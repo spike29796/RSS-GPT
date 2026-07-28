@@ -87,13 +87,13 @@ README 里提到的 `openai==0.27.8` 是**历史遗留说明**。实测上游现
 ### 2.5 替换 config.ini（3 个测试源）
 
 1. 仓库首页点开 `config.ini` → 右上角铅笔图标 **Edit this file**
-2. 全选删除，粘贴本仓库 `deploy/config.ini` 的内容（已配好：量子位 / OpenAI News / IT之家，中文、200 字摘要）
+2. 全选删除，粘贴本仓库 `RSS-GPT/config.ini` 的内容（已配好：量子位 / OpenAI News / IT之家，中文、200 字摘要）
 3. 底部 **Commit changes** → **Commit directly to the main branch** → **Commit changes**
 
 ### 2.6 替换 workflow 文件（上游版本已无法运行，必须改）
 
 1. 仓库里进入 `.github/workflows/cron-job.yml` → 铅笔 **Edit**
-2. 全选删除，粘贴本仓库 `deploy/cron-job.yml` 的内容
+2. 全选删除，粘贴本仓库 `RSS-GPT/.github/workflows/cron-job.yml` 的内容
 3. **Commit changes**
 
 改了什么、为什么：
@@ -107,8 +107,10 @@ README 里提到的 `openai==0.27.8` 是**历史遗留说明**。实测上游现
 
 分类功能是我们对上游的定制修改（见第 2.10 节），同样需要覆盖 fork 里的文件：
 
-1. 仓库里点开 `main.py` → 铅笔 **Edit** → 全选删除，粘贴本仓库 `deploy/main.py` 的内容 → **Commit changes**
-2. 同样方法用 `deploy/template.xml` 替换 `template.xml`
+1. 仓库里点开 `main.py` → 铅笔 **Edit** → 全选删除，粘贴本仓库 `RSS-GPT/main.py` 的内容 → **Commit changes**
+2. 同样方法用 `RSS-GPT/template.xml` 替换 `template.xml`
+
+（更推荐的方式：本地 `RSS-GPT/` 目录就是 fork 的 git 克隆，直接改完 `git push`，无需网页粘贴。）
 
 ### 2.7 开启 GitHub Pages
 
@@ -134,11 +136,11 @@ README 里提到的 `openai==0.27.8` 是**历史遗留说明**。实测上游现
 
 每篇文章除了中文摘要，还会带一个分类，写入 RSS XML 的 `<category>` 字段：
 
-- 分类仅限五类：**模型发布 / 行业动态 / 政策法规 / 开源项目 / 产品应用**
+- 分类列表可在 `config.ini` 的 `[cfg] categories` 配置（默认五类：**模型发布 / 行业动态 / 政策法规 / 开源项目 / 产品应用**），兜底类由 `[cfg] default_category` 配置；单个源可用 `[sourceNNN]` 下的 `categories` 键覆盖
 - 实现方式：摘要 prompt 要求模型第一行只输出分类、第二行起输出摘要；
-  代码解析第一行并校验合法性，不合法（或摘要失败、超出 max_items 未调用模型）时兜底为「行业动态」
+  代码解析第一行并校验合法性，不合法（或摘要失败、超出 max_items 未调用模型）时兜底为默认分类
 - 旧条目在后续运行中重新渲染时保留原分类
-- 改动文件：`main.py`（prompt + 解析 + 兜底）、`template.xml`（渲染 `<category>`），均已放在 `deploy/` 下
+- 改动文件：`main.py`（prompt + 解析 + 兜底）、`template.xml`（渲染 `<category>`），以 fork 仓库（本地 `RSS-GPT/` 克隆）为准
 
 ## 3. 踩坑记录
 
@@ -157,15 +159,16 @@ README 里提到的 `openai==0.27.8` 是**历史遗留说明**。实测上游现
 10. **摘要条数控制**：`max_items` 是"每次运行最多为几篇新文章生成摘要"，测试期每个源设为 3，
     控制 API 花费；正式用可以调大。
 11. **量子位会 403 非浏览器 UA**：上游用 fake_useragent 随机 UA，实测被量子位拒绝（403）。
-    `deploy/main.py` 已改为固定的现代 Chrome UA，不要改回去。
+    `RSS-GPT/main.py` 已改为固定的现代 Chrome UA，不要改回去。
 12. **第一次运行很慢**：OpenAI 官方 feed 带全部历史文章（约 1000 篇），首轮要逐篇清洗，
     Actions 第一次跑 10 分钟以上属正常；之后有去重缓存就快了。
 13. **feedparser 的属性陷阱**：给 feedparser 的 entry 用点号赋值自定义属性不会写入字典，
     `entry.get('xxx')` 永远拿到 None。读取自定义属性必须用 `getattr(entry, 'xxx', None)`。
-    （这是分类功能开发时踩的坑，deploy/main.py 里已修正并注释。）
+    （这是分类功能开发时踩的坑，`RSS-GPT/main.py` 里已修正并注释。）
 
 ## 4. 以后重装 / 加源
 
-- 重装：照第 2 节从头走一遍即可，文件都在 `deploy/` 目录。
+- 重装：照第 2 节从头走一遍即可，文件以 fork 仓库为准（本地 `RSS-GPT/` 目录是 fork 的克隆，改完 `git push` 同步，无需网页粘贴）。
 - 加源：在 `config.ini` 末尾追加 `[source004]` 段（段名递增即可），填 `name` / `url` / `max_items`，commit 后等下一轮运行。
 - 改摘要语言/长度：`[cfg]` 段 `language` 和 `summary_length`。
+- 改分类体系：`[cfg]` 段 `categories`（逗号分隔）和 `default_category`；单个源可在自己的 `[sourceNNN]` 段加 `categories` 覆盖全局。

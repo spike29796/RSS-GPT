@@ -45,3 +45,40 @@
 
 ## 下一步
 - 用户在 fork 替换 main.py、template.xml 后重跑 Actions 验收（DoD 最后一项，依赖 secrets 已配置）。
+
+---
+
+# PROG-2026-07-28（追加）第一步：单副本 + JSONL 数据层 + 分类配置化
+
+## 做了什么（对应 REQ-data-layer.md）
+- 单副本：`RSS-GPT/` 换成 fork（spike29796/RSS-GPT）的克隆，旧上游克隆和
+  `deploy/` 改名为 `.bak` 保留；外层 `.gitignore` 忽略 `RSS-GPT/`、`.venv/` 等。
+- JSONL 数据层：`docs/<name>.jsonl` 为事实来源（字段见 REQ）；
+  `migrate_xml_to_jsonl.py` 完成存量迁移（1051/73/11 条）；
+  `load_entries()` JSONL 优先、XML 自动兜底迁移；先写 JSONL 再渲染 XML。
+- 模板合并：`template.xml` 双循环改单循环，渲染字段统一。
+- 分类配置化：`[cfg] categories` / `default_category`，支持源级覆盖；
+  config.ini 显式 UTF-8 读取；`validate_categories.py` 改从 config 读分类表。
+- 数据清理（用户拍板）：删掉无 category 的历史条目 1019 条
+  （qbitai 10 / openai-news 949 / ithome 60），下一轮运行会被 feed 重新提供并
+  以保证带分类的新条目身份入库。
+- 验证（mock LLM + 真实三源，两轮，日志 test/logs/phase1-verify.log）：
+  无新文章的源两轮输出逐字节一致；有 category 的旧条目与基线逐条一致；
+  `validate_categories.py` 全绿；`compare_feeds.py` 新增为回归工具。
+- 文档：README 的 deploy/ 引用全部改指 fork 克隆；新增 REQ-data-layer.md、
+  BUG-conveyor-belt.md（传送带效应，上游既有，下一步修）。
+
+## 重要发现
+- 旧本地 XML 是 mock 测试产物，生产数据以 fork 为准（此前一次"验收通过"
+  实际验的是 mock 数据，教训：验收必须对着 fork 克隆做）。
+- 生产上用户自配模型不遵守"第一行只输出分类"的格式 → 真实摘要几乎全部
+  落入兜底分类。不影响本阶段（行为保持），第二阶段选模型/prompt 时需正视。
+- openai-news 传送带效应（详见 BUG-conveyor-belt.md）。
+
+## 卡在哪
+- 无阻塞。fork 仓库两个 commit（数据层、重构+清理）待用户 push
+  （权限配置 deny 了 git push，由用户手动执行）。
+
+## 下一步
+1. 用户：`git -C RSS-GPT push`，然后在 fork 重跑 Actions 验收（线上 DoD）。
+2. 第二步立项：采集器接口 + Awwwards SOTD 爬虫（先做反爬可行性验证）。

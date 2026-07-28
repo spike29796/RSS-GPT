@@ -2,20 +2,31 @@
 
 Checks, for each generated feed:
 - every <item> has at least one <category>
-- every category value is within the allowed 5 classes
+- every category value is within the allowed classes (read from config.ini,
+  no hardcoded list — the config is the single source of truth)
 - at least one item carries a summary containing the expected marker
 
 Usage: python test/validate_categories.py RSS-GPT/docs
 """
+import configparser
+import os
 import sys
 
 import feedparser
 
-ALLOWED = {"模型发布", "行业动态", "政策法规", "开源项目", "产品应用"}
 FEEDS = ["qbitai", "openai-news", "ithome"]
 
 
+def load_allowed(docs_dir):
+    config_path = os.path.join(os.path.dirname(docs_dir), "config.ini")
+    config = configparser.ConfigParser()
+    config.read(config_path, encoding="utf-8")
+    raw = config.get("cfg", "categories").strip('"')
+    return {c.strip() for c in raw.split(",") if c.strip()}
+
+
 def main(docs_dir):
+    allowed = load_allowed(docs_dir)
     failures = []
     for name in FEEDS:
         path = f"{docs_dir}/{name}.xml"
@@ -30,7 +41,7 @@ def main(docs_dir):
             if not terms:
                 failures.append(f"{name}: item #{i} '{entry.get('title', '?')[:30]}' has no category")
             for term in terms:
-                if term not in ALLOWED:
+                if term not in allowed:
                     failures.append(f"{name}: item #{i} illegal category '{term}'")
             content = ""
             if entry.get("content"):
