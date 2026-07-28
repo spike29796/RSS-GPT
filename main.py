@@ -1,6 +1,7 @@
 import feedparser
 import configparser
 import os
+import json
 import httpx
 from openai import OpenAI
 from jinja2 import Template
@@ -17,7 +18,9 @@ def get_cfg(sec, name, default=None):
         return value.strip('"')
 
 config = configparser.ConfigParser()
-config.read('config.ini')
+# config.ini contains non-ASCII category names; always read as UTF-8 so
+# Windows locales (GBK default) don't break parsing.
+config.read('config.ini', encoding='utf-8')
 secs = config.sections()
 # Maxnumber of entries to in a feed.xml file
 max_entries = 1000
@@ -134,59 +137,84 @@ def filter_entry(entry, filter_apply, filter_type, filter_rule):
     else:
         raise Exception('filter_type not supported')
 
-def read_entry_from_file(sec):
-    """
-    This function is used to read the RSS feed entries from the feed.xml file.
+def load_entries(sec):
+    """Load stored entries for a source as a list of plain dicts.
+
+    The JSONL data file is the source of truth. When it does not exist yet
+    (e.g. first run after deploying this change on the fork), fall back to
+    converting the existing feed XML on the fly.
 
     Args:
         sec: section name in config.ini
     """
-    out_dir = os.path.join(BASE, get_cfg(sec, 'name'))
-    try:
-        with open(out_dir + '.xml', 'r') as f:
-            rss = f.read()
-        feed = feedparser.parse(rss)
-        return feed.entries
-    except:
-        return []
+    base = os.path.join(BASE, get_cfg(sec, 'name'))
+    jsonl_path = base + '.jsonl'
+    if os.path.exists(jsonl_path):
+        entries = []
+        with open(jsonl_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    entries.append(json.loads(line))
+        return entries
+    xml_path = base + '.xml'
+    if os.path.exists(xml_path):
+        import migrate_xml_to_jsonl
+        feed = feedparser.parse(xml_path)
+        return [migrate_xml_to_jsonl.entry_to_record(e) for e in feed.entries]
+    return []
 
 def truncate_entries(entries, max_entries):
     if len(entries) > max_entries:
         entries = entries[:max_entries]
     return entries
 
-# Allowed article categories, the model must pick exactly one.
-CATEGORIES = ['模型发布', '行业动态', '政策法规', '开源项目', '产品应用']
-# Fallback category to guarantee every item gets a valid <category> value.
+# Built-in fallback used only when config.ini has no categories configured.
+DEFAULT_CATEGORIES = ['模型发布', '行业动态', '政策法规', '开源项目', '产品应用']
 DEFAULT_CATEGORY = '行业动态'
 
-def parse_category_and_summary(text):
+def get_categories(sec=None):
+    """Resolve the allowed category list: per-source override first, then the
+    global [cfg] categories key, then the built-in default."""
+    raw = get_cfg(sec, 'categories') if sec else None
+    if not raw:
+        raw = get_cfg('cfg', 'categories')
+    if raw:
+        return [c.strip() for c in raw.split(',') if c.strip()]
+    return list(DEFAULT_CATEGORIES)
+
+def get_default_category():
+    """Fallback category to guarantee every item gets a valid value."""
+    return get_cfg('cfg', 'default_category') or DEFAULT_CATEGORY
+
+def parse_category_and_summary(text, categories, default_category):
     """Split the model output into (category, summary).
 
     The first non-empty line is expected to be the category and the rest is
     the summary. Any output that does not comply falls back to
-    DEFAULT_CATEGORY with the original text kept as the summary, so the
+    default_category with the original text kept as the summary, so the
     generated XML always has a valid <category> value.
     """
     lines = [line.strip() for line in text.strip().splitlines() if line.strip()]
     if not lines:
-        return DEFAULT_CATEGORY, text
+        return default_category, text
     candidate = re.sub(r'^(分类|类别|category)\s*[:：]?\s*', '', lines[0], flags=re.IGNORECASE).strip()
-    if candidate in CATEGORIES:
+    if candidate in categories:
         summary = '\n'.join(lines[1:])
         return candidate, summary if summary else text
-    return DEFAULT_CATEGORY, text
+    return default_category, text
 
-def gpt_summary(query,model,language):
+def gpt_summary(query,model,language,categories,default_category):
+    category_list = '、'.join(categories)
     if language == "zh":
         messages = [
             {"role": "user", "content": query},
-            {"role": "assistant", "content": f"请用中文总结这篇文章，严格按照以下格式输出：第一行只输出一个分类，必须从以下五类中选择一个：{'、'.join(CATEGORIES)}，除此之外第一行不要输出任何其他内容；从第二行开始，用中文在{summary_length}字内写一个包含所有要点的总结，按顺序分要点输出，并按照以下格式输出'<br><br>总结:'，<br>是HTML的换行符，输出时必须保留2个，并且必须在'总结:'二字之前"}
+            {"role": "assistant", "content": f"请用中文总结这篇文章，严格按照以下格式输出：第一行只输出一个分类，必须从以下分类中选择一个：{category_list}，除此之外第一行不要输出任何其他内容；从第二行开始，用中文在{summary_length}字内写一个包含所有要点的总结，按顺序分要点输出，并按照以下格式输出'<br><br>总结:'，<br>是HTML的换行符，输出时必须保留2个，并且必须在'总结:'二字之前"}
         ]
     else:
         messages = [
             {"role": "user", "content": query},
-            {"role": "assistant", "content": f"Please summarize this article in {language} language, strictly follow this format: the first line must contain exactly one category chosen from: {'、'.join(CATEGORIES)}, and nothing else; starting from the second line, write a summary containing all the points in {summary_length} words in {language}, output in order by points, and output in the following format '<br><br>Summary:' , <br> is the line break of HTML, 2 must be retained when output, and must be before the word 'Summary:'"}
+            {"role": "assistant", "content": f"Please summarize this article in {language} language, strictly follow this format: the first line must contain exactly one category chosen from: {category_list}, and nothing else; starting from the second line, write a summary containing all the points in {summary_length} words in {language}, output in order by points, and output in the following format '<br><br>Summary:' , <br> is the line break of HTML, 2 must be retained when output, and must be before the word 'Summary:'"}
         ]
     if not OPENAI_PROXY:
         client = OpenAI(
@@ -206,7 +234,7 @@ def gpt_summary(query,model,language):
         model=model,
         messages=messages,
     )
-    return parse_category_and_summary(completion.choices[0].message.content)
+    return parse_category_and_summary(completion.choices[0].message.content, categories, default_category)
 
 def output(sec, language):
     """ output
@@ -248,7 +276,9 @@ def output(sec, language):
     else:
         max_items = int(max_items)
     cnt = 0
-    existing_entries = read_entry_from_file(sec)
+    categories = get_categories(sec)
+    default_category = get_default_category()
+    existing_entries = load_entries(sec)
     with open(log_file, 'a') as f:
         f.write('------------------------------------------------------\n')
         f.write(f'Started: {datetime.datetime.now()}\n')
@@ -276,7 +306,7 @@ def output(sec, language):
             if entry.link.find('#replay') and entry.link.find('v2ex'):
                 entry.link = entry.link.split('#')[0]
 
-            if entry.link in [x.link for x in existing_entries]:
+            if entry.link in [x['link'] for x in existing_entries]:
                 continue
 
             if entry.link in [x.link for x in append_entries]:
@@ -311,7 +341,7 @@ def output(sec, language):
                 token_length = len(cleaned_article)
                 if custom_model:
                     try:
-                        entry.gpt_category, entry.summary = gpt_summary(cleaned_article,model=custom_model, language=language)
+                        entry.gpt_category, entry.summary = gpt_summary(cleaned_article,model=custom_model, language=language, categories=categories, default_category=default_category)
                         with open(log_file, 'a') as f:
                             f.write(f"Token length: {token_length}\n")
                             f.write(f"Summarized using {custom_model}\n")
@@ -323,14 +353,14 @@ def output(sec, language):
                             f.write(f"error: {e}\n")
                 else:
                     try:
-                        entry.gpt_category, entry.summary = gpt_summary(cleaned_article,model="gpt-4o-mini", language=language)
+                        entry.gpt_category, entry.summary = gpt_summary(cleaned_article,model="gpt-4o-mini", language=language, categories=categories, default_category=default_category)
                         with open(log_file, 'a') as f:
                             f.write(f"Token length: {token_length}\n")
                             f.write(f"Summarized using gpt-4o-mini\n")
                             f.write(f"Category: {entry.gpt_category}\n")
                     except:
                         try:
-                            entry.gpt_category, entry.summary = gpt_summary(cleaned_article,model="gpt-4o", language=language)
+                            entry.gpt_category, entry.summary = gpt_summary(cleaned_article,model="gpt-4o", language=language, categories=categories, default_category=default_category)
                             with open(log_file, 'a') as f:
                                 f.write(f"Token length: {token_length}\n")
                                 f.write(f"Summarized using GPT-4o\n")
@@ -346,7 +376,7 @@ def output(sec, language):
             # NOTE: must use getattr here - FeedParserDict attribute assignment
             # does not store dict keys, so entry.get('gpt_category') is always None.
             if not getattr(entry, 'gpt_category', None):
-                entry.gpt_category = DEFAULT_CATEGORY
+                entry.gpt_category = default_category
 
             append_entries.append(entry)
             with open(log_file, 'a') as f:
@@ -355,11 +385,36 @@ def output(sec, language):
     with open(log_file, 'a') as f:
         f.write(f'append_entries: {len(append_entries)}\n')
 
+    # Convert fetched entries to the unified record shape (same as JSONL lines).
+    # content is the canonical <content:encoded> body: summary div + article,
+    # identical to what the old two-loop template produced.
+    append_records = []
+    for entry in append_entries:
+        summary = getattr(entry, 'summary', None)
+        content = ("<div> " + summary + " <div>" if summary else "") + "\n" + entry.article
+        append_records.append({
+            "link": entry.link,
+            "title": entry.title,
+            "published": getattr(entry, 'published', None),
+            "updated": getattr(entry, 'updated', None),
+            "category": getattr(entry, 'gpt_category', None) or default_category,
+            "summary": summary,
+            "content": content,
+        })
+
+    # New entries first, then history (already truncated to max_entries above).
+    entries = append_records + existing_entries
+
+    # Data layer first: persist JSONL, then render the XML from the same list.
+    with open(out_dir + '.jsonl', 'w', encoding='utf-8') as f:
+        for record in entries:
+            f.write(json.dumps(record, ensure_ascii=False) + '\n')
+
     template = Template(open('template.xml').read())
-    
+
     try:
-        rss = template.render(feed=feed, append_entries=append_entries, existing_entries=existing_entries)
-        with open(out_dir + '.xml', 'w') as f:
+        rss = template.render(feed=feed, entries=entries)
+        with open(out_dir + '.xml', 'w', encoding='utf-8') as f:
             f.write(rss)
         with open(log_file, 'a') as f:
             f.write(f'Finish: {datetime.datetime.now()}\n')
