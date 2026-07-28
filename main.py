@@ -38,8 +38,9 @@ def fetch_feed(url, log_file):
     response = None
     headers = {}
     try:
-        ua = UserAgent()
-        headers['User-Agent'] = ua.random.strip()
+        # Use a fixed modern browser UA: some feeds (e.g. qbitai) reject
+        # random or bot-like User-Agent strings with 403.
+        headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
         response = requests.get(url, headers=headers, timeout=30)
         if response.status_code == 200:
             feed = feedparser.parse(response.text)
@@ -154,16 +155,38 @@ def truncate_entries(entries, max_entries):
         entries = entries[:max_entries]
     return entries
 
+# Allowed article categories, the model must pick exactly one.
+CATEGORIES = ['模型发布', '行业动态', '政策法规', '开源项目', '产品应用']
+# Fallback category to guarantee every item gets a valid <category> value.
+DEFAULT_CATEGORY = '行业动态'
+
+def parse_category_and_summary(text):
+    """Split the model output into (category, summary).
+
+    The first non-empty line is expected to be the category and the rest is
+    the summary. Any output that does not comply falls back to
+    DEFAULT_CATEGORY with the original text kept as the summary, so the
+    generated XML always has a valid <category> value.
+    """
+    lines = [line.strip() for line in text.strip().splitlines() if line.strip()]
+    if not lines:
+        return DEFAULT_CATEGORY, text
+    candidate = re.sub(r'^(分类|类别|category)\s*[:：]?\s*', '', lines[0], flags=re.IGNORECASE).strip()
+    if candidate in CATEGORIES:
+        summary = '\n'.join(lines[1:])
+        return candidate, summary if summary else text
+    return DEFAULT_CATEGORY, text
+
 def gpt_summary(query,model,language):
     if language == "zh":
         messages = [
             {"role": "user", "content": query},
-            {"role": "assistant", "content": f"请用中文总结这篇文章，先提取出{keyword_length}个关键词，在同一行内输出，然后换行，用中文在{summary_length}字内写一个包含所有要点的总结，按顺序分要点输出，并按照以下格式输出'<br><br>总结:'，<br>是HTML的换行符，输出时必须保留2个，并且必须在'总结:'二字之前"}
+            {"role": "assistant", "content": f"请用中文总结这篇文章，严格按照以下格式输出：第一行只输出一个分类，必须从以下五类中选择一个：{'、'.join(CATEGORIES)}，除此之外第一行不要输出任何其他内容；从第二行开始，用中文在{summary_length}字内写一个包含所有要点的总结，按顺序分要点输出，并按照以下格式输出'<br><br>总结:'，<br>是HTML的换行符，输出时必须保留2个，并且必须在'总结:'二字之前"}
         ]
     else:
         messages = [
             {"role": "user", "content": query},
-            {"role": "assistant", "content": f"Please summarize this article in {language} language, first extract {keyword_length} keywords, output in the same line, then line break, write a summary containing all the points in {summary_length} words in {language}, output in order by points, and output in the following format '<br><br>Summary:' , <br> is the line break of HTML, 2 must be retained when output, and must be before the word 'Summary:'"}
+            {"role": "assistant", "content": f"Please summarize this article in {language} language, strictly follow this format: the first line must contain exactly one category chosen from: {'、'.join(CATEGORIES)}, and nothing else; starting from the second line, write a summary containing all the points in {summary_length} words in {language}, output in order by points, and output in the following format '<br><br>Summary:' , <br> is the line break of HTML, 2 must be retained when output, and must be before the word 'Summary:'"}
         ]
     if not OPENAI_PROXY:
         client = OpenAI(
@@ -183,7 +206,7 @@ def gpt_summary(query,model,language):
         model=model,
         messages=messages,
     )
-    return completion.choices[0].message.content
+    return parse_category_and_summary(completion.choices[0].message.content)
 
 def output(sec, language):
     """ output
@@ -288,10 +311,11 @@ def output(sec, language):
                 token_length = len(cleaned_article)
                 if custom_model:
                     try:
-                        entry.summary = gpt_summary(cleaned_article,model=custom_model, language=language)
+                        entry.gpt_category, entry.summary = gpt_summary(cleaned_article,model=custom_model, language=language)
                         with open(log_file, 'a') as f:
                             f.write(f"Token length: {token_length}\n")
                             f.write(f"Summarized using {custom_model}\n")
+                            f.write(f"Category: {entry.gpt_category}\n")
                     except Exception as e:
                         entry.summary = None
                         with open(log_file, 'a') as f:
@@ -299,21 +323,30 @@ def output(sec, language):
                             f.write(f"error: {e}\n")
                 else:
                     try:
-                        entry.summary = gpt_summary(cleaned_article,model="gpt-4o-mini", language=language)
+                        entry.gpt_category, entry.summary = gpt_summary(cleaned_article,model="gpt-4o-mini", language=language)
                         with open(log_file, 'a') as f:
                             f.write(f"Token length: {token_length}\n")
                             f.write(f"Summarized using gpt-4o-mini\n")
+                            f.write(f"Category: {entry.gpt_category}\n")
                     except:
                         try:
-                            entry.summary = gpt_summary(cleaned_article,model="gpt-4o", language=language)
+                            entry.gpt_category, entry.summary = gpt_summary(cleaned_article,model="gpt-4o", language=language)
                             with open(log_file, 'a') as f:
                                 f.write(f"Token length: {token_length}\n")
                                 f.write(f"Summarized using GPT-4o\n")
+                                f.write(f"Category: {entry.gpt_category}\n")
                         except Exception as e:
                             entry.summary = None
                             with open(log_file, 'a') as f:
                                 f.write(f"Summarization failed, append the original article\n")
                                 f.write(f"error: {e}\n")
+
+            # Guarantee every new item has a valid category, even when the
+            # summary was skipped (beyond max_items) or summarization failed.
+            # NOTE: must use getattr here - FeedParserDict attribute assignment
+            # does not store dict keys, so entry.get('gpt_category') is always None.
+            if not getattr(entry, 'gpt_category', None):
+                entry.gpt_category = DEFAULT_CATEGORY
 
             append_entries.append(entry)
             with open(log_file, 'a') as f:
