@@ -192,17 +192,18 @@ def parse_category_and_summary(text, categories, default_category):
 
     The first non-empty line is expected to be the category and the rest is
     the summary. Any output that does not comply falls back to
-    default_category with the original text kept as the summary, so the
-    generated XML always has a valid <category> value.
+    default_category with summary=None (same as a summarization failure), so
+    the generated XML always has a valid <category> value and non-compliant
+    raw model output never leaks into the data layer.
     """
     lines = [line.strip() for line in text.strip().splitlines() if line.strip()]
     if not lines:
-        return default_category, text
+        return default_category, None
     candidate = re.sub(r'^(分类|类别|category)\s*[:：]?\s*', '', lines[0], flags=re.IGNORECASE).strip()
     if candidate in categories:
         summary = '\n'.join(lines[1:])
-        return candidate, summary if summary else text
-    return default_category, text
+        return candidate, summary if summary else None
+    return default_category, None
 
 def gpt_summary(query,model,language,categories,default_category):
     category_list = '、'.join(categories)
