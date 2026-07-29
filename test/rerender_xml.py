@@ -14,7 +14,7 @@ import feedparser
 from jinja2 import Template
 
 DOCS_DIR = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).parent.parent / "RSS-GPT" / "docs"
-FEEDS = ["qbitai", "ithome", "openai-news", "awwwards-sotd"]
+FEEDS = ["openai-news"]
 
 
 def main():

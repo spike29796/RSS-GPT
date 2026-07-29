@@ -218,6 +218,18 @@ backfill_items = "5"   # 每轮回填预算（条），默认 0 = 关
   awwwards=C、量子位/IT之家=D，B 预留新源），分类 ↔ 赛季流派。
   首页 = 赛季分组卡片 + 各源热门分类 top3（计数+占比）；深色游戏风。
 
+### 2.16 单源 OpenAI + 官方标签（第五轮，现行架构）
+
+- **源收缩为 openai-news 一个**（旧三源配置与数据文件已删，git 历史可查）。
+- **分类复用官方标签**：feed 每条自带官方 `<category>`（20 个词汇），代码里
+  官方 tag 优先于 LLM 分类与兜底；`[source002] categories` 写死 20 词做允许集，
+  最老约 100 条无 tag 的用 `default_category="Company"` 兜底。
+  LLM 只写一句话中文导读。存量用 `test/retag_official_categories.py` 重打标。
+- **前端**：单源列表，顶部官方标签 chips（带计数）+ 搜索；卡片 = 大写 tag →
+  标题 → 日期 → 中文导读（官网信息层级，深色主题保留）。
+- 2.11（awwwards 采集器）与 2.15（赛季/流派 UI）已成历史，仅作演进记录；
+  collectors.py 代码保留待用。
+
 ## 3. 踩坑记录
 
 1. **机器之心 RSS 已下线**：`jiqizhixin.com/rss` 现在 302 跳转到"数据服务"付费页，返回 HTML 而非 XML；

@@ -226,3 +226,28 @@
   回填恢复）；build + 静态模拟 4 资源 200。
 - 坑：Git Bash 的 ln -s 在某些环境是"复制"而非软链，静态模拟serve的是旧快照，
   重建链接后正常。
+
+---
+
+# PROG-2026-07-29（追加）第五轮：单源 OpenAI + 官方标签 + 官网风卡片
+
+## 做了什么（对应 REQ-openai-only.md；用户已自行更换 CUSTOM_MODEL）
+- 实测官方 feed：1052 item、952 条带 CDATA `<category>`（20 个官方词汇，
+  分布已记入 REQ）、无图；最老约 100 条无 tag → default=Company。
+- 管道：新条目分类官方 tag 优先（覆盖 LLM/兜底）；回填保护已有合法分类；
+  config 单源化（删 source001/003/004）；旧三源数据文件 git rm。
+- 一次性 retag_official_categories.py：1000 条全部重打官方标
+  （900 直接映射 + 100 无 tag 兜底），validate 全绿。
+- 前端：去赛季化单源列表；官方标签 chips（带计数）；卡片=大写 tag→标题→
+  日期→中文导读；深色保留。rerender/validate 的 FEEDS 同步单源。
+- e2e 单源全绿（run2 稳定、回填正常、validate 过）。
+
+## 下一步
+- 提交 push；用户线上复核 + 触发 Actions 观察新模型的导读格式遵从。
+
+### 推送时冲突与新模型观察（2026-07-29 补）
+- push 撞上 08:45 Auto Build（带新模型的一轮回填）：UD 冲突删旧三源、
+  UU 取远端 jsonl 保留新摘要，重跑 retag+rerender 后 amend 推上。
+- **新模型格式遵从 5/7**：两条脏摘要（prompt 碎片/示例回显）已清并留给
+  回填重试；clean_dirty_summaries 正则补「除此之外|示例：」。
+  观察：指令遵循仍是主要失败模式，兜底 None + 回填重试机制兜底有效。
