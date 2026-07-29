@@ -411,11 +411,20 @@ def output(sec, language):
                                 f.write(f"Summarization failed, append the original article\n")
                                 f.write(f"error: {e}\n")
 
-            # Guarantee every new item has a valid category, even when the
-            # summary was skipped (beyond max_items) or summarization failed.
+            # Category resolution: the feed's own tag wins when available
+            # (e.g. openai.com/news ships an official <category> per item),
+            # overriding any LLM-chosen value. Otherwise keep the LLM category,
+            # falling back to the default so every item has a valid value.
             # NOTE: must use getattr here - FeedParserDict attribute assignment
             # does not store dict keys, so entry.get('gpt_category') is always None.
-            if not getattr(entry, 'gpt_category', None):
+            official_category = None
+            try:
+                official_category = entry.tags[0].term
+            except (AttributeError, IndexError, KeyError, TypeError):
+                pass
+            if official_category:
+                entry.gpt_category = official_category
+            elif not getattr(entry, 'gpt_category', None):
                 entry.gpt_category = default_category
 
             append_entries.append(entry)
@@ -488,7 +497,10 @@ def output(sec, language):
                 continue
             if summary is None:
                 continue  # non-compliant output; leave for the next run
-            record['category'] = category
+            # Keep an already-valid category (e.g. the feed's official tag);
+            # only repair missing/stale ones.
+            if record.get('category') not in categories:
+                record['category'] = category
             record['summary'] = summary
             record['content'] = "<div> " + summary + " <div>" + "\n" + article
             backfilled += 1
