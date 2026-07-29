@@ -82,3 +82,33 @@
 ## 下一步
 1. 用户：`git -C RSS-GPT push`，然后在 fork 重跑 Actions 验收（线上 DoD）。
 2. 第二步立项：采集器接口 + Awwwards SOTD 爬虫（先做反爬可行性验证）。
+
+---
+
+# PROG-2026-07-29 脏摘要清理 + 解析兜底修复
+
+## 背景
+线上验收发现 2026-07-29 Auto Build（4933964ac）生产的 9 条摘要中约 5 条是
+垃圾内容：生产模型不遵守"首行分类+总结"格式，且旧兜底策略把整段原始输出
+（prompt 回显、思维链、幻觉英文样例文章）原样存入 JSONL 并渲染到公开 XML。
+（qbitai 2 条、ithome 3 条、openai-news 1 条传送带重抓旧文）
+
+## 做了什么
+- `main.py` `parse_category_and_summary`：解析失败/只有分类没有摘要时兜底返回
+  `summary=None`（与摘要失败路径一致，渲染时无摘要 div），原始输出不再进数据层。
+- 数据修复：`test/clean_dirty_summaries.py`（一次性）清掉 6 条脏 summary
+  （summary→null，content 中同步剥离 `<div> summary <div>` 前缀）。
+- `test/rerender_xml.py`：不抓 feed、不调 LLM，直接从 JSONL + template.xml
+  重渲染 3 个 XML。验证：用脏 JSONL 重渲染结果与 HEAD 逐字节一致（幂等），
+  再用干净 JSONL 重渲染，diff 恰好只触及 6 个 item（共删约 805 行垃圾）。
+- 验证：`validate_categories.py` 全绿；parse 兜底单测断言通过；main.py 编译通过。
+
+## 发现
+- 脏输出含多轮对话痕迹（"上面这个总结是你上次生成的，请你重新生成"），
+  疑似所用 OpenAI 兼容服务存在上下文串联，第二阶段选服务/模型时需验证。
+- openai-news 已回到 1052 条（949 条无分类历史被 feed 全量重新提供，属清理时
+  的预期行为）；传送带 BUG 依旧，第二阶段按 BUG 文档修。
+
+## 下一步
+- 提交并 push 后线上 XML 即恢复干净；之后正常进入第二阶段
+  （调教模型输出格式 + 修传送带 + Awwwards 采集器）。
