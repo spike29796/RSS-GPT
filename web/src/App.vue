@@ -601,7 +601,6 @@ body {
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
-  align-items: start;
 }
 @media (min-width: 700px) {
   .list {

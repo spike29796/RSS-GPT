@@ -38,6 +38,7 @@ const tag = computed(() => tagLabel(props.entry.category, ui.showZh))
   display: flex;
   flex-direction: column;
   gap: 8px;
+  height: 100%;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 8px;

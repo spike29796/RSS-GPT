@@ -271,3 +271,13 @@
 - kimi-k2.6 实测格式遵从约 5/7 → 加标记归一化（尾部 总结: 前移/缺省补）
   后全部可用；前端卡片摘要以 <br><br> 开头吃掉 line-clamp 两行额度显示成
   "..."，改渲染时剥标记 + 绿色导读标签。
+
+### UI 细调（2026-07-29 补，Playwright 截图驱动）
+- 配置：~/.kimi-code/mcp.json 已写 Playwright MCP（重启或 /mcp 生效）；
+  本轮调试用 web/scripts/ui_shots.mjs（本地静态服务 + chromium 截图，
+  覆盖双主题 × 1600/390 宽 × 单/多源）。
+- 多源模拟（git 历史恢复旧三源 jsonl + 临时 4 源构建）：首页赛季卡/热门分类
+  网格自动换行不错位，验证通过。
+- 修复：卡片大小不一（.list 误用 align-items:start → 改 stretch + 卡片
+  height:100%，同行等高）；test-shots/ 加入 gitignore。
+- 用户确认译题覆盖路径：backfill 临时 300/天（5d2639869），铺满后调回 50。
