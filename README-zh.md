@@ -53,3 +53,4 @@
 <a href="https://www.buymeacoffee.com/yinan" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
 - https://openai.com/news/rss.xml -> https://spike29796.github.io/RSS-GPT/openai-news.xml
+- https://claude.com/blog -> https://spike29796.github.io/RSS-GPT/claude-blog.xml

@@ -56,3 +56,4 @@ These feeds on hosted in the [`docs/` subdirectory](https://github.com/yinan-c/R
 I will consider hosting more feeds in the future. Email me or submit an issue if there are any questions using the script or any suggestions.
 
 - https://openai.com/news/rss.xml -> https://spike29796.github.io/RSS-GPT/openai-news.xml
+- https://claude.com/blog -> https://spike29796.github.io/RSS-GPT/claude-blog.xml

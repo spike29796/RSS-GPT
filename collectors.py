@@ -91,6 +91,77 @@ def collect_awwwards_sotd(url, log_file):
     })
 
 
+_MONTHS = {m: i + 1 for i, m in enumerate(
+    ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])}
+
+
+def _parse_blog_date(text):
+    """'Jul 28, 2026' -> RFC 2822 string (locale-independent month lookup)."""
+    m = re.match(r'([A-Z][a-z]{2})\s+(\d{1,2}),\s+(\d{4})', text.strip())
+    if not m:
+        return None
+    mon, day, year = _MONTHS[m.group(1)], int(m.group(2)), int(m.group(3))
+    import datetime
+    return formatdate(datetime.datetime(year, mon, day, tzinfo=datetime.timezone.utc).timestamp(), usegmt=True)
+
+
+def collect_claude_blog(url, log_file):
+    """Collect articles from claude.com/blog (Webflow, server-rendered).
+
+    Every card carries its official tag(s), exposed as feedparser entry.tags
+    so main.py's official-tag category resolution picks them up. The blog
+    renders each card twice (grid + list view), so dedupe by link.
+    """
+    from bs4 import BeautifulSoup
+    try:
+        response = _get_ipv4(url, headers={'User-Agent': USER_AGENT}, timeout=30)
+    except requests.RequestException as e:
+        _log(log_file, f"Collector fetch error: {e}")
+        return None
+    if response.status_code != 200:
+        _log(log_file, f"Collector fetch error: {response.status_code}")
+        return None
+
+    soup = BeautifulSoup(response.text, 'html.parser')
+    entries = []
+    seen = set()
+    for card in soup.select('.card_blog_wrap'):
+        try:
+            anchor = card.find_parent('a', href=True) or card.find('a', href=True)
+            if not anchor:
+                continue
+            link = 'https://claude.com' + anchor['href'] if anchor['href'].startswith('/') else anchor['href']
+            if link in seen:
+                continue
+            seen.add(link)
+            title_el = card.select_one('.card_blog_title')
+            date_el = card.select_one('.u-text-style-caption')
+            tags = [t.get_text(strip=True) for t in card.select('.card-main_tag-wrap div') if t.get_text(strip=True)]
+            img = card.select_one('img.card_blog_illo')
+            article = ''
+            if img and img.get('src'):
+                article += f'<img src="{img["src"]}" />'
+            if tags:
+                article += '<p>Tags: ' + ', '.join(tags) + '</p>'
+            entries.append(feedparser.FeedParserDict({
+                'link': link,
+                'title': title_el.get_text(strip=True) if title_el else link,
+                'published': _parse_blog_date(date_el.get_text()) if date_el else None,
+                'updated': None,
+                'tags': [feedparser.FeedParserDict({'term': t}) for t in tags],
+                'content': [feedparser.FeedParserDict({'value': article})],
+            }))
+        except (AttributeError, KeyError, TypeError) as e:
+            _log(log_file, f"Collector parse error, skip item: {e}")
+
+    _log(log_file, f"Collector claude_blog: {len(entries)} entries")
+    return feedparser.FeedParserDict({
+        'feed': feedparser.FeedParserDict({'title': 'Claude Blog', 'link': url}),
+        'entries': entries,
+    })
+
+
 COLLECTORS = {
     'awwwards_sotd': collect_awwwards_sotd,
+    'claude_blog': collect_claude_blog,
 }
