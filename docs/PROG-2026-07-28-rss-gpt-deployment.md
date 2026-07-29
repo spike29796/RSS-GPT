@@ -151,3 +151,11 @@
   触发 Actions 验收：绿色 + 四 feed 可访问 + awwwards 条目正确 +
   openai-news 一次性回落到 1000（预期）。
 - 观察修复后首次真实模型输出格式遵从率（system 消息 + 重试的效果）。
+
+### 线上热修（2026-07-29）：Actions 上 awwwards 抓取失败
+- 现象：Actions 绿色但 awwwards-sotd 空 feed，log 报 `Errno 101 Network is
+  unreachable`（TCP 层，非 403）。
+- 根因：awwwards 有 AAAA 记录而 Actions runner 无 IPv6 路由，首个连接即
+  ENETUNREACH。本机有 IPv6/代理所以 e2e 没暴露。
+- 修复：`collectors.py` 强制 IPv4（AF_INET-only getaddrinfo 包住请求），
+  b420de885 已 push；README 踩坑 16。

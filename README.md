@@ -202,6 +202,10 @@ default_category = "设计灵感"
     同时 `NO_PROXY=127.0.0.1,localhost` 保住本地 mock LLM。GitHub Actions 直连无此问题。
 15. **"合并后再截断"治不了传送带**：只要 feed 全量档案 > max_entries，丢弃的条目下轮
     必然被当作新条目重抓，无论截断在合并前后。必须配墓碑文件（见 2.12）。
+16. **GitHub Actions 没有 IPv6 路由**：目标站有 AAAA 记录时（如 awwwards），
+    首次连接直接 ENETUNREACH（Errno 101，不是 403），要在采集器内强制 IPv4
+    （`collectors.py` 的 `_get_ipv4`，AF_INET-only getaddrinfo）。本机有 IPv6/代理
+    所以本地验证发现不了这个问题。
 
 ## 4. 以后重装 / 加源
 
