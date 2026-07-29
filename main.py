@@ -218,9 +218,9 @@ def gpt_summary(query,model,language,categories,default_category):
     # in an assistant message, which many models treat as content to continue
     # rather than an instruction, hurting format compliance).
     if language == "zh":
-        instruction = f"请用中文总结这篇文章，严格按照以下格式输出：第一行只输出一个分类，必须从以下分类中选择一个：{category_list}，除此之外第一行不要输出任何其他内容；从第二行开始，用中文在{summary_length}字内写一个包含所有要点的总结，按顺序分要点输出，并按照以下格式输出'<br><br>总结:'，<br>是HTML的换行符，输出时必须保留2个，并且必须在'总结:'二字之前"
+        instruction = f"请用中文为这篇文章写一句话导读，严格按照以下格式输出：第一行只输出一个分类，必须从以下分类中选择一个：{category_list}，除此之外第一行不要输出任何其他内容；第二行用中文写一句话导读，不超过{summary_length}字，必须是一句话，不要分点、不要编号，并按照以下格式输出'<br><br>总结:'，<br>是HTML的换行符，输出时必须保留2个，并且必须在'总结:'二字之前"
     else:
-        instruction = f"Please summarize this article in {language} language, strictly follow this format: the first line must contain exactly one category chosen from: {category_list}, and nothing else; starting from the second line, write a summary containing all the points in {summary_length} words in {language}, output in order by points, and output in the following format '<br><br>Summary:' , <br> is the line break of HTML, 2 must be retained when output, and must be before the word 'Summary:'"
+        instruction = f"Write a one-sentence guide for this article in {language} language, strictly follow this format: the first line must contain exactly one category chosen from: {category_list}, and nothing else; the second line must be a single sentence of no more than {summary_length} words in {language}, no bullet points, no numbering, output in the following format '<br><br>Summary:' , <br> is the line break of HTML, 2 must be retained when output, and must be before the word 'Summary:'"
     messages = [
         {"role": "system", "content": instruction},
         {"role": "user", "content": query},
@@ -376,9 +376,12 @@ def output(sec, language):
                 entry.summary = None
             elif OPENAI_API_KEY:
                 token_length = len(cleaned_article)
+                # Title is prepended to the summary input: collector sources
+                # (e.g. awwwards) have little body text beyond tags.
+                query = f"{entry.title}\n{cleaned_article}"
                 if custom_model:
                     try:
-                        entry.gpt_category, entry.summary = gpt_summary(cleaned_article,model=custom_model, language=language, categories=categories, default_category=default_category)
+                        entry.gpt_category, entry.summary = gpt_summary(query,model=custom_model, language=language, categories=categories, default_category=default_category)
                         with open(log_file, 'a') as f:
                             f.write(f"Token length: {token_length}\n")
                             f.write(f"Summarized using {custom_model}\n")
@@ -390,14 +393,14 @@ def output(sec, language):
                             f.write(f"error: {e}\n")
                 else:
                     try:
-                        entry.gpt_category, entry.summary = gpt_summary(cleaned_article,model="gpt-4o-mini", language=language, categories=categories, default_category=default_category)
+                        entry.gpt_category, entry.summary = gpt_summary(query,model="gpt-4o-mini", language=language, categories=categories, default_category=default_category)
                         with open(log_file, 'a') as f:
                             f.write(f"Token length: {token_length}\n")
                             f.write(f"Summarized using gpt-4o-mini\n")
                             f.write(f"Category: {entry.gpt_category}\n")
                     except:
                         try:
-                            entry.gpt_category, entry.summary = gpt_summary(cleaned_article,model="gpt-4o", language=language, categories=categories, default_category=default_category)
+                            entry.gpt_category, entry.summary = gpt_summary(query,model="gpt-4o", language=language, categories=categories, default_category=default_category)
                             with open(log_file, 'a') as f:
                                 f.write(f"Token length: {token_length}\n")
                                 f.write(f"Summarized using GPT-4o\n")
@@ -476,8 +479,9 @@ def output(sec, language):
                 continue
             # Unsummarized records store content as "\n" + article.
             article = record['content'][1:] if record['content'].startswith('\n') else record['content']
+            query = f"{record['title']}\n{clean_html(article)}"
             try:
-                category, summary = gpt_summary(clean_html(article), model=custom_model or "gpt-4o-mini", language=language, categories=categories, default_category=default_category)
+                category, summary = gpt_summary(query, model=custom_model or "gpt-4o-mini", language=language, categories=categories, default_category=default_category)
             except Exception as e:
                 with open(log_file, 'a') as f:
                     f.write(f"Backfill failed: [{record['title']}]({record['link']})\nerror: {e}\n")
