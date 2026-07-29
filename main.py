@@ -194,6 +194,25 @@ def get_default_category(sec=None):
             return value
     return get_cfg('cfg', 'default_category') or DEFAULT_CATEGORY
 
+SUMMARY_MARKERS = ('<br><br>总结:', '<br><br>Summary:')
+
+
+def normalize_summary(summary):
+    """Ensure the summary starts with the '<br><br>总结:' marker.
+
+    Some models emit the guide text first and append the marker at the end
+    (e.g. "指南内容<br><br>总结:"); reorder so the frontend always gets the
+    marker-first form. Missing markers are prepended.
+    """
+    for marker in SUMMARY_MARKERS:
+        if marker in summary:
+            if summary.startswith(marker):
+                return summary
+            before, after = summary.split(marker, 1)
+            return marker + (before + after).strip()
+    return SUMMARY_MARKERS[0] + summary
+
+
 def parse_category_and_summary(text, categories, default_category):
     """Split the model output into (category, summary).
 
@@ -209,7 +228,7 @@ def parse_category_and_summary(text, categories, default_category):
     candidate = re.sub(r'^(分类|类别|category)\s*[:：]?\s*', '', lines[0], flags=re.IGNORECASE).strip()
     if candidate in categories:
         summary = '\n'.join(lines[1:])
-        return candidate, summary if summary else None
+        return candidate, normalize_summary(summary) if summary else None
     return default_category, None
 
 def gpt_summary(query,model,language,categories,default_category):
