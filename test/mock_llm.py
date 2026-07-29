@@ -40,7 +40,7 @@ class Handler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length)
         category, _ = pick_category(body)
-        content = f"{category}\n<br><br>总结:这是一句话导读，覆盖文章核心看点。"
+        content = f"{category}\n<br><br>总结:这是一句话导读，覆盖文章核心看点。\n模拟中文标题"
         resp = json.dumps({
             "id": "chatcmpl-mock",
             "object": "chat.completion",

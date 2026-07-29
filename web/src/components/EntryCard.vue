@@ -1,6 +1,8 @@
 <script setup>
 import { computed } from 'vue'
 import { formatDate } from '../format.js'
+import { ui } from '../store.js'
+import { tagLabel } from '../i18n.js'
 
 const props = defineProps({
   entry: { type: Object, required: true },
@@ -18,12 +20,14 @@ const guideText = computed(() => {
   return s
 })
 const date = computed(() => formatDate(props.entry.published))
+const title = computed(() => (ui.showZh ? props.entry.title_zh || props.entry.title : props.entry.title))
+const tag = computed(() => tagLabel(props.entry.category, ui.showZh))
 </script>
 
 <template>
   <a class="card" :href="entry.link" target="_blank" rel="noopener">
-    <span class="tag">{{ entry.category }}</span>
-    <h3 class="title">{{ entry.title }}</h3>
+    <span class="tag">{{ tag }}</span>
+    <h3 class="title">{{ title }}</h3>
     <span class="date">{{ date }}</span>
     <div v-if="guideText" class="summary"><span class="guide-label">导读</span><span v-html="guideText"></span></div>
   </a>
@@ -34,8 +38,8 @@ const date = computed(() => formatDate(props.entry.published))
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: #242e40;
-  border: 1px solid #33405a;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 16px 18px;
   text-decoration: none;
@@ -43,14 +47,14 @@ const date = computed(() => formatDate(props.entry.published))
   transition: background 0.15s;
 }
 .card:hover {
-  background: #2b3850;
+  background: var(--card-hover);
 }
 .tag {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: #7fd4a8;
+  color: var(--accent);
 }
 .title {
   margin: 0;
@@ -59,26 +63,26 @@ const date = computed(() => formatDate(props.entry.published))
 }
 .date {
   font-size: 12px;
-  color: #7c8798;
+  color: var(--dim);
 }
 .summary {
   font-size: 13px;
-  color: #9fb0c8;
+  color: var(--text-2);
   line-height: 1.6;
   word-break: break-word;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  border-top: 1px solid #2c3850;
+  border-top: 1px solid var(--border-2);
   padding-top: 8px;
 }
 .guide-label {
   display: inline-block;
   font-size: 11px;
   font-weight: 700;
-  color: #141a26;
-  background: #7fd4a8;
+  color: var(--accent-contrast);
+  background: var(--accent);
   border-radius: 3px;
   padding: 0 5px;
   margin-right: 6px;

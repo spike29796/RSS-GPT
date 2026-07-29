@@ -117,8 +117,14 @@ def main():
                 if [x["link"] for x in r1] != [x["link"] for x in r2]:
                     fail(f"run2 changed entry set/order in {name} (conveyor-belt regression)")
                 for a, b in zip(r1, r2):
-                    if a.get("summary") and a != b:
-                        fail(f"run2 mutated a summarized entry in {name}: {a['link']}")
+                    # Summarized entries must be unchanged except for gaining a
+                    # title_zh (one-time translation backfill).
+                    if a.get("summary"):
+                        a2, b2 = dict(a), dict(b)
+                        if a2.get("title_zh") != b2.get("title_zh") and b2.get("title_zh"):
+                            a2["title_zh"] = b2["title_zh"]
+                        if a2 != b2:
+                            fail(f"run2 mutated a summarized entry in {name}: {a['link']}")
                     for key in ("title", "published", "updated"):
                         if a.get(key) != b.get(key):
                             fail(f"run2 changed {key} in {name}: {a['link']}")
@@ -159,13 +165,14 @@ def main():
             "cats = main.get_categories('source002')\n"
             "default = main.get_default_category('source002')\n"
             "for i in range(7):\n"
-            "    cat, s = main.gpt_summary('test article', model='mock-model', language='zh', categories=cats, default_category=default)\n"
+            "    cat, s, tz = main.gpt_summary('test article', model='mock-model', language='zh', categories=cats, default_category=default)\n"
             "    assert s is not None, f'call {i}: summary None after retry'\n"
             "    assert cat in cats, f'call {i}: illegal category {cat}'\n"
-            "cat, s = main.parse_category_and_summary('Company\\n指南内容<br><br>总结:', cats, default)\n"
-            "assert (cat, s) == ('Company', '<br><br>总结:指南内容'), f'marker reorder failed: {s}'\n"
-            "cat, s = main.parse_category_and_summary('Company\\n指南内容', cats, default)\n"
-            "assert (cat, s) == ('Company', '<br><br>总结:指南内容'), f'marker prepend failed: {s}'\n"
+            "    assert tz == '模拟中文标题', f'call {i}: title_zh missing: {tz}'\n"
+            "cat, s, tz = main.parse_category_and_summary('Company\\n指南内容<br><br>总结:\\n某中文标题', cats, default)\n"
+            "assert (cat, s, tz) == ('Company', '<br><br>总结:指南内容', '某中文标题'), f'3-line parse failed: {(cat, s, tz)}'\n"
+            "cat, s, tz = main.parse_category_and_summary('Company\\n指南内容', cats, default)\n"
+            "assert (cat, s, tz) == ('Company', '<br><br>总结:指南内容', None), f'marker prepend failed: {(cat, s, tz)}'\n"
             "print('retry assertions OK')\n"
         )
         r = subprocess.run([PYTHON, "-c", code], cwd=repo, env=ENV,

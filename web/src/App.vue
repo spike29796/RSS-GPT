@@ -1,7 +1,10 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import Fuse from 'fuse.js'
 import { SOURCES, fetchAllEntries } from './api.js'
 import { parseDate, formatDate, formatShort, isToday } from './format.js'
+import { ui, toggleTheme, toggleZh } from './store.js'
+import { TAG_ZH, tagLabel } from './i18n.js'
 import EntryCard from './components/EntryCard.vue'
 
 const PAGE_SIZE = 50
@@ -17,6 +20,7 @@ const shown = ref(PAGE_SIZE)
 
 onMounted(async () => {
   const { entries: list, errors: errs } = await fetchAllEntries()
+  for (const e of list) e.category_zh = TAG_ZH[e.category] || ''
   entries.value = list.sort((a, b) => (parseDate(b.published) || 0) - (parseDate(a.published) || 0))
   errors.value = errs
   loading.value = false
@@ -52,16 +56,28 @@ const categories = computed(() => {
     .map(([name, count]) => ({ name, count }))
 })
 
+const fuse = computed(
+  () =>
+    new Fuse(entries.value, {
+      keys: ['title', 'title_zh', 'summary', 'category', 'category_zh'],
+      threshold: 0.3,
+      ignoreLocation: true,
+    }),
+)
+
 const filtered = computed(() => {
-  const kw = search.value.trim().toLowerCase()
-  return entries.value.filter((e) => {
-    if (activeCategory.value !== 'all' && e.category !== activeCategory.value) return false
-    if (kw && !(e.title || '').toLowerCase().includes(kw) && !(e.summary || '').toLowerCase().includes(kw)) return false
-    return true
-  })
+  const kw = search.value.trim()
+  let list = entries.value
+  if (kw) list = fuse.value.search(kw).map((r) => r.item)
+  if (activeCategory.value !== 'all') list = list.filter((e) => e.category === activeCategory.value)
+  return list
 })
 
 const visible = computed(() => filtered.value.slice(0, shown.value))
+
+function displayTitle(e) {
+  return ui.showZh ? e.title_zh || e.title : e.title
+}
 
 function openList(category = 'all') {
   activeCategory.value = category
@@ -85,6 +101,12 @@ function selectCategory(name) {
     <header class="header">
       <h1 @click="goHome">OpenAI News 聚合</h1>
       <span v-if="lastUpdate" class="updated">更新于 {{ lastUpdate }}</span>
+      <span class="header-actions">
+        <button class="icon-btn" :class="{ on: ui.showZh }" title="翻译标题和标签" @click="toggleZh">译</button>
+        <button class="icon-btn" :title="ui.theme === 'dark' ? '切换到日间模式' : '切换到夜间模式'" @click="toggleTheme">
+          {{ ui.theme === 'dark' ? '☀️' : '🌙' }}
+        </button>
+      </span>
     </header>
 
     <p v-if="loading" class="hint">加载中…</p>
@@ -124,7 +146,7 @@ function selectCategory(name) {
                 <span class="preview-date">
                   <em v-if="isToday(e.published)" class="new-dot">NEW</em>{{ formatShort(e.published) }}
                 </span>
-                <span class="preview-title">{{ e.title }}</span>
+                <span class="preview-title">{{ displayTitle(e) }}</span>
               </a>
             </div>
           </div>
@@ -145,7 +167,7 @@ function selectCategory(name) {
               class="class-row"
               @click="openList(t.category)"
             >
-              <span class="class-name">{{ t.category }}</span>
+              <span class="class-name">{{ tagLabel(t.category, ui.showZh) }}</span>
               <span class="class-pct" :style="{ color: s.accent }">{{ t.count }} 条 · {{ t.pct }}%</span>
             </button>
             <p v-if="s.top.length === 0" class="class-empty">暂无数据</p>
@@ -159,7 +181,7 @@ function selectCategory(name) {
       <div class="list-layout">
         <aside class="panel">
           <button class="home-btn" @click="goHome">‹ 首页</button>
-          <input v-model="search" class="search" type="search" placeholder="搜索标题或导读…" @input="shown = PAGE_SIZE" />
+          <input v-model="search" class="search" type="search" placeholder="模糊搜索（中英文都行）…" @input="shown = PAGE_SIZE" />
           <h3 class="panel-title">标签</h3>
           <div class="panel-tags">
             <button :class="{ active: activeCategory === 'all' }" @click="selectCategory('all')">
@@ -171,7 +193,7 @@ function selectCategory(name) {
               :class="{ active: activeCategory === c.name }"
               @click="selectCategory(c.name)"
             >
-              <span>{{ c.name }}</span><span class="n">{{ c.count }}</span>
+              <span>{{ tagLabel(c.name, ui.showZh) }}</span><span class="n">{{ c.count }}</span>
             </button>
           </div>
         </aside>
@@ -195,14 +217,45 @@ function selectCategory(name) {
 </template>
 
 <style>
+:root {
+  --bg: #1a2230;
+  --card: #242e40;
+  --card-hover: #2b3850;
+  --card-2: #1f2839;
+  --border: #33405a;
+  --border-2: #2c3850;
+  --text: #d7dee9;
+  --text-2: #9fb0c8;
+  --dim: #7c8798;
+  --dim-2: #8fa0b8;
+  --accent: #7fd4a8;
+  --accent-contrast: #141a26;
+  --error: #ff7a7a;
+}
+[data-theme='light'] {
+  --bg: #f6f7f9;
+  --card: #ffffff;
+  --card-hover: #f0f2f5;
+  --card-2: #f3f4f6;
+  --border: #e2e6ec;
+  --border-2: #e5e7eb;
+  --text: #1a2230;
+  --text-2: #4b5563;
+  --dim: #6b7280;
+  --dim-2: #9ca3af;
+  --accent: #0f9d63;
+  --accent-contrast: #ffffff;
+  --error: #dc2626;
+}
 * {
   box-sizing: border-box;
 }
 body {
   margin: 0;
-  background: #1a2230;
-  color: #d7dee9;
+  background: var(--bg);
+  color: var(--text);
   font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  transition: background 0.2s, color 0.2s;
 }
 .page {
   max-width: 1600px;
@@ -222,7 +275,31 @@ body {
 }
 .updated {
   font-size: 12px;
-  color: #7c8798;
+  color: var(--dim);
+}
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.icon-btn.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 700;
 }
 
 .section {
@@ -232,12 +309,12 @@ body {
   font-size: 13px;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: #8fa0b8;
-  border-bottom: 1px solid #33405a;
+  color: var(--dim-2);
+  border-bottom: 1px solid var(--border);
   padding: 0 4px 8px;
 }
 .count {
-  color: #7fd4a8;
+  color: var(--accent);
   margin-left: 4px;
 }
 
@@ -248,9 +325,9 @@ body {
   margin-top: 12px;
 }
 .league-card {
-  background: #242e40;
-  border: 1px solid #33405a;
-  border-left: 4px solid #7c8798;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--dim);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -269,14 +346,14 @@ body {
   transition: background 0.15s;
 }
 .league-head:hover {
-  background: #2b3850;
+  background: var(--card-hover);
 }
 .league-letter {
   width: 30px;
   height: 30px;
   border-radius: 4px;
-  background: #7c8798;
-  color: #141a26;
+  background: var(--dim);
+  color: var(--accent-contrast);
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -293,30 +370,30 @@ body {
 }
 .league-total {
   font-size: 12px;
-  color: #7c8798;
-}
-.chevron {
-  color: #7c8798;
-  font-size: 18px;
+  color: var(--dim);
 }
 .today-badge {
   margin-left: auto;
   flex-shrink: 0;
   font-size: 12px;
   font-weight: 700;
-  color: #141a26;
-  background: #7fd4a8;
+  color: var(--accent-contrast);
+  background: var(--accent);
   border-radius: 999px;
   padding: 3px 10px;
 }
 .today-badge.zero {
   background: none;
-  border: 1px solid #33405a;
-  color: #7c8798;
+  border: 1px solid var(--border);
+  color: var(--dim);
   font-weight: 400;
 }
+.chevron {
+  color: var(--dim);
+  font-size: 18px;
+}
 .preview {
-  border-top: 1px solid #33405a;
+  border-top: 1px solid var(--border);
   padding: 10px 12px;
   display: flex;
   flex-direction: column;
@@ -333,13 +410,13 @@ body {
   line-height: 1.5;
 }
 .preview-item:hover {
-  background: #2b3850;
+  background: var(--card-hover);
 }
 .preview-date {
   flex-shrink: 0;
   width: 108px;
   font-size: 11px;
-  color: #7c8798;
+  color: var(--dim);
   font-variant-numeric: tabular-nums;
 }
 .new-dot {
@@ -347,14 +424,14 @@ body {
   font-style: normal;
   font-size: 10px;
   font-weight: 700;
-  color: #141a26;
-  background: #7fd4a8;
+  color: var(--accent-contrast);
+  background: var(--accent);
   border-radius: 3px;
   padding: 0 4px;
   margin-right: 5px;
 }
 .preview-title {
-  color: #d7dee9;
+  color: var(--text);
   font-size: 13px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -369,8 +446,8 @@ body {
   margin-top: 12px;
 }
 .class-col {
-  background: #242e40;
-  border: 1px solid #33405a;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 12px 14px;
 }
@@ -389,7 +466,7 @@ body {
 .see-all {
   background: none;
   border: none;
-  color: #7fd4a8;
+  color: var(--accent);
   font-size: 12px;
   cursor: pointer;
   padding: 0;
@@ -399,8 +476,8 @@ body {
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  background: #1f2839;
-  border: 1px solid #2c3850;
+  background: var(--card-2);
+  border: 1px solid var(--border-2);
   border-radius: 4px;
   padding: 8px 10px;
   margin-bottom: 6px;
@@ -409,13 +486,13 @@ body {
   cursor: pointer;
 }
 .class-row:hover {
-  background: #28334a;
+  background: var(--card-hover);
 }
 .class-pct {
   font-size: 12px;
 }
 .class-empty {
-  color: #7c8798;
+  color: var(--dim);
   font-size: 12px;
   margin: 4px 0;
 }
@@ -445,8 +522,8 @@ body {
   }
 }
 .panel {
-  background: #242e40;
-  border: 1px solid #33405a;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px;
   display: flex;
@@ -454,8 +531,8 @@ body {
   gap: 10px;
 }
 .home-btn {
-  border: 1px solid #7fd4a8;
-  color: #7fd4a8;
+  border: 1px solid var(--accent);
+  color: var(--accent);
   background: none;
   border-radius: 999px;
   padding: 5px 14px;
@@ -466,14 +543,14 @@ body {
 .search {
   width: 100%;
   padding: 6px 12px;
-  border: 1px solid #33405a;
+  border: 1px solid var(--border);
   border-radius: 999px;
-  background: #1f2839;
-  color: #d7dee9;
+  background: var(--card-2);
+  color: var(--text);
   font-size: 13px;
 }
 .search::placeholder {
-  color: #7c8798;
+  color: var(--dim);
 }
 .panel-title {
   margin: 0;
@@ -481,8 +558,8 @@ body {
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: #8fa0b8;
-  border-bottom: 1px solid #33405a;
+  color: var(--dim-2);
+  border-bottom: 1px solid var(--border);
   padding-bottom: 6px;
 }
 .panel-tags {
@@ -495,9 +572,9 @@ body {
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  border: 1px solid #2c3850;
-  background: #1f2839;
-  color: #d7dee9;
+  border: 1px solid var(--border-2);
+  background: var(--card-2);
+  color: var(--text);
   border-radius: 4px;
   padding: 6px 10px;
   font-size: 13px;
@@ -505,19 +582,19 @@ body {
   text-align: left;
 }
 .panel-tags button:hover {
-  background: #28334a;
+  background: var(--card-hover);
 }
 .panel-tags button .n {
-  color: #7c8798;
+  color: var(--dim);
   font-size: 11px;
 }
 .panel-tags button.active {
-  background: #7fd4a8;
-  color: #141a26;
-  border-color: #7fd4a8;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-color: var(--accent);
 }
 .panel-tags button.active .n {
-  color: #141a26;
+  color: var(--accent-contrast);
 }
 
 .list {
@@ -536,37 +613,37 @@ body {
   grid-column: 1 / -1;
 }
 .hint {
-  color: #7c8798;
+  color: var(--dim);
   font-size: 14px;
   text-align: center;
   padding: 24px 0;
 }
 .hint.error {
-  color: #ff7a7a;
+  color: var(--error);
 }
 .more {
   display: block;
   width: 100%;
   padding: 10px;
   margin: 8px 0 16px;
-  border: 1px solid #33405a;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  background: #242e40;
-  color: #d7dee9;
+  background: var(--card);
+  color: var(--text);
   font-size: 14px;
   cursor: pointer;
 }
 .footer {
-  border-top: 1px solid #33405a;
+  border-top: 1px solid var(--border);
   margin-top: 24px;
   padding-top: 12px;
   font-size: 12px;
-  color: #7c8798;
+  color: var(--dim);
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
 .footer a {
-  color: #7fd4a8;
+  color: var(--accent);
 }
 </style>
