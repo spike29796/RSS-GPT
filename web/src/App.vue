@@ -5,6 +5,7 @@ import { parseDate, formatDate } from './format.js'
 import EntryCard from './components/EntryCard.vue'
 
 const PAGE_SIZE = 50
+const PREVIEW_SIZE = 4
 
 const entries = ref([])
 const errors = ref([])
@@ -23,7 +24,8 @@ onMounted(async () => {
 
 const lastUpdate = computed(() => (entries.value[0] ? formatDate(entries.value[0].published) : ''))
 
-// Per-source stats for the league cards and the top-classes grid.
+// Per-source stats for the league cards (with latest-entry preview) and the
+// top-classes grid.
 const sourceStats = computed(() =>
   SOURCES.map((s) => {
     const list = entries.value.filter((e) => e.source === s.name)
@@ -35,7 +37,7 @@ const sourceStats = computed(() =>
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
       .map(([category, count]) => ({ category, count, pct: list.length ? Math.round((count / list.length) * 100) : 0 }))
-    return { ...s, total: list.length, top }
+    return { ...s, total: list.length, top, latest: list.slice(0, PREVIEW_SIZE) }
   }),
 )
 
@@ -88,25 +90,39 @@ function selectCategory(name) {
     <p v-if="loading" class="hint">加载中…</p>
     <p v-for="e in errors" :key="e" class="hint error">{{ e }}</p>
 
-    <!-- 首页：赛季（资讯源）卡片 + 热门流派（官方标签） -->
+    <!-- 首页：赛季（资讯源）卡片（含最新消息小窗） + 热门流派（官方标签） -->
     <template v-if="!loading && view === 'home'">
       <section class="section">
         <h2 class="section-title">资讯源 <span class="count">{{ sourceStats.length }}</span></h2>
         <div class="leagues">
-          <button
+          <div
             v-for="s in sourceStats"
             :key="s.name"
             class="league-card"
             :style="{ borderLeftColor: s.accent }"
-            @click="openList()"
           >
-            <span class="league-letter" :style="{ background: s.accent }">{{ s.league }}</span>
-            <span class="league-body">
-              <span class="league-name">{{ s.label }}</span>
-              <span class="league-total">{{ s.total }} 条</span>
-            </span>
-            <span class="chevron">›</span>
-          </button>
+            <button class="league-head" @click="openList()">
+              <span class="league-letter" :style="{ background: s.accent }">{{ s.league }}</span>
+              <span class="league-body">
+                <span class="league-name">{{ s.label }}</span>
+                <span class="league-total">{{ s.total }} 条</span>
+              </span>
+              <span class="chevron">›</span>
+            </button>
+            <div class="preview">
+              <a
+                v-for="e in s.latest"
+                :key="e.link"
+                class="preview-item"
+                :href="e.link"
+                target="_blank"
+                rel="noopener"
+              >
+                <span class="preview-tag">{{ e.category }}</span>
+                <span class="preview-title">{{ e.title }}</span>
+              </a>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -133,33 +149,36 @@ function selectCategory(name) {
       </section>
     </template>
 
-    <!-- 列表视图：官方标签筛选 + 搜索 + 卡片 -->
+    <!-- 列表视图：两列卡片 + 右侧标签控制面板 -->
     <template v-if="view === 'list'">
-      <div class="toolbar">
-        <button class="home-btn" @click="goHome">‹ 首页</button>
-        <div class="chips">
-          <button :class="{ active: activeCategory === 'all' }" @click="selectCategory('all')">
-            全部 <span class="n">{{ entries.length }}</span>
-          </button>
-          <button
-            v-for="c in categories"
-            :key="c.name"
-            :class="{ active: activeCategory === c.name }"
-            @click="selectCategory(c.name)"
-          >
-            {{ c.name }} <span class="n">{{ c.count }}</span>
-          </button>
-        </div>
-        <input v-model="search" class="search" type="search" placeholder="搜索标题或导读…" @input="shown = PAGE_SIZE" />
-      </div>
+      <div class="list-layout">
+        <aside class="panel">
+          <button class="home-btn" @click="goHome">‹ 首页</button>
+          <input v-model="search" class="search" type="search" placeholder="搜索标题或导读…" @input="shown = PAGE_SIZE" />
+          <h3 class="panel-title">标签</h3>
+          <div class="panel-tags">
+            <button :class="{ active: activeCategory === 'all' }" @click="selectCategory('all')">
+              <span>全部</span><span class="n">{{ entries.length }}</span>
+            </button>
+            <button
+              v-for="c in categories"
+              :key="c.name"
+              :class="{ active: activeCategory === c.name }"
+              @click="selectCategory(c.name)"
+            >
+              <span>{{ c.name }}</span><span class="n">{{ c.count }}</span>
+            </button>
+          </div>
+        </aside>
 
-      <main class="list">
-        <p v-if="filtered.length === 0" class="hint">没有匹配的条目</p>
-        <EntryCard v-for="e in visible" :key="e.link" :entry="e" />
-        <button v-if="filtered.length > shown" class="more" @click="shown += PAGE_SIZE">
-          加载更多（{{ filtered.length - shown }} 条剩余）
-        </button>
-      </main>
+        <main class="list">
+          <p v-if="filtered.length === 0" class="hint">没有匹配的条目</p>
+          <EntryCard v-for="e in visible" :key="e.link" :entry="e" />
+          <button v-if="filtered.length > shown" class="more" @click="shown += PAGE_SIZE">
+            加载更多（{{ filtered.length - shown }} 条剩余）
+          </button>
+        </main>
+      </div>
     </template>
 
     <footer class="footer">
@@ -219,18 +238,24 @@ body {
 
 .leagues {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 10px;
   margin-top: 12px;
 }
 .league-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
   background: #242e40;
   border: 1px solid #33405a;
   border-left: 4px solid #7c8798;
   border-radius: 6px;
+  overflow: hidden;
+}
+.league-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  background: none;
+  border: none;
   padding: 14px 16px;
   color: inherit;
   cursor: pointer;
@@ -238,7 +263,7 @@ body {
   font-size: 14px;
   transition: background 0.15s;
 }
-.league-card:hover {
+.league-head:hover {
   background: #2b3850;
 }
 .league-letter {
@@ -269,6 +294,40 @@ body {
   margin-left: auto;
   color: #7c8798;
   font-size: 18px;
+}
+.preview {
+  border-top: 1px solid #33405a;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.preview-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  text-decoration: none;
+  color: inherit;
+  font-size: 12px;
+}
+.preview-item:hover {
+  background: #2b3850;
+}
+.preview-tag {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #7fd4a8;
+}
+.preview-title {
+  color: #9fb0c8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .classes {
@@ -329,85 +388,115 @@ body {
   margin: 4px 0;
 }
 
-.toolbar {
+/* 列表视图：左卡片两列 + 右侧控制面板 */
+.list-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (min-width: 1000px) {
+  .list-layout {
+    grid-template-columns: minmax(0, 1fr) 280px;
+  }
+  .list-layout > .panel {
+    grid-column: 2;
+    grid-row: 1;
+    position: sticky;
+    top: 16px;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+  }
+  .list-layout > .list {
+    grid-column: 1;
+    grid-row: 1;
+  }
+}
+.panel {
+  background: #242e40;
+  border: 1px solid #33405a;
+  border-radius: 8px;
+  padding: 12px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  padding: 8px 4px;
-  position: sticky;
-  top: 0;
-  background: #1a2230;
-  z-index: 1;
+  flex-direction: column;
+  gap: 10px;
 }
 .home-btn {
   border: 1px solid #7fd4a8;
   color: #7fd4a8;
-  background: #242e40;
+  background: none;
   border-radius: 999px;
   padding: 5px 14px;
   font-size: 13px;
-  white-space: nowrap;
   cursor: pointer;
-}
-.chips {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  flex: 1;
-  padding-bottom: 2px;
-}
-.chips button {
-  border: 1px solid #33405a;
-  background: #242e40;
-  color: #d7dee9;
-  border-radius: 999px;
-  padding: 5px 14px;
-  font-size: 13px;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.chips button .n {
-  color: #7c8798;
-  font-size: 11px;
-  margin-left: 2px;
-}
-.chips button.active {
-  background: #7fd4a8;
-  color: #141a26;
-  border-color: #7fd4a8;
-}
-.chips button.active .n {
-  color: #141a26;
+  align-self: flex-start;
 }
 .search {
-  flex: 0 1 260px;
-  min-width: 160px;
+  width: 100%;
   padding: 6px 12px;
   border: 1px solid #33405a;
   border-radius: 999px;
-  background: #242e40;
+  background: #1f2839;
   color: #d7dee9;
   font-size: 13px;
 }
 .search::placeholder {
   color: #7c8798;
 }
+.panel-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #8fa0b8;
+  border-bottom: 1px solid #33405a;
+  padding-bottom: 6px;
+}
+.panel-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.panel-tags button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  border: 1px solid #2c3850;
+  background: #1f2839;
+  color: #d7dee9;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+}
+.panel-tags button:hover {
+  background: #28334a;
+}
+.panel-tags button .n {
+  color: #7c8798;
+  font-size: 11px;
+}
+.panel-tags button.active {
+  background: #7fd4a8;
+  color: #141a26;
+  border-color: #7fd4a8;
+}
+.panel-tags button.active .n {
+  color: #141a26;
+}
+
 .list {
-  padding-top: 8px;
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
   align-items: start;
 }
-@media (min-width: 900px) {
+@media (min-width: 700px) {
   .list {
     grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (min-width: 1400px) {
-  .list {
-    grid-template-columns: repeat(3, 1fr);
   }
 }
 .list > .hint,
