@@ -46,6 +46,10 @@ const clickLeague = async (page) => {
   await page.click('.league-head')
   await page.waitForTimeout(600)
 }
+const clickSecondLeague = async (page) => {
+  await page.click('.league-card:nth-child(2) .league-head')
+  await page.waitForTimeout(600)
+}
 
 await shot('home-dark-1600')
 await shot('home-light-1600', { theme: 'light' })
@@ -53,6 +57,7 @@ await shot('home-dark-390', { width: 390, height: 844 })
 await shot('list-dark-1600', { page: clickLeague })
 await shot('list-light-1600', { theme: 'light', page: clickLeague })
 await shot('list-dark-1600-zh', { zh: true, page: clickLeague })
+await shot('list-claude-dark-1600', { page: clickSecondLeague })
 await shot('list-dark-390', { width: 390, height: 844, page: clickLeague })
 
 await browser.close()

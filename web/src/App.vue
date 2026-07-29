@@ -14,6 +14,7 @@ const entries = ref([])
 const errors = ref([])
 const loading = ref(true)
 const view = ref('home') // 'home' | 'list'
+const activeSource = ref('all')
 const activeCategory = ref('all')
 const search = ref('')
 const shown = ref(PAGE_SIZE)
@@ -45,10 +46,14 @@ const sourceStats = computed(() =>
   }),
 )
 
-// Official OpenAI News tags with counts, most-used first (list view filter).
+// Tag counts scoped to the currently selected source (list view filter).
+const bySource = computed(() =>
+  activeSource.value === 'all' ? entries.value : entries.value.filter((e) => e.source === activeSource.value),
+)
+
 const categories = computed(() => {
   const counts = {}
-  for (const e of entries.value) {
+  for (const e of bySource.value) {
     if (e.category) counts[e.category] = (counts[e.category] || 0) + 1
   }
   return Object.entries(counts)
@@ -58,7 +63,7 @@ const categories = computed(() => {
 
 const fuse = computed(
   () =>
-    new Fuse(entries.value, {
+    new Fuse(bySource.value, {
       keys: ['title', 'title_zh', 'summary', 'category', 'category_zh'],
       threshold: 0.3,
       ignoreLocation: true,
@@ -67,7 +72,7 @@ const fuse = computed(
 
 const filtered = computed(() => {
   const kw = search.value.trim()
-  let list = entries.value
+  let list = bySource.value
   if (kw) list = fuse.value.search(kw).map((r) => r.item)
   if (activeCategory.value !== 'all') list = list.filter((e) => e.category === activeCategory.value)
   return list
@@ -79,7 +84,8 @@ function displayTitle(e) {
   return ui.showZh ? e.title_zh || e.title : e.title
 }
 
-function openList(category = 'all') {
+function openList(source = 'all', category = 'all') {
+  activeSource.value = source
   activeCategory.value = category
   search.value = ''
   shown.value = PAGE_SIZE
@@ -88,6 +94,12 @@ function openList(category = 'all') {
 
 function goHome() {
   view.value = 'home'
+}
+
+function selectSource(name) {
+  activeSource.value = name
+  activeCategory.value = 'all'
+  shown.value = PAGE_SIZE
 }
 
 function selectCategory(name) {
@@ -123,7 +135,7 @@ function selectCategory(name) {
             class="league-card"
             :style="{ borderLeftColor: s.accent }"
           >
-            <button class="league-head" @click="openList()">
+            <button class="league-head" @click="openList(s.name)">
               <span class="league-letter" :style="{ background: s.accent }">{{ s.league }}</span>
               <span class="league-body">
                 <span class="league-name">{{ s.label }}</span>
@@ -159,13 +171,13 @@ function selectCategory(name) {
           <div v-for="s in sourceStats" :key="s.name" class="class-col">
             <div class="class-head">
               <span class="class-source" :style="{ color: s.accent }">{{ s.label }}</span>
-              <button class="see-all" @click="openList()">查看全部 ›</button>
+              <button class="see-all" @click="openList(s.name)">查看全部 ›</button>
             </div>
             <button
               v-for="t in s.top"
               :key="t.category"
               class="class-row"
-              @click="openList(t.category)"
+              @click="openList(s.name, t.category)"
             >
               <span class="class-name">{{ tagLabel(t.category, ui.showZh) }}</span>
               <span class="class-pct" :style="{ color: s.accent }">{{ t.count }} 条 · {{ t.pct }}%</span>
@@ -182,10 +194,25 @@ function selectCategory(name) {
         <aside class="panel">
           <button class="home-btn" @click="goHome">‹ 首页</button>
           <input v-model="search" class="search" type="search" placeholder="模糊搜索（中英文都行）…" @input="shown = PAGE_SIZE" />
+          <h3 class="panel-title">资讯源</h3>
+          <div class="panel-tags">
+            <button :class="{ active: activeSource === 'all' }" @click="selectSource('all')">
+              <span>全部源</span><span class="n">{{ entries.length }}</span>
+            </button>
+            <button
+              v-for="s in SOURCES"
+              :key="s.name"
+              :class="{ active: activeSource === s.name }"
+              @click="selectSource(s.name)"
+            >
+              <span><i class="dot" :style="{ background: s.accent }"></i>{{ s.label }}</span>
+              <span class="n">{{ sourceStats.find((x) => x.name === s.name)?.total || 0 }}</span>
+            </button>
+          </div>
           <h3 class="panel-title">标签</h3>
           <div class="panel-tags">
             <button :class="{ active: activeCategory === 'all' }" @click="selectCategory('all')">
-              <span>全部</span><span class="n">{{ entries.length }}</span>
+              <span>全部</span><span class="n">{{ bySource.length }}</span>
             </button>
             <button
               v-for="c in categories"
@@ -441,7 +468,8 @@ body {
 
 .classes {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  /* Same tracks as .leagues so each class panel lines up under its source card */
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 10px;
   margin-top: 12px;
 }
@@ -595,6 +623,13 @@ body {
 }
 .panel-tags button.active .n {
   color: var(--accent-contrast);
+}
+.panel-tags .dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
 }
 
 .list {
