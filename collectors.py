@@ -11,6 +11,7 @@ the fetch target.
 import html
 import json
 import re
+import socket
 from email.utils import formatdate
 
 import feedparser
@@ -21,6 +22,23 @@ USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 
 AWWWARDS_SITE_URL = 'https://www.awwwards.com/sites/{slug}'
 AWWWARDS_THUMB_URL = 'https://assets.awwwards.com/awards/media/cache/thumb_417_299/{path}'
+
+_orig_getaddrinfo = socket.getaddrinfo
+
+
+def _ipv4_getaddrinfo(host, port, family=0, *args, **kwargs):
+    # www.awwwards.com publishes an AAAA record; GitHub Actions runners have
+    # no IPv6 route, so the first connection attempt dies with ENETUNREACH
+    # (Errno 101 "Network is unreachable") and the fetch fails. Force IPv4.
+    return _orig_getaddrinfo(host, port, socket.AF_INET, *args, **kwargs)
+
+
+def _get_ipv4(url, **kwargs):
+    socket.getaddrinfo = _ipv4_getaddrinfo
+    try:
+        return requests.get(url, **kwargs)
+    finally:
+        socket.getaddrinfo = _orig_getaddrinfo
 
 
 def _log(log_file, message):
@@ -36,7 +54,7 @@ def collect_awwwards_sotd(url, log_file):
     with slug/title/createdAt/tags/images.thumbnail. No JS execution needed.
     """
     try:
-        response = requests.get(url, headers={'User-Agent': USER_AGENT}, timeout=30)
+        response = _get_ipv4(url, headers={'User-Agent': USER_AGENT}, timeout=30)
     except requests.RequestException as e:
         _log(log_file, f"Collector fetch error: {e}")
         return None
