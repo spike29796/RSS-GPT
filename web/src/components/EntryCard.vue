@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { formatDate, extractImage } from '../format.js'
 
 const props = defineProps({
@@ -11,11 +11,20 @@ const props = defineProps({
 const summaryHtml = computed(() => props.entry.summary || '')
 const image = computed(() => extractImage(props.entry.content))
 const date = computed(() => formatDate(props.entry.published))
+// Broken thumbnail: hide it entirely (alt text would duplicate the title).
+const imageFailed = ref(false)
 </script>
 
 <template>
   <a class="card" :href="entry.link" target="_blank" rel="noopener">
-    <img v-if="image" class="thumb" :src="image" :alt="entry.title" loading="lazy" />
+    <img
+      v-if="image && !imageFailed"
+      class="thumb"
+      :src="image"
+      alt=""
+      loading="lazy"
+      @error="imageFailed = true"
+    />
     <div class="body">
       <div class="meta">
         <span class="badge">{{ entry.category }}</span>
@@ -34,7 +43,6 @@ const date = computed(() => formatDate(props.entry.published))
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
-  margin-bottom: 12px;
   overflow: hidden;
   text-decoration: none;
   color: inherit;

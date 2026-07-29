@@ -189,3 +189,17 @@
 ## 下一步
 - 提交外层（web/ + 文档）与 RSS-GPT（main.py + 构建产物 + feeds.html）并 push；
   用户线上验收：Pages 首页即应用、筛选/搜索/缩略图/手机可用。
+
+### 线上验收修复（2026-07-29）：前端三问题 + 摘要回填
+- 用户验收反馈：①大部分卡片无摘要（数据现实：只有每天每源最新 3 条有），
+  个别卡片显示 prompt 碎片；②图片加载失败时 alt 重复标题；③布局过窄拥挤。
+- 数据：残留 3 条上游时代 prompt 碎片（前一轮清理的启发式没覆盖短碎片），
+  `clean_dirty_summaries.py` 扩展指令正则后再清 3 条并重渲染 XML，diff 恰好 3 item。
+- 前端：图片 `alt=""` + `@error` 隐藏；容器 760px→1600px，卡片流改
+  auto-fill 多列网格（900px 两列 / 1400px 三列），移动端仍单列。
+- 回填（用户决策，REQ-summary-backfill.md）：`backfill_days`/`backfill_items`
+  源级配置，每轮独立预算为最近 N 天未摘要条目补摘要（最新优先、跳过不合规、
+  不改条目集合与顺序）；qbitai 7天/5条、ithome 3天/10条，openai-news 不开。
+- e2e 语义适配：链接序列两轮一致 + 已摘要条目零改写 + 无 backfill 源 XML
+  逐字节一致 + backfill 源每轮新增摘要 >0。结果：run2 恰好回填 15 条
+  （预算 5+10），qbitai 窗口内 12/12 全覆盖，全绿。

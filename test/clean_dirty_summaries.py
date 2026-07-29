@@ -10,15 +10,26 @@ prefix is stripped from content. XML regenerates from JSONL on the next run.
 Usage: python test/clean_dirty_summaries.py [docs_dir]
 """
 import json
+import re
 import sys
 from pathlib import Path
 
 DOCS_DIR = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).parent.parent / "RSS-GPT" / "docs"
 FEEDS = ["qbitai", "ithome", "openai-news"]
 
+# Raw model outputs kept as summaries: oversized / format-instruction echoes /
+# conversation fragments. Legit summaries start with '<br><br>总结:' and never
+# contain these instruction phrases.
+INSTRUCTION_RE = re.compile(
+    r"第一行|第二行|例如[:：]|不要加上任何|请确保格式|详细介绍每个要点|"
+    r"要点[一二三四五]|总结:要点|请按要求作答|小写的'"
+)
+
 
 def is_dirty(summary: str) -> bool:
-    return len(summary) > 800 or "第一行" in summary or "Title:" in summary
+    if len(summary) > 800 or "Title:" in summary:
+        return True
+    return bool(INSTRUCTION_RE.search(summary))
 
 
 def main():

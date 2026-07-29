@@ -184,9 +184,27 @@ Pages 首页是一个 Vue3 单页应用（聚合展示四源条目：源切换/�
 - **目录归属约定**：`RSS-GPT/docs/index.html` 和 `docs/assets/` 是前端构建产物，
   不要手改、不要让管道覆盖；`main.py` 的 RSS 链接列表页已改渲染到
   `docs/feeds.html`（管道绝不会碰 index.html）。
-- 改了前端后重新 `npm run build` 并把 `RSS-GPT` 仓库的产物一起 commit + push。
+- 改了前端后重新 `npm run build` 并把 `RSS-GPT` 仓库的产物一起 commit + push
+  （注意：`docs/assets/` 里带 hash 的旧文件不会自动清理，构建后手动删掉旧版本）。
 - 本地开发：`cd web && npm run dev`，dev server 会把 `/RSS-GPT/*` 代理到线上
   Pages 取真实数据（本机需走代理时给 npm 进程配 HTTPS_PROXY）。
+
+### 2.14 摘要回填（backfill）
+
+只有每天每源最新 `max_items` 条会拿到摘要，此前未摘要的条目（超额度/失败/兜底）
+默认永远空白。开启回填后，每轮运行会额外用独立预算为**最近 N 天内**未摘要的
+条目补摘要（最新优先），直到窗口内全覆盖：
+
+```ini
+[sourceNNN]
+backfill_days = "7"    # 时间窗口（天），默认 0 = 关
+backfill_items = "5"   # 每轮回填预算（条），默认 0 = 关
+```
+
+- 当前配置：qbitai 7天/5条、ithome 3天/10条；**openai-news 不要开**（1000+
+  历史档案会逐条烧 API 额度）；awwwards 不调 LLM 无需开。
+- 回填只改 summary/category/content，不改条目集合与顺序；输出不合规时跳过
+  留给下轮。
 
 ## 3. 踩坑记录
 

@@ -127,9 +127,9 @@ body {
   font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 .page {
-  max-width: 760px;
+  max-width: 1600px;
   margin: 0 auto;
-  padding: 16px 12px 40px;
+  padding: 20px 24px 48px;
 }
 .header {
   display: flex;
@@ -198,6 +198,24 @@ body {
 }
 .list {
   padding-top: 8px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1400px) {
+  .list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.list > .hint,
+.list > .more {
+  grid-column: 1 / -1;
 }
 .hint {
   color: #9ca3af;

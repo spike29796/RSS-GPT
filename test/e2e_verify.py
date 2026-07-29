@@ -14,7 +14,7 @@ serves canned LLM responses from mock_llm.py, then checks:
 Usage: python test/e2e_verify.py [repo_dir]
 Requires: HTTPS_PROXY/HTTP_PROXY set if a source needs a proxy locally.
 """
-import filecmp
+import configparser
 import json
 import os
 import shutil
@@ -43,6 +43,20 @@ ENV = {
 def fail(msg):
     print(f"FAIL: {msg}")
     sys.exit(1)
+
+
+def _backfill_feeds(repo):
+    """Names of sources with backfill enabled (their JSONL/XML may legitimately
+    change on run 2 as unsummarized recent entries get summaries)."""
+    config = configparser.ConfigParser()
+    config.read(repo / "config.ini", encoding="utf-8")
+    feeds = set()
+    for sec in config.sections():
+        days = config.get(sec, "backfill_days", fallback="0").strip('"')
+        items = config.get(sec, "backfill_items", fallback="0").strip('"')
+        if days != "0" and items != "0" and config.has_option(sec, "name"):
+            feeds.add(config.get(sec, "name").strip('"'))
+    return feeds
 
 
 def run_main(workdir):
@@ -84,13 +98,42 @@ def main():
 
         snap1 = snapshot(repo / "docs")
 
-        # --- run 2: idempotency / conveyor-belt check --------------------------
+        # --- run 2: stability / conveyor-belt check ---------------------------
+        # JSONL link lists must be identical and already-summarized entries
+        # unchanged; unsummarized entries MAY gain summary/category/content
+        # (the backfill budget keeps working each run). XMLs of feeds without
+        # backfill must stay byte-identical.
+        backfill_feeds = _backfill_feeds(repo)
         run_main(repo)
-        snap2 = snapshot(repo / "docs")
-        for name in snap1:
-            if snap1[name] != snap2.get(name):
-                fail(f"run2 not idempotent: {name} changed")
-        print("run1 clean, run2 idempotent")
+        for name, before in snap1.items():
+            after_path = repo / "docs" / name
+            if not after_path.exists():
+                fail(f"run2 lost {name}")
+            if name.endswith(".jsonl"):
+                r1 = [json.loads(l) for l in before.decode("utf-8").splitlines() if l.strip()]
+                r2 = [json.loads(l) for l in after_path.read_text(encoding="utf-8").splitlines() if l.strip()]
+                if [x["link"] for x in r1] != [x["link"] for x in r2]:
+                    fail(f"run2 changed entry set/order in {name} (conveyor-belt regression)")
+                for a, b in zip(r1, r2):
+                    if a.get("summary") and a != b:
+                        fail(f"run2 mutated a summarized entry in {name}: {a['link']}")
+                    for key in ("title", "published", "updated"):
+                        if a.get(key) != b.get(key):
+                            fail(f"run2 changed {key} in {name}: {a['link']}")
+            elif name.rsplit(".", 1)[0] not in backfill_feeds:
+                if before != after_path.read_bytes():
+                    fail(f"run2 not stable: {name} changed")
+        print("run1 clean, run2 stable (link sets identical, summaries preserved)")
+
+        # --- backfill must actually fill recent unsummarized entries ----------
+        gained = 0
+        for name in backfill_feeds:
+            r1 = [json.loads(l) for l in snap1[f"{name}.jsonl"].decode("utf-8").splitlines() if l.strip()]
+            r2 = [json.loads(l) for l in (repo / "docs" / f"{name}.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+            gained += sum(1 for a, b in zip(r1, r2) if not a.get("summary") and b.get("summary"))
+        if gained == 0:
+            fail(f"backfill produced no summaries in {sorted(backfill_feeds)}")
+        print(f"backfill filled {gained} summaries in run2")
 
         # --- direct retry check across the full mock cycle ---------------------
         code = (
