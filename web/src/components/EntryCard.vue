@@ -7,9 +7,16 @@ const props = defineProps({
 })
 
 // Official-site card hierarchy: uppercase tag -> title -> date -> one-line guide.
-// Summary HTML is produced by our own pipeline (model output with <br> markers),
-// so v-html is acceptable here; external article HTML is never rendered.
-const summaryHtml = computed(() => props.entry.summary || '')
+// The stored summary starts with '<br><br>总结:' (an RSS-facing paragraph
+// marker); for the card we strip the leading line breaks and the marker text
+// and render a styled 导读 label instead. Summary HTML comes from our own
+// pipeline, so v-html is acceptable here.
+const guideText = computed(() => {
+  let s = props.entry.summary || ''
+  s = s.replace(/^(<br\s*\/?>\s*)+/, '')
+  s = s.replace(/^(总结|Summary)[:：]/, '')
+  return s
+})
 const date = computed(() => formatDate(props.entry.published))
 </script>
 
@@ -18,7 +25,7 @@ const date = computed(() => formatDate(props.entry.published))
     <span class="tag">{{ entry.category }}</span>
     <h3 class="title">{{ entry.title }}</h3>
     <span class="date">{{ date }}</span>
-    <div v-if="summaryHtml" class="summary" v-html="summaryHtml"></div>
+    <div v-if="guideText" class="summary"><span class="guide-label">导读</span><span v-html="guideText"></span></div>
   </a>
 </template>
 
@@ -65,5 +72,16 @@ const date = computed(() => formatDate(props.entry.published))
   overflow: hidden;
   border-top: 1px solid #2c3850;
   padding-top: 8px;
+}
+.guide-label {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #141a26;
+  background: #7fd4a8;
+  border-radius: 3px;
+  padding: 0 5px;
+  margin-right: 6px;
+  vertical-align: 1px;
 }
 </style>
