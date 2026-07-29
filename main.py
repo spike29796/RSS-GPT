@@ -497,9 +497,10 @@ def append_readme(readme, links):
 append_readme("README.md", links)
 append_readme("README-zh.md", links)
 
-# Rendering index.html used in my GitHub page, delete this if you don't need it.
-# Modify template.html to change the style
-with open(os.path.join(BASE, 'index.html'), 'w') as f:
+# Rendering the RSS link-list page for GitHub Pages. Since phase 3 the site
+# entry page docs/index.html is the Vue app's build artifact, so this list is
+# rendered to feeds.html instead — never overwrite index.html here.
+with open(os.path.join(BASE, 'feeds.html'), 'w') as f:
     template = Template(open('template.html').read())
     html = template.render(update_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), feeds=feeds)
     f.write(html)
