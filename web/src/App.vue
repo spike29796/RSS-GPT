@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { SOURCES, fetchAllEntries } from './api.js'
-import { parseDate, formatDate } from './format.js'
+import { parseDate, formatDate, formatShort, isToday } from './format.js'
 import EntryCard from './components/EntryCard.vue'
 
 const PAGE_SIZE = 50
@@ -37,7 +37,7 @@ const sourceStats = computed(() =>
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
       .map(([category, count]) => ({ category, count, pct: list.length ? Math.round((count / list.length) * 100) : 0 }))
-    return { ...s, total: list.length, top, latest: list.slice(0, PREVIEW_SIZE) }
+    return { ...s, total: list.length, top, latest: list.slice(0, PREVIEW_SIZE), todayCount: list.filter((e) => isToday(e.published)).length }
   }),
 )
 
@@ -107,6 +107,9 @@ function selectCategory(name) {
                 <span class="league-name">{{ s.label }}</span>
                 <span class="league-total">{{ s.total }} 条</span>
               </span>
+              <span class="today-badge" :class="{ zero: s.todayCount === 0 }">
+                {{ s.todayCount > 0 ? `今天 +${s.todayCount}` : '今天无新消息' }}
+              </span>
               <span class="chevron">›</span>
             </button>
             <div class="preview">
@@ -118,7 +121,9 @@ function selectCategory(name) {
                 target="_blank"
                 rel="noopener"
               >
-                <span class="preview-tag">{{ e.category }}</span>
+                <span class="preview-date">
+                  <em v-if="isToday(e.published)" class="new-dot">NEW</em>{{ formatShort(e.published) }}
+                </span>
                 <span class="preview-title">{{ e.title }}</span>
               </a>
             </div>
@@ -291,43 +296,70 @@ body {
   color: #7c8798;
 }
 .chevron {
-  margin-left: auto;
   color: #7c8798;
   font-size: 18px;
 }
+.today-badge {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #141a26;
+  background: #7fd4a8;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+.today-badge.zero {
+  background: none;
+  border: 1px solid #33405a;
+  color: #7c8798;
+  font-weight: 400;
+}
 .preview {
   border-top: 1px solid #33405a;
-  padding: 8px 10px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 .preview-item {
   display: flex;
   align-items: baseline;
-  gap: 8px;
-  padding: 5px 8px;
+  gap: 10px;
+  padding: 7px 8px;
   border-radius: 4px;
   text-decoration: none;
   color: inherit;
-  font-size: 12px;
+  line-height: 1.5;
 }
 .preview-item:hover {
   background: #2b3850;
 }
-.preview-tag {
+.preview-date {
   flex-shrink: 0;
+  width: 108px;
+  font-size: 11px;
+  color: #7c8798;
+  font-variant-numeric: tabular-nums;
+}
+.new-dot {
+  display: inline-block;
+  font-style: normal;
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: #7fd4a8;
+  color: #141a26;
+  background: #7fd4a8;
+  border-radius: 3px;
+  padding: 0 4px;
+  margin-right: 5px;
 }
 .preview-title {
-  color: #9fb0c8;
-  white-space: nowrap;
+  color: #d7dee9;
+  font-size: 13px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .classes {

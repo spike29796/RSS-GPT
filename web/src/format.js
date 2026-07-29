@@ -20,3 +20,17 @@ export function extractImage(content) {
   const m = content.match(/<img[^>]+src="([^"]+)"/)
   return m ? m[1] : null
 }
+
+export function formatShort(value) {
+  const d = parseDate(value)
+  if (!d) return ''
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+export function isToday(value) {
+  const d = parseDate(value)
+  if (!d) return false
+  const n = new Date()
+  return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate()
+}
