@@ -2,7 +2,7 @@
 // Record shape: {link, title, published, updated, category, summary, content}
 
 export const SOURCES = [
-  { name: 'openai-news', label: 'OpenAI News' },
+  { name: 'openai-news', label: 'OpenAI News', league: 'A', accent: '#7fd4a8' },
 ]
 
 async function fetchSource(source) {
