@@ -452,6 +452,47 @@ def output(sec, language):
             for link in sorted(dropped_links)[-5000:]:
                 f.write(link + '\n')
 
+    # Backfill: spend a small per-run LLM budget summarizing recent entries
+    # that never got a summary (beyond max_items when appended, or produced
+    # before summarization worked). Only entries within backfill_days are
+    # eligible, so archives (e.g. openai-news' 1000-item history) are never
+    # touched. Entries stay newest-first; only summary/category/content change.
+    backfill_days = int(get_cfg(sec, 'backfill_days') or 0)
+    backfill_items = int(get_cfg(sec, 'backfill_items') or 0)
+    if OPENAI_API_KEY and backfill_days > 0 and backfill_items > 0:
+        from email.utils import parsedate_to_datetime
+        now = datetime.datetime.now(datetime.timezone.utc)
+        backfilled = 0
+        for record in entries:
+            if backfilled >= backfill_items:
+                break
+            if record.get('summary'):
+                continue
+            try:
+                published = parsedate_to_datetime(record.get('published') or '')
+            except (TypeError, ValueError):
+                continue
+            if (now - published).days > backfill_days:
+                continue
+            # Unsummarized records store content as "\n" + article.
+            article = record['content'][1:] if record['content'].startswith('\n') else record['content']
+            try:
+                category, summary = gpt_summary(clean_html(article), model=custom_model or "gpt-4o-mini", language=language, categories=categories, default_category=default_category)
+            except Exception as e:
+                with open(log_file, 'a') as f:
+                    f.write(f"Backfill failed: [{record['title']}]({record['link']})\nerror: {e}\n")
+                continue
+            if summary is None:
+                continue  # non-compliant output; leave for the next run
+            record['category'] = category
+            record['summary'] = summary
+            record['content'] = "<div> " + summary + " <div>" + "\n" + article
+            backfilled += 1
+            with open(log_file, 'a') as f:
+                f.write(f"Backfilled: [{record['title']}]({record['link']})\nCategory: {category}\n")
+        with open(log_file, 'a') as f:
+            f.write(f'backfilled_entries: {backfilled}\n')
+
     # Data layer first: persist JSONL, then render the XML from the same list.
     with open(out_dir + '.jsonl', 'w', encoding='utf-8') as f:
         for record in entries:
