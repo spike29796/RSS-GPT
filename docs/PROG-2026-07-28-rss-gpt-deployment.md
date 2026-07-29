@@ -112,3 +112,42 @@
 ## 下一步
 - 提交并 push 后线上 XML 即恢复干净；之后正常进入第二阶段
   （调教模型输出格式 + 修传送带 + Awwwards 采集器）。
+
+---
+
+# PROG-2026-07-29（追加）第二阶段：传送带修复 + prompt 修复 + Awwwards 采集器
+
+## 做了什么（对应 REQ-collector.md）
+- **传送带修复**（BUG-conveyor-belt.md 关闭）：先按原建议只把截断移到合并后，
+  e2e 第二轮 openai-news.jsonl 仍变（被截断的 51 条 2017 年旧文重抓置顶还抢了
+  3 个 mock 摘要额度）——证明"合并后再截断"治不了本。加墓碑文件
+  `docs/<name>.dropped` 记录被截断丢弃的链接、去重视为已见，才真正幂等。
+- **gpt_summary**：格式指令从 assistant 消息挪到 system 消息（zh/en 同步）；
+  解析失败重试 1 次再兜底 summary=None。
+- **采集器接口**：新增 `collectors.py`（COLLECTORS 注册表，返回 feedparser
+  兼容伪 feed）；`output()` 按源段 `collector` 键分流，主循环零改动。
+- **Awwwards SOTD**：裸 GET + 解析 `data-collectable-model-value` 内嵌 JSON
+  （31 条，slug/title/createdAt/tags/缩略图）；不调 LLM，源级分类/兜底
+  「设计灵感」（`get_default_category` 扩展源级覆盖）。缩略图 CDN 两种尺寸
+  均实测 200。
+- `validate_categories.py`：allowed 并入源级 categories 覆盖；采集器源
+  （读 config 的 collector 键）豁免"至少一条摘要"检查。
+- 验证工具：`test/e2e_verify.py`（拷贝仓库到临时目录跑两轮，生产 docs/ 零接触）。
+
+## 验证（e2e 全绿）
+- run1 干净（无脏摘要），run2 逐字节幂等（传送带盖棺）；
+  直接调 gpt_summary 7 次全覆盖 mock 周期，重试断言通过；
+- validate_categories 四源全过（awwwards-sotd 31 条全「设计灵感」、summary 豁免）；
+- 旧条目回归：HEAD 三源链接零丢失（openai-news 少的 52 条 == 墓碑集合）。
+
+## 踩过的坑
+- 本机 requests 不读系统代理：awwwards 直连超时，需显式 HTTPS_PROXY；
+  mock LLM 需 NO_PROXY 保住（README 踩坑 14）。
+- feed 抓取失败时 `feed=None` 会导致渲染被跳过（上游既有行为），首次部署
+  采集器源务必保证首抓成功。
+
+## 下一步
+- 提交 RSS-GPT（main.py/collectors.py/config.ini）+ push；用户在 fork 手动
+  触发 Actions 验收：绿色 + 四 feed 可访问 + awwwards 条目正确 +
+  openai-news 一次性回落到 1000（预期）。
+- 观察修复后首次真实模型输出格式遵从率（system 消息 + 重试的效果）。

@@ -142,6 +142,38 @@ README 里提到的 `openai==0.27.8` 是**历史遗留说明**。实测上游现
 - 旧条目在后续运行中重新渲染时保留原分类
 - 改动文件：`main.py`（prompt + 解析 + 兜底）、`template.xml`（渲染 `<category>`），以 fork 仓库（本地 `RSS-GPT/` 克隆）为准
 
+### 2.11 采集器源（非 RSS 来源，第二阶段新增）
+
+管道除 RSS 外还支持"采集器源"：直接抓网页解析出条目，走同一套
+去重/分类/JSONL/XML 流程。首个采集器是 **Awwwards Site of the Day**
+（`awwwards-sotd`），配置方式（已在 config.ini 里）：
+
+```ini
+[source004]
+name = "awwwards-sotd"
+url = "https://www.awwwards.com/websites/sites_of_the_day/"
+collector = "awwwards_sotd"
+max_items = "0"
+categories = "设计灵感"
+default_category = "设计灵感"
+```
+
+- `collector` 键指向 `collectors.py` 里的 `COLLECTORS` 注册表；`url` 作为采集目标页。
+  新增采集器 = 在 `collectors.py` 写一个返回伪 feed 的函数并注册。
+- Awwwards 条目只有站点名/缩略图/标签，文本太少，**不调 LLM**（`max_items=0`），
+  分类用源级覆盖固定为「设计灵感」；不抓详情页分数（后续想要可加）。
+- 源级 `default_category` 覆盖与 `categories` 覆盖同模式，非 AI 内容不会落进「行业动态」。
+
+### 2.12 第二阶段顺带修复
+
+- **摘要 prompt 结构**：格式指令从 assistant 消息挪到 system 消息（上游把指令塞在
+  assistant 里是格式遵从差的主因之一）；解析失败自动重试 1 次，仍不合规则
+  summary 记空（原始输出不再进数据层）。
+- **openai-news 传送带 BUG 已修**：截断移到合并之后，且被截断丢弃的链接记入
+  `docs/<name>.dropped` 墓碑文件，feed 仍提供的旧档案不再被当作新条目重抓。
+  想强制重抓某源历史，删掉对应 `.dropped` 文件即可。
+  （修复后 openai-news 一次性从 1051 回落到 1000 条，属预期。）
+
 ## 3. 踩坑记录
 
 1. **机器之心 RSS 已下线**：`jiqizhixin.com/rss` 现在 302 跳转到"数据服务"付费页，返回 HTML 而非 XML；
@@ -165,10 +197,15 @@ README 里提到的 `openai==0.27.8` 是**历史遗留说明**。实测上游现
 13. **feedparser 的属性陷阱**：给 feedparser 的 entry 用点号赋值自定义属性不会写入字典，
     `entry.get('xxx')` 永远拿到 None。读取自定义属性必须用 `getattr(entry, 'xxx', None)`。
     （这是分类功能开发时踩的坑，`RSS-GPT/main.py` 里已修正并注释。）
+14. **本地跑采集器源要显式代理**：awwwards.com 在本机直连超时，本地验证需
+    `HTTPS_PROXY=http://127.0.0.1:7892`（requests 不一定会读系统代理）；
+    同时 `NO_PROXY=127.0.0.1,localhost` 保住本地 mock LLM。GitHub Actions 直连无此问题。
+15. **"合并后再截断"治不了传送带**：只要 feed 全量档案 > max_entries，丢弃的条目下轮
+    必然被当作新条目重抓，无论截断在合并前后。必须配墓碑文件（见 2.12）。
 
 ## 4. 以后重装 / 加源
 
 - 重装：照第 2 节从头走一遍即可，文件以 fork 仓库为准（本地 `RSS-GPT/` 目录是 fork 的克隆，改完 `git push` 同步，无需网页粘贴）。
-- 加源：在 `config.ini` 末尾追加 `[source004]` 段（段名递增即可），填 `name` / `url` / `max_items`，commit 后等下一轮运行。
+- 加源：在 `config.ini` 末尾追加 `[source005]` 段（段名递增即可），填 `name` / `url` / `max_items`，commit 后等下一轮运行。
 - 改摘要语言/长度：`[cfg]` 段 `language` 和 `summary_length`。
 - 改分类体系：`[cfg]` 段 `categories`（逗号分隔）和 `default_category`；单个源可在自己的 `[sourceNNN]` 段加 `categories` 覆盖全局。

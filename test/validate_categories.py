@@ -14,19 +14,38 @@ import sys
 
 import feedparser
 
-FEEDS = ["qbitai", "openai-news", "ithome"]
+FEEDS = ["qbitai", "openai-news", "ithome", "awwwards-sotd"]
 
 
 def load_allowed(docs_dir):
     config_path = os.path.join(os.path.dirname(docs_dir), "config.ini")
     config = configparser.ConfigParser()
     config.read(config_path, encoding="utf-8")
+    # Allowed categories = global list plus any per-source overrides
+    # (e.g. collector sources like awwwards-sotd use their own category).
     raw = config.get("cfg", "categories").strip('"')
-    return {c.strip() for c in raw.split(",") if c.strip()}
+    parts = [raw]
+    for sec in config.sections():
+        if config.has_option(sec, "categories"):
+            parts.append(config.get(sec, "categories").strip('"'))
+    return {c.strip() for part in parts for c in part.split(",") if c.strip()}
+
+
+def load_collector_feeds(docs_dir):
+    """Names of sources backed by a collector (no LLM summaries expected)."""
+    config_path = os.path.join(os.path.dirname(docs_dir), "config.ini")
+    config = configparser.ConfigParser()
+    config.read(config_path, encoding="utf-8")
+    names = set()
+    for sec in config.sections():
+        if config.has_option(sec, "collector") and config.has_option(sec, "name"):
+            names.add(config.get(sec, "name").strip('"'))
+    return names
 
 
 def main(docs_dir):
     allowed = load_allowed(docs_dir)
+    collector_feeds = load_collector_feeds(docs_dir)
     failures = []
     for name in FEEDS:
         path = f"{docs_dir}/{name}.xml"
@@ -49,7 +68,7 @@ def main(docs_dir):
             if "总结:" in content or "Summary:" in content:
                 with_summary += 1
         print(f"{name}: {total} items, {with_summary} with summary")
-        if with_summary == 0:
+        if with_summary == 0 and name not in collector_feeds:
             failures.append(f"{name}: no item contains a summary")
     if failures:
         print("\nFAILURES:")
