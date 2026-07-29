@@ -1,24 +1,25 @@
 # PROGRESS 心跳
 
-更新时间：2026-07-29（第二阶段线上验收通过，已归档）
+更新时间：2026-07-29（第三阶段本地完成，待提交推送 + 线上验收）
 
 ## 当前步骤
-第二阶段完成并验收。备份目录已删除。下一步开第三步（另立项）：Vue3 前端 + 聚合展示。
+Vue3 前端聚合页本地完成：web/ 工程建好、构建产物已入 RSS-GPT/docs、
+e2e 全绿，待提交 push 后用户线上验收。
 
 ## 已完成
-- 第一阶段闭环：脏摘要清理 + 解析兜底修复上线（dcb11da79）
-- 第二阶段三工作流全部上线并验收（438be8bc1 + b420de885 IPv6 热修）：
-  - 传送带修复：合并后截断 + `.dropped` 墓碑文件，线上连续两轮 append_entries=0
-  - prompt 修复：system 消息 + 重试，生产新摘要全部格式合规、四源 dirty=0
-  - 采集器接口 + Awwwards SOTD：31 条「设计灵感」条目上线
-  - Actions 绿色；validate_categories 四源全过；旧条目零丢失
-- 备份清理：RSS-GPT-upstream.bak/、deploy.bak/ 已删除
+- 第一、二阶段全部上线验收（含 IPv6 热修）；备份目录已删
+- 第三阶段（REQ-frontend.md）：
+  - 决策：纯静态无后端、同 repo Pages、浏览聚合、替换旧首页
+  - main.py 让出入口页（index.html → feeds.html）
+  - web/：Vite5+Vue3，源 tabs/分类 chips/搜索/50 条分页/awwwards 缩略图/移动适配
+  - 构建产物 + 预生成 feeds.html 已在 RSS-GPT/docs
+  - 验证：build OK、Pages 静态模拟 200、e2e 两轮全绿
 
-## 下一步（第三步，另立 REQ）
-- Vue3 前端 + 聚合展示（消费 docs/*.jsonl，Pages 可直接访问）
-- 可选增强：Awwwards 详情页分数抓取、新采集器接入
+## 下一步（用户操作）
+1. 提交外层（web/ + 文档）与 RSS-GPT（main.py + 产物）并 push
+2. 线上验收：spike29796.github.io/RSS-GPT/ 首页即应用，筛选/搜索/缩略图/手机正常
+3. 后续可选：已读/收藏（localStorage）、新采集器、Awwwards 详情页分数
 
-## 遇到的问题（均已解决并记录）
-- 生产模型不遵守格式 → system 消息 + 重试 + 兜底 None（README 2.12）
-- 传送带"合并后截断"治标不治本 → 墓碑文件（README 踩坑 15）
-- Actions 无 IPv6 路由 → 采集器强制 IPv4（README 踩坑 16）
+## 遇到的问题
+- vite preview 会套用 dev proxy 导致本地验收 500 → 改用 python http.server 模拟
+- node 不在 bash PATH（/d/nodejs 失效残留）→ 用 /c/Program Files/nodejs

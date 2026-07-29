@@ -159,3 +159,33 @@
   ENETUNREACH。本机有 IPv6/代理所以 e2e 没暴露。
 - 修复：`collectors.py` 强制 IPv4（AF_INET-only getaddrinfo 包住请求），
   b420de885 已 push；README 踩坑 16。
+
+---
+
+# PROG-2026-07-29（追加）第三阶段：Vue3 前端聚合页
+
+## 做了什么（对应 REQ-frontend.md）
+- 决策（用户）：纯静态无后端（弃 Supabase）、同 repo 同 Pages、首版浏览聚合、
+  Vue 应用替换旧 RSS 链接列表首页。
+- 管道让出入口：`main.py` 链接列表页改渲染 `docs/feeds.html`，index.html 留给
+  前端产物（消除了"每日 Auto Build 覆盖应用入口"的冲突）。
+- 新建 `web/`（Vite5 + Vue3 SFC，无 TS/router/UI 库）：
+  - `vite.config.js` base `/RSS-GPT/`、outDir `../RSS-GPT/docs`（emptyOutDir=false
+    保护数据文件）、dev proxy 到线上 Pages 取真数据；
+  - `api.js` 并行 fetch 四源 JSONL、Promise.allSettled 单源容错；
+  - `App.vue` 源 tabs + 动态分类 chips + 搜索 + 50 条/批加载更多 + RSS 订阅页脚；
+  - `EntryCard.vue` 分类徽章/来源/时间/摘要(v-html)/Awwwards 缩略图。
+- 构建产物（index.html + assets/）已写入 RSS-GPT/docs；本地用 template.html
+  预生成 feeds.html 避免部署后页脚 404。
+- 验证：build 成功（gzip js 27KB）；python http.server 模拟 Pages 五个关键
+  资源全 200；e2e_verify.py 两轮全绿（管道改动无回归）。
+
+## 踩过的坑
+- `vite preview` 也会应用 server.proxy，本机直连 github.io 被重置导致 500，
+  本地验收改用 python http.server 模拟 Pages 静态服务。
+- node 在 `C:\Program Files\nodejs` 但不在 bash PATH（PATH 里的 /d/nodejs 是
+  失效残留），用时要 `export PATH="/c/Program Files/nodejs:$PATH"`。
+
+## 下一步
+- 提交外层（web/ + 文档）与 RSS-GPT（main.py + 构建产物 + feeds.html）并 push；
+  用户线上验收：Pages 首页即应用、筛选/搜索/缩略图/手机可用。

@@ -174,6 +174,20 @@ default_category = "设计灵感"
   想强制重抓某源历史，删掉对应 `.dropped` 文件即可。
   （修复后 openai-news 一次性从 1051 回落到 1000 条，属预期。）
 
+### 2.13 前端聚合页（第三阶段）
+
+Pages 首页是一个 Vue3 单页应用（聚合展示四源条目：源切换/分类筛选/搜索/
+缩略图），数据直接 fetch 同站的 `docs/*.jsonl`，纯静态无后端。
+
+- 源码在外层仓库 `web/`（Vite + Vue3，无 TS/router/UI 库）；
+  `npm run build` 产物直接写入 `RSS-GPT/docs/`（`index.html` + `assets/`）。
+- **目录归属约定**：`RSS-GPT/docs/index.html` 和 `docs/assets/` 是前端构建产物，
+  不要手改、不要让管道覆盖；`main.py` 的 RSS 链接列表页已改渲染到
+  `docs/feeds.html`（管道绝不会碰 index.html）。
+- 改了前端后重新 `npm run build` 并把 `RSS-GPT` 仓库的产物一起 commit + push。
+- 本地开发：`cd web && npm run dev`，dev server 会把 `/RSS-GPT/*` 代理到线上
+  Pages 取真实数据（本机需走代理时给 npm 进程配 HTTPS_PROXY）。
+
 ## 3. 踩坑记录
 
 1. **机器之心 RSS 已下线**：`jiqizhixin.com/rss` 现在 302 跳转到"数据服务"付费页，返回 HTML 而非 XML；
