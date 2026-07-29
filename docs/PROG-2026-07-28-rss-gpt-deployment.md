@@ -203,3 +203,26 @@
 - e2e 语义适配：链接序列两轮一致 + 已摘要条目零改写 + 无 backfill 源 XML
   逐字节一致 + backfill 源每轮新增摘要 >0。结果：run2 恰好回填 15 条
   （预算 5+10），qbitai 窗口内 12/12 全覆盖，全绿。
+
+---
+
+# PROG-2026-07-29（追加）第四轮：赛季/流派 UI + 一句话导读 + Awwwards 分类体系
+
+## 做了什么（对应 REQ-league-ui.md）
+- 管道：gpt_summary 改一句话导读（≤50字、不分点、保留 总结: 标记，zh/en 同步）；
+  摘要输入 prepend 标题（新条目+回填两处）；summary_length 200→50。
+- config：openai-news 开回填 7天/5条；awwwards-sotd max_items=5、独立五分类
+  （榜单发布/优秀工作室/技术展示/视觉风格/行业资讯）、backfill 30天/10条。
+- 一次性 refresh_summaries.py：窗口内旧长摘要置 null（qbitai 1、ithome 7）、
+  awwwards 旧「设计灵感」31 条全部重置为「行业资讯」，XML 重渲染。
+- mock_llm 重写：从请求 system 指令解析分类列表自适应返回，第 6/7 个响应
+  仍测非法/前缀变体 → awwwards 摘要链路首次可被 e2e 覆盖。
+- 前端深色游戏风双视图：首页=赛季卡片（A/C/D 徽章+条目数，B 预留）+
+  各源热门分类（top3 计数+占比）；列表视图深色化、卡片加源字母徽章、
+  导读最多两行截断（过渡期长摘要兜底）。rerender_xml 补 awwwards（此前漏了）。
+
+## 验证
+- e2e 全绿；validate：设计灵感清零（qbitai/ithome 摘要清零为预期过渡态，
+  回填恢复）；build + 静态模拟 4 资源 200。
+- 坑：Git Bash 的 ln -s 在某些环境是"复制"而非软链，静态模拟serve的是旧快照，
+  重建链接后正常。

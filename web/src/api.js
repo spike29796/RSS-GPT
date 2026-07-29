@@ -2,10 +2,10 @@
 // Record shape: {link, title, published, updated, category, summary, content}
 
 export const SOURCES = [
-  { name: 'qbitai', label: '量子位' },
-  { name: 'ithome', label: 'IT之家' },
-  { name: 'openai-news', label: 'OpenAI News' },
-  { name: 'awwwards-sotd', label: 'Awwwards SOTD' },
+  { name: 'qbitai', label: '量子位', league: 'D', accent: '#5ea8ff' },
+  { name: 'ithome', label: 'IT之家', league: 'D', accent: '#5ea8ff' },
+  { name: 'openai-news', label: 'OpenAI News', league: 'A', accent: '#7fd4a8' },
+  { name: 'awwwards-sotd', label: 'Awwwards SOTD', league: 'C', accent: '#e2b96f' },
 ]
 
 async function fetchSource(source) {
@@ -16,7 +16,13 @@ async function fetchSource(source) {
   return text
     .split('\n')
     .filter((line) => line.trim())
-    .map((line) => ({ ...JSON.parse(line), source: source.name, sourceLabel: source.label }))
+    .map((line) => ({
+      ...JSON.parse(line),
+      source: source.name,
+      sourceLabel: source.label,
+      league: source.league,
+      accent: source.accent,
+    }))
 }
 
 // Fetch all sources in parallel; a failing source yields an empty list and is

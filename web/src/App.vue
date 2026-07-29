@@ -9,6 +9,7 @@ const PAGE_SIZE = 50
 const entries = ref([])
 const errors = ref([])
 const loading = ref(true)
+const view = ref('home') // 'home' | 'list'
 const activeSource = ref('all')
 const activeCategory = ref('all')
 const search = ref('')
@@ -21,21 +22,29 @@ onMounted(async () => {
   loading.value = false
 })
 
-const lastUpdate = computed(() => {
-  const latest = entries.value[0]
-  return latest ? formatDate(latest.published) : ''
-})
+const lastUpdate = computed(() => (entries.value[0] ? formatDate(entries.value[0].published) : ''))
 
-const bySource = computed(() =>
-  activeSource.value === 'all'
-    ? entries.value
-    : entries.value.filter((e) => e.source === activeSource.value),
+// Per-source stats for the league cards and the top-classes grid.
+const sourceStats = computed(() =>
+  SOURCES.map((s) => {
+    const list = entries.value.filter((e) => e.source === s.name)
+    const counts = {}
+    for (const e of list) {
+      if (e.category) counts[e.category] = (counts[e.category] || 0) + 1
+    }
+    const top = Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([category, count]) => ({ category, count, pct: list.length ? Math.round((count / list.length) * 100) : 0 }))
+    return { ...s, total: list.length, top }
+  }),
 )
 
-const categories = computed(() => {
-  const set = new Set(bySource.value.map((e) => e.category).filter(Boolean))
-  return [...set]
-})
+const bySource = computed(() =>
+  activeSource.value === 'all' ? entries.value : entries.value.filter((e) => e.source === activeSource.value),
+)
+
+const categories = computed(() => [...new Set(bySource.value.map((e) => e.category).filter(Boolean))])
 
 const filtered = computed(() => {
   const kw = search.value.trim().toLowerCase()
@@ -48,65 +57,132 @@ const filtered = computed(() => {
 
 const visible = computed(() => filtered.value.slice(0, shown.value))
 
-function resetView() {
+function openList(sourceName, category = 'all') {
+  activeSource.value = sourceName
+  activeCategory.value = category
+  search.value = ''
   shown.value = PAGE_SIZE
+  view.value = 'list'
+}
+
+function goHome() {
+  view.value = 'home'
 }
 
 function selectSource(name) {
   activeSource.value = name
   activeCategory.value = 'all'
-  resetView()
+  shown.value = PAGE_SIZE
 }
 
 function selectCategory(name) {
   activeCategory.value = name
-  resetView()
+  shown.value = PAGE_SIZE
 }
 </script>
 
 <template>
   <div class="page">
     <header class="header">
-      <h1>AI 资讯聚合</h1>
+      <h1 @click="goHome">AI 资讯聚合</h1>
       <span v-if="lastUpdate" class="updated">更新于 {{ lastUpdate }}</span>
     </header>
 
-    <nav class="tabs">
-      <button :class="{ active: activeSource === 'all' }" @click="selectSource('all')">全部</button>
-      <button
-        v-for="s in SOURCES"
-        :key="s.name"
-        :class="{ active: activeSource === s.name }"
-        @click="selectSource(s.name)"
-      >
-        {{ s.label }}
-      </button>
-    </nav>
+    <p v-if="loading" class="hint">加载中…</p>
+    <p v-for="e in errors" :key="e" class="hint error">{{ e }}</p>
 
-    <div class="toolbar">
-      <div class="chips">
-        <button :class="{ active: activeCategory === 'all' }" @click="selectCategory('all')">全部分类</button>
+    <!-- 首页：赛季（资讯源）分组卡片 + 各赛季热门流派（分类） -->
+    <template v-if="!loading && view === 'home'">
+      <section class="section">
+        <h2 class="section-title">资讯源 <span class="count">{{ sourceStats.length }}</span></h2>
+        <div class="leagues">
+          <button
+            v-for="s in sourceStats"
+            :key="s.name"
+            class="league-card"
+            :style="{ borderLeftColor: s.accent }"
+            @click="openList(s.name)"
+          >
+            <span class="league-letter" :style="{ background: s.accent }">{{ s.league }}</span>
+            <span class="league-body">
+              <span class="league-name">{{ s.label }}</span>
+              <span class="league-total">{{ s.total }} 条</span>
+            </span>
+            <span class="chevron">›</span>
+          </button>
+          <button class="league-card all" @click="openList('all')">
+            <span class="league-letter">全</span>
+            <span class="league-body">
+              <span class="league-name">全部源</span>
+              <span class="league-total">{{ entries.length }} 条</span>
+            </span>
+            <span class="chevron">›</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">各源热门分类</h2>
+        <div class="classes">
+          <div v-for="s in sourceStats" :key="s.name" class="class-col">
+            <div class="class-head">
+              <span class="class-source" :style="{ color: s.accent }">{{ s.label }}</span>
+              <button class="see-all" @click="openList(s.name)">查看全部 ›</button>
+            </div>
+            <button
+              v-for="t in s.top"
+              :key="t.category"
+              class="class-row"
+              @click="openList(s.name, t.category)"
+            >
+              <span class="class-name">{{ t.category }}</span>
+              <span class="class-pct" :style="{ color: s.accent }">{{ t.count }} 条 · {{ t.pct }}%</span>
+            </button>
+            <p v-if="s.top.length === 0" class="class-empty">暂无数据</p>
+          </div>
+        </div>
+      </section>
+    </template>
+
+    <!-- 列表视图 -->
+    <template v-if="view === 'list'">
+      <nav class="tabs">
+        <button class="home-btn" @click="goHome">‹ 首页</button>
+        <button :class="{ active: activeSource === 'all' }" @click="selectSource('all')">全部</button>
         <button
-          v-for="c in categories"
-          :key="c"
-          :class="{ active: activeCategory === c }"
-          @click="selectCategory(c)"
+          v-for="s in SOURCES"
+          :key="s.name"
+          :class="{ active: activeSource === s.name }"
+          :style="activeSource === s.name ? { background: s.accent, borderColor: s.accent } : {}"
+          @click="selectSource(s.name)"
         >
-          {{ c }}
+          {{ s.label }}
         </button>
-      </div>
-      <input v-model="search" class="search" type="search" placeholder="搜索标题或摘要…" @input="resetView" />
-    </div>
+      </nav>
 
-    <main class="list">
-      <p v-if="loading" class="hint">加载中…</p>
-      <p v-for="e in errors" :key="e" class="hint error">{{ e }}</p>
-      <p v-if="!loading && filtered.length === 0" class="hint">没有匹配的条目</p>
-      <EntryCard v-for="e in visible" :key="e.link" :entry="e" />
-      <button v-if="filtered.length > shown" class="more" @click="shown += PAGE_SIZE">
-        加载更多（{{ filtered.length - shown }} 条剩余）
-      </button>
-    </main>
+      <div class="toolbar">
+        <div class="chips">
+          <button :class="{ active: activeCategory === 'all' }" @click="selectCategory('all')">全部分类</button>
+          <button
+            v-for="c in categories"
+            :key="c"
+            :class="{ active: activeCategory === c }"
+            @click="selectCategory(c)"
+          >
+            {{ c }}
+          </button>
+        </div>
+        <input v-model="search" class="search" type="search" placeholder="搜索标题或导读…" @input="shown = PAGE_SIZE" />
+      </div>
+
+      <main class="list">
+        <p v-if="filtered.length === 0" class="hint">没有匹配的条目</p>
+        <EntryCard v-for="e in visible" :key="e.link" :entry="e" />
+        <button v-if="filtered.length > shown" class="more" @click="shown += PAGE_SIZE">
+          加载更多（{{ filtered.length - shown }} 条剩余）
+        </button>
+      </main>
+    </template>
 
     <footer class="footer">
       <span>RSS 订阅：</span>
@@ -122,8 +198,8 @@ function selectCategory(name) {
 }
 body {
   margin: 0;
-  background: #f3f4f6;
-  color: #111827;
+  background: #1a2230;
+  color: #d7dee9;
   font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 .page {
@@ -135,16 +211,149 @@ body {
   display: flex;
   align-items: baseline;
   gap: 12px;
-  padding: 8px 4px 12px;
+  padding: 8px 4px 16px;
 }
 .header h1 {
   font-size: 22px;
   margin: 0;
+  cursor: pointer;
 }
 .updated {
   font-size: 12px;
-  color: #9ca3af;
+  color: #7c8798;
 }
+
+.section {
+  margin-bottom: 28px;
+}
+.section-title {
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #8fa0b8;
+  border-bottom: 1px solid #33405a;
+  padding: 0 4px 8px;
+}
+.count {
+  color: #7fd4a8;
+  margin-left: 4px;
+}
+
+.leagues {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.league-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #242e40;
+  border: 1px solid #33405a;
+  border-left: 4px solid #7c8798;
+  border-radius: 6px;
+  padding: 14px 16px;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  font-size: 14px;
+  transition: background 0.15s;
+}
+.league-card:hover {
+  background: #2b3850;
+}
+.league-card.all {
+  border-left-color: #7fd4a8;
+}
+.league-letter {
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  background: #7c8798;
+  color: #141a26;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.league-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.league-name {
+  font-weight: 600;
+}
+.league-total {
+  font-size: 12px;
+  color: #7c8798;
+}
+.chevron {
+  margin-left: auto;
+  color: #7c8798;
+  font-size: 18px;
+}
+
+.classes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.class-col {
+  background: #242e40;
+  border: 1px solid #33405a;
+  border-radius: 6px;
+  padding: 12px 14px;
+}
+.class-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.class-source {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.see-all {
+  background: none;
+  border: none;
+  color: #7fd4a8;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+}
+.class-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background: #1f2839;
+  border: 1px solid #2c3850;
+  border-radius: 4px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  color: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.class-row:hover {
+  background: #28334a;
+}
+.class-pct {
+  font-size: 12px;
+}
+.class-empty {
+  color: #7c8798;
+  font-size: 12px;
+  margin: 4px 0;
+}
+
 .tabs {
   display: flex;
   gap: 6px;
@@ -152,13 +361,14 @@ body {
   padding: 4px;
   position: sticky;
   top: 0;
-  background: #f3f4f6;
+  background: #1a2230;
   z-index: 1;
 }
 .tabs button,
 .chips button {
-  border: 1px solid #d1d5db;
-  background: #fff;
+  border: 1px solid #33405a;
+  background: #242e40;
+  color: #d7dee9;
   border-radius: 999px;
   padding: 5px 14px;
   font-size: 13px;
@@ -166,14 +376,18 @@ body {
   cursor: pointer;
 }
 .tabs button.active {
-  background: #111827;
-  color: #fff;
-  border-color: #111827;
+  background: #d7dee9;
+  color: #141a26;
+  border-color: #d7dee9;
+}
+.tabs .home-btn {
+  border-color: #7fd4a8;
+  color: #7fd4a8;
 }
 .chips button.active {
-  background: #4338ca;
-  color: #fff;
-  border-color: #4338ca;
+  background: #7fd4a8;
+  color: #141a26;
+  border-color: #7fd4a8;
 }
 .toolbar {
   display: flex;
@@ -192,9 +406,14 @@ body {
   flex: 1;
   min-width: 160px;
   padding: 6px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #33405a;
   border-radius: 999px;
+  background: #242e40;
+  color: #d7dee9;
   font-size: 13px;
+}
+.search::placeholder {
+  color: #7c8798;
 }
 .list {
   padding-top: 8px;
@@ -218,35 +437,37 @@ body {
   grid-column: 1 / -1;
 }
 .hint {
-  color: #9ca3af;
+  color: #7c8798;
   font-size: 14px;
   text-align: center;
   padding: 24px 0;
 }
 .hint.error {
-  color: #dc2626;
+  color: #ff7a7a;
 }
 .more {
   display: block;
   width: 100%;
   padding: 10px;
   margin: 8px 0 16px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #33405a;
   border-radius: 10px;
-  background: #fff;
+  background: #242e40;
+  color: #d7dee9;
   font-size: 14px;
   cursor: pointer;
 }
 .footer {
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid #33405a;
+  margin-top: 24px;
   padding-top: 12px;
   font-size: 12px;
-  color: #6b7280;
+  color: #7c8798;
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
 .footer a {
-  color: #4338ca;
+  color: #7fd4a8;
 }
 </style>

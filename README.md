@@ -160,8 +160,9 @@ default_category = "设计灵感"
 
 - `collector` 键指向 `collectors.py` 里的 `COLLECTORS` 注册表；`url` 作为采集目标页。
   新增采集器 = 在 `collectors.py` 写一个返回伪 feed 的函数并注册。
-- Awwwards 条目只有站点名/缩略图/标签，文本太少，**不调 LLM**（`max_items=0`），
-  分类用源级覆盖固定为「设计灵感」；不抓详情页分数（后续想要可加）。
+- Awwwards 条目凭 标题+Tags 走 LLM（`max_items=5`）：独立分类集
+  （榜单发布/优秀工作室/技术展示/视觉风格/行业资讯）+ 一句话导读；
+  `backfill 30天/10条` 覆盖存量。不抓详情页分数（后续想要可加）。
 - 源级 `default_category` 覆盖与 `categories` 覆盖同模式，非 AI 内容不会落进「行业动态」。
 
 ### 2.12 第二阶段顺带修复
@@ -201,10 +202,21 @@ backfill_days = "7"    # 时间窗口（天），默认 0 = 关
 backfill_items = "5"   # 每轮回填预算（条），默认 0 = 关
 ```
 
-- 当前配置：qbitai 7天/5条、ithome 3天/10条；**openai-news 不要开**（1000+
-  历史档案会逐条烧 API 额度）；awwwards 不调 LLM 无需开。
+- 当前配置：qbitai 7天/5条、ithome 3天/10条、openai-news 7天/5条（窗口内
+  才补，1000+ 历史档案超窗永不碰）、awwwards 30天/10条。
 - 回填只改 summary/category/content，不改条目集合与顺序；输出不合规时跳过
   留给下轮。
+
+### 2.15 一句话导读 + 赛季/流派 UI（第四轮）
+
+- **摘要格式**：从"200 字分点总结"改为**一句话导读**（`[cfg] summary_length=50`，
+  不分点），保留 `<br><br>总结:` 标记；摘要输入带标题（采集器源正文只有 Tags）。
+  旧长摘要用 `test/refresh_summaries.py` 一次性置空，靠回填换血。
+- **Awwwards 独立分类**：榜单发布/优秀工作室/技术展示/视觉风格/行业资讯
+  （见 2.11）。
+- **前端信息架构**（参照 poe.ninja）：资讯源 ↔ 赛季（字母徽章 openai=A、
+  awwwards=C、量子位/IT之家=D，B 预留新源），分类 ↔ 赛季流派。
+  首页 = 赛季分组卡片 + 各源热门分类 top3（计数+占比）；深色游戏风。
 
 ## 3. 踩坑记录
 
