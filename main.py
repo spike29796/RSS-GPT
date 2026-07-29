@@ -10,6 +10,7 @@ import re
 import datetime
 import requests
 from fake_useragent import UserAgent
+import collectors
 #from dateutil.parser import parse
 
 def get_cfg(sec, name, default=None):
@@ -183,8 +184,14 @@ def get_categories(sec=None):
         return [c.strip() for c in raw.split(',') if c.strip()]
     return list(DEFAULT_CATEGORIES)
 
-def get_default_category():
-    """Fallback category to guarantee every item gets a valid value."""
+def get_default_category(sec=None):
+    """Fallback category to guarantee every item gets a valid value.
+    Per-source `default_category` key overrides the global one (same pattern
+    as get_categories)."""
+    if sec:
+        value = get_cfg(sec, 'default_category')
+        if value:
+            return value
     return get_cfg('cfg', 'default_category') or DEFAULT_CATEGORY
 
 def parse_category_and_summary(text, categories, default_category):
@@ -207,16 +214,17 @@ def parse_category_and_summary(text, categories, default_category):
 
 def gpt_summary(query,model,language,categories,default_category):
     category_list = '、'.join(categories)
+    # Format instruction goes in the system message (the upstream code put it
+    # in an assistant message, which many models treat as content to continue
+    # rather than an instruction, hurting format compliance).
     if language == "zh":
-        messages = [
-            {"role": "user", "content": query},
-            {"role": "assistant", "content": f"请用中文总结这篇文章，严格按照以下格式输出：第一行只输出一个分类，必须从以下分类中选择一个：{category_list}，除此之外第一行不要输出任何其他内容；从第二行开始，用中文在{summary_length}字内写一个包含所有要点的总结，按顺序分要点输出，并按照以下格式输出'<br><br>总结:'，<br>是HTML的换行符，输出时必须保留2个，并且必须在'总结:'二字之前"}
-        ]
+        instruction = f"请用中文总结这篇文章，严格按照以下格式输出：第一行只输出一个分类，必须从以下分类中选择一个：{category_list}，除此之外第一行不要输出任何其他内容；从第二行开始，用中文在{summary_length}字内写一个包含所有要点的总结，按顺序分要点输出，并按照以下格式输出'<br><br>总结:'，<br>是HTML的换行符，输出时必须保留2个，并且必须在'总结:'二字之前"
     else:
-        messages = [
-            {"role": "user", "content": query},
-            {"role": "assistant", "content": f"Please summarize this article in {language} language, strictly follow this format: the first line must contain exactly one category chosen from: {category_list}, and nothing else; starting from the second line, write a summary containing all the points in {summary_length} words in {language}, output in order by points, and output in the following format '<br><br>Summary:' , <br> is the line break of HTML, 2 must be retained when output, and must be before the word 'Summary:'"}
-        ]
+        instruction = f"Please summarize this article in {language} language, strictly follow this format: the first line must contain exactly one category chosen from: {category_list}, and nothing else; starting from the second line, write a summary containing all the points in {summary_length} words in {language}, output in order by points, and output in the following format '<br><br>Summary:' , <br> is the line break of HTML, 2 must be retained when output, and must be before the word 'Summary:'"
+    messages = [
+        {"role": "system", "content": instruction},
+        {"role": "user", "content": query},
+    ]
     if not OPENAI_PROXY:
         client = OpenAI(
             api_key=OPENAI_API_KEY,
@@ -231,11 +239,18 @@ def gpt_summary(query,model,language,categories,default_category):
             http_client=httpx.Client(proxy=OPENAI_PROXY),
             # example:"http://my.test.proxy.example.com",
         )
-    completion = client.chat.completions.create(
-        model=model,
-        messages=messages,
-    )
-    return parse_category_and_summary(completion.choices[0].message.content, categories, default_category)
+    # Retry once when the output does not comply with the category+summary
+    # format (parse returns summary=None); a non-compliant second attempt
+    # falls back to (default_category, None) and nothing is stored.
+    for attempt in range(2):
+        completion = client.chat.completions.create(
+            model=model,
+            messages=messages,
+        )
+        category, summary = parse_category_and_summary(completion.choices[0].message.content, categories, default_category)
+        if summary is not None:
+            return category, summary
+    return category, summary
 
 def output(sec, language):
     """ output
@@ -278,22 +293,40 @@ def output(sec, language):
         max_items = int(max_items)
     cnt = 0
     categories = get_categories(sec)
-    default_category = get_default_category()
+    default_category = get_default_category(sec)
+    collector_name = get_cfg(sec, 'collector')
     existing_entries = load_entries(sec)
     with open(log_file, 'a') as f:
         f.write('------------------------------------------------------\n')
         f.write(f'Started: {datetime.datetime.now()}\n')
         f.write(f'Existing_entries: {len(existing_entries)}\n')
-    existing_entries = truncate_entries(existing_entries, max_entries=max_entries)
-    # Be careful when the deleted ones are still in the feed, in that case, you will mess up the order of the entries.
-    # Truncating old entries is for limiting the file size, 1000 is a safe number to avoid messing up the order.
+    # NOTE: do NOT truncate existing entries here. Truncating before the merge
+    # drops the oldest entries, which then look "new" to the dedup check when
+    # the feed still serves them, causing a conveyor-belt re-fetch cycle
+    # (see docs BUG-conveyor-belt). Truncate once, after the merge below.
+    # Links dropped by that truncation are recorded in a tombstone file
+    # (docs/<name>.dropped) so they are never re-fetched as "new" while the
+    # feed keeps serving them. To force a re-fetch, delete the .dropped file.
+    dropped_path = os.path.join(BASE, get_cfg(sec, 'name') + '.dropped')
+    dropped_links = set()
+    if os.path.exists(dropped_path):
+        with open(dropped_path, 'r', encoding='utf-8') as f:
+            dropped_links = {line.strip() for line in f if line.strip()}
     append_entries = []
 
     for rss_url in rss_urls:
         with open(log_file, 'a') as f:
             f.write(f"Fetching from {rss_url}\n")
             print(f"Fetching from {rss_url}")
-        feed = fetch_feed(rss_url, log_file)['feed']
+        if collector_name:
+            # Non-RSS source: the collector fetches rss_url and returns a
+            # feedparser-compatible pseudo feed.
+            collector = collectors.COLLECTORS.get(collector_name)
+            if collector is None:
+                raise Exception(f'unknown collector: {collector_name}')
+            feed = collector(rss_url, log_file)
+        else:
+            feed = fetch_feed(rss_url, log_file)['feed']
         if not feed:
             with open(log_file, 'a') as f:
                 f.write(f"Fetch failed from {rss_url}\n")
@@ -308,6 +341,9 @@ def output(sec, language):
                 entry.link = entry.link.split('#')[0]
 
             if entry.link in [x['link'] for x in existing_entries]:
+                continue
+
+            if entry.link in dropped_links:
                 continue
 
             if entry.link in [x.link for x in append_entries]:
@@ -403,8 +439,18 @@ def output(sec, language):
             "content": content,
         })
 
-    # New entries first, then history (already truncated to max_entries above).
-    entries = append_records + existing_entries
+    # New entries first, then history; truncate AFTER the merge (conveyor-belt
+    # fix). Anything cut off by the truncation goes into the tombstone file so
+    # the dedup check above keeps treating it as seen while the feed serves it.
+    merged = append_records + existing_entries
+    entries = truncate_entries(merged, max_entries=max_entries)
+    for record in merged[len(entries):]:
+        dropped_links.add(record['link'])
+    if dropped_links:
+        # Keep the file bounded; the most recently dropped links matter most.
+        with open(dropped_path, 'w', encoding='utf-8') as f:
+            for link in sorted(dropped_links)[-5000:]:
+                f.write(link + '\n')
 
     # Data layer first: persist JSONL, then render the XML from the same list.
     with open(out_dir + '.jsonl', 'w', encoding='utf-8') as f:
