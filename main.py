@@ -224,12 +224,19 @@ def parse_category_and_summary(text, categories, default_category):
     """
     lines = [line.strip() for line in text.strip().splitlines() if line.strip()]
     if not lines:
-        return default_category, None
+        return default_category, None, None
     candidate = re.sub(r'^(分类|类别|category)\s*[:：]?\s*', '', lines[0], flags=re.IGNORECASE).strip()
     if candidate in categories:
-        summary = '\n'.join(lines[1:])
-        return candidate, normalize_summary(summary) if summary else None
-    return default_category, None
+        summary = normalize_summary(lines[1]) if len(lines) > 1 else None
+        if not summary:
+            return candidate, None, None
+        # Third line (optional): the translated title. Missing is acceptable
+        # and does not trigger a retry.
+        title_zh = None
+        if len(lines) > 2:
+            title_zh = re.sub(r'^(标题|title)\s*[:：]?\s*', '', lines[2], flags=re.IGNORECASE).strip() or None
+        return candidate, summary, title_zh
+    return default_category, None, None
 
 def gpt_summary(query,model,language,categories,default_category):
     category_list = '、'.join(categories)
@@ -237,9 +244,9 @@ def gpt_summary(query,model,language,categories,default_category):
     # in an assistant message, which many models treat as content to continue
     # rather than an instruction, hurting format compliance).
     if language == "zh":
-        instruction = f"请用中文为这篇文章写一句话导读，严格按照以下格式输出：第一行只输出一个分类，必须从以下分类中选择一个：{category_list}，除此之外第一行不要输出任何其他内容；第二行用中文写一句话导读，不超过{summary_length}字，必须是一句话，不要分点、不要编号，并按照以下格式输出'<br><br>总结:'，<br>是HTML的换行符，输出时必须保留2个，并且必须在'总结:'二字之前"
+        instruction = f"请用中文为这篇文章写一句话导读并翻译标题，严格按照以下格式输出：第一行只输出一个分类，必须从以下分类中选择一个：{category_list}，除此之外第一行不要输出任何其他内容；第二行用中文写一句话导读，不超过{summary_length}字，必须是一句话，不要分点、不要编号，并按照以下格式输出'<br><br>总结:'，<br>是HTML的换行符，输出时必须保留2个，并且必须在'总结:'二字之前；第三行只输出文章标题的中文翻译，除此之外第三行不要输出任何其他内容"
     else:
-        instruction = f"Write a one-sentence guide for this article in {language} language, strictly follow this format: the first line must contain exactly one category chosen from: {category_list}, and nothing else; the second line must be a single sentence of no more than {summary_length} words in {language}, no bullet points, no numbering, output in the following format '<br><br>Summary:' , <br> is the line break of HTML, 2 must be retained when output, and must be before the word 'Summary:'"
+        instruction = f"Write a one-sentence guide for this article in {language} language and translate the title into {language}, strictly follow this format: the first line must contain exactly one category chosen from: {category_list}, and nothing else; the second line must be a single sentence of no more than {summary_length} words in {language}, no bullet points, no numbering, output in the following format '<br><br>Summary:' , <br> is the line break of HTML, 2 must be retained when output, and must be before the word 'Summary:'; the third line must contain only the article title translated into {language}, and nothing else"
     messages = [
         {"role": "system", "content": instruction},
         {"role": "user", "content": query},
@@ -260,16 +267,16 @@ def gpt_summary(query,model,language,categories,default_category):
         )
     # Retry once when the output does not comply with the category+summary
     # format (parse returns summary=None); a non-compliant second attempt
-    # falls back to (default_category, None) and nothing is stored.
+    # falls back to (default_category, None, None) and nothing is stored.
     for attempt in range(2):
         completion = client.chat.completions.create(
             model=model,
             messages=messages,
         )
-        category, summary = parse_category_and_summary(completion.choices[0].message.content, categories, default_category)
+        category, summary, title_zh = parse_category_and_summary(completion.choices[0].message.content, categories, default_category)
         if summary is not None:
-            return category, summary
-    return category, summary
+            return category, summary, title_zh
+    return category, summary, title_zh
 
 def output(sec, language):
     """ output
@@ -400,7 +407,7 @@ def output(sec, language):
                 query = f"{entry.title}\n{cleaned_article}"
                 if custom_model:
                     try:
-                        entry.gpt_category, entry.summary = gpt_summary(query,model=custom_model, language=language, categories=categories, default_category=default_category)
+                        entry.gpt_category, entry.summary, entry.title_zh = gpt_summary(query,model=custom_model, language=language, categories=categories, default_category=default_category)
                         with open(log_file, 'a') as f:
                             f.write(f"Token length: {token_length}\n")
                             f.write(f"Summarized using {custom_model}\n")
@@ -412,14 +419,14 @@ def output(sec, language):
                             f.write(f"error: {e}\n")
                 else:
                     try:
-                        entry.gpt_category, entry.summary = gpt_summary(query,model="gpt-4o-mini", language=language, categories=categories, default_category=default_category)
+                        entry.gpt_category, entry.summary, entry.title_zh = gpt_summary(query,model="gpt-4o-mini", language=language, categories=categories, default_category=default_category)
                         with open(log_file, 'a') as f:
                             f.write(f"Token length: {token_length}\n")
                             f.write(f"Summarized using gpt-4o-mini\n")
                             f.write(f"Category: {entry.gpt_category}\n")
                     except:
                         try:
-                            entry.gpt_category, entry.summary = gpt_summary(query,model="gpt-4o", language=language, categories=categories, default_category=default_category)
+                            entry.gpt_category, entry.summary, entry.title_zh = gpt_summary(query,model="gpt-4o", language=language, categories=categories, default_category=default_category)
                             with open(log_file, 'a') as f:
                                 f.write(f"Token length: {token_length}\n")
                                 f.write(f"Summarized using GPT-4o\n")
@@ -463,6 +470,7 @@ def output(sec, language):
         append_records.append({
             "link": entry.link,
             "title": entry.title,
+            "title_zh": getattr(entry, 'title_zh', None),
             "published": getattr(entry, 'published', None),
             "updated": getattr(entry, 'updated', None),
             "category": getattr(entry, 'gpt_category', None) or default_category,
@@ -483,11 +491,11 @@ def output(sec, language):
             for link in sorted(dropped_links)[-5000:]:
                 f.write(link + '\n')
 
-    # Backfill: spend a small per-run LLM budget summarizing recent entries
-    # that never got a summary (beyond max_items when appended, or produced
-    # before summarization worked). Only entries within backfill_days are
-    # eligible, so archives (e.g. openai-news' 1000-item history) are never
-    # touched. Entries stay newest-first; only summary/category/content change.
+    # Backfill: spend a per-run LLM budget summarizing entries that never got
+    # a summary (beyond max_items when appended, or produced before
+    # summarization worked). Entries with a summary but no title_zh are also
+    # eligible (one-time translation backfill). Only entries within
+    # backfill_days are eligible. Entries stay newest-first.
     backfill_days = int(get_cfg(sec, 'backfill_days') or 0)
     backfill_items = int(get_cfg(sec, 'backfill_items') or 0)
     if OPENAI_API_KEY and backfill_days > 0 and backfill_items > 0:
@@ -497,7 +505,7 @@ def output(sec, language):
         for record in entries:
             if backfilled >= backfill_items:
                 break
-            if record.get('summary'):
+            if record.get('summary') and record.get('title_zh'):
                 continue
             try:
                 published = parsedate_to_datetime(record.get('published') or '')
@@ -507,9 +515,14 @@ def output(sec, language):
                 continue
             # Unsummarized records store content as "\n" + article.
             article = record['content'][1:] if record['content'].startswith('\n') else record['content']
+            # Entries that already have a summary carry the summary div in
+            # content; strip it so the model only sees the article.
+            if record.get('summary'):
+                prefix = "<div> " + record['summary'] + " <div>"
+                article = article[len(prefix):] if article.startswith(prefix) else article
             query = f"{record['title']}\n{clean_html(article)}"
             try:
-                category, summary = gpt_summary(query, model=custom_model or "gpt-4o-mini", language=language, categories=categories, default_category=default_category)
+                category, summary, title_zh = gpt_summary(query, model=custom_model or "gpt-4o-mini", language=language, categories=categories, default_category=default_category)
             except Exception as e:
                 with open(log_file, 'a') as f:
                     f.write(f"Backfill failed: [{record['title']}]({record['link']})\nerror: {e}\n")
@@ -521,6 +534,8 @@ def output(sec, language):
             if record.get('category') not in categories:
                 record['category'] = category
             record['summary'] = summary
+            if title_zh:
+                record['title_zh'] = title_zh
             record['content'] = "<div> " + summary + " <div>" + "\n" + article
             backfilled += 1
             with open(log_file, 'a') as f:
