@@ -14,7 +14,7 @@ import sys
 
 import feedparser
 
-FEEDS = ["openai-news"]
+FEEDS = ["openai-news", "claude-blog"]
 
 
 def load_allowed(docs_dir):

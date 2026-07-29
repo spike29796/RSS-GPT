@@ -3,6 +3,7 @@
 
 export const SOURCES = [
   { name: 'openai-news', label: 'OpenAI News', league: 'A', accent: '#7fd4a8' },
+  { name: 'claude-blog', label: 'Claude Blog', league: 'B', accent: '#d97757' },
 ]
 
 async function fetchSource(source) {

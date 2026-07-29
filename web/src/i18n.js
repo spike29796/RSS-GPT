@@ -21,6 +21,11 @@ export const TAG_ZH = {
   'Applied AI': '应用 AI',
   'Webinar': '网络研讨会',
   'OpenAI on OpenAI': 'OpenAI 谈 OpenAI',
+  'Product announcements': '产品发布',
+  'Enterprise AI': '企业 AI',
+  'Claude Code': 'Claude Code',
+  'Agents': '智能体',
+  'eBook': '电子书',
 }
 
 export function tagLabel(tag, showZh) {

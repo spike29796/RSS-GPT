@@ -281,3 +281,16 @@
 - 修复：卡片大小不一（.list 误用 align-items:start → 改 stretch + 卡片
   height:100%，同行等高）；test-shots/ 加入 gitignore。
 - 用户确认译题覆盖路径：backfill 临时 300/天（5d2639869），铺满后调回 50。
+
+---
+
+# PROG-2026-07-29（追加）Claude Blog 源接入（REQ-claude-source.md）
+- 采集器：collectors.py 新增 collect_claude_blog（bs4 解析 Webflow 卡片，
+  dedupe by link，手工月份表避 Windows locale 坑），单测 15 条通过。
+- config source003（claude-blog，5 官方标签，backfill 30天/10条）；
+  前端 B 徽章+品牌橙，TAG_ZH 补 5 词。
+- 播种：本地无 API key 跑一轮 main.py 生成 15 条种子（summary 留空待回填），
+  README/feeds.html 双源化（sed 修 U_NAME 缺省产生的 None.github.io）。
+- e2e：预算限速（生产 300 配置会让 e2e 跑 900 次 mock 超 600s，临时改 5）+
+  新源基线兼容（snap0 无 claude-blog.jsonl），双源全绿。
+- 截图验证：首页双源卡片并排、热门分类双列、移动端正。

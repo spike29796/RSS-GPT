@@ -80,6 +80,18 @@ def main():
     shutil.copytree(REPO, tmp / "repo", ignore=shutil.ignore_patterns(".git", "__pycache__"))
     repo = tmp / "repo"
 
+    # Speed cap: the production config may use large backfill budgets (e.g. 300
+    # for archive coverage). The e2e tests the mechanism, not the volume —
+    # shrink budgets so three pipeline runs finish in seconds.
+    cfg_path = repo / "config.ini"
+    cfg = configparser.ConfigParser()
+    cfg.read(cfg_path, encoding="utf-8")
+    for sec in cfg.sections():
+        if cfg.has_option(sec, "backfill_items"):
+            cfg.set(sec, "backfill_items", "5")
+    with open(cfg_path, "w", encoding="utf-8") as f:
+        cfg.write(f)
+
     mock = subprocess.Popen([PYTHON, str(TEST_DIR / "mock_llm.py")], env=ENV)
     try:
         time.sleep(1)  # let the mock server bind
@@ -143,7 +155,8 @@ def main():
         gained = 0
         remaining = 0
         for name, days in backfill_feeds.items():
-            r0 = [json.loads(l) for l in snap0[f"{name}.jsonl"].decode("utf-8").splitlines() if l.strip()]
+            base = snap0.get(f"{name}.jsonl", b"")
+            r0 = [json.loads(l) for l in base.decode("utf-8").splitlines() if l.strip()]
             r2 = [json.loads(l) for l in (repo / "docs" / f"{name}.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
             gained += sum(1 for a, b in zip(r0, r2) if not a.get("summary") and b.get("summary"))
             for b in r2:
