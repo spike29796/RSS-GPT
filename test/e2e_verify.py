@@ -46,16 +46,17 @@ def fail(msg):
 
 
 def _backfill_feeds(repo):
-    """Names of sources with backfill enabled (their JSONL/XML may legitimately
-    change on run 2 as unsummarized recent entries get summaries)."""
+    """Sources with backfill enabled as {name: backfill_days}. Their JSONL/XML
+    may legitimately change on run 2 as unsummarized recent entries get
+    summaries."""
     config = configparser.ConfigParser()
     config.read(repo / "config.ini", encoding="utf-8")
-    feeds = set()
+    feeds = {}
     for sec in config.sections():
         days = config.get(sec, "backfill_days", fallback="0").strip('"')
         items = config.get(sec, "backfill_items", fallback="0").strip('"')
         if days != "0" and items != "0" and config.has_option(sec, "name"):
-            feeds.add(config.get(sec, "name").strip('"'))
+            feeds[config.get(sec, "name").strip('"')] = int(days)
     return feeds
 
 
@@ -84,6 +85,7 @@ def main():
         time.sleep(1)  # let the mock server bind
 
         # --- run 1 + retry-via-pipeline check ---------------------------------
+        snap0 = snapshot(repo / "docs")  # pre-pipeline baseline for backfill check
         run_main(repo)
         # entries summarized in run1 = entries whose summary is not null and
         # whose category is one of the mock's canned categories; simply assert
@@ -126,24 +128,44 @@ def main():
         print("run1 clean, run2 stable (link sets identical, summaries preserved)")
 
         # --- backfill must actually fill recent unsummarized entries ----------
+        # Compare against the pre-pipeline baseline (not run1): run1 alone may
+        # already cover the whole backfill window, leaving run2 nothing to do.
+        # A fully-covered window is a pass even when nothing was gained.
+        from datetime import datetime, timezone
+        from email.utils import parsedate_to_datetime
+        now = datetime.now(timezone.utc)
         gained = 0
-        for name in backfill_feeds:
-            r1 = [json.loads(l) for l in snap1[f"{name}.jsonl"].decode("utf-8").splitlines() if l.strip()]
+        remaining = 0
+        for name, days in backfill_feeds.items():
+            r0 = [json.loads(l) for l in snap0[f"{name}.jsonl"].decode("utf-8").splitlines() if l.strip()]
             r2 = [json.loads(l) for l in (repo / "docs" / f"{name}.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
-            gained += sum(1 for a, b in zip(r1, r2) if not a.get("summary") and b.get("summary"))
-        if gained == 0:
-            fail(f"backfill produced no summaries in {sorted(backfill_feeds)}")
-        print(f"backfill filled {gained} summaries in run2")
+            gained += sum(1 for a, b in zip(r0, r2) if not a.get("summary") and b.get("summary"))
+            for b in r2:
+                if b.get("summary"):
+                    continue
+                try:
+                    published = parsedate_to_datetime(b.get("published") or "")
+                except (TypeError, ValueError):
+                    continue
+                if (now - published).days <= days:
+                    remaining += 1
+        if gained == 0 and remaining > 0:
+            fail(f"backfill filled nothing but {remaining} in-window entries still lack summaries")
+        print(f"backfill filled {gained} summaries over baseline, {remaining} in-window still null")
 
         # --- direct retry check across the full mock cycle ---------------------
         code = (
             "import main\n"  # importing runs the pipeline once more (harmless)
-            "cats = main.get_categories('source001')\n"
-            "default = main.get_default_category('source001')\n"
+            "cats = main.get_categories('source002')\n"
+            "default = main.get_default_category('source002')\n"
             "for i in range(7):\n"
             "    cat, s = main.gpt_summary('test article', model='mock-model', language='zh', categories=cats, default_category=default)\n"
             "    assert s is not None, f'call {i}: summary None after retry'\n"
             "    assert cat in cats, f'call {i}: illegal category {cat}'\n"
+            "cat, s = main.parse_category_and_summary('Company\\n指南内容<br><br>总结:', cats, default)\n"
+            "assert (cat, s) == ('Company', '<br><br>总结:指南内容'), f'marker reorder failed: {s}'\n"
+            "cat, s = main.parse_category_and_summary('Company\\n指南内容', cats, default)\n"
+            "assert (cat, s) == ('Company', '<br><br>总结:指南内容'), f'marker prepend failed: {s}'\n"
             "print('retry assertions OK')\n"
         )
         r = subprocess.run([PYTHON, "-c", code], cwd=repo, env=ENV,
