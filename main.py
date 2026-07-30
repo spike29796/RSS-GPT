@@ -439,13 +439,19 @@ def output(sec, language):
 
             # Category resolution: the feed's own tag wins when available
             # (e.g. openai.com/news ships an official <category> per item),
-            # overriding any LLM-chosen value. Otherwise keep the LLM category,
+            # overriding any LLM-chosen value. Sources with noise tags (e.g.
+            # WordPress 'Featured') can list them in `ignore_tags`; the first
+            # remaining tag is used. Without tags, keep the LLM category,
             # falling back to the default so every item has a valid value.
             # NOTE: must use getattr here - FeedParserDict attribute assignment
             # does not store dict keys, so entry.get('gpt_category') is always None.
+            ignored_tags = {t.strip() for t in (get_cfg(sec, 'ignore_tags') or '').split(',') if t.strip()}
             official_category = None
             try:
-                official_category = entry.tags[0].term
+                for tag in entry.tags:
+                    if tag.term and tag.term not in ignored_tags:
+                        official_category = tag.term
+                        break
             except (AttributeError, IndexError, KeyError, TypeError):
                 pass
             if official_category:
@@ -467,11 +473,21 @@ def output(sec, language):
     for entry in append_entries:
         summary = getattr(entry, 'summary', None)
         content = ("<div> " + summary + " <div>" if summary else "") + "\n" + entry.article
+        published = getattr(entry, 'published', None)
+        if not published:
+            # Atom feeds (e.g. apple-newsroom) carry only <updated>; normalize
+            # via feedparser's parsed struct_time (UTC) to the same RFC 2822
+            # shape RSS entries use, so pubDate/backfill windows can parse it.
+            st = getattr(entry, 'updated_parsed', None)
+            if st:
+                from calendar import timegm
+                from email.utils import formatdate
+                published = formatdate(timegm(st), usegmt=True)
         append_records.append({
             "link": entry.link,
             "title": entry.title,
             "title_zh": getattr(entry, 'title_zh', None),
-            "published": getattr(entry, 'published', None),
+            "published": published,
             "updated": getattr(entry, 'updated', None),
             "category": getattr(entry, 'gpt_category', None) or default_category,
             "summary": summary,
@@ -543,6 +559,13 @@ def output(sec, language):
         with open(log_file, 'a') as f:
             f.write(f'backfilled_entries: {backfilled}\n')
 
+    # Total fetch failure on a source with no history: do not create empty
+    # artifacts (an empty JSONL + missing XML breaks validation downstream).
+    if not feed and not entries:
+        with open(log_file, 'a') as f:
+            f.write('Fetch failed and no existing entries; skipping output.\n')
+        return
+
     # Data layer first: persist JSONL, then render the XML from the same list.
     with open(out_dir + '.jsonl', 'w', encoding='utf-8') as f:
         for record in entries:
@@ -551,6 +574,11 @@ def output(sec, language):
     template = Template(open('template.xml').read())
 
     try:
+        if not feed and os.path.exists(out_dir + '.xml'):
+            # Fetch failed this run: reuse the previous XML's channel metadata
+            # so the re-rendered XML still reflects the JSONL (e.g. summaries
+            # backfilled while the source was unreachable).
+            feed = feedparser.parse(out_dir + '.xml')
         rss = template.render(feed=feed, entries=entries)
         with open(out_dir + '.xml', 'w', encoding='utf-8') as f:
             f.write(rss)

@@ -52,5 +52,12 @@
 
 <a href="https://www.buymeacoffee.com/yinan" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
-- https://openai.com/news/rss.xml -> https://spike29796.github.io/RSS-GPT/openai-news.xml
-- https://claude.com/blog -> https://spike29796.github.io/RSS-GPT/claude-blog.xml
+- https://openai.com/news/rss.xml -> https://None.github.io/RSS-GPT/openai-news.xml
+- https://claude.com/blog -> https://None.github.io/RSS-GPT/claude-blog.xml
+- https://blog.google/rss/ -> https://None.github.io/RSS-GPT/google-blog.xml
+- https://api-docs.deepseek.com/zh-cn/news/news260424/ -> https://None.github.io/RSS-GPT/deepseek-news.xml
+- https://www.kimi.com/blog/ -> https://None.github.io/RSS-GPT/kimi-blog.xml
+- https://blogs.microsoft.com/feed/ -> https://None.github.io/RSS-GPT/microsoft-blog.xml
+- https://www.apple.com/newsroom/rss-feed.rss -> https://None.github.io/RSS-GPT/apple-newsroom.xml
+- https://content.spacex.com/api/spacex-website/updates -> https://None.github.io/RSS-GPT/spacex-updates.xml
+- https://blogs.nvidia.com/feed/ -> https://None.github.io/RSS-GPT/nvidia-blog.xml
