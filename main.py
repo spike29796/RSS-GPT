@@ -264,6 +264,10 @@ def parse_category_and_summary(text, categories, default_category):
 
 def gpt_summary(query,model,language,categories,default_category):
     category_list = '、'.join(categories)
+    # Input cap: a one-sentence guide needs the lead, not the full article.
+    # Multi-k-token articles multiply cost AND latency on a slow relay.
+    if len(query) > 2000:
+        query = query[:2000]
     # Format instruction goes in the system message (the upstream code put it
     # in an assistant message, which many models treat as content to continue
     # rather than an instruction, hurting format compliance).
@@ -599,7 +603,7 @@ def output(sec, language):
                 record['title_zh'] = title_zh
             record['content'] = "<div> " + summary + " <div>" + "\n" + article
             with open(log_file, 'a') as f:
-                f.write(f"Backfilled in {elapsed:.0f}s: [{record['title']}]({record['link']})\nCategory: {category}\n")
+                f.write(f"Backfilled in {elapsed:.0f}s using {custom_model or 'gpt-4o-mini'}: [{record['title']}]({record['link']})\nCategory: {category}\n")
             return 1
 
         backfilled = 0
