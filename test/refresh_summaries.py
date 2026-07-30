@@ -38,7 +38,7 @@ def main():
         default = config.get(sec, "default_category", fallback=config.get("cfg", "default_category")).strip('"')
 
         path = DOCS_DIR / f"{name}.jsonl"
-        records = [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
+        records = [json.loads(l) for l in path.read_text(encoding="utf-8").split('\n') if l.strip()]
         n_summary = n_cat = 0
         for rec in records:
             try:

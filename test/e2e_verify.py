@@ -103,7 +103,7 @@ def main():
         # whose category is one of the mock's canned categories; simply assert
         # no dirty/raw output survived anywhere.
         for jsonl in (repo / "docs").glob("*.jsonl"):
-            for line in jsonl.read_text(encoding="utf-8").splitlines():
+            for line in jsonl.read_text(encoding="utf-8").split('\n'):
                 if not line.strip():
                     continue
                 s = json.loads(line).get("summary") or ""
@@ -124,8 +124,8 @@ def main():
             if not after_path.exists():
                 fail(f"run2 lost {name}")
             if name.endswith(".jsonl"):
-                r1 = [json.loads(l) for l in before.decode("utf-8").splitlines() if l.strip()]
-                r2 = [json.loads(l) for l in after_path.read_text(encoding="utf-8").splitlines() if l.strip()]
+                r1 = [json.loads(l) for l in before.decode("utf-8").split('\n') if l.strip()]
+                r2 = [json.loads(l) for l in after_path.read_text(encoding="utf-8").split('\n') if l.strip()]
                 if [x["link"] for x in r1] != [x["link"] for x in r2]:
                     fail(f"run2 changed entry set/order in {name} (conveyor-belt regression)")
                 for a, b in zip(r1, r2):
@@ -155,9 +155,15 @@ def main():
         gained = 0
         remaining = 0
         for name, days in backfill_feeds.items():
+            jsonl_path = repo / "docs" / f"{name}.jsonl"
+            if not jsonl_path.exists():
+                # Source unfetchable from this network (e.g. region-blocked):
+                # nothing seeded, nothing to backfill — nothing to verify.
+                print(f"backfill check skipped for {name}: no JSONL (fetch failed locally)")
+                continue
             base = snap0.get(f"{name}.jsonl", b"")
-            r0 = [json.loads(l) for l in base.decode("utf-8").splitlines() if l.strip()]
-            r2 = [json.loads(l) for l in (repo / "docs" / f"{name}.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+            r0 = [json.loads(l) for l in base.decode("utf-8").split('\n') if l.strip()]
+            r2 = [json.loads(l) for l in (repo / "docs" / f"{name}.jsonl").read_text(encoding="utf-8").split('\n') if l.strip()]
             gained += sum(1 for a, b in zip(r0, r2) if not a.get("summary") and b.get("summary"))
             for b in r2:
                 if b.get("summary"):
@@ -196,8 +202,11 @@ def main():
             fail("gpt_summary retry assertions")
 
         # --- category DoD ------------------------------------------------------
+        # encoding/errors: item titles in the output can be non-GBK Unicode;
+        # text=True alone decodes with the locale codec and kills the reader.
         r = subprocess.run([PYTHON, str(TEST_DIR / "validate_categories.py"), str(repo / "docs")],
-                           env=ENV, capture_output=True, text=True)
+                           env=ENV, capture_output=True, text=True,
+                           encoding="utf-8", errors="replace")
         print(r.stdout)
         if r.returncode != 0:
             fail("validate_categories")

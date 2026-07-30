@@ -24,7 +24,7 @@ def main():
         feed = feedparser.parse(str(xml_path))  # only feed.feed.title/link are used
         entries = [
             json.loads(line)
-            for line in (DOCS_DIR / f"{name}.jsonl").read_text(encoding="utf-8").splitlines()
+            for line in (DOCS_DIR / f"{name}.jsonl").read_text(encoding="utf-8").split('\n')
             if line.strip()
         ]
         xml_path.write_text(template.render(feed=feed, entries=entries), encoding="utf-8")

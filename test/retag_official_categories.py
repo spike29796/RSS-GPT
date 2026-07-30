@@ -37,7 +37,7 @@ def main():
     config = configparser.ConfigParser()
     config.read(DOCS_DIR.parent / "config.ini", encoding="utf-8")
     default = config.get("source002", "default_category").strip('"')
-    records = [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
+    records = [json.loads(l) for l in path.read_text(encoding="utf-8").split('\n') if l.strip()]
     retagged = missing = 0
     for rec in records:
         tag = tag_by_link.get(rec["link"])

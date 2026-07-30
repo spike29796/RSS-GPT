@@ -4,6 +4,13 @@
 export const SOURCES = [
   { name: 'openai-news', label: 'OpenAI News', league: 'A', accent: '#7fd4a8' },
   { name: 'claude-blog', label: 'Claude Blog', league: 'B', accent: '#d97757' },
+  { name: 'google-blog', label: 'Google Blog', league: 'C', accent: '#4285f4' },
+  { name: 'deepseek-news', label: 'DeepSeek News', league: 'D', accent: '#06b6d4' },
+  { name: 'kimi-blog', label: 'Kimi Blog', league: 'E', accent: '#8b5cf6' },
+  { name: 'microsoft-blog', label: 'Microsoft Blog', league: 'F', accent: '#38bdf8' },
+  { name: 'apple-newsroom', label: 'Apple Newsroom', league: 'G', accent: '#d4d4d8' },
+  { name: 'spacex-updates', label: 'SpaceX Updates', league: 'H', accent: '#f43f5e' },
+  { name: 'nvidia-blog', label: 'NVIDIA Blog', league: 'I', accent: '#76b900' },
 ]
 
 async function fetchSource(source) {

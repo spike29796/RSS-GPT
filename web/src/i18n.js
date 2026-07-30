@@ -1,5 +1,6 @@
-// Chinese labels for the 20 official OpenAI News tags (single source of truth
-// for the translate toggle). Unknown tags fall back to the original English.
+// Chinese labels for official source tags (OpenAI 20 + Claude 5 + Apple 2;
+// single source of truth for the translate toggle). Unknown tags (open-vocab
+// sources like google-blog / nvidia-blog) fall back to the original English.
 export const TAG_ZH = {
   'Company': '公司',
   'Research': '研究',
@@ -26,6 +27,8 @@ export const TAG_ZH = {
   'Claude Code': 'Claude Code',
   'Agents': '智能体',
   'eBook': '电子书',
+  'PRESS RELEASE': '新闻稿',
+  'UPDATE': '更新',
 }
 
 export function tagLabel(tag, showZh) {
