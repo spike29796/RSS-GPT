@@ -55,12 +55,12 @@ These feeds on hosted in the [`docs/` subdirectory](https://github.com/yinan-c/R
 
 I will consider hosting more feeds in the future. Email me or submit an issue if there are any questions using the script or any suggestions.
 
-- https://openai.com/news/rss.xml -> https://None.github.io/RSS-GPT/openai-news.xml
-- https://claude.com/blog -> https://None.github.io/RSS-GPT/claude-blog.xml
-- https://blog.google/rss/ -> https://None.github.io/RSS-GPT/google-blog.xml
-- https://api-docs.deepseek.com/zh-cn/news/news260424/ -> https://None.github.io/RSS-GPT/deepseek-news.xml
-- https://www.kimi.com/blog/ -> https://None.github.io/RSS-GPT/kimi-blog.xml
-- https://blogs.microsoft.com/feed/ -> https://None.github.io/RSS-GPT/microsoft-blog.xml
-- https://www.apple.com/newsroom/rss-feed.rss -> https://None.github.io/RSS-GPT/apple-newsroom.xml
-- https://content.spacex.com/api/spacex-website/updates -> https://None.github.io/RSS-GPT/spacex-updates.xml
-- https://blogs.nvidia.com/feed/ -> https://None.github.io/RSS-GPT/nvidia-blog.xml
+- https://openai.com/news/rss.xml -> https://spike29796.github.io/RSS-GPT/openai-news.xml
+- https://claude.com/blog -> https://spike29796.github.io/RSS-GPT/claude-blog.xml
+- https://blog.google/rss/ -> https://spike29796.github.io/RSS-GPT/google-blog.xml
+- https://api-docs.deepseek.com/zh-cn/news/news260424/ -> https://spike29796.github.io/RSS-GPT/deepseek-news.xml
+- https://www.kimi.com/blog/ -> https://spike29796.github.io/RSS-GPT/kimi-blog.xml
+- https://blogs.microsoft.com/feed/ -> https://spike29796.github.io/RSS-GPT/microsoft-blog.xml
+- https://www.apple.com/newsroom/rss-feed.rss -> https://spike29796.github.io/RSS-GPT/apple-newsroom.xml
+- https://content.spacex.com/api/spacex-website/updates -> https://spike29796.github.io/RSS-GPT/spacex-updates.xml
+- https://blogs.nvidia.com/feed/ -> https://spike29796.github.io/RSS-GPT/nvidia-blog.xml
