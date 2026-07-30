@@ -11,6 +11,9 @@ jobs:
   build:
     # 上游原文件写的是 ubuntu-20.04，该镜像已被 GitHub 下线，必须改
     runs-on: ubuntu-latest
+    # 硬上限：main.py 内部有 backfill_max_minutes 软预算兜底，这里再防
+    # 意外挂死（默认 6 小时会烧额度且什么都提交不了）
+    timeout-minutes: 45
 
     steps:
       - name: Check out repository
@@ -39,6 +42,8 @@ jobs:
           U_NAME: ${{ secrets.U_NAME }}
 
       - name: Commit and push
+        # 即使 Generate 步骤失败/超时也提交：已落盘的部分进度不能丢
+        if: always()
         run: |
           git config --local user.name "github-actions[bot]"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"

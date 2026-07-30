@@ -36,6 +36,13 @@ BASE =get_cfg('cfg', 'BASE')
 keyword_length = int(get_cfg('cfg', 'keyword_length'))
 summary_length = int(get_cfg('cfg', 'summary_length'))
 language = get_cfg('cfg', 'language')
+# Wall-clock budget for the whole backfill phase, in minutes (0 = unlimited).
+# A large per-source backfill budget against a slow/flaky API can otherwise
+# run past the Actions job timeout — the job is killed before the commit step
+# and every summary produced in that run is lost (observed 2026-07-29: a 6h
+# run burned tokens and committed nothing).
+backfill_max_minutes = float(get_cfg('cfg', 'backfill_max_minutes') or 0)
+BACKFILL_DEADLINE = (datetime.datetime.now() + datetime.timedelta(minutes=backfill_max_minutes)).timestamp() if backfill_max_minutes > 0 else None
 
 def fetch_feed(url, log_file):
     feed = None
@@ -268,11 +275,21 @@ def gpt_summary(query,model,language,categories,default_category):
     # Retry once when the output does not comply with the category+summary
     # format (parse returns summary=None); a non-compliant second attempt
     # falls back to (default_category, None, None) and nothing is stored.
+    # API errors (e.g. the intermittent 404s some relays return) also get one
+    # retry — previously a single failed call burned the entry's whole budget.
     for attempt in range(2):
-        completion = client.chat.completions.create(
-            model=model,
-            messages=messages,
-        )
+        try:
+            completion = client.chat.completions.create(
+                model=model,
+                messages=messages,
+                timeout=120,
+            )
+        except Exception:
+            if attempt == 0:
+                import time
+                time.sleep(5)
+                continue
+            raise
         category, summary, title_zh = parse_category_and_summary(completion.choices[0].message.content, categories, default_category)
         if summary is not None:
             return category, summary, title_zh
@@ -400,7 +417,9 @@ def output(sec, language):
             cnt += 1
             if cnt > max_items:
                 entry.summary = None
-            elif OPENAI_API_KEY:
+            elif OPENAI_API_KEY and (BACKFILL_DEADLINE is None or datetime.datetime.now().timestamp() <= BACKFILL_DEADLINE):
+                # Also gated by the time budget: new items missed today are
+                # picked up by backfill on later runs — a lost commit is worse.
                 token_length = len(cleaned_article)
                 # Title is prepended to the summary input: collector sources
                 # (e.g. awwwards) have little body text beyond tags.
@@ -520,6 +539,10 @@ def output(sec, language):
         backfilled = 0
         for record in entries:
             if backfilled >= backfill_items:
+                break
+            if BACKFILL_DEADLINE is not None and datetime.datetime.now().timestamp() > BACKFILL_DEADLINE:
+                with open(log_file, 'a') as f:
+                    f.write('Backfill time budget exhausted; remaining entries deferred to the next run.\n')
                 break
             if record.get('summary') and record.get('title_zh'):
                 continue
