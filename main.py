@@ -44,6 +44,23 @@ language = get_cfg('cfg', 'language')
 backfill_max_minutes = float(get_cfg('cfg', 'backfill_max_minutes') or 0)
 BACKFILL_DEADLINE = (datetime.datetime.now() + datetime.timedelta(minutes=backfill_max_minutes)).timestamp() if backfill_max_minutes > 0 else None
 
+
+def _llm_deadline(sec):
+    """Per-source fair share of the global LLM time budget: the remaining time
+    is split evenly across the remaining sources, so one big archive (openai's
+    1000-entry backlog) can't eat the whole run while later sources get zero.
+    Inline summaries and backfill in output() both respect this deadline."""
+    if BACKFILL_DEADLINE is None:
+        return None
+    now = datetime.datetime.now().timestamp()
+    sources = secs[1:]
+    try:
+        idx = sources.index(sec)
+    except ValueError:
+        idx = 0
+    share = (BACKFILL_DEADLINE - now) / max(1, len(sources) - idx)
+    return min(BACKFILL_DEADLINE, now + max(0.0, share))
+
 def fetch_feed(url, log_file):
     feed = None
     response = None
@@ -339,6 +356,7 @@ def output(sec, language):
     default_category = get_default_category(sec)
     collector_name = get_cfg(sec, 'collector')
     existing_entries = load_entries(sec)
+    llm_deadline = _llm_deadline(sec)
     with open(log_file, 'a') as f:
         f.write('------------------------------------------------------\n')
         f.write(f'Started: {datetime.datetime.now()}\n')
@@ -380,7 +398,7 @@ def output(sec, language):
                     f.write(f"Skip from: [{entry.title}]({entry.link})\n")
                 break
 
-            if entry.link.find('#replay') and entry.link.find('v2ex'):
+            if '#replay' in entry.link and 'v2ex' in entry.link:
                 entry.link = entry.link.split('#')[0]
 
             if entry.link in [x['link'] for x in existing_entries]:
@@ -417,7 +435,7 @@ def output(sec, language):
             cnt += 1
             if cnt > max_items:
                 entry.summary = None
-            elif OPENAI_API_KEY and (BACKFILL_DEADLINE is None or datetime.datetime.now().timestamp() <= BACKFILL_DEADLINE):
+            elif OPENAI_API_KEY and (llm_deadline is None or datetime.datetime.now().timestamp() <= llm_deadline):
                 # Also gated by the time budget: new items missed today are
                 # picked up by backfill on later runs — a lost commit is worse.
                 token_length = len(cleaned_article)
@@ -534,15 +552,14 @@ def output(sec, language):
     backfill_days = int(get_cfg(sec, 'backfill_days') or 0)
     backfill_items = int(get_cfg(sec, 'backfill_items') or 0)
     if OPENAI_API_KEY and backfill_days > 0 and backfill_items > 0:
+        from concurrent.futures import ThreadPoolExecutor
         from email.utils import parsedate_to_datetime
         now = datetime.datetime.now(datetime.timezone.utc)
-        backfilled = 0
+        # Eligible candidates, newest first. Entries with a summary but no
+        # title_zh are also eligible (one-time translation backfill).
+        candidates = []
         for record in entries:
-            if backfilled >= backfill_items:
-                break
-            if BACKFILL_DEADLINE is not None and datetime.datetime.now().timestamp() > BACKFILL_DEADLINE:
-                with open(log_file, 'a') as f:
-                    f.write('Backfill time budget exhausted; remaining entries deferred to the next run.\n')
+            if len(candidates) >= backfill_items:
                 break
             if record.get('summary') and record.get('title_zh'):
                 continue
@@ -559,15 +576,20 @@ def output(sec, language):
             if record.get('summary'):
                 prefix = "<div> " + record['summary'] + " <div>"
                 article = article[len(prefix):] if article.startswith(prefix) else article
+            candidates.append((record, article))
+
+        def backfill_one(record, article):
+            started = datetime.datetime.now().timestamp()
             query = f"{record['title']}\n{clean_html(article)}"
             try:
                 category, summary, title_zh = gpt_summary(query, model=custom_model or "gpt-4o-mini", language=language, categories=categories, default_category=default_category)
             except Exception as e:
                 with open(log_file, 'a') as f:
                     f.write(f"Backfill failed: [{record['title']}]({record['link']})\nerror: {e}\n")
-                continue
+                return 0
             if summary is None:
-                continue  # non-compliant output; leave for the next run
+                return 0  # non-compliant output; leave for the next run
+            elapsed = datetime.datetime.now().timestamp() - started
             # Keep an already-valid category (e.g. the feed's official tag);
             # only repair missing/stale ones.
             if record.get('category') not in categories:
@@ -576,9 +598,19 @@ def output(sec, language):
             if title_zh:
                 record['title_zh'] = title_zh
             record['content'] = "<div> " + summary + " <div>" + "\n" + article
-            backfilled += 1
             with open(log_file, 'a') as f:
-                f.write(f"Backfilled: [{record['title']}]({record['link']})\nCategory: {category}\n")
+                f.write(f"Backfilled in {elapsed:.0f}s: [{record['title']}]({record['link']})\nCategory: {category}\n")
+            return 1
+
+        backfilled = 0
+        # Account limit is 3 concurrent requests — batch accordingly.
+        for i in range(0, len(candidates), 3):
+            if llm_deadline is not None and datetime.datetime.now().timestamp() > llm_deadline:
+                with open(log_file, 'a') as f:
+                    f.write('Backfill time budget exhausted; remaining entries deferred to the next run.\n')
+                break
+            with ThreadPoolExecutor(max_workers=3) as pool:
+                backfilled += sum(pool.map(lambda c: backfill_one(*c), candidates[i:i + 3]))
         with open(log_file, 'a') as f:
             f.write(f'backfilled_entries: {backfilled}\n')
 

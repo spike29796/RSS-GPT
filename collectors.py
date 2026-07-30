@@ -318,7 +318,8 @@ def collect_spacex_updates(url, log_file):
             slug = item['updateId']
             blocks = item.get('contentBlocks') or []
             article = ''.join(
-                '<p>' + ' '.join(str(v) for v in b.values()) + '</p>' if isinstance(b, dict) else f'<p>{b}</p>'
+                # Skip block ids/None values — only real text goes to the LLM.
+                '<p>' + ' '.join(str(v) for v in b.values() if v and not isinstance(v, (int, float))) + '</p>' if isinstance(b, dict) else f'<p>{b}</p>'
                 for b in blocks
             )
             image = item.get('image') or {}
