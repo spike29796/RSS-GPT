@@ -262,7 +262,7 @@ def parse_category_and_summary(text, categories, default_category):
         return candidate, summary, title_zh
     return default_category, None, None
 
-def gpt_summary(query,model,language,categories,default_category):
+def gpt_summary(query,model,language,categories,default_category,log_file=None):
     category_list = '、'.join(categories)
     # Input cap: a one-sentence guide needs the lead, not the full article.
     # Multi-k-token articles multiply cost AND latency on a slow relay.
@@ -311,6 +311,15 @@ def gpt_summary(query,model,language,categories,default_category):
                 time.sleep(5)
                 continue
             raise
+        # Token accounting per call — settles cost questions with data instead
+        # of guesses. Reasoning tokens (thinking models) are called out when
+        # the provider reports them.
+        if log_file and getattr(completion, 'usage', None):
+            u = completion.usage
+            details = getattr(u, 'completion_tokens_details', None)
+            reasoning = getattr(details, 'reasoning_tokens', 0) if details else 0
+            with open(log_file, 'a') as f:
+                f.write(f"LLM usage: prompt={u.prompt_tokens} completion={u.completion_tokens} reasoning={reasoning} total={u.total_tokens}\n")
         category, summary, title_zh = parse_category_and_summary(completion.choices[0].message.content, categories, default_category)
         if summary is not None:
             return category, summary, title_zh
@@ -448,7 +457,7 @@ def output(sec, language):
                 query = f"{entry.title}\n{cleaned_article}"
                 if custom_model:
                     try:
-                        entry.gpt_category, entry.summary, entry.title_zh = gpt_summary(query,model=custom_model, language=language, categories=categories, default_category=default_category)
+                        entry.gpt_category, entry.summary, entry.title_zh = gpt_summary(query,model=custom_model, language=language, categories=categories, default_category=default_category, log_file=log_file)
                         with open(log_file, 'a') as f:
                             f.write(f"Token length: {token_length}\n")
                             f.write(f"Summarized using {custom_model}\n")
@@ -460,14 +469,14 @@ def output(sec, language):
                             f.write(f"error: {e}\n")
                 else:
                     try:
-                        entry.gpt_category, entry.summary, entry.title_zh = gpt_summary(query,model="gpt-4o-mini", language=language, categories=categories, default_category=default_category)
+                        entry.gpt_category, entry.summary, entry.title_zh = gpt_summary(query,model="gpt-4o-mini", language=language, categories=categories, default_category=default_category, log_file=log_file)
                         with open(log_file, 'a') as f:
                             f.write(f"Token length: {token_length}\n")
                             f.write(f"Summarized using gpt-4o-mini\n")
                             f.write(f"Category: {entry.gpt_category}\n")
                     except:
                         try:
-                            entry.gpt_category, entry.summary, entry.title_zh = gpt_summary(query,model="gpt-4o", language=language, categories=categories, default_category=default_category)
+                            entry.gpt_category, entry.summary, entry.title_zh = gpt_summary(query,model="gpt-4o", language=language, categories=categories, default_category=default_category, log_file=log_file)
                             with open(log_file, 'a') as f:
                                 f.write(f"Token length: {token_length}\n")
                                 f.write(f"Summarized using GPT-4o\n")
@@ -586,7 +595,7 @@ def output(sec, language):
             started = datetime.datetime.now().timestamp()
             query = f"{record['title']}\n{clean_html(article)}"
             try:
-                category, summary, title_zh = gpt_summary(query, model=custom_model or "gpt-4o-mini", language=language, categories=categories, default_category=default_category)
+                category, summary, title_zh = gpt_summary(query, model=custom_model or "gpt-4o-mini", language=language, categories=categories, default_category=default_category, log_file=log_file)
             except Exception as e:
                 with open(log_file, 'a') as f:
                     f.write(f"Backfill failed: [{record['title']}]({record['link']})\nerror: {e}\n")
