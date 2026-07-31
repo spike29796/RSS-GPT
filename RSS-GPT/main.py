@@ -641,6 +641,19 @@ def output(sec, language):
 
     template = Template(open('template.xml').read())
 
+    # XML 1.0 forbids most C0 control chars even inside CDATA (observed: NUL
+    # bytes in deepseek-news article bodies). Strip them at the render
+    # boundary so the emitted feed always parses; the JSONL data layer
+    # (already written above) keeps the original text.
+    invalid_xml_chars = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f￾￿]')
+
+    def strip_invalid_xml_chars(value):
+        return invalid_xml_chars.sub('', value) if isinstance(value, str) else value
+
+    for record in entries:
+        for key, value in record.items():
+            record[key] = strip_invalid_xml_chars(value)
+
     try:
         if not feed and os.path.exists(out_dir + '.xml'):
             # Fetch failed this run: reuse the previous XML's channel metadata
