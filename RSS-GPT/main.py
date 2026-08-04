@@ -61,22 +61,39 @@ def _llm_deadline(sec):
     share = (BACKFILL_DEADLINE - now) / max(1, len(sources) - idx)
     return min(BACKFILL_DEADLINE, now + max(0.0, share))
 
+# Per-feed decompressed size cap (bytes), default 50MB. iter_content decodes
+# Content-Encoding transparently, so a gzip bomb (V-03: 305KB on the wire,
+# 300MB decompressed, ~1.2GB peak RSS) is only visible *after* decompression —
+# the cap must count decompressed bytes, not wire bytes.
+feed_max_bytes = int(get_cfg('cfg', 'feed_max_bytes') or (50 * 1024 * 1024))
+
 def fetch_feed(url, log_file):
     feed = None
-    response = None
     headers = {}
     try:
         # Use a fixed modern browser UA: some feeds (e.g. qbitai) reject
         # random or bot-like User-Agent strings with 403.
         headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
-        response = requests.get(url, headers=headers, timeout=30)
-        if response.status_code == 200:
+        with requests.get(url, headers=headers, timeout=30, stream=True) as response:
+            if response.status_code != 200:
+                with open(log_file, 'a') as f:
+                    f.write(f"Fetch error: {response.status_code}\n")
+                return {'feed': None, 'status': response.status_code}
+            chunks = []
+            downloaded = 0
+            for chunk in response.iter_content(chunk_size=65536):
+                downloaded += len(chunk)
+                if downloaded > feed_max_bytes:
+                    with open(log_file, 'a') as f:
+                        f.write(f"Fetch aborted: decompressed body exceeds feed_max_bytes={feed_max_bytes} bytes, source skipped: {url}\n")
+                    return {'feed': None, 'status': 'too_large'}
+                chunks.append(chunk)
+            # Replay requests' own .text decoding on the buffered bytes so the
+            # parsed result is identical to the old full-download path.
+            response._content = b"".join(chunks)
+            response._content_consumed = True
             feed = feedparser.parse(response.text)
             return {'feed': feed, 'status': 'success'}
-        else:
-            with open(log_file, 'a') as f:
-                f.write(f"Fetch error: {response.status_code}\n")
-            return {'feed': None, 'status': response.status_code}
     except requests.RequestException as e:
         with open(log_file, 'a') as f:
             f.write(f"Fetch error: {e}\n")
