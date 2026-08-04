@@ -37,10 +37,24 @@ jobs:
       - name: Set up Pages
         uses: actions/configure-pages@v5
 
+      # V-05：main.py 把 LLM 用量/供应商细节写进 docs/*.log，整目录上传会公开。
+      # upload-pages-artifact 没有 exclude 输入（官方 README 仅 name/path/
+      # retention-days/include-hidden-files），只能先暂存拷贝、剔除 log 再上传。
+      # 历史日志文件保留在仓库 docs/ 里不动，只断发布链路。
+      - name: Stage site without logs
+        run: |
+          mkdir _site
+          cp -r RSS-GPT/docs/. _site/
+          find _site -type f -name '*.log' -delete
+          if find _site -type f -name '*.log' | grep -q .; then
+            echo "::error::staging 目录仍含 *.log，中止发布"
+            exit 1
+          fi
+
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: RSS-GPT/docs
+          path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment
