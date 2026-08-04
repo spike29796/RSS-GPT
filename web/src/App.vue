@@ -5,6 +5,7 @@ import { SOURCES, fetchAllEntries } from './api.js'
 import { parseDate, formatDate, formatShort, isToday } from './format.js'
 import { ui, toggleTheme, toggleZh } from './store.js'
 import { TAG_ZH, tagLabel } from './i18n.js'
+import { safeLink } from './sanitize.js'
 import EntryCard from './components/EntryCard.vue'
 
 const PAGE_SIZE = 50
@@ -151,7 +152,7 @@ function selectCategory(name) {
                 v-for="e in s.latest"
                 :key="e.link"
                 class="preview-item"
-                :href="e.link"
+                :href="safeLink(e.link)"
                 target="_blank"
                 rel="noopener"
               >
