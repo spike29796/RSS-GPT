@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 import re
 import datetime
 import requests
+import traceback
 from fake_useragent import UserAgent
 import collectors
 #from dateutil.parser import parse
@@ -651,18 +652,27 @@ def output(sec, language):
             f.write('Fetch failed and no existing entries; skipping output.\n')
         return
 
+    # Lone surrogates (e.g. "\ud800" from LLM JSON responses) cannot be
+    # UTF-8 encoded and would crash the disk writes below. They carry no
+    # meaning, so drop them before anything hits disk.
+    lone_surrogates = re.compile(r'[\ud800-\udfff]')
+    for record in entries:
+        for key, value in record.items():
+            if isinstance(value, str):
+                record[key] = lone_surrogates.sub('', value)
+
     # Data layer first: persist JSONL, then render the XML from the same list.
     with open(out_dir + '.jsonl', 'w', encoding='utf-8') as f:
         for record in entries:
             f.write(json.dumps(record, ensure_ascii=False) + '\n')
 
-    template = Template(open('template.xml').read())
+    template = Template(open('template.xml', encoding='utf-8').read())
 
     # XML 1.0 forbids most C0 control chars even inside CDATA (observed: NUL
     # bytes in deepseek-news article bodies). Strip them at the render
     # boundary so the emitted feed always parses; the JSONL data layer
     # (already written above) keeps the original text.
-    invalid_xml_chars = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f￾￿]')
+    invalid_xml_chars = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f\ud800-\udfff￾￿]')
 
     def strip_invalid_xml_chars(value):
         return invalid_xml_chars.sub('', value) if isinstance(value, str) else value
@@ -682,9 +692,10 @@ def output(sec, language):
             f.write(rss)
         with open(log_file, 'a') as f:
             f.write(f'Finish: {datetime.datetime.now()}\n')
-    except:
+    except Exception:
         with open (log_file, 'a') as f:
             f.write(f"error when rendering xml, skip {out_dir}\n")
+            f.write(traceback.format_exc())
             print(f"error when rendering xml, skip {out_dir}\n")
 
 try:
@@ -702,13 +713,13 @@ for x in secs[1:]:
     links.append("- "+ get_cfg(x, 'url').replace(',',', ') + " -> " + deployment_url + feed['name'] + ".xml\n")
 
 def append_readme(readme, links):
-    with open(readme, 'r') as f:
+    with open(readme, 'r', encoding='utf-8') as f:
         readme_lines = f.readlines()
     while readme_lines[-1].startswith('- ') or readme_lines[-1] == '\n':
         readme_lines = readme_lines[:-1]  # remove 1 line from the end for each feed
     readme_lines.append('\n')
     readme_lines.extend(links)
-    with open(readme, 'w') as f:
+    with open(readme, 'w', encoding='utf-8') as f:
         f.writelines(readme_lines)
 
 append_readme("README.md", links)
@@ -717,7 +728,7 @@ append_readme("README-zh.md", links)
 # Rendering the RSS link-list page for GitHub Pages. Since phase 3 the site
 # entry page docs/index.html is the Vue app's build artifact, so this list is
 # rendered to feeds.html instead — never overwrite index.html here.
-with open(os.path.join(BASE, 'feeds.html'), 'w') as f:
-    template = Template(open('template.html').read())
+with open(os.path.join(BASE, 'feeds.html'), 'w', encoding='utf-8') as f:
+    template = Template(open('template.html', encoding='utf-8').read())
     html = template.render(update_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), feeds=feeds)
     f.write(html)
