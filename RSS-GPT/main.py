@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 import re
 import datetime
 import requests
+import time
 import traceback
 from fake_useragent import UserAgent
 import collectors
@@ -44,6 +45,17 @@ language = get_cfg('cfg', 'language')
 # run burned tokens and committed nothing).
 backfill_max_minutes = float(get_cfg('cfg', 'backfill_max_minutes') or 0)
 BACKFILL_DEADLINE = (datetime.datetime.now() + datetime.timedelta(minutes=backfill_max_minutes)).timestamp() if backfill_max_minutes > 0 else None
+
+# LLM retry policy (T-012): at most LLM_MAX_ATTEMPTS API calls per entry per
+# run (initial call + retries) with exponential backoff (2s, 4s) on call
+# failures — bounds the per-run API-call amplification from retries.
+LLM_MAX_ATTEMPTS = 3
+LLM_BACKOFF_BASE = 2
+# Retry queue: entries whose summarization ultimately failed are stored in
+# docs/<name>.retry.jsonl and retried FIRST on later runs (never silently
+# dropped). A non-empty queue guarantees at least this many LLM slots per
+# run even when the source's backfill budget is smaller or disabled.
+RETRY_QUEUE_BATCH = 10
 
 
 def _llm_deadline(sec):
@@ -212,6 +224,59 @@ def truncate_entries(entries, max_entries):
         entries = entries[:max_entries]
     return entries
 
+def _redact_secrets(text):
+    """Scrub the API key / base URL out of text before it hits a log file."""
+    for secret in (OPENAI_API_KEY, OPENAI_BASE_URL):
+        if secret:
+            text = text.replace(secret, '<redacted>')
+    return text
+
+def load_retry_queue(retry_path):
+    """Load a source's retry queue (JSONL, one record per line:
+    {"link", "reason", "fail_count", "ts"}). Entries land here when
+    summarization ultimately failed (API error after all retries, persistent
+    empty content, or non-compliant output) so later runs retry them first
+    instead of silently dropping them."""
+    queue = {}
+    if os.path.exists(retry_path):
+        with open(retry_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                    queue[rec['link']] = rec
+                except (json.JSONDecodeError, KeyError, TypeError):
+                    continue
+    return queue
+
+def save_retry_queue(retry_path, queue):
+    """Persist the retry queue; delete the file when nothing is pending."""
+    if queue:
+        with open(retry_path, 'w', encoding='utf-8') as f:
+            for rec in queue.values():
+                f.write(json.dumps(rec, ensure_ascii=False) + '\n')
+    elif os.path.exists(retry_path):
+        os.remove(retry_path)
+
+def mark_retry(queue, link, reason):
+    rec = queue.get(link) or {'link': link, 'fail_count': 0}
+    rec['reason'] = reason
+    rec['fail_count'] = rec.get('fail_count', 0) + 1
+    rec['ts'] = datetime.datetime.now().isoformat(timespec='seconds')
+    queue[link] = rec
+
+def record_article(record):
+    """Extract the raw article body from a stored record (inverse of the
+    content assembly in output()). Unsummarized records store content as
+    "\\n" + article; summarized ones carry the summary div as a prefix."""
+    article = record['content'][1:] if record['content'].startswith('\n') else record['content']
+    if record.get('summary'):
+        prefix = "<div> " + record['summary'] + " <div>"
+        article = article[len(prefix):] if article.startswith(prefix) else article
+    return article
+
 # Built-in fallback used only when config.ini has no categories configured.
 DEFAULT_CATEGORIES = ['模型发布', '行业动态', '政策法规', '开源项目', '产品应用']
 DEFAULT_CATEGORY = '行业动态'
@@ -311,22 +376,28 @@ def gpt_summary(query,model,language,categories,default_category,log_file=None):
             http_client=httpx.Client(proxy=OPENAI_PROXY),
             # example:"http://my.test.proxy.example.com",
         )
-    # Retry once when the output does not comply with the category+summary
-    # format (parse returns summary=None); a non-compliant second attempt
-    # falls back to (default_category, None, None) and nothing is stored.
-    # API errors (e.g. the intermittent 404s some relays return) also get one
-    # retry — previously a single failed call burned the entry's whole budget.
-    for attempt in range(2):
+    # Bounded retries with exponential backoff: at most LLM_MAX_ATTEMPTS API
+    # calls per entry per run. Retried conditions: API errors (e.g. the
+    # intermittent 404s some relays return) and empty/None content (reasoning
+    # models occasionally return it — previously a None content escaped the
+    # retry loop via an AttributeError in the parser and burned the entry).
+    # Format-non-compliant output is also retried, but immediately (it is not
+    # an API fault, so no backoff).
+    category, summary, title_zh = default_category, None, None
+    for attempt in range(LLM_MAX_ATTEMPTS):
         try:
             completion = client.chat.completions.create(
                 model=model,
                 messages=messages,
                 timeout=120,
             )
-        except Exception:
-            if attempt == 0:
-                import time
-                time.sleep(5)
+        except Exception as e:
+            if attempt < LLM_MAX_ATTEMPTS - 1:
+                wait = LLM_BACKOFF_BASE * 2 ** attempt
+                if log_file:
+                    with open(log_file, 'a') as f:
+                        f.write(f"LLM call failed (attempt {attempt + 1}/{LLM_MAX_ATTEMPTS}), retrying in {wait}s: {_redact_secrets(type(e).__name__ + ': ' + str(e))}\n")
+                time.sleep(wait)
                 continue
             raise
         # Token accounting per call — settles cost questions with data instead
@@ -338,7 +409,16 @@ def gpt_summary(query,model,language,categories,default_category,log_file=None):
             reasoning = getattr(details, 'reasoning_tokens', 0) if details else 0
             with open(log_file, 'a') as f:
                 f.write(f"LLM usage: prompt={u.prompt_tokens} completion={u.completion_tokens} reasoning={reasoning} total={u.total_tokens}\n")
-        category, summary, title_zh = parse_category_and_summary(completion.choices[0].message.content, categories, default_category)
+        content = completion.choices[0].message.content if getattr(completion, 'choices', None) else None
+        if not content or not content.strip():
+            if log_file:
+                with open(log_file, 'a') as f:
+                    f.write(f"LLM returned empty content (attempt {attempt + 1}/{LLM_MAX_ATTEMPTS})\n")
+            if attempt < LLM_MAX_ATTEMPTS - 1:
+                time.sleep(LLM_BACKOFF_BASE * 2 ** attempt)
+                continue
+            return default_category, None, None
+        category, summary, title_zh = parse_category_and_summary(content, categories, default_category)
         if summary is not None:
             return category, summary, title_zh
     return category, summary, title_zh
@@ -404,6 +484,14 @@ def output(sec, language):
     if os.path.exists(dropped_path):
         with open(dropped_path, 'r', encoding='utf-8') as f:
             dropped_links = {line.strip() for line in f if line.strip()}
+    # Retry queue (T-012): entries whose summarization ultimately failed in
+    # earlier runs. Inline failures this run are added to it; the backfill
+    # phase below retries queued entries first and clears them on success.
+    retry_path = os.path.join(BASE, get_cfg(sec, 'name') + '.retry.jsonl')
+    retry_queue = load_retry_queue(retry_path)
+    # Links marked this run are excluded from this run's retry/backfill phase
+    # so an entry never exceeds LLM_MAX_ATTEMPTS API calls per run.
+    retry_marked = set()
     append_entries = []
 
     for rss_url in rss_urls:
@@ -482,9 +570,11 @@ def output(sec, language):
                             f.write(f"Category: {entry.gpt_category}\n")
                     except Exception as e:
                         entry.summary = None
+                        mark_retry(retry_queue, entry.link, 'api_error')
+                        retry_marked.add(entry.link)
                         with open(log_file, 'a') as f:
                             f.write(f"Summarization failed, append the original article\n")
-                            f.write(f"error: {e}\n")
+                            f.write(f"error: {_redact_secrets(type(e).__name__ + ': ' + str(e))}\n")
                 else:
                     try:
                         entry.gpt_category, entry.summary, entry.title_zh = gpt_summary(query,model="gpt-4o-mini", language=language, categories=categories, default_category=default_category, log_file=log_file)
@@ -492,7 +582,7 @@ def output(sec, language):
                             f.write(f"Token length: {token_length}\n")
                             f.write(f"Summarized using gpt-4o-mini\n")
                             f.write(f"Category: {entry.gpt_category}\n")
-                    except:
+                    except Exception:
                         try:
                             entry.gpt_category, entry.summary, entry.title_zh = gpt_summary(query,model="gpt-4o", language=language, categories=categories, default_category=default_category, log_file=log_file)
                             with open(log_file, 'a') as f:
@@ -501,9 +591,19 @@ def output(sec, language):
                                 f.write(f"Category: {entry.gpt_category}\n")
                         except Exception as e:
                             entry.summary = None
+                            mark_retry(retry_queue, entry.link, 'api_error')
+                            retry_marked.add(entry.link)
                             with open(log_file, 'a') as f:
                                 f.write(f"Summarization failed, append the original article\n")
-                                f.write(f"error: {e}\n")
+                                f.write(f"error: {_redact_secrets(type(e).__name__ + ': ' + str(e))}\n")
+                if getattr(entry, 'summary', None) is None and entry.link not in retry_marked:
+                    # The LLM answered but the output never complied (or the
+                    # content was persistently empty): queue the entry for
+                    # priority retry on the next run instead of dropping it.
+                    mark_retry(retry_queue, entry.link, 'bad_output')
+                    retry_marked.add(entry.link)
+                    with open(log_file, 'a') as f:
+                        f.write(f"Summarization produced no usable output, queued for retry: [{entry.title}]({entry.link})\n")
 
             # Category resolution: the feed's own tag wins when available
             # (e.g. openai.com/news ships an official <category> per item),
@@ -575,39 +675,55 @@ def output(sec, language):
             for link in sorted(dropped_links)[-5000:]:
                 f.write(link + '\n')
 
-    # Backfill: spend a per-run LLM budget summarizing entries that never got
-    # a summary (beyond max_items when appended, or produced before
-    # summarization worked). Entries with a summary but no title_zh are also
-    # eligible (one-time translation backfill). Only entries within
-    # backfill_days are eligible. Entries stay newest-first.
+    # Backfill + retry-queue phase: spend a bounded per-run LLM budget on
+    # entries that never got a summary. Priority 1 is the retry queue
+    # (entries that FAILED summarization in earlier runs — exempt from the
+    # backfill_days window, cleared on success, never silently dropped);
+    # priority 2 is the normal backfill window (beyond max_items when
+    # appended, or produced before summarization worked; entries with a
+    # summary but no title_zh are also eligible — one-time translation
+    # backfill). Entries stay newest-first.
     backfill_days = int(get_cfg(sec, 'backfill_days') or 0)
     backfill_items = int(get_cfg(sec, 'backfill_items') or 0)
-    if OPENAI_API_KEY and backfill_days > 0 and backfill_items > 0:
+    if OPENAI_API_KEY:
         from concurrent.futures import ThreadPoolExecutor
         from email.utils import parsedate_to_datetime
         now = datetime.datetime.now(datetime.timezone.utc)
-        # Eligible candidates, newest first. Entries with a summary but no
-        # title_zh are also eligible (one-time translation backfill).
+        # A non-empty retry queue guarantees at least RETRY_QUEUE_BATCH LLM
+        # slots this run, even when backfill is small/disabled for the source.
+        budget = max(backfill_items, RETRY_QUEUE_BATCH) if retry_queue else backfill_items
         candidates = []
-        for record in entries:
-            if len(candidates) >= backfill_items:
-                break
-            if record.get('summary') and record.get('title_zh'):
-                continue
-            try:
-                published = parsedate_to_datetime(record.get('published') or '')
-            except (TypeError, ValueError):
-                continue
-            if (now - published).days > backfill_days:
-                continue
-            # Unsummarized records store content as "\n" + article.
-            article = record['content'][1:] if record['content'].startswith('\n') else record['content']
-            # Entries that already have a summary carry the summary div in
-            # content; strip it so the model only sees the article.
-            if record.get('summary'):
-                prefix = "<div> " + record['summary'] + " <div>"
-                article = article[len(prefix):] if article.startswith(prefix) else article
-            candidates.append((record, article))
+        if retry_queue:
+            for record in entries:
+                if len(candidates) >= budget:
+                    break
+                if record['link'] not in retry_queue:
+                    continue
+                if record['link'] in retry_marked:
+                    continue  # already burned this run's attempts inline
+                if record.get('summary') and record.get('title_zh'):
+                    # Completed by other means since it was queued: clear the
+                    # record without spending an API call.
+                    del retry_queue[record['link']]
+                    continue
+                candidates.append((record, record_article(record)))
+        if backfill_days > 0 and backfill_items > 0 and len(candidates) < budget:
+            # Eligible candidates, newest first.
+            queued_links = {record['link'] for record, _ in candidates}
+            for record in entries:
+                if len(candidates) >= budget:
+                    break
+                if record['link'] in queued_links or record['link'] in retry_marked:
+                    continue
+                if record.get('summary') and record.get('title_zh'):
+                    continue
+                try:
+                    published = parsedate_to_datetime(record.get('published') or '')
+                except (TypeError, ValueError):
+                    continue
+                if (now - published).days > backfill_days:
+                    continue
+                candidates.append((record, record_article(record)))
 
         def backfill_one(record, article):
             started = datetime.datetime.now().timestamp()
@@ -615,11 +731,13 @@ def output(sec, language):
             try:
                 category, summary, title_zh = gpt_summary(query, model=custom_model or "gpt-4o-mini", language=language, categories=categories, default_category=default_category, log_file=log_file)
             except Exception as e:
+                mark_retry(retry_queue, record['link'], 'api_error')
                 with open(log_file, 'a') as f:
-                    f.write(f"Backfill failed: [{record['title']}]({record['link']})\nerror: {e}\n")
+                    f.write(f"Backfill failed: [{record['title']}]({record['link']})\nerror: {_redact_secrets(type(e).__name__ + ': ' + str(e))}\n")
                 return 0
             if summary is None:
-                return 0  # non-compliant output; leave for the next run
+                mark_retry(retry_queue, record['link'], 'bad_output')
+                return 0  # non-compliant output; stays queued for the next run
             elapsed = datetime.datetime.now().timestamp() - started
             # Keep an already-valid category (e.g. the feed's official tag);
             # only repair missing/stale ones.
@@ -629,6 +747,10 @@ def output(sec, language):
             if title_zh:
                 record['title_zh'] = title_zh
             record['content'] = "<div> " + summary + " <div>" + "\n" + article
+            if record['link'] in retry_queue:
+                del retry_queue[record['link']]
+                with open(log_file, 'a') as f:
+                    f.write(f"Retry queue cleared: [{record['title']}]({record['link']})\n")
             with open(log_file, 'a') as f:
                 f.write(f"Backfilled in {elapsed:.0f}s using {custom_model or 'gpt-4o-mini'}: [{record['title']}]({record['link']})\nCategory: {category}\n")
             return 1
@@ -644,6 +766,16 @@ def output(sec, language):
                 backfilled += sum(pool.map(lambda c: backfill_one(*c), candidates[i:i + 3]))
         with open(log_file, 'a') as f:
             f.write(f'backfilled_entries: {backfilled}\n')
+
+        # Purge queue records whose entry no longer exists (truncated out of
+        # the feed history), then persist the queue once for the whole run.
+        live_links = {record['link'] for record in entries}
+        for link in list(retry_queue):
+            if link not in live_links:
+                with open(log_file, 'a') as f:
+                    f.write(f"Retry queue purge (entry gone): {link}\n")
+                del retry_queue[link]
+        save_retry_queue(retry_path, retry_queue)
 
     # Total fetch failure on a source with no history: do not create empty
     # artifacts (an empty JSONL + missing XML breaks validation downstream).
