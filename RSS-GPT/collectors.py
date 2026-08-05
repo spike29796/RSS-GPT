@@ -42,7 +42,7 @@ def _get_ipv4(url, **kwargs):
 
 
 def _log(log_file, message):
-    with open(log_file, 'a') as f:
+    with open(log_file, 'a', encoding='utf-8') as f:
         f.write(message + '\n')
 
 

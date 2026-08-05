@@ -11,7 +11,6 @@ import datetime
 import requests
 import time
 import traceback
-from fake_useragent import UserAgent
 import collectors
 #from dateutil.parser import parse
 
@@ -35,7 +34,6 @@ OPENAI_BASE_URL = os.environ.get('OPENAI_BASE_URL', 'https://api.openai.com/v1')
 custom_model = os.environ.get('CUSTOM_MODEL')
 deployment_url = f'https://{U_NAME}.github.io/RSS-GPT/'
 BASE =get_cfg('cfg', 'BASE')
-keyword_length = int(get_cfg('cfg', 'keyword_length'))
 summary_length = int(get_cfg('cfg', 'summary_length'))
 language = get_cfg('cfg', 'language')
 # Wall-clock budget for the whole backfill phase, in minutes (0 = unlimited).
@@ -89,7 +87,7 @@ def fetch_feed(url, log_file):
         headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
         with requests.get(url, headers=headers, timeout=30, stream=True) as response:
             if response.status_code != 200:
-                with open(log_file, 'a') as f:
+                with open(log_file, 'a', encoding='utf-8') as f:
                     f.write(f"Fetch error: {response.status_code}\n")
                 return {'feed': None, 'status': response.status_code}
             chunks = []
@@ -97,7 +95,7 @@ def fetch_feed(url, log_file):
             for chunk in response.iter_content(chunk_size=65536):
                 downloaded += len(chunk)
                 if downloaded > feed_max_bytes:
-                    with open(log_file, 'a') as f:
+                    with open(log_file, 'a', encoding='utf-8') as f:
                         f.write(f"Fetch aborted: decompressed body exceeds feed_max_bytes={feed_max_bytes} bytes, source skipped: {url}\n")
                     return {'feed': None, 'status': 'too_large'}
                 chunks.append(chunk)
@@ -108,7 +106,7 @@ def fetch_feed(url, log_file):
             feed = feedparser.parse(response.text)
             return {'feed': feed, 'status': 'success'}
     except requests.RequestException as e:
-        with open(log_file, 'a') as f:
+        with open(log_file, 'a', encoding='utf-8') as f:
             f.write(f"Fetch error: {e}\n")
         return {'feed': None, 'status': 'failed'}
 
@@ -395,7 +393,7 @@ def gpt_summary(query,model,language,categories,default_category,log_file=None):
             if attempt < LLM_MAX_ATTEMPTS - 1:
                 wait = LLM_BACKOFF_BASE * 2 ** attempt
                 if log_file:
-                    with open(log_file, 'a') as f:
+                    with open(log_file, 'a', encoding='utf-8') as f:
                         f.write(f"LLM call failed (attempt {attempt + 1}/{LLM_MAX_ATTEMPTS}), retrying in {wait}s: {_redact_secrets(type(e).__name__ + ': ' + str(e))}\n")
                 time.sleep(wait)
                 continue
@@ -407,12 +405,12 @@ def gpt_summary(query,model,language,categories,default_category,log_file=None):
             u = completion.usage
             details = getattr(u, 'completion_tokens_details', None)
             reasoning = getattr(details, 'reasoning_tokens', 0) if details else 0
-            with open(log_file, 'a') as f:
+            with open(log_file, 'a', encoding='utf-8') as f:
                 f.write(f"LLM usage: prompt={u.prompt_tokens} completion={u.completion_tokens} reasoning={reasoning} total={u.total_tokens}\n")
         content = completion.choices[0].message.content if getattr(completion, 'choices', None) else None
         if not content or not content.strip():
             if log_file:
-                with open(log_file, 'a') as f:
+                with open(log_file, 'a', encoding='utf-8') as f:
                     f.write(f"LLM returned empty content (attempt {attempt + 1}/{LLM_MAX_ATTEMPTS})\n")
             if attempt < LLM_MAX_ATTEMPTS - 1:
                 time.sleep(LLM_BACKOFF_BASE * 2 ** attempt)
@@ -468,7 +466,7 @@ def output(sec, language):
     collector_name = get_cfg(sec, 'collector')
     existing_entries = load_entries(sec)
     llm_deadline = _llm_deadline(sec)
-    with open(log_file, 'a') as f:
+    with open(log_file, 'a', encoding='utf-8') as f:
         f.write('------------------------------------------------------\n')
         f.write(f'Started: {datetime.datetime.now()}\n')
         f.write(f'Existing_entries: {len(existing_entries)}\n')
@@ -495,7 +493,7 @@ def output(sec, language):
     append_entries = []
 
     for rss_url in rss_urls:
-        with open(log_file, 'a') as f:
+        with open(log_file, 'a', encoding='utf-8') as f:
             f.write(f"Fetching from {rss_url}\n")
             print(f"Fetching from {rss_url}")
         if collector_name:
@@ -508,12 +506,12 @@ def output(sec, language):
         else:
             feed = fetch_feed(rss_url, log_file)['feed']
         if not feed:
-            with open(log_file, 'a') as f:
+            with open(log_file, 'a', encoding='utf-8') as f:
                 f.write(f"Fetch failed from {rss_url}\n")
             continue
         for entry in feed.entries:
             if cnt > max_entries:
-                with open(log_file, 'a') as f:
+                with open(log_file, 'a', encoding='utf-8') as f:
                     f.write(f"Skip from: [{entry.title}]({entry.link})\n")
                 break
 
@@ -540,7 +538,7 @@ def output(sec, language):
             cleaned_article = clean_html(entry.article)
 
             if not filter_entry(entry, filter_apply, filter_type, filter_rule):
-                with open(log_file, 'a') as f:
+                with open(log_file, 'a', encoding='utf-8') as f:
                     f.write(f"Filter: [{entry.title}]({entry.link})\n")
                 continue
 
@@ -564,7 +562,7 @@ def output(sec, language):
                 if custom_model:
                     try:
                         entry.gpt_category, entry.summary, entry.title_zh = gpt_summary(query,model=custom_model, language=language, categories=categories, default_category=default_category, log_file=log_file)
-                        with open(log_file, 'a') as f:
+                        with open(log_file, 'a', encoding='utf-8') as f:
                             f.write(f"Token length: {token_length}\n")
                             f.write(f"Summarized using {custom_model}\n")
                             f.write(f"Category: {entry.gpt_category}\n")
@@ -572,20 +570,20 @@ def output(sec, language):
                         entry.summary = None
                         mark_retry(retry_queue, entry.link, 'api_error')
                         retry_marked.add(entry.link)
-                        with open(log_file, 'a') as f:
+                        with open(log_file, 'a', encoding='utf-8') as f:
                             f.write(f"Summarization failed, append the original article\n")
                             f.write(f"error: {_redact_secrets(type(e).__name__ + ': ' + str(e))}\n")
                 else:
                     try:
                         entry.gpt_category, entry.summary, entry.title_zh = gpt_summary(query,model="gpt-4o-mini", language=language, categories=categories, default_category=default_category, log_file=log_file)
-                        with open(log_file, 'a') as f:
+                        with open(log_file, 'a', encoding='utf-8') as f:
                             f.write(f"Token length: {token_length}\n")
                             f.write(f"Summarized using gpt-4o-mini\n")
                             f.write(f"Category: {entry.gpt_category}\n")
                     except Exception:
                         try:
                             entry.gpt_category, entry.summary, entry.title_zh = gpt_summary(query,model="gpt-4o", language=language, categories=categories, default_category=default_category, log_file=log_file)
-                            with open(log_file, 'a') as f:
+                            with open(log_file, 'a', encoding='utf-8') as f:
                                 f.write(f"Token length: {token_length}\n")
                                 f.write(f"Summarized using GPT-4o\n")
                                 f.write(f"Category: {entry.gpt_category}\n")
@@ -593,7 +591,7 @@ def output(sec, language):
                             entry.summary = None
                             mark_retry(retry_queue, entry.link, 'api_error')
                             retry_marked.add(entry.link)
-                            with open(log_file, 'a') as f:
+                            with open(log_file, 'a', encoding='utf-8') as f:
                                 f.write(f"Summarization failed, append the original article\n")
                                 f.write(f"error: {_redact_secrets(type(e).__name__ + ': ' + str(e))}\n")
                 if getattr(entry, 'summary', None) is None and entry.link not in retry_marked:
@@ -602,7 +600,7 @@ def output(sec, language):
                     # priority retry on the next run instead of dropping it.
                     mark_retry(retry_queue, entry.link, 'bad_output')
                     retry_marked.add(entry.link)
-                    with open(log_file, 'a') as f:
+                    with open(log_file, 'a', encoding='utf-8') as f:
                         f.write(f"Summarization produced no usable output, queued for retry: [{entry.title}]({entry.link})\n")
 
             # Category resolution: the feed's own tag wins when available
@@ -628,10 +626,10 @@ def output(sec, language):
                 entry.gpt_category = default_category
 
             append_entries.append(entry)
-            with open(log_file, 'a') as f:
+            with open(log_file, 'a', encoding='utf-8') as f:
                 f.write(f"Append: [{entry.title}]({entry.link})\n")
 
-    with open(log_file, 'a') as f:
+    with open(log_file, 'a', encoding='utf-8') as f:
         f.write(f'append_entries: {len(append_entries)}\n')
 
     # Convert fetched entries to the unified record shape (same as JSONL lines).
@@ -732,7 +730,7 @@ def output(sec, language):
                 category, summary, title_zh = gpt_summary(query, model=custom_model or "gpt-4o-mini", language=language, categories=categories, default_category=default_category, log_file=log_file)
             except Exception as e:
                 mark_retry(retry_queue, record['link'], 'api_error')
-                with open(log_file, 'a') as f:
+                with open(log_file, 'a', encoding='utf-8') as f:
                     f.write(f"Backfill failed: [{record['title']}]({record['link']})\nerror: {_redact_secrets(type(e).__name__ + ': ' + str(e))}\n")
                 return 0
             if summary is None:
@@ -749,9 +747,9 @@ def output(sec, language):
             record['content'] = "<div> " + summary + " <div>" + "\n" + article
             if record['link'] in retry_queue:
                 del retry_queue[record['link']]
-                with open(log_file, 'a') as f:
+                with open(log_file, 'a', encoding='utf-8') as f:
                     f.write(f"Retry queue cleared: [{record['title']}]({record['link']})\n")
-            with open(log_file, 'a') as f:
+            with open(log_file, 'a', encoding='utf-8') as f:
                 f.write(f"Backfilled in {elapsed:.0f}s using {custom_model or 'gpt-4o-mini'}: [{record['title']}]({record['link']})\nCategory: {category}\n")
             return 1
 
@@ -759,12 +757,12 @@ def output(sec, language):
         # Account limit is 3 concurrent requests — batch accordingly.
         for i in range(0, len(candidates), 3):
             if llm_deadline is not None and datetime.datetime.now().timestamp() > llm_deadline:
-                with open(log_file, 'a') as f:
+                with open(log_file, 'a', encoding='utf-8') as f:
                     f.write('Backfill time budget exhausted; remaining entries deferred to the next run.\n')
                 break
             with ThreadPoolExecutor(max_workers=3) as pool:
                 backfilled += sum(pool.map(lambda c: backfill_one(*c), candidates[i:i + 3]))
-        with open(log_file, 'a') as f:
+        with open(log_file, 'a', encoding='utf-8') as f:
             f.write(f'backfilled_entries: {backfilled}\n')
 
         # Purge queue records whose entry no longer exists (truncated out of
@@ -772,7 +770,7 @@ def output(sec, language):
         live_links = {record['link'] for record in entries}
         for link in list(retry_queue):
             if link not in live_links:
-                with open(log_file, 'a') as f:
+                with open(log_file, 'a', encoding='utf-8') as f:
                     f.write(f"Retry queue purge (entry gone): {link}\n")
                 del retry_queue[link]
         save_retry_queue(retry_path, retry_queue)
@@ -780,7 +778,7 @@ def output(sec, language):
     # Total fetch failure on a source with no history: do not create empty
     # artifacts (an empty JSONL + missing XML breaks validation downstream).
     if not feed and not entries:
-        with open(log_file, 'a') as f:
+        with open(log_file, 'a', encoding='utf-8') as f:
             f.write('Fetch failed and no existing entries; skipping output.\n')
         return
 
@@ -822,10 +820,10 @@ def output(sec, language):
         rss = template.render(feed=feed, entries=entries)
         with open(out_dir + '.xml', 'w', encoding='utf-8') as f:
             f.write(rss)
-        with open(log_file, 'a') as f:
+        with open(log_file, 'a', encoding='utf-8') as f:
             f.write(f'Finish: {datetime.datetime.now()}\n')
     except Exception:
-        with open (log_file, 'a') as f:
+        with open (log_file, 'a', encoding='utf-8') as f:
             f.write(f"error when rendering xml, skip {out_dir}\n")
             f.write(traceback.format_exc())
             print(f"error when rendering xml, skip {out_dir}\n")

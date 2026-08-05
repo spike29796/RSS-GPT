@@ -18,13 +18,12 @@ def opml_to_ini(opml_file, ini_file):
     config = configparser.ConfigParser()
 
     if os.path.exists(ini_file):
-        config.read(ini_file)
+        config.read(ini_file, encoding='utf-8')
     
     if 'cfg' not in config:
         config['cfg'] = {
             'base': format_with_quotes('docs/'),
             'language': format_with_quotes('zh'),
-            'keyword_length': format_with_quotes('5'),
             'summary_length': format_with_quotes('200')
         }
 
@@ -47,7 +46,7 @@ def opml_to_ini(opml_file, ini_file):
             'max_items': format_with_quotes('0')  # Default value, adjust as necessary
         }
 
-    with open(ini_file, 'w') as configfile:
+    with open(ini_file, 'w', encoding='utf-8') as configfile:
         config.write(configfile)
 
 import sys
