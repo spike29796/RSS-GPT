@@ -2,22 +2,28 @@
 
 Responds to POST /v1/chat/completions with a canned chat completion. The
 category is parsed from the request's system instruction (so sources with
-their own category set, e.g. awwwards-sotd, get a valid value). To exercise
-the retry path in gpt_summary, every 6th request returns an invalid category
-and every 7th a prefixed one; the next attempt then lands on a valid value.
+their own category set, e.g. awwwards-sotd, get a valid value).
+
+Response style is a deterministic function of the request BODY (T-017): the
+pipeline's backfill pool issues 3 concurrent requests, so a global request
+counter made per-entry categories depend on thread arrival order and broke
+byte-identical e2e reruns. Now the first attempt for a given body hashes the
+body: hash%7==6 -> invalid category, hash%7==0 -> prefixed category (both
+exercise the gpt_summary retry path); any retry (2nd+ attempt for the same
+body) always lands on a valid value.
 """
+import hashlib
 import json
 import re
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 DEFAULT_CATS = ["模型发布", "行业动态", "政策法规", "开源项目", "产品应用"]
-counter = {"n": 0}
+attempts = {}  # body -> attempt count (retries must land on a valid response)
 
 
 def pick_category(body: bytes) -> tuple[str, str]:
     """Return (category, style) for this request: style is 'normal',
-    'invalid' (6th request) or 'prefixed' (7th)."""
-    counter["n"] += 1
+    'invalid' or 'prefixed'. Deterministic per request body."""
     cats = DEFAULT_CATS
     try:
         payload = json.loads(body)
@@ -27,12 +33,17 @@ def pick_category(body: bytes) -> tuple[str, str]:
             cats = [c.strip() for c in re.split(r"[、,]", m.group(1)) if c.strip()]
     except Exception:
         pass
-    n = counter["n"]
-    if n % 7 == 6:
+    n = attempts.get(body, 0) + 1
+    attempts[body] = n
+    h = int.from_bytes(hashlib.sha256(body).digest()[:8], "big")
+    if n >= 2:
+        # A retry after an invalid/prefixed first attempt must succeed.
+        return cats[h % len(cats)], "normal"
+    if h % 7 == 6:
         return "科技新闻", "invalid"
-    if n % 7 == 0:
-        return f"分类：{cats[n % len(cats)]}", "prefixed"
-    return cats[n % len(cats)], "normal"
+    if h % 7 == 0:
+        return f"分类：{cats[h % len(cats)]}", "prefixed"
+    return cats[h % len(cats)], "normal"
 
 
 class Handler(BaseHTTPRequestHandler):
