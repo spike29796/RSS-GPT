@@ -737,20 +737,34 @@ def output(sec, language):
                 mark_retry(retry_queue, record['link'], 'bad_output')
                 return 0  # non-compliant output; stays queued for the next run
             elapsed = datetime.datetime.now().timestamp() - started
-            # Keep an already-valid category (e.g. the feed's official tag);
-            # only repair missing/stale ones.
-            if record.get('category') not in categories:
-                record['category'] = category
-            record['summary'] = summary
-            if title_zh:
-                record['title_zh'] = title_zh
-            record['content'] = "<div> " + summary + " <div>" + "\n" + article
+            had_summary = bool(record.get('summary'))
+            if had_summary:
+                # One-time translation backfill (T-019): the entry already has
+                # a summary — fill ONLY the missing title_zh. summary/content/
+                # category and every other field stay byte-identical.
+                # Previously this path also rewrote summary/content with fresh
+                # LLM output, clobbering good summaries (and tripping the e2e
+                # "run2 must not mutate summarized entries" assertion).
+                if title_zh:
+                    record['title_zh'] = title_zh
+            else:
+                # Keep an already-valid category (e.g. the feed's official
+                # tag); only repair missing/stale ones.
+                if record.get('category') not in categories:
+                    record['category'] = category
+                record['summary'] = summary
+                if title_zh:
+                    record['title_zh'] = title_zh
+                record['content'] = "<div> " + summary + " <div>" + "\n" + article
             if record['link'] in retry_queue:
                 del retry_queue[record['link']]
                 with open(log_file, 'a', encoding='utf-8') as f:
                     f.write(f"Retry queue cleared: [{record['title']}]({record['link']})\n")
             with open(log_file, 'a', encoding='utf-8') as f:
-                f.write(f"Backfilled in {elapsed:.0f}s using {custom_model or 'gpt-4o-mini'}: [{record['title']}]({record['link']})\nCategory: {category}\n")
+                if had_summary:
+                    f.write(f"title_zh backfilled in {elapsed:.0f}s using {custom_model or 'gpt-4o-mini'}: [{record['title']}]({record['link']})\n")
+                else:
+                    f.write(f"Backfilled in {elapsed:.0f}s using {custom_model or 'gpt-4o-mini'}: [{record['title']}]({record['link']})\nCategory: {category}\n")
             return 1
 
         backfilled = 0

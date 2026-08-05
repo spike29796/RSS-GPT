@@ -232,19 +232,15 @@ def main():
                 if [x["link"] for x in r1] != [x["link"] for x in r2]:
                     fail(f"run2 changed entry set/order in {name} (conveyor-belt regression)")
                 for a, b in zip(r1, r2):
-                    # Summarized entries must be unchanged except for the
-                    # one-time translation backfill: entries with a summary
-                    # but no title_zh are still backfill-eligible in run2,
-                    # and main.py's backfill fills title_zh AND regenerates
-                    # summary/content for them (documented business behavior,
-                    # not a conveyor-belt regression — the link-set check
-                    # above is what guards that).
+                    # Summarized entries must be unchanged except for gaining a
+                    # title_zh via the one-time translation backfill — which
+                    # since T-019 fills ONLY title_zh, so a summary/content
+                    # rewrite of an already-summarized entry is a regression
+                    # again and fails here. (The link-set check above guards
+                    # the conveyor belt.)
                     if a.get("summary"):
                         a2, b2 = dict(a), dict(b)
-                        if not a.get("title_zh"):
-                            for k in ("title_zh", "summary", "content"):
-                                a2[k] = b2[k] = None
-                        elif a2.get("title_zh") != b2.get("title_zh") and b2.get("title_zh"):
+                        if a2.get("title_zh") != b2.get("title_zh") and b2.get("title_zh"):
                             a2["title_zh"] = b2["title_zh"]
                         if a2 != b2:
                             fail(f"run2 mutated a summarized entry in {name}: {a['link']}")
