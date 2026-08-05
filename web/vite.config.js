@@ -13,9 +13,10 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      // Dev against the live published data.
+      // Dev against the published data. Override with VITE_DATA_BASE to point
+      // at a local/staging copy; defaults to the live Pages origin.
       '/RSS-GPT': {
-        target: 'https://spike29796.github.io',
+        target: process.env.VITE_DATA_BASE || 'https://spike29796.github.io',
         changeOrigin: true,
       },
     },

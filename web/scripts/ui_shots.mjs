@@ -1,6 +1,7 @@
 // UI screenshot review: serves the built app statically and captures the home
 // and list views across themes and viewport widths.
-// Usage: node scripts/ui_shots.mjs [docsDir] [outDir]
+// Usage: node scripts/ui_shots.mjs [docsDir] [outDir] [port]
+// Port also configurable via UI_SHOTS_PORT env; defaults to 8931.
 import { createServer } from 'node:http'
 import { readFile } from 'node:fs/promises'
 import { existsSync, mkdirSync } from 'node:fs'
@@ -9,7 +10,7 @@ import { chromium } from 'playwright'
 
 const DOCS = resolve(process.argv[2] || '../RSS-GPT/docs')
 const OUT = resolve(process.argv[3] || 'test-shots')
-const PORT = 8931
+const PORT = Number(process.argv[4] || process.env.UI_SHOTS_PORT || 8931)
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.jsonl': 'application/json', '.xml': 'text/xml', '.png': 'image/png' }
 
 const server = createServer(async (req, res) => {

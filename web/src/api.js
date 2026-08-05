@@ -18,10 +18,20 @@ async function fetchSource(source) {
   const resp = await fetch(url)
   if (!resp.ok) throw new Error(`${source.name}: HTTP ${resp.status}`)
   const text = await resp.text()
-  return text
+  // Per-line tolerance: one malformed line only drops that line (with a
+  // console.warn), instead of failing the whole source into the errors map.
+  const entries = []
+  text
     .split('\n')
     .filter((line) => line.trim())
-    .map((line) => ({ ...JSON.parse(line), source: source.name, sourceLabel: source.label }))
+    .forEach((line, i) => {
+      try {
+        entries.push({ ...JSON.parse(line), source: source.name, sourceLabel: source.label })
+      } catch (e) {
+        console.warn(`${source.name}: line ${i + 1} skipped, bad JSON: ${e.message}`)
+      }
+    })
+  return entries
 }
 
 // Fetch all sources in parallel; a failing source yields an empty list and is
