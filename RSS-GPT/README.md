@@ -58,7 +58,6 @@ I will consider hosting more feeds in the future. Email me or submit an issue if
 - https://openai.com/news/rss.xml -> https://spike29796.github.io/RSS-GPT/openai-news.xml
 - https://claude.com/blog -> https://spike29796.github.io/RSS-GPT/claude-blog.xml
 - https://blog.google/rss/ -> https://spike29796.github.io/RSS-GPT/google-blog.xml
-- https://api-docs.deepseek.com/zh-cn/news/news260424/ -> https://spike29796.github.io/RSS-GPT/deepseek-news.xml
 - https://www.kimi.com/blog/ -> https://spike29796.github.io/RSS-GPT/kimi-blog.xml
 - https://blogs.microsoft.com/feed/ -> https://spike29796.github.io/RSS-GPT/microsoft-blog.xml
 - https://www.apple.com/newsroom/rss-feed.rss -> https://spike29796.github.io/RSS-GPT/apple-newsroom.xml
