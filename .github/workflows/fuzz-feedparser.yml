@@ -1,0 +1,76 @@
+name: fuzz-feedparser
+
+# T-022：feedparser 解析边界 atheris fuzz。workflow_dispatch 唯一触发
+# （禁 push/PR 自动触发，防烧 Actions 额度）；单次 timeout-minutes: 120 硬约束。
+on:
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: "fuzz 时长（分钟），建议 ≤115；120 分钟硬超时兜底"
+        required: true
+        default: "115"
+        type: string
+
+# 同组不并发：排队而不是互杀，避免误杀跑到一半的长档
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps (feedparser 钉 6.0.11 与线上一致)
+        run: pip install -r RSS-GPT/requirements.txt -r test/requirements-fuzz.txt
+
+      - name: Build seed corpus
+        run: |
+          set -e
+          CORPUS=artifacts/T-022/corpus
+          mkdir -p "$CORPUS"
+          # 8 个真实 feed 原样作种子
+          cp test/feed_snapshots/*.body "$CORPUS"/
+          # 各自 gzip 包裹变体（路径 1 防线种子）
+          for f in test/feed_snapshots/*.body; do
+            gzip -c "$f" > "$CORPUS/$(basename "$f").gz"
+          done
+          # 截断变体（喂到一半的 XML）
+          for f in test/feed_snapshots/*.body; do
+            head -c 512 "$f" > "$CORPUS/$(basename "$f").trunc512"
+          done
+          # 手工乱码/随机种子
+          head -c 256 /dev/urandom > "$CORPUS/random256.bin"
+          printf '\xef\xbb\xbf<rss version="2.0"><channel><title>x' > "$CORPUS/bom_truncated.xml"
+          printf 'not xml at all \x00\x01\x02' > "$CORPUS/garbage.bin"
+          ls -la "$CORPUS"
+
+      - name: Fuzz
+        env:
+          MINUTES: ${{ inputs.minutes }}
+        run: |
+          SECS=$(( MINUTES * 60 ))
+          mkdir -p fuzz_artifacts
+          python test/fuzz_feedparser.py artifacts/T-022/corpus \
+            -max_total_time="$SECS" -timeout=25 -rss_limit_mb=2048 \
+            -artifact_prefix=fuzz_artifacts/ -print_final_stats=1 \
+            2>&1 | tee fuzz_artifacts/fuzz.log
+
+      - name: Upload fuzz results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-feedparser-results
+          path: |
+            fuzz_artifacts/
+            artifacts/T-022/corpus/
+          retention-days: 30
