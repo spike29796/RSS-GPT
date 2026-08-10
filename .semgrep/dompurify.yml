@@ -1,0 +1,36 @@
+# javascript.dompurify rule family (vendored).
+# Source: https://github.com/semgrep/semgrep-rules/blob/main/javascript/dompurify.yaml (OSS)
+# Why vendored: the semgrep registry path r/javascript.dompurify.* currently
+# serves an empty rule set (https://semgrep.dev/c/r/javascript.dompurify.harden-dompurify-usage
+# returns "rules: []"), so the OSS rule is pinned here for reproducible CI.
+# Tuning: an extra pattern-not exempts calls with an explicit tag/attribute
+# allowlist (this project's web/src/sanitize.js uses ALLOWED_TAGS: ['br'],
+# which leaves no mutation-XSS vector); bare or loosely-configured calls
+# still alert.
+rules:
+- id: harden-dompurify-usage
+  patterns:
+  - pattern: DOMPurify.sanitize($X, ...)
+  - pattern-not: |
+      DOMPurify.sanitize($X, {RETURN_DOM_FRAGMENT: true})
+  - pattern-not: |
+      DOMPurify.sanitize($X, {RETURN_DOM: true})
+  - pattern-not: |
+      DOMPurify.sanitize($X, {ALLOWED_TAGS: $T, ALLOWED_ATTR: $A})
+  message: DOMPurify.sanitize() was called without RETURN_DOM / RETURN_DOM_FRAGMENT
+    or an explicit tag/attribute allowlist. This is prone to mutation XSS, which
+    could possibly bypass existing XSS filters.
+  languages:
+  - js
+  - ts
+  severity: ERROR
+  fix: |
+    DOMPurify.sanitize($X, {RETURN_DOM: true});
+  metadata:
+    category: security
+    technology:
+    - javascript
+    - typescript
+    references:
+    - https://research.securitum.com/mutation-xss-via-mathml-mutation-dompurify-2-0-17-bypass/
+    source: https://github.com/semgrep/semgrep-rules/blob/main/javascript/dompurify.yaml

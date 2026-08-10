@@ -1,0 +1,55 @@
+name: semgrep
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install semgrep CE
+        run: pip install "semgrep==1.172.0"
+
+      - name: Full scan (informational report)
+        # Full scan of the whole repo; findings are published as a build
+        # artifact and never fail the job. Existing findings on main are
+        # tracked in artifacts/T-014/ (dispositions recorded there).
+        run: |
+          semgrep scan \
+            --config p/python --config p/security-audit --config .semgrep/ \
+            --metrics=off --disable-version-check \
+            --json -o semgrep-full.json . || true
+
+      - name: Upload full scan report
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-full-report
+          path: semgrep-full.json
+          if-no-files-found: ignore
+
+      - name: Differential gate (fail on new findings only)
+        # The gate is baseline-diffed: only findings NOT present on the base
+        # commit fail the check. This keeps main green with the known legacy
+        # findings while blocking any newly introduced dangerous usage.
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          semgrep scan \
+            --config p/python --config p/security-audit --config .semgrep/ \
+            --metrics=off --disable-version-check \
+            --baseline-commit "$BASE_SHA" \
+            --error .

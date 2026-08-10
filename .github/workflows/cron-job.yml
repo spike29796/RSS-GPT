@@ -1,0 +1,83 @@
+name: cron_job
+
+on:
+  # 每天 UTC 00:17 运行一次（= 北京时间 08:17），GitHub cron 只用 UTC
+  schedule:
+    - cron: "17 0 * * *"
+  # 允许在 Actions 页面手动触发
+  workflow_dispatch:
+
+# T-013：同组并发互斥，撞车时取消在跑的旧 run，避免双 push 必败其一
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+# T-008 显式最小权限：checkout 和 push 都走 WORK_TOKEN PAT，GITHUB_TOKEN
+# 本 workflow 内无需写权限；按官方文档，permissions 块里未声明的 scope 一律
+# 按 none 处理，所以只留 contents:read 兜底（任何隐式读仓库操作仍可用）
+permissions:
+  contents: read
+
+jobs:
+  build:
+    # 上游原文件写的是 ubuntu-20.04，该镜像已被 GitHub 下线，必须改
+    runs-on: ubuntu-latest
+    # 硬上限：main.py 内部有 backfill_max_minutes 软预算兜底，这里再防
+    # 意外挂死（默认 6 小时会烧额度且什么都提交不了）
+    timeout-minutes: 45
+
+    # monorepo 适配（T-001）：业务代码在 RSS-GPT/ 子目录，所有 run 步骤
+    # 默认在 RSS-GPT/ 下执行；checkout 仍在仓库根，子目录里跑 git 命令
+    # 会自动上溯到仓库根，git add docs/ 实际暂存的是 RSS-GPT/docs/
+    defaults:
+      run:
+        working-directory: RSS-GPT
+
+    steps:
+      - name: Check out repository
+        # T-013：pin 到 commit SHA 防 tag 被重指，行尾注释保留版本号便于人读
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          token: ${{ secrets.WORK_TOKEN }}
+          # T-013（T-004 观察项）：token 仅用于 clone 的 HTTP 头，不写入
+          # .git/config，避免 pip 装依赖期间凭据落盘被恶意依赖读取
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          # T-013：与 RSS-GPT/.python-version 拉齐到 3.12
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Generate RSS summaries
+        run: |
+          python main.py
+          ls -al docs/
+        env:
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
+          CUSTOM_MODEL: ${{ secrets.CUSTOM_MODEL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          U_NAME: ${{ secrets.U_NAME }}
+
+      - name: Commit and push
+        # 即使 Generate 步骤失败/超时也提交：已落盘的部分进度不能丢
+        if: always()
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git status -s
+          # T-013：docs/ 改目录路径式 add（无变更也 exit 0）；
+          # README* 保留 glob 但加 || true 兜底空匹配，步骤不炸
+          git add docs/
+          git add README* || true
+          # 当天无新增文章时 commit 会失败，加兜底避免整个 workflow 报错
+          git commit -m "Auto Build at `date +"%Y-%m-%d %H:%M"`" || echo "No changes to commit"
+          # T-013：persist-credentials: false 后 remote 不再携带凭据，
+          # 改为显式带 token 推送——token 只存在于该进程的命令行，不落盘；
+          # GitHub Actions 会对日志中的 secret 值自动 mask
+          git push "https://x-access-token:${{ secrets.WORK_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:main

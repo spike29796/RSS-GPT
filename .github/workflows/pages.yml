@@ -1,0 +1,61 @@
+name: pages_deploy
+
+# T-001：Pages 发布从「Deploy from a branch」改为 GitHub Actions。
+# 原因：monorepo 后站点文件在 RSS-GPT/docs/ 而非仓库根 /docs，
+# branch 模式的 /docs 选项够不到子目录，必须由 Actions 显式指定发布目录。
+# 前提：仓库 Settings → Pages → Source 选「GitHub Actions」（一次性手动设置）。
+
+on:
+  # cron_job 每天回写 RSS-GPT/docs/ 后自动跟着发布；
+  # 只在这个目录变化时跑，避免无关提交触发空部署
+  push:
+    branches: [main]
+    paths:
+      - "RSS-GPT/docs/**"
+  workflow_dispatch:
+
+# GITHUB_TOKEN 默认无 pages 权限，必须显式授权
+permissions:
+  pages: write
+  id-token: write
+
+# 同一天 cron_job push 和人工 push 可能撞车：只保留最新一次部署
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Pages
+        uses: actions/configure-pages@v5
+
+      # V-05：main.py 把 LLM 用量/供应商细节写进 docs/*.log，整目录上传会公开。
+      # upload-pages-artifact 没有 exclude 输入（官方 README 仅 name/path/
+      # retention-days/include-hidden-files），只能先暂存拷贝、剔除 log 再上传。
+      # 历史日志文件保留在仓库 docs/ 里不动，只断发布链路。
+      - name: Stage site without logs
+        run: |
+          mkdir _site
+          cp -r RSS-GPT/docs/. _site/
+          find _site -type f -name '*.log' -delete
+          if find _site -type f -name '*.log' | grep -q .; then
+            echo "::error::staging 目录仍含 *.log，中止发布"
+            exit 1
+          fi
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
