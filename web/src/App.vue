@@ -1,12 +1,13 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import Fuse from 'fuse.js'
-import { SOURCES, fetchAllEntries } from './api.js'
+import { SOURCES, fetchAllEntries, fetchBiliVideos } from './api.js'
 import { parseDate, formatDate, formatShort, isToday } from './format.js'
 import { ui, toggleTheme, toggleZh } from './store.js'
 import { TAG_ZH, tagLabel } from './i18n.js'
 import { safeLink } from './sanitize.js'
 import EntryCard from './components/EntryCard.vue'
+import BiliCarousel from './components/BiliCarousel.vue'
 
 const PAGE_SIZE = 50
 const PREVIEW_SIZE = 4
@@ -19,14 +20,29 @@ const activeSource = ref('all')
 const activeCategory = ref('all')
 const search = ref('')
 const shown = ref(PAGE_SIZE)
+// T-026：B站轮播数据。fetch 失败或为空 → 轮播模块整体不渲染（不留空壳）。
+const bili = ref([])
 
 onMounted(async () => {
-  const { entries: list, errors: errs } = await fetchAllEntries()
-  for (const e of list) e.category_zh = TAG_ZH[e.category] || ''
-  entries.value = list.sort((a, b) => (parseDate(b.published) || 0) - (parseDate(a.published) || 0))
-  errors.value = errs
+  // bili 与主列表并行（allSettled 口径）：bili 失败不影响主列表。
+  const [main, biliResult] = await Promise.allSettled([fetchAllEntries(), fetchBiliVideos()])
+  if (main.status === 'fulfilled') {
+    const { entries: list, errors: errs } = main.value
+    for (const e of list) e.category_zh = TAG_ZH[e.category] || ''
+    entries.value = list.sort((a, b) => (parseDate(b.published) || 0) - (parseDate(a.published) || 0))
+    errors.value = errs
+  } else {
+    errors.value = [`主列表加载失败：${main.reason.message}`]
+  }
+  if (biliResult.status === 'fulfilled') bili.value = biliResult.value
+  else console.warn(`bilibili 加载失败：${biliResult.reason.message}`)
   loading.value = false
 })
+
+// 轮播播放栏总量：合流时间倒序前 10 条（不足 10 按实际）
+const biliTop10 = computed(() =>
+  [...bili.value].sort((a, b) => (parseDate(b.published) || 0) - (parseDate(a.published) || 0)).slice(0, 10),
+)
 
 const lastUpdate = computed(() => (entries.value[0] ? formatDate(entries.value[0].published) : ''))
 
@@ -125,8 +141,10 @@ function selectCategory(name) {
     <p v-if="loading" class="hint">加载中…</p>
     <p v-for="e in errors" :key="e" class="hint error">{{ e }}</p>
 
-    <!-- 首页：赛季（资讯源）卡片（含最新消息小窗） + 热门流派（官方标签） -->
+    <!-- 首页：B站轮播（数据为空不渲染） + 赛季（资讯源）卡片（含最新消息小窗） + 热门流派（官方标签） -->
     <template v-if="!loading && view === 'home'">
+      <BiliCarousel v-if="biliTop10.length" :items="biliTop10" />
+
       <section class="section">
         <h2 class="section-title">资讯源 <span class="count">{{ sourceStats.length }}</span></h2>
         <div class="leagues">

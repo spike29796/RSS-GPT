@@ -46,3 +46,26 @@ export async function fetchAllEntries() {
   })
   return { entries, errors }
 }
+
+// B站轮播数据（T-026 消费侧口径，T-025 产出）。 Record shape:
+// {bvid, link, title, cover, up_name, uid, published}（全 string，published RFC 2822）。
+// 不进 SOURCES：B站不是资讯源。 Per-line tolerance same as fetchSource;
+// fetch/parse failure throws so the caller can treat it as "module hidden".
+export async function fetchBiliVideos() {
+  const url = `${import.meta.env.BASE_URL}bilibili.jsonl`
+  const resp = await fetch(url)
+  if (!resp.ok) throw new Error(`bilibili: HTTP ${resp.status}`)
+  const text = await resp.text()
+  const entries = []
+  text
+    .split('\n')
+    .filter((line) => line.trim())
+    .forEach((line, i) => {
+      try {
+        entries.push(JSON.parse(line))
+      } catch (e) {
+        console.warn(`bilibili: line ${i + 1} skipped, bad JSON: ${e.message}`)
+      }
+    })
+  return entries
+}
