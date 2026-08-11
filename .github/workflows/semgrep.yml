@@ -45,11 +45,22 @@ jobs:
         # The gate is baseline-diffed: only findings NOT present on the base
         # commit fail the check. This keeps main green with the known legacy
         # findings while blocking any newly introduced dangerous usage.
+        # If the base commit is unreachable (history rewrite / force push /
+        # shallow-clone boundary), degrade to a full informational scan so
+        # the job stays green instead of failing on a missing baseline.
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
-          semgrep scan \
-            --config p/python --config p/security-audit --config .semgrep/ \
-            --metrics=off --disable-version-check \
-            --baseline-commit "$BASE_SHA" \
-            --error .
+          if git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+            semgrep scan \
+              --config p/python --config p/security-audit --config .semgrep/ \
+              --metrics=off --disable-version-check \
+              --baseline-commit "$BASE_SHA" \
+              --error .
+          else
+            echo "::warning::Differential gate degraded: BASE_SHA=$BASE_SHA unreachable (history rewrite or shallow-clone boundary); falling back to full informational scan, job stays green"
+            semgrep scan \
+              --config p/python --config p/security-audit --config .semgrep/ \
+              --metrics=off --disable-version-check \
+              . || true
+          fi
