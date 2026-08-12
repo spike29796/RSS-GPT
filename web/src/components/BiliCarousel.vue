@@ -1,6 +1,6 @@
 <script setup>
-// T-026 B站轮播：主区无边框封面大图自动轮播 + 两侧隐形滑动键 + 标题压底 +
-// 右侧缩略区（当前条目之后 3 条，取模循环）。
+// T-027 B站轮播紧凑化：主区无边框封面大图自动轮播（高 ≤320px）+ 两侧隐形滑动键 + 标题压底 +
+// 右侧缩略区 9 条（当前条目之后 9 条，取模循环，主区 1 + 侧窗 9 = top10 全露）。
 // sanitize 口径：title/up_name 一律文本插值（禁 v-html），链接一律过 safeLink()。
 // 主题：只用既有 CSS 变量，不加新主题。
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -13,7 +13,7 @@ const props = defineProps({
 })
 
 const INTERVAL_MS = 4000 // 自动轮播间隔 4 秒（验收 1 要求 3-5s 区间，取 4s）
-const THUMB_COUNT = 3 // 侧边缩略区条数（验收 4：施工定，取 3）
+const THUMB_COUNT = 9 // 侧边缩略区条数（主区 1 + 侧窗 9 = top10 全露）
 
 const current = ref(0)
 let timer = null
@@ -107,7 +107,7 @@ onBeforeUnmount(stopTimer)
         <span class="bc-zone right"><button class="bc-nav" aria-label="下一条" @click="go(1)">›</button></span>
       </div>
 
-      <!-- 侧边缩略区：当前条目之后 3 条，点击切换主区 -->
+      <!-- 侧边缩略区：当前条目之后 9 条，点击切换主区 -->
       <div v-if="thumbs.length" class="bc-thumbs">
         <button
           v-for="t in thumbs"
@@ -139,13 +139,13 @@ onBeforeUnmount(stopTimer)
   align-items: stretch;
 }
 
-/* 主区：桌面 16:9 且 ≤480px；宽度撑满剩余空间（容器全宽 = 首页四卡行宽） */
+/* 主区：桌面 16:9 且 ≤320px；宽度撑满剩余空间（容器全宽 = 首页四卡行宽） */
 .bc-main {
   position: relative;
   flex: 1 1 auto;
   min-width: 0;
   aspect-ratio: 16 / 9;
-  max-height: 480px;
+  max-height: 320px;
   border-radius: 8px;
   overflow: hidden;
   background: var(--card-2);
@@ -240,12 +240,12 @@ onBeforeUnmount(stopTimer)
   opacity: 1;
 }
 
-/* 侧边缩略区：紧邻主区右侧，3 格纵排 */
+/* 侧边缩略区：紧邻主区右侧，9 格纵排均分主区高度 */
 .bc-thumbs {
-  flex: 0 0 240px;
+  flex: 0 0 160px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 .bc-thumb {
   position: relative;
@@ -283,7 +283,7 @@ onBeforeUnmount(stopTimer)
   padding: 14px 8px 5px;
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.72));
   color: #fff;
-  font-size: 12px;
+  font-size: 11px;
   text-align: left;
   white-space: nowrap;
   overflow: hidden;
@@ -291,7 +291,7 @@ onBeforeUnmount(stopTimer)
   pointer-events: none;
 }
 
-/* 手机宽度（对齐 .list 的 700px 断点）：缩略区移至主区下方横排；任何宽度不横向滚动 */
+/* 手机宽度（对齐 .list 的 700px 断点）：缩略区移至主区下方横排折行；任何宽度不横向滚动 */
 @media (max-width: 699px) {
   .bc-row {
     flex-direction: column;
@@ -299,10 +299,15 @@ onBeforeUnmount(stopTimer)
   .bc-thumbs {
     flex: none;
     flex-direction: row;
+    flex-wrap: wrap;
   }
   .bc-thumb {
-    flex: 1 1 0;
+    flex: 1 1 60px;
+    max-width: calc(25% - 4.5px);
     aspect-ratio: 16 / 9;
+  }
+  .bc-thumb-title {
+    display: none;
   }
   .bc-title {
     font-size: 14px;
