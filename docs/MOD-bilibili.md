@@ -55,5 +55,5 @@ B站 up 主正式投稿的采集、数据格式与首页轮播消费链路。零
 
 ## 溯源
 
-工单 `docs/T-025.md`、`docs/T-026.md`（含 WBI 签名全参数契约与组长实测记录）；
+工单 `共享区 tickets/T-025.md`、`共享区 tickets/T-026.md`（含 WBI 签名全参数契约与组长实测记录）；
 证据 `D:\vibe-coding\factory-shared\artifacts\T-025\`、`T-026\`。

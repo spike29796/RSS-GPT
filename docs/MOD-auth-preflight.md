@@ -37,5 +37,5 @@ py test/preflight_github_auth.py
 
 ## 溯源
 
-工单 `docs/T-023.md`；验收证据 `D:\vibe-coding\factory-shared\artifacts\T-023\`；
+工单 `共享区 tickets/T-023.md`；验收证据 `D:\vibe-coding\factory-shared\artifacts\T-023\`；
 T-021 仓库瘦身操作中的凭据/代理纪律同口径。
