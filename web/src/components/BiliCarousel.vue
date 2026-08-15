@@ -136,16 +136,16 @@ onBeforeUnmount(stopTimer)
   display: flex;
   gap: 12px;
   margin-top: 12px;
-  align-items: stretch;
+  align-items: center;
+  width: calc(100% / 1.5);
 }
 
-/* 主区：桌面 16:9 且 ≤320px；宽度撑满剩余空间（容器全宽 = 首页四卡行宽） */
+/* 主区：桌面 16:9 定高 213px（宽 ≈379px），在 312px 行高内垂直居中 */
 .bc-main {
   position: relative;
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 0 0 auto;
+  height: 213px;
   aspect-ratio: 16 / 9;
-  max-height: 320px;
   border-radius: 8px;
   overflow: hidden;
   background: var(--card-2);
@@ -240,17 +240,16 @@ onBeforeUnmount(stopTimer)
   opacity: 1;
 }
 
-/* 侧边缩略区：紧邻主区右侧，9 格纵排均分主区高度 */
+/* 侧边缩略区：紧邻主区右侧，9 格 100×100 方形 grid 排 4 列（4+4+1，418×312 撑出行高） */
 .bc-thumbs {
-  flex: 0 0 160px;
-  display: flex;
-  flex-direction: column;
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 100px);
+  grid-auto-rows: 100px;
   gap: 6px;
 }
 .bc-thumb {
   position: relative;
-  flex: 1 1 0;
-  min-height: 0;
   padding: 0;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -285,26 +284,33 @@ onBeforeUnmount(stopTimer)
   color: #fff;
   font-size: 11px;
   text-align: left;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
   pointer-events: none;
 }
 
-/* 手机宽度（对齐 .list 的 700px 断点）：缩略区移至主区下方横排折行；任何宽度不横向滚动 */
+/* 手机宽度（对齐 .list 的 700px 断点）：行恢复满宽，缩略区移至主区下方横排折行；任何宽度不横向滚动 */
 @media (max-width: 699px) {
   .bc-row {
     flex-direction: column;
+    width: 100%;
+  }
+  .bc-main {
+    width: 100%;
+    height: auto;
   }
   .bc-thumbs {
-    flex: none;
+    display: flex;
     flex-direction: row;
     flex-wrap: wrap;
+    height: auto;
   }
   .bc-thumb {
-    flex: 1 1 60px;
+    flex: 1 1 calc(25% - 4.5px);
     max-width: calc(25% - 4.5px);
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 1 / 1;
   }
   .bc-thumb-title {
     display: none;
