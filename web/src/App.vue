@@ -2,15 +2,15 @@
 import { computed, onMounted, ref } from 'vue'
 import Fuse from 'fuse.js'
 import { SOURCES, fetchAllEntries, fetchBiliVideos } from './api.js'
-import { parseDate, formatDate, formatShort, isToday } from './format.js'
+import { parseDate, formatDate, isToday } from './format.js'
 import { ui, toggleTheme, toggleZh } from './store.js'
 import { TAG_ZH, tagLabel } from './i18n.js'
-import { safeLink } from './sanitize.js'
 import EntryCard from './components/EntryCard.vue'
 import BiliCarousel from './components/BiliCarousel.vue'
+import SourceCard from './components/SourceCard.vue'
 
 const PAGE_SIZE = 50
-const PREVIEW_SIZE = 4
+const CARD_LIST_SIZE = 20
 
 const entries = ref([])
 const errors = ref([])
@@ -59,7 +59,7 @@ const sourceStats = computed(() =>
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
       .map(([category, count]) => ({ category, count, pct: list.length ? Math.round((count / list.length) * 100) : 0 }))
-    return { ...s, total: list.length, top, latest: list.slice(0, PREVIEW_SIZE), todayCount: list.filter((e) => isToday(e.published)).length }
+    return { ...s, total: list.length, top, latest: list.slice(0, CARD_LIST_SIZE), todayCount: list.filter((e) => isToday(e.published)).length }
   }),
 )
 
@@ -96,10 +96,6 @@ const filtered = computed(() => {
 })
 
 const visible = computed(() => filtered.value.slice(0, shown.value))
-
-function displayTitle(e) {
-  return ui.showZh ? e.title_zh || e.title : e.title
-}
 
 function openList(source = 'all', category = 'all') {
   activeSource.value = source
@@ -148,39 +144,7 @@ function selectCategory(name) {
       <section class="section">
         <h2 class="section-title">资讯源 <span class="count">{{ sourceStats.length }}</span></h2>
         <div class="leagues">
-          <div
-            v-for="s in sourceStats"
-            :key="s.name"
-            class="league-card"
-            :style="{ borderLeftColor: s.accent }"
-          >
-            <button class="league-head" @click="openList(s.name)">
-              <span class="league-letter" :style="{ background: s.accent }">{{ s.league }}</span>
-              <span class="league-body">
-                <span class="league-name">{{ s.label }}</span>
-                <span class="league-total">{{ s.total }} 条</span>
-              </span>
-              <span class="today-badge" :class="{ zero: s.todayCount === 0 }">
-                {{ s.todayCount > 0 ? `今天 +${s.todayCount}` : '今天无新消息' }}
-              </span>
-              <span class="chevron">›</span>
-            </button>
-            <div class="preview">
-              <a
-                v-for="e in s.latest"
-                :key="e.link"
-                class="preview-item"
-                :href="safeLink(e.link)"
-                target="_blank"
-                rel="noopener"
-              >
-                <span class="preview-date">
-                  <em v-if="isToday(e.published)" class="new-dot">NEW</em>{{ formatShort(e.published) }}
-                </span>
-                <span class="preview-title">{{ displayTitle(e) }}</span>
-              </a>
-            </div>
-          </div>
+          <SourceCard v-for="s in sourceStats" :key="s.name" :s="s" @open="openList" />
         </div>
       </section>
 
@@ -366,123 +330,14 @@ body {
 
 .leagues {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 24px;
   margin-top: 12px;
 }
-.league-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--dim);
-  border-radius: 6px;
-  overflow: hidden;
-}
-.league-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  background: none;
-  border: none;
-  padding: 14px 16px;
-  color: inherit;
-  cursor: pointer;
-  text-align: left;
-  font-size: 14px;
-  transition: background 0.15s;
-}
-.league-head:hover {
-  background: var(--card-hover);
-}
-.league-letter {
-  width: 30px;
-  height: 30px;
-  border-radius: 4px;
-  background: var(--dim);
-  color: var(--accent-contrast);
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.league-body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.league-name {
-  font-weight: 600;
-}
-.league-total {
-  font-size: 12px;
-  color: var(--dim);
-}
-.today-badge {
-  margin-left: auto;
-  flex-shrink: 0;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--accent-contrast);
-  background: var(--accent);
-  border-radius: 999px;
-  padding: 3px 10px;
-}
-.today-badge.zero {
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--dim);
-  font-weight: 400;
-}
-.chevron {
-  color: var(--dim);
-  font-size: 18px;
-}
-.preview {
-  border-top: 1px solid var(--border);
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.preview-item {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  padding: 7px 8px;
-  border-radius: 4px;
-  text-decoration: none;
-  color: inherit;
-  line-height: 1.5;
-}
-.preview-item:hover {
-  background: var(--card-hover);
-}
-.preview-date {
-  flex-shrink: 0;
-  width: 108px;
-  font-size: 11px;
-  color: var(--dim);
-  font-variant-numeric: tabular-nums;
-}
-.new-dot {
-  display: inline-block;
-  font-style: normal;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--accent-contrast);
-  background: var(--accent);
-  border-radius: 3px;
-  padding: 0 4px;
-  margin-right: 5px;
-}
-.preview-title {
-  color: var(--text);
-  font-size: 13px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+@media (max-width: 700px) {
+  .leagues {
+    grid-template-columns: 1fr;
+  }
 }
 
 .classes {
