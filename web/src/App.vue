@@ -8,6 +8,7 @@ import { TAG_ZH, tagLabel } from './i18n.js'
 import EntryCard from './components/EntryCard.vue'
 import BiliCarousel from './components/BiliCarousel.vue'
 import SourceCard from './components/SourceCard.vue'
+import BiliDetailItem from './components/BiliDetailItem.vue'
 
 const PAGE_SIZE = 50
 const CARD_LIST_SIZE = 20
@@ -15,7 +16,7 @@ const CARD_LIST_SIZE = 20
 const entries = ref([])
 const errors = ref([])
 const loading = ref(true)
-const view = ref('home') // 'home' | 'list'
+const view = ref('home') // 'home' | 'list' | 'bili'
 const activeSource = ref('all')
 const activeCategory = ref('all')
 const search = ref('')
@@ -43,6 +44,17 @@ onMounted(async () => {
 const biliTop10 = computed(() =>
   [...bili.value].sort((a, b) => (parseDate(b.published) || 0) - (parseDate(a.published) || 0)).slice(0, 10),
 )
+
+// B站详情页全量：时间倒序，数量=实际 bili 数据（T-035）
+const biliList = computed(() =>
+  [...bili.value].sort((a, b) => (parseDate(b.published) || 0) - (parseDate(a.published) || 0)),
+)
+
+// B站详情页裂图兜底记录（与轮播同口径，按 bvid；实际渲染由 BiliDetailItem 局部 err 管理，契约 C）
+const biliBroken = ref({})
+function biliCoverError(v) {
+  biliBroken.value = { ...biliBroken.value, [v.bvid]: true }
+}
 
 const lastUpdate = computed(() => (entries.value[0] ? formatDate(entries.value[0].published) : ''))
 
@@ -105,6 +117,11 @@ function openList(source = 'all', category = 'all') {
   view.value = 'list'
 }
 
+// B站源卡入口（T-035）：B站不是 SOURCES，不重设 activeSource
+function openBili() {
+  view.value = 'bili'
+}
+
 function goHome() {
   view.value = 'home'
 }
@@ -145,6 +162,14 @@ function selectCategory(name) {
         <h2 class="section-title">资讯源 <span class="count">{{ sourceStats.length }}</span></h2>
         <div class="leagues">
           <SourceCard v-for="s in sourceStats" :key="s.name" :s="s" @open="openList" />
+          <button v-if="bili.length" class="bili-source-card" @click="openBili">
+            <span class="league-letter" style="background: #00a1d6">B</span>
+            <span class="league-body">
+              <span class="league-name">哔哩哔哩</span>
+              <span class="league-total">{{ bili.length }} 条</span>
+            </span>
+            <span class="chevron">›</span>
+          </button>
         </div>
       </section>
 
@@ -215,6 +240,15 @@ function selectCategory(name) {
             加载更多（{{ filtered.length - shown }} 条剩余）
           </button>
         </main>
+      </div>
+    </template>
+
+    <!-- B站详情页：标题原文 + 150×100 封面，无导读无翻译 -->
+    <template v-if="view === 'bili'">
+      <button class="home-btn" @click="goHome">‹ 首页</button>
+      <h2 class="section-title">哔哩哔哩 · 精选投稿 <span class="count">{{ biliList.length }}</span></h2>
+      <div class="bili-grid">
+        <BiliDetailItem v-for="v in biliList" :key="v.bvid" :item="v" />
       </div>
     </template>
 
@@ -337,6 +371,71 @@ body {
 @media (max-width: 700px) {
   .leagues {
     grid-template-columns: 1fr;
+  }
+}
+
+/* T-035 B站源卡（.leagues grid 内，仿 T-031 SourceCard 卡头视觉；内部类名带前缀限定，不碰 SourceCard scoped） */
+.bili-source-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: 14px;
+  color: inherit;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+}
+.bili-source-card:hover {
+  background: var(--card-hover);
+}
+.bili-source-card .league-letter {
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  background: var(--dim);
+  color: var(--accent-contrast);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.bili-source-card .league-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.bili-source-card .league-name {
+  font-weight: 600;
+}
+.bili-source-card .league-total {
+  font-size: 12px;
+  color: var(--dim);
+}
+.bili-source-card .chevron {
+  margin-left: auto;
+  color: var(--dim);
+  font-size: 18px;
+}
+
+/* T-035 B站详情页网格 */
+.bili-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+@media (max-width: 699px) {
+  .bili-grid {
+    grid-template-columns: 1fr;
+  }
+  .bili-source-card {
+    width: 100%;
   }
 }
 
