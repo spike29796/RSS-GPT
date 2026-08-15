@@ -132,7 +132,7 @@ function selectCategory(name) {
     <p v-if="loading" class="hint">加载中…</p>
     <p v-for="e in errors" :key="e" class="hint error">{{ e }}</p>
 
-    <!-- 首页：B站轮播（数据为空不渲染） + 赛季（资讯源）卡片（含最新消息小窗） + 热门流派（官方标签） -->
+    <!-- 首页：B站轮播（数据为空不渲染） + 赛季（资讯源）卡片（含最新消息小窗） -->
     <template v-if="!loading && view === 'home'">
       <BiliCarousel v-if="biliTop10.length" :items="biliTop10" />
 
