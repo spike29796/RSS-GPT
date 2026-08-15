@@ -228,6 +228,11 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
+/* 预览卡容器：display:contents 让卡直接参与 .cf-stage 绝对定位布局（不能 none，否则预览卡全藏） */
+.cf-deck {
+  display: contents;
+}
+
 /* 预览卡点击区：撑满卡面 */
 .cf-peek {
   display: block;
