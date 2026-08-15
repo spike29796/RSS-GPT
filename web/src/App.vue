@@ -652,22 +652,18 @@ body {
 }
 
 .list {
-  columns: 1;
-  column-gap: 12px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
 }
 @media (min-width: 700px) {
   .list {
-    columns: 2;
-  }
-}
-@media (min-width: 1200px) {
-  .list {
-    columns: 3;
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 .list > .hint,
 .list > .more {
-  column-span: all;
+  grid-column: 1 / -1;
 }
 .hint {
   color: var(--dim);
