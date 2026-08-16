@@ -2,16 +2,17 @@
 import { ref } from 'vue'
 import { safeLink } from '../sanitize.js'
 
-defineProps({
+const props = defineProps({
   item: { type: Object, required: true },
 })
+const emit = defineEmits(['play']) // T-037：条目点击就地弹播放器
 
 // 单条裂图兜底：封面加载失败渲染占位块（居中标题），不显示浏览器裂图图标
 const err = ref(false)
 </script>
 
 <template>
-  <a class="bili-item" :href="safeLink(item.link)" target="_blank" rel="noopener">
+  <a class="bili-item" :href="safeLink(item.link)" @click.prevent="emit('play', item)">
     <span class="bili-thumb">
       <img
         v-if="!err"

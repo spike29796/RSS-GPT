@@ -9,6 +9,7 @@ import EntryCard from './components/EntryCard.vue'
 import BiliCarousel from './components/BiliCarousel.vue'
 import SourceCard from './components/SourceCard.vue'
 import BiliDetailItem from './components/BiliDetailItem.vue'
+import PlayerOverlay from './components/PlayerOverlay.vue'
 
 const PAGE_SIZE = 50
 const CARD_LIST_SIZE = 20
@@ -113,6 +114,16 @@ function openBili() {
   view.value = 'bili'
 }
 
+// T-037：B站视频就地播放——playerBvid 非空时挂官方 iframe 遮罩。
+// 契约 B2/C2 emit('play', item) 传条目对象，此处抽 item.bvid 字符串给遮罩（白名单校验入口）
+const playerBvid = ref(null)
+function openPlayer(item) {
+  playerBvid.value = item.bvid
+}
+function closePlayer() {
+  playerBvid.value = null
+}
+
 function goHome() {
   view.value = 'home'
 }
@@ -147,7 +158,7 @@ function selectCategory(name) {
 
     <!-- 首页：B站轮播（数据为空不渲染） + 赛季（资讯源）卡片（含最新消息小窗） -->
     <template v-if="!loading && view === 'home'">
-      <BiliCarousel v-if="biliTop10.length" :items="biliTop10" />
+      <BiliCarousel v-if="biliTop10.length" :items="biliTop10" @play="openPlayer" />
 
       <section class="section">
         <h2 class="section-title">资讯源 <span class="count">{{ sourceStats.length }}</span></h2>
@@ -218,7 +229,7 @@ function selectCategory(name) {
       <button class="home-btn" @click="goHome">‹ 首页</button>
       <h2 class="section-title">哔哩哔哩 · 精选投稿 <span class="count">{{ biliList.length }}</span></h2>
       <div class="bili-grid">
-        <BiliDetailItem v-for="v in biliList" :key="v.bvid" :item="v" />
+        <BiliDetailItem v-for="v in biliList" :key="v.bvid" :item="v" @play="openPlayer" />
       </div>
     </template>
 
@@ -227,6 +238,9 @@ function selectCategory(name) {
       <a v-for="s in SOURCES" :key="s.name" :href="`${s.name}.xml`">{{ s.label }}</a>
       <a href="feeds.html">全部源</a>
     </footer>
+
+    <!-- T-037：B站视频就地播放遮罩（fixed，不受布局影响） -->
+    <PlayerOverlay v-if="playerBvid" :bvid="playerBvid" @close="closePlayer" />
   </div>
 </template>
 

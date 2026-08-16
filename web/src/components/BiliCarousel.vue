@@ -10,6 +10,7 @@ const props = defineProps({
   // 合流时间倒序前 10 条（App.vue top10 computed 传入；不足 10 按实际）
   items: { type: Array, required: true },
 })
+const emit = defineEmits(['play']) // T-037：主卡点击就地弹播放器（预览卡仍切主区）
 
 // ---- 契约 A — 常量与几何定案（round-2 施工定值）----
 const INTERVAL_MS = 4000 // 自动轮播间隔 4 秒
@@ -144,8 +145,7 @@ onBeforeUnmount(() => {
           v-if="mainCard.item"
           class="bc-cover"
           :href="safeLink(mainCard.item.link)"
-          target="_blank"
-          rel="noopener"
+          @click.prevent="emit('play', mainCard.item)"
         >
           <div v-if="broken[mainCard.item.bvid]" class="bc-fallback">{{ mainCard.item.title }}</div>
           <img
