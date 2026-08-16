@@ -47,6 +47,21 @@
 
 > 前端改动后：在 `web/` 跑 `npm run build`，产物落到 `RSS-GPT/docs/`，随 commit 推送后 Pages 自动更新。
 
+### 本地跑（接本地 LLM）
+
+想用**本地 LLM**（Ollama / LM Studio 等 OpenAI 兼容端点）在**自己机器**上采集：
+
+```bash
+cd RSS-GPT
+cp .env.example .env          # Windows: copy .env.example .env
+# 编辑 .env：填 OPENAI_BASE_URL（如 http://127.0.0.1:11434/v1）、CUSTOM_MODEL、OPENAI_API_KEY（本地可留空）、U_NAME
+pip install -r requirements.txt
+python run_local.py            # 跑管线 + 提交 docs/（加 --push 自动推送到 origin）
+```
+
+- `.env` 已被 gitignore，密钥不进仓库
+- GitHub Actions 的 cron-job 已改手动触发（云端连不到 localhost 的本地 LLM）
+
 ## 📄 许可
 
 MIT（见 [RSS-GPT/LICENSE](RSS-GPT/LICENSE)）
