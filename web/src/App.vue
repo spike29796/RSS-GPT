@@ -58,20 +58,11 @@ function biliCoverError(v) {
 
 const lastUpdate = computed(() => (entries.value[0] ? formatDate(entries.value[0].published) : ''))
 
-// Per-source stats for the league cards (with latest-entry preview) and the
-// top-classes grid.
+// Per-source stats for the league cards (with latest-entry preview).
 const sourceStats = computed(() =>
   SOURCES.map((s) => {
     const list = entries.value.filter((e) => e.source === s.name)
-    const counts = {}
-    for (const e of list) {
-      if (e.category) counts[e.category] = (counts[e.category] || 0) + 1
-    }
-    const top = Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([category, count]) => ({ category, count, pct: list.length ? Math.round((count / list.length) * 100) : 0 }))
-    return { ...s, total: list.length, top, latest: list.slice(0, CARD_LIST_SIZE), todayCount: list.filter((e) => isToday(e.published)).length }
+    return { ...s, total: list.length, latest: list.slice(0, CARD_LIST_SIZE), todayCount: list.filter((e) => isToday(e.published)).length }
   }),
 )
 
@@ -154,7 +145,7 @@ function selectCategory(name) {
     <p v-if="loading" class="hint">加载中…</p>
     <p v-for="e in errors" :key="e" class="hint error">{{ e }}</p>
 
-    <!-- 首页：B站轮播（数据为空不渲染） + 赛季（资讯源）卡片（含最新消息小窗） + 热门流派（官方标签） -->
+    <!-- 首页：B站轮播（数据为空不渲染） + 赛季（资讯源）卡片（含最新消息小窗） -->
     <template v-if="!loading && view === 'home'">
       <BiliCarousel v-if="biliTop10.length" :items="biliTop10" />
 
@@ -173,27 +164,6 @@ function selectCategory(name) {
         </div>
       </section>
 
-      <section class="section">
-        <h2 class="section-title">热门分类</h2>
-        <div class="classes">
-          <div v-for="s in sourceStats" :key="s.name" class="class-col">
-            <div class="class-head">
-              <span class="class-source" :style="{ color: s.accent }">{{ s.label }}</span>
-              <button class="see-all" @click="openList(s.name)">查看全部 ›</button>
-            </div>
-            <button
-              v-for="t in s.top"
-              :key="t.category"
-              class="class-row"
-              @click="openList(s.name, t.category)"
-            >
-              <span class="class-name">{{ tagLabel(t.category, ui.showZh) }}</span>
-              <span class="class-pct" :style="{ color: s.accent }">{{ t.count }} 条 · {{ t.pct }}%</span>
-            </button>
-            <p v-if="s.top.length === 0" class="class-empty">暂无数据</p>
-          </div>
-        </div>
-      </section>
     </template>
 
     <!-- 列表视图：两列卡片 + 右侧标签控制面板 -->
@@ -437,65 +407,6 @@ body {
   .bili-source-card {
     width: 100%;
   }
-}
-
-.classes {
-  display: grid;
-  /* Same tracks as .leagues so each class panel lines up under its source card */
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 10px;
-  margin-top: 12px;
-}
-.class-col {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px 14px;
-}
-.class-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-.class-source {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-.see-all {
-  background: none;
-  border: none;
-  color: var(--accent);
-  font-size: 12px;
-  cursor: pointer;
-  padding: 0;
-}
-.class-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  background: var(--card-2);
-  border: 1px solid var(--border-2);
-  border-radius: 4px;
-  padding: 8px 10px;
-  margin-bottom: 6px;
-  color: inherit;
-  font-size: 13px;
-  cursor: pointer;
-}
-.class-row:hover {
-  background: var(--card-hover);
-}
-.class-pct {
-  font-size: 12px;
-}
-.class-empty {
-  color: var(--dim);
-  font-size: 12px;
-  margin: 4px 0;
 }
 
 /* 列表视图：左卡片两列 + 右侧控制面板 */
