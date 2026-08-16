@@ -131,6 +131,10 @@ function title(e) {
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.sc-scroll::-webkit-scrollbar {
+  display: none;
 }
 .preview-item {
   display: flex;
