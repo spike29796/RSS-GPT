@@ -69,3 +69,12 @@ MIT（见 [RSS-GPT/LICENSE](RSS-GPT/LICENSE)）
 ---
 
 > 本仓库由 [yinan-c/RSS-GPT](https://github.com/yinan-c/RSS-GPT) 深度定制而来：新增 Vue3 聚合前端、B站采集与轮播/详情页/就地播放、双语主题、模糊搜索等。
+
+- https://openai.com/news/rss.xml -> https://None.github.io/RSS-GPT/openai-news.xml
+- https://www.qbitai.com/feed -> https://None.github.io/RSS-GPT/qbitai.xml
+- https://simonwillison.net/atom/everything/ -> https://None.github.io/RSS-GPT/simonwillison.xml
+- https://www.geekpark.net/rss -> https://None.github.io/RSS-GPT/geekpark.xml
+- https://www.ithome.com/rss/ -> https://None.github.io/RSS-GPT/ithome.xml
+- https://www.producthunt.com/feed -> https://None.github.io/RSS-GPT/producthunt.xml
+- https://www.infoq.cn/feed -> https://None.github.io/RSS-GPT/infoq.xml
+- https://blogs.nvidia.com/feed/ -> https://None.github.io/RSS-GPT/nvidia-blog.xml

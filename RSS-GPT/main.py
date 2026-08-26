@@ -866,8 +866,7 @@ def append_readme(readme, links):
     with open(readme, 'w', encoding='utf-8') as f:
         f.writelines(readme_lines)
 
-append_readme("README.md", links)
-append_readme("README-zh.md", links)
+append_readme("../README.md", links)
 
 # Rendering the RSS link-list page for GitHub Pages. Since phase 3 the site
 # entry page docs/index.html is the Vue app's build artifact, so this list is
