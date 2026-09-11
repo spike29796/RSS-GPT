@@ -2,15 +2,14 @@
 // Record shape: {link, title, published, updated, category, summary, content}
 
 export const SOURCES = [
-  { name: 'openai-news', label: 'OpenAI News', league: 'A', accent: '#7fd4a8' },
-  { name: 'claude-blog', label: 'Claude Blog', league: 'B', accent: '#d97757' },
-  { name: 'google-blog', label: 'Google Blog', league: 'C', accent: '#4285f4' },
-  { name: 'deepseek-news', label: 'DeepSeek News', league: 'D', accent: '#06b6d4' },
-  { name: 'kimi-blog', label: 'Kimi Blog', league: 'E', accent: '#8b5cf6' },
-  { name: 'microsoft-blog', label: 'Microsoft Blog', league: 'F', accent: '#38bdf8' },
-  { name: 'apple-newsroom', label: 'Apple Newsroom', league: 'G', accent: '#d4d4d8' },
-  { name: 'spacex-updates', label: 'SpaceX Updates', league: 'H', accent: '#f43f5e' },
-  { name: 'nvidia-blog', label: 'NVIDIA Blog', league: 'I', accent: '#76b900' },
+  { name: 'qbitai', label: '量子位 QbitAI', league: 'A', accent: '#4f46e5' },
+  { name: 'geekpark', label: '极客公园 GeekPark', league: 'B', accent: '#ef4444' },
+  { name: 'ithome', label: 'IT之家 ITHome', league: 'C', accent: '#f59e0b' },
+  { name: 'producthunt', label: 'Product Hunt', league: 'D', accent: '#da552f' },
+  { name: 'infoq', label: 'InfoQ 中文', league: 'E', accent: '#0ea5e9' },
+  { name: 'simonwillison', label: 'Simon Willison', league: 'F', accent: '#22c55e' },
+  { name: 'nvidia-blog', label: 'NVIDIA Blog', league: 'G', accent: '#76b900' },
+  { name: 'openai-news', label: 'OpenAI News', league: 'H', accent: '#7fd4a8' },
 ]
 
 async function fetchSource(source) {
