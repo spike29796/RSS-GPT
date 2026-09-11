@@ -302,6 +302,27 @@ def get_default_category(sec=None):
 SUMMARY_MARKERS = ('<br><br>总结:', '<br><br>Summary:')
 
 
+def strip_tags(s):
+    """去掉文本里残留的 HTML 标签（模型偶尔把 <br> 写进标题翻译行）。
+
+    2026-09-11：站点出现「标题 = <br>xxx」的脏数据，根因是 title_zh 只做了
+    前缀 strip、没清标签。这里统一收口。
+    """
+    return re.sub(r'<[^>]+>', ' ', str(s or '')).strip()
+
+
+def summary_body(summary):
+    """返回摘要里去掉格式标记后的正文。
+
+    只输出标记（如 "<br><br>总结:"）而无正文 = 模型半成品，调用方应视为失败
+    并重试，而不是把空壳写进数据层。
+    """
+    body = str(summary or '')
+    for m in SUMMARY_MARKERS:
+        body = body.replace(m, '')
+    return strip_tags(body).strip()
+
+
 def normalize_summary(summary):
     """Ensure the summary starts with the '<br><br>总结:' marker.
 
@@ -309,6 +330,7 @@ def normalize_summary(summary):
     (e.g. "指南内容<br><br>总结:"); reorder so the frontend always gets the
     marker-first form. Missing markers are prepended.
     """
+    summary = strip_tags(summary)
     for marker in SUMMARY_MARKERS:
         if marker in summary:
             if summary.startswith(marker):
@@ -319,7 +341,7 @@ def normalize_summary(summary):
 
 
 def parse_category_and_summary(text, categories, default_category):
-    """Split the model output into (category, summary).
+    """Split the model output into (category, summary, title_zh).
 
     The first non-empty line is expected to be the category and the rest is
     the summary. Any output that does not comply falls back to
@@ -333,13 +355,17 @@ def parse_category_and_summary(text, categories, default_category):
     candidate = re.sub(r'^(分类|类别|category)\s*[:：]?\s*', '', lines[0], flags=re.IGNORECASE).strip()
     if candidate in categories:
         summary = normalize_summary(lines[1]) if len(lines) > 1 else None
-        if not summary:
+        # 半成品（只有标记、没有正文）也当失败，交给上层重试
+        if not summary or not summary_body(summary):
             return candidate, None, None
         # Third line (optional): the translated title. Missing is acceptable
         # and does not trigger a retry.
         title_zh = None
         if len(lines) > 2:
-            title_zh = re.sub(r'^(标题|title)\s*[:：]?\s*', '', lines[2], flags=re.IGNORECASE).strip() or None
+            # 2026-09-11：必须清标签——模型有时把 <br> 写进这一行，
+            # 直接落库会在站点上显示成「<br>标题」
+            cleaned = strip_tags(re.sub(r'^(标题|title)\s*[:：]?\s*', '', lines[2], flags=re.IGNORECASE))
+            title_zh = cleaned or None
         return candidate, summary, title_zh
     return default_category, None, None
 
