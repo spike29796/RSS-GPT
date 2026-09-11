@@ -404,19 +404,35 @@ def parse_published(value):
         return None
 
 
-def entry_complete(record):
-    """条目是否已经"实质完整"——summary 有正文 且 译名是中文。
+def looks_like_title(tz, title):
+    """译名是否"像标题"——而不是一整句描述。
 
-    2026-09-11：旧判定只看字段是否存在（record.get('summary') and
-    record.get('title_zh')），结果 producthunt 这类源的"空壳摘要 +
-    英文原文塞进标题位"被当成已完成，backfill 永远不再处理它们。
+    2026-09-11：仅判断"含中文"不够，producthunt / simonwillison 的
+    title_zh 是整句中文描述（"xxx是一款……的集成开发环境，旨在……。"），
+    含中文且被判合格，于是 backfill 永远跳过它们，站点上"译"模式下
+    标题位就显示成了摘要。标题式译名的特征：短、无句末标点。
+    """
+    tz = str(tz or "").strip()
+    if not tz or not has_cjk(tz):
+        return False
+    if re.search(r'[。！？；!?;]\s*$', tz):
+        return False          # 以句末标点收尾 = 句子，不是标题
+    base = len(str(title or ""))
+    if len(tz) > max(40, base * 3):
+        return False          # 远长于原标题 = 多半是描述/摘要
+    return True
+
+
+def entry_complete(record):
+    """条目是否已经"实质完整"——summary 有正文 且 译名像标题。
+
+    2026-09-11 两次收紧：
+      ① 旧判定只看字段是否存在 → "空壳摘要 + 英文塞标题位"被当成完成；
+      ② 只看"含中文"也不够 → 整句中文描述同样蒙混过关。
     """
     if not summary_body(record.get('summary')):
         return False
-    tz = record.get('title_zh')
-    if not tz:
-        return False
-    return has_cjk(tz)
+    return looks_like_title(record.get('title_zh'), record.get('title'))
 
 
 

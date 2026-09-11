@@ -25,16 +25,23 @@ const date = computed(() => formatDate(props.entry.published))
 
 const hasCjk = (s) => /[\u4e00-\u9fff]/.test(String(s || ''))
 
-// 2026-09-11 修两处：
-// ① 原题已是中文时，永远显示原题 —— 中文标题不需要"翻译版"，
-//    之前 showZh 会拿 title_zh 覆盖它，把中文标题换成别的内容。
-// ② "译"模式下的译名必须真的含中文 —— 否则（如 producthunt 的
-//    title_zh 被写成英文描述）会把描述显示在标题位。
+// 2026-09-11：光"含中文"不够 —— producthunt/simonwillison 的 title_zh
+// 是整句中文描述（"xxx是一款……的集成开发环境，旨在……。"），照样蒙混过关，
+// 显示到标题位就成了摘要。译名必须"像标题"：短、无句末标点。
+const looksLikeTitle = (tz, title) => {
+  const s = String(tz || '').trim()
+  if (!s || !hasCjk(s)) return false
+  if (/[。！？；!?;]\s*$/.test(s)) return false
+  if (s.length > Math.max(40, String(title || '').length * 3)) return false
+  return true
+}
+
+// 原题已是中文时永远显示原题（中文标题不需要"翻译版"）
 const title = computed(() => {
   const e = props.entry
   if (!ui.showZh) return e.title
   if (hasCjk(e.title)) return e.title
-  if (e.title_zh && hasCjk(e.title_zh)) return e.title_zh
+  if (looksLikeTitle(e.title_zh, e.title)) return e.title_zh
   return e.title
 })
 const tag = computed(() => tagLabel(props.entry.category, ui.showZh))

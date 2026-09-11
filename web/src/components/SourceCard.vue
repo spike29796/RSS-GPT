@@ -11,13 +11,21 @@ defineEmits(['open'])
 
 const hasCjk = (s) => /[\u4e00-\u9fff]/.test(String(s || ''))
 
-// 2026-09-11：与 EntryCard 同规则——中文原标题永远优先；
-// "译"模式下只有【含中文】的 title_zh 才算有效译名，
-// 否则会把英文描述之类的内容显示到标题位。
+// 2026-09-11：与 EntryCard 同规则。仅"含中文"不够——整句中文描述
+// （而非标题翻译）会显示到标题位；要求译名短且无句末标点。
+const looksLikeTitle = (tz, title) => {
+  const s = String(tz || '').trim()
+  if (!s || !hasCjk(s)) return false
+  if (/[。！？；!?;]\s*$/.test(s)) return false
+  if (s.length > Math.max(40, String(title || '').length * 3)) return false
+  return true
+}
+
+// 中文原标题永远优先；"译"模式下只有"像标题"的译名才采用
 function title(e) {
   if (!ui.showZh) return e.title
   if (hasCjk(e.title)) return e.title
-  if (e.title_zh && hasCjk(e.title_zh)) return e.title_zh
+  if (looksLikeTitle(e.title_zh, e.title)) return e.title_zh
   return e.title
 }
 </script>
