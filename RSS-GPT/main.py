@@ -369,6 +369,27 @@ def parse_category_and_summary(text, categories, default_category):
         return candidate, summary, title_zh
     return default_category, None, None
 
+def has_cjk(s):
+    """文本里是否含中文字符（用于判断 title_zh 是不是真的译文）。"""
+    return bool(re.search(r'[\u4e00-\u9fff]', str(s or '')))
+
+
+def entry_complete(record):
+    """条目是否已经"实质完整"——summary 有正文 且 译名是中文。
+
+    2026-09-11：旧判定只看字段是否存在（record.get('summary') and
+    record.get('title_zh')），结果 producthunt 这类源的"空壳摘要 +
+    英文原文塞进标题位"被当成已完成，backfill 永远不再处理它们。
+    """
+    if not summary_body(record.get('summary')):
+        return False
+    tz = record.get('title_zh')
+    if not tz:
+        return False
+    return has_cjk(tz)
+
+
+
 def gpt_summary(query,model,language,categories,default_category,log_file=None):
     category_list = '、'.join(categories)
     # Input cap: a one-sentence guide needs the lead, not the full article.
@@ -725,7 +746,7 @@ def output(sec, language):
                     continue
                 if record['link'] in retry_marked:
                     continue  # already burned this run's attempts inline
-                if record.get('summary') and record.get('title_zh'):
+                if entry_complete(record):
                     # Completed by other means since it was queued: clear the
                     # record without spending an API call.
                     del retry_queue[record['link']]
@@ -739,7 +760,7 @@ def output(sec, language):
                     break
                 if record['link'] in queued_links or record['link'] in retry_marked:
                     continue
-                if record.get('summary') and record.get('title_zh'):
+                if entry_complete(record):
                     continue
                 try:
                     published = parsedate_to_datetime(record.get('published') or '')
