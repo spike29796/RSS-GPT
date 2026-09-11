@@ -383,6 +383,8 @@ def parse_published(value):
     解析抛 ValueError 后整条被 continue 跳过 —— 这两个源的历史条目
     因此永远补不上翻译/摘要。这里双格式兜底，统一返回 aware datetime。
     """
+    from email.utils import parsedate_to_datetime
+
     s = str(value or "").strip()
     if not s:
         return None
