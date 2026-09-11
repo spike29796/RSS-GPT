@@ -374,6 +374,34 @@ def has_cjk(s):
     return bool(re.search(r'[\u4e00-\u9fff]', str(s or '')))
 
 
+def parse_published(value):
+    """解析发布时间：RFC 2822 优先，ISO 8601 兜底。
+
+    2026-09-11：backfill 的时间窗口判断原先直接用 email.utils
+    .parsedate_to_datetime，而它只认 RFC 2822。producthunt /
+    simonwillison 的 feed 用 ISO 8601（2026-08-21T03:54:22-07:00），
+    解析抛 ValueError 后整条被 continue 跳过 —— 这两个源的历史条目
+    因此永远补不上翻译/摘要。这里双格式兜底，统一返回 aware datetime。
+    """
+    s = str(value or "").strip()
+    if not s:
+        return None
+    try:
+        dt = parsedate_to_datetime(s)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=datetime.timezone.utc)
+        return dt
+    except (TypeError, ValueError):
+        pass
+    try:
+        dt = datetime.datetime.fromisoformat(s.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=datetime.timezone.utc)
+        return dt
+    except (TypeError, ValueError):
+        return None
+
+
 def entry_complete(record):
     """条目是否已经"实质完整"——summary 有正文 且 译名是中文。
 
@@ -762,9 +790,8 @@ def output(sec, language):
                     continue
                 if entry_complete(record):
                     continue
-                try:
-                    published = parsedate_to_datetime(record.get('published') or '')
-                except (TypeError, ValueError):
+                published = parse_published(record.get('published'))
+                if published is None:
                     continue
                 if (now - published).days > backfill_days:
                     continue
