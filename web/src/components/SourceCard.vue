@@ -9,8 +9,16 @@ defineProps({
 
 defineEmits(['open'])
 
+const hasCjk = (s) => /[\u4e00-\u9fff]/.test(String(s || ''))
+
+// 2026-09-11：与 EntryCard 同规则——中文原标题永远优先；
+// "译"模式下只有【含中文】的 title_zh 才算有效译名，
+// 否则会把英文描述之类的内容显示到标题位。
 function title(e) {
-  return ui.showZh ? e.title_zh || e.title : e.title
+  if (!ui.showZh) return e.title
+  if (hasCjk(e.title)) return e.title
+  if (e.title_zh && hasCjk(e.title_zh)) return e.title_zh
+  return e.title
 }
 </script>
 

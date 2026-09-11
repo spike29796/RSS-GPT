@@ -16,12 +16,27 @@ const props = defineProps({
 const guideText = computed(() => {
   let s = props.entry.summary || ''
   s = s.replace(/^(<br\s*\/?>\s*)+/, '')
-  s = s.replace(/^(总结|Summary)[:：]/, '')
-  return sanitizeSummary(s)
+  // 2026-09-11：模型偶尔输出重复标记（"总结:总结: 正文"），要循环剥掉
+  s = s.replace(/^((总结|Summary)\s*[:：]\s*)+/, '')
+  return sanitizeSummary(s.trim())
 })
 const entryLink = computed(() => safeLink(props.entry.link))
 const date = computed(() => formatDate(props.entry.published))
-const title = computed(() => (ui.showZh ? props.entry.title_zh || props.entry.title : props.entry.title))
+
+const hasCjk = (s) => /[\u4e00-\u9fff]/.test(String(s || ''))
+
+// 2026-09-11 修两处：
+// ① 原题已是中文时，永远显示原题 —— 中文标题不需要"翻译版"，
+//    之前 showZh 会拿 title_zh 覆盖它，把中文标题换成别的内容。
+// ② "译"模式下的译名必须真的含中文 —— 否则（如 producthunt 的
+//    title_zh 被写成英文描述）会把描述显示在标题位。
+const title = computed(() => {
+  const e = props.entry
+  if (!ui.showZh) return e.title
+  if (hasCjk(e.title)) return e.title
+  if (e.title_zh && hasCjk(e.title_zh)) return e.title_zh
+  return e.title
+})
 const tag = computed(() => tagLabel(props.entry.category, ui.showZh))
 </script>
 
