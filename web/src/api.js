@@ -12,6 +12,18 @@ export const SOURCES = [
   { name: 'simonwillison', label: 'Simon Willison', league: 'F', accent: '#22c55e' },
   { name: 'nvidia-blog', label: 'NVIDIA Blog', league: 'G', accent: '#76b900' },
   { name: 'openai-news', label: 'OpenAI News', league: 'H', accent: '#7fd4a8' },
+
+  // T-041 2026-09-14：补「能直接动手」的源类型（新闻源拿不到"能马上用"）
+  { name: 'github-trending', label: 'GitHub 日榜', league: 'I', accent: '#8b5cf6' },
+  { name: 'hackernews', label: 'Hacker News', league: 'J', accent: '#ff6600' },
+  { name: 'reddit-localllama', label: 'r/LocalLLaMA', league: 'K', accent: '#ff4500' },
+  { name: 'lilianweng', label: 'Lilian Weng', league: 'L', accent: '#06b6d4' },
+  { name: 'gradient', label: 'The Gradient', league: 'M', accent: '#ec4899' },
+  { name: 'lobsters', label: 'Lobsters', league: 'N', accent: '#b0232a' },
+  { name: 'hf-blog', label: 'HuggingFace', league: 'O', accent: '#ffd21e' },
+  { name: 'arxiv-ai', label: 'arXiv cs.AI', league: 'P', accent: '#b31b1b' },
+  { name: 'arxiv-ro', label: 'arXiv 机器人', league: 'Q', accent: '#c2410c' },
+  { name: 'sspai', label: '少数派', league: 'R', accent: '#d71a1b' },
 ]
 
 async function fetchSource(source) {
