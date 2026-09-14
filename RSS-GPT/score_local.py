@@ -131,6 +131,47 @@ def source_priors(marks, min_n=8, noise_rate=0.10):
     return dropped
 
 
+def evaluate_previous(prev_path, marks):
+    """机制自检：拿「上一轮推荐过的条目」对照「他后来实际标的」，算命中率。
+
+    为什么需要（T-050）：打分器推完就完了 —— 推得准不准没有任何数字，
+    "这机制有效"就只是一面之词。这是评分机制能不能被信任的核心：
+    没有反馈的评分器等于没有评分器。
+
+    做法：跑新的一轮前，读上一轮的 recommended.jsonl，
+    对每条去标注里查它后来被标成什么 → 命中 / 误报 / 未标注。
+    """
+    if not os.path.exists(prev_path):
+        return None
+    prev = []
+    for line in open(prev_path, encoding="utf-8", errors="ignore"):
+        line = line.strip()
+        if line:
+            try:
+                prev.append(json.loads(line))
+            except Exception:
+                pass
+    if not prev:
+        return None
+
+    by_link = {m.get("link"): m for m in marks if m.get("link")}
+    hit = miss = unlabeled = 0
+    misses = []
+    for r in prev:
+        m = by_link.get(r.get("link"))
+        if not m:
+            unlabeled += 1
+            continue
+        if m.get("intent") in ("use", "save"):
+            hit += 1
+        else:
+            miss += 1
+            misses.append((m.get("intent"), (r.get("title") or "")[:52]))
+    labeled = hit + miss
+    return {"total": len(prev), "labeled": labeled, "hit": hit,
+            "miss": miss, "unlabeled": unlabeled, "misses": misses[:10]}
+
+
 def parse_ts(s):
     """把 RFC 2822 / ISO 8601 都解析成时间戳；解析不了返回 0。
 
@@ -269,17 +310,31 @@ def score_batch(key, examples, batch):
     # 用 requests 而不是 urllib：semgrep 的 dynamic-urllib-use-detected 规则会把
     # urlopen(Request(...)) 判为 blocking（urllib 支持 file:// 协议）。虽然这里的
     # URL 是写死的常量，但规则不认，且 requests 本来就是仓库依赖。
-    resp = requests.post(
-        API_URL,
-        headers={"Authorization": "Bearer %s" % key,
-                 "Content-Type": "application/json"},
-        data=json.dumps({"model": MODEL,
-                         "messages": [{"role": "user", "content": prompt}],
-                         "temperature": 0.2}).encode("utf-8"),
-        timeout=180,
-    )
-    resp.raise_for_status()
-    text = resp.json()["choices"][0]["message"]["content"]
+    #
+    # T-050：加 3 次重试 —— 这是个要双击自己跑的脚本，跑一次 5 分钟，
+    # 不能因为一次网络抖动就整轮白跑（实测遇到过 ConnectTimeout）。
+    payload = json.dumps({"model": MODEL,
+                          "messages": [{"role": "user", "content": prompt}],
+                          "temperature": 0.2}).encode("utf-8")
+    last_err = None
+    for attempt in range(3):
+        try:
+            resp = requests.post(
+                API_URL,
+                headers={"Authorization": "Bearer %s" % key,
+                         "Content-Type": "application/json"},
+                data=payload, timeout=120)
+            resp.raise_for_status()
+            text = resp.json()["choices"][0]["message"]["content"]
+            break
+        except Exception as e:
+            last_err = e
+            if attempt < 2:
+                print("    (第 %d 次调用失败：%s，10 秒后重试)" % (attempt + 1, str(e)[:60]))
+                time.sleep(10)
+    else:
+        raise RuntimeError("GLM 调用连续 3 次失败：%s" % last_err)
+
     m = re.search(r"\[[\s\S]*\]", text)
     if not m:
         return []
@@ -313,6 +368,27 @@ def main():
     print("示例池: %d 条" % len(examples))
     if by.get("use", 0) + by.get("save", 0) < 5:
         print("  ⚠️ 正例偏少（能马上用+该存档 < 5），打分可能偏保守 —— 继续标效果会更好")
+
+    # ★ 机制自检：上一轮推的，你后来实际标了什么（必须在覆盖 recommended.jsonl 之前跑）
+    ev = evaluate_previous(OUT, marks)
+    if ev:
+        print("\n=== 机制自检（上一轮推荐 vs 你后来的标注）===")
+        print("  上轮推荐 %d 条 ｜ 你已标 %d 条 ｜ 还没标 %d 条"
+              % (ev["total"], ev["labeled"], ev["unlabeled"]))
+        if ev["labeled"]:
+            rate = ev["hit"] / ev["labeled"] * 100
+            print("  命中（你标了能马上用/该存档）：%d 条" % ev["hit"])
+            print("  误报（你标了只需知道/与我无关）：%d 条" % ev["miss"])
+            print("  → 精确率 %.0f%%%s" % (rate, "  ✅ 机制有效" if rate >= 50
+                                          else "  ⚠️ 低于一半，机制需要调"))
+            if ev["misses"]:
+                print("  误报样例：")
+                for it, t in ev["misses"]:
+                    print("    [%s] %s" % (LABEL.get(it, it), t))
+        else:
+            print("  （推荐的条目你还没标过 —— 去站点上标几条，下轮就有数字了）")
+    else:
+        print("\n=== 机制自检 ===\n  （第一次跑，没有上一轮可比）")
 
     all_entries = load_entries()
     marked_links = set(m["link"] for m in marks if m.get("link"))
