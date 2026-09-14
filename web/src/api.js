@@ -25,8 +25,10 @@ export const SOURCES = [
   { name: 'lilianweng', label: 'Lilian Weng', league: 'L', accent: '#06b6d4' },
   { name: 'gradient', label: 'The Gradient', league: 'M', accent: '#ec4899' },
   { name: 'lobsters', label: 'Lobsters', league: 'N', accent: '#b0232a' },
-  { name: 'hf-blog', label: 'HuggingFace', league: 'O', accent: '#ffd21e' },
-  { name: 'arxiv-ai', label: 'arXiv cs.AI', league: 'P', accent: '#b31b1b' },
+  // T-048 2026-09-14：HuggingFace Blog（862 条压倒全部源 + 只有 3 条有摘要）
+  // { name: 'hf-blog', label: 'HuggingFace', league: 'O', accent: '#ffd21e' },
+  // T-048 2026-09-14：arXiv cs.AI（两轮抓取都是 0 条；arxiv-ro 那栏是好的）
+  // { name: 'arxiv-ai', label: 'arXiv cs.AI', league: 'P', accent: '#b31b1b' },
   { name: 'arxiv-ro', label: 'arXiv 机器人', league: 'Q', accent: '#c2410c' },
   { name: 'sspai', label: '少数派', league: 'R', accent: '#d71a1b' },
 ]

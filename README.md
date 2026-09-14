@@ -80,8 +80,6 @@ MIT（见 [RSS-GPT/LICENSE](RSS-GPT/LICENSE)）
 - https://lilianweng.github.io/index.xml -> https://None.github.io/RSS-GPT/lilianweng.jsonl
 - https://thegradient.pub/rss/ -> https://None.github.io/RSS-GPT/gradient.jsonl
 - https://lobste.rs/rss -> https://None.github.io/RSS-GPT/lobsters.jsonl
-- HuggingFace Blog -> https://None.github.io/RSS-GPT/hf-blog.jsonl
-- arXiv cs.AI -> https://None.github.io/RSS-GPT/arxiv-ai.jsonl
 - arXiv cs.RO -> https://None.github.io/RSS-GPT/arxiv-ro.jsonl
 - https://sspai.com/feed -> https://None.github.io/RSS-GPT/sspai.jsonl
 
