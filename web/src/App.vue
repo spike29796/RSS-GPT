@@ -32,7 +32,11 @@ onMounted(async () => {
     const { entries: list, errors: errs } = main.value
     for (const e of list) e.category_zh = TAG_ZH[e.category] || ''
     entries.value = list.sort((a, b) => (parseDate(b.published) || 0) - (parseDate(a.published) || 0))
-    errors.value = errs
+    // T-043：单个源失败（404/超时）不再刷到页面上 —— 缺源是常态：
+    // 新加的源在云端跑出数据前必然 404，那是预期内的，不是故障。
+    // 只有「一条都没加载到」才把错误显示给用户看。
+    for (const e of errs) console.warn(e)
+    errors.value = list.length ? [] : errs
   } else {
     errors.value = [`主列表加载失败：${main.reason.message}`]
   }
@@ -198,6 +202,9 @@ const todayEntries = computed(() => {
 })
 const todayIsFallback = computed(() => !entries.value.some((e) => isToday(e.published)))
 
+// T-043：有多少个源真的有数据（缺源不报警，但要让人看得见）
+const loadedSources = computed(() => new Set(entries.value.map((e) => e.source)).size)
+
 // 摘要清洗：jsonl 里存着 HTML 标签（<br>）和重复的"总结:"前缀
 // 实测原始值形如 "<br><br>总结:总结: xxx" —— 前缀会重复，必须循环剥
 function cleanText(s) {
@@ -257,6 +264,7 @@ function clearMarks() {
           <p class="today-sub">
             <b>{{ todayEntries.length }}</b> 条
             <span v-if="todayIsFallback" class="fallback">（今日无更新，显示最近一批）</span>
+            ｜ 源 <b>{{ loadedSources }}</b>/{{ SOURCES.length }}
             ｜ 已标注 <b>{{ markedCount }}</b> 条
           </p>
         </div>
