@@ -172,6 +172,89 @@ def evaluate_previous(prev_path, marks):
             "miss": miss, "unlabeled": unlabeled, "misses": misses[:10]}
 
 
+def run_selftest(key, marks, batch=20):
+    """留出验证：把大卫自己的正例/负例藏起来当考卷，看打分器能不能认出来。
+
+    这是判断打分机制好坏的硬指标 —— 不看内容、只看分数分离度：
+      · 正例（他标了能马上用/该存档）得分应该高
+      · 负例（他标了与我无关）得分应该低
+    如果它给自己的正例都打不出高分，那机制就是坏的，不是内容的错。
+
+    ⚠️ 关键：考卷里的条目必须从示例池里剔除，否则是泄题（模型照抄例子拿满分）。
+    """
+    pos = [m for m in marks if m.get("intent") in ("use", "save") and (m.get("title") or "")]
+    neg = [m for m in marks if m.get("intent") == "noise" and (m.get("title") or "")]
+    if not pos:
+        print("没有正例可测（先标几条能马上用/该存档）")
+        return
+
+    # 留出：正例留最多 5 条、负例留 8 条当考卷。
+    # ⚠️ 别抽太多正例 —— 本来就只有 12 条，抽 8 条后示例池只剩 4 条正例，
+    # 模型学不到偏好，测出来的是"示例不足"而不是"判据好不好"。
+    import random
+    random.seed(42)
+    test_pos = pos[:5]
+    test_neg = random.sample(neg, min(8, len(neg)))
+    test_links = set(m.get("link") for m in test_pos + test_neg)
+
+    # 示例池 = 标注里去掉考卷条目
+    pool = [m for m in marks if m.get("link") not in test_links]
+    examples = build_examples(pool)
+
+    print("\n" + "=" * 60)
+    print("机制自测（留出验证）")
+    print("=" * 60)
+    print("  示例池: %d 条 ｜ 考卷: 正例 %d 条 + 负例 %d 条"
+          % (len(examples), len(test_pos), len(test_neg)))
+
+    def as_entry(m):
+        return {"title": m.get("title") or "", "summary": m.get("summary") or "",
+                "content": m.get("content") or "", "_src": m.get("source") or "?"}
+
+    results = {"pos": [], "neg": []}
+    for label, items in (("正例", test_pos), ("负例", test_neg)):
+        for i in range(0, len(items), batch):
+            chunk = [as_entry(m) for m in items[i:i + batch]]
+            for s in score_batch(key, examples, chunk):
+                try:
+                    idx = int(s.get("i", 0))
+                except Exception:
+                    continue
+                if 1 <= idx <= len(chunk):
+                    results["pos" if label == "正例" else "neg"].append(
+                        (s.get("score", 0), chunk[idx - 1]["title"][:52]))
+
+    def stat(rs):
+        if not rs:
+            return "（无数据）"
+        avg = sum(r[0] for r in rs) / len(rs)
+        return "平均 %.2f 分 ｜ %s" % (avg, " ".join(str(r[0]) for r in rs))
+
+    print("\n  正例（他标了「要的」）得分：%s" % stat(results["pos"]))
+    print("  负例（他标了「与我无关」）得分：%s" % stat(results["neg"]))
+
+    if results["pos"] and results["neg"]:
+        ap = sum(r[0] for r in results["pos"]) / len(results["pos"])
+        an = sum(r[0] for r in results["neg"]) / len(results["neg"])
+        gap = ap - an
+        print("\n  分离度（正例均分 - 负例均分）: %.2f" % gap)
+        # 判定：≥2 分才算能进推荐区
+        pos_ok = len([r for r in results["pos"] if r[0] >= 2]) / len(results["pos"]) * 100
+        neg_bad = len([r for r in results["neg"] if r[0] >= 2]) / len(results["neg"]) * 100
+        print("  正例里 ≥2 分（会被推荐）的: %.0f%%   ← 召回" % pos_ok)
+        print("  负例里 ≥2 分（误报）的:     %.0f%%   ← 误报率" % neg_bad)
+        if gap >= 1.0 and pos_ok >= 60 and neg_bad <= 30:
+            print("\n  ✅ 机制成立：能把他要的和不要的分开")
+        else:
+            print("\n  ⚠️ 机制还不够：分离度不足或误报偏高，需要调判据/加标注")
+
+    print("\n  考卷明细（正例应高分、负例应低分）：")
+    for sc, t in results["pos"]:
+        print("    [%s] %s" % (sc, t))
+    for sc, t in results["neg"]:
+        print("    [%s] %s  ← 负例" % (sc, t))
+
+
 def parse_ts(s):
     """把 RFC 2822 / ISO 8601 都解析成时间戳；解析不了返回 0。
 
@@ -252,28 +335,24 @@ def build_examples(marks):
 # 而新闻报道（谁发布了什么、谁警告了什么）只能到 1 分。
 # ⚠️ 实测（T-043）：判据写成"有没有用" → 模型全给 2 分（30 条里 17 条），
 #    因为它根本没法区分。改写成"有没有可动手的东西"才分得开。
-CRITERIA = """打分判据（严格按此，不要给中间分）：
+CRITERIA = """打分方法（分两步判断，不要跳步）：
 
-问自己一个问题：这条内容里有没有【我真的能动手用的东西】？
-（代码、方法、步骤、工具名、架构设计、实测数据、可复现的经验）
+【第一问】这条内容里有【可以直接拿来做的东西】吗？
+  算「有」：代码、命令行、配置、具体的工具/框架名、可复现的步骤或实测数据
+  算「没有」：只是报道某事发生、谁发布了什么、谁说了什么、行业趋势感慨、大会现场观察
 
-  3 = 有可操作内容，且我立刻就想动手试（今天/明天就会做）
-  2 = 有可操作内容（能找到用法/思路/工具），但我不是马上用，先存着
-  1 = 没有可操作内容，纯报道：谁发布了什么、谁警告了什么、谁融资了、
-      行业趋势感慨、大会现场观察 —— 知道就行了
-  0 = 跟我方向无关，或下面这些直接排除的类型
+  第一问答「没有」 → 直接给 0 或 1 分，结束（不用看第二问）
+    0 = 跟 AI/技术完全无关（汽车/手机/家电/财经/政治/娱乐）
+    1 = 是 AI/技术新闻，但里面没有能动的东西
 
-直接 0 分的类型：
-  · 会议/大会/榜单/征集/报名/展台报道/颁奖/开发者日
-  · 手机·汽车·家电·可穿戴·耳机等消费电子新品发布/配色/售价/预售
-  · 股价/融资/财报/人事变动/裁员
-  · 转发式早报、资讯合集、多条拼盘
+【第二问】只对第一问答「有」的条目问：这个东西跟我【现在在做的方向】有关系吗？
+  我的方向：AI 应用开发、本地部署模型、Agent 工程、代码工具链
 
-【即使看着"可操作"，也降为 1 分或 0 分】（实测：这些占了误报的大头）
-  · 单纯的版本号更新 / 例行 release note（如 "llm 0.35"、"datasette 1.0a39"、
-    "xxx 2.9.1"）—— 能装不等于我要装
-  · 纯引用/摘录帖（标题像 "Quoting XXX"）而没有作者自己的分析
-  · 单个工具的补丁级小更新（第三位版本号变动）
+  有关系 → 2 分（值得存档，以后要用）
+  有关系且我马上就想动手试 → 3 分
+  没关系（比如游戏开发、硬件电路、纯学术不落地） → 1 分
+
+注意：宁可给 0 或 1，不要都给 2。大部分内容应该是 0-1 分，只有少数是 2-3 分。
 """
 
 
@@ -351,6 +430,8 @@ def main():
     ap.add_argument("--min-score", type=int, default=2)
     ap.add_argument("--batch", type=int, default=20)
     ap.add_argument("--days", type=int, default=14, help="只看最近 N 天的条目（0=不限）")
+    ap.add_argument("--selftest", action="store_true",
+                    help="留出验证：拿你自己的正例/负例当考卷，测打分机制好不好")
     ap.add_argument("--dry", action="store_true")
     a = ap.parse_args()
 
@@ -369,7 +450,12 @@ def main():
     if by.get("use", 0) + by.get("save", 0) < 5:
         print("  ⚠️ 正例偏少（能马上用+该存档 < 5），打分可能偏保守 —— 继续标效果会更好")
 
-    # ★ 机制自检：上一轮推的，你后来实际标了什么（必须在覆盖 recommended.jsonl 之前跑）
+    # --selftest：只跑机制验证，不写文件、不碰推荐区
+    if a.selftest:
+        run_selftest(get_key(), marks, batch=a.batch)
+        return
+
+
     ev = evaluate_previous(OUT, marks)
     if ev:
         print("\n=== 机制自检（上一轮推荐 vs 你后来的标注）===")
