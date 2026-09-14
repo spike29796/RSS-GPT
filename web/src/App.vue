@@ -280,10 +280,13 @@ function clearMarks() {
 <template>
   <div class="page">
     <!-- ============================================================
-         T-038 新 UI：今日更新大框 + 每条意图标注
-         旧 UI 已停用，保留在下方 <div v-if="false"> 内备查
+         T-052 2026-09-14：UI 复原 —— 回到原始的三视图（首页源卡片 / 列表 / B站）
+         理由：意图标注 + 打分器这套实验的结论是「源选得更精」比「筛得更准」更重要，
+         打分器暂停（代码与自检都留着，随时能捡起来），界面回到原样。
+         下面 T-038 那套（今日更新框 + 意图按钮 + 推荐/全部两区）已停用，
+         保留在 v-if="false" 里备查。
          ============================================================ -->
-    <div class="today-box">
+    <div v-if="false" class="today-box">
       <div class="today-head">
         <div class="today-head-left">
           <h2 class="today-title">今日更新</h2>
@@ -358,7 +361,7 @@ function clearMarks() {
       </ul>
     </div>
 
-    <div class="stat-bar">
+    <div v-if="false" class="stat-bar">
       <span class="stat-label">我的标注</span>
       <span v-for="s in intentStats" :key="s.id" class="stat-item">
         <i class="dot" :style="{ background: s.color }"></i>{{ s.label }} <b>{{ s.n }}</b>
@@ -366,8 +369,8 @@ function clearMarks() {
       <span v-if="!markedCount" class="stat-empty">还没开始 —— 每条点一个按钮就行</span>
     </div>
 
-    <!-- ↓↓↓ 旧 UI 已停用（v-if="false" = 不渲染，代码保留备查） ↓↓↓ -->
-    <div v-if="false" class="legacy-ui">
+    <!-- ↓↓↓ T-052：原 UI 已恢复（这三视图是站点的正式形态） ↓↓↓ -->
+    <div class="legacy-ui">
     <header class="header">
       <h1 @click="goHome">OpenAI News 聚合</h1>
       <span v-if="lastUpdate" class="updated">更新于 {{ lastUpdate }}</span>
@@ -809,7 +812,8 @@ body {
 /* ============================================================
    T-038：今日更新大框 + 意图标注（新 UI）
    ============================================================ */
-.legacy-ui { display: none; }
+/* T-052：原 UI 恢复为正式形态，这里不再隐藏（原来 T-038 时是 display:none） */
+.legacy-ui { display: block; }
 
 .today-box {
   background: var(--card);
