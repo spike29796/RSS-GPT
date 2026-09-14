@@ -307,6 +307,8 @@ def get_default_category(sec=None):
     return get_cfg('cfg', 'default_category') or DEFAULT_CATEGORY
 
 SUMMARY_MARKERS = ('<br><br>总结:', '<br><br>Summary:')
+# strip_tags 之后标记会退化成裸前缀，这两个形态也必须认
+PLAIN_MARKERS = ('总结:', 'Summary:')
 
 
 def strip_tags(s):
@@ -318,15 +320,33 @@ def strip_tags(s):
     return re.sub(r'<[^>]+>', ' ', str(s or '')).strip()
 
 
+def _strip_plain_prefixes(s):
+    """剥掉开头可能重复出现的裸前缀（"总结:" / "Summary:"）。"""
+    body = str(s or '')
+    while True:
+        n = body
+        for plain in PLAIN_MARKERS:
+            if n.startswith(plain):
+                n = n[len(plain):]
+        n = n.lstrip()
+        if n == body:
+            break
+        body = n
+    return body
+
+
 def summary_body(summary):
     """返回摘要里去掉格式标记后的正文。
 
     只输出标记（如 "<br><br>总结:"）而无正文 = 模型半成品，调用方应视为失败
     并重试，而不是把空壳写进数据层。
+
+    T-038：前缀可能重复出现（历史数据里有 "总结:总结: xxx"），循环剥干净。
     """
     body = str(summary or '')
     for m in SUMMARY_MARKERS:
-        body = body.replace(m, '')
+        body = body.replace(m, ' ')
+    body = _strip_plain_prefixes(body)
     return strip_tags(body).strip()
 
 
@@ -336,15 +356,21 @@ def normalize_summary(summary):
     Some models emit the guide text first and append the marker at the end
     (e.g. "指南内容<br><br>总结:"); reorder so the frontend always gets the
     marker-first form. Missing markers are prepended.
+
+    T-038：原实现先 strip_tags 再去匹配 '<br><br>总结:' ——
+    标签被剥掉后标记永远匹配不到，于是每次都会【再前置一次】，
+    产出 "总结:总结: xxx" 这种重复前缀（线上数据实证）。
+    现在生形态（带 <br>）与熟形态（裸前缀）都认，且重复前缀会剥净。
     """
-    summary = strip_tags(summary)
+    raw = str(summary or '')
+    # 生形态：标记在尾部时重排到头部；已在头部则复用
     for marker in SUMMARY_MARKERS:
-        if marker in summary:
-            if summary.startswith(marker):
-                return summary
-            before, after = summary.split(marker, 1)
-            return marker + (before + after).strip()
-    return SUMMARY_MARKERS[0] + summary
+        if marker in raw:
+            body = raw.split(marker, 1)
+            body = (body[0] + body[1]) if len(body) > 1 else body[0]
+            return marker + _strip_plain_prefixes(strip_tags(body))
+    # 熟形态：剥掉已有的裸前缀（可能重复），再统一补上标准标记
+    return SUMMARY_MARKERS[0] + _strip_plain_prefixes(strip_tags(raw))
 
 
 def parse_category_and_summary(text, categories, default_category):

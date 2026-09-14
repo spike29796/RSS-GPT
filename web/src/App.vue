@@ -198,7 +198,8 @@ const todayEntries = computed(() => {
 })
 const todayIsFallback = computed(() => !entries.value.some((e) => isToday(e.published)))
 
-// 摘要清洗：jsonl 里存着 HTML 标签（<br>）和"总结"前缀，直接渲染会很难看
+// 摘要清洗：jsonl 里存着 HTML 标签（<br>）和重复的"总结:"前缀
+// 实测原始值形如 "<br><br>总结:总结: xxx" —— 前缀会重复，必须循环剥
 function cleanText(s) {
   if (!s) return ''
   let t = String(s).replace(/<[^>]*>/g, ' ')
@@ -207,8 +208,14 @@ function cleanText(s) {
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
-  t = t.replace(/^\s*(总结|摘要)\s*[：:]\s*/, '')
-  return t.replace(/\s+/g, ' ').trim()
+  for (let i = 0; i < 5; i++) {
+    const n = t.replace(/^\s*(总结|摘要)\s*[：:]\s*/, '')
+    if (n === t) break
+    t = n
+  }
+  t = t.replace(/\s+/g, ' ').trim()
+  // 剥完只剩"总结:"这种残渣 → 视为没有摘要
+  return /^(总结|摘要)\s*[：:]?$/.test(t) ? '' : t
 }
 
 function exportMarks() {
