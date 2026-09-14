@@ -23,8 +23,9 @@ import os
 import re
 import sys
 import time
-import urllib.request
 from collections import defaultdict
+
+import requests
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DOCS = os.path.join(HERE, "docs")
@@ -40,6 +41,10 @@ SRC_NAME = [
 ]
 
 LABEL = {"use": "能马上用", "save": "该存档", "know": "只需知道", "noise": "与我无关"}
+
+# 智谱 GLM 的 OpenAI 兼容端点（免费档够用）
+API_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+MODEL = "glm-4-flash"
 
 # 明确的排除信号（大卫的标注里高频出现）—— 写进提示词，压掉误报
 EXCLUDE_HINT = (
@@ -203,16 +208,20 @@ def score_batch(key, examples, batch):
     L += ["", '只输出 JSON 数组，不要解释：[{"i":1,"score":2,"why":"15字内理由"}]']
     prompt = "\n".join(L)
 
-    body = json.dumps({"model": "glm-4-flash",
-                       "messages": [{"role": "user", "content": prompt}],
-                       "temperature": 0.2}).encode("utf-8")
-    req = urllib.request.Request(
-        "https://open.bigmodel.cn/api/paas/v4/chat/completions",
-        data=body,
+    # 用 requests 而不是 urllib：semgrep 的 dynamic-urllib-use-detected 规则会把
+    # urlopen(Request(...)) 判为 blocking（urllib 支持 file:// 协议）。虽然这里的
+    # URL 是写死的常量，但规则不认，且 requests 本来就是仓库依赖。
+    resp = requests.post(
+        API_URL,
         headers={"Authorization": "Bearer %s" % key,
-                 "Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=180) as resp:
-        text = json.loads(resp.read().decode("utf-8"))["choices"][0]["message"]["content"]
+                 "Content-Type": "application/json"},
+        data=json.dumps({"model": MODEL,
+                         "messages": [{"role": "user", "content": prompt}],
+                         "temperature": 0.2}).encode("utf-8"),
+        timeout=180,
+    )
+    resp.raise_for_status()
+    text = resp.json()["choices"][0]["message"]["content"]
     m = re.search(r"\[[\s\S]*\]", text)
     if not m:
         return []
