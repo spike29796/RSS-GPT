@@ -4,7 +4,9 @@
 export const SOURCES = [
   { name: 'qbitai', label: '量子位 QbitAI', league: 'A', accent: '#4f46e5' },
   { name: 'geekpark', label: '极客公园 GeekPark', league: 'B', accent: '#ef4444' },
-  { name: 'ithome', label: 'IT之家 ITHome', league: 'C', accent: '#f59e0b' },
+  // T-040 2026-09-14：IT之家下线 —— 大卫用意图标注判定「99% 是垃圾信息」，
+  // 数据佐证：120 条里含 AI 词仅 20.8%（半数还是伪 AI），消费电子/汽车占 45%。
+  // { name: 'ithome', label: 'IT之家 ITHome', league: 'C', accent: '#f59e0b' },
   { name: 'producthunt', label: 'Product Hunt', league: 'D', accent: '#da552f' },
   { name: 'infoq', label: 'InfoQ 中文', league: 'E', accent: '#0ea5e9' },
   { name: 'simonwillison', label: 'Simon Willison', league: 'F', accent: '#22c55e' },

@@ -74,7 +74,6 @@ MIT（见 [RSS-GPT/LICENSE](RSS-GPT/LICENSE)）
 - https://www.qbitai.com/feed -> https://None.github.io/RSS-GPT/qbitai.xml
 - https://simonwillison.net/atom/everything/ -> https://None.github.io/RSS-GPT/simonwillison.xml
 - https://www.geekpark.net/rss -> https://None.github.io/RSS-GPT/geekpark.xml
-- https://www.ithome.com/rss/ -> https://None.github.io/RSS-GPT/ithome.xml
 - https://www.producthunt.com/feed -> https://None.github.io/RSS-GPT/producthunt.xml
 - https://www.infoq.cn/feed -> https://None.github.io/RSS-GPT/infoq.xml
 - https://blogs.nvidia.com/feed/ -> https://None.github.io/RSS-GPT/nvidia-blog.xml
