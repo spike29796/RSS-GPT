@@ -4,13 +4,16 @@
 export const SOURCES = [
   { name: 'qbitai', label: '量子位 QbitAI', league: 'A', accent: '#4f46e5' },
   { name: 'geekpark', label: '极客公园 GeekPark', league: 'B', accent: '#ef4444' },
+  { name: 'infoq', label: 'InfoQ 中文', league: 'E', accent: '#0ea5e9' },
+  { name: 'nvidia-blog', label: 'NVIDIA Blog', league: 'G', accent: '#76b900' },
   // T-040 2026-09-14：IT之家下线 —— 大卫用意图标注判定「99% 是垃圾信息」，
   // 数据佐证：120 条里含 AI 词仅 20.8%（半数还是伪 AI），消费电子/汽车占 45%。
   // { name: 'ithome', label: 'IT之家 ITHome', league: 'C', accent: '#f59e0b' },
-  { name: 'producthunt', label: 'Product Hunt', league: 'D', accent: '#da552f' },
-  { name: 'infoq', label: 'InfoQ 中文', league: 'E', accent: '#0ea5e9' },
-  { name: 'simonwillison', label: 'Simon Willison', league: 'F', accent: '#22c55e' },
-  { name: 'nvidia-blog', label: 'NVIDIA Blog', league: 'G', accent: '#76b900' },
+  // T-047 2026-09-14：Simon Willison（7/7 标「与我无关」，多为版本号更新/纯引用帖）
+  // { name: 'simonwillison', label: 'Simon Willison', league: 'F', accent: '#22c55e' },
+  // T-047 2026-09-14：Product Hunt（12/12 标「与我无关」，冷门小工具发布页）
+  // { name: 'producthunt', label: 'Product Hunt', league: 'D', accent: '#da552f' },
+
   // T-044 2026-09-14：OpenAI News 下线 —— 1000 条把页面淹了（别的源 20-60 条），
   // 且多为公司宣传（合作/政策/人事/发布）而非技术实操。
   // { name: 'openai-news', label: 'OpenAI News', league: 'H', accent: '#7fd4a8' },

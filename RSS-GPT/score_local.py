@@ -32,10 +32,10 @@ DOCS = os.path.join(HERE, "docs")
 OUT = os.path.join(DOCS, "recommended.jsonl")
 
 # 源名 → 中文标签（跟 web/src/api.js 对齐；只影响显示）
-# 注意：ithome（T-040）、openai-news（T-044）已下线，不在此列。
+# 已下线（不在此列）：ithome(T-040)、openai-news(T-044)、
+#                    simonwillison(T-047)、producthunt(T-047)
 SRC_NAME = [
-    "qbitai", "geekpark", "producthunt", "infoq", "simonwillison",
-    "nvidia-blog",
+    "qbitai", "geekpark", "infoq", "nvidia-blog",
     "github-trending", "hackernews", "reddit-localllama", "lilianweng",
     "gradient", "lobsters", "hf-blog", "arxiv-ai", "arxiv-ro", "sspai",
 ]
@@ -77,6 +77,32 @@ def clean(s):
             break
         t = n
     return re.sub(r"\s+", " ", t).strip()
+
+
+def source_priors(marks, min_n=8, noise_rate=0.10):
+    """从标注里学「源级先验」—— 某个源历史样本够多且几乎没有正例 → 整体跳过。
+
+    为什么需要：模型能学会"什么样的内容是能动手的"（有代码/方法/工具），
+    但学不会"这个源对我是噪音"。实测（T-047）：simonwillison 被大卫标了
+    7/7「与我无关」，但打分器照样给它那些版本更新帖打 2 分 ——
+    因为那些帖子确实"有可操作内容"，只是他不关心这个源。
+
+    判据（保守）：
+      · 该源被标过的条数 >= min_n（样本够）
+      · 正例（能马上用 + 该存档）占比 < noise_rate
+    → 该源整体不参与打分（并在输出里说明，方便大卫复核）
+    """
+    by = defaultdict(lambda: [0, 0])  # src -> [总数, 正例]
+    for m in marks:
+        s = m.get("source") or "?"
+        by[s][0] += 1
+        if m.get("intent") in ("use", "save"):
+            by[s][1] += 1
+    dropped = {}
+    for s, (n, pos) in by.items():
+        if n >= min_n and (pos / n) < noise_rate:
+            dropped[s] = (n, pos)
+    return dropped
 
 
 def parse_ts(s):
@@ -175,6 +201,12 @@ CRITERIA = """打分判据（严格按此，不要给中间分）：
   · 手机·汽车·家电·可穿戴·耳机等消费电子新品发布/配色/售价/预售
   · 股价/融资/财报/人事变动/裁员
   · 转发式早报、资讯合集、多条拼盘
+
+【即使看着"可操作"，也降为 1 分或 0 分】（实测：这些占了误报的大头）
+  · 单纯的版本号更新 / 例行 release note（如 "llm 0.35"、"datasette 1.0a39"、
+    "xxx 2.9.1"）—— 能装不等于我要装
+  · 纯引用/摘录帖（标题像 "Quoting XXX"）而没有作者自己的分析
+  · 单个工具的补丁级小更新（第三位版本号变动）
 """
 
 
@@ -259,6 +291,17 @@ def main():
     all_entries = load_entries()
     marked_links = set(m["link"] for m in marks if m.get("link"))
     cand = [e for e in all_entries if e.get("link") not in marked_links]
+
+    # 源级先验：样本够多且几乎没正例的源，整体跳过（见 source_priors 的说明）
+    dropped = source_priors(marks)
+    if dropped:
+        print("\n=== 源级先验（从你的标注学出来）===")
+        for s, (n, pos) in sorted(dropped.items(), key=lambda x: -x[1][0]):
+            print("  跳过 %-18s 你标过 %d 条，正例 %d 条 → 整体不推" % (s, n, pos))
+        before = len(cand)
+        cand = [e for e in cand if e["_src"] not in dropped]
+        print("  → 滤掉 %d 条" % (before - len(cand)))
+
     for e in cand:
         e["_ts"] = parse_ts(e.get("published"))
     if a.days:

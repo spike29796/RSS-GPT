@@ -71,9 +71,7 @@ MIT（见 [RSS-GPT/LICENSE](RSS-GPT/LICENSE)）
 > 本仓库由 [yinan-c/RSS-GPT](https://github.com/yinan-c/RSS-GPT) 深度定制而来：新增 Vue3 聚合前端、B站采集与轮播/详情页/就地播放、双语主题、模糊搜索等。
 
 - https://www.qbitai.com/feed -> https://None.github.io/RSS-GPT/qbitai.xml
-- https://simonwillison.net/atom/everything/ -> https://None.github.io/RSS-GPT/simonwillison.xml
 - https://www.geekpark.net/rss -> https://None.github.io/RSS-GPT/geekpark.xml
-- https://www.producthunt.com/feed -> https://None.github.io/RSS-GPT/producthunt.xml
 - https://www.infoq.cn/feed -> https://None.github.io/RSS-GPT/infoq.xml
 - https://blogs.nvidia.com/feed/ -> https://None.github.io/RSS-GPT/nvidia-blog.xml
 - GitHub Trending 日榜 -> https://None.github.io/RSS-GPT/github-trending.jsonl
@@ -86,3 +84,8 @@ MIT（见 [RSS-GPT/LICENSE](RSS-GPT/LICENSE)）
 - arXiv cs.AI -> https://None.github.io/RSS-GPT/arxiv-ai.jsonl
 - arXiv cs.RO -> https://None.github.io/RSS-GPT/arxiv-ro.jsonl
 - https://sspai.com/feed -> https://None.github.io/RSS-GPT/sspai.jsonl
+
+<!-- 已下线源（数据从 git 历史可取回，配置见 RSS-GPT/config.ini 注释）
+     ithome（T-040）｜ openai-news（T-044）｜ simonwillison（T-047）｜ producthunt（T-047）
+     —— 下线依据均来自大卫的意图标注数据（0 正例 或 单源条目量压倒其他源） -->
+
