@@ -239,6 +239,18 @@ function cleanText(s) {
   return /^(总结|摘要)\s*[：:]?$/.test(t) ? '' : t
 }
 
+// T-048：摘要回退 —— summary 为空时用 content 开头。
+// 实测：arxiv-ro 的 93 条 summary 全空（LLM 摘要那步被时间预算挤掉），
+// 但 content 里存着完整 Abstract。不回退的话页面上就是一堆光秃秃的英文标题。
+function summaryOf(e, limit = 260) {
+  const s = cleanText(e.summary)
+  if (s) return s
+  let c = cleanText(e.content)
+  c = c.replace(/^arXiv:[\d.]+v\d+\s*Announce Type:\s*\w+\s*/, '')
+  c = c.replace(/^Abstract:\s*/, '')
+  return c.slice(0, limit)
+}
+
 function exportMarks() {
   const rows = Object.values(marks.value)
   if (!rows.length) {
@@ -326,7 +338,7 @@ function clearMarks() {
               <span v-if="e.category_zh" class="cat">{{ e.category_zh }}</span>
               <span class="time">{{ formatDate(e.published) }}</span>
             </div>
-            <p v-if="cleanText(e.summary)" class="entry-sum">{{ cleanText(e.summary) }}</p>
+            <p v-if="summaryOf(e)" class="entry-sum">{{ summaryOf(e) }}</p>
             <p v-if="zone === 'rec' && e.why" class="entry-why">
               <span class="score-badge" :class="'s' + e.score">{{ e.score }}</span>{{ e.why }}
             </p>

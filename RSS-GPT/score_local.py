@@ -42,6 +42,13 @@ SRC_NAME = [
 
 LABEL = {"use": "能马上用", "save": "该存档", "know": "只需知道", "noise": "与我无关"}
 
+# 【只抓不推】的源 —— 照常抓取、在「全部」区可见、数据留在仓库，但不进推荐区。
+# 大卫原话：「那就放着不管，压仓库里，什么时候想看就拿出来」（2026-09-14）
+# 理由：arXiv cs.RO 每天发 90+ 篇论文，与其他源（每天 1-5 条）差两个数量级，
+#       不管怎么打分都会压倒推荐区（实测 79 条推荐里它占 63）。它不是"没用"，
+#       是"量太大会淹掉别的"——所以保留但不推。
+NO_RECOMMEND = {"arxiv-ro"}
+
 # 智谱 GLM 的 OpenAI 兼容端点（免费档够用）
 API_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
 MODEL = "glm-4-flash"
@@ -77,6 +84,25 @@ def clean(s):
             break
         t = n
     return re.sub(r"\s+", " ", t).strip()
+
+
+def digest(e, limit=400):
+    """给打分器看的「内容」：优先 summary；为空则退回 content 开头。
+
+    ⚠️ 实测（T-048）：arxiv-ro 的 93 条 summary 全空 —— LLM 生成中文摘要那步
+    没跑到（backfill_max_minutes=25 的时间预算被前面的源吃掉了），代码在摘要
+    失败时写 None，没有退回原始内容。但 content 字段里存着完整的 arXiv Abstract。
+    只拿标题去打分 → 模型看英文论文标题"都很技术" → 93 条论文全给 2 分，
+    把推荐区淹了（111 条里 93 条是它）。
+    """
+    s = clean(e.get("summary"))
+    if s:
+        return s[:limit]
+    c = clean(e.get("content"))
+    # 去掉 arxiv 的 "arXiv:xxxx Announce Type: new Abstract:" 前缀噪音
+    c = re.sub(r"^\s*arXiv:[\d.]+v\d+\s*Announce Type:\s*\w+\s*", "", c)
+    c = re.sub(r"^\s*Abstract:\s*", "", c)
+    return c[:limit]
 
 
 def source_priors(marks, min_n=8, noise_rate=0.10):
@@ -234,9 +260,9 @@ def score_batch(key, examples, batch):
           "现在给下面 %d 条新条目各打一个分（0/1/2/3）：" % len(batch), ""]
     for i, e in enumerate(batch, 1):
         title = e.get("title") or ""
-        summ = clean(e.get("summary"))
+        summ = digest(e)
         L.append("%d. [%s] %s%s" % (i, e["_src"], title[:80],
-                  ("　｜ " + summ[:70]) if summ else ""))
+                  ("　｜ " + summ[:200]) if summ else ""))
     L += ["", '只输出 JSON 数组，不要解释：[{"i":1,"score":2,"why":"15字内理由"}]']
     prompt = "\n".join(L)
 
@@ -302,6 +328,13 @@ def main():
         cand = [e for e in cand if e["_src"] not in dropped]
         print("  → 滤掉 %d 条" % (before - len(cand)))
 
+    # 只抓不推的源（数据留着，但不进推荐区）
+    if NO_RECOMMEND:
+        before = len(cand)
+        cand = [e for e in cand if e["_src"] not in NO_RECOMMEND]
+        print("\n=== 只抓不推 ===\n  %s（数据仍在仓库，可在「全部」区看）→ 滤掉 %d 条"
+              % (", ".join(sorted(NO_RECOMMEND)), before - len(cand)))
+
     for e in cand:
         e["_ts"] = parse_ts(e.get("published"))
     if a.days:
@@ -332,7 +365,7 @@ def main():
                     "title_zh": e.get("title_zh") or "", "source": e["_src"],
                     "category": e.get("category") or "",
                     "published": e.get("published") or "",
-                    "summary": clean(e.get("summary"))[:200],
+                    "summary": digest(e, 300),
                     "score": s.get("score", 0), "why": str(s.get("why") or "")[:60],
                 })
 
