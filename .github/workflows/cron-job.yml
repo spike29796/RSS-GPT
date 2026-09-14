@@ -84,8 +84,14 @@ jobs:
           git add README* || true
           # 当天无新增文章时 commit 会失败，加兜底避免整个 workflow 报错
           git commit -m "Auto Build at `date +"%Y-%m-%d %H:%M"`" || echo "No changes to commit"
+          # 2026-09-14：原来这里是 `git push ... || echo "push skipped"` ——
+          # 踩过的坑：CI 跑到一半时有人往 main 推了代码，CI 结束时 push 变
+          # non-fast-forward 被拒，而这个 `|| echo` 把失败【静默吞掉】，
+          # 整轮抓取（2.3MB 数据）白跑且毫无提示（T-042 实测）。
+          # 现在：先 rebase 到最新 main 再 push，且失败就让步骤红掉、不再吞错。
+          git pull --rebase --autostash origin main
           # 2026-09-11：GITHUB_TOKEN 经 env 传入，不落盘、日志自动 mask
-          git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" HEAD:main || echo "push skipped"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" HEAD:main
 
       - name: Trigger pages deploy
         # GITHUB_TOKEN 的 push 不触发下游 workflow（GitHub 有意设计），
