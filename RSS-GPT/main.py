@@ -268,8 +268,15 @@ def mark_retry(queue, link, reason):
 def record_article(record):
     """Extract the raw article body from a stored record (inverse of the
     content assembly in output()). Unsummarized records store content as
-    "\\n" + article; summarized ones carry the summary div as a prefix."""
-    article = record['content'][1:] if record['content'].startswith('\n') else record['content']
+    "\\n" + article; summarized ones carry the summary div as a prefix.
+
+    T-038: some feeds (e.g. https://openai.com/news/rss.xml) publish entries
+    with no `content` field at all — fall back to summary/description and
+    finally to an empty string so a single malformed entry can't kill the run.
+    """
+    raw = record.get('content') or record.get('summary') \
+        or record.get('description') or ''
+    article = raw[1:] if raw.startswith('\n') else raw
     if record.get('summary'):
         prefix = "<div> " + record['summary'] + " <div>"
         article = article[len(prefix):] if article.startswith(prefix) else article

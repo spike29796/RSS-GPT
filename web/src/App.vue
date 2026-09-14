@@ -138,10 +138,174 @@ function selectCategory(name) {
   activeCategory.value = name
   shown.value = PAGE_SIZE
 }
+// ===== T-038：意图标注 =====
+// 判据不是"这条讲什么"，而是"我读完下一步会做什么"
+const INTENTS = [
+  { id: 'use', label: '能马上用', color: '#46d17a' },
+  { id: 'save', label: '该存档', color: '#4d9ef7' },
+  { id: 'know', label: '只需知道', color: '#9aa4b2' },
+  { id: 'noise', label: '与我无关', color: '#6b7280' },
+]
+const MARKS_KEY = 'rss_intent_marks_v1'
+const marks = ref({})
+
+onMounted(() => {
+  try {
+    const raw = localStorage.getItem(MARKS_KEY)
+    if (raw) marks.value = JSON.parse(raw)
+  } catch (e) {
+    console.warn('标注读取失败', e)
+  }
+})
+
+function mark(entry, intent) {
+  const cur = marks.value[entry.link]
+  const next = { ...marks.value }
+  if (cur && cur.intent === intent) {
+    delete next[entry.link] // 再点一次 = 取消
+  } else {
+    next[entry.link] = {
+      link: entry.link,
+      title: entry.title || '',
+      title_zh: entry.title_zh || '',
+      source: entry.source || '',
+      category: entry.category || '',
+      intent,
+      ts: new Date().toISOString(),
+    }
+  }
+  marks.value = next
+  try {
+    localStorage.setItem(MARKS_KEY, JSON.stringify(next))
+  } catch (e) {
+    console.warn('标注写入失败', e)
+  }
+}
+
+const markedCount = computed(() => Object.keys(marks.value).length)
+
+const intentStats = computed(() =>
+  INTENTS.map((it) => ({
+    ...it,
+    n: Object.values(marks.value).filter((m) => m.intent === it.id).length,
+  })),
+)
+
+// 今日更新；今日无更新则退回最近一批（避免空框）
+const todayEntries = computed(() => {
+  const today = entries.value.filter((e) => isToday(e.published))
+  return today.length ? today : entries.value.slice(0, 20)
+})
+const todayIsFallback = computed(() => !entries.value.some((e) => isToday(e.published)))
+
+// 摘要清洗：jsonl 里存着 HTML 标签（<br>）和"总结"前缀，直接渲染会很难看
+function cleanText(s) {
+  if (!s) return ''
+  let t = String(s).replace(/<[^>]*>/g, ' ')
+  t = t.replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+  t = t.replace(/^\s*(总结|摘要)\s*[：:]\s*/, '')
+  return t.replace(/\s+/g, ' ').trim()
+}
+
+function exportMarks() {
+  const rows = Object.values(marks.value)
+  if (!rows.length) {
+    alert('还没标注任何条目')
+    return
+  }
+  const body = rows.map((r) => JSON.stringify(r)).join('\n')
+  const blob = new Blob([body + '\n'], { type: 'application/x-ndjson' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `intent-marks-${new Date().toISOString().slice(0, 10)}.jsonl`
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
+
+function clearMarks() {
+  if (!confirm('清空全部标注？此操作不可撤销')) return
+  marks.value = {}
+  try {
+    localStorage.removeItem(MARKS_KEY)
+  } catch (e) {
+    console.warn(e)
+  }
+}
 </script>
 
 <template>
   <div class="page">
+    <!-- ============================================================
+         T-038 新 UI：今日更新大框 + 每条意图标注
+         旧 UI 已停用，保留在下方 <div v-if="false"> 内备查
+         ============================================================ -->
+    <div class="today-box">
+      <div class="today-head">
+        <div class="today-head-left">
+          <h2 class="today-title">今日更新</h2>
+          <p class="today-sub">
+            <b>{{ todayEntries.length }}</b> 条
+            <span v-if="todayIsFallback" class="fallback">（今日无更新，显示最近一批）</span>
+            ｜ 已标注 <b>{{ markedCount }}</b> 条
+          </p>
+        </div>
+        <div class="today-actions">
+          <button class="mini" :class="{ on: ui.showZh }" title="中英切换" @click="toggleZh">
+            {{ ui.showZh ? '中' : 'En' }}
+          </button>
+          <button class="mini" title="主题" @click="toggleTheme">
+            {{ ui.theme === 'dark' ? '☀️' : '🌙' }}
+          </button>
+          <button class="mini primary" @click="exportMarks">导出标注</button>
+          <button class="mini" @click="clearMarks">清空</button>
+        </div>
+      </div>
+
+      <p v-if="loading" class="hint">加载中…</p>
+      <p v-for="e in errors" :key="e" class="hint error">{{ e }}</p>
+
+      <ul class="entry-list">
+        <li v-for="e in todayEntries" :key="e.link" class="entry-row">
+          <div class="entry-main">
+            <a class="entry-title" :href="e.link" target="_blank" rel="noopener">
+              {{ ui.showZh ? e.title_zh || e.title : e.title }}
+            </a>
+            <div class="entry-meta">
+              <span class="src">{{ e.source }}</span>
+              <span v-if="e.category_zh" class="cat">{{ e.category_zh }}</span>
+              <span class="time">{{ formatDate(e.published) }}</span>
+            </div>
+            <p v-if="cleanText(e.summary)" class="entry-sum">{{ cleanText(e.summary) }}</p>
+          </div>
+          <div class="intents">
+            <button
+              v-for="it in INTENTS"
+              :key="it.id"
+              class="intent-btn"
+              :class="{ on: marks[e.link] && marks[e.link].intent === it.id }"
+              @click="mark(e, it.id)"
+            >
+              {{ it.label }}
+            </button>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="stat-bar">
+      <span class="stat-label">我的标注</span>
+      <span v-for="s in intentStats" :key="s.id" class="stat-item">
+        <i class="dot" :style="{ background: s.color }"></i>{{ s.label }} <b>{{ s.n }}</b>
+      </span>
+      <span v-if="!markedCount" class="stat-empty">还没开始 —— 每条点一个按钮就行</span>
+    </div>
+
+    <!-- ↓↓↓ 旧 UI 已停用（v-if="false" = 不渲染，代码保留备查） ↓↓↓ -->
+    <div v-if="false" class="legacy-ui">
     <header class="header">
       <h1 @click="goHome">OpenAI News 聚合</h1>
       <span v-if="lastUpdate" class="updated">更新于 {{ lastUpdate }}</span>
@@ -241,6 +405,8 @@ function selectCategory(name) {
 
     <!-- T-037：B站视频就地播放遮罩（fixed，不受布局影响） -->
     <PlayerOverlay v-if="playerBvid" :bvid="playerBvid" @close="closePlayer" />
+    </div>
+    <!-- ↑↑↑ 旧 UI 停用区结束 ↑↑↑ -->
   </div>
 </template>
 
@@ -577,5 +743,151 @@ body {
 }
 .footer a {
   color: var(--accent);
+}
+/* ============================================================
+   T-038：今日更新大框 + 意图标注（新 UI）
+   ============================================================ */
+.legacy-ui { display: none; }
+
+.today-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px 8px;
+  margin: 20px 0 14px;
+}
+
+.today-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-2);
+}
+.today-title {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
+.today-sub {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--dim);
+}
+.today-sub b { color: var(--accent); }
+.today-sub .fallback { color: var(--dim-2); }
+
+.today-actions { display: flex; gap: 7px; flex-wrap: wrap; }
+.mini {
+  padding: 5px 11px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--card-2);
+  color: var(--text-2);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .12s;
+}
+.mini:hover { background: var(--card-hover); color: var(--text); }
+.mini.on { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
+.mini.primary { border-color: var(--accent); color: var(--accent); }
+.mini.primary:hover { background: var(--accent); color: var(--accent-contrast); }
+
+.entry-list { list-style: none; margin: 0; padding: 0; }
+
+.entry-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border-2);
+}
+.entry-row:last-child { border-bottom: none; }
+
+.entry-main { flex: 1 1 auto; min-width: 0; }
+.entry-title {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--text);
+  text-decoration: none;
+  margin-bottom: 5px;
+}
+.entry-title:hover { color: var(--accent); }
+.entry-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  color: var(--dim);
+}
+.entry-meta .src {
+  padding: 1px 7px;
+  border-radius: 4px;
+  background: var(--card-2);
+  border: 1px solid var(--border-2);
+}
+.entry-meta .cat { color: var(--accent); }
+.entry-sum {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.intents {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: 5px;
+}
+.intent-btn {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--dim-2);
+  font-size: 11.5px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all .12s;
+}
+.intent-btn:hover { border-color: var(--text-2); color: var(--text); }
+.intents .intent-btn:nth-child(1).on { background: #46d17a; border-color: #46d17a; color: #0b1220; font-weight: 600; }
+.intents .intent-btn:nth-child(2).on { background: #4d9ef7; border-color: #4d9ef7; color: #0b1220; font-weight: 600; }
+.intents .intent-btn:nth-child(3).on { background: #9aa4b2; border-color: #9aa4b2; color: #0b1220; font-weight: 600; }
+.intents .intent-btn:nth-child(4).on { background: #6b7280; border-color: #6b7280; color: #fff; font-weight: 600; }
+
+.stat-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 12px 18px;
+  margin-bottom: 24px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 12.5px;
+  color: var(--dim-2);
+}
+.stat-label { color: var(--dim); }
+.stat-item { display: inline-flex; align-items: center; gap: 5px; }
+.stat-item b { color: var(--text); }
+.stat-item .dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.stat-empty { color: var(--dim); font-style: italic; }
+
+@media (max-width: 720px) {
+  .entry-row { flex-direction: column; gap: 9px; }
+  .intents { grid-template-columns: repeat(4, 1fr); width: 100%; }
 }
 </style>
