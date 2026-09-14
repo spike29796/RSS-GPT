@@ -11,7 +11,9 @@ export const SOURCES = [
   { name: 'infoq', label: 'InfoQ 中文', league: 'E', accent: '#0ea5e9' },
   { name: 'simonwillison', label: 'Simon Willison', league: 'F', accent: '#22c55e' },
   { name: 'nvidia-blog', label: 'NVIDIA Blog', league: 'G', accent: '#76b900' },
-  { name: 'openai-news', label: 'OpenAI News', league: 'H', accent: '#7fd4a8' },
+  // T-044 2026-09-14：OpenAI News 下线 —— 1000 条把页面淹了（别的源 20-60 条），
+  // 且多为公司宣传（合作/政策/人事/发布）而非技术实操。
+  // { name: 'openai-news', label: 'OpenAI News', league: 'H', accent: '#7fd4a8' },
 
   // T-041 2026-09-14：补「能直接动手」的源类型（新闻源拿不到"能马上用"）
   { name: 'github-trending', label: 'GitHub 日榜', league: 'I', accent: '#8b5cf6' },
@@ -58,6 +60,30 @@ export async function fetchAllEntries() {
     else errors.push(`${SOURCES[i].label} 加载失败：${r.reason.message}`)
   })
   return { entries, errors }
+}
+
+// T-043：推荐区数据 —— 由本地打分器 RSS-GPT/score_local.py 产出。
+// 打分器读大卫的意图标注（本机导出，不进仓库）当 few-shot，
+// 给最近条目打分，把 ≥2 分的写进 docs/recommended.jsonl。
+// Record shape: {link, title, title_zh, source, category, published, summary, score, why}
+// 文件不存在（还没跑过打分器）→ 抛错，调用方按「推荐区暂无数据」处理。
+export async function fetchRecommended() {
+  const url = `${import.meta.env.BASE_URL}recommended.jsonl`
+  const resp = await fetch(url)
+  if (!resp.ok) throw new Error(`recommended: HTTP ${resp.status}`)
+  const text = await resp.text()
+  const out = []
+  text
+    .split('\n')
+    .filter((line) => line.trim())
+    .forEach((line, i) => {
+      try {
+        out.push(JSON.parse(line))
+      } catch (e) {
+        console.warn(`recommended: line ${i + 1} skipped, bad JSON: ${e.message}`)
+      }
+    })
+  return out
 }
 
 // B站轮播数据（T-026 消费侧口径，T-025 产出）。 Record shape:

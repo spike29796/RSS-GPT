@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import Fuse from 'fuse.js'
-import { SOURCES, fetchAllEntries, fetchBiliVideos } from './api.js'
+import { SOURCES, fetchAllEntries, fetchRecommended, fetchBiliVideos } from './api.js'
 import { parseDate, formatDate, isToday } from './format.js'
 import { ui, toggleTheme, toggleZh } from './store.js'
 import { TAG_ZH, tagLabel } from './i18n.js'
@@ -24,10 +24,24 @@ const search = ref('')
 const shown = ref(PAGE_SIZE)
 // T-026：B站轮播数据。fetch 失败或为空 → 轮播模块整体不渲染（不留空壳）。
 const bili = ref([])
+// T-043：两个区 —— 'rec' = 打分器推荐（≥2 分），'all' = 抓到什么看什么
+const zone = ref('rec')
+const rec = ref([])
+const recEntries = computed(() => rec.value)
 
 onMounted(async () => {
   // bili 与主列表并行（allSettled 口径）：bili 失败不影响主列表。
-  const [main, biliResult] = await Promise.allSettled([fetchAllEntries(), fetchBiliVideos()])
+  // T-043：推荐区并行拉取；文件不存在（还没跑过打分器）→ 空数组，不报错。
+  const [main, biliResult, recResult] = await Promise.allSettled([
+    fetchAllEntries(), fetchBiliVideos(), fetchRecommended(),
+  ])
+  if (recResult.status === 'fulfilled') {
+    const list = recResult.value
+    for (const r of list) r.category_zh = TAG_ZH[r.category] || ''
+    rec.value = list.sort((a, b) => (b.score || 0) - (a.score || 0))
+  } else {
+    console.warn(`推荐区：${recResult.reason.message}（还没跑过 score_local.py？）`)
+  }
   if (main.status === 'fulfilled') {
     const { entries: list, errors: errs } = main.value
     for (const e of list) e.category_zh = TAG_ZH[e.category] || ''
@@ -280,11 +294,29 @@ function clearMarks() {
         </div>
       </div>
 
+      <div class="zone-tabs">
+        <button :class="{ on: zone === 'rec' }" @click="zone = 'rec'">
+          推荐 <b>{{ recEntries.length }}</b>
+        </button>
+        <button :class="{ on: zone === 'all' }" @click="zone = 'all'">
+          全部 <b>{{ todayEntries.length }}</b>
+        </button>
+        <span class="zone-hint">
+          {{ zone === 'rec'
+            ? '打分器筛出来的（≥2 分）—— 每天看这一区就够'
+            : '抓到什么看什么 —— 你没标过的都在这里' }}
+        </span>
+      </div>
+
       <p v-if="loading" class="hint">加载中…</p>
       <p v-for="e in errors" :key="e" class="hint error">{{ e }}</p>
+      <p v-if="zone === 'rec' && !recEntries.length && !loading" class="hint">
+        推荐区还没有数据 —— 在「全部」区标注一些条目，然后在电脑上跑一次
+        <code>score_local.py</code> 就会生成。
+      </p>
 
       <ul class="entry-list">
-        <li v-for="e in todayEntries" :key="e.link" class="entry-row">
+        <li v-for="e in (zone === 'rec' ? recEntries : todayEntries)" :key="e.link" class="entry-row">
           <div class="entry-main">
             <a class="entry-title" :href="e.link" target="_blank" rel="noopener">
               {{ ui.showZh ? e.title_zh || e.title : e.title }}
@@ -295,6 +327,9 @@ function clearMarks() {
               <span class="time">{{ formatDate(e.published) }}</span>
             </div>
             <p v-if="cleanText(e.summary)" class="entry-sum">{{ cleanText(e.summary) }}</p>
+            <p v-if="zone === 'rec' && e.why" class="entry-why">
+              <span class="score-badge" :class="'s' + e.score">{{ e.score }}</span>{{ e.why }}
+            </p>
           </div>
           <div class="intents">
             <button
@@ -905,4 +940,60 @@ body {
   .entry-row { flex-direction: column; gap: 9px; }
   .intents { grid-template-columns: repeat(4, 1fr); width: 100%; }
 }
+/* T-043：推荐 / 全部 两个区 */
+.zone-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 0 4px;
+  border-bottom: 1px solid var(--border-2);
+}
+.zone-tabs button {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card-2);
+  color: var(--text-2);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .12s;
+}
+.zone-tabs button:hover { background: var(--card-hover); color: var(--text); }
+.zone-tabs button.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+}
+.zone-tabs button b { margin-left: 4px; }
+.zone-hint {
+  font-size: 11.5px;
+  color: var(--dim);
+  margin-left: 4px;
+}
+
+.entry-why {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  color: var(--dim-2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.score-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--card-2);
+  color: var(--text-2);
+  flex: 0 0 auto;
+}
+.score-badge.s3 { background: #46d17a; color: #0b1220; }
+.score-badge.s2 { background: #4d9ef7; color: #0b1220; }
 </style>
