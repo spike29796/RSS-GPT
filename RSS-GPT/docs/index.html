@@ -38,5 +38,63 @@
         }
       })();
     </script>
+      <!-- PWA 安装入口：页面内按钮，省得用户翻浏览器菜单 -->
+    <style>
+      #pwa-install-btn{position:fixed;right:16px;bottom:16px;z-index:9999;display:none;
+        align-items:center;gap:6px;padding:10px 16px;border:0;border-radius:22px;
+        background:#0b0f14;color:#fff;font-size:14px;line-height:1;cursor:pointer;
+        box-shadow:0 4px 14px rgba(0,0,0,.35);font-family:inherit}
+      #pwa-install-btn:hover{background:#1b2530}
+      #pwa-ios-tip{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:9999;
+        display:none;max-width:88vw;padding:10px 14px;border-radius:12px;background:#0b0f14;color:#fff;
+        font-size:13px;line-height:1.5;box-shadow:0 4px 14px rgba(0,0,0,.35);font-family:inherit}
+      #pwa-ios-tip b{color:#ff8c42}
+      #pwa-ios-tip span{display:block;margin-top:4px;opacity:.75;font-size:12px}
+    </style>
+    <button id="pwa-install-btn" type="button">装到桌面</button>
+    <div id="pwa-ios-tip">
+      在 <b>Safari</b> 里点底部「分享」→「添加到主屏幕」
+      <span>（不是在浏览器菜单里，是底部中间那个方框加箭头）</span>
+    </div>
+    <script>
+      (function () {
+        var btn = document.getElementById('pwa-install-btn');
+        var iosTip = document.getElementById('pwa-ios-tip');
+        var deferred = null;
+        var standalone = window.matchMedia('(display-mode: standalone)').matches ||
+          window.navigator.standalone === true;
+        if (standalone) { return; }              // 已经装了，不显示
+
+        // Android / 桌面 Chrome / Edge：浏览器给出安装事件时，把按钮亮出来
+        window.addEventListener('beforeinstallprompt', function (e) {
+          e.preventDefault();
+          deferred = e;
+          btn.style.display = 'inline-flex';
+        });
+        btn.addEventListener('click', function () {
+          if (!deferred) { return; }
+          deferred.prompt();
+          deferred.userChoice.then(function () {
+            deferred = null;
+            btn.style.display = 'none';
+          });
+        });
+        window.addEventListener('appinstalled', function () {
+          btn.style.display = 'none';
+          iosTip.style.display = 'none';
+        });
+
+        // iOS Safari 不支持 beforeinstallprompt，直接给文字引导
+        var ua = navigator.userAgent || '';
+        var isIOS = /iPad|iPhone|iPod/.test(ua) ||
+          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        var isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+        var inApp = /MicroMessenger|QQ\/|Weibo|Alipay/i.test(ua);
+        if (isIOS && isSafari && !inApp) {
+          iosTip.style.display = 'block';
+          setTimeout(function () { iosTip.style.display = 'none'; }, 12000);
+        }
+      })();
+    </script>
   </body>
 </html>
