@@ -191,4 +191,49 @@ function title(e) {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* 2026-09-20：手机端不要预览列表，整卡压成小方格（点进去看）。
+   与 App.vue 的 .leagues 网格（96px+ 自适应列）配合。 */
+@media (max-width: 699px) {
+  .league-card {
+    height: 100%;
+    min-height: 104px;
+    border-left-width: 3px;
+  }
+  .preview {
+    display: none;
+  }
+  .league-head {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 6px;
+    padding: 14px 6px;
+    height: 100%;
+  }
+  .league-body {
+    align-items: center;
+    gap: 1px;
+  }
+  .league-letter {
+    width: 34px;
+    height: 34px;
+  }
+  .league-name {
+    font-size: 12px;
+    line-height: 1.25;
+  }
+  .league-total {
+    font-size: 11px;
+  }
+  .today-badge {
+    margin-left: 0;
+    font-size: 10px;
+    padding: 2px 7px;
+  }
+  .chevron {
+    display: none;
+  }
+}
 </style>

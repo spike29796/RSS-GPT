@@ -85,6 +85,8 @@ const isDesktop = ref(window.matchMedia('(min-width: 700px)').matches)
 let mql = null
 function syncMql() {
   isDesktop.value = mql.matches
+  // 断点切换时同步启停自动轮播（桌面→手机要停，手机→桌面要起）
+  startTimer()
 }
 
 function stopTimer() {
@@ -96,6 +98,8 @@ function stopTimer() {
 
 function startTimer() {
   stopTimer()
+  // 2026-09-20：手机端不自动切换图片（只保留左右滑键手动切）
+  if (!isDesktop.value) return
   if (props.items.length > 1) timer = setInterval(() => go(1), INTERVAL_MS)
 }
 

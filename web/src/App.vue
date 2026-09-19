@@ -584,8 +584,10 @@ body {
   margin-top: 12px;
 }
 @media (max-width: 700px) {
+  /* 2026-09-20：手机端不再单列大卡（12 个源要滚 12 屏），改小方格网格，点进去看 */
   .leagues {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 10px;
   }
 }
 
@@ -636,6 +638,32 @@ body {
   margin-left: auto;
   color: var(--dim);
   font-size: 18px;
+}
+/* 2026-09-20：手机端与 SourceCard 方格对齐（竖排居中） */
+@media (max-width: 700px) {
+  .bili-source-card {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 6px;
+    padding: 14px 6px;
+    height: 100%;
+    border-radius: 12px;
+  }
+  .bili-source-card .league-body {
+    align-items: center;
+  }
+  .bili-source-card .league-name {
+    font-size: 12px;
+    line-height: 1.25;
+  }
+  .bili-source-card .league-total {
+    font-size: 11px;
+  }
+  .bili-source-card .chevron {
+    display: none;
+  }
 }
 
 /* T-035 B站详情页网格 */
