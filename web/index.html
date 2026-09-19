@@ -37,18 +37,22 @@
         }
       })();
     </script>
-      <!-- PWA 安装入口 -->
+      <!-- PWA 安装入口（点了必有反馈，不依赖浏览器接口） -->
     <style>
       #pwa-install-btn{position:fixed;right:16px;bottom:16px;z-index:9999;display:none;
-        align-items:center;gap:6px;padding:10px 16px;border:0;border-radius:22px;
+        align-items:center;gap:6px;padding:11px 17px;border:0;border-radius:22px;
         background:#0b0f14;color:#fff;font-size:14px;line-height:1;cursor:pointer;
         box-shadow:0 4px 14px rgba(0,0,0,.35);font-family:inherit}
       #pwa-install-btn:hover{background:#1b2530}
       #pwa-tip{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:9999;
-        display:none;max-width:90vw;padding:12px 16px;border-radius:12px;background:#0b0f14;color:#fff;
-        font-size:13px;line-height:1.7;box-shadow:0 4px 14px rgba(0,0,0,.4);font-family:inherit;text-align:left}
+        display:none;max-width:92vw;padding:14px 18px;border-radius:14px;background:#0b0f14;color:#fff;
+        font-size:13.5px;line-height:1.85;box-shadow:0 6px 20px rgba(0,0,0,.45);font-family:inherit;
+        text-align:left;box-sizing:border-box}
       #pwa-tip b{color:#ff8c42}
-      #pwa-tip .x{position:absolute;top:4px;right:10px;cursor:pointer;opacity:.6}
+      #pwa-tip ol{margin:6px 0 0;padding-left:20px}
+      #pwa-tip .x{position:absolute;top:6px;right:12px;cursor:pointer;opacity:.55;font-size:15px}
+      #pwa-tip:before{content:"安装到手机桌面";display:block;font-weight:700;margin-bottom:6px;
+        padding-right:24px}
     </style>
     <button id="pwa-install-btn" type="button">装到桌面</button>
     <div id="pwa-tip"></div>
@@ -57,8 +61,16 @@
         var btn = document.getElementById('pwa-install-btn');
         var tip = document.getElementById('pwa-tip');
         var deferred = null;
+        var ua = navigator.userAgent || '';
+        var isIOS = /iPad|iPhone|iPod/.test(ua) ||
+          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        var isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+        var inApp = /MicroMessenger|QQ\/|Weibo|Alipay/i.test(ua);
+        var quark = /Quark/i.test(ua);
+        var immersive = /immersive/i.test(ua);
 
-        var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+        var standalone = (window.matchMedia &&
+          window.matchMedia('(display-mode: standalone)').matches) ||
           window.navigator.standalone === true;
         if (standalone) { return; }
 
@@ -66,60 +78,63 @@
           tip.innerHTML = '<span class="x" onclick="this.parentNode.style.display=\'none\'">✕</span>' + html;
           tip.style.display = 'block';
           clearTimeout(say._t);
-          say._t = setTimeout(function () { tip.style.display = 'none'; }, ms || 20000);
+          say._t = setTimeout(function () { tip.style.display = 'none'; }, ms || 30000);
         }
 
+        // 能拿到安装事件就亮按钮（能装的时候才显示）
         window.addEventListener('beforeinstallprompt', function (e) {
           e.preventDefault();
           deferred = e;
           btn.style.display = 'inline-flex';
         });
 
+        // 不在应用内、也不是 iOS Safari 时，也给个按钮——但点了一定有话说
+        if (!inApp && !(isIOS && isSafari)) {
+          btn.style.display = 'inline-flex';
+        }
+
+        function manualSteps() {
+          var u = navigator.userAgent || '';
+          if (/Huawei|HONOR/i.test(u)) {
+            return '① 菜单 <b>⋮</b> → <b>「添加到桌面」</b>';
+          }
+          if (/MIUI|Xiaomi|Redmi|HeyTap|OPPO|vivo|OnePlus|realme/i.test(u)) {
+            return '① 菜单 <b>⋮</b> → <b>「添加到桌面」</b>（自带的浏览器都支持）';
+          }
+          return '① 用手机<b>自带浏览器</b>打开本页<br>' +
+                 '② 菜单 <b>⋮</b> → <b>「添加到桌面」</b>';
+        }
+
         btn.addEventListener('click', function () {
+          // 先说话，再尝试——保证永远有反应
           if (deferred && typeof deferred.prompt === 'function') {
-            btn.textContent = '处理中…';
-            try { deferred.prompt(); } catch (err) { /* 落到下面兜底 */ }
+            say('已请求安装，请确认弹窗。<br><span style="opacity:.7">如果没弹出来，' +
+                '就用手动方式：</span><ol><li>' + manualSteps().replace('① ', '') + '</li></ol>', 25000);
+            try { deferred.prompt(); } catch (err) {}
             var settled = false;
             if (deferred.userChoice && deferred.userChoice.then) {
               deferred.userChoice.then(function (r) {
                 settled = true;
-                if (r && r.outcome === 'accepted') {
-                  btn.style.display = 'none';
-                } else {
-                  manual();
-                }
+                if (r && r.outcome === 'accepted') { tip.style.display = 'none'; btn.style.display = 'none'; }
                 deferred = null;
-              }).catch(function () { if (!settled) { manual(); } });
+              }).catch(function () {});
             }
-            // Chrome 有时既不弹框也不回调，等 1.2 秒没动静就给手动步骤
-            setTimeout(function () {
-              if (!settled) { manual(); }
-            }, 1200);
           } else {
-            manual();
+            say('<b>这个浏览器没有开放安装接口。</b><br>' +
+                '（夸克、UC、部分第三方壳浏览器都这样，不是你的操作问题）<br>' +
+                '<ol><li>' + manualSteps().replace('① ', '') + '</li>' +
+                '<li>想用<b>全屏 + 离线</b>的真 App，装 <b>Edge</b> 打开本页再点「安装应用」</li></ol>', 30000);
           }
         });
-
-        function manual() {
-          btn.textContent = '装到桌面';
-          say('没弹出安装框？手动装：<br>' +
-              '① 点右上角 <b>⋮</b> 菜单<br>' +
-              '② 选「<b>安装应用</b>」或「<b>添加到主屏幕</b>」' +
-              '<br><span style="opacity:.7">iPhone 请在 Safari 里点底部分享按钮 → 添加到主屏幕</span>');
-        }
 
         window.addEventListener('appinstalled', function () {
           btn.style.display = 'none';
           tip.style.display = 'none';
         });
 
-        // iOS：不支持安装事件，直接常驻文字引导
-        var ua = navigator.userAgent || '';
-        var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-        var isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
-        var inApp = /MicroMessenger|QQ\/|Weibo|Alipay|Quark|UCBrowser/i.test(ua);
+        // iOS Safari：不支持安装事件，常驻文字引导
         if (isIOS && isSafari && !inApp) {
-          say('在 <b>Safari</b> 里点底部的「分享」按钮 → 「添加到主屏幕」', 15000);
+          say('点底部「<b>分享</b>」（方框加箭头）→ 「<b>添加到主屏幕</b>」', 20000);
         }
       })();
     </script>
