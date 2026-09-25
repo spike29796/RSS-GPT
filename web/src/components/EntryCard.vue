@@ -49,9 +49,11 @@ const tag = computed(() => tagLabel(props.entry.category, ui.showZh))
 
 <template>
   <a class="card" :href="entryLink" target="_blank" rel="noopener">
-    <span class="tag">{{ tag }}</span>
+    <div class="meta">
+      <span class="tag">{{ tag }}</span>
+      <span class="date">{{ date }}</span>
+    </div>
     <h3 class="title">{{ title }}</h3>
-    <span class="date">{{ date }}</span>
     <div v-if="guideText" class="summary"><span class="guide-label">导读</span><span v-html="guideText"></span></div>
   </a>
 </template>
@@ -73,12 +75,26 @@ const tag = computed(() => tagLabel(props.entry.category, ui.showZh))
 .card:hover {
   background: var(--card-hover);
 }
+/* 2026-09-25：原来 tag / title / date 各占一整行（flex column），
+   一行只放一个词很浪费。改成「标签+日期」同一行，标签做成小胶囊。 */
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 .tag {
+  display: inline-block;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
+  letter-spacing: 0.6px;
   color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 1px 8px;
+  line-height: 1.6;
+  white-space: nowrap;
 }
 .title {
   margin: 0;
@@ -88,6 +104,7 @@ const tag = computed(() => tagLabel(props.entry.category, ui.showZh))
 .date {
   font-size: 12px;
   color: var(--dim);
+  margin-left: auto;
 }
 .summary {
   font-size: 13px;

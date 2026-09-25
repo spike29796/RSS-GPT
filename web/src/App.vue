@@ -726,12 +726,13 @@ body {
   .panel-tags button .n {
     display: none;
   }
+  /* 小标签下手指点：靠加大内边距和行高，不靠撑满整行 */
   .panel-tags button {
-    padding: 11px 12px;
-    font-size: 14px;
+    padding: 8px 14px;
+    font-size: 13.5px;
   }
   .panel-tags {
-    gap: 6px;
+    gap: 8px;
   }
   .tags-toggle {
     padding: 10px;
@@ -816,24 +817,30 @@ body {
   border-bottom: 1px solid var(--border);
   padding-bottom: 6px;
 }
+/* 2026-09-25：原来 flex-direction: column + width:100%，一个标签占一整行 ——
+   14 个源就是 14 行，把侧栏撑得老长。改成横向流式小标签（chips），自动换行。 */
 .panel-tags {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 .panel-tags button {
-  display: flex;
-  justify-content: space-between;
+  display: inline-flex;
   align-items: center;
-  width: 100%;
+  width: auto;
+  max-width: 100%;
   border: 1px solid var(--border-2);
   background: var(--card-2);
   color: var(--text);
-  border-radius: 4px;
-  padding: 6px 10px;
-  font-size: 13px;
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-size: 12.5px;
+  line-height: 1.5;
   cursor: pointer;
   text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .panel-tags button:hover {
   background: var(--card-hover);
@@ -841,6 +848,8 @@ body {
 .panel-tags button .n {
   color: var(--dim);
   font-size: 11px;
+  margin-left: 5px;
+  flex: 0 0 auto;
 }
 .panel-tags button.active {
   background: var(--accent);
@@ -852,10 +861,11 @@ body {
 }
 .panel-tags .dot {
   display: inline-block;
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  margin-right: 6px;
+  margin-right: 5px;
+  flex: 0 0 auto;
 }
 /* 2026-09-25：资讯源默认折叠。子元素顺序 = 「全部源」+ 各源，故 n+8 起隐藏
    （即只露「全部源」+ 前 6 个源）。 */
