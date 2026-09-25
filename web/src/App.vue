@@ -12,9 +12,6 @@ import BiliDetailItem from './components/BiliDetailItem.vue'
 import PlayerOverlay from './components/PlayerOverlay.vue'
 
 const PAGE_SIZE = 50
-// 2026-09-25：侧栏「资讯源」默认只露 6 个，点「展开」再看全部（源多了太占屏）
-const SOURCE_COLLAPSED = 6
-const sourcesExpanded = ref(false)
 const CARD_LIST_SIZE = 20
 
 const entries = ref([])
@@ -448,7 +445,7 @@ function clearMarks() {
           <button class="home-btn" @click="goHome">‹ 首页</button>
           <input v-model="search" class="search" type="search" placeholder="模糊搜索（中英文都行）…" @input="shown = PAGE_SIZE" />
           <h3 class="panel-title">资讯源</h3>
-          <div class="panel-tags" :class="{ collapsed: !sourcesExpanded }">
+          <div class="panel-tags">
             <button :class="{ active: activeSource === 'all' }" @click="selectSource('all')">
               <span>全部源</span><span class="n">{{ entries.length }}</span>
             </button>
@@ -462,9 +459,6 @@ function clearMarks() {
               <span class="n">{{ sourceStats.find((x) => x.name === s.name)?.total || 0 }}</span>
             </button>
           </div>
-          <button v-if="SOURCES.length > SOURCE_COLLAPSED" class="tags-toggle" @click="sourcesExpanded = !sourcesExpanded">
-            {{ sourcesExpanded ? '收起' : `展开全部 ${SOURCES.length} 个源` }}
-          </button>
           <h3 class="panel-title">标签</h3>
           <div class="panel-tags">
             <button :class="{ active: activeCategory === 'all' }" @click="selectCategory('all')">
@@ -734,10 +728,6 @@ body {
   .panel-tags {
     gap: 8px;
   }
-  .tags-toggle {
-    padding: 10px;
-    font-size: 13px;
-  }
   .panel {
     padding: 10px;
     gap: 8px;
@@ -818,7 +808,8 @@ body {
   padding-bottom: 6px;
 }
 /* 2026-09-25：原来 flex-direction: column + width:100%，一个标签占一整行 ——
-   14 个源就是 14 行，把侧栏撑得老长。改成横向流式小标签（chips），自动换行。 */
+   14 个源就是 14 行，把侧栏撑得老长。改成横向流式小标签（chips）：
+   按各自文字宽度自动排满一行、放下个自动换行，所以也不需要折叠/展开了。 */
 .panel-tags {
   display: flex;
   flex-wrap: wrap;
@@ -866,25 +857,6 @@ body {
   border-radius: 50%;
   margin-right: 5px;
   flex: 0 0 auto;
-}
-/* 2026-09-25：资讯源默认折叠。子元素顺序 = 「全部源」+ 各源，故 n+8 起隐藏
-   （即只露「全部源」+ 前 6 个源）。 */
-.panel-tags.collapsed > button:nth-child(n + 8) {
-  display: none;
-}
-.tags-toggle {
-  border: 1px dashed var(--border-2);
-  background: none;
-  color: var(--dim);
-  border-radius: 4px;
-  padding: 5px 10px;
-  font-size: 12px;
-  cursor: pointer;
-  text-align: center;
-}
-.tags-toggle:hover {
-  color: var(--text);
-  border-color: var(--accent);
 }
 .today-note {
   grid-column: 1 / -1;
