@@ -815,10 +815,16 @@ body {
   flex-wrap: wrap;
   gap: 6px;
 }
+/* 2026-09-25（第二轮）：大卫要的是「流式填充」—— 不是按内容宽度排完留白，
+   而是每行的胶囊自动拉伸、把整行宽度占满，右边不留空位。
+   flex: 1 1 auto 让同行的胶囊一起瓜分该行剩余宽度；
+   故意不加 ::after 吸收末行空间 —— 那会让最后一行留空，与「不留空位」相悖。 */
 .panel-tags button {
   display: inline-flex;
   align-items: center;
-  width: auto;
+  justify-content: center;
+  flex: 1 1 auto;
+  min-width: 0;
   max-width: 100%;
   border: 1px solid var(--border-2);
   background: var(--card-2);
@@ -828,7 +834,7 @@ body {
   font-size: 12.5px;
   line-height: 1.5;
   cursor: pointer;
-  text-align: left;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
