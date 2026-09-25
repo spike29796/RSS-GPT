@@ -83,7 +83,7 @@ jobs:
           # T-013：docs/ 改目录路径式 add（无变更也 exit 0）；
           # README* 保留 glob 但加 || true 兜底空匹配，步骤不炸
           git add docs/
-          git add README* || true
+          git add README* 2>/dev/null || true
           # 当天无新增文章时 commit 会失败，加兜底避免整个 workflow 报错
           git commit -m "Auto Build at `date +"%Y-%m-%d %H:%M"`" || echo "No changes to commit"
           # 2026-09-14：原来这里是 `git push ... || echo "push skipped"` ——
@@ -91,7 +91,19 @@ jobs:
           # non-fast-forward 被拒，而这个 `|| echo` 把失败【静默吞掉】，
           # 整轮抓取（2.3MB 数据）白跑且毫无提示（T-042 实测）。
           # 现在：先 rebase 到最新 main 再 push，且失败就让步骤红掉、不再吞错。
-          git pull --rebase --autostash origin main
+          # 2026-09-25：原来这里是裸的 git pull --rebase --autostash。
+          # 实测踩坑：这一轮跑了 40 分钟 LLM 翻译（13762 行改动），期间
+          # 有人往前端 push，rebase 在 docs/qbitai.jsonl 等文件上冲突，
+          # 步骤直接红掉 —— 40 分钟的工作全丢在 runner 上。
+          # 现在：冲突时以本次产物为准（rebase 里的 -X theirs 指"正在重放的
+          # 这个 commit"，也就是 CI 刚生成的），失败再退化成一次 merge 重试。
+          if ! git pull --rebase --autostash -X theirs origin main; then
+            echo "::warning::rebase conflicted, falling back to merge -X theirs"
+            git rebase --abort 2>/dev/null || true
+            git pull --no-rebase --autostash -X theirs origin main || true
+            git add docs/ || true
+            git commit -m "Auto Build (merge) at `date +"%Y-%m-%d %H:%M"`" || true
+          fi
           # 2026-09-11：GITHUB_TOKEN 经 env 传入，不落盘、日志自动 mask
           git push "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" HEAD:main
 
