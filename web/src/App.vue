@@ -119,17 +119,26 @@ const filtered = computed(() => {
 
 const visible = computed(() => filtered.value.slice(0, shown.value))
 
+// 2026-09-25：切视图/换源后回到顶部。
+// 之前没这一步——用户从首页（或长列表）滚下来再点开源，新视图高度变了但滚动位置
+// 被浏览器保留，结果直接落在页面底部，要手动往上找。
+function toTop() {
+  window.scrollTo(0, 0)
+}
+
 function openList(source = 'all', category = 'all') {
   activeSource.value = source
   activeCategory.value = category
   search.value = ''
   shown.value = PAGE_SIZE
   view.value = 'list'
+  toTop()
 }
 
 // B站源卡入口（T-035）：B站不是 SOURCES，不重设 activeSource
 function openBili() {
   view.value = 'bili'
+  toTop()
 }
 
 // T-037：B站视频就地播放——playerBvid 非空时挂官方 iframe 遮罩。
@@ -144,6 +153,7 @@ function closePlayer() {
 
 function goHome() {
   view.value = 'home'
+  toTop()
 }
 
 function selectSource(name) {

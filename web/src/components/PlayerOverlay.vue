@@ -16,6 +16,14 @@ const src = computed(() =>
     : null,
 )
 
+// 2026-09-25：B站播放器在手机上会跳转到 www.bilibili.com/blackboard/webplayer/mbplayer.html
+// （官方 player.html 里的 isMobileDevice 脚本干的）。原来 CSP 只放行 player.bilibili.com，
+// 手机端 iframe 一律被拦 → 白屏。CSP 已放行 www.bilibili.com（见 index.html），
+// 这里再补一个「在B站打开」的兜底入口，万一某台设备仍然播不了也能一键过去。
+const biliUrl = computed(() =>
+  BVID_RE.test(props.bvid) ? `https://www.bilibili.com/video/${props.bvid}` : null,
+)
+
 // ESC 关闭
 function onKey(e) {
   if (e.key === 'Escape') emit('close')
@@ -32,11 +40,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         v-if="src"
         :src="src"
         allowfullscreen
-        allow="autoplay; fullscreen; encrypted-media"
-        referrerpolicy="no-referrer"
+        allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+        referrerpolicy="strict-origin-when-cross-origin"
         title="B站视频播放"
       ></iframe>
       <p v-else class="player-invalid">视频地址无效</p>
+      <p v-if="biliUrl" class="player-fallback">
+        播不出来？
+        <a :href="biliUrl" target="_blank" rel="noopener noreferrer">在B站打开 ↗</a>
+      </p>
     </div>
   </div>
 </template>
@@ -81,6 +93,21 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 }
 .player-close:hover {
   background: rgba(0, 0, 0, 0.75);
+}
+.player-fallback {
+  margin: 10px 0 0;
+  text-align: center;
+  color: #9fb0c8;
+  font-size: 13px;
+}
+.player-fallback a {
+  color: #7fd4ff;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(127, 212, 255, 0.4);
+  padding-bottom: 1px;
+}
+.player-fallback a:hover {
+  color: #a8e3ff;
 }
 .player-invalid {
   width: 100%;

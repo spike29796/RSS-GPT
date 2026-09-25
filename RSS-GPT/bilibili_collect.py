@@ -70,14 +70,23 @@ def load_bilibili_ini():
         uids = [u.strip() for u in _strip(cfg.get('bilibili', 'uids')).split(',') if u.strip()]
         per_max = int(_strip(cfg.get('bilibili', 'per_uid_per_run_max')))
         interval = float(_strip(cfg.get('bilibili', 'request_interval_sec') or '1'))
+        # 2026-09-25：每页条数与翻页数。原来写死 ps=5 且只拉第 1 页，
+        # 每个 UP 最多 5 条 —— 更新一多就永久漏掉（大卫报『更新不全』的根因）。
+        page_size = int(_strip(cfg.get('bilibili', 'page_size') or '30'))
+        pages = int(_strip(cfg.get('bilibili', 'pages') or '2'))
+        retry_max = int(_strip(cfg.get('bilibili', 'retry_max') or '2'))
+        retry_wait = float(_strip(cfg.get('bilibili', 'retry_wait_sec') or '6'))
     except Exception as e:
         print(f'bilibili: FATAL bilibili.ini missing/invalid: {e}', file=sys.stderr)
         sys.exit(2)
-    if not api_base or not uids or per_max < 1 or interval < 0:
+    if (not api_base or not uids or per_max < 1 or interval < 0
+            or page_size < 1 or pages < 1):
         print('bilibili: FATAL bilibili.ini bad api_base/uids/per_uid_per_run_max/'
               'request_interval_sec', file=sys.stderr)
         sys.exit(2)
-    return api_base, uids, per_max, interval
+    page_size = max(1, min(50, page_size))  # B站 space API 的 ps 上限是 50
+    return (api_base, uids, per_max, interval,
+            page_size, pages, retry_max, retry_wait)
 
 
 def load_pipeline_cfg():
@@ -153,12 +162,14 @@ def signed_query(params, mixin_key):
     return query + '&w_rid=' + w_rid
 
 
-def fetch_vlist(session, api_base, uid, mixin_key, feed_max_bytes):
-    """拉单个 uid 的投稿列表。返回 (vlist, total_count, None) 或 (None, None, 原因)。"""
+def fetch_vlist(session, api_base, uid, mixin_key, feed_max_bytes,
+                page_size=30, pn=1):
+    """拉单个 uid 的投稿列表。返回 (vlist, total_count, None) 或 (None, None, 原因)。
+    2026-09-25：ps/pn 参数化（原来写死 5 条第 1 页）。"""
     params = {
         'mid': uid,
-        'ps': '5',
-        'pn': '1',
+        'ps': str(page_size),
+        'pn': str(pn),
         'order': 'pubdate',
         'platform': 'web',
         'web_location': '1550101',
@@ -175,8 +186,11 @@ def fetch_vlist(session, api_base, uid, mixin_key, feed_max_bytes):
         return None, None, err
     try:
         payload = json.loads(text)
-    except json.JSONDecodeError as e:
-        return None, None, f'json parse error: {e}'
+    except json.JSONDecodeError:
+        # 2026-09-25：HTTP 412 风控页是 HTML（上层已拦状态码），
+        # 但偶有 200 + 风控页；原来只报 json parse error 看不出根因。
+        head = text.lstrip()[:40].replace('\r', ' ').replace('\n', ' ')
+        return None, None, f'non-json response ({head}...)'
     if payload.get('code') != 0:
         return None, None, f'api code {payload.get("code")}'
     data = payload['data']
@@ -206,6 +220,22 @@ def extract_records(vlist, uid, skip):
         if not title or not up_name or not isinstance(created, (int, float)):
             skip('契约字段缺失(title/up_name/created)')
             continue
+        # 2026-09-25：补 summary(视频简介) / duration(秒) / play(播放数)。
+        # 大卫反馈「B站的摘要没有」—— space API 的 vlist 本来就带 description，
+        # 原来只取 7 个字段把它丢了，等于白拿。duration/play 顺手存下供前端用。
+        desc = (v.get('description') or '').strip()
+        duration = v.get('length')            # "mm:ss" 形式，兜底转秒
+        dur_sec = 0
+        if isinstance(duration, str) and ':' in duration:
+            try:
+                parts = [int(x) for x in duration.split(':')]
+                for x in parts:
+                    dur_sec = dur_sec * 60 + x
+            except ValueError:
+                dur_sec = 0
+        elif isinstance(duration, (int, float)):
+            dur_sec = int(duration)
+        play = v.get('play')
         records.append({
             'bvid': bvid,
             'link': f'https://www.bilibili.com/video/{bvid}',  # 规范化重建
@@ -214,6 +244,9 @@ def extract_records(vlist, uid, skip):
             'up_name': up_name,
             'uid': uid,
             'published': formatdate(created, usegmt=True),  # unix 秒 → RFC 2822 GMT
+            'summary': desc,              # 视频简介（可为空字符串）
+            'duration': dur_sec,          # 秒
+            'play': int(play) if isinstance(play, (int, float)) else 0,
         })
     return records
 
@@ -226,7 +259,8 @@ def _sort_key(record):
 
 
 def main():
-    api_base, uids, per_max, interval = load_bilibili_ini()
+    (api_base, uids, per_max, interval,
+     page_size, pages, retry_max, retry_wait) = load_bilibili_ini()
     out_base, feed_max_bytes = load_pipeline_cfg()
     out_dir = os.path.join(SCRIPT_DIR, out_base)
     os.makedirs(out_dir, exist_ok=True)
@@ -256,13 +290,31 @@ def main():
         if mixin_key is None:
             log_lines.append(f'uid={uid} FETCH_FAIL no wbi keys')
         else:
-            vlist, total, err = fetch_vlist(session, api_base, uid, mixin_key, feed_max_bytes)
-            if err is not None:
-                log_lines.append(f'uid={uid} FETCH_FAIL {err}')
-            else:
-                ok_count += 1
-                skips = {}
-                added = 0
+            skips = {}
+            added = 0
+            total = 0
+            pages_ok = 0
+            last_err = None
+            for pn in range(1, pages + 1):
+                vlist, total_cnt, err = None, None, None
+                # 2026-09-25：退避重试。实测 B站会返 HTTP 412（风控页），
+                # 是临时限频而非 UP 失效 —— 等一下重来常常就通了。
+                for attempt in range(retry_max + 1):
+                    vlist, total_cnt, err = fetch_vlist(
+                        session, api_base, uid, mixin_key, feed_max_bytes,
+                        page_size=page_size, pn=pn)
+                    if err is None:
+                        break
+                    last_err = err
+                    if attempt < retry_max:
+                        time.sleep(retry_wait * (attempt + 1))
+                if err is not None:
+                    break
+                pages_ok += 1
+                if total_cnt:
+                    total = total_cnt
+                if not vlist:
+                    break
                 for rec in extract_records(vlist, uid,
                                            lambda r: skips.__setitem__(r, skips.get(r, 0) + 1)):
                     if rec['bvid'] in seen:
@@ -274,8 +326,15 @@ def main():
                     seen.add(rec['bvid'])
                     new_records.append(rec)
                     added += 1
+                if pn < pages:
+                    time.sleep(interval)  # 翻页间隔，防风控
+            if pages_ok == 0:
+                log_lines.append(f'uid={uid} FETCH_FAIL {last_err}')
+            else:
+                ok_count += 1
                 skip_str = ','.join(f'{k}x{v}' for k, v in sorted(skips.items())) or 'none'
-                log_lines.append(f'uid={uid} new={added} skip={skip_str} total={total}')
+                log_lines.append(f'uid={uid} new={added} skip={skip_str} '
+                                 f'total={total} pages={pages_ok}/{pages}')
         if i < len(uids) - 1:
             time.sleep(interval)  # 每 uid 请求间隔，防风控（契约）
 
@@ -290,7 +349,8 @@ def main():
                 f.write(json.dumps(rec, ensure_ascii=False) + '\n')
         os.replace(tmp_path, jsonl_path)
 
-    log_lines.append(f'bilibili: ok {ok_count}/{len(uids)}, new {len(new_records)}')
+    log_lines.append(f'bilibili: ok {ok_count}/{len(uids)}, new {len(new_records)}, '
+                     f'ps={page_size} pages={pages}')
     with open(log_path, 'a', encoding='utf-8') as f:
         f.write('\n'.join(log_lines) + '\n')
     print(log_lines[-1])
