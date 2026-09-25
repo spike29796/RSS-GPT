@@ -1,6 +1,9 @@
 // RSS-GPT service worker —— network-first
 // 目标：内容永远拿最新的（他 push 完就生效），只在断网时用缓存兜底。
-const CACHE = 'rss-gpt-v1';
+// 2026-09-25：v1 -> v2。改了前端但大卫刷新看不到 ——
+// GitHub Pages 给 index.html 的 cache-control 是 max-age=600，
+// 浏览器 10 分钟内不重新拉页面，于是还挂着旧 bundle。升版本号强制换缓存。
+const CACHE = 'rss-gpt-v2';
 
 // 只预缓存"壳"（图标 + manifest）。数据（*.jsonl / *.xml）不预缓存，
 // 因为它们是每天更新的内容，缓存了反而会看到旧数据。
@@ -36,7 +39,27 @@ self.addEventListener('fetch', (e) => {
     return; // 交给浏览器默认行为
   }
 
-  // 页面和静态资源：network-first，失败回落到缓存
+  // 2026-09-25：页面导航（HTML）必须绕开 HTTP 缓存 ——
+  // 否则 GitHub Pages 的 max-age=600 会让用户拿着旧 index.html，
+  // 而它引用的是旧 hash bundle，看起来就是「改了没生效」。
+  const isHTML = req.mode === 'navigate'
+    || (req.headers.get('accept') || '').includes('text/html')
+  if (isHTML) {
+    e.respondWith(
+      fetch(req, { cache: 'no-store' })
+        .then((res) => {
+          if (res && res.status === 200 && res.type === 'basic') {
+            const copy = res.clone()
+            caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {})
+          }
+          return res
+        })
+        .catch(() => caches.match(req).then((hit) => hit || caches.match('/RSS-GPT/')))
+    )
+    return
+  }
+
+  // 静态资源（带 hash 的 bundle）：network-first，失败回落到缓存
   e.respondWith(
     fetch(req)
       .then((res) => {
