@@ -12,6 +12,9 @@ import BiliDetailItem from './components/BiliDetailItem.vue'
 import PlayerOverlay from './components/PlayerOverlay.vue'
 
 const PAGE_SIZE = 50
+// 2026-09-25：侧栏「资讯源」默认只露 6 个，点「展开」再看全部（源多了太占屏）
+const SOURCE_COLLAPSED = 6
+const sourcesExpanded = ref(false)
 const CARD_LIST_SIZE = 20
 
 const entries = ref([])
@@ -117,7 +120,26 @@ const filtered = computed(() => {
   return list
 })
 
-const visible = computed(() => filtered.value.slice(0, shown.value))
+// 2026-09-25：源详情第一页只给「今天」的条目。
+// 原来一进源就是全部（含几十天前旧文），今天的新内容反而被埋着。
+// 今天有内容 → 首屏只显示今天的，按钮变「查看全部」；
+// 今天没内容 → 回退显示全部（否则空白更糟）。
+const showAllEntries = ref(false)
+const todayFiltered = computed(() => filtered.value.filter((e) => isToday(e.published)))
+const listSource = computed(() => {
+  if (showAllEntries.value) return filtered.value
+  const t = todayFiltered.value
+  return t.length ? t : filtered.value
+})
+const visible = computed(() => listSource.value.slice(0, shown.value))
+// 首次点「查看全部」：放出历史条目（不翻页）；之后再点才是翻页
+function loadMore() {
+  if (!showAllEntries.value && todayFiltered.value.length) {
+    showAllEntries.value = true
+    return
+  }
+  shown.value += PAGE_SIZE
+}
 
 // 2026-09-25：切视图/换源后回到顶部。
 // 之前没这一步——用户从首页（或长列表）滚下来再点开源，新视图高度变了但滚动位置
@@ -131,6 +153,7 @@ function openList(source = 'all', category = 'all') {
   activeCategory.value = category
   search.value = ''
   shown.value = PAGE_SIZE
+  showAllEntries.value = false
   view.value = 'list'
   toTop()
 }
@@ -160,11 +183,13 @@ function selectSource(name) {
   activeSource.value = name
   activeCategory.value = 'all'
   shown.value = PAGE_SIZE
+  showAllEntries.value = false
 }
 
 function selectCategory(name) {
   activeCategory.value = name
   shown.value = PAGE_SIZE
+  showAllEntries.value = false
 }
 // ===== T-038：意图标注 =====
 // 判据不是"这条讲什么"，而是"我读完下一步会做什么"
@@ -423,7 +448,7 @@ function clearMarks() {
           <button class="home-btn" @click="goHome">‹ 首页</button>
           <input v-model="search" class="search" type="search" placeholder="模糊搜索（中英文都行）…" @input="shown = PAGE_SIZE" />
           <h3 class="panel-title">资讯源</h3>
-          <div class="panel-tags">
+          <div class="panel-tags" :class="{ collapsed: !sourcesExpanded }">
             <button :class="{ active: activeSource === 'all' }" @click="selectSource('all')">
               <span>全部源</span><span class="n">{{ entries.length }}</span>
             </button>
@@ -437,6 +462,9 @@ function clearMarks() {
               <span class="n">{{ sourceStats.find((x) => x.name === s.name)?.total || 0 }}</span>
             </button>
           </div>
+          <button v-if="SOURCES.length > SOURCE_COLLAPSED" class="tags-toggle" @click="sourcesExpanded = !sourcesExpanded">
+            {{ sourcesExpanded ? '收起' : `展开全部 ${SOURCES.length} 个源` }}
+          </button>
           <h3 class="panel-title">标签</h3>
           <div class="panel-tags">
             <button :class="{ active: activeCategory === 'all' }" @click="selectCategory('all')">
@@ -454,10 +482,18 @@ function clearMarks() {
         </aside>
 
         <main class="list">
-          <p v-if="filtered.length === 0" class="hint">没有匹配的条目</p>
+          <p v-if="listSource.length === 0" class="hint">没有匹配的条目</p>
+          <p v-if="!showAllEntries && todayFiltered.length && filtered.length > todayFiltered.length" class="today-note">
+            今日更新 <b>{{ todayFiltered.length }}</b> 条
+          </p>
+          <p v-else-if="!showAllEntries && !todayFiltered.length && filtered.length" class="today-note dim">
+            今日无更新，以下是最近内容
+          </p>
           <EntryCard v-for="e in visible" :key="e.link" :entry="e" />
-          <button v-if="filtered.length > shown" class="more" @click="shown += PAGE_SIZE">
-            加载更多（{{ filtered.length - shown }} 条剩余）
+          <button v-if="filtered.length > visible.length" class="more" @click="loadMore">
+            {{ showAllEntries || !todayFiltered.length
+               ? `加载更多（${filtered.length - shown} 条剩余）`
+               : `查看全部 ${filtered.length} 条` }}
           </button>
         </main>
       </div>
@@ -683,6 +719,29 @@ body {
   gap: 10px;
   margin-top: 12px;
 }
+/* 2026-09-25：窄屏（<1000px 单栏）下的侧栏优化 ——
+   隐藏条数避免和源名挤在一行、加大点击区方便手指点、
+   展开按钮也变成大块。 */
+@media (max-width: 999px) {
+  .panel-tags button .n {
+    display: none;
+  }
+  .panel-tags button {
+    padding: 11px 12px;
+    font-size: 14px;
+  }
+  .panel-tags {
+    gap: 6px;
+  }
+  .tags-toggle {
+    padding: 10px;
+    font-size: 13px;
+  }
+  .panel {
+    padding: 10px;
+    gap: 8px;
+  }
+}
 @media (max-width: 699px) {
   .bili-grid {
     grid-template-columns: 1fr;
@@ -797,6 +856,42 @@ body {
   height: 8px;
   border-radius: 50%;
   margin-right: 6px;
+}
+/* 2026-09-25：资讯源默认折叠。子元素顺序 = 「全部源」+ 各源，故 n+8 起隐藏
+   （即只露「全部源」+ 前 6 个源）。 */
+.panel-tags.collapsed > button:nth-child(n + 8) {
+  display: none;
+}
+.tags-toggle {
+  border: 1px dashed var(--border-2);
+  background: none;
+  color: var(--dim);
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: center;
+}
+.tags-toggle:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+.today-note {
+  grid-column: 1 / -1;
+  margin: 0 0 4px;
+  padding: 7px 12px;
+  border-left: 3px solid var(--accent);
+  background: var(--card-2);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.today-note b {
+  color: var(--accent);
+}
+.today-note.dim {
+  border-left-color: var(--border-2);
+  color: var(--dim);
 }
 
 .list {
