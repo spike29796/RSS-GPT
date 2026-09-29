@@ -16,7 +16,9 @@ export const SOURCES = [
 
   // T-044 2026-09-14：OpenAI News 下线 —— 1000 条把页面淹了（别的源 20-60 条），
   // 且多为公司宣传（合作/政策/人事/发布）而非技术实操。
-  // { name: 'openai-news', label: 'OpenAI News', league: 'H', accent: '#7fd4a8' },
+  // T-053 2026-09-29：恢复上线，改为限量（max_items=3 / backfill_days=14），
+  // 每天最多 3 条 —— 一手发布只有它有，arXiv 和二手媒体里拿不到。
+  { name: 'openai-news', label: 'OpenAI News', league: 'H', accent: '#7fd4a8' },
 
   // T-041 2026-09-14：补「能直接动手」的源类型（新闻源拿不到"能马上用"）
   { name: 'github-trending', label: 'GitHub 日榜', league: 'I', accent: '#8b5cf6' },
@@ -29,7 +31,14 @@ export const SOURCES = [
   // { name: 'hf-blog', label: 'HuggingFace', league: 'O', accent: '#ffd21e' },
   // T-048 2026-09-14：arXiv cs.AI（两轮抓取都是 0 条；arxiv-ro 那栏是好的）
   // { name: 'arxiv-ai', label: 'arXiv cs.AI', league: 'P', accent: '#b31b1b' },
-  { name: 'arxiv-ro', label: 'arXiv 机器人', league: 'Q', accent: '#c2410c' },
+  // T-053 2026-09-29：arxiv-ro 下线（全量 RSS：988/1000 条从未处理、三天净处理 3 条、
+  // 每轮只有约 3 分钟预算）→ 换成 4 个 arXiv API 主题源，见下方。
+  // { name: 'arxiv-ro', label: 'arXiv 机器人', league: 'Q', accent: '#c2410c' },
+  // T-053 2026-09-29：arXiv API 主题源，每源每天只取最新 5 条（原 arxiv-ro 是全量推送）
+  { name: 'arxiv-agent', label: 'arXiv·Agent', league: 'S', accent: '#7c3aed' },
+  { name: 'arxiv-t2i', label: 'arXiv·文生图', league: 'T', accent: '#db2777' },
+  { name: 'arxiv-video', label: 'arXiv·视频生成', league: 'U', accent: '#0891b2' },
+  { name: 'arxiv-llm-eng', label: 'arXiv·LLM 工程', league: 'V', accent: '#65a30d' },
   { name: 'sspai', label: '少数派', league: 'R', accent: '#d71a1b' },
 ]
 

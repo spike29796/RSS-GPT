@@ -8,7 +8,7 @@
 
 ## ✨ 特性
 
-- **每日自动采集**：GitHub Actions 定时任务抓取 9 个 RSS 源 + B站官方 API（`cron-job.yml`，每日凌晨跑）
+- **每日自动采集**：GitHub Actions 定时任务抓取 16 个 RSS 源 + B站官方 API（`cron-job.yml`，每日凌晨跑）
 - **LLM 中文导读**：OpenAI 兼容 API 为每条生成一句话中文摘要（`config.ini` 可切换模型/源）
 - **Vue3 前端聚合页**：
   - 双语主题（日/夜）+ 一键翻译（标题/标签）
@@ -70,6 +70,7 @@ MIT（见 [RSS-GPT/LICENSE](RSS-GPT/LICENSE)）
 
 > 本仓库由 [yinan-c/RSS-GPT](https://github.com/yinan-c/RSS-GPT) 深度定制而来：新增 Vue3 聚合前端、B站采集与轮播/详情页/就地播放、双语主题、模糊搜索等。
 
+- https://openai.com/news/rss.xml -> https://None.github.io/RSS-GPT/openai-news.jsonl
 - https://www.qbitai.com/feed -> https://None.github.io/RSS-GPT/qbitai.xml
 - https://www.geekpark.net/rss -> https://None.github.io/RSS-GPT/geekpark.xml
 - https://www.infoq.cn/feed -> https://None.github.io/RSS-GPT/infoq.xml
@@ -80,10 +81,15 @@ MIT（见 [RSS-GPT/LICENSE](RSS-GPT/LICENSE)）
 - https://lilianweng.github.io/index.xml -> https://None.github.io/RSS-GPT/lilianweng.jsonl
 - https://thegradient.pub/rss/ -> https://None.github.io/RSS-GPT/gradient.jsonl
 - https://lobste.rs/rss -> https://None.github.io/RSS-GPT/lobsters.jsonl
-- arXiv cs.RO -> https://None.github.io/RSS-GPT/arxiv-ro.jsonl
+- arXiv·Agent -> https://None.github.io/RSS-GPT/arxiv-agent.jsonl
+- arXiv·文生图 -> https://None.github.io/RSS-GPT/arxiv-t2i.jsonl
+- arXiv·视频生成 -> https://None.github.io/RSS-GPT/arxiv-video.jsonl
+- arXiv·LLM 工程 -> https://None.github.io/RSS-GPT/arxiv-llm-eng.jsonl
 - https://sspai.com/feed -> https://None.github.io/RSS-GPT/sspai.jsonl
 
 <!-- 已下线源（数据从 git 历史可取回，配置见 RSS-GPT/config.ini 注释）
-     ithome（T-040）｜ openai-news（T-044）｜ simonwillison（T-047）｜ producthunt（T-047）
+     ithome（T-040）｜ simonwillison（T-047）｜ producthunt（T-047）
+     ｜ arXiv cs.RO（T-053，全量 RSS：988/1000 条从未处理、三天净处理 3 条，
+       改用上面的 4 个 arXiv API 主题源）
      —— 下线依据均来自大卫的意图标注数据（0 正例 或 单源条目量压倒其他源） -->
 

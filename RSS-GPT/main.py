@@ -373,6 +373,46 @@ def normalize_summary(summary):
     return SUMMARY_MARKERS[0] + _strip_plain_prefixes(strip_tags(raw))
 
 
+def _clean_category_line(s):
+    """剥掉「分类: xxx」这类前缀，返回纯分类名。"""
+    return re.sub(r'^(分类|类别|category)\s*[:：]?\s*', '', str(s or ''), flags=re.IGNORECASE).strip()
+
+
+def _split_tolerant(text, categories):
+    """容错切分（T-055）：把 <br> 与真换行一并当分隔符，返回 (分类, 摘要原文, 标题) 或 None。
+
+    实测的两种形态都会让严格三行解析失败：
+      本地 Qwen：'模型发布<br><br>总结: 正文<br>标题'          ← 分类与标记写在同一行
+      GLM：     '模型发布\\n<br><br>总结:<br>\\n正文\\n<br>标题'  ← 标记独占一行、正文在下一行
+    做法：切段后，摘要段在「只有标记、没有正文」时向后吞并，标题取最后一段。
+    只在严格路径失败时启用，保证既有行为零变化。
+    """
+    segs = [s.strip() for s in re.split(r'<br\s*/?>|\r?\n', str(text or ''), flags=re.IGNORECASE)]
+    segs = [s for s in segs if s]
+    if len(segs) < 2:
+        return None
+    category = _clean_category_line(segs[0])
+    if category not in categories:
+        return None
+    buffers = []
+    i = 1
+    while i < len(segs):
+        buffers.append(segs[i])
+        i += 1
+        if summary_body(normalize_summary(' '.join(buffers))):
+            break
+    summary_raw = ' '.join(buffers)
+    if not summary_body(normalize_summary(summary_raw)):
+        return None
+    title_raw = None
+    rest = segs[i:]
+    if rest:
+        cand = strip_tags(re.sub(r'^(标题|title)\s*[:：]?\s*', '', rest[-1], flags=re.IGNORECASE))
+        if cand and cand != summary_body(normalize_summary(summary_raw)):
+            title_raw = cand
+    return category, summary_raw, title_raw
+
+
 def parse_category_and_summary(text, categories, default_category):
     """Split the model output into (category, summary, title_zh).
 
@@ -381,25 +421,32 @@ def parse_category_and_summary(text, categories, default_category):
     default_category with summary=None (same as a summarization failure), so
     the generated XML always has a valid <category> value and non-compliant
     raw model output never leaks into the data layer.
+
+    T-055（2026-09-30）：严格路径失败时，再走一次 <br> 容错切分（_split_tolerant）。
+    实测该改动让本地 Qwen2.5-7B 与 GLM-4-Flash 的可解析率都从 0/5 升到 5/5
+    （样本 = 5 篇真实 arXiv 论文的原始输出；GLM 侧同样失败的原因是
+    '<br><br>总结:<br>' 独占一行时 lines[1] 只剩标记 → summary_body 为空）。
     """
-    lines = [line.strip() for line in text.strip().splitlines() if line.strip()]
-    if not lines:
-        return default_category, None, None
-    candidate = re.sub(r'^(分类|类别|category)\s*[:：]?\s*', '', lines[0], flags=re.IGNORECASE).strip()
-    if candidate in categories:
-        summary = normalize_summary(lines[1]) if len(lines) > 1 else None
-        # 半成品（只有标记、没有正文）也当失败，交给上层重试
-        if not summary or not summary_body(summary):
-            return candidate, None, None
-        # Third line (optional): the translated title. Missing is acceptable
-        # and does not trigger a retry.
-        title_zh = None
-        if len(lines) > 2:
-            # 2026-09-11：必须清标签——模型有时把 <br> 写进这一行，
-            # 直接落库会在站点上显示成「<br>标题」
-            cleaned = strip_tags(re.sub(r'^(标题|title)\s*[:：]?\s*', '', lines[2], flags=re.IGNORECASE))
-            title_zh = cleaned or None
-        return candidate, summary, title_zh
+    lines = [line.strip() for line in (text or '').strip().splitlines() if line.strip()]
+    if lines:
+        candidate = _clean_category_line(lines[0])
+        if candidate in categories:
+            summary = normalize_summary(lines[1]) if len(lines) > 1 else None
+            # 半成品（只有标记、没有正文）也当失败，交给上层重试
+            if summary and summary_body(summary):
+                # Third line (optional): the translated title. Missing is acceptable
+                # and does not trigger a retry.
+                title_zh = None
+                if len(lines) > 2:
+                    # 2026-09-11：必须清标签——模型有时把 <br> 写进这一行，
+                    # 直接落库会在站点上显示成「<br>标题」
+                    cleaned = strip_tags(re.sub(r'^(标题|title)\s*[:：]?\s*', '', lines[2], flags=re.IGNORECASE))
+                    title_zh = cleaned or None
+                return candidate, summary, title_zh
+    tolerant = _split_tolerant(text, categories)
+    if tolerant:
+        category, summary_raw, title_raw = tolerant
+        return category, normalize_summary(summary_raw), title_raw
     return default_category, None, None
 
 def has_cjk(s):

@@ -32,12 +32,13 @@ DOCS = os.path.join(HERE, "docs")
 OUT = os.path.join(DOCS, "recommended.jsonl")
 
 # 源名 → 中文标签（跟 web/src/api.js 对齐；只影响显示）
-# 已下线（不在此列）：ithome(T-040)、openai-news(T-044)、
-#   simonwillison(T-047)、producthunt(T-047)、hf-blog(T-048)、arxiv-ai(T-048)
+# 已下线（不在此列）：ithome(T-040)、simonwillison(T-047)、
+#   producthunt(T-047)、hf-blog(T-048)、arxiv-ai(T-048)、arxiv-ro(T-053)
 SRC_NAME = [
     "qbitai", "geekpark", "infoq", "nvidia-blog",
     "github-trending", "hackernews", "reddit-localllama", "lilianweng",
-    "gradient", "lobsters", "arxiv-ro", "sspai",
+    "gradient", "lobsters", "sspai", "openai-news",
+    "arxiv-agent", "arxiv-t2i", "arxiv-video", "arxiv-llm-eng",
 ]
 
 LABEL = {"use": "能马上用", "save": "该存档", "know": "只需知道", "noise": "与我无关"}
