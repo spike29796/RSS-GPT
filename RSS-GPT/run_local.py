@@ -52,8 +52,12 @@ def main():
     if missing:
         sys.exit(f".env 缺必填项：{', '.join(missing)}（OPENAI_API_KEY 本地可留空）")
 
-    run("python main.py")
-    run("python bilibili_collect.py")
+    # 2026-09-30：用当前解释器（sys.executable）而不是裸 `python` ——
+    # 有些 Windows 机器上 PATH 里的 `python` 是 Microsoft Store 的占位符
+    # （跑起来只弹商店、`--version` 返回空），管线会整条挂掉。
+    py = f'"{sys.executable}"'
+    run(f"{py} main.py")
+    run(f"{py} bilibili_collect.py")
 
     run("git add docs/", check=False)
     msg = datetime.datetime.now().strftime("Auto Build at %Y-%m-%d %H:%M")
