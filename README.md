@@ -93,3 +93,19 @@ MIT（见 [RSS-GPT/LICENSE](RSS-GPT/LICENSE)）
        改用上面的 4 个 arXiv API 主题源）
      —— 下线依据均来自大卫的意图标注数据（0 正例 或 单源条目量压倒其他源） -->
 
+- https://openai.com/news/rss.xml -> https://spike29796.github.io/RSS-GPT/openai-news.xml
+- https://www.qbitai.com/feed -> https://spike29796.github.io/RSS-GPT/qbitai.xml
+- https://www.geekpark.net/rss -> https://spike29796.github.io/RSS-GPT/geekpark.xml
+- https://www.infoq.cn/feed -> https://spike29796.github.io/RSS-GPT/infoq.xml
+- https://blogs.nvidia.com/feed/ -> https://spike29796.github.io/RSS-GPT/nvidia-blog.xml
+- https://mshibanami.github.io/GitHubTrendingRSS/daily/all.xml -> https://spike29796.github.io/RSS-GPT/github-trending.xml
+- https://lilianweng.github.io/index.xml -> https://spike29796.github.io/RSS-GPT/lilianweng.xml
+- https://hnrss.org/frontpage -> https://spike29796.github.io/RSS-GPT/hackernews.xml
+- https://lobste.rs/rss -> https://spike29796.github.io/RSS-GPT/lobsters.xml
+- https://thegradient.pub/rss/ -> https://spike29796.github.io/RSS-GPT/gradient.xml
+- https://sspai.com/feed -> https://spike29796.github.io/RSS-GPT/sspai.xml
+- https://export.arxiv.org/api/query?search_query=cat%3Acs.AI%20AND%20abs%3A%22agent%22&sortBy=submittedDate&sortOrder=descending&max_results=20 -> https://spike29796.github.io/RSS-GPT/arxiv-agent.xml
+- https://export.arxiv.org/api/query?search_query=cat%3Acs.CV%20AND%20(abs%3A%22diffusion%22%20OR%20abs%3A%22text-to-image%22)&sortBy=submittedDate&sortOrder=descending&max_results=20 -> https://spike29796.github.io/RSS-GPT/arxiv-t2i.xml
+- https://export.arxiv.org/api/query?search_query=abs%3A%22video%20generation%22%20OR%20abs%3A%22image-to-video%22&sortBy=submittedDate&sortOrder=descending&max_results=20 -> https://spike29796.github.io/RSS-GPT/arxiv-video.xml
+- https://export.arxiv.org/api/query?search_query=cat%3Acs.SE%20AND%20abs%3A%22LLM%22&sortBy=submittedDate&sortOrder=descending&max_results=20 -> https://spike29796.github.io/RSS-GPT/arxiv-llm-eng.xml
+- https://www.reddit.com/r/LocalLLaMA/.rss -> https://spike29796.github.io/RSS-GPT/reddit-localllama.xml
