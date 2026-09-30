@@ -378,48 +378,6 @@ def _clean_category_line(s):
     return re.sub(r'^(分类|类别|category)\s*[:：]?\s*', '', str(s or ''), flags=re.IGNORECASE).strip()
 
 
-
-# ---------------------------------------------------------------- T-057
-# 标题位的格式闸门。不合格一律返回 None —— 站点回退英文原标题，
-# 而不是把分类名 / 格式标记 / 正文片段 / 整句话显示成标题。
-#
-# 2026-09-30 全站扫描：1274 条 title_zh 中有 176 条是上面的脏数据。
-# 规则边界经三轮全量验证定稿（曾误杀英文原题 492 条、误杀正常中文标题 110 条，
-# 均已修正）：
-#   · 纯非中文（未翻译的英文题名）一律放行，不碰
-#   · 中文长度上限只做兜底（30 字会误杀「苹果发布iPhone 18 Pro」这类正常标题）
-#   · 只认中文句号；问号/叹号结尾的标题很常见，不算脏
-_CJK_RE = re.compile(r'[\u4e00-\u9fff]')
-_TITLE_MARKERS = {'总结', 'Summary', 'summary', '标题', 'title', 'Title'}
-_TITLE_MAX_LEN = 100
-
-
-def _plausible_title(cand, categories, summary_text):
-    """标题位内容是否可用；不可用返回 None（落库为 None → 前端回退英文标题）。"""
-    c = strip_tags(str(cand or '')).strip()
-    if not c:
-        return None
-    if c in categories:
-        return None
-    if c.rstrip(':：').strip() in _TITLE_MARKERS:
-        return None
-    if not _CJK_RE.search(c):
-        # 没翻译、直接沿用英文题名 —— 站点本来就显示英文，不算脏数据
-        return c
-    body = str(summary_text or '').strip()
-    if c == body:
-        return None
-    if len(c) >= 3 and c in body:
-        # 正文片段被切到标题位（如「验证工程师」）——靠"是摘要子串"识别
-        return None
-    if len(c) > _TITLE_MAX_LEN:
-        return None
-    if re.search(r'。\s*$', c):
-        # 以句号收尾 = 完整句子，不是标题短语
-        return None
-    return c
-
-
 def _split_tolerant(text, categories):
     """容错切分（T-055）：把 <br> 与真换行一并当分隔符，返回 (分类, 摘要原文, 标题) 或 None。
 
@@ -450,8 +408,8 @@ def _split_tolerant(text, categories):
     rest = segs[i:]
     if rest:
         cand = strip_tags(re.sub(r'^(标题|title)\s*[:：]?\s*', '', rest[-1], flags=re.IGNORECASE))
-        # T-057：同一道闸门（分类名 / 标记 / 正文片段 / 整句 一律丢弃）
-        title_raw = _plausible_title(cand, categories, summary_body(normalize_summary(summary_raw)))
+        if cand and cand != summary_body(normalize_summary(summary_raw)):
+            title_raw = cand
     return category, summary_raw, title_raw
 
 
@@ -483,8 +441,7 @@ def parse_category_and_summary(text, categories, default_category):
                     # 2026-09-11：必须清标签——模型有时把 <br> 写进这一行，
                     # 直接落库会在站点上显示成「<br>标题」
                     cleaned = strip_tags(re.sub(r'^(标题|title)\s*[:：]?\s*', '', lines[2], flags=re.IGNORECASE))
-                    # T-057：出口闸门 —— 不合格就丢弃，回退英文标题
-                    title_zh = _plausible_title(cleaned, categories, summary_body(summary))
+                    title_zh = cleaned or None
                 return candidate, summary, title_zh
     tolerant = _split_tolerant(text, categories)
     if tolerant:
