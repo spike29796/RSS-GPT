@@ -15,6 +15,7 @@ import datetime
 import os
 import subprocess
 import sys
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ENV_FILE = os.path.join(HERE, ".env")
@@ -66,7 +67,26 @@ def main():
         print("（无变更可提交，跳过）")
 
     if "--push" in sys.argv:
-        run("git push origin main", check=False)
+        # 2026-10-03 修：原来这一句是 `run("git push origin main", check=False)` ——
+        # 推送失败被静默吞掉，任务照样 exit 0，commit 只留在本地、站点不更新
+        # （10-03 就发生了：本地 afe8d14 领先远端 1 个，Pages 没动）。
+        # 现在：自动重试 3 次（网络抽风可自愈），最终失败以非 0 退出，
+        # 让计划任务的 LastTaskResult 留下失败痕迹。
+        pushed = False
+        for attempt in range(1, 4):
+            rc = run("git push origin main", check=False)
+            if rc == 0:
+                print(f"[push] 成功（第 {attempt} 次）")
+                pushed = True
+                break
+            print(f"[push] 失败 exit={rc}（第 {attempt}/3 次）")
+            if attempt < 3:
+                time.sleep(30)
+        if not pushed:
+            sys.exit(
+                "[push] 连续 3 次失败：检查网络/代理。"
+                "本地 commit 已保留，可手动 `git push origin main` 补推。"
+            )
     else:
         print("\ndocs/ 已提交（未推送）。确认后手动 `git push origin main`，或加 --push 自动推。")
 
