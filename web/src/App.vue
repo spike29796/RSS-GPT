@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import Fuse from 'fuse.js'
 import { SOURCES, fetchAllEntries, fetchRecommended, fetchBiliVideos } from './api.js'
 import { parseDate, formatDate, isToday } from './format.js'
@@ -10,6 +10,8 @@ import BiliCarousel from './components/BiliCarousel.vue'
 import SourceCard from './components/SourceCard.vue'
 import BiliDetailItem from './components/BiliDetailItem.vue'
 import PlayerOverlay from './components/PlayerOverlay.vue'
+import ReaderView from './components/ReaderView.vue'
+import { paperId } from './paperId.js'
 
 const PAGE_SIZE = 50
 const CARD_LIST_SIZE = 20
@@ -17,11 +19,15 @@ const CARD_LIST_SIZE = 20
 const entries = ref([])
 const errors = ref([])
 const loading = ref(true)
-const view = ref('home') // 'home' | 'list' | 'bili'
+const view = ref('home') // 'home' | 'list' | 'bili' | 'read'
 const activeSource = ref('all')
 const activeCategory = ref('all')
 const search = ref('')
 const shown = ref(PAGE_SIZE)
+// 2026-10-08：阅读页。站点是纯静态托管（GitHub Pages），直接访问 /read/xxx 路径会 404，
+// 所以路由走 hash（#/read/<id>）。沿用现有手写视图切换，不引 vue-router。
+const readerId = ref('')
+const readerEntry = ref(null)
 // T-026：B站轮播数据。fetch 失败或为空 → 轮播模块整体不渲染（不留空壳）。
 const bili = ref([])
 // T-043：两个区 —— 'rec' = 打分器推荐（≥2 分），'all' = 抓到什么看什么
@@ -173,8 +179,52 @@ function closePlayer() {
 
 function goHome() {
   view.value = 'home'
+  if (location.hash) location.hash = '' // 触发 hashchange → applyRoute（不会重复切视图）
   toTop()
 }
+
+// ===== 2026-10-08：站内阅读页路由（hash）=====
+// 点条目卡 → 阅读页；地址栏同步成 #/read/<id>，转发/刷新都能直接回到同一篇。
+// id = sha1(link)[:16]，与 paper_translate.py 写出的文件名同口径（web/src/paperId.js）。
+const READ_RE = /^#\/read\/([0-9a-f]{4,64})$/
+
+function openReader(entry) {
+  readerEntry.value = { id: paperId(entry.link), entry: { ...entry, source: entry.source || entry.sourceLabel || '' } }
+  location.hash = `#/read/${readerEntry.value.id}`
+}
+
+// 只有「进来时点的那张卡」才对得上这个 id。直接改地址栏 / 转发进来的链接
+// 没有卡片快照，readerEntry 可能还是上一篇的 —— 对不上就当没有。
+const readerSnapshot = computed(() =>
+  readerEntry.value && readerEntry.value.id === readerId.value ? readerEntry.value.entry : null,
+)
+
+function applyRoute() {
+  const m = READ_RE.exec(location.hash || '')
+  if (m) {
+    readerId.value = m[1]
+    view.value = 'read'
+  } else if (view.value === 'read') {
+    // 从阅读页返回：回到进来之前的列表；首次直接开阅读页的，退回首页
+    view.value = entries.value.length ? 'list' : 'home'
+  }
+  toTop()
+}
+
+function closeReader() {
+  const before = location.hash
+  history.back()
+  // 直达 #/read/<id>（没有可回退的历史）时 back() 不会触发 hashchange，兜底清 hash
+  setTimeout(() => {
+    if (view.value === 'read' && location.hash === before) location.hash = ''
+  }, 150)
+}
+
+onMounted(() => {
+  window.addEventListener('hashchange', applyRoute)
+  applyRoute() // 支持直接打开 #/read/<id>（刷新后仍停在阅读页）
+})
+onBeforeUnmount(() => window.removeEventListener('hashchange', applyRoute))
 
 function selectSource(name) {
   activeSource.value = name
@@ -403,7 +453,7 @@ function clearMarks() {
 
     <!-- ↓↓↓ T-052：原 UI 已恢复（这三视图是站点的正式形态） ↓↓↓ -->
     <div class="legacy-ui">
-    <header class="header">
+    <header v-if="view !== 'read'" class="header">
       <h1 @click="goHome">OpenAI News 聚合</h1>
       <span v-if="lastUpdate" class="updated">更新于 {{ lastUpdate }}</span>
       <span class="header-actions">
@@ -483,7 +533,7 @@ function clearMarks() {
           <p v-else-if="!showAllEntries && !todayFiltered.length && filtered.length" class="today-note dim">
             今日无更新，以下是最近内容
           </p>
-          <EntryCard v-for="e in visible" :key="e.link" :entry="e" />
+          <EntryCard v-for="e in visible" :key="e.link" :entry="e" @open="openReader" />
           <button v-if="filtered.length > visible.length" class="more" @click="loadMore">
             {{ showAllEntries || !todayFiltered.length
                ? `加载更多（${filtered.length - shown} 条剩余）`
@@ -500,6 +550,11 @@ function clearMarks() {
       <div class="bili-grid">
         <BiliDetailItem v-for="v in biliList" :key="v.bvid" :item="v" @play="openPlayer" />
       </div>
+    </template>
+
+    <!-- 双语阅读页：点条目卡进来，点段落展开中文译文 -->
+    <template v-if="view === 'read'">
+      <ReaderView :id="readerId" :entry="readerSnapshot" @back="closeReader" />
     </template>
 
     <!-- T-037：B站视频就地播放遮罩（fixed，不受布局影响） -->

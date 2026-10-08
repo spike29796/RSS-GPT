@@ -8,6 +8,9 @@ import { sanitizeSummary, safeLink } from '../sanitize.js'
 const props = defineProps({
   entry: { type: Object, required: true },
 })
+// 2026-10-08：整卡原来直接跳原文。改成进站内阅读页（双语分段），
+// 卡片右下角留一个次要的「原文 ↗」出口，想直接去原文的人不用绕。
+const emit = defineEmits(['open'])
 
 // The stored summary starts with '<br><br>总结:' (an RSS-facing paragraph
 // marker); for the card we strip the leading line breaks and the marker text
@@ -48,14 +51,21 @@ const tag = computed(() => tagLabel(props.entry.category, ui.showZh))
 </script>
 
 <template>
-  <a class="card" :href="entryLink" target="_blank" rel="noopener">
+  <div
+    class="card"
+    role="link"
+    tabindex="0"
+    @click="emit('open', entry)"
+    @keydown.enter.prevent="emit('open', entry)"
+  >
     <div class="meta">
       <span class="tag">{{ tag }}</span>
       <span class="date">{{ date }}</span>
     </div>
     <h3 class="title">{{ title }}</h3>
     <div v-if="guideText" class="summary"><span class="guide-label">导读</span><span v-html="guideText"></span></div>
-  </a>
+    <a class="orig" :href="entryLink" target="_blank" rel="noopener" @click.stop>原文 ↗</a>
+  </div>
 </template>
 
 <style scoped>
@@ -70,10 +80,37 @@ const tag = computed(() => tagLabel(props.entry.category, ui.showZh))
   padding: 16px 18px;
   text-decoration: none;
   color: inherit;
+  cursor: pointer;
   transition: background 0.15s;
 }
 .card:hover {
   background: var(--card-hover);
+}
+.card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+/* 「原文 ↗」是次要出口：贴右下角，别跟标题抢注意力 */
+.orig {
+  align-self: flex-end;
+  margin-top: auto;
+  font-size: 12px;
+  color: var(--dim);
+  text-decoration: none;
+  padding: 3px 9px;
+  border: 1px solid var(--border-2);
+  border-radius: 999px;
+}
+.orig:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+/* 手机上手指点：把次要出口的点击区撑高（原来 24px 太小点不准） */
+@media (max-width: 700px) {
+  .orig {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
 }
 /* 2026-09-25：原来 tag / title / date 各占一整行（flex column），
    一行只放一个词很浪费。改成「标签+日期」同一行，标签做成小胶囊。 */
