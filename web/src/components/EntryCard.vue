@@ -1,9 +1,11 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { formatDate } from '../format.js'
-import { ui } from '../store.js'
 import { tagLabel } from '../i18n.js'
+import { paperId } from '../paperId.js'
+import { isPaperSource } from '../paperSources.js'
 import { sanitizeSummary, safeLink } from '../sanitize.js'
+import { ui } from '../store.js'
 
 const props = defineProps({
   entry: { type: Object, required: true },
@@ -25,6 +27,80 @@ const guideText = computed(() => {
 })
 const entryLink = computed(() => safeLink(props.entry.link))
 const date = computed(() => formatDate(props.entry.published))
+
+// 2026-10-09：「复制链接」按钮。
+// 复制的是「点开这张卡会去哪」的那个地址 —— 论文复制站内阅读页（对方能直接
+// 看到中英对照），其余源复制原文。跟点击行为一致，不用猜自己复制到了什么。
+const shareUrl = computed(() => {
+  const link = entryLink.value
+  if (!link) return ''
+  if (!isPaperSource(props.entry)) return link
+  return `${location.origin}${import.meta.env.BASE_URL}#/read/${paperId(props.entry.link)}`
+})
+
+const copyState = ref('idle')
+let copyTimer = 0
+
+// 非安全上下文（手机走 http://192.168.x.x 那种地址）里 navigator.clipboard
+// 是禁用的，那条路要退回 execCommand + 临时 textarea。两条都失败才算没复制成。
+async function writeClipboard(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+  } catch (e) {
+    /* 掉到兜底那条路 */
+  }
+  try {
+    const ta = document.createElement('textarea')
+    ta.setAttribute('readonly', '')
+    ta.value = text
+    // 放到视口内（display:none 的节点选不上），再用 1px 透明藏起来
+    ta.style.position = 'fixed'
+    ta.style.top = '0'
+    ta.style.left = '0'
+    ta.style.width = '1px'
+    ta.style.height = '1px'
+    ta.style.padding = '0'
+    ta.style.border = '0'
+    ta.style.outline = '0'
+    ta.style.boxShadow = 'none'
+    ta.style.background = 'transparent'
+    ta.style.opacity = '0'
+    ta.style.zIndex = '-1'
+    document.body.appendChild(ta)
+    const ok = (() => {
+      // iOS Safari 用 readonly textarea 时 select() 圈不到内容，要先自己造 range
+      const isiOS = /ipad|iphone|ipod/i.test(navigator.userAgent)
+      if (isiOS) {
+        const range = document.createRange()
+        range.selectNodeContents(ta)
+        const sel = window.getSelection()
+        sel.removeAllRanges()
+        sel.addRange(range)
+        ta.setSelectionRange(0, 999999)
+      } else {
+        ta.select()
+        ta.setSelectionRange(0, text.length)
+      }
+      return document.execCommand('copy')
+    })()
+    document.body.removeChild(ta)
+    return ok
+  } catch (e) {
+    return false
+  }
+}
+
+async function copyLink() {
+  const url = shareUrl.value
+  if (!url) return
+  // 复制不成也要让按钮说话 —— 点了毫无反应是最糟的反馈
+  copyState.value = (await writeClipboard(url)) ? 'done' : 'fail'
+  window.clearTimeout(copyTimer)
+  copyTimer = window.setTimeout(() => { copyState.value = 'idle' }, 1800)
+}
 
 const hasCjk = (s) => /[\u4e00-\u9fff]/.test(String(s || ''))
 
@@ -64,7 +140,18 @@ const tag = computed(() => tagLabel(props.entry.category, ui.showZh))
     </div>
     <h3 class="title">{{ title }}</h3>
     <div v-if="guideText" class="summary"><span class="guide-label">导读</span><span v-html="guideText"></span></div>
-    <a class="orig" :href="entryLink" target="_blank" rel="noopener" @click.stop>原文 ↗</a>
+    <div class="actions">
+      <button
+        class="act"
+        type="button"
+        :class="{ done: copyState === 'done', fail: copyState === 'fail' }"
+        :title="shareUrl"
+        @click.stop="copyLink"
+        @keydown.enter.stop.prevent="copyLink"
+        @keydown.space.stop.prevent="copyLink"
+      >{{ copyState === 'done' ? '已复制 ✓' : copyState === 'fail' ? '复制失败' : '复制链接' }}</button>
+      <a class="orig" :href="entryLink" target="_blank" rel="noopener" @click.stop>原文 ↗</a>
+    </div>
   </div>
 </template>
 
@@ -90,10 +177,16 @@ const tag = computed(() => tagLabel(props.entry.category, ui.showZh))
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
-/* 「原文 ↗」是次要出口：贴右下角，别跟标题抢注意力 */
-.orig {
-  align-self: flex-end;
+/* 底部动作条：「复制链接」+「原文 ↗」，贴右下角，别跟标题抢注意力 */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
   margin-top: auto;
+}
+.act,
+.orig {
   font-size: 12px;
   color: var(--dim);
   text-decoration: none;
@@ -101,12 +194,30 @@ const tag = computed(() => tagLabel(props.entry.category, ui.showZh))
   border: 1px solid var(--border-2);
   border-radius: 999px;
 }
+.act {
+  background: none;
+  font-family: inherit;
+  line-height: inherit;
+  cursor: pointer;
+}
+.act:hover,
 .orig:hover {
   color: var(--accent);
   border-color: var(--accent);
 }
-/* 手机上手指点：把次要出口的点击区撑高（原来 24px 太小点不准） */
+/* 复制成功那一刻给个正向反馈，不然点完不知道成没成 */
+.act.done {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+/* 复制不成也得说一声，不能点了没反应 */
+.act.fail {
+  color: #d9534f;
+  border-color: #d9534f;
+}
+/* 手机上手指点：把动作条的点击区撑高（原来 24px 太小点不准） */
 @media (max-width: 700px) {
+  .act,
   .orig {
     padding: 8px 16px;
     font-size: 13px;
