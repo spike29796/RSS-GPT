@@ -12,6 +12,7 @@ import BiliDetailItem from './components/BiliDetailItem.vue'
 import PlayerOverlay from './components/PlayerOverlay.vue'
 import ReaderView from './components/ReaderView.vue'
 import { paperId } from './paperId.js'
+import { safeLink } from './sanitize.js'
 
 const PAGE_SIZE = 50
 const CARD_LIST_SIZE = 20
@@ -186,10 +187,24 @@ function goHome() {
 // ===== 2026-10-08：站内阅读页路由（hash）=====
 // 点条目卡 → 阅读页；地址栏同步成 #/read/<id>，转发/刷新都能直接回到同一篇。
 // id = sha1(link)[:16]，与 paper_translate.py 写出的文件名同口径（web/src/paperId.js）。
+// 论文源白名单：只有这几个源进站内阅读页（它们的正文才有翻译价值，
+// 也才有 paper_translate.py 产出的 docs/paper/<id>.json）。改这个集合
+// 就改了「哪些卡走站内阅读页」，别处不用动。
+const PAPER_SOURCES = new Set(['arxiv-agent', 'arxiv-t2i', 'arxiv-video', 'arxiv-llm-eng'])
+
 const READ_RE = /^#\/read\/([0-9a-f]{4,64})$/
 
 function openReader(entry) {
-  readerEntry.value = { id: paperId(entry.link), entry: { ...entry, source: entry.source || entry.sourceLabel || '' } }
+  // 2026-10-09：只有论文源才进站内阅读页。其余 15 个源没有译文，
+  // 点进去只会落到「译文未生成」空页 —— 那不是阅读，是绕路一次。
+  // 非论文卡片直接开原文，省掉这一跳。
+  const src = entry.source || entry.sourceLabel || ''
+  if (!PAPER_SOURCES.has(src)) {
+    const url = safeLink(entry.link)
+    if (url) window.open(url, '_blank', 'noopener')
+    return
+  }
+  readerEntry.value = { id: paperId(entry.link), entry: { ...entry, source: src } }
   location.hash = `#/read/${readerEntry.value.id}`
 }
 
