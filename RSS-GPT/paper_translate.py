@@ -53,6 +53,35 @@ DEFAULT_TRANSLATE_URL = 'http://127.0.0.1:11434'
 # 这两个 jsonl 不是资讯源：recommended 是打分器产物、bilibili 是视频，不进阅读页
 SKIP_FILES = {'recommended', 'bilibili'}
 
+CONFIG_INI = os.path.join(HERE, 'config.ini')
+_NAME_RE = re.compile(r'^\s*name\s*=\s*"?([A-Za-z0-9._-]+)"?')
+
+
+def load_active_sources():
+    """读 config.ini，返回仍在上线的源名集合。
+
+    为什么要读配置：docs/ 会留下已下线源的 jsonl（配置删了、文件没删）。
+    早期版本的候选源判据只看「文件在不在」，于是废弃源照跑不误 ——
+    apple-newsroom 这类按字母序还排在活跃源前面，每次全量重跑都先烧它。
+    配置是「哪个源还活着」的唯一事实源，脚本必须跟它对齐。
+    解析规则：跳过 # 开头的行（下线源整段被注释），取 name="..."。
+    """
+    if not os.path.exists(CONFIG_INI):
+        return None
+    try:
+        with open(CONFIG_INI, encoding='utf-8-sig') as f:
+            active = set()
+            for line in f:
+                stripped = line.lstrip()
+                if stripped.startswith('#'):
+                    continue
+                m = _NAME_RE.match(line)
+                if m:
+                    active.add(m.group(1))
+    except Exception:
+        return None
+    return active or None
+
 UA = {'User-Agent': 'Mozilla/5.0 (compatible; RSS-GPT paper_translate)'}
 
 
@@ -517,18 +546,27 @@ def process_entry(entry, source, args, log):
 # ---------------------------------------------------------------- 扫描
 
 def iter_candidates(source_filter):
-    """扫 docs/*.jsonl，返回 [(source, entry)]，源内按时间倒序（先翻最新）。"""
+    """扫 docs/*.jsonl，返回 [(source, entry)]，源内按时间倒序（先翻最新）。
+
+    只扫 config.ini 里仍上线的源。docs/ 里残留的已下线源 jsonl 一律跳过 ——
+    它们不在 UI 上，翻了也没人看，只会白烧模型时间。
+    """
     if not os.path.isdir(DOCS_DIR):
         return
+    active = load_active_sources()
     names = sorted(
         n for n in os.listdir(DOCS_DIR)
         if n.endswith('.jsonl') and os.path.isfile(os.path.join(DOCS_DIR, n))
     )
+    skipped = []
     for name in names:
         stem = name[:-len('.jsonl')]
         if stem in SKIP_FILES or stem.endswith('.retry'):
             continue
         if source_filter and stem != source_filter:
+            continue
+        if active is not None and stem not in active:
+            skipped.append(stem)
             continue
         entries = []
         with open(os.path.join(DOCS_DIR, name), encoding='utf-8') as f:
@@ -545,6 +583,8 @@ def iter_candidates(source_filter):
         entries.sort(key=lambda e: e.get('published') or e.get('updated') or '', reverse=True)
         for e in entries:
             yield stem, e
+    if skipped:
+        print(f'[scan] 跳过已下线源 {len(skipped)} 个：{", ".join(skipped)}')
 
 
 def main():
