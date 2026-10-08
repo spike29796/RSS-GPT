@@ -9,8 +9,15 @@
     docs/paper/<id>.json    id = sha1(link)[:16]，与前端 web/src/paperId.js 同一算法
     {
       "id", "source", "link", "title", "title_zh", "published", "translated_at",
-      "paragraphs": [{"en": "英文段", "zh": "中文译文"}, ...]
+      "paragraphs": [{
+        "en": "英文段",
+        "zh": "中文译文（整段）",
+        "sents": [{"en": "英文句", "zh": "中文句"}, ...]   # 行间穿插用；对不齐时为 null
+      }, ...]
     }
+
+    阅读页按 sents 逐句穿插渲染：英文句一行，紧跟它自己的中文句。
+    sents 为 null 的段退回旧样式（英文整段 + 「看中文」点开）。
 
 增量
     条目级：docs/paper/<id>.json 已存在 → 整条跳过（--force 可覆盖）
@@ -83,6 +90,11 @@ TRANSLATE_URL = (os.environ.get('TRANSLATE_URL') or DEFAULT_TRANSLATE_URL).strip
 TRANSLATE_MODEL = os.environ.get('TRANSLATE_MODEL', 'index-translate').strip()
 TRANSLATE_TIMEOUT = float(os.environ.get('TRANSLATE_TIMEOUT', '180'))
 
+# index-translate 的 Modelfile 没写 num_predict，Ollama 用默认上限截断长输出。
+# 句级翻译的输出比整段翻译长（多了换行和逐句之间的冗余），必须显式抬高上限，
+# 否则 JSON 少半个大括号 / 中文断在半句，而且是静默的 —— 不报错，直接写坏文件。
+TRANSLATE_NUM_PREDICT = int(os.environ.get('TRANSLATE_NUM_PREDICT', '4096'))
+
 
 # ---------------------------------------------------------------- 基础工具
 
@@ -108,6 +120,31 @@ def strip_tags(fragment):
 
 # ---------------------------------------------------------------- 翻译
 
+def _post_generate(prompt, num_predict, timeout):
+    """调 Ollama 生成，返回剥掉思考链前缀的纯文本。
+
+    num_predict 必须显式给：index-translate 的 Modelfile 没设这个参数，
+    长输出会被默认上限静默截断 —— 表现为 JSON 少半个大括号、译文断在半句。
+    """
+    body = json.dumps({
+        'model': TRANSLATE_MODEL,
+        'prompt': prompt,
+        'stream': False,
+        'think': False,
+        'options': {'temperature': 0, 'num_ctx': 8192, 'num_predict': num_predict},
+    }).encode('utf-8')
+    req = urllib.request.Request(
+        TRANSLATE_URL + '/api/generate',
+        data=body,
+        headers={'Content-Type': 'application/json'},
+    )
+    resp = json.loads(urllib.request.urlopen(req, timeout=timeout).read())
+    out = (resp.get('response') or '').strip()
+    # 实测响应会带一段思考链前缀（think:false 不总是生效），解析前统一剥掉
+    out = re.sub(r'^[\s\S]*?<｜end▁of▁thinking｜>', '', out, count=1).strip()
+    return out
+
+
 def translate(text):
     """与 translate_step.translate_to_zh 同 prompt / 同 options，但不截断。
 
@@ -115,23 +152,166 @@ def translate(text):
     这里不能那样 —— 退回原文等于把英文当译文写进文件，前端会重复显示英文）。
     """
     prompt = translate_step._PREFIX + translate_step._glossary_block() + text
-    body = json.dumps({
-        'model': TRANSLATE_MODEL,
-        'prompt': prompt,
-        'stream': False,
-        'think': False,
-        'options': {'temperature': 0, 'num_ctx': 8192},
-    }).encode('utf-8')
-    req = urllib.request.Request(
-        TRANSLATE_URL + '/api/generate',
-        data=body,
-        headers={'Content-Type': 'application/json'},
-    )
-    resp = json.loads(urllib.request.urlopen(req, timeout=TRANSLATE_TIMEOUT).read())
-    out = (resp.get('response') or '').strip()
+    out = _post_generate(prompt, num_predict=TRANSLATE_NUM_PREDICT, timeout=TRANSLATE_TIMEOUT)
     if not out:
         raise RuntimeError('翻译返回空内容')
     return out
+
+
+# 句级对照方案（踩坑记录，别回退）
+#
+# 试过让模型自己切句并成对输出 {"en":..., "zh":...}：短段（758 字符）成功 6/6，
+# 长段（1662 字符）连跑 3 次输出逐字节相同、全部退化成「整段当一句」，en 字段里塞的还是中文。
+# 让它只切句不翻译时又完全正常（11 句，0 汉字）—— 崩点是「切句+翻译+复制原文」的联合任务，
+# 不是切句能力，也不是模型改写英文（一度以为它把 are able to solve 改成 can solve，
+# 核对 docs/paper/f995cd3882081852.json 原文后确认原文就是 can solve many narrow，误判已撤回）。
+# 所以改成：Python 切块 → 模型只输出中文数组 → 按索引配对。
+# 这样错位在结构上不可能发生（索引对齐），英文永远是原文（不经过模型），
+# 切块粒度不完美也只是「块不严格等于一句」，不会造成中文贴错英文。
+_SENT_BOUNDARY_RE = re.compile(r'(?<=[.!?])\s+(?=[A-Z"\'(\[])')
+
+# 切出的碎片短于这个长度就并回前一块 —— 挡缩写误切（"et al. Smith" 之类）
+_MIN_BLOCK_CHARS = 25
+
+
+def split_sentences(text):
+    """把英文段切成句块。宽松切分：块边界清楚即可，不追求语言学严格。
+
+    块与中文按索引一一对应，所以切歪了也只是粒度问题，不会错位。
+    """
+    text = (text or '').strip()
+    if len(text) <= _MIN_BLOCK_CHARS:
+        return [text] if text else []
+    out = []
+    for piece in _SENT_BOUNDARY_RE.split(text):
+        piece = piece.strip()
+        if not piece:
+            continue
+        if out and len(piece) < _MIN_BLOCK_CHARS:
+            out[-1] = out[-1] + ' ' + piece
+        else:
+            out.append(piece)
+    return out or [text]
+
+
+# 只输出中文，不要 JSON。理由：中文译文里引号、书名号、括号满地都是，
+# 模型拿全角引号当 JSON 定界符是必然事件（实测 12 段里 2 段栽在这上面，
+# 还有 2 段干脆不输出数组、直接给「【统一视角】。我们将…」一段话）。
+# 换成「编号 + 一行一句」：两侧都不碰引号，行数对不对一眼能查。
+BLOCK_TRANSLATE_PROMPT = (
+    '任务：把下面编号的英文句子逐句翻译成中文。\n'
+    '输出格式：每句一行，行首写同样的编号，格式是「编号. 译文」。\n'
+    '例如输入 3 句，输出就是：\n'
+    '1. 第一句的中文译文\n'
+    '2. 第二句的中文译文\n'
+    '3. 第三句的中文译文\n'
+    '\n'
+    '要求：\n'
+    '- 编号从 1 到 N 连续，不跳号，不多出句子。\n'
+    '- 每行只写一句的完整译文，行内不要换行。\n'
+    '- 不要输出英文原文，不要解释，不要空行。\n'
+    '- 不要输出 JSON、markdown、代码围栏。\n'
+    '\n'
+    '要翻译的英文句子：\n'
+)
+
+
+def _repair_json_escapes(s):
+    """把 JSON 里不合法的反斜杠转义修成合法的。
+
+    论文正文带 LaTeX 残留（`\\in\\mathcal{R}` 这类）。模型翻中文时会把公式原样抄回来，
+    抄的时候只写一个反斜杠，`"\\in"` 在 JSON 里就是非法转义，整个数组解析直接失败。
+    合法的转义只有 \\" \\\\ \\/ \\b \\f \\n \\r \\t \\uXXXX 这几种。
+    """
+    s = re.sub(r'\\(?!["\\/bfnrtu])', r'\\\\', s)
+    # \u 后面必须正好跟 4 位十六进制，否则也是非法
+    s = re.sub(r'\\u(?![0-9a-fA-F]{4})', r'\\\\u', s)
+    return s
+
+
+def _extract_json_array(raw):
+    """从模型输出里抠出 JSON 数组。输出可能带思考链残渣或代码围栏。"""
+    if not raw:
+        return None
+    start = raw.find('[')
+    end = raw.rfind(']')
+    if start < 0 or end <= start:
+        return None
+    chunk = raw[start:end + 1]
+    for candidate in (chunk, _repair_json_escapes(chunk)):
+        try:
+            return json.loads(candidate)
+        except Exception:
+            continue
+    return None
+
+
+_NUM_LINE_RE = re.compile(r'^\s*(\d{1,3})\s*[.、)．]\s*(.*)$')
+
+
+def _parse_numbered(raw, n):
+    """按「编号. 译文」解析模型输出。行内续行并进上一项，编号不全就返回 None。
+
+    宁可返回 None 退整段，也不猜残行的归属 —— 猜错就是把中文贴到别的句子上。
+    """
+    if not raw:
+        return None
+    items, cur = {}, None
+    for line in raw.splitlines():
+        m = _NUM_LINE_RE.match(line)
+        if m:
+            idx = int(m.group(1))
+            if 1 <= idx <= n:
+                cur = idx
+                items[cur] = m.group(2).strip()
+            else:
+                cur = None
+        elif cur is not None and line.strip():
+            items[cur] = (items.get(cur, '') + ' ' + line.strip()).strip()
+    if len(items) != n:
+        return None
+    return [items[i] for i in range(1, n + 1)]
+
+
+def translate_blocks(blocks):
+    """一次调用翻一批句块，返回中文数组。项数不符或空项即抛异常。"""
+    if not blocks:
+        return []
+    numbered = '\n'.join('%d. %s' % (i + 1, b) for i, b in enumerate(blocks))
+    raw = _post_generate(translate_step._glossary_block() + BLOCK_TRANSLATE_PROMPT + numbered,
+                         num_predict=TRANSLATE_NUM_PREDICT, timeout=TRANSLATE_TIMEOUT)
+    out = _parse_numbered(raw, len(blocks))
+    if out is None:
+        arr = _extract_json_array(raw)
+        if isinstance(arr, list) and len(arr) == len(blocks):
+            out = [str(x).strip() for x in arr]
+    if out is None:
+        raise RuntimeError('中文行数与块数不符：期望 %d' % len(blocks))
+    if any(not x for x in out):
+        raise RuntimeError('中文译文有空行')
+    return out
+
+
+def translate_sentences(text):
+    """一段英文 → (整段中文, 句级对照数组)。
+
+    返回 (zh, sents)：
+      zh    —— 整段中文，前端降级渲染（无 sents 时点击展开）用
+      sents —— [{'en': ..., 'zh': ...}, ...]；拿不到可靠对齐时是 None
+
+    只调一次模型（一次翻整段的全部句块）。任何一步不可信就整段退回旧路径 ——
+    宁可这一段没有穿插，也不让中文错位贴到别的句子上。
+    """
+    blocks = split_sentences(text)
+    if len(blocks) > 1:
+        try:
+            zh_list = translate_blocks(blocks)
+            return ' '.join(zh_list), [{'en': b, 'zh': z} for b, z in zip(blocks, zh_list)]
+        except Exception as e:
+            print('[warn] 句级翻译失败（%s: %s），退回整段翻译：%s…'
+                  % (type(e).__name__, e, text[:40]), file=sys.stderr)
+
+    return translate(text), None
 
 
 # ---------------------------------------------------------------- 正文抓取
@@ -250,7 +430,11 @@ def gather_paragraphs(entry, log):
 # ---------------------------------------------------------------- 条目处理
 
 def load_existing(path):
-    """读已生成的 json，返回 {en_hash: zh} —— 段级增量用。"""
+    """读已生成的 json，返回 {en_hash: (zh, sents)} —— 段级增量用。
+
+    sents 也要一起缓存：--force 重跑时若只捞回 zh，句级对照就白跑了，
+    整篇会退化成旧的点开看中文。
+    """
     try:
         with open(path, encoding='utf-8') as f:
             data = json.load(f)
@@ -261,7 +445,7 @@ def load_existing(path):
         en = p.get('en')
         zh = p.get('zh')
         if en and zh:
-            out[para_key(en)] = zh
+            out[para_key(en)] = (zh, p.get('sents'))
     return out
 
 
@@ -283,23 +467,25 @@ def process_entry(entry, source, args, log):
     cache = load_existing(out_path) if args.force else {}
     rows, reused, translated, failed = [], 0, 0, 0
     for en in paragraphs:
-        zh = cache.get(para_key(en))
-        if zh:
+        cached = cache.get(para_key(en))
+        if cached and cached[0]:
+            zh, sents = cached[0], cached[1]
             reused += 1
         else:
-            zh = ''
+            zh, sents, done = '', None, False
             for attempt in (1, 2):
                 try:
-                    zh = translate(en)
+                    zh, sents = translate_sentences(en)
+                    done = True
                     break
                 except Exception as e:
                     log('段翻译失败（第%d次，%s: %s）' % (attempt, type(e).__name__, e))
-            if zh:
+            if done:
                 translated += 1
             else:
                 failed += 1
                 log('段翻译放弃（%d 字符）' % len(en))
-        rows.append({'en': en, 'zh': zh})
+        rows.append({'en': en, 'zh': zh, 'sents': sents})
 
     if not any(r['zh'] for r in rows):
         return 'fail', {'reason': '整条所有段都翻译失败'}

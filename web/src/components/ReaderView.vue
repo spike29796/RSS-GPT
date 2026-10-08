@@ -52,7 +52,10 @@ function remember(entry) {
 
 const state = ref('loading') // 'loading' | 'ok' | 'missing'
 const paper = ref(null)
-const openSet = ref({}) // en 段下标 → 是否展开
+
+// 中文默认显示。穿插版式的意义就是「读到哪里中文就在哪里」，
+// 默认藏起来等于把上一版的点击展开又做了一遍。
+const showZh = ref(true)
 
 const meta = computed(() => {
   if (paper.value) return paper.value
@@ -89,21 +92,12 @@ const titleSecondary = computed(() => {
 const paragraphs = computed(() => (paper.value && paper.value.paragraphs) || [])
 const translatedCount = computed(() => paragraphs.value.filter((p) => p.zh).length)
 
-function toggle(i) {
-  openSet.value = { ...openSet.value, [i]: !openSet.value[i] }
-}
-
-const allOpen = computed(() => paragraphs.value.length > 0 && paragraphs.value.every((_, i) => openSet.value[i]))
-function toggleAll() {
-  const next = {}
-  if (!allOpen.value) paragraphs.value.forEach((_, i) => { next[i] = true })
-  openSet.value = next
-}
+// 句级对照的段落 —— 后端切块 + 按索引配对，en 永远是原文，不会贴错
+const hasSents = (p) => Array.isArray(p.sents) && p.sents.length > 0
 
 async function load(id) {
   state.value = 'loading'
   paper.value = null
-  openSet.value = {}
   if (!id) {
     state.value = 'missing'
     return
@@ -157,21 +151,28 @@ watch(() => props.id, (id) => {
 
     <template v-else>
       <div class="toolbar">
-        <button class="mini" @click="toggleAll">{{ allOpen ? '全部收起' : '全部展开' }}</button>
-        <span class="toolbar-hint">点段落展开中文，再点收起</span>
+        <button class="mini" @click="showZh = !showZh">{{ showZh ? '隐藏中文' : '显示中文' }}</button>
       </div>
       <article class="paras">
         <section
           v-for="(p, i) in paragraphs"
           :key="i"
           class="para"
-          :class="{ open: openSet[i], zhless: !p.zh }"
+          :class="{ zhless: !p.zh }"
         >
-          <button class="para-en" @click="toggle(i)">
-            <span class="para-text">{{ p.en }}</span>
-            <span class="para-tag">{{ p.zh ? (openSet[i] ? '收起中文 ▾' : '看中文 ▸') : '无译文' }}</span>
-          </button>
-          <div v-if="openSet[i] && p.zh" class="para-zh">{{ p.zh }}</div>
+          <!-- 逐句穿插：英文句块后面紧跟它自己的中文，读到哪里中文在哪里 -->
+          <!-- 同一组（英+中）共用同一色号，下划线颜色一一对应，逐组轮换 -->
+          <div v-if="hasSents(p)" class="para-inline">
+            <template v-for="(s, j) in p.sents" :key="j">
+              <span class="sent-en" :class="'pair-' + (j % 6)">{{ s.en }}</span>
+              <span v-if="showZh" class="sent-zh" :class="'pair-' + (j % 6)">{{ s.zh }}</span>
+            </template>
+          </div>
+          <!-- 没有句级数据（短文/单句段/句级失败回退）：整段英文 + 整段中文 -->
+          <template v-else>
+            <p class="para-flat">{{ p.en }}</p>
+            <p v-if="showZh && p.zh" class="para-zh">{{ p.zh }}</p>
+          </template>
         </section>
       </article>
     </template>
@@ -313,66 +314,80 @@ watch(() => props.id, (id) => {
 .paras {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 8px;
 }
 .para {
-  border-left: 3px solid transparent;
   border-radius: 6px;
-  transition: background 0.15s, border-color 0.15s;
 }
-.para.open {
-  border-left-color: var(--accent);
-  background: var(--card-2);
+/* 逐句穿插：英文句块 + 紧跟的中文句块，一组一组往下走 */
+.para-inline {
+  padding: 12px 12px 2px;
 }
-/* 整段是点击区 —— 手机上手指点的目标越大越好 */
-.para-en {
+/* 配对色号：同一组英文句和它的中文句用同一色号，逐组轮换，相邻不同色 */
+.pair-0 { --pair: var(--pair-0); }
+.pair-1 { --pair: var(--pair-1); }
+.pair-2 { --pair: var(--pair-2); }
+.pair-3 { --pair: var(--pair-3); }
+.pair-4 { --pair: var(--pair-4); }
+.pair-5 { --pair: var(--pair-5); }
+.sent-en,
+.sent-zh {
+  text-decoration-line: underline;
+  text-decoration-color: var(--pair);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+.sent-en {
   display: block;
-  width: 100%;
-  text-align: left;
-  font-family: inherit;
-  font-size: 15.5px;
-  line-height: 1.7;
-  color: var(--text);
-  background: none;
-  border: none;
-  padding: 12px 12px;
-  cursor: pointer;
+  /* 衬线：长文阅读最省眼，和论文原文的排印气质一致 */
+  font-family: "Iowan Old Style", "Charter", "Bitstream Charter", Georgia, "Sitka Text", Cambria, "Noto Serif", serif;
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--en);
+  letter-spacing: 0.005em;
 }
-.para-en:hover {
-  background: var(--card);
-}
-.para-text {
+.sent-zh {
   display: block;
+  /* 无衬线：中文在屏上无衬线更清楚，和英文形成字体对比 */
+  font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--zh);
+  margin: 2px 0 10px;
+  padding-left: 10px;
+  border-left: 2px solid var(--zh-rule);
 }
-.para-tag {
-  display: inline-block;
-  margin-top: 6px;
-  font-size: 11.5px;
-  color: var(--dim);
-}
-.para.open .para-tag {
-  color: var(--accent);
-}
-.para.zhless .para-tag {
-  color: var(--dim);
+/* 无句级数据时退回整段版式 */
+.para-flat {
+  margin: 0;
+  padding: 12px 12px 0;
+  font-family: "Iowan Old Style", "Charter", "Bitstream Charter", Georgia, "Sitka Text", Cambria, "Noto Serif", serif;
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--en);
+  letter-spacing: 0.005em;
 }
 .para-zh {
-  padding: 2px 12px 14px;
-  font-size: 15.5px;
-  line-height: 1.8;
-  color: var(--text-2);
+  margin: 6px 12px 12px;
+  padding: 8px 0 0 10px;
+  font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--zh);
   border-top: 1px dashed var(--border);
-  margin: 0 12px;
-  padding-left: 0;
-  padding-right: 0;
+  border-left: 2px solid var(--zh-rule);
 }
 @media (max-width: 700px) {
   .title {
     font-size: 19px;
   }
-  .para-en,
+  .sent-en,
+  .para-flat {
+    font-size: 16.5px;
+  }
+  .sent-zh,
   .para-zh {
-    font-size: 16px;
+    font-size: 15.5px;
   }
 }
 </style>

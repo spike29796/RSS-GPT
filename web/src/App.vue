@@ -574,6 +574,16 @@ function clearMarks() {
   --border-2: #2c3850;
   --text: #d7dee9;
   --text-2: #9fb0c8;
+  --en: #e4ebf5;
+  --zh: #8d9fb8;
+  --zh-rule: #35506b;
+  /* 句对配对色：一组英文句 + 它的中文句共用同一色号，逐组轮换 */
+  --pair-0: #7fd4a8;
+  --pair-1: #7fb4e8;
+  --pair-2: #c9a0e8;
+  --pair-3: #e8b884;
+  --pair-4: #e88fa8;
+  --pair-5: #a8d47f;
   --dim: #7c8798;
   --dim-2: #8fa0b8;
   --accent: #7fd4a8;
@@ -589,6 +599,15 @@ function clearMarks() {
   --border-2: #e5e7eb;
   --text: #1a2230;
   --text-2: #4b5563;
+  --en: #10192a;
+  --zh: #64748b;
+  --zh-rule: #cbd5e1;
+  --pair-0: #0f9d63;
+  --pair-1: #2563eb;
+  --pair-2: #7c3aed;
+  --pair-3: #c2410c;
+  --pair-4: #db2777;
+  --pair-5: #4d7c0f;
   --dim: #6b7280;
   --dim-2: #9ca3af;
   --accent: #0f9d63;
