@@ -1,0 +1,1792 @@
+{
+ "id": "fe8abd0af3834f17",
+ "source": "arxiv-agent",
+ "link": "https://arxiv.org/abs/2610.08647v1",
+ "title": "SquidAgent: Parallelize Wisely, Coordinate Efficiently",
+ "title_zh": "",
+ "published": "2026-10-06T16:35:28Z",
+ "translated_at": "2026-10-08T14:53:37Z",
+ "paragraphs": [
+  {
+   "en": "LLM-based agents solve complex multi-step tasks, but sequential execution incurs substantial latency. In principle, parallelizing work across multiple agents should yield near-linear speedups. Yet existing parallel multi-agent systems often run slower than a single-agent baseline. We attribute this gap to two hidden costs that parallel execution incurs but a serial agent avoids. First, there is a re-exploration cost : redundant effort spent by parallel workers reconstructing context that the orchestrator already possesses, such as prior decisions, that would otherwise be inherited implicitly in a serial execution. Second, there is an alignment cost : the overhead required to reconcile inconsistencies across independently generated outputs. We thus derive a principled decision criterion: a layer should be parallelized only when its critical-path cost, plus re-exploration and alignment overheads, is lower than the corresponding serial cost. While this criterion is naturally expressed in wall-clock time, we observe that LLMs are poorly calibrated when asked to estimate task duration. To address this, we instead measure cost in predicted output tokens, which we empirically find LLMs can estimate substantially more reliably than wall-clock time. Building on this token-based criterion, we propose SquidAgent. It estimates all token budgets in a single planning step, forks each worker directly from the orchestrator’s session to eliminate re-exploration cost, and replaces post-hoc reconciliation with a pre-generated shared convention block that converts alignment into a bounded upfront cost. A deterministic scheduler then applies the criterion layer by layer. Empirically, SquidAgent achieves a 2.2 × \\times mean throughput improvement and a 2.6 × \\times mean wall-time speedup over Claude Code, and a 2.0 × \\times throughput improvement over the strongest multi-agent baseline.",
+   "zh": "基于大型语言模型（LLM）的智能体能够解决复杂的多步骤任务，但顺序执行会产生显著的延迟。 从原则上讲，将工作并行分配给多个智能体应该能带来接近线性的加速效果。 然而，现有的并行多智能体系统通常运行得比单智能体基线更慢。 我们将这一差距归因于并行执行所引入、而串行智能体却能避免的两项隐藏成本。 首先，存在重新探索成本：并行执行者会重复投入努力，重建协调器已经掌握的背景信息（例如先前的决策），而这些信息在串行执行中本应被隐式继承。 其次，存在对齐成本：需要额外开销来协调独立生成的输出之间的一致性差异。 因此，我们推导出了一个基于原则的决策标准：仅当某一层级的关键路径成本加上重新探索和对齐的额外开销低于对应的串行成本时，才应将其并行化。 尽管这一标准天然可以用实际运行时间来表达，但我们观察到，大型语言模型在估算任务持续时间时校准效果不佳。 为了解决这个问题，我们转而以预测的输出词符数量来衡量成本，通过实证我们发现，大型语言模型对此的估算比实际运行时间可靠得多。 基于这一词符导向的标准，我们提出了 SquidAgent。 它能在单次规划步骤中估算所有词符预算，直接从协调器的会话中分叉每个执行者以消除重新探索成本，并用预先生成的共享约定块替代事后的协调过程，从而将对齐问题转化为一个有上限的初始成本。 随后，一个确定性调度器会逐层应用这一标准。 实证表明，与 Claude Code 相比，SquidAgent 的平均吞吐量提升了 2.2 倍（2.2 ×），平均实际运行时间加速了 2.6 倍（2.6 ×）；与最强的多智能体基线相比，其吞吐量提升了 2.0 倍（2.0 ×）。",
+   "sents": [
+    {
+     "en": "LLM-based agents solve complex multi-step tasks, but sequential execution incurs substantial latency.",
+     "zh": "基于大型语言模型（LLM）的智能体能够解决复杂的多步骤任务，但顺序执行会产生显著的延迟。"
+    },
+    {
+     "en": "In principle, parallelizing work across multiple agents should yield near-linear speedups.",
+     "zh": "从原则上讲，将工作并行分配给多个智能体应该能带来接近线性的加速效果。"
+    },
+    {
+     "en": "Yet existing parallel multi-agent systems often run slower than a single-agent baseline.",
+     "zh": "然而，现有的并行多智能体系统通常运行得比单智能体基线更慢。"
+    },
+    {
+     "en": "We attribute this gap to two hidden costs that parallel execution incurs but a serial agent avoids.",
+     "zh": "我们将这一差距归因于并行执行所引入、而串行智能体却能避免的两项隐藏成本。"
+    },
+    {
+     "en": "First, there is a re-exploration cost : redundant effort spent by parallel workers reconstructing context that the orchestrator already possesses, such as prior decisions, that would otherwise be inherited implicitly in a serial execution.",
+     "zh": "首先，存在重新探索成本：并行执行者会重复投入努力，重建协调器已经掌握的背景信息（例如先前的决策），而这些信息在串行执行中本应被隐式继承。"
+    },
+    {
+     "en": "Second, there is an alignment cost : the overhead required to reconcile inconsistencies across independently generated outputs.",
+     "zh": "其次，存在对齐成本：需要额外开销来协调独立生成的输出之间的一致性差异。"
+    },
+    {
+     "en": "We thus derive a principled decision criterion: a layer should be parallelized only when its critical-path cost, plus re-exploration and alignment overheads, is lower than the corresponding serial cost.",
+     "zh": "因此，我们推导出了一个基于原则的决策标准：仅当某一层级的关键路径成本加上重新探索和对齐的额外开销低于对应的串行成本时，才应将其并行化。"
+    },
+    {
+     "en": "While this criterion is naturally expressed in wall-clock time, we observe that LLMs are poorly calibrated when asked to estimate task duration.",
+     "zh": "尽管这一标准天然可以用实际运行时间来表达，但我们观察到，大型语言模型在估算任务持续时间时校准效果不佳。"
+    },
+    {
+     "en": "To address this, we instead measure cost in predicted output tokens, which we empirically find LLMs can estimate substantially more reliably than wall-clock time.",
+     "zh": "为了解决这个问题，我们转而以预测的输出词符数量来衡量成本，通过实证我们发现，大型语言模型对此的估算比实际运行时间可靠得多。"
+    },
+    {
+     "en": "Building on this token-based criterion, we propose SquidAgent.",
+     "zh": "基于这一词符导向的标准，我们提出了 SquidAgent。"
+    },
+    {
+     "en": "It estimates all token budgets in a single planning step, forks each worker directly from the orchestrator’s session to eliminate re-exploration cost, and replaces post-hoc reconciliation with a pre-generated shared convention block that converts alignment into a bounded upfront cost.",
+     "zh": "它能在单次规划步骤中估算所有词符预算，直接从协调器的会话中分叉每个执行者以消除重新探索成本，并用预先生成的共享约定块替代事后的协调过程，从而将对齐问题转化为一个有上限的初始成本。"
+    },
+    {
+     "en": "A deterministic scheduler then applies the criterion layer by layer.",
+     "zh": "随后，一个确定性调度器会逐层应用这一标准。"
+    },
+    {
+     "en": "Empirically, SquidAgent achieves a 2.2 × \\times mean throughput improvement and a 2.6 × \\times mean wall-time speedup over Claude Code, and a 2.0 × \\times throughput improvement over the strongest multi-agent baseline.",
+     "zh": "实证表明，与 Claude Code 相比，SquidAgent 的平均吞吐量提升了 2.2 倍（2.2 ×），平均实际运行时间加速了 2.6 倍（2.6 ×）；与最强的多智能体基线相比，其吞吐量提升了 2.0 倍（2.0 ×）。"
+    }
+   ]
+  },
+  {
+   "en": "LLM-based agent systems are increasingly deployed for complex, multi-step tasks such as software development ( Hong et al., 2024 ; Qian et al., 2024 ) , document authoring, and structured planning. As tasks grow in scale and complexity, a single agent often becomes a bottleneck, motivating the rise of multi-agent systems that coordinate multiple specialized agents to solve a task collaboratively. A common paradigm in these systems is to decompose a high-level user request into a set of subtasks organized as a directed acyclic graph (DAG) ( Zhuge et al., 2024 ; Qian et al., 2025 ) , where edges encode dependencies between subtasks, and assign each subtask to a dedicated agent. This graph-based decomposition has been adopted by a wide range of multi-agent frameworks, from general-purpose conversation platforms ( Wu et al., 2024a ; Li et al., 2023 ) to specialized systems for code generation ( Niu et al., 2025 ; Kim et al., 2024 ) and workflow automation ( Zhuge et al., 2024 ; Wu et al., 2024b ) . In this work, we focus on the common LLM-agent setting in which an orchestrator delegates subtasks to multiple LLM workers that share the objective of completing the user request.",
+   "zh": "基于大型语言模型（LLM）的智能体系统正越来越多地部署于复杂的多步骤任务中，例如软件开发（Hong et al., 2024；Qian et al., 2024）、文档撰写和结构化规划。 随着任务的规模和复杂程度不断提升，单个智能体往往会成为瓶颈，这推动了多智能体系统的兴起，这些系统通过协调多个专业智能体来协作完成任务。 这类系统中一种常见的范式是将高层用户请求分解为一系列以有向无环图（DAG）形式组织的子任务（Zhuge et al., 2024；Qian et al., 2025），其中边表示子任务之间的依赖关系，并将每个子任务分配给一个专用智能体。 这种基于图的分解方法已被广泛的多智能体框架所采用，从通用对话平台（Wu et al., 2024a；Li et al., 2023）到专门用于代码生成的系统（Niu et al., 2025；Kim et al., 2024）以及工作流自动化系统（Zhuge et al., 2024；Wu et al., 2024b）。 在本项工作中，我们聚焦于常见的 LLM-智能体设置，即一个协调器将子任务分配给多个 LLM 执行者，这些执行者共享完成用户请求这一共同目标。",
+   "sents": [
+    {
+     "en": "LLM-based agent systems are increasingly deployed for complex, multi-step tasks such as software development ( Hong et al., 2024 ; Qian et al., 2024 ) , document authoring, and structured planning.",
+     "zh": "基于大型语言模型（LLM）的智能体系统正越来越多地部署于复杂的多步骤任务中，例如软件开发（Hong et al., 2024；Qian et al., 2024）、文档撰写和结构化规划。"
+    },
+    {
+     "en": "As tasks grow in scale and complexity, a single agent often becomes a bottleneck, motivating the rise of multi-agent systems that coordinate multiple specialized agents to solve a task collaboratively.",
+     "zh": "随着任务的规模和复杂程度不断提升，单个智能体往往会成为瓶颈，这推动了多智能体系统的兴起，这些系统通过协调多个专业智能体来协作完成任务。"
+    },
+    {
+     "en": "A common paradigm in these systems is to decompose a high-level user request into a set of subtasks organized as a directed acyclic graph (DAG) ( Zhuge et al., 2024 ; Qian et al., 2025 ) , where edges encode dependencies between subtasks, and assign each subtask to a dedicated agent.",
+     "zh": "这类系统中一种常见的范式是将高层用户请求分解为一系列以有向无环图（DAG）形式组织的子任务（Zhuge et al., 2024；Qian et al., 2025），其中边表示子任务之间的依赖关系，并将每个子任务分配给一个专用智能体。"
+    },
+    {
+     "en": "This graph-based decomposition has been adopted by a wide range of multi-agent frameworks, from general-purpose conversation platforms ( Wu et al., 2024a ; Li et al., 2023 ) to specialized systems for code generation ( Niu et al., 2025 ; Kim et al., 2024 ) and workflow automation ( Zhuge et al., 2024 ; Wu et al., 2024b ) .",
+     "zh": "这种基于图的分解方法已被广泛的多智能体框架所采用，从通用对话平台（Wu et al., 2024a；Li et al., 2023）到专门用于代码生成的系统（Niu et al., 2025；Kim et al., 2024）以及工作流自动化系统（Zhuge et al., 2024；Wu et al., 2024b）。"
+    },
+    {
+     "en": "In this work, we focus on the common LLM-agent setting in which an orchestrator delegates subtasks to multiple LLM workers that share the objective of completing the user request.",
+     "zh": "在本项工作中，我们聚焦于常见的 LLM-智能体设置，即一个协调器将子任务分配给多个 LLM 执行者，这些执行者共享完成用户请求这一共同目标。"
+    }
+   ]
+  },
+  {
+   "en": "A key advantage of multi-agent systems is the potential for parallelism . When subtasks at the same DAG layer are independent, multiple worker agents can execute them concurrently, so that wall-clock time is determined by the slowest worker rather than the sum of all tasks. In theory, such parallel execution should provide substantial speedups, and many recent multi-agent systems are built on this premise ( Qian et al., 2025 ; Niu et al., 2025 ; Kim et al., 2024 ; Yu et al., 2025 ) .",
+   "zh": "多智能体系统的一个关键优势在于其并行处理的潜力。 当同一 DAG 层中的子任务是独立的时，多个执行智能体可以并发地执行这些任务，因此实际耗时由最慢的执行者决定，而非所有任务时间的总和。 理论上，这种并行执行应能带来显著的速度提升，许多近期的多智能体系统都是基于这一前提构建的（Qian et al., 2025；Niu et al., 2025；Kim et al., 2024；Yu et al., 2025）。",
+   "sents": [
+    {
+     "en": "A key advantage of multi-agent systems is the potential for parallelism .",
+     "zh": "多智能体系统的一个关键优势在于其并行处理的潜力。"
+    },
+    {
+     "en": "When subtasks at the same DAG layer are independent, multiple worker agents can execute them concurrently, so that wall-clock time is determined by the slowest worker rather than the sum of all tasks.",
+     "zh": "当同一 DAG 层中的子任务是独立的时，多个执行智能体可以并发地执行这些任务，因此实际耗时由最慢的执行者决定，而非所有任务时间的总和。"
+    },
+    {
+     "en": "In theory, such parallel execution should provide substantial speedups, and many recent multi-agent systems are built on this premise ( Qian et al., 2025 ; Niu et al., 2025 ; Kim et al., 2024 ; Yu et al., 2025 ) .",
+     "zh": "理论上，这种并行执行应能带来显著的速度提升，许多近期的多智能体系统都是基于这一前提构建的（Qian et al., 2025；Niu et al., 2025；Kim et al., 2024；Yu et al., 2025）。"
+    }
+   ]
+  },
+  {
+   "en": "However, existing parallel multi-agent systems often fail to achieve the expected speedups and can even be slower than their sequential counterparts ( Hong et al., 2024 ; Yao et al., 2025 ; Xu et al., 2026 ) . This suggests a fundamental limitation in current execution strategies: they lack an explicit criterion for determining when parallelization is actually worthwhile. Existing methods either rely on fixed execution policies, such as always parallelizing subtasks once explicit dependencies are satisfied ( Qian et al., 2025 ; Niu et al., 2025 ) , or depend on heuristic LLM-based scheduling decisions ( Dang et al., 2026 ; Wang et al., 2026b ) . This raises a central question: when is parallel execution truly beneficial for LLM-based multi-agent systems?",
+   "zh": "然而，现有的并行多智能体系统往往无法实现预期的加速效果，甚至可能比其串行版本更慢（Hong et al., 2024；Yao et al., 2025；Xu et al., 2026）。 这表明当前的执行策略存在一个根本性局限：它们缺乏明确的标准来判断并行化是否真正值得实施。 现有方法要么依赖固定的执行策略，例如一旦满足显式依赖关系就始终对子任务进行并行处理（Qian et al., 2025；Niu et al., 2025），要么依赖启发式的基于大型语言模型的调度决策（Dang et al., 2026；Wang et al., 2026b）。 这引出了一个核心问题：在何种情况下，并行执行对基于大型语言模型的多智能体系统才能真正有益？",
+   "sents": [
+    {
+     "en": "However, existing parallel multi-agent systems often fail to achieve the expected speedups and can even be slower than their sequential counterparts ( Hong et al., 2024 ; Yao et al., 2025 ; Xu et al., 2026 ) .",
+     "zh": "然而，现有的并行多智能体系统往往无法实现预期的加速效果，甚至可能比其串行版本更慢（Hong et al., 2024；Yao et al., 2025；Xu et al., 2026）。"
+    },
+    {
+     "en": "This suggests a fundamental limitation in current execution strategies: they lack an explicit criterion for determining when parallelization is actually worthwhile.",
+     "zh": "这表明当前的执行策略存在一个根本性局限：它们缺乏明确的标准来判断并行化是否真正值得实施。"
+    },
+    {
+     "en": "Existing methods either rely on fixed execution policies, such as always parallelizing subtasks once explicit dependencies are satisfied ( Qian et al., 2025 ; Niu et al., 2025 ) , or depend on heuristic LLM-based scheduling decisions ( Dang et al., 2026 ; Wang et al., 2026b ) .",
+     "zh": "现有方法要么依赖固定的执行策略，例如一旦满足显式依赖关系就始终对子任务进行并行处理（Qian et al., 2025；Niu et al., 2025），要么依赖启发式的基于大型语言模型的调度决策（Dang et al., 2026；Wang et al., 2026b）。"
+    },
+    {
+     "en": "This raises a central question: when is parallel execution truly beneficial for LLM-based multi-agent systems?",
+     "zh": "这引出了一个核心问题：在何种情况下，并行执行对基于大型语言模型的多智能体系统才能真正有益？"
+    }
+   ]
+  },
+  {
+   "en": "We argue that the answer depends on accounting for the hidden costs introduced by parallelization. We identify two such costs that parallelism pays but a sequential agent does not. The first is re-exploration cost : any agent, serial or parallel, must do some exploration to understand a task before solving it, but a serial agent does so once and reuses the resulting context for free, whereas parallel workers have to independently rediscover the same conventions, assumptions, and intermediate decisions before they can begin useful work. Note that this is not generic exploration, it is the redundant portion that exists only because the orchestrator’s planning state cannot be transferred to parallel workers for free. The second is alignment cost : independently generated outputs must be reconciled into a coherent final result, and inconsistencies among workers may require additional correction. These costs arise because LLM-generated DAGs typically capture explicit dependencies among subtasks but overlook implicit dependencies, such as shared naming conventions, formatting choices, or global design decisions, that a single agent would resolve incrementally. Parallel execution is therefore beneficial only when the time saved by concurrency outweighs the additional re-exploration and alignment costs. Figure 1 illustrates this phenomenon on a representative task.",
+   "zh": "我们认为，答案取决于是否考虑了并行化所引入的隐藏成本。 我们识别出两种这样的成本：并行处理需要承担这些成本，而顺序智能体则不需要。 第一种是重新探索成本：无论是串行还是并行智能体，都必须进行一定程度的探索才能理解任务并加以解决；但串行智能体只需探索一次，便可免费复用由此产生的上下文信息，而并行执行者则必须独立地重新发现相同的命名规范、假设和中间决策，之后才能开始有效工作。 请注意，这并非一般的探索成本，而是仅因协调器的规划状态无法免费传递给并行执行者而产生的冗余部分。 第二种是对齐成本：独立生成的输出必须被整合成一个连贯的最终结果，而执行者之间的不一致性可能需要额外的修正。 这些成本的产生是因为大型语言模型生成的有向无环图（DAG）通常只捕捉了子任务之间的显式依赖关系，却忽略了隐式依赖——例如共享的命名规范、格式选择或全局设计决策——而这些依赖本应由单个智能体逐步解决。 因此，只有当并发带来的时间节省足以抵消额外的重新探索和对齐成本时，并行执行才是有益的。 图1通过一个代表性任务展示了这一现象。",
+   "sents": [
+    {
+     "en": "We argue that the answer depends on accounting for the hidden costs introduced by parallelization.",
+     "zh": "我们认为，答案取决于是否考虑了并行化所引入的隐藏成本。"
+    },
+    {
+     "en": "We identify two such costs that parallelism pays but a sequential agent does not.",
+     "zh": "我们识别出两种这样的成本：并行处理需要承担这些成本，而顺序智能体则不需要。"
+    },
+    {
+     "en": "The first is re-exploration cost : any agent, serial or parallel, must do some exploration to understand a task before solving it, but a serial agent does so once and reuses the resulting context for free, whereas parallel workers have to independently rediscover the same conventions, assumptions, and intermediate decisions before they can begin useful work.",
+     "zh": "第一种是重新探索成本：无论是串行还是并行智能体，都必须进行一定程度的探索才能理解任务并加以解决；但串行智能体只需探索一次，便可免费复用由此产生的上下文信息，而并行执行者则必须独立地重新发现相同的命名规范、假设和中间决策，之后才能开始有效工作。"
+    },
+    {
+     "en": "Note that this is not generic exploration, it is the redundant portion that exists only because the orchestrator’s planning state cannot be transferred to parallel workers for free.",
+     "zh": "请注意，这并非一般的探索成本，而是仅因协调器的规划状态无法免费传递给并行执行者而产生的冗余部分。"
+    },
+    {
+     "en": "The second is alignment cost : independently generated outputs must be reconciled into a coherent final result, and inconsistencies among workers may require additional correction.",
+     "zh": "第二种是对齐成本：独立生成的输出必须被整合成一个连贯的最终结果，而执行者之间的不一致性可能需要额外的修正。"
+    },
+    {
+     "en": "These costs arise because LLM-generated DAGs typically capture explicit dependencies among subtasks but overlook implicit dependencies, such as shared naming conventions, formatting choices, or global design decisions, that a single agent would resolve incrementally.",
+     "zh": "这些成本的产生是因为大型语言模型生成的有向无环图（DAG）通常只捕捉了子任务之间的显式依赖关系，却忽略了隐式依赖——例如共享的命名规范、格式选择或全局设计决策——而这些依赖本应由单个智能体逐步解决。"
+    },
+    {
+     "en": "Parallel execution is therefore beneficial only when the time saved by concurrency outweighs the additional re-exploration and alignment costs.",
+     "zh": "因此，只有当并发带来的时间节省足以抵消额外的重新探索和对齐成本时，并行执行才是有益的。"
+    },
+    {
+     "en": "Figure 1 illustrates this phenomenon on a representative task.",
+     "zh": "图1通过一个代表性任务展示了这一现象。"
+    }
+   ]
+  },
+  {
+   "en": "In this paper, we instead propose a parallelization criterion that makes this trade-off explicit and computable before execution. For a group of subtasks, the estimated serial cost is the sum of all subtask costs, while the estimated parallel cost consists of the slowest worker’s execution cost together with the re-exploration and alignment costs. Parallel execution is selected only when the estimated parallel cost is strictly lower than the estimated serial cost. The natural unit for this criterion is wall-clock time, which is what users observe. However, predicting wall-clock time at planning time turns out to be unreliable for two reasons. First, it is backend-dependent (server load, batching, retries). Second, and more fundamentally, LLMs are systematically miscalibrated when asked to estimate their own task duration: they anchor on human-engineering norms (“this looks like a few-day task”) rather than on their own throughput, and their estimates exhibit substantial rank reversals relative to realized execution time, so even the relative ordering of task costs can flip between the estimate and reality. We therefore measure cost in predicted output tokens, a quantity an LLM can estimate well because it is a property of its own next response (the size of the artifact it would write) rather than the duration of an agentic process. For a fixed model and decoding configuration, tokens are emitted at an approximately constant rate, providing a backend-independent proxy for time. Unlike fixed or heuristic policies, this token-cost criterion is an explicit, layer-wise decision rule over the task DAG.",
+   "zh": "在本文中，我们转而提出一种并行化标准，该标准在执行前就能明确体现并计算出这种权衡。 对于一组子任务，预估的串行成本是所有子任务成本的总和，而预估的并行成本则由最慢执行者的执行成本以及重新探索与对齐的成本组成。 只有当预估的并行成本严格低于预估的串行成本时，才会选择并行执行。 这一标准的自然单位是实际运行时间，也就是用户所观察到的时间。 然而，在规划阶段预测实际运行时间因两个原因而变得不可靠。 首先，它依赖于后端系统（服务器负载、批量处理、重试）。 其次，也是更根本的原因，当要求 LLM 估计自身任务时长时，它们会系统性出现校准偏差：它们会锚定在人类工程规范上（“这看起来像是一个需要几天才能完成的任务”），而不是自身的吞吐量；而且它们的预估结果与实际执行时间相比会出现显著的排名反转，因此即使任务成本的相对顺序也可能在预估与现实之间发生颠倒。 因此，我们将成本以预测的输出词元数来衡量，这是一个 LLM 能够良好估计的量，因为它是自身下一个响应的属性（即它将生成的产物大小），而非智能体过程持续时间的体现。 对于固定的模型和解码配置，词元会以近似恒定的速率发出，从而提供了一个不依赖后端系统的时间代理指标。 与固定策略或启发式策略不同，这种基于词元成本的标准是一种针对任务 DAG 的显式、逐层决策规则。",
+   "sents": [
+    {
+     "en": "In this paper, we instead propose a parallelization criterion that makes this trade-off explicit and computable before execution.",
+     "zh": "在本文中，我们转而提出一种并行化标准，该标准在执行前就能明确体现并计算出这种权衡。"
+    },
+    {
+     "en": "For a group of subtasks, the estimated serial cost is the sum of all subtask costs, while the estimated parallel cost consists of the slowest worker’s execution cost together with the re-exploration and alignment costs.",
+     "zh": "对于一组子任务，预估的串行成本是所有子任务成本的总和，而预估的并行成本则由最慢执行者的执行成本以及重新探索与对齐的成本组成。"
+    },
+    {
+     "en": "Parallel execution is selected only when the estimated parallel cost is strictly lower than the estimated serial cost.",
+     "zh": "只有当预估的并行成本严格低于预估的串行成本时，才会选择并行执行。"
+    },
+    {
+     "en": "The natural unit for this criterion is wall-clock time, which is what users observe.",
+     "zh": "这一标准的自然单位是实际运行时间，也就是用户所观察到的时间。"
+    },
+    {
+     "en": "However, predicting wall-clock time at planning time turns out to be unreliable for two reasons.",
+     "zh": "然而，在规划阶段预测实际运行时间因两个原因而变得不可靠。"
+    },
+    {
+     "en": "First, it is backend-dependent (server load, batching, retries).",
+     "zh": "首先，它依赖于后端系统（服务器负载、批量处理、重试）。"
+    },
+    {
+     "en": "Second, and more fundamentally, LLMs are systematically miscalibrated when asked to estimate their own task duration: they anchor on human-engineering norms (“this looks like a few-day task”) rather than on their own throughput, and their estimates exhibit substantial rank reversals relative to realized execution time, so even the relative ordering of task costs can flip between the estimate and reality.",
+     "zh": "其次，也是更根本的原因，当要求 LLM 估计自身任务时长时，它们会系统性出现校准偏差：它们会锚定在人类工程规范上（“这看起来像是一个需要几天才能完成的任务”），而不是自身的吞吐量；而且它们的预估结果与实际执行时间相比会出现显著的排名反转，因此即使任务成本的相对顺序也可能在预估与现实之间发生颠倒。"
+    },
+    {
+     "en": "We therefore measure cost in predicted output tokens, a quantity an LLM can estimate well because it is a property of its own next response (the size of the artifact it would write) rather than the duration of an agentic process.",
+     "zh": "因此，我们将成本以预测的输出词元数来衡量，这是一个 LLM 能够良好估计的量，因为它是自身下一个响应的属性（即它将生成的产物大小），而非智能体过程持续时间的体现。"
+    },
+    {
+     "en": "For a fixed model and decoding configuration, tokens are emitted at an approximately constant rate, providing a backend-independent proxy for time.",
+     "zh": "对于固定的模型和解码配置，词元会以近似恒定的速率发出，从而提供了一个不依赖后端系统的时间代理指标。"
+    },
+    {
+     "en": "Unlike fixed or heuristic policies, this token-cost criterion is an explicit, layer-wise decision rule over the task DAG.",
+     "zh": "与固定策略或启发式策略不同，这种基于词元成本的标准是一种针对任务 DAG 的显式、逐层决策规则。"
+    }
+   ]
+  },
+  {
+   "en": "Based on this criterion, we propose SquidAgent, a cost-aware parallel multi-agent framework that realizes token-cost scheduling in practice. SquidAgent first decomposes a user request into a DAG and, in the same planning response, estimates token budgets for both subtask execution and layer-level alignment cost. It then applies the criterion to each topological layer, choosing parallel execution when the estimated parallel cost is lower than the estimated serial cost, and serial execution otherwise. To further reduce the hidden costs themselves, workers fork the orchestrator’s conversation, inheriting global conventions and prior decisions. This reduces redundant reconstruction of the planning context, motivating the operational approximation C exp ≈ 0 C_{\\mathrm{exp}}\\approx 0 . The orchestrator also writes a shared convention block before each parallel layer, reducing subsequent inconsistency and making the upfront planning cost estimable. Code is available at: https://github.com/tmllab/2026_NeurIPS_SquidAgent .",
+   "zh": "基于这一标准，我们提出了 SquidAgent——一个具备成本感知能力的并行多智能体框架，能够在实际应用中实现令牌成本调度。 SquidAgent 首先将用户请求分解为有向无环图（DAG），并在同一规划响应中估算子任务执行和层级对齐所需的令牌预算。 随后，该框架将这一标准应用于每个拓扑层：当估算的并行成本低于估算的串行成本时，选择并行执行；否则选择串行执行。 为了进一步降低隐藏成本本身，工作智能体会分叉协调器的对话，从而继承全局约定和先前的决策。 这减少了规划上下文的冗余重建，从而促使操作近似值满足 C exp ≈ 0 C_{\\mathrm{exp}}\\approx 0 。 协调器还在每个并行层之前写入一个共享的约定块，以减少后续的不一致性，并使初始规划成本具备可估算性。 代码可在以下地址获取：https://github.com/tmllab/2026_NeurIPS_SquidAgent 。",
+   "sents": [
+    {
+     "en": "Based on this criterion, we propose SquidAgent, a cost-aware parallel multi-agent framework that realizes token-cost scheduling in practice.",
+     "zh": "基于这一标准，我们提出了 SquidAgent——一个具备成本感知能力的并行多智能体框架，能够在实际应用中实现令牌成本调度。"
+    },
+    {
+     "en": "SquidAgent first decomposes a user request into a DAG and, in the same planning response, estimates token budgets for both subtask execution and layer-level alignment cost.",
+     "zh": "SquidAgent 首先将用户请求分解为有向无环图（DAG），并在同一规划响应中估算子任务执行和层级对齐所需的令牌预算。"
+    },
+    {
+     "en": "It then applies the criterion to each topological layer, choosing parallel execution when the estimated parallel cost is lower than the estimated serial cost, and serial execution otherwise.",
+     "zh": "随后，该框架将这一标准应用于每个拓扑层：当估算的并行成本低于估算的串行成本时，选择并行执行；否则选择串行执行。"
+    },
+    {
+     "en": "To further reduce the hidden costs themselves, workers fork the orchestrator’s conversation, inheriting global conventions and prior decisions.",
+     "zh": "为了进一步降低隐藏成本本身，工作智能体会分叉协调器的对话，从而继承全局约定和先前的决策。"
+    },
+    {
+     "en": "This reduces redundant reconstruction of the planning context, motivating the operational approximation C exp ≈ 0 C_{\\mathrm{exp}}\\approx 0 .",
+     "zh": "这减少了规划上下文的冗余重建，从而促使操作近似值满足 C exp ≈ 0 C_{\\mathrm{exp}}\\approx 0 。"
+    },
+    {
+     "en": "The orchestrator also writes a shared convention block before each parallel layer, reducing subsequent inconsistency and making the upfront planning cost estimable.",
+     "zh": "协调器还在每个并行层之前写入一个共享的约定块，以减少后续的不一致性，并使初始规划成本具备可估算性。"
+    },
+    {
+     "en": "Code is available at: https://github.com/tmllab/2026_NeurIPS_SquidAgent .",
+     "zh": "代码可在以下地址获取：https://github.com/tmllab/2026_NeurIPS_SquidAgent 。"
+    }
+   ]
+  },
+  {
+   "en": "Our main contributions are summarized as follows:",
+   "zh": "我们的主要贡献总结如下：",
+   "sents": null
+  },
+  {
+   "en": "Hidden-cost analysis of parallel multi-agent execution. We identify two operationally distinct sources of coordination overhead in parallel LLM-agent execution: (i) the re-exploration cost , where parallel workers redundantly reconstruct the orchestrator’s planning context that a serial agent retains implicitly, and (ii) the alignment cost , incurred when independently generated outputs must be reconciled into a globally consistent solution. We show that parallel execution can be counterproductive when these costs outweigh the benefit of concurrency.",
+   "zh": "并行多智能体执行的隐藏成本分析。 我们识别出并行 LLM-智能体执行中两种在操作层面截然不同的协调开销来源：(i) 重新探索成本，即并行工作者会冗余地重建协调器所规划的上下文——而串行智能体会以隐式方式保留该上下文；以及 (ii) 对齐成本，即当独立生成的输出必须整合成一个全局一致的方案时所产生的成本。 我们证明，当这些成本超过并发带来的收益时，并行执行可能会适得其反。",
+   "sents": [
+    {
+     "en": "Hidden-cost analysis of parallel multi-agent execution.",
+     "zh": "并行多智能体执行的隐藏成本分析。"
+    },
+    {
+     "en": "We identify two operationally distinct sources of coordination overhead in parallel LLM-agent execution: (i) the re-exploration cost , where parallel workers redundantly reconstruct the orchestrator’s planning context that a serial agent retains implicitly, and (ii) the alignment cost , incurred when independently generated outputs must be reconciled into a globally consistent solution.",
+     "zh": "我们识别出并行 LLM-智能体执行中两种在操作层面截然不同的协调开销来源：(i) 重新探索成本，即并行工作者会冗余地重建协调器所规划的上下文——而串行智能体会以隐式方式保留该上下文；以及 (ii) 对齐成本，即当独立生成的输出必须整合成一个全局一致的方案时所产生的成本。"
+    },
+    {
+     "en": "We show that parallel execution can be counterproductive when these costs outweigh the benefit of concurrency.",
+     "zh": "我们证明，当这些成本超过并发带来的收益时，并行执行可能会适得其反。"
+    }
+   ]
+  },
+  {
+   "en": "A token-cost criterion for adaptive parallelization. We observe that wall-clock time is the natural optimization target, but is poorly estimated by LLMs due to systematic miscalibration in predicting task duration. We instead use predicted output tokens as a proxy cost, which LLMs can estimate more reliably than wall-clock time as a property of their own responses and which is backend-independent. Based on this, we formalize parallelization as a cost-sensitive scheduling problem and derive a layer-wise criterion comparing (i) predicted serial cost (sum of subtasks) against (ii) predicted parallel cost (critical path plus re-exploration and alignment costs). The criterion is computed before execution and applied per topological layer of the task DAG.",
+   "zh": "一种基于令牌成本的自适应并行化标准。 我们观察到，实际运行时间是自然的优化目标，但由于 LLM 在预测任务时长时存在系统性偏差，导致其对该时间的估计效果不佳。 因此，我们转而使用预测的输出令牌数作为代理成本，因为对于 LLM 而言，这一成本作为其自身响应的属性，比实际运行时间更容易可靠地估计，且不受后端系统的影响。 基于此，我们将并行化形式化为一个成本敏感的调度问题，并推导出一种逐层标准：比较（i）预测的串行成本（子任务之和）与（ii）预测的并行成本（关键路径加上重新探索与对齐成本）。 该标准在执行前进行计算，并应用于任务 DAG 的每个拓扑层。",
+   "sents": [
+    {
+     "en": "A token-cost criterion for adaptive parallelization.",
+     "zh": "一种基于令牌成本的自适应并行化标准。"
+    },
+    {
+     "en": "We observe that wall-clock time is the natural optimization target, but is poorly estimated by LLMs due to systematic miscalibration in predicting task duration.",
+     "zh": "我们观察到，实际运行时间是自然的优化目标，但由于 LLM 在预测任务时长时存在系统性偏差，导致其对该时间的估计效果不佳。"
+    },
+    {
+     "en": "We instead use predicted output tokens as a proxy cost, which LLMs can estimate more reliably than wall-clock time as a property of their own responses and which is backend-independent.",
+     "zh": "因此，我们转而使用预测的输出令牌数作为代理成本，因为对于 LLM 而言，这一成本作为其自身响应的属性，比实际运行时间更容易可靠地估计，且不受后端系统的影响。"
+    },
+    {
+     "en": "Based on this, we formalize parallelization as a cost-sensitive scheduling problem and derive a layer-wise criterion comparing (i) predicted serial cost (sum of subtasks) against (ii) predicted parallel cost (critical path plus re-exploration and alignment costs).",
+     "zh": "基于此，我们将并行化形式化为一个成本敏感的调度问题，并推导出一种逐层标准：比较（i）预测的串行成本（子任务之和）与（ii）预测的并行成本（关键路径加上重新探索与对齐成本）。"
+    },
+    {
+     "en": "The criterion is computed before execution and applied per topological layer of the task DAG.",
+     "zh": "该标准在执行前进行计算，并应用于任务 DAG 的每个拓扑层。"
+    }
+   ]
+  },
+  {
+   "en": "The SquidAgent framework. We instantiate this criterion in SquidAgent, a parallel multi-agent framework for cost-aware execution. Our method (i) estimates token budgets in a single planning pass, (ii) initializes workers from a shared orchestrator state to reduce redundant re-exploration, and (iii) writes a shared convention block to reduce alignment cost across parallel workers. Across all nine evaluation tasks, SquidAgent achieves a 2.6 × \\times average wall-time speedup and a 2.2 × \\times average throughput improvement over Claude Code. It also achieves a 2.0 × \\times average throughput improvement over the strongest multi-agent baseline while obtaining the best overall task completion quality.",
+   "zh": "SquidAgent 框架。 我们在 SquidAgent 中实现了这一标准，它是一个用于成本感知执行的并行多智能体框架。 我们的方法（i）在一次规划过程中估算令牌预算，（ii）从共享的协调器状态初始化工作单元，以减少重复探索，以及（iii）写入一个共享的约定块，以降低并行工作单元之间的对齐成本。 在所有九个评估任务中，SquidAgent 相比 Claude Code 实现了平均 2.6 × 的实际运行时间加速和平均 2.2 × 的吞吐量提升。 与最强的多智能体基线方法相比，它还实现了平均 2.0 × 的吞吐量提升，同时获得了最佳的总体任务完成质量。",
+   "sents": [
+    {
+     "en": "The SquidAgent framework.",
+     "zh": "SquidAgent 框架。"
+    },
+    {
+     "en": "We instantiate this criterion in SquidAgent, a parallel multi-agent framework for cost-aware execution.",
+     "zh": "我们在 SquidAgent 中实现了这一标准，它是一个用于成本感知执行的并行多智能体框架。"
+    },
+    {
+     "en": "Our method (i) estimates token budgets in a single planning pass, (ii) initializes workers from a shared orchestrator state to reduce redundant re-exploration, and (iii) writes a shared convention block to reduce alignment cost across parallel workers.",
+     "zh": "我们的方法（i）在一次规划过程中估算令牌预算，（ii）从共享的协调器状态初始化工作单元，以减少重复探索，以及（iii）写入一个共享的约定块，以降低并行工作单元之间的对齐成本。"
+    },
+    {
+     "en": "Across all nine evaluation tasks, SquidAgent achieves a 2.6 × \\times average wall-time speedup and a 2.2 × \\times average throughput improvement over Claude Code.",
+     "zh": "在所有九个评估任务中，SquidAgent 相比 Claude Code 实现了平均 2.6 × 的实际运行时间加速和平均 2.2 × 的吞吐量提升。"
+    },
+    {
+     "en": "It also achieves a 2.0 × \\times average throughput improvement over the strongest multi-agent baseline while obtaining the best overall task completion quality.",
+     "zh": "与最强的多智能体基线方法相比，它还实现了平均 2.0 × 的吞吐量提升，同时获得了最佳的总体任务完成质量。"
+    }
+   ]
+  },
+  {
+   "en": "Multi-agent LLM systems decompose complex tasks into subtasks and solve them through coordinated agents ( Guo et al., 2024 ) . Existing systems differ mainly in how they organize execution. Sequential pipelines, such as MetaGPT ( Hong et al., 2024 ) , SeqCV ( Yao et al., 2025 ) , and OneFlow ( Xu et al., 2026 ) , execute subtasks step by step and preserve global consistency, but they sacrifice parallel speedup. Parallel systems, such as MacNet ( Qian et al., 2025 ) , Flow ( Niu et al., 2025 ) , and LLMCompiler ( Kim et al., 2024 ) , dispatch independent subtasks to concurrent workers, but typically rely on fixed parallelization rules rather than an explicit cost-benefit criterion. Other frameworks, including AutoGen ( Wu et al., 2024a ) , ChatDev ( Qian et al., 2024 ) , CAMEL ( Li et al., 2023 ) , and AgentVerse ( Chen et al., 2024b ) , provide flexible agent composition, but leave the execution policy largely to the developer. Debate-style systems ( Du et al., 2024 ; Liang et al., 2024 ; Chan et al., 2024 ; Chen et al., 2024a ) improve answer quality through iterative critique and consensus, which is orthogonal to our focus on execution scheduling. Consensus Matrix explores role-specialized multi-agent collaboration for structured decision-making in visual media workflows ( Zhang et al., 2026a ) . Heterogeneous agent collaborative reinforcement learning shares verified rollouts during training while operating independently at inference time ( Zhang et al., 2026c ) . In contrast, we study how multiple workers should be coordinated during inference.",
+   "zh": "多智能体 LLM 系统将复杂任务分解为子任务，并通过协同的智能体解决这些任务（Guo 等，2024）。 现有系统的主要差异在于它们如何组织执行流程。 顺序式流程系统，例如 MetaGPT（Hong 等，2024）、SeqCV（Yao 等，2025）和 OneFlow（Xu 等，2026），按步骤执行子任务并维持全局一致性，但会牺牲并行加速的优势。 并行式系统，例如 MacNet（Qian 等，2025）、Flow（Niu 等，2025）和 LLMCompiler（Kim 等，2024），将独立的子任务分配给并发执行的工作者，但通常依赖固定的并行化规则，而非明确的成本效益标准。 其他框架，包括 AutoGen（Wu 等，2024a）、ChatDev（Qian 等，2024）、CAMEL（Li 等，2023）和 AgentVerse（Chen 等，2024b），提供了灵活的智能体组合方式，但执行策略在很大程度上仍由开发者自行决定。 辩论式系统（Du 等，2024；Liang 等，2024；Chan 等，2024；Chen 等，2024a）通过迭代性批判与共识提升答案质量，这与我们的执行调度研究重点相互独立。 Consensus Matrix 探索了角色专业化的多智能体协作在视觉媒体工作流程中实现结构化决策的方法（Zhang 等，2026a）。 异构智能体协作强化学习在训练阶段共享经过验证的执行结果，而在推理阶段则独立运行（Zhang 等，2026c）。 相比之下，我们研究的是如何在推理阶段协调多个工作者。",
+   "sents": [
+    {
+     "en": "Multi-agent LLM systems decompose complex tasks into subtasks and solve them through coordinated agents ( Guo et al., 2024 ) .",
+     "zh": "多智能体 LLM 系统将复杂任务分解为子任务，并通过协同的智能体解决这些任务（Guo 等，2024）。"
+    },
+    {
+     "en": "Existing systems differ mainly in how they organize execution.",
+     "zh": "现有系统的主要差异在于它们如何组织执行流程。"
+    },
+    {
+     "en": "Sequential pipelines, such as MetaGPT ( Hong et al., 2024 ) , SeqCV ( Yao et al., 2025 ) , and OneFlow ( Xu et al., 2026 ) , execute subtasks step by step and preserve global consistency, but they sacrifice parallel speedup.",
+     "zh": "顺序式流程系统，例如 MetaGPT（Hong 等，2024）、SeqCV（Yao 等，2025）和 OneFlow（Xu 等，2026），按步骤执行子任务并维持全局一致性，但会牺牲并行加速的优势。"
+    },
+    {
+     "en": "Parallel systems, such as MacNet ( Qian et al., 2025 ) , Flow ( Niu et al., 2025 ) , and LLMCompiler ( Kim et al., 2024 ) , dispatch independent subtasks to concurrent workers, but typically rely on fixed parallelization rules rather than an explicit cost-benefit criterion.",
+     "zh": "并行式系统，例如 MacNet（Qian 等，2025）、Flow（Niu 等，2025）和 LLMCompiler（Kim 等，2024），将独立的子任务分配给并发执行的工作者，但通常依赖固定的并行化规则，而非明确的成本效益标准。"
+    },
+    {
+     "en": "Other frameworks, including AutoGen ( Wu et al., 2024a ) , ChatDev ( Qian et al., 2024 ) , CAMEL ( Li et al., 2023 ) , and AgentVerse ( Chen et al., 2024b ) , provide flexible agent composition, but leave the execution policy largely to the developer.",
+     "zh": "其他框架，包括 AutoGen（Wu 等，2024a）、ChatDev（Qian 等，2024）、CAMEL（Li 等，2023）和 AgentVerse（Chen 等，2024b），提供了灵活的智能体组合方式，但执行策略在很大程度上仍由开发者自行决定。"
+    },
+    {
+     "en": "Debate-style systems ( Du et al., 2024 ; Liang et al., 2024 ; Chan et al., 2024 ; Chen et al., 2024a ) improve answer quality through iterative critique and consensus, which is orthogonal to our focus on execution scheduling.",
+     "zh": "辩论式系统（Du 等，2024；Liang 等，2024；Chan 等，2024；Chen 等，2024a）通过迭代性批判与共识提升答案质量，这与我们的执行调度研究重点相互独立。"
+    },
+    {
+     "en": "Consensus Matrix explores role-specialized multi-agent collaboration for structured decision-making in visual media workflows ( Zhang et al., 2026a ) .",
+     "zh": "Consensus Matrix 探索了角色专业化的多智能体协作在视觉媒体工作流程中实现结构化决策的方法（Zhang 等，2026a）。"
+    },
+    {
+     "en": "Heterogeneous agent collaborative reinforcement learning shares verified rollouts during training while operating independently at inference time ( Zhang et al., 2026c ) .",
+     "zh": "异构智能体协作强化学习在训练阶段共享经过验证的执行结果，而在推理阶段则独立运行（Zhang 等，2026c）。"
+    },
+    {
+     "en": "In contrast, we study how multiple workers should be coordinated during inference.",
+     "zh": "相比之下，我们研究的是如何在推理阶段协调多个工作者。"
+    }
+   ]
+  },
+  {
+   "en": "Graph-structured reasoning and execution have been widely used to expose dependencies among intermediate steps. Tree-of-Thoughts ( Yao et al., 2023 ) , Graph-of-Thoughts ( Besta et al., 2024 ) , and Skeleton-of-Thought ( Ning et al., 2024 ) structure single-agent reasoning as trees, graphs, or parallel skeleton expansion. In multi-agent settings, GPTSwarm ( Zhuge et al., 2024 ) , AgentKit ( Wu et al., 2024b ) , TDAG ( Wang et al., 2025 ) , and DynTaskMAS ( Yu et al., 2025 ) represent tasks or agents as computational graphs with explicit dependencies. These graph representations naturally induce dependency layers that can serve as synchronization points. Our work uses this layer structure not merely for execution, but as the unit for deciding whether parallelization is worthwhile.",
+   "zh": "图结构推理与执行已被广泛用于揭示中间步骤之间的依赖关系。 思维树（Yao 等，2023）、思维图（Besta 等，2024）和思维骨架（Ning 等，2024）将单智能体推理结构化为树、图或平行的骨架扩展形式。 在多智能体场景中，GPTSwarm（Zhuge 等，2024）、AgentKit（Wu 等，2024b）、TDAG（Wang 等，2025）和 DynTaskMAS（Yu 等，2025）将任务或智能体表示为具有显式依赖的计算图。 这些图表示天然会形成依赖层，这些依赖层可用作同步点。 我们的工作不仅利用这种分层结构进行执行，更将其作为判断并行化是否值得的基本单位。",
+   "sents": [
+    {
+     "en": "Graph-structured reasoning and execution have been widely used to expose dependencies among intermediate steps.",
+     "zh": "图结构推理与执行已被广泛用于揭示中间步骤之间的依赖关系。"
+    },
+    {
+     "en": "Tree-of-Thoughts ( Yao et al., 2023 ) , Graph-of-Thoughts ( Besta et al., 2024 ) , and Skeleton-of-Thought ( Ning et al., 2024 ) structure single-agent reasoning as trees, graphs, or parallel skeleton expansion.",
+     "zh": "思维树（Yao 等，2023）、思维图（Besta 等，2024）和思维骨架（Ning 等，2024）将单智能体推理结构化为树、图或平行的骨架扩展形式。"
+    },
+    {
+     "en": "In multi-agent settings, GPTSwarm ( Zhuge et al., 2024 ) , AgentKit ( Wu et al., 2024b ) , TDAG ( Wang et al., 2025 ) , and DynTaskMAS ( Yu et al., 2025 ) represent tasks or agents as computational graphs with explicit dependencies.",
+     "zh": "在多智能体场景中，GPTSwarm（Zhuge 等，2024）、AgentKit（Wu 等，2024b）、TDAG（Wang 等，2025）和 DynTaskMAS（Yu 等，2025）将任务或智能体表示为具有显式依赖的计算图。"
+    },
+    {
+     "en": "These graph representations naturally induce dependency layers that can serve as synchronization points.",
+     "zh": "这些图表示天然会形成依赖层，这些依赖层可用作同步点。"
+    },
+    {
+     "en": "Our work uses this layer structure not merely for execution, but as the unit for deciding whether parallelization is worthwhile.",
+     "zh": "我们的工作不仅利用这种分层结构进行执行，更将其作为判断并行化是否值得的基本单位。"
+    }
+   ]
+  },
+  {
+   "en": "Existing systems typically use fixed serial execution, fixed parallel execution, or heuristic adaptive control. Fixed strategies ignore task-dependent coordination costs, while adaptive systems such as the Evolving Orchestrator ( Dang et al., 2026 ) and AgentConductor ( Wang et al., 2026b ) adjust execution strategies without an explicit serial-versus-parallel cost criterion. Adaptive reasoning termination ( Huang et al., 2026d ) reduces computation within individual responses. Related work on token efficiency ( Lin et al., 2026 ) , agent scheduling theory ( Wei, 2026 ) , and workflow optimization ( Yue et al., 2026 ) highlights the importance of reducing agent execution cost, but does not provide an operational decision rule for LLM-agent parallelization. SquidAgent addresses this gap by comparing the estimated serial cost of each dependency layer with its effective parallel cost, including coordination overhead.",
+   "zh": "现有系统通常采用固定的串行执行、固定的并行执行或启发式自适应控制。 固定策略会忽略任务相关的协调成本，而像 Evolving Orchestrator（Dang 等人，2026）和 AgentConductor（Wang 等人，2026b）这样的自适应系统则在没有明确的串行与并行成本标准的情况下调整执行策略。 自适应推理终止（Huang 等人，2026d）减少了单个响应内的计算量。 关于标记效率（Lin 等人，2026）、智能体调度理论（Wei，2026）和工作流优化（Yue 等人，2026）的相关研究强调了降低智能体执行成本的重要性，但并未提供用于 LLM-智能体并行化的可操作决策规则。 SquidAgent 通过比较每个依赖层的预估串行成本与其有效并行成本（包括协调开销）来解决这一问题。",
+   "sents": [
+    {
+     "en": "Existing systems typically use fixed serial execution, fixed parallel execution, or heuristic adaptive control.",
+     "zh": "现有系统通常采用固定的串行执行、固定的并行执行或启发式自适应控制。"
+    },
+    {
+     "en": "Fixed strategies ignore task-dependent coordination costs, while adaptive systems such as the Evolving Orchestrator ( Dang et al., 2026 ) and AgentConductor ( Wang et al., 2026b ) adjust execution strategies without an explicit serial-versus-parallel cost criterion.",
+     "zh": "固定策略会忽略任务相关的协调成本，而像 Evolving Orchestrator（Dang 等人，2026）和 AgentConductor（Wang 等人，2026b）这样的自适应系统则在没有明确的串行与并行成本标准的情况下调整执行策略。"
+    },
+    {
+     "en": "Adaptive reasoning termination ( Huang et al., 2026d ) reduces computation within individual responses.",
+     "zh": "自适应推理终止（Huang 等人，2026d）减少了单个响应内的计算量。"
+    },
+    {
+     "en": "Related work on token efficiency ( Lin et al., 2026 ) , agent scheduling theory ( Wei, 2026 ) , and workflow optimization ( Yue et al., 2026 ) highlights the importance of reducing agent execution cost, but does not provide an operational decision rule for LLM-agent parallelization.",
+     "zh": "关于标记效率（Lin 等人，2026）、智能体调度理论（Wei，2026）和工作流优化（Yue 等人，2026）的相关研究强调了降低智能体执行成本的重要性，但并未提供用于 LLM-智能体并行化的可操作决策规则。"
+    },
+    {
+     "en": "SquidAgent addresses this gap by comparing the estimated serial cost of each dependency layer with its effective parallel cost, including coordination overhead.",
+     "zh": "SquidAgent 通过比较每个依赖层的预估串行成本与其有效并行成本（包括协调开销）来解决这一问题。"
+    }
+   ]
+  },
+  {
+   "en": "In this section, we present SquidAgent. We first define the task decomposition setting and notation (Section 3.1 ). We then derive a wall-clock parallelization criterion, explain why it is unreliable to estimate before execution, and introduce a token-cost criterion as a computable alternative (Section 3.2 ). Finally, we describe how SquidAgent implements this criterion through context forking, upfront convention planning, and deterministic layer-wise scheduling (Section 3.3 ).",
+   "zh": "在本节中，我们介绍 SquidAgent。 我们首先定义任务分解的设置和符号（第 3.1 节）。 接着，我们推导出一个实际运行时间的并行化标准，解释为何在执行前难以可靠地估算该标准，并引入一种基于令牌消耗的标准作为可计算的替代方案（第 3.2 节）。 最后，我们描述 SquidAgent 如何通过上下文分叉、预先的约定规划以及确定性的逐层调度来实现这一标准（第 3.3 节）。",
+   "sents": [
+    {
+     "en": "In this section, we present SquidAgent.",
+     "zh": "在本节中，我们介绍 SquidAgent。"
+    },
+    {
+     "en": "We first define the task decomposition setting and notation (Section 3.1 ).",
+     "zh": "我们首先定义任务分解的设置和符号（第 3.1 节）。"
+    },
+    {
+     "en": "We then derive a wall-clock parallelization criterion, explain why it is unreliable to estimate before execution, and introduce a token-cost criterion as a computable alternative (Section 3.2 ).",
+     "zh": "接着，我们推导出一个实际运行时间的并行化标准，解释为何在执行前难以可靠地估算该标准，并引入一种基于令牌消耗的标准作为可计算的替代方案（第 3.2 节）。"
+    },
+    {
+     "en": "Finally, we describe how SquidAgent implements this criterion through context forking, upfront convention planning, and deterministic layer-wise scheduling (Section 3.3 ).",
+     "zh": "最后，我们描述 SquidAgent 如何通过上下文分叉、预先的约定规划以及确定性的逐层调度来实现这一标准（第 3.3 节）。"
+    }
+   ]
+  },
+  {
+   "en": "Given a user request ℛ \\mathcal{R} , an orchestrator 𝒪 \\mathcal{O} decomposes ℛ \\mathcal{R} into a directed acyclic graph (DAG) 𝒢 \\mathcal{G} over subtasks t 1 , … , t n t_{1},\\ldots,t_{n} , where edges encode dependencies. In the same planning step, the orchestrator also produces the cost estimates consumed by the scheduler:",
+   "zh": "给定用户请求 ℛ \\mathcal{R}，协调器 𝒪 \\mathcal{O} 将 ℛ \\mathcal{R} 分解为一个有向无环图（DAG）𝒢 \\mathcal{G}，该图包含子任务 t_{1},\\ldots,t_{n}，其中边表示依赖关系。 在同一规划步骤中，协调器还会生成调度器所消耗的成本估计值：",
+   "sents": [
+    {
+     "en": "Given a user request ℛ \\mathcal{R} , an orchestrator 𝒪 \\mathcal{O} decomposes ℛ \\mathcal{R} into a directed acyclic graph (DAG) 𝒢 \\mathcal{G} over subtasks t 1 , … , t n t_{1},\\ldots,t_{n} , where edges encode dependencies.",
+     "zh": "给定用户请求 ℛ \\mathcal{R}，协调器 𝒪 \\mathcal{O} 将 ℛ \\mathcal{R} 分解为一个有向无环图（DAG）𝒢 \\mathcal{G}，该图包含子任务 t_{1},\\ldots,t_{n}，其中边表示依赖关系。"
+    },
+    {
+     "en": "In the same planning step, the orchestrator also produces the cost estimates consumed by the scheduler:",
+     "zh": "在同一规划步骤中，协调器还会生成调度器所消耗的成本估计值："
+    }
+   ]
+  },
+  {
+   "en": "where τ i \\tau_{i} estimates the cost of completing subtask t i t_{i} , and C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) estimates the alignment cost for layer ℒ k \\mathcal{L}_{k} , i.e., the effort needed to resolve inconsistencies among parallel outputs such as notation, terminology, interfaces, formatting, or cross-references.",
+   "zh": "其中 τ i \\tau_{i} 用于估计完成子任务 t i t_{i} 的成本，而 C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) 用于估计层 ℒ k \\mathcal{L}_{k} 的对齐成本，即解决并行输出之间不一致性（如符号表示、术语、接口、格式或交叉引用等）所需的努力。",
+   "sents": null
+  },
+  {
+   "en": "The DAG is partitioned into topological layers ℒ 1 , … , ℒ L \\mathcal{L}_{1},\\ldots,\\mathcal{L}_{L} , where every dependency of a task in ℒ k \\mathcal{L}_{k} is satisfied by earlier layers. Tasks within the same layer are therefore eligible for parallel execution. For each layer, the scheduler chooses an execution mode m k ∈ { Serial , Parallel } m_{k}\\in\\{\\textsc{Serial},\\textsc{Parallel}\\} . Under Serial , the orchestrator completes the subtasks one after another; under Parallel , separate workers execute them concurrently.",
+   "zh": "该有向无环图（DAG）被划分为拓扑层 ℒ₁, …, ℒ_L，其中 ℒ_k 中每个任务的依赖关系都由更早的层满足。 因此，同一层内的任务可以并行执行。 对于每一层，调度器会选择一种执行模式 m_k ∈ {Serial, Parallel}。 在串行模式下，协调器会依次完成子任务；在并行模式下，则由不同的执行单元同时执行这些子任务。",
+   "sents": [
+    {
+     "en": "The DAG is partitioned into topological layers ℒ 1 , … , ℒ L \\mathcal{L}_{1},\\ldots,\\mathcal{L}_{L} , where every dependency of a task in ℒ k \\mathcal{L}_{k} is satisfied by earlier layers.",
+     "zh": "该有向无环图（DAG）被划分为拓扑层 ℒ₁, …, ℒ_L，其中 ℒ_k 中每个任务的依赖关系都由更早的层满足。"
+    },
+    {
+     "en": "Tasks within the same layer are therefore eligible for parallel execution.",
+     "zh": "因此，同一层内的任务可以并行执行。"
+    },
+    {
+     "en": "For each layer, the scheduler chooses an execution mode m k ∈ { Serial , Parallel } m_{k}\\in\\{\\textsc{Serial},\\textsc{Parallel}\\} .",
+     "zh": "对于每一层，调度器会选择一种执行模式 m_k ∈ {Serial, Parallel}。"
+    },
+    {
+     "en": "Under Serial , the orchestrator completes the subtasks one after another; under Parallel , separate workers execute them concurrently.",
+     "zh": "在串行模式下，协调器会依次完成子任务；在并行模式下，则由不同的执行单元同时执行这些子任务。"
+    }
+   ]
+  },
+  {
+   "en": "We first formulate the layer-wise cost in wall-clock time, and then replace it with a more tractable token-based proxy.",
+   "zh": "我们首先以实际运行时间为单位来构建逐层成本模型，然后将其替换为一种更易处理的基于标记的代理指标。",
+   "sents": null
+  },
+  {
+   "en": "Let τ ~ i \\tilde{\\tau}_{i} denote the wall-clock time required to complete subtask t i t_{i} . Under serial execution, the layer cost is the sum of all subtask times:",
+   "zh": "令 τ ~ i \\tilde{\\tau}_{i} 表示完成子任务 t i t_{i} 所需的实际运行时间。 在串行执行中，层成本是所有子任务时间的总和：",
+   "sents": [
+    {
+     "en": "Let τ ~ i \\tilde{\\tau}_{i} denote the wall-clock time required to complete subtask t i t_{i} .",
+     "zh": "令 τ ~ i \\tilde{\\tau}_{i} 表示完成子任务 t i t_{i} 所需的实际运行时间。"
+    },
+    {
+     "en": "Under serial execution, the layer cost is the sum of all subtask times:",
+     "zh": "在串行执行中，层成本是所有子任务时间的总和："
+    }
+   ]
+  },
+  {
+   "en": "Under parallel execution, workers execute subtasks concurrently, so the execution cost is determined by the slowest worker. However, parallelism also introduces two additional costs. First, independent workers may need to rediscover planning context that the orchestrator has already established, incurring re-exploration time C ~ exp ​ ( ℒ k ) \\widetilde{C}_{\\mathrm{exp}}(\\mathcal{L}_{k}) . Second, independently produced outputs may require reconciliation, incurring alignment time C ~ alg ​ ( ℒ k ) \\widetilde{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) . Thus the parallel cost is",
+   "zh": "在并行执行中，智能体同时执行子任务，因此执行成本由最慢的智能体决定。 然而，并行性也会带来两种额外的成本。 首先，独立的智能体可能需要重新发现协调器已经建立的规划上下文，从而产生重新探索时间 C ~ exp ​ ( ℒ k ) \\widetilde{C}_{\\mathrm{exp}}(\\mathcal{L}_{k}) 。 其次，独立生成的输出可能需要协调一致，从而产生对齐时间 C ~ alg ​ ( ℒ k ) \\widetilde{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) 。 因此，并行成本为",
+   "sents": [
+    {
+     "en": "Under parallel execution, workers execute subtasks concurrently, so the execution cost is determined by the slowest worker.",
+     "zh": "在并行执行中，智能体同时执行子任务，因此执行成本由最慢的智能体决定。"
+    },
+    {
+     "en": "However, parallelism also introduces two additional costs.",
+     "zh": "然而，并行性也会带来两种额外的成本。"
+    },
+    {
+     "en": "First, independent workers may need to rediscover planning context that the orchestrator has already established, incurring re-exploration time C ~ exp ​ ( ℒ k ) \\widetilde{C}_{\\mathrm{exp}}(\\mathcal{L}_{k}) .",
+     "zh": "首先，独立的智能体可能需要重新发现协调器已经建立的规划上下文，从而产生重新探索时间 C ~ exp ​ ( ℒ k ) \\widetilde{C}_{\\mathrm{exp}}(\\mathcal{L}_{k}) 。"
+    },
+    {
+     "en": "Second, independently produced outputs may require reconciliation, incurring alignment time C ~ alg ​ ( ℒ k ) \\widetilde{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) .",
+     "zh": "其次，独立生成的输出可能需要协调一致，从而产生对齐时间 C ~ alg ​ ( ℒ k ) \\widetilde{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) 。"
+    },
+    {
+     "en": "Thus the parallel cost is",
+     "zh": "因此，并行成本为"
+    }
+   ]
+  },
+  {
+   "en": "A layer should be parallelized only when doing so reduces wall-clock time:",
+   "zh": "仅当并行化能够减少实际运行时间时，才对某一层进行并行化：",
+   "sents": null
+  },
+  {
+   "en": "Although Eq. 4 is the desired decision rule, its terms cannot be reliably predicted before execution. Wall-clock time depends on backend conditions such as server load, batching, throttling, retries, and tool-call latency. LLMs are also poorly calibrated when asked to estimate their own execution duration: they tend to answer in human-engineering time rather than model-runtime time. Such estimates may mis-rank subtasks relative to their realized execution times, since human-difficult tasks are not always slow for LLM agents, while long outputs, tool calls, and retries can dominate actual runtime.",
+   "zh": "尽管公式 4 是理想的决策规则，但其各项参数在执行前无法可靠预测。 实际运行时间取决于后端条件，例如服务器负载、批量处理、速率限制、重试以及工具调用延迟。 当被要求估算自身执行时长时，大型语言模型（LLM）的估计结果也存在严重偏差：它们倾向于以人类工程时间而非模型运行时时间来作答。 这类估计可能会错误地排序子任务与其实际执行时间的关系，因为对人类而言困难的任务对 LLM 智能体而言并不总是缓慢的，而长输出、工具调用和重试却可能主导实际运行时间。",
+   "sents": [
+    {
+     "en": "Although Eq. 4 is the desired decision rule, its terms cannot be reliably predicted before execution.",
+     "zh": "尽管公式 4 是理想的决策规则，但其各项参数在执行前无法可靠预测。"
+    },
+    {
+     "en": "Wall-clock time depends on backend conditions such as server load, batching, throttling, retries, and tool-call latency.",
+     "zh": "实际运行时间取决于后端条件，例如服务器负载、批量处理、速率限制、重试以及工具调用延迟。"
+    },
+    {
+     "en": "LLMs are also poorly calibrated when asked to estimate their own execution duration: they tend to answer in human-engineering time rather than model-runtime time.",
+     "zh": "当被要求估算自身执行时长时，大型语言模型（LLM）的估计结果也存在严重偏差：它们倾向于以人类工程时间而非模型运行时时间来作答。"
+    },
+    {
+     "en": "Such estimates may mis-rank subtasks relative to their realized execution times, since human-difficult tasks are not always slow for LLM agents, while long outputs, tool calls, and retries can dominate actual runtime.",
+     "zh": "这类估计可能会错误地排序子任务与其实际执行时间的关系，因为对人类而言困难的任务对 LLM 智能体而言并不总是缓慢的，而长输出、工具调用和重试却可能主导实际运行时间。"
+    }
+   ]
+  },
+  {
+   "en": "We address this issue by estimating output length rather than execution time. Instead of asking “how long will this task take?”, SquidAgent asks “how many output tokens will this task require?” This quantity is better calibrated because it reflects the size of the artifact the LLM will generate, rather than the duration of an agentic process. For a fixed model and decoding configuration, output tokens are produced at a roughly stable rate, making token count a practical proxy for relative execution time. Moreover, token budgets can be grounded in concrete deliverables, turning estimation into a content-length prediction rather than a runtime prediction. This proxy is primarily suited to LLM-generation-dominated workflows and does not directly capture latency from tool execution, retrieval, or external API calls.",
+   "zh": "我们通过估算输出长度而非执行时间来应对这个问题。 SquidAgent 没有问“这项任务需要多长时间？”，而是问“这项任务需要多少输出标记？”这一数量更容易校准，因为它反映了 LLM 将生成的产物规模，而非智能体过程的持续时间。 对于固定的模型和解码配置，输出标记的生成速率大致稳定，因此标记数量是相对执行时间的实用替代指标。 此外，标记预算可以基于具体的交付成果来设定，从而将估算转化为对内容长度的预测，而非运行时间的预测。 这种替代指标主要适用于以 LLM 生成为主导的工作流程，无法直接反映工具执行、信息检索或外部 API 调用所带来的延迟。",
+   "sents": [
+    {
+     "en": "We address this issue by estimating output length rather than execution time.",
+     "zh": "我们通过估算输出长度而非执行时间来应对这个问题。"
+    },
+    {
+     "en": "Instead of asking “how long will this task take?”, SquidAgent asks “how many output tokens will this task require?” This quantity is better calibrated because it reflects the size of the artifact the LLM will generate, rather than the duration of an agentic process.",
+     "zh": "SquidAgent 没有问“这项任务需要多长时间？”，而是问“这项任务需要多少输出标记？”这一数量更容易校准，因为它反映了 LLM 将生成的产物规模，而非智能体过程的持续时间。"
+    },
+    {
+     "en": "For a fixed model and decoding configuration, output tokens are produced at a roughly stable rate, making token count a practical proxy for relative execution time.",
+     "zh": "对于固定的模型和解码配置，输出标记的生成速率大致稳定，因此标记数量是相对执行时间的实用替代指标。"
+    },
+    {
+     "en": "Moreover, token budgets can be grounded in concrete deliverables, turning estimation into a content-length prediction rather than a runtime prediction.",
+     "zh": "此外，标记预算可以基于具体的交付成果来设定，从而将估算转化为对内容长度的预测，而非运行时间的预测。"
+    },
+    {
+     "en": "This proxy is primarily suited to LLM-generation-dominated workflows and does not directly capture latency from tool execution, retrieval, or external API calls.",
+     "zh": "这种替代指标主要适用于以 LLM 生成为主导的工作流程，无法直接反映工具执行、信息检索或外部 API 调用所带来的延迟。"
+    }
+   ]
+  },
+  {
+   "en": "We therefore measure every quantity in Eq. 4 using predicted output tokens. Let τ i \\tau_{i} be the predicted output-token budget for subtask t i t_{i} , and let C exp ​ ( ℒ k ) C_{\\mathrm{exp}}(\\mathcal{L}_{k}) and C alg ​ ( ℒ k ) C_{\\mathrm{alg}}(\\mathcal{L}_{k}) denote the token-valued re-exploration and alignment costs of layer ℒ k \\mathcal{L}_{k} . The serial and parallel token costs are",
+   "zh": "因此，我们使用预测的输出标记来测量方程 4 中的每个量。 令 τ i \\tau_{i} 为子任务 t i t_{i} 的预测输出标记预算，并令 C exp ​ ( ℒ k ) C_{\\mathrm{exp}}(\\mathcal{L}_{k}) 和 C alg ​ ( ℒ k ) C_{\\mathrm{alg}}(\\mathcal{L}_{k}) 分别表示层 ℒ k \\mathcal{L}_{k} 的标记值重探索成本和对齐成本。 串行和并行标记成本是",
+   "sents": [
+    {
+     "en": "We therefore measure every quantity in Eq. 4 using predicted output tokens.",
+     "zh": "因此，我们使用预测的输出标记来测量方程 4 中的每个量。"
+    },
+    {
+     "en": "Let τ i \\tau_{i} be the predicted output-token budget for subtask t i t_{i} , and let C exp ​ ( ℒ k ) C_{\\mathrm{exp}}(\\mathcal{L}_{k}) and C alg ​ ( ℒ k ) C_{\\mathrm{alg}}(\\mathcal{L}_{k}) denote the token-valued re-exploration and alignment costs of layer ℒ k \\mathcal{L}_{k} .",
+     "zh": "令 τ i \\tau_{i} 为子任务 t i t_{i} 的预测输出标记预算，并令 C exp ​ ( ℒ k ) C_{\\mathrm{exp}}(\\mathcal{L}_{k}) 和 C alg ​ ( ℒ k ) C_{\\mathrm{alg}}(\\mathcal{L}_{k}) 分别表示层 ℒ k \\mathcal{L}_{k} 的标记值重探索成本和对齐成本。"
+    },
+    {
+     "en": "The serial and parallel token costs are",
+     "zh": "串行和并行标记成本是"
+    }
+   ]
+  },
+  {
+   "en": "This criterion makes explicit why always parallelizing independent tasks can be suboptimal: the savings from replacing a sum with a maximum must exceed the additional re-exploration and alignment costs. Conversely, always-serial execution will miss potential speedups on layers where the parallel cost is lower than the serial cost.",
+   "zh": "这一标准明确说明了为何总是将独立任务并行化可能并非最优：用最大值替换求和所带来的收益必须超过重新探索和对齐所产生的额外成本。 相反，始终串行执行则会错过那些并行成本低于串行成本的层可能带来的加速效果。",
+   "sents": [
+    {
+     "en": "This criterion makes explicit why always parallelizing independent tasks can be suboptimal: the savings from replacing a sum with a maximum must exceed the additional re-exploration and alignment costs.",
+     "zh": "这一标准明确说明了为何总是将独立任务并行化可能并非最优：用最大值替换求和所带来的收益必须超过重新探索和对齐所产生的额外成本。"
+    },
+    {
+     "en": "Conversely, always-serial execution will miss potential speedups on layers where the parallel cost is lower than the serial cost.",
+     "zh": "相反，始终串行执行则会错过那些并行成本低于串行成本的层可能带来的加速效果。"
+    }
+   ]
+  },
+  {
+   "en": "Although token budgets are easier to estimate than wall-clock time, not all terms in Eq. 7 are equally tractable. The per-task budgets τ i \\tau_{i} can be estimated during decomposition, whereas C exp ​ ( ℒ k ) C_{\\mathrm{exp}}(\\mathcal{L}_{k}) and C alg ​ ( ℒ k ) C_{\\mathrm{alg}}(\\mathcal{L}_{k}) depend on emergent worker behavior in a naive parallel system.",
+   "zh": "尽管令牌预算比实际运行时间更容易估算，但公式 7 中的并非所有项都同样易于处理。 每个任务的预算 τ i \\tau_{i} 可以在分解阶段进行估算，而 C exp ​ ( ℒ k ) C_{\\mathrm{exp}}(\\mathcal{L}_{k}) 和 C alg ​ ( ℒ k ) C_{\\mathrm{alg}}(\\mathcal{L}_{k}) 则取决于简单并行系统中智能体的涌现行为。",
+   "sents": [
+    {
+     "en": "Although token budgets are easier to estimate than wall-clock time, not all terms in Eq. 7 are equally tractable.",
+     "zh": "尽管令牌预算比实际运行时间更容易估算，但公式 7 中的并非所有项都同样易于处理。"
+    },
+    {
+     "en": "The per-task budgets τ i \\tau_{i} can be estimated during decomposition, whereas C exp ​ ( ℒ k ) C_{\\mathrm{exp}}(\\mathcal{L}_{k}) and C alg ​ ( ℒ k ) C_{\\mathrm{alg}}(\\mathcal{L}_{k}) depend on emergent worker behavior in a naive parallel system.",
+     "zh": "每个任务的预算 τ i \\tau_{i} 可以在分解阶段进行估算，而 C exp ​ ( ℒ k ) C_{\\mathrm{exp}}(\\mathcal{L}_{k}) 和 C alg ​ ( ℒ k ) C_{\\mathrm{alg}}(\\mathcal{L}_{k}) 则取决于简单并行系统中智能体的涌现行为。"
+    }
+   ]
+  },
+  {
+   "en": "SquidAgent reduces these difficult terms by design. First, workers fork the orchestrator’s session and inherit prior reasoning, decisions, constraints, and partial plans. This shared context reduces duplicated re-exploration, allowing us to approximate C exp ​ ( ℒ k ) ≈ 0 C_{\\mathrm{exp}}(\\mathcal{L}_{k})\\approx 0 . Second, before parallel execution, the orchestrator writes a layer-specific convention block that specifies shared assumptions, interfaces, formatting rules, and coordination constraints. This moves part of the alignment burden from post-hoc reconciliation to upfront planning, whose estimated cost is denoted by C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) . The effective parallel cost is therefore",
+   "zh": "SquidAgent 通过其设计减少了这些复杂术语。 首先，工作智能体分叉协调智能体的会话，并继承先前的推理、决策、约束和局部计划。 这种共享上下文减少了重复的重新探索，使我们能够近似得到 C_{\\mathrm{exp}}(\\mathcal{L}_{k})\\approx 0。 其次，在并行执行之前，协调智能体会编写一个特定于层的约定块，其中规定了共享假设、接口、格式规则和协调约束。 这将部分对齐负担从事后协调转移到了预先规划，其估计成本表示为 \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k})。 因此，有效的并行成本是",
+   "sents": [
+    {
+     "en": "SquidAgent reduces these difficult terms by design.",
+     "zh": "SquidAgent 通过其设计减少了这些复杂术语。"
+    },
+    {
+     "en": "First, workers fork the orchestrator’s session and inherit prior reasoning, decisions, constraints, and partial plans.",
+     "zh": "首先，工作智能体分叉协调智能体的会话，并继承先前的推理、决策、约束和局部计划。"
+    },
+    {
+     "en": "This shared context reduces duplicated re-exploration, allowing us to approximate C exp ​ ( ℒ k ) ≈ 0 C_{\\mathrm{exp}}(\\mathcal{L}_{k})\\approx 0 .",
+     "zh": "这种共享上下文减少了重复的重新探索，使我们能够近似得到 C_{\\mathrm{exp}}(\\mathcal{L}_{k})\\approx 0。"
+    },
+    {
+     "en": "Second, before parallel execution, the orchestrator writes a layer-specific convention block that specifies shared assumptions, interfaces, formatting rules, and coordination constraints.",
+     "zh": "其次，在并行执行之前，协调智能体会编写一个特定于层的约定块，其中规定了共享假设、接口、格式规则和协调约束。"
+    },
+    {
+     "en": "This moves part of the alignment burden from post-hoc reconciliation to upfront planning, whose estimated cost is denoted by C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) .",
+     "zh": "这将部分对齐负担从事后协调转移到了预先规划，其估计成本表示为 \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k})。"
+    },
+    {
+     "en": "The effective parallel cost is therefore",
+     "zh": "因此，有效的并行成本是"
+    }
+   ]
+  },
+  {
+   "en": "We then define the estimated layer-wise cost ratio as",
+   "zh": "然后，我们将估计的逐层成本比定义为",
+   "sents": null
+  },
+  {
+   "en": "A ratio above one indicates that parallel execution is predicted to be cheaper than serial execution. However, since { τ i } \\{\\tau_{i}\\} and C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) are noisy estimates rather than exact costs, deciding purely by ρ ^ k > 1 \\widehat{\\rho}_{k}>1 can be vulnerable. SquidAgent therefore uses a safety margin α > 1 \\alpha>1 :",
+   "zh": "比率高于 1 表示预测的并行执行成本低于串行执行成本。 然而，由于 { τ i } \\{\\tau_{i}\\} 和 C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) 是带有噪声的估计值而非精确成本，因此仅依据 ρ ^ k > 1 \\widehat{\\rho}_{k}>1 来做决定可能存在风险。 因此，SquidAgent 使用了一个安全余量 α > 1 \\alpha>1：",
+   "sents": [
+    {
+     "en": "A ratio above one indicates that parallel execution is predicted to be cheaper than serial execution.",
+     "zh": "比率高于 1 表示预测的并行执行成本低于串行执行成本。"
+    },
+    {
+     "en": "However, since { τ i } \\{\\tau_{i}\\} and C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) are noisy estimates rather than exact costs, deciding purely by ρ ^ k > 1 \\widehat{\\rho}_{k}>1 can be vulnerable.",
+     "zh": "然而，由于 { τ i } \\{\\tau_{i}\\} 和 C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) 是带有噪声的估计值而非精确成本，因此仅依据 ρ ^ k > 1 \\widehat{\\rho}_{k}>1 来做决定可能存在风险。"
+    },
+    {
+     "en": "SquidAgent therefore uses a safety margin α > 1 \\alpha>1 :",
+     "zh": "因此，SquidAgent 使用了一个安全余量 α > 1 \\alpha>1："
+    }
+   ]
+  },
+  {
+   "en": "When ρ ^ k ∈ ( 1 , α ] \\widehat{\\rho}_{k}\\!\\in\\!(1,\\alpha] , the predicted advantage of parallel execution may be erased by estimation noise, so the layer is executed serially.",
+   "zh": "当 ρ ^ k ∈ ( 1 , α ] \\widehat{\\rho}_{k}\\!\\in\\!(1,\\alpha] 时，并行执行所预测的优势可能会被估计噪声抵消，因此该层以串行方式执行。",
+   "sents": null
+  },
+  {
+   "en": "Let ρ k \\rho_{k} denote the true serial-to-parallel cost ratio. If | ρ ^ k − ρ k | ≤ ε |\\widehat{\\rho}_{k}-\\rho_{k}|\\leq\\varepsilon , then ρ k > α + ε \\rho_{k}>\\alpha+\\varepsilon guarantees a parallel decision, while ρ k < α − ε \\rho_{k}<\\alpha-\\varepsilon guarantees a serial decision. Estimation error can change the threshold decision only within ε \\varepsilon of α \\alpha . In particular, ε < α − 1 \\varepsilon<\\alpha-1 prevents incorrect parallelization of any layer with ρ k ≤ 1 \\rho_{k}\\leq 1 . The margin can nevertheless forgo modest parallel gains. Proposition 1 in Appendix E gives the full statement and proof.",
+   "zh": "令 ρ k \\rho_{k} 表示真实的串行到并行成本比。 如果 | ρ ^ k − ρ k | ≤ ε |\\widehat{\\rho}_{k}-\\rho_{k}|\\leq\\varepsilon，那么 ρ k > α + ε \\rho_{k}>\\alpha+\\varepsilon 保证采用并行决策，而 ρ k < α − ε \\rho_{k}<\\alpha-\\varepsilon 则保证采用串行决策。 估计误差只能在 α \\alpha 的 ε \\varepsilon 范围内改变阈值决策。 特别地，ε < α − 1 \\varepsilon<\\alpha-1 可防止任何 ρ k ≤ 1 \\rho_{k}\\leq 1 的层出现错误的并行化。 尽管如此，该余量仍可能放弃适度的并行收益。 附录 E 中的命题 1 给出了完整的陈述和证明。",
+   "sents": [
+    {
+     "en": "Let ρ k \\rho_{k} denote the true serial-to-parallel cost ratio.",
+     "zh": "令 ρ k \\rho_{k} 表示真实的串行到并行成本比。"
+    },
+    {
+     "en": "If | ρ ^ k − ρ k | ≤ ε |\\widehat{\\rho}_{k}-\\rho_{k}|\\leq\\varepsilon , then ρ k > α + ε \\rho_{k}>\\alpha+\\varepsilon guarantees a parallel decision, while ρ k < α − ε \\rho_{k}<\\alpha-\\varepsilon guarantees a serial decision.",
+     "zh": "如果 | ρ ^ k − ρ k | ≤ ε |\\widehat{\\rho}_{k}-\\rho_{k}|\\leq\\varepsilon，那么 ρ k > α + ε \\rho_{k}>\\alpha+\\varepsilon 保证采用并行决策，而 ρ k < α − ε \\rho_{k}<\\alpha-\\varepsilon 则保证采用串行决策。"
+    },
+    {
+     "en": "Estimation error can change the threshold decision only within ε \\varepsilon of α \\alpha .",
+     "zh": "估计误差只能在 α \\alpha 的 ε \\varepsilon 范围内改变阈值决策。"
+    },
+    {
+     "en": "In particular, ε < α − 1 \\varepsilon<\\alpha-1 prevents incorrect parallelization of any layer with ρ k ≤ 1 \\rho_{k}\\leq 1 .",
+     "zh": "特别地，ε < α − 1 \\varepsilon<\\alpha-1 可防止任何 ρ k ≤ 1 \\rho_{k}\\leq 1 的层出现错误的并行化。"
+    },
+    {
+     "en": "The margin can nevertheless forgo modest parallel gains.",
+     "zh": "尽管如此，该余量仍可能放弃适度的并行收益。"
+    },
+    {
+     "en": "Proposition 1 in Appendix E gives the full statement and proof.",
+     "zh": "附录 E 中的命题 1 给出了完整的陈述和证明。"
+    }
+   ]
+  },
+  {
+   "en": "SquidAgent realizes Eq. 10 through three components: an orchestrator that produces both the task graph and the required token budgets, workers that inherit the orchestrator’s context, and a deterministic scheduler that applies the criterion to each layer.",
+   "zh": "SquidAgent 通过三个组件实现了公式 10：一个负责生成任务图所需令牌预算的协调器、继承协调器上下文的执行者，以及将标准应用于每一层的确定性调度器。",
+   "sents": null
+  },
+  {
+   "en": "The orchestrator is prompted to decompose the request into a DAG and, in the same response, estimate the output-token cost of each subtask and the alignment cost of each dependency layer. Concretely, the structured output contains task-level fields such as {id, depends_on, estimated_output_tokens} and a layer-level field layer_alignment_tokens . The field estimated_output_tokens corresponds to τ i \\tau_{i} , while layer_alignment_tokens provides C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) for each layer. Because these estimates are produced together with the decomposition, SquidAgent does not require additional LLM calls for cost estimation. The alignment budget is estimated per layer rather than globally, since different layers can require very different amounts of shared convention planning. The complete prompt and schema are provided in Appendix D .",
+   "zh": "协调器会收到提示，将请求分解为有向无环图（DAG），并在同一响应中估算每个子任务的输出标记成本以及每个依赖层的对齐成本。 具体而言，结构化输出包含任务级字段，例如 {id, depends_on, estimated_output_tokens}，以及一个层级字段 layer_alignment_tokens。 字段 estimated_output_tokens 对应于 τ i \\tau_{i}，而 layer_alignment_tokens 则为每一层提供 C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k})。 由于这些估算值与分解过程一同生成，SquidAgent 无需进行额外的 LLM 调用来进行成本估算。 对齐预算是按层而非全局估算的，因为不同层可能需要非常不同的共享惯例规划量。 完整的提示词和模式定义见附录 D。",
+   "sents": [
+    {
+     "en": "The orchestrator is prompted to decompose the request into a DAG and, in the same response, estimate the output-token cost of each subtask and the alignment cost of each dependency layer.",
+     "zh": "协调器会收到提示，将请求分解为有向无环图（DAG），并在同一响应中估算每个子任务的输出标记成本以及每个依赖层的对齐成本。"
+    },
+    {
+     "en": "Concretely, the structured output contains task-level fields such as {id, depends_on, estimated_output_tokens} and a layer-level field layer_alignment_tokens .",
+     "zh": "具体而言，结构化输出包含任务级字段，例如 {id, depends_on, estimated_output_tokens}，以及一个层级字段 layer_alignment_tokens。"
+    },
+    {
+     "en": "The field estimated_output_tokens corresponds to τ i \\tau_{i} , while layer_alignment_tokens provides C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) for each layer.",
+     "zh": "字段 estimated_output_tokens 对应于 τ i \\tau_{i}，而 layer_alignment_tokens 则为每一层提供 C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k})。"
+    },
+    {
+     "en": "Because these estimates are produced together with the decomposition, SquidAgent does not require additional LLM calls for cost estimation.",
+     "zh": "由于这些估算值与分解过程一同生成，SquidAgent 无需进行额外的 LLM 调用来进行成本估算。"
+    },
+    {
+     "en": "The alignment budget is estimated per layer rather than globally, since different layers can require very different amounts of shared convention planning.",
+     "zh": "对齐预算是按层而非全局估算的，因为不同层可能需要非常不同的共享惯例规划量。"
+    },
+    {
+     "en": "The complete prompt and schema are provided in Appendix D .",
+     "zh": "完整的提示词和模式定义见附录 D。"
+    }
+   ]
+  },
+  {
+   "en": "A naive worker must reconstruct the global plan before doing useful work, which introduces duplicated exploration. SquidAgent avoids this by launching each worker from the orchestrator’s session state, so the worker inherits the planning context, conventions, and architectural decisions already established by the orchestrator. It can therefore proceed directly to its assigned subtask rather than rediscovering global context. Context inheritance therefore reduces re-exploration cost to near zero, yielding C exp ​ ( ℒ k ) ≈ 0 C_{\\mathrm{exp}}(\\mathcal{L}_{k})\\approx 0 in Eq. 8 . The component ablation in Section 4.4 evaluates the contribution of this mechanism.",
+   "zh": "一个普通的智能体在开始执行有效工作之前，必须重新构建全局计划，这会导致重复探索。 SquidAgent 通过从协调器的会话状态中启动每个智能体来避免这一问题，这样该智能体就能继承协调器已经建立好的规划上下文、惯例和架构决策。 因此，它可以直接执行分配给自己的子任务，而无需重新发现全局上下文。 因此，上下文继承将重复探索的成本降至接近零，使得公式 8 中的 C_{\\mathrm{exp}}(\\mathcal{L}_{k})\\approx 0。 第 4.4 节中的组件消融分析评估了这一机制的贡献。",
+   "sents": [
+    {
+     "en": "A naive worker must reconstruct the global plan before doing useful work, which introduces duplicated exploration.",
+     "zh": "一个普通的智能体在开始执行有效工作之前，必须重新构建全局计划，这会导致重复探索。"
+    },
+    {
+     "en": "SquidAgent avoids this by launching each worker from the orchestrator’s session state, so the worker inherits the planning context, conventions, and architectural decisions already established by the orchestrator.",
+     "zh": "SquidAgent 通过从协调器的会话状态中启动每个智能体来避免这一问题，这样该智能体就能继承协调器已经建立好的规划上下文、惯例和架构决策。"
+    },
+    {
+     "en": "It can therefore proceed directly to its assigned subtask rather than rediscovering global context.",
+     "zh": "因此，它可以直接执行分配给自己的子任务，而无需重新发现全局上下文。"
+    },
+    {
+     "en": "Context inheritance therefore reduces re-exploration cost to near zero, yielding C exp ​ ( ℒ k ) ≈ 0 C_{\\mathrm{exp}}(\\mathcal{L}_{k})\\approx 0 in Eq. 8 .",
+     "zh": "因此，上下文继承将重复探索的成本降至接近零，使得公式 8 中的 C_{\\mathrm{exp}}(\\mathcal{L}_{k})\\approx 0。"
+    },
+    {
+     "en": "The component ablation in Section 4.4 evaluates the contribution of this mechanism.",
+     "zh": "第 4.4 节中的组件消融分析评估了这一机制的贡献。"
+    }
+   ]
+  },
+  {
+   "en": "Alignment cost is difficult to predict when it is left until after workers finish, because the inconsistencies among independently produced outputs are only revealed post hoc. SquidAgent reduces this uncertainty by specifying the shared conventions before parallel execution. For each layer considered for parallelization, the orchestrator writes a layer-specific policy that fixes notation, naming, interfaces, formatting rules, and cross-reference requirements. Workers inherit this policy through the same session fork, so many potential inconsistencies are constrained before they arise rather than repaired after completion. Upfront conventions reduce the need for post-hoc reconciliation, making alignment cost estimable before execution through the output-token cost of upfront convention planning. The operational criterion uses this estimate, C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) , as an approximation to alignment overhead.",
+   "zh": "如果等到工作者完成工作后再处理对齐成本，就很难预测该成本，因为独立生成的输出之间的不一致性只有在事后才会显现。 SquidAgent通过在并行执行前明确约定共享规范，降低了这种不确定性。 对于每个考虑并行化的层，协调器都会编写一个特定于该层的策略，以固定符号表示、命名、接口、格式规则以及交叉引用要求。 工作者通过相同的会话分支继承这一策略，因此许多潜在的不一致性问题在出现前就被限制住，而不是在完成后再进行修复。 预先约定规范可以减少事后协调的需求，从而使得对齐成本能够在执行前，通过预先规划规范所需的输出标记成本来估算。 运行标准使用这一估算值 C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) 作为对齐开销的近似值。",
+   "sents": [
+    {
+     "en": "Alignment cost is difficult to predict when it is left until after workers finish, because the inconsistencies among independently produced outputs are only revealed post hoc.",
+     "zh": "如果等到工作者完成工作后再处理对齐成本，就很难预测该成本，因为独立生成的输出之间的不一致性只有在事后才会显现。"
+    },
+    {
+     "en": "SquidAgent reduces this uncertainty by specifying the shared conventions before parallel execution.",
+     "zh": "SquidAgent通过在并行执行前明确约定共享规范，降低了这种不确定性。"
+    },
+    {
+     "en": "For each layer considered for parallelization, the orchestrator writes a layer-specific policy that fixes notation, naming, interfaces, formatting rules, and cross-reference requirements.",
+     "zh": "对于每个考虑并行化的层，协调器都会编写一个特定于该层的策略，以固定符号表示、命名、接口、格式规则以及交叉引用要求。"
+    },
+    {
+     "en": "Workers inherit this policy through the same session fork, so many potential inconsistencies are constrained before they arise rather than repaired after completion.",
+     "zh": "工作者通过相同的会话分支继承这一策略，因此许多潜在的不一致性问题在出现前就被限制住，而不是在完成后再进行修复。"
+    },
+    {
+     "en": "Upfront conventions reduce the need for post-hoc reconciliation, making alignment cost estimable before execution through the output-token cost of upfront convention planning.",
+     "zh": "预先约定规范可以减少事后协调的需求，从而使得对齐成本能够在执行前，通过预先规划规范所需的输出标记成本来估算。"
+    },
+    {
+     "en": "The operational criterion uses this estimate, C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) , as an approximation to alignment overhead.",
+     "zh": "运行标准使用这一估算值 C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) 作为对齐开销的近似值。"
+    }
+   ]
+  },
+  {
+   "en": "The scheduler converts the planned token budgets into execution decisions for each dependency layer. For a layer ℒ k \\mathcal{L}_{k} , it computes ρ ^ k \\widehat{\\rho}_{k} using Eq. 10 and selects Parallel only when ρ ^ k > α \\widehat{\\rho}_{k}>\\alpha ; otherwise, it uses Serial . This applies the same cost criterion consistently across layers and avoids relying on an additional LLM call for the final scheduling decision. The full procedure is summarized in Algorithm 1 .",
+   "zh": "调度器将规划好的令牌预算转换为每个依赖层的执行决策。 对于层 ℒ k \\mathcal{L}_{k}，它使用公式 10 计算 ρ ^ k \\widehat{\\rho}_{k}，并且仅在 ρ ^ k > α \\widehat{\\rho}_{k}>\\alpha 时选择并行模式；否则，它将使用串行模式。 这一方法在各层中始终应用相同的成本标准，并避免了为最终调度决策而额外调用 LLM 的依赖。 完整流程在算法 1 中进行了总结。",
+   "sents": [
+    {
+     "en": "The scheduler converts the planned token budgets into execution decisions for each dependency layer.",
+     "zh": "调度器将规划好的令牌预算转换为每个依赖层的执行决策。"
+    },
+    {
+     "en": "For a layer ℒ k \\mathcal{L}_{k} , it computes ρ ^ k \\widehat{\\rho}_{k} using Eq. 10 and selects Parallel only when ρ ^ k > α \\widehat{\\rho}_{k}>\\alpha ; otherwise, it uses Serial .",
+     "zh": "对于层 ℒ k \\mathcal{L}_{k}，它使用公式 10 计算 ρ ^ k \\widehat{\\rho}_{k}，并且仅在 ρ ^ k > α \\widehat{\\rho}_{k}>\\alpha 时选择并行模式；否则，它将使用串行模式。"
+    },
+    {
+     "en": "This applies the same cost criterion consistently across layers and avoids relying on an additional LLM call for the final scheduling decision.",
+     "zh": "这一方法在各层中始终应用相同的成本标准，并避免了为最终调度决策而额外调用 LLM 的依赖。"
+    },
+    {
+     "en": "The full procedure is summarized in Algorithm 1 .",
+     "zh": "完整流程在算法 1 中进行了总结。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate SquidAgent on 9 evaluation tasks spanning code generation, document authoring, and structured planning, and compare it with 7 baselines. We additionally isolate the three components (Section 4.4 ) and compare token and time prediction (Section 4.5 ). Additional experiments on margin stability across all nine tasks and transfer to external tasks are presented in Appendices F.2 and G , respectively. We describe the experimental setup (Section 4.1 ), report throughput results (Section 4.2 ), evaluate output quality (Section 4.3 ), and analyze the scheduler’s sensitivity to ratio estimation and the margin parameter α \\alpha (Section 4.6 ). Layer-wise scheduler decisions are detailed in Appendix C . Visualizations of the results generated by all methods are provided at: https://yexionglin.github.io/SquidAgent_Demo .",
+   "zh": "我们在涵盖代码生成、文档撰写和结构化规划的 9 项评估任务上对 SquidAgent 进行了评估，并将其与 7 个基线模型进行了比较。 此外，我们还分别隔离了三个组件（第 4.4 节），并比较了它们的词符预测和时间预测性能（第 4.5 节）。 关于所有九项任务中余量稳定性的额外实验，以及向外部任务的迁移实验，分别在第 F.2 和 G 附录中呈现。 我们描述了实验设置（第 4.1 节），报告了吞吐量结果（第 4.2 节），评估了输出质量（第 4.3 节），并分析了调度器对比率估计和余量参数 α \\alpha 的敏感性（第 4.6 节）。 各层调度器的决策细节见附录 C。 所有方法生成的结果可视化展示请见：https://yexionglin.github.io/SquidAgent_Demo。",
+   "sents": [
+    {
+     "en": "We evaluate SquidAgent on 9 evaluation tasks spanning code generation, document authoring, and structured planning, and compare it with 7 baselines.",
+     "zh": "我们在涵盖代码生成、文档撰写和结构化规划的 9 项评估任务上对 SquidAgent 进行了评估，并将其与 7 个基线模型进行了比较。"
+    },
+    {
+     "en": "We additionally isolate the three components (Section 4.4 ) and compare token and time prediction (Section 4.5 ).",
+     "zh": "此外，我们还分别隔离了三个组件（第 4.4 节），并比较了它们的词符预测和时间预测性能（第 4.5 节）。"
+    },
+    {
+     "en": "Additional experiments on margin stability across all nine tasks and transfer to external tasks are presented in Appendices F.2 and G , respectively.",
+     "zh": "关于所有九项任务中余量稳定性的额外实验，以及向外部任务的迁移实验，分别在第 F.2 和 G 附录中呈现。"
+    },
+    {
+     "en": "We describe the experimental setup (Section 4.1 ), report throughput results (Section 4.2 ), evaluate output quality (Section 4.3 ), and analyze the scheduler’s sensitivity to ratio estimation and the margin parameter α \\alpha (Section 4.6 ).",
+     "zh": "我们描述了实验设置（第 4.1 节），报告了吞吐量结果（第 4.2 节），评估了输出质量（第 4.3 节），并分析了调度器对比率估计和余量参数 α \\alpha 的敏感性（第 4.6 节）。"
+    },
+    {
+     "en": "Layer-wise scheduler decisions are detailed in Appendix C .",
+     "zh": "各层调度器的决策细节见附录 C。"
+    },
+    {
+     "en": "Visualizations of the results generated by all methods are provided at: https://yexionglin.github.io/SquidAgent_Demo .",
+     "zh": "所有方法生成的结果可视化展示请见：https://yexionglin.github.io/SquidAgent_Demo。"
+    }
+   ]
+  },
+  {
+   "en": "All methods use Claude Sonnet ( claude-sonnet-4-6 ) with thinking effort set to medium . Unless otherwise specified, all methods are run with the same tool-access setting and the same task specification.",
+   "zh": "所有方法均使用 Claude Sonnet（claude-sonnet-4-6），并将思考努力程度设为中等。 除非另有说明，所有方法均以相同的工具访问设置和相同任务规范运行。",
+   "sents": [
+    {
+     "en": "All methods use Claude Sonnet ( claude-sonnet-4-6 ) with thinking effort set to medium .",
+     "zh": "所有方法均使用 Claude Sonnet（claude-sonnet-4-6），并将思考努力程度设为中等。"
+    },
+    {
+     "en": "Unless otherwise specified, all methods are run with the same tool-access setting and the same task specification.",
+     "zh": "除非另有说明，所有方法均以相同的工具访问设置和相同任务规范运行。"
+    }
+   ]
+  },
+  {
+   "en": "We design a suite of 9 evaluation tasks spanning code generation, technical writing, and structured planning (Table 5 ; full prompts in Appendix A ). The tasks are designed to expose different coordination challenges faced by multi-agent systems, including independent module parallelism, shared interface constraints, cross-file consistency, long-form generation, and dependencies across modules.",
+   "zh": "我们设计了一套包含 9 项评估任务的系统，涵盖代码生成、技术写作和结构化规划（表 5；完整提示词见附录 A）。 这些任务旨在揭示多智能体系统所面临的不同协调挑战，包括独立模块的并行性、共享接口约束、跨文件一致性、长文本生成以及模块间的依赖关系。",
+   "sents": [
+    {
+     "en": "We design a suite of 9 evaluation tasks spanning code generation, technical writing, and structured planning (Table 5 ; full prompts in Appendix A ).",
+     "zh": "我们设计了一套包含 9 项评估任务的系统，涵盖代码生成、技术写作和结构化规划（表 5；完整提示词见附录 A）。"
+    },
+    {
+     "en": "The tasks are designed to expose different coordination challenges faced by multi-agent systems, including independent module parallelism, shared interface constraints, cross-file consistency, long-form generation, and dependencies across modules.",
+     "zh": "这些任务旨在揭示多智能体系统所面临的不同协调挑战，包括独立模块的并行性、共享接口约束、跨文件一致性、长文本生成以及模块间的依赖关系。"
+    }
+   ]
+  },
+  {
+   "en": "Heavy tasks contain 8–27 files with 300–900 lines per file: 1) PixelCraft , a Python/Pygame survival game testing parallel implementation of loosely coupled game systems; 2) ShopFlow , a full-stack e-commerce application testing consistency across backend APIs, authentication, admin logic, and frontend pages; 3) CompressKit , a compression toolkit testing shared data-format constraints across multiple algorithms; 4) ArcadeBox , a collection of HTML5 Canvas games testing high parallelism across mostly independent modules; 5) SlideKit , ML workshop slide decks and handouts testing long-form generation with cross-document consistency; 6) ClimateAnalysis , analysis scripts and reports testing consistency between computed results and written summaries.",
+   "zh": "复杂任务包含 8–27 个文件，每个文件有 300–900 行代码：1) PixelCraft，一款使用 Python/Pygame 开发的生存游戏，用于测试松耦合游戏系统的并行实现；2) ShopFlow，一个全栈电子商务应用，用于测试后端 API、身份验证、管理员逻辑和前端页面之间的一致性；3) CompressKit，一个压缩工具包，用于测试多种算法之间共享数据格式的一致性；4) ArcadeBox，一系列 HTML5 Canvas 游戏，用于测试大部分独立模块之间的高度并行性；5) SlideKit，机器学习工作坊的幻灯片和讲义，用于测试长文本生成及跨文档一致性；6) ClimateAnalysis，分析脚本和报告，用于测试计算结果与书面摘要之间的一致性。",
+   "sents": null
+  },
+  {
+   "en": "Medium tasks contain 6–10 files with 150–600 lines per file: 7) LinAlgBook , a linear algebra tutorial testing structured mathematical writing; 8) MathRef , a discrete mathematics reference testing tightly coupled cross-references; 9) CloudDocs , API documentation testing consistency between module-level references and cross-cutting guides.",
+   "zh": "中等难度的任务包含 6–10 个文件，每个文件有 150–600 行代码：7) LinAlgBook，一个测试结构化数学写作的线性代数教程；8) MathRef，一个测试紧密耦合交叉引用的离散数学参考手册；9) CloudDocs，用于测试模块级引用与跨模块指南之间一致性的 API 文档。",
+   "sents": null
+  },
+  {
+   "en": "We compare SquidAgent with seven representative baselines spanning single-agent execution, sequential verification, role-based workflows, workflow search, parallel execution, and adaptive coordination. Claude Code is a baseline using raw claude -p without additional orchestration instructions. SeqCV ( Yao et al., 2025 ) performs sequential execution with cross-model verification. MetaGPT ( Hong et al., 2024 ) follows a role-based workflow with predefined agents such as product manager, architect, and engineer. AFlow ( Zhang et al., 2025 ) searches over operator pipelines and executes the selected workflow. Flow ( Niu et al., 2025 ) uses git-based orchestration with parallel workers in isolated worktrees. MacNet ( Qian et al., 2025 ) organizes agents in a DAG-style topology with draft-review interactions. AgentConductor ( Wang et al., 2026b ) adaptively adjusts the coordination structure according to task difficulty.",
+   "zh": "我们将 SquidAgent 与七种具有代表性的基线方法进行了比较，这些方法涵盖了单智能体执行、顺序验证、基于角色的工作流程、工作流程搜索、并行执行和自适应协调。 Claude Code 是一种基线方法，它直接使用 raw claude -p，没有额外的编排指令。 SeqCV（Yao 等人，2025）通过跨模型验证进行顺序执行。 MetaGPT（Hong 等人，2024）遵循基于角色的工作流程，其中包含产品经理、架构师和工程师等预定义的智能体。 AFlow（Zhang 等人，2025）在操作符管道中进行搜索，并执行选定的工作流程。 Flow（Niu 等人，2025）使用基于 git 的编排方式，并在隔离的工作树中部署并行工作者。 MacNet（Qian 等人，2025）将智能体组织成 DAG 风格的拓扑结构，并引入草案与评审的交互机制。 AgentConductor（Wang 等人，2026b）会根据任务难度自适应地调整协调结构。",
+   "sents": [
+    {
+     "en": "We compare SquidAgent with seven representative baselines spanning single-agent execution, sequential verification, role-based workflows, workflow search, parallel execution, and adaptive coordination.",
+     "zh": "我们将 SquidAgent 与七种具有代表性的基线方法进行了比较，这些方法涵盖了单智能体执行、顺序验证、基于角色的工作流程、工作流程搜索、并行执行和自适应协调。"
+    },
+    {
+     "en": "Claude Code is a baseline using raw claude -p without additional orchestration instructions.",
+     "zh": "Claude Code 是一种基线方法，它直接使用 raw claude -p，没有额外的编排指令。"
+    },
+    {
+     "en": "SeqCV ( Yao et al., 2025 ) performs sequential execution with cross-model verification.",
+     "zh": "SeqCV（Yao 等人，2025）通过跨模型验证进行顺序执行。"
+    },
+    {
+     "en": "MetaGPT ( Hong et al., 2024 ) follows a role-based workflow with predefined agents such as product manager, architect, and engineer.",
+     "zh": "MetaGPT（Hong 等人，2024）遵循基于角色的工作流程，其中包含产品经理、架构师和工程师等预定义的智能体。"
+    },
+    {
+     "en": "AFlow ( Zhang et al., 2025 ) searches over operator pipelines and executes the selected workflow.",
+     "zh": "AFlow（Zhang 等人，2025）在操作符管道中进行搜索，并执行选定的工作流程。"
+    },
+    {
+     "en": "Flow ( Niu et al., 2025 ) uses git-based orchestration with parallel workers in isolated worktrees.",
+     "zh": "Flow（Niu 等人，2025）使用基于 git 的编排方式，并在隔离的工作树中部署并行工作者。"
+    },
+    {
+     "en": "MacNet ( Qian et al., 2025 ) organizes agents in a DAG-style topology with draft-review interactions.",
+     "zh": "MacNet（Qian 等人，2025）将智能体组织成 DAG 风格的拓扑结构，并引入草案与评审的交互机制。"
+    },
+    {
+     "en": "AgentConductor ( Wang et al., 2026b ) adaptively adjusts the coordination structure according to task difficulty.",
+     "zh": "AgentConductor（Wang 等人，2026b）会根据任务难度自适应地调整协调结构。"
+    }
+   ]
+  },
+  {
+   "en": "All methods receive the same task specification per task. We set α = 1.9 \\alpha=1.9 for SquidAgent. We report wall time (seconds, from first model invocation to final deliverable) and deliverable throughput (words/s, excluding intermediate artifacts). Output quality is evaluated separately in Section 4.3 .",
+   "zh": "所有方法在每个任务中都接收相同的任务规范。 对于 SquidAgent，我们设置 α = 1.9 \\alpha=1.9。 我们报告实际运行时间（秒，从首次模型调用到最终交付成果的时间）以及交付成果吞吐量（词/秒，不包括中间产物）。 输出质量在第 4.3 节中单独进行评估。",
+   "sents": [
+    {
+     "en": "All methods receive the same task specification per task.",
+     "zh": "所有方法在每个任务中都接收相同的任务规范。"
+    },
+    {
+     "en": "We set α = 1.9 \\alpha=1.9 for SquidAgent.",
+     "zh": "对于 SquidAgent，我们设置 α = 1.9 \\alpha=1.9。"
+    },
+    {
+     "en": "We report wall time (seconds, from first model invocation to final deliverable) and deliverable throughput (words/s, excluding intermediate artifacts).",
+     "zh": "我们报告实际运行时间（秒，从首次模型调用到最终交付成果的时间）以及交付成果吞吐量（词/秒，不包括中间产物）。"
+    },
+    {
+     "en": "Output quality is evaluated separately in Section 4.3 .",
+     "zh": "输出质量在第 4.3 节中单独进行评估。"
+    }
+   ]
+  },
+  {
+   "en": "Table 2 reports deliverable throughput on the nine evaluation tasks, measured as the number of delivered words divided by wall-clock time. Detailed wall-clock time and output-size statistics are provided in Appendix B . Across all tasks, SquidAgent achieves the highest throughput, while producing deliverables of comparable or larger size than the baselines.",
+   "zh": "表 2 报告了九项评估任务中的交付吞吐量，其衡量方式为交付词数除以实际运行时间。 详细的实际运行时间和输出规模统计数据见附录 B。 在所有任务中，SquidAgent 实现了最高的吞吐量，同时其交付成果的大小与基线模型相当或更大。",
+   "sents": [
+    {
+     "en": "Table 2 reports deliverable throughput on the nine evaluation tasks, measured as the number of delivered words divided by wall-clock time.",
+     "zh": "表 2 报告了九项评估任务中的交付吞吐量，其衡量方式为交付词数除以实际运行时间。"
+    },
+    {
+     "en": "Detailed wall-clock time and output-size statistics are provided in Appendix B .",
+     "zh": "详细的实际运行时间和输出规模统计数据见附录 B。"
+    },
+    {
+     "en": "Across all tasks, SquidAgent achieves the highest throughput, while producing deliverables of comparable or larger size than the baselines.",
+     "zh": "在所有任务中，SquidAgent 实现了最高的吞吐量，同时其交付成果的大小与基线模型相当或更大。"
+    }
+   ]
+  },
+  {
+   "en": "The improvement is most evident on large tasks, where the task structure exposes substantial independent work that can be executed in parallel. For example, SquidAgent improves throughput over the strongest baseline by 2.8 × \\times on ArcadeBox and 2.3 × \\times on SlideKit. On medium tasks, the absolute gains are smaller because there are fewer independent subtasks to parallelize, but SquidAgent still achieves the best throughput on every task. Overall, SquidAgent increases mean throughput from 17.2 to 38.1 words/s compared with Claude Code, corresponding to a 2.2 × \\times speedup, and from 19.2 to 38.1 words/s compared with the strongest multi-agent baseline, AgentConductor, corresponding to a 2.0 × \\times speedup. These results show that SquidAgent improves efficiency not merely by increasing parallelism, but by parallelizing only when the estimated serial cost exceeds the effective parallel cost, including coordination overhead.",
+   "zh": "这种改进在大型任务中最为明显，因为任务结构暴露出大量可以并行执行的工作。 例如，SquidAgent 在 ArcadeBox 上的吞吐量比最强的基线模型提升了 2.8 × \\times，在 SlideKit 上则提升了 2.3 × \\times。 在中型任务中，绝对增益较小，因为可以并行处理的独立子任务较少，但 SquidAgent 仍然在所有任务中实现了最高的吞吐量。 总体而言，与 Claude Code 相比，SquidAgent 将平均吞吐量从 17.2 提升至 38.1 词/秒，相当于 2.2 × \\times 的速度提升；与最强的多智能体基线模型 AgentConductor 相比，则从 19.2 提升至 38.1 词/秒，相当于 2.0 × \\times 的速度提升。 这些结果表明，SquidAgent 提高效率不仅通过增加并行性，更在于仅在预估的串行成本超过有效并行成本（包括协调开销）时进行并行处理。",
+   "sents": [
+    {
+     "en": "The improvement is most evident on large tasks, where the task structure exposes substantial independent work that can be executed in parallel.",
+     "zh": "这种改进在大型任务中最为明显，因为任务结构暴露出大量可以并行执行的工作。"
+    },
+    {
+     "en": "For example, SquidAgent improves throughput over the strongest baseline by 2.8 × \\times on ArcadeBox and 2.3 × \\times on SlideKit.",
+     "zh": "例如，SquidAgent 在 ArcadeBox 上的吞吐量比最强的基线模型提升了 2.8 × \\times，在 SlideKit 上则提升了 2.3 × \\times。"
+    },
+    {
+     "en": "On medium tasks, the absolute gains are smaller because there are fewer independent subtasks to parallelize, but SquidAgent still achieves the best throughput on every task.",
+     "zh": "在中型任务中，绝对增益较小，因为可以并行处理的独立子任务较少，但 SquidAgent 仍然在所有任务中实现了最高的吞吐量。"
+    },
+    {
+     "en": "Overall, SquidAgent increases mean throughput from 17.2 to 38.1 words/s compared with Claude Code, corresponding to a 2.2 × \\times speedup, and from 19.2 to 38.1 words/s compared with the strongest multi-agent baseline, AgentConductor, corresponding to a 2.0 × \\times speedup.",
+     "zh": "总体而言，与 Claude Code 相比，SquidAgent 将平均吞吐量从 17.2 提升至 38.1 词/秒，相当于 2.2 × \\times 的速度提升；与最强的多智能体基线模型 AgentConductor 相比，则从 19.2 提升至 38.1 词/秒，相当于 2.0 × \\times 的速度提升。"
+    },
+    {
+     "en": "These results show that SquidAgent improves efficiency not merely by increasing parallelism, but by parallelizing only when the estimated serial cost exceeds the effective parallel cost, including coordination overhead.",
+     "zh": "这些结果表明，SquidAgent 提高效率不仅通过增加并行性，更在于仅在预估的串行成本超过有效并行成本（包括协调开销）时进行并行处理。"
+    }
+   ]
+  },
+  {
+   "en": "Table 2 reports output quality using task-specific binary rubrics scored by Claude Opus 4.6. Each rubric covers task compliance, domain-specific correctness, and overall polish, with 21–37 items per task; full rubrics are provided in Appendix I .",
+   "zh": "表 2 使用由 Claude Opus 4.6 评分的任务特定二元评分标准，报告了输出质量。 每个评分标准均涵盖任务合规性、领域特定正确性以及整体完善度，每项任务包含 21–37 个条目；完整的评分标准见附录 I。",
+   "sents": [
+    {
+     "en": "Table 2 reports output quality using task-specific binary rubrics scored by Claude Opus 4.6.",
+     "zh": "表 2 使用由 Claude Opus 4.6 评分的任务特定二元评分标准，报告了输出质量。"
+    },
+    {
+     "en": "Each rubric covers task compliance, domain-specific correctness, and overall polish, with 21–37 items per task; full rubrics are provided in Appendix I .",
+     "zh": "每个评分标准均涵盖任务合规性、领域特定正确性以及整体完善度，每项任务包含 21–37 个条目；完整的评分标准见附录 I。"
+    }
+   ]
+  },
+  {
+   "en": "SquidAgent achieves the highest overall score, 98.2 ± 2.1 98.2\\pm 2.1 %, reaching 100% on 5 of 9 evaluation tasks. Claude Code is also strong ( 97.1 ± 3.1 97.1\\pm 3.1 %) but substantially slower. Several multi-agent baselines show larger variance, with failures on tasks requiring complete deliverables and consistent cross-file organization. These results suggest that SquidAgent’s throughput gains do not come at the expense of deliverable quality.",
+   "zh": "SquidAgent 获得了最高的综合得分，为 98.2 ± 2.1 98.2\\pm 2.1%，在 9 项评估任务中有 5 项达到了 100%。 Claude Code 的表现也很出色（97.1 ± 3.1 97.1\\pm 3.1%），但速度明显更慢。 多个多智能体基线模型表现出更大的方差，在需要完整交付成果和跨文件一致组织能力的任务中出现了失败。 这些结果表明，SquidAgent 在吞吐量上的提升并未以牺牲交付成果的质量为代价。",
+   "sents": [
+    {
+     "en": "SquidAgent achieves the highest overall score, 98.2 ± 2.1 98.2\\pm 2.1 %, reaching 100% on 5 of 9 evaluation tasks.",
+     "zh": "SquidAgent 获得了最高的综合得分，为 98.2 ± 2.1 98.2\\pm 2.1%，在 9 项评估任务中有 5 项达到了 100%。"
+    },
+    {
+     "en": "Claude Code is also strong ( 97.1 ± 3.1 97.1\\pm 3.1 %) but substantially slower.",
+     "zh": "Claude Code 的表现也很出色（97.1 ± 3.1 97.1\\pm 3.1%），但速度明显更慢。"
+    },
+    {
+     "en": "Several multi-agent baselines show larger variance, with failures on tasks requiring complete deliverables and consistent cross-file organization.",
+     "zh": "多个多智能体基线模型表现出更大的方差，在需要完整交付成果和跨文件一致组织能力的任务中出现了失败。"
+    },
+    {
+     "en": "These results suggest that SquidAgent’s throughput gains do not come at the expense of deliverable quality.",
+     "zh": "这些结果表明，SquidAgent 在吞吐量上的提升并未以牺牲交付成果的质量为代价。"
+    }
+   ]
+  },
+  {
+   "en": "We individually ablate the three components on four tasks, which the orchestrator decomposes into multi-layer DAGs (Table 3 ). Without scheduling parallelizes all eligible multi-task layers. Without session forking removes inherited context. Without convention planning leaves consistency correction to the final review. The other two components remain enabled. All three removals lower throughput; removing scheduling incurs a 32.1% decrease. Their effects are not additive.",
+   "zh": "我们在四个任务上分别禁用这三个组件，而协调器则将这些任务分解为多层有向无环图（表 3）。 没有调度机制时，所有符合条件的多任务层都会被并行执行。 没有会话分叉时，继承的上下文会被移除。 没有约定规划时，一致性修正将留待最终审查阶段处理。 另外两个组件仍然处于启用状态。 移除这三个组件中的任何一个都会降低吞吐量；移除调度机制会导致吞吐量下降 32.1%。 它们的影响并非简单叠加。",
+   "sents": [
+    {
+     "en": "We individually ablate the three components on four tasks, which the orchestrator decomposes into multi-layer DAGs (Table 3 ).",
+     "zh": "我们在四个任务上分别禁用这三个组件，而协调器则将这些任务分解为多层有向无环图（表 3）。"
+    },
+    {
+     "en": "Without scheduling parallelizes all eligible multi-task layers.",
+     "zh": "没有调度机制时，所有符合条件的多任务层都会被并行执行。"
+    },
+    {
+     "en": "Without session forking removes inherited context.",
+     "zh": "没有会话分叉时，继承的上下文会被移除。"
+    },
+    {
+     "en": "Without convention planning leaves consistency correction to the final review.",
+     "zh": "没有约定规划时，一致性修正将留待最终审查阶段处理。"
+    },
+    {
+     "en": "The other two components remain enabled.",
+     "zh": "另外两个组件仍然处于启用状态。"
+    },
+    {
+     "en": "All three removals lower throughput; removing scheduling incurs a 32.1% decrease.",
+     "zh": "移除这三个组件中的任何一个都会降低吞吐量；移除调度机制会导致吞吐量下降 32.1%。"
+    },
+    {
+     "en": "Their effects are not additive.",
+     "zh": "它们的影响并非简单叠加。"
+    }
+   ]
+  },
+  {
+   "en": "For each of the 59 subtasks from nine tasks, we independently predict output-token count and wall-clock time five times each, and compare the median prediction for each quantity with its observed value from the recorded execution. The DAG, model, backend, and prompt structure are held fixed. Table 4 reports Spearman’s rank correlation coefficient ρ \\rho between predicted and observed values, and Pearson’s correlation coefficient r log r_{\\log} between their log-transformed values. Token predictions correlate more strongly with observations, supporting token-based costs in these LLM-dominated workflows. Appendix F provides additional rank-ordering analysis.",
+   "zh": "对于九个任务中的每个子任务（共 59 个），我们独立预测输出词元数和实际运行时间，每次预测重复五次，并将每种数量的预测中位数与其在记录执行中的观测值进行比较。 DAG、模型、后端和提示结构均保持固定不变。 表 4 报告了预测值与观测值之间的斯皮尔曼等级相关系数 ρ \\rho，以及它们经过对数变换后的值之间的皮尔逊相关系数 r log r_{\\log}。 词元预测与观测值的相关性更强，这支持在这些以 LLM 为主导的工作流程中采用基于词元的成本计算方式。 附录 F 提供了额外的排序分析。",
+   "sents": [
+    {
+     "en": "For each of the 59 subtasks from nine tasks, we independently predict output-token count and wall-clock time five times each, and compare the median prediction for each quantity with its observed value from the recorded execution.",
+     "zh": "对于九个任务中的每个子任务（共 59 个），我们独立预测输出词元数和实际运行时间，每次预测重复五次，并将每种数量的预测中位数与其在记录执行中的观测值进行比较。"
+    },
+    {
+     "en": "The DAG, model, backend, and prompt structure are held fixed.",
+     "zh": "DAG、模型、后端和提示结构均保持固定不变。"
+    },
+    {
+     "en": "Table 4 reports Spearman’s rank correlation coefficient ρ \\rho between predicted and observed values, and Pearson’s correlation coefficient r log r_{\\log} between their log-transformed values.",
+     "zh": "表 4 报告了预测值与观测值之间的斯皮尔曼等级相关系数 ρ \\rho，以及它们经过对数变换后的值之间的皮尔逊相关系数 r log r_{\\log}。"
+    },
+    {
+     "en": "Token predictions correlate more strongly with observations, supporting token-based costs in these LLM-dominated workflows.",
+     "zh": "词元预测与观测值的相关性更强，这支持在这些以 LLM 为主导的工作流程中采用基于词元的成本计算方式。"
+    },
+    {
+     "en": "Appendix F provides additional rank-ordering analysis.",
+     "zh": "附录 F 提供了额外的排序分析。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 2 (a) compares the scheduler’s estimated ratio ρ ^ k \\hat{\\rho}_{k} against the actual ratio ρ k \\rho_{k} across all 14 multi-task dependency layers. Generally, these ratios cluster near the diagonal, indicating reliable estimation.",
+   "zh": "图 2 (a) 比较了调度器估计的比率 ρ ^ k \\hat{\\rho}_{k} 与所有 14 个多任务依赖层中的实际比率 ρ k \\rho_{k}。 通常，这些比率聚集在对角线附近，表明估计是可靠的。",
+   "sents": [
+    {
+     "en": "Figure 2 (a) compares the scheduler’s estimated ratio ρ ^ k \\hat{\\rho}_{k} against the actual ratio ρ k \\rho_{k} across all 14 multi-task dependency layers.",
+     "zh": "图 2 (a) 比较了调度器估计的比率 ρ ^ k \\hat{\\rho}_{k} 与所有 14 个多任务依赖层中的实际比率 ρ k \\rho_{k}。"
+    },
+    {
+     "en": "Generally, these ratios cluster near the diagonal, indicating reliable estimation.",
+     "zh": "通常，这些比率聚集在对角线附近，表明估计是可靠的。"
+    }
+   ]
+  },
+  {
+   "en": "We vary α \\alpha on MathRef. The orchestrator generate a 2-layer DAG, where Layer 0 (L0) contain 6 chapters and Layer 1 (L1) contain 4 cross-referencing appendices. To isolate the effect of α \\alpha , we fix the task DAG, token estimates, and C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) across all runs. Figure 2 (b) shows that at α ≤ 1.8 \\alpha\\leq 1.8 the scheduler parallelizes L1, yielding 34–41 words/s. At α ≥ 2.0 \\alpha\\geq 2.0 it serializes L1, improving throughput to 45–51 words/s. The transition occurs between α = 1.8 \\alpha=1.8 and α = 2.0 \\alpha=2.0 , and we set α = 1.9 \\alpha=1.9 as the default, which correctly serializes L1 for this tightly coupled layer while preserving parallelization for layers with higher ratios.",
+   "zh": "我们在 MathRef 上调整 α \\alpha 的值。 协调器生成一个 2 层 DAG，其中第 0 层（L0）包含 6 个章节，第 1 层（L1）包含 4 个相互引用的附录。 为了隔离 α \\alpha 的影响，我们在所有运行中固定任务 DAG、令牌估计值以及 C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k})。 图 2(b) 显示，当 α ≤ 1.8 \\alpha\\leq 1.8 时，调度器会将 L1 并行化，从而实现 34–41 词/秒的吞吐量。 当 α ≥ 2.0 \\alpha\\geq 2.0 时，调度器会将 L1 串行化，使吞吐量提升至 45–51 词/秒。 这一转变发生在 α = 1.8 \\alpha=1.8 和 α = 2.0 \\alpha=2.0 之间，我们将 α = 1.9 \\alpha=1.9 设为默认值；该值能正确地将 L1 串行化（适用于这种强耦合层），同时保留具有更高比率的层的并行化。",
+   "sents": [
+    {
+     "en": "We vary α \\alpha on MathRef.",
+     "zh": "我们在 MathRef 上调整 α \\alpha 的值。"
+    },
+    {
+     "en": "The orchestrator generate a 2-layer DAG, where Layer 0 (L0) contain 6 chapters and Layer 1 (L1) contain 4 cross-referencing appendices.",
+     "zh": "协调器生成一个 2 层 DAG，其中第 0 层（L0）包含 6 个章节，第 1 层（L1）包含 4 个相互引用的附录。"
+    },
+    {
+     "en": "To isolate the effect of α \\alpha , we fix the task DAG, token estimates, and C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) across all runs.",
+     "zh": "为了隔离 α \\alpha 的影响，我们在所有运行中固定任务 DAG、令牌估计值以及 C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k})。"
+    },
+    {
+     "en": "Figure 2 (b) shows that at α ≤ 1.8 \\alpha\\leq 1.8 the scheduler parallelizes L1, yielding 34–41 words/s.",
+     "zh": "图 2(b) 显示，当 α ≤ 1.8 \\alpha\\leq 1.8 时，调度器会将 L1 并行化，从而实现 34–41 词/秒的吞吐量。"
+    },
+    {
+     "en": "At α ≥ 2.0 \\alpha\\geq 2.0 it serializes L1, improving throughput to 45–51 words/s.",
+     "zh": "当 α ≥ 2.0 \\alpha\\geq 2.0 时，调度器会将 L1 串行化，使吞吐量提升至 45–51 词/秒。"
+    },
+    {
+     "en": "The transition occurs between α = 1.8 \\alpha=1.8 and α = 2.0 \\alpha=2.0 , and we set α = 1.9 \\alpha=1.9 as the default, which correctly serializes L1 for this tightly coupled layer while preserving parallelization for layers with higher ratios.",
+     "zh": "这一转变发生在 α = 1.8 \\alpha=1.8 和 α = 2.0 \\alpha=2.0 之间，我们将 α = 1.9 \\alpha=1.9 设为默认值；该值能正确地将 L1 串行化（适用于这种强耦合层），同时保留具有更高比率的层的并行化。"
+    }
+   ]
+  },
+  {
+   "en": "We present SquidAgent, a cost-aware scheduler for multi-agent LLM systems. Parallel execution can introduce re-exploration and alignment costs that offset its speedup when subtasks are tightly coupled. SquidAgent captures this trade-off with a token-cost criterion and decides, for each dependency layer, whether to run serially or in parallel. It further reduces coordination cost through context inheritance and upfront convention planning. Across nine evaluation tasks, SquidAgent improves mean throughput by 2.2 × \\times over Claude Code and 2.0 × \\times over the strongest multi-agent baseline, while maintaining competitive quality. These results highlight cost-aware scheduling as a practical principle for efficient multi-agent LLM execution.",
+   "zh": "我们提出 SquidAgent，这是一种面向多智能体大语言模型系统的成本感知调度器。 当子任务之间耦合紧密时，并行执行可能会引入重新探索和对齐成本，从而抵消其带来的加速效果。 SquidAgent 通过一种令牌成本标准来捕捉这种权衡关系，并为每个依赖层决定是串行执行还是并行执行。 它还通过上下文继承和预先的协议规划进一步降低了协调成本。 在九项评估任务中，SquidAgent 的平均吞吐量比 Claude Code 提升了 2.2 × \\times，比最强的多智能体基线模型提升了 2.0 × \\times，同时保持了具有竞争力的质量。 这些结果表明，成本感知调度是高效执行多智能体大语言模型的一项实用原则。",
+   "sents": [
+    {
+     "en": "We present SquidAgent, a cost-aware scheduler for multi-agent LLM systems.",
+     "zh": "我们提出 SquidAgent，这是一种面向多智能体大语言模型系统的成本感知调度器。"
+    },
+    {
+     "en": "Parallel execution can introduce re-exploration and alignment costs that offset its speedup when subtasks are tightly coupled.",
+     "zh": "当子任务之间耦合紧密时，并行执行可能会引入重新探索和对齐成本，从而抵消其带来的加速效果。"
+    },
+    {
+     "en": "SquidAgent captures this trade-off with a token-cost criterion and decides, for each dependency layer, whether to run serially or in parallel.",
+     "zh": "SquidAgent 通过一种令牌成本标准来捕捉这种权衡关系，并为每个依赖层决定是串行执行还是并行执行。"
+    },
+    {
+     "en": "It further reduces coordination cost through context inheritance and upfront convention planning.",
+     "zh": "它还通过上下文继承和预先的协议规划进一步降低了协调成本。"
+    },
+    {
+     "en": "Across nine evaluation tasks, SquidAgent improves mean throughput by 2.2 × \\times over Claude Code and 2.0 × \\times over the strongest multi-agent baseline, while maintaining competitive quality.",
+     "zh": "在九项评估任务中，SquidAgent 的平均吞吐量比 Claude Code 提升了 2.2 × \\times，比最强的多智能体基线模型提升了 2.0 × \\times，同时保持了具有竞争力的质量。"
+    },
+    {
+     "en": "These results highlight cost-aware scheduling as a practical principle for efficient multi-agent LLM execution.",
+     "zh": "这些结果表明，成本感知调度是高效执行多智能体大语言模型的一项实用原则。"
+    }
+   ]
+  },
+  {
+   "en": "SquidAgent has three main limitations. First, its fixed safety margin does not adapt to uncertainty in token estimates. Second, its token proxy does not capture tool or API latency. Third, SquidAgent makes a single serial-or-parallel decision for each layer, even when some tasks would benefit from parallel execution while others would be better run serially. Appendix H discusses these limitations and future directions.",
+   "zh": "SquidAgent 存在三个主要局限性。 首先，其固定的安全余量无法适应令牌估算中的不确定性。 其次，其令牌代理未能反映工具或 API 的延迟。 第三，SquidAgent 对每一层仅做出一次串行或并行决策，即使某些任务适合并行执行，而另一些任务更适合串行运行。 附录 H 讨论了这些局限性以及未来的发展方向。",
+   "sents": [
+    {
+     "en": "SquidAgent has three main limitations.",
+     "zh": "SquidAgent 存在三个主要局限性。"
+    },
+    {
+     "en": "First, its fixed safety margin does not adapt to uncertainty in token estimates.",
+     "zh": "首先，其固定的安全余量无法适应令牌估算中的不确定性。"
+    },
+    {
+     "en": "Second, its token proxy does not capture tool or API latency.",
+     "zh": "其次，其令牌代理未能反映工具或 API 的延迟。"
+    },
+    {
+     "en": "Third, SquidAgent makes a single serial-or-parallel decision for each layer, even when some tasks would benefit from parallel execution while others would be better run serially.",
+     "zh": "第三，SquidAgent 对每一层仅做出一次串行或并行决策，即使某些任务适合并行执行，而另一些任务更适合串行运行。"
+    },
+    {
+     "en": "Appendix H discusses these limitations and future directions.",
+     "zh": "附录 H 讨论了这些局限性以及未来的发展方向。"
+    }
+   ]
+  },
+  {
+   "en": "Tongliang Liu is partially supported by the following Australian Research Council projects: DP260102466, FT220100318, DP220102121, LP220100527, LP220200949. Zhen Fang is partially supported by the Australian Research Council project DE250100363. Yu Yao is partially supported by the following Australian Research Council projects: DE260101993, DP260102466. Bo Han is partially supported by RGC Research Fellow Scheme No. RFS2627-2S02, RGC Young Collaborative Research Grant No. C2005-24Y, RGC General Research Fund No. 12202026, RGC General Research Fund No. 12200725, NSFC Major Research Plan No. 92570109, NSFC General Program No. 62376235, HKBU Faculty Niche Research Areas No. RC-FNRA-IG/25-26/SCI/05, and HKBU CSD Departmental Incentive Scheme.",
+   "zh": "刘同亮部分受以下澳大利亚研究理事会项目支持：DP260102466、FT220100318、DP220102121、LP220100527、LP220200949。 方震部分受澳大利亚研究理事会项目 DE250100363 支持。 姚宇部分受以下澳大利亚研究理事会项目支持：DE260101993、DP260102466。 韩博部分受 RGC 研究学者计划（编号： RFS2627-2S02）、RGC 青年合作研究基金（编号： C2005-24Y）、RGC 一般研究基金（编号：12202026）、RGC 一般研究基金（编号：12200725）、NSFC 重大研究计划（编号：92570109）、NSFC 一般项目（编号：62376235）、HKBU 学院特色研究领域项目（编号： RC-FNRA-IG/25-26/SCI/05）以及 HKBU CSD 部门激励计划支持。",
+   "sents": [
+    {
+     "en": "Tongliang Liu is partially supported by the following Australian Research Council projects: DP260102466, FT220100318, DP220102121, LP220100527, LP220200949.",
+     "zh": "刘同亮部分受以下澳大利亚研究理事会项目支持：DP260102466、FT220100318、DP220102121、LP220100527、LP220200949。"
+    },
+    {
+     "en": "Zhen Fang is partially supported by the Australian Research Council project DE250100363.",
+     "zh": "方震部分受澳大利亚研究理事会项目 DE250100363 支持。"
+    },
+    {
+     "en": "Yu Yao is partially supported by the following Australian Research Council projects: DE260101993, DP260102466.",
+     "zh": "姚宇部分受以下澳大利亚研究理事会项目支持：DE260101993、DP260102466。"
+    },
+    {
+     "en": "Bo Han is partially supported by RGC Research Fellow Scheme No.",
+     "zh": "韩博部分受 RGC 研究学者计划（编号："
+    },
+    {
+     "en": "RFS2627-2S02, RGC Young Collaborative Research Grant No.",
+     "zh": "RFS2627-2S02）、RGC 青年合作研究基金（编号："
+    },
+    {
+     "en": "C2005-24Y, RGC General Research Fund No. 12202026, RGC General Research Fund No. 12200725, NSFC Major Research Plan No. 92570109, NSFC General Program No. 62376235, HKBU Faculty Niche Research Areas No.",
+     "zh": "C2005-24Y）、RGC 一般研究基金（编号：12202026）、RGC 一般研究基金（编号：12200725）、NSFC 重大研究计划（编号：92570109）、NSFC 一般项目（编号：62376235）、HKBU 学院特色研究领域项目（编号："
+    },
+    {
+     "en": "RC-FNRA-IG/25-26/SCI/05, and HKBU CSD Departmental Incentive Scheme.",
+     "zh": "RC-FNRA-IG/25-26/SCI/05）以及 HKBU CSD 部门激励计划支持。"
+    }
+   ]
+  },
+  {
+   "en": "Table 5 summarizes the nine evaluation tasks used in our experiments. The tasks are grouped by output scale and designed to cover different coordination requirements, including independent module generation, shared interfaces, cross-file consistency, long-form document construction, and multi-stage dependencies. For each task, all methods receive exactly the same user prompt. No additional implementation hints, file-structure constraints, decomposition guidance, or style specifications are provided.",
+   "zh": "表 5 总结了我们在实验中使用的九项评估任务。 这些任务按输出规模进行分组，旨在涵盖不同的协作需求，包括独立模块生成、共享接口、跨文件一致性、长文档构建以及多阶段依赖关系。 对于每一项任务，所有方法都接收到完全相同用户提示。 未提供任何额外的实现提示、文件结构限制、分解指导或风格规范。",
+   "sents": [
+    {
+     "en": "Table 5 summarizes the nine evaluation tasks used in our experiments.",
+     "zh": "表 5 总结了我们在实验中使用的九项评估任务。"
+    },
+    {
+     "en": "The tasks are grouped by output scale and designed to cover different coordination requirements, including independent module generation, shared interfaces, cross-file consistency, long-form document construction, and multi-stage dependencies.",
+     "zh": "这些任务按输出规模进行分组，旨在涵盖不同的协作需求，包括独立模块生成、共享接口、跨文件一致性、长文档构建以及多阶段依赖关系。"
+    },
+    {
+     "en": "For each task, all methods receive exactly the same user prompt.",
+     "zh": "对于每一项任务，所有方法都接收到完全相同用户提示。"
+    },
+    {
+     "en": "No additional implementation hints, file-structure constraints, decomposition guidance, or style specifications are provided.",
+     "zh": "未提供任何额外的实现提示、文件结构限制、分解指导或风格规范。"
+    }
+   ]
+  },
+  {
+   "en": "We provide the complete user prompt for each evaluation task below. Each prompt is used as the sole input to every method, ensuring that differences in performance come from the execution strategy rather than from task-specific guidance.",
+   "zh": "我们在下面为每个评估任务提供了完整的全局用户提示。 每个提示都作为所有方法的唯一输入，从而确保性能差异源于执行策略，而非任务特定的指导信息。",
+   "sents": [
+    {
+     "en": "We provide the complete user prompt for each evaluation task below.",
+     "zh": "我们在下面为每个评估任务提供了完整的全局用户提示。"
+    },
+    {
+     "en": "Each prompt is used as the sole input to every method, ensuring that differences in performance come from the execution strategy rather than from task-specific guidance.",
+     "zh": "每个提示都作为所有方法的唯一输入，从而确保性能差异源于执行策略，而非任务特定的指导信息。"
+    }
+   ]
+  },
+  {
+   "en": "Table 6 reports wall time (seconds from first model invocation to final deliverable) and Table 7 reports deliverable output in words. Deliverable output counts only final user-facing files (source code, content documents, HTML pages), excluding intermediate artifacts such as planning documents, log files, build outputs, and configuration files. The throughput metric reported in the main text (Table 2 ) is computed as the ratio of deliverable output to wall time.",
+   "zh": "表 6 报告了实际运行时间（从首次模型调用到最终交付成果所花费的秒数），而表 7 报告了以词为单位的交付成果输出量。 交付成果输出仅统计最终面向用户的文件（源代码、内容文档、HTML 页面），不包括规划文档、日志文件、构建输出和配置文件等中间产物。 正文中（表 2）报告的吞吐量指标，是通过交付成果输出量与实际运行时间之比计算得出的。",
+   "sents": [
+    {
+     "en": "Table 6 reports wall time (seconds from first model invocation to final deliverable) and Table 7 reports deliverable output in words.",
+     "zh": "表 6 报告了实际运行时间（从首次模型调用到最终交付成果所花费的秒数），而表 7 报告了以词为单位的交付成果输出量。"
+    },
+    {
+     "en": "Deliverable output counts only final user-facing files (source code, content documents, HTML pages), excluding intermediate artifacts such as planning documents, log files, build outputs, and configuration files.",
+     "zh": "交付成果输出仅统计最终面向用户的文件（源代码、内容文档、HTML 页面），不包括规划文档、日志文件、构建输出和配置文件等中间产物。"
+    },
+    {
+     "en": "The throughput metric reported in the main text (Table 2 ) is computed as the ratio of deliverable output to wall time.",
+     "zh": "正文中（表 2）报告的吞吐量指标，是通过交付成果输出量与实际运行时间之比计算得出的。"
+    }
+   ]
+  },
+  {
+   "en": "Four of the nine evaluation tasks (MathRef, SlideKit, CloudDocs, and ClimateAnalysis) contain multi-layer DAGs where the scheduler makes different parallel/serial decisions per layer. Table 8 reports the layer-wise alignment cost, token-cost ratio, and scheduler decision. The scheduler applies Eq. 10 independently to each layer and parallelizes only when the ratio exceeds α = 1.9 \\alpha=1.9 .",
+   "zh": "在九个评估任务中，有四个任务（MathRef、SlideKit、CloudDocs 和 ClimateAnalysis）包含多层 DAG，其中调度器会在每一层做出不同的并行/串行决策。 表 8 报告了各层的对齐成本、令牌成本比以及调度器的决策。 调度器独立地将公式 10 应用于每一层，并且仅当该比率超过 α = 1.9 \\alpha=1.9 时才会进行并行化。",
+   "sents": [
+    {
+     "en": "Four of the nine evaluation tasks (MathRef, SlideKit, CloudDocs, and ClimateAnalysis) contain multi-layer DAGs where the scheduler makes different parallel/serial decisions per layer.",
+     "zh": "在九个评估任务中，有四个任务（MathRef、SlideKit、CloudDocs 和 ClimateAnalysis）包含多层 DAG，其中调度器会在每一层做出不同的并行/串行决策。"
+    },
+    {
+     "en": "Table 8 reports the layer-wise alignment cost, token-cost ratio, and scheduler decision.",
+     "zh": "表 8 报告了各层的对齐成本、令牌成本比以及调度器的决策。"
+    },
+    {
+     "en": "The scheduler applies Eq. 10 independently to each layer and parallelizes only when the ratio exceeds α = 1.9 \\alpha=1.9 .",
+     "zh": "调度器独立地将公式 10 应用于每一层，并且仅当该比率超过 α = 1.9 \\alpha=1.9 时才会进行并行化。"
+    }
+   ]
+  },
+  {
+   "en": "On MathRef, the scheduler parallelizes the six heavy chapters ( C ^ alg ​ ( ℒ 0 ) = 2500 \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{0})=2500 , ρ 0 = 5.09 \\rho_{0}=5.09 ) but serializes the four appendices ( C ^ alg ​ ( ℒ 1 ) = 6000 \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{1})=6000 , ρ 1 = 1.45 \\rho_{1}=1.45 ). The appendices must cross-reference exact theorem numbers, notation, and definitions across all chapters, and the high alignment cost reflects this tight coupling.",
+   "zh": "在 MathRef 中，调度器将六个厚重的章节并行化（ C ^ alg ​ ( ℒ 0 ) = 2500 \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{0})=2500 , ρ 0 = 5.09 \\rho_{0}=5.09 ），但将四个附录串行化（ C ^ alg ​ ( ℒ 1 ) = 6000 \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{1})=6000 , ρ 1 = 1.45 \\rho_{1}=1.45 ）。 这些附录必须跨所有章节交叉引用精确的定理编号、符号和定义，而高昂的对齐成本则反映了这种紧密耦合。",
+   "sents": [
+    {
+     "en": "On MathRef, the scheduler parallelizes the six heavy chapters ( C ^ alg ​ ( ℒ 0 ) = 2500 \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{0})=2500 , ρ 0 = 5.09 \\rho_{0}=5.09 ) but serializes the four appendices ( C ^ alg ​ ( ℒ 1 ) = 6000 \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{1})=6000 , ρ 1 = 1.45 \\rho_{1}=1.45 ).",
+     "zh": "在 MathRef 中，调度器将六个厚重的章节并行化（ C ^ alg ​ ( ℒ 0 ) = 2500 \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{0})=2500 , ρ 0 = 5.09 \\rho_{0}=5.09 ），但将四个附录串行化（ C ^ alg ​ ( ℒ 1 ) = 6000 \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{1})=6000 , ρ 1 = 1.45 \\rho_{1}=1.45 ）。"
+    },
+    {
+     "en": "The appendices must cross-reference exact theorem numbers, notation, and definitions across all chapters, and the high alignment cost reflects this tight coupling.",
+     "zh": "这些附录必须跨所有章节交叉引用精确的定理编号、符号和定义，而高昂的对齐成本则反映了这种紧密耦合。"
+    }
+   ]
+  },
+  {
+   "en": "On CloudDocs, the scheduler parallelizes the five independent API module references ( C ^ alg ​ ( ℒ 0 ) = 3500 \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{0})=3500 , ρ 0 = 3.31 \\rho_{0}=3.31 ) but serializes the three cross-cutting guides ( C ^ alg ​ ( ℒ 1 ) = 3000 \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{1})=3000 , ρ 1 = 1.64 \\rho_{1}=1.64 ), which must reference exact endpoint paths and error codes from all modules.",
+   "zh": "在 CloudDocs 中，调度器将五个独立的 API 模块引用（ C ^ alg ​ ( ℒ 0 ) = 3500 \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{0})=3500 , ρ 0 = 3.31 \\rho_{0}=3.31 ）并行化，但将三个跨模块指南（ C ^ alg ​ ( ℒ 1 ) = 3000 \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{1})=3000 , ρ 1 = 1.64 \\rho_{1}=1.64 ）串行化，这些指南必须引用所有模块的精确端点路径和错误代码。",
+   "sents": null
+  },
+  {
+   "en": "On ClimateAnalysis, the scheduler makes three distinct decisions: it parallelizes the independent analysis scripts ( C ^ alg ​ ( ℒ 0 ) = 2000 \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{0})=2000 , ρ 0 = 3.53 \\rho_{0}=3.53 ), serializes the single correlation script that depends on all previous outputs, and serializes the final reports ( C ^ alg ​ ( ℒ 2 ) = 5000 \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{2})=5000 , ρ 2 = 0.93 \\rho_{2}=0.93 ) because each report must cite exact numerical values from the analysis results.",
+   "zh": "在 ClimateAnalysis 中，调度器会做出三个不同的决策：它将独立的分析脚本并行化（ C ^ alg ​ ( ℒ 0 ) = 2000 \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{0})=2000 , ρ 0 = 3.53 \\rho_{0}=3.53 ），将依赖所有先前输出的单个相关性脚本串行化，并将最终报告串行化（ C ^ alg ​ ( ℒ 2 ) = 5000 \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{2})=5000 , ρ 2 = 0.93 \\rho_{2}=0.93 ），因为每份报告都必须引用分析结果中的精确数值。",
+   "sents": null
+  },
+  {
+   "en": "We provide the complete orchestrator and worker prompts used in SquidAgent (fork + bypass mode). These are the actual system prompts given to the LLM agents.",
+   "zh": "我们提供了在 SquidAgent 中使用的完整协调器和工作者提示（分叉 + 旁路模式）。 这些是实际提供给 LLM 智能体的系统提示。",
+   "sents": [
+    {
+     "en": "We provide the complete orchestrator and worker prompts used in SquidAgent (fork + bypass mode).",
+     "zh": "我们提供了在 SquidAgent 中使用的完整协调器和工作者提示（分叉 + 旁路模式）。"
+    },
+    {
+     "en": "These are the actual system prompts given to the LLM agents.",
+     "zh": "这些是实际提供给 LLM 智能体的系统提示。"
+    }
+   ]
+  },
+  {
+   "en": "The scheduler is implemented as a deterministic Python function that is automatically invoked inside the create_plan_branch tool. When the orchestrator calls this tool with a task list, the tool: (1) parses the task DAG from the tasks and layer_convention_tokens fields, (2) runs the scheduler (computing topological layers, applying the token-cost inequality per layer with layer-specific C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) ), and (3) returns the execution schedule as part of the tool response. The orchestrator never calls the scheduler directly — it simply calls create_plan_branch and receives the schedule in the response JSON. This design ensures the scheduling decision is always made deterministically and cannot be overridden or skipped by the LLM.",
+   "zh": "调度器被实现为一个确定性 Python 函数，会在 create_plan_branch 工具内部自动调用。 当协调器使用任务列表调用此工具时，该工具会：(1) 从 tasks 和 layer_convention_tokens 字段中解析任务 DAG；(2) 运行调度器（计算拓扑层，并针对每层应用基于特定层的 C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) 的令牌成本不等式）；以及 (3) 将执行调度作为工具响应的部分内容返回。 协调器绝不会直接调用调度器——它只需调用 create_plan_branch，并在响应 JSON 中获取调度方案。 这种设计确保了调度决策始终具有确定性，且无法被 LLM 覆盖或跳过。",
+   "sents": [
+    {
+     "en": "The scheduler is implemented as a deterministic Python function that is automatically invoked inside the create_plan_branch tool.",
+     "zh": "调度器被实现为一个确定性 Python 函数，会在 create_plan_branch 工具内部自动调用。"
+    },
+    {
+     "en": "When the orchestrator calls this tool with a task list, the tool: (1) parses the task DAG from the tasks and layer_convention_tokens fields, (2) runs the scheduler (computing topological layers, applying the token-cost inequality per layer with layer-specific C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) ), and (3) returns the execution schedule as part of the tool response.",
+     "zh": "当协调器使用任务列表调用此工具时，该工具会：(1) 从 tasks 和 layer_convention_tokens 字段中解析任务 DAG；(2) 运行调度器（计算拓扑层，并针对每层应用基于特定层的 C ^ alg ​ ( ℒ k ) \\widehat{C}_{\\mathrm{alg}}(\\mathcal{L}_{k}) 的令牌成本不等式）；以及 (3) 将执行调度作为工具响应的部分内容返回。"
+    },
+    {
+     "en": "The orchestrator never calls the scheduler directly — it simply calls create_plan_branch and receives the schedule in the response JSON.",
+     "zh": "协调器绝不会直接调用调度器——它只需调用 create_plan_branch，并在响应 JSON 中获取调度方案。"
+    },
+    {
+     "en": "This design ensures the scheduling decision is always made deterministically and cannot be overridden or skipped by the LLM.",
+     "zh": "这种设计确保了调度决策始终具有确定性，且无法被 LLM 覆盖或跳过。"
+    }
+   ]
+  },
+  {
+   "en": "The following result characterizes when bounded error in the serial-to-parallel cost ratio can change the threshold decision. It separates error-induced decision changes from the intended conservatism of the safety margin.",
+   "zh": "以下结果描述了串行到并行成本比中的有界误差在何种情况下会改变阈值决策。 它将由误差引起的决策变化与安全裕度所期望的保守性区分开来。",
+   "sents": [
+    {
+     "en": "The following result characterizes when bounded error in the serial-to-parallel cost ratio can change the threshold decision.",
+     "zh": "以下结果描述了串行到并行成本比中的有界误差在何种情况下会改变阈值决策。"
+    },
+    {
+     "en": "It separates error-induced decision changes from the intended conservatism of the safety margin.",
+     "zh": "它将由误差引起的决策变化与安全裕度所期望的保守性区分开来。"
+    }
+   ]
+  },
+  {
+   "en": "Let ρ = T ser / T par \\rho=T_{\\mathrm{ser}}/T_{\\mathrm{par}} be the true serial-to-parallel cost ratio, with T par > 0 T_{\\mathrm{par}}>0 , and let ρ ^ \\widehat{\\rho} be its estimate. Suppose",
+   "zh": "令 ρ = T ser / T par \\rho=T_{\\mathrm{ser}}/T_{\\mathrm{par}} 为真实的串行-并行成本比，其中 T par > 0 T_{\\mathrm{par}}>0，并令 ρ ^ \\widehat{\\rho} 为其估计值。假设",
+   "sents": null
+  },
+  {
+   "en": "The scheduler selects parallel execution if and only if ρ ^ > α \\widehat{\\rho}>\\alpha , where α > 1 \\alpha>1 . If ρ > α + ε \\rho>\\alpha+\\varepsilon , the scheduler is guaranteed to select parallel execution. If ρ < α − ε \\rho<\\alpha-\\varepsilon , it is guaranteed to select serial execution. Consequently, estimation error can change the decision relative to applying the same threshold to the true ratio only in the region",
+   "zh": "当且仅当 ρ ^ > α \\widehat{\\rho}>\\alpha，其中 α > 1 \\alpha>1，调度器才会选择并行执行。 如果 ρ > α + ε \\rho>\\alpha+\\varepsilon，调度器保证会选择并行执行。 如果 ρ < α − ε \\rho<\\alpha-\\varepsilon，调度器保证会选择串行执行。 因此，估计误差只有在特定区域内才会导致决策与对真实比率应用相同阈值时的结果不同。",
+   "sents": [
+    {
+     "en": "The scheduler selects parallel execution if and only if ρ ^ > α \\widehat{\\rho}>\\alpha , where α > 1 \\alpha>1 .",
+     "zh": "当且仅当 ρ ^ > α \\widehat{\\rho}>\\alpha，其中 α > 1 \\alpha>1，调度器才会选择并行执行。"
+    },
+    {
+     "en": "If ρ > α + ε \\rho>\\alpha+\\varepsilon , the scheduler is guaranteed to select parallel execution.",
+     "zh": "如果 ρ > α + ε \\rho>\\alpha+\\varepsilon，调度器保证会选择并行执行。"
+    },
+    {
+     "en": "If ρ < α − ε \\rho<\\alpha-\\varepsilon , it is guaranteed to select serial execution.",
+     "zh": "如果 ρ < α − ε \\rho<\\alpha-\\varepsilon，调度器保证会选择串行执行。"
+    },
+    {
+     "en": "Consequently, estimation error can change the decision relative to applying the same threshold to the true ratio only in the region",
+     "zh": "因此，估计误差只有在特定区域内才会导致决策与对真实比率应用相同阈值时的结果不同。"
+    }
+   ]
+  },
+  {
+   "en": "Furthermore, if ε < α − 1 \\varepsilon<\\alpha-1 , every layer with ρ ≤ 1 \\rho\\leq 1 is guaranteed to be executed serially.",
+   "zh": "此外，如果 ε < α − 1 \\varepsilon<\\alpha-1 ，那么所有满足 ρ ≤ 1 \\rho\\leq 1 的层都保证以串行方式执行。",
+   "sents": null
+  },
+  {
+   "en": "If ρ > α + ε \\rho>\\alpha+\\varepsilon , Eq. 11 yields",
+   "zh": "如果 ρ > α + ε \\rho>\\alpha+\\varepsilon ，则方程 11 可得",
+   "sents": null
+  },
+  {
+   "en": "so the scheduler selects parallel execution. If ρ < α − ε \\rho<\\alpha-\\varepsilon , then",
+   "zh": "因此调度器选择并行执行。 如果 ρ < α − ε \\rho<\\alpha-\\varepsilon ，那么",
+   "sents": [
+    {
+     "en": "so the scheduler selects parallel execution.",
+     "zh": "因此调度器选择并行执行。"
+    },
+    {
+     "en": "If ρ < α − ε \\rho<\\alpha-\\varepsilon , then",
+     "zh": "如果 ρ < α − ε \\rho<\\alpha-\\varepsilon ，那么"
+    }
+   ]
+  },
+  {
+   "en": "so the scheduler selects serial execution. These inequalities imply Eq. 12 . Finally, if ρ ≤ 1 \\rho\\leq 1 and ε < α − 1 \\varepsilon<\\alpha-1 , then",
+   "zh": "因此，调度器选择串行执行。 这些不等式意味着方程 12。 最后，如果 ρ ≤ 1 \\rho\\leq 1 且 ε < α − 1 \\varepsilon<\\alpha-1 ，那么",
+   "sents": [
+    {
+     "en": "so the scheduler selects serial execution.",
+     "zh": "因此，调度器选择串行执行。"
+    },
+    {
+     "en": "These inequalities imply Eq. 12 .",
+     "zh": "这些不等式意味着方程 12。"
+    },
+    {
+     "en": "Finally, if ρ ≤ 1 \\rho\\leq 1 and ε < α − 1 \\varepsilon<\\alpha-1 , then",
+     "zh": "最后，如果 ρ ≤ 1 \\rho\\leq 1 且 ε < α − 1 \\varepsilon<\\alpha-1 ，那么"
+    }
+   ]
+  },
+  {
+   "en": "and incorrect parallelization is impossible. By the strict scheduling rule, an estimated tie ρ ^ = α \\widehat{\\rho}=\\alpha also selects serial execution. ∎",
+   "zh": "并且不正确的并行化是不可能的。 根据严格的调度规则，估计的打平值 ρ ^ = α \\widehat{\\rho}=\\alpha 也会选择串行执行。∎",
+   "sents": [
+    {
+     "en": "and incorrect parallelization is impossible.",
+     "zh": "并且不正确的并行化是不可能的。"
+    },
+    {
+     "en": "By the strict scheduling rule, an estimated tie ρ ^ = α \\widehat{\\rho}=\\alpha also selects serial execution. ∎",
+     "zh": "根据严格的调度规则，估计的打平值 ρ ^ = α \\widehat{\\rho}=\\alpha 也会选择串行执行。∎"
+    }
+   ]
+  },
+  {
+   "en": "Small estimation errors do not change the decision when the true ratio is sufficiently far from α \\alpha . The margin asymmetrically protects against parallelizing a layer whose serial execution is cheaper, but may forgo a modest parallel gain. With an exact estimate, layers with 1 < ρ ≤ α 1<\\rho\\leq\\alpha are deliberately serialized. Under the error bound, a truly parallel-favoring layer can be serialized only if 1 < ρ ≤ α + ε 1<\\rho\\leq\\alpha+\\varepsilon ; the interval α < ρ ≤ α + ε \\alpha<\\rho\\leq\\alpha+\\varepsilon captures additional serialization that can arise from estimation error. This is a conditional decision-stability result under Eq. 11 .",
+   "zh": "当真实比率足够远离 α 时，微小的估计误差不会改变决策。 该余量以非对称方式防止对串行执行成本更低的层进行并行化，但也可能放弃适度的并行收益。 在精确估计的情况下，满足 1 < ρ ≤ α 的层会被刻意串行化。 在误差界限下，一个真正有利于并行化的层只有在 1 < ρ ≤ α + ε 时才会被串行化；区间 α < ρ ≤ α + ε 涵盖了因估计误差而可能产生的额外串行化。 这是在方程 11 下的一个条件性决策稳定性结果。",
+   "sents": [
+    {
+     "en": "Small estimation errors do not change the decision when the true ratio is sufficiently far from α \\alpha .",
+     "zh": "当真实比率足够远离 α 时，微小的估计误差不会改变决策。"
+    },
+    {
+     "en": "The margin asymmetrically protects against parallelizing a layer whose serial execution is cheaper, but may forgo a modest parallel gain.",
+     "zh": "该余量以非对称方式防止对串行执行成本更低的层进行并行化，但也可能放弃适度的并行收益。"
+    },
+    {
+     "en": "With an exact estimate, layers with 1 < ρ ≤ α 1<\\rho\\leq\\alpha are deliberately serialized.",
+     "zh": "在精确估计的情况下，满足 1 < ρ ≤ α 的层会被刻意串行化。"
+    },
+    {
+     "en": "Under the error bound, a truly parallel-favoring layer can be serialized only if 1 < ρ ≤ α + ε 1<\\rho\\leq\\alpha+\\varepsilon ; the interval α < ρ ≤ α + ε \\alpha<\\rho\\leq\\alpha+\\varepsilon captures additional serialization that can arise from estimation error.",
+     "zh": "在误差界限下，一个真正有利于并行化的层只有在 1 < ρ ≤ α + ε 时才会被串行化；区间 α < ρ ≤ α + ε 涵盖了因估计误差而可能产生的额外串行化。"
+    },
+    {
+     "en": "This is a conditional decision-stability result under Eq. 11 .",
+     "zh": "这是在方程 11 下的一个条件性决策稳定性结果。"
+    }
+   ]
+  },
+  {
+   "en": "We extend the prediction comparison in Section 4.5 with a rank-ordering analysis, using the same 59 worker subtasks from nine evaluation tasks and the median of five independent predictions for each quantity. We compare predicted and observed subtask orderings using Kendall’s τ b \\tau_{b} and the fraction of inverted pairs, excluding tied pairs from the latter. Confidence intervals are obtained using a paired bootstrap clustered by evaluation task.",
+   "zh": "我们在第 4.5 节的预测比较基础上，进一步加入了排序分析。该分析使用了来自九个评估任务的相同 59 个工人子任务，以及每个数量的五次独立预测的中位数。 我们使用肯德尔 τ b \\tau_{b} 和倒置对的比例来比较预测与观测到的子任务排序，其中后者不包含打平的对。 置信区间通过以评估任务为聚类单位的配对自助法获得。",
+   "sents": [
+    {
+     "en": "We extend the prediction comparison in Section 4.5 with a rank-ordering analysis, using the same 59 worker subtasks from nine evaluation tasks and the median of five independent predictions for each quantity.",
+     "zh": "我们在第 4.5 节的预测比较基础上，进一步加入了排序分析。该分析使用了来自九个评估任务的相同 59 个工人子任务，以及每个数量的五次独立预测的中位数。"
+    },
+    {
+     "en": "We compare predicted and observed subtask orderings using Kendall’s τ b \\tau_{b} and the fraction of inverted pairs, excluding tied pairs from the latter.",
+     "zh": "我们使用肯德尔 τ b \\tau_{b} 和倒置对的比例来比较预测与观测到的子任务排序，其中后者不包含打平的对。"
+    },
+    {
+     "en": "Confidence intervals are obtained using a paired bootstrap clustered by evaluation task.",
+     "zh": "置信区间通过以评估任务为聚类单位的配对自助法获得。"
+    }
+   ]
+  },
+  {
+   "en": "There are ( 59 2 ) = 1,711 \\binom{59}{2}=1{,}711 subtask pairs before excluding ties. Token predictions preserve ordering substantially better (Table 9 ). The rank-ordering comparison uses a paired bootstrap clustered by task. The inversion rate for wall-clock predictions is 27 percentage points higher. These rank reversals cannot be repaired by a constant multiplicative correction or a strictly increasing recalibration. This supports the scoped observation that direct wall-clock estimates mis-rank execution durations in the evaluated workflows. Figure 2 (a) provides complementary scheduler-level evidence by comparing estimated and realized layer cost ratios.",
+   "zh": "在排除平局之前，共有 ( 59 2 ) = 1,711 \\binom{59}{2}=1{,}711 个子任务对。 标记预测在保持顺序方面的效果要好得多（表 9）。 排名顺序比较采用按任务分组的配对自助法。 实际运行时间预测的倒置率高出 27 个百分点。 这些排名反转无法通过恒定的乘法修正或严格递增的重新校准来修复。 这支持了这样一个限定性观察：直接的实际运行时间估计在评估的工作流中错误地排序了执行时长。 图 2(a) 通过比较估计的与实际实现的层成本比率，提供了补充的调度器层面证据。",
+   "sents": [
+    {
+     "en": "There are ( 59 2 ) = 1,711 \\binom{59}{2}=1{,}711 subtask pairs before excluding ties.",
+     "zh": "在排除平局之前，共有 ( 59 2 ) = 1,711 \\binom{59}{2}=1{,}711 个子任务对。"
+    },
+    {
+     "en": "Token predictions preserve ordering substantially better (Table 9 ).",
+     "zh": "标记预测在保持顺序方面的效果要好得多（表 9）。"
+    },
+    {
+     "en": "The rank-ordering comparison uses a paired bootstrap clustered by task.",
+     "zh": "排名顺序比较采用按任务分组的配对自助法。"
+    },
+    {
+     "en": "The inversion rate for wall-clock predictions is 27 percentage points higher.",
+     "zh": "实际运行时间预测的倒置率高出 27 个百分点。"
+    },
+    {
+     "en": "These rank reversals cannot be repaired by a constant multiplicative correction or a strictly increasing recalibration.",
+     "zh": "这些排名反转无法通过恒定的乘法修正或严格递增的重新校准来修复。"
+    },
+    {
+     "en": "This supports the scoped observation that direct wall-clock estimates mis-rank execution durations in the evaluated workflows.",
+     "zh": "这支持了这样一个限定性观察：直接的实际运行时间估计在评估的工作流中错误地排序了执行时长。"
+    },
+    {
+     "en": "Figure 2 (a) provides complementary scheduler-level evidence by comparing estimated and realized layer cost ratios.",
+     "zh": "图 2(a) 通过比较估计的与实际实现的层成本比率，提供了补充的调度器层面证据。"
+    }
+   ]
+  },
+  {
+   "en": "We repeat the planning stage three times for each of the nine tasks and record ρ ^ k \\widehat{\\rho}_{k} for each dependency layer. Table 10 summarizes the mean and range of the resulting estimates. These are repeated-planning results, distinct from the original executed-plan examples in Appendix C . Because the scheduler parallelizes a layer exactly when ρ ^ k > α \\widehat{\\rho}_{k}>\\alpha , a decision changes only when α \\alpha crosses the corresponding estimated ratio.",
+   "zh": "我们对九个任务中的每个任务重复规划阶段三次，并记录每个依赖层的 ρ ^ k \\widehat{\\rho}_{k}。 表 10 总结了由此得到的估计值的均值和范围。 这些是重复规划的结果，与附录 C 中原始的执行计划示例不同。 由于调度器仅在 ρ ^ k > α \\widehat{\\rho}_{k}>\\alpha 时才会并行化一个层，因此只有当 α \\alpha 穿过相应的估计比率时，决策才会改变。",
+   "sents": [
+    {
+     "en": "We repeat the planning stage three times for each of the nine tasks and record ρ ^ k \\widehat{\\rho}_{k} for each dependency layer.",
+     "zh": "我们对九个任务中的每个任务重复规划阶段三次，并记录每个依赖层的 ρ ^ k \\widehat{\\rho}_{k}。"
+    },
+    {
+     "en": "Table 10 summarizes the mean and range of the resulting estimates.",
+     "zh": "表 10 总结了由此得到的估计值的均值和范围。"
+    },
+    {
+     "en": "These are repeated-planning results, distinct from the original executed-plan examples in Appendix C .",
+     "zh": "这些是重复规划的结果，与附录 C 中原始的执行计划示例不同。"
+    },
+    {
+     "en": "Because the scheduler parallelizes a layer exactly when ρ ^ k > α \\widehat{\\rho}_{k}>\\alpha , a decision changes only when α \\alpha crosses the corresponding estimated ratio.",
+     "zh": "由于调度器仅在 ρ ^ k > α \\widehat{\\rho}_{k}>\\alpha 时才会并行化一个层，因此只有当 α \\alpha 穿过相应的估计比率时，决策才会改变。"
+    }
+   ]
+  },
+  {
+   "en": "The remaining tasks are LinAlgBook, PixelCraft, ArcadeBox, CompressKit, and ShopFlow. Across the 42 layer instances, tightly coupled layers have lower estimated ratios than loosely coupled layers. The resulting separation gives a stable interval of safety margins that produce the same decisions, including the default α = 1.9 \\alpha=1.9 , which lies near the lower end of the interval. This experiment characterizes decision stability under repeated planning; the fixed-plan MathRef experiment in Section 4.6 separately measures throughput under different margins.",
+   "zh": "剩余的任务包括 LinAlgBook、PixelCraft、ArcadeBox、CompressKit 和 ShopFlow。 在 42 个层实例中，紧密耦合的层的估计比率低于松散耦合的层。 由此产生的分离提供了一个稳定的安全边际区间，该区间能产生相同的决策，包括默认值 α = 1.9 \\alpha=1.9，该值位于区间的低端附近。 本实验描述了重复规划下的决策稳定性；第 4.6 节中固定规划的 MathRef 实验则单独测量了不同安全边际下的吞吐量。",
+   "sents": [
+    {
+     "en": "The remaining tasks are LinAlgBook, PixelCraft, ArcadeBox, CompressKit, and ShopFlow.",
+     "zh": "剩余的任务包括 LinAlgBook、PixelCraft、ArcadeBox、CompressKit 和 ShopFlow。"
+    },
+    {
+     "en": "Across the 42 layer instances, tightly coupled layers have lower estimated ratios than loosely coupled layers.",
+     "zh": "在 42 个层实例中，紧密耦合的层的估计比率低于松散耦合的层。"
+    },
+    {
+     "en": "The resulting separation gives a stable interval of safety margins that produce the same decisions, including the default α = 1.9 \\alpha=1.9 , which lies near the lower end of the interval.",
+     "zh": "由此产生的分离提供了一个稳定的安全边际区间，该区间能产生相同的决策，包括默认值 α = 1.9 \\alpha=1.9，该值位于区间的低端附近。"
+    },
+    {
+     "en": "This experiment characterizes decision stability under repeated planning; the fixed-plan MathRef experiment in Section 4.6 separately measures throughput under different margins.",
+     "zh": "本实验描述了重复规划下的决策稳定性；第 4.6 节中固定规划的 MathRef 实验则单独测量了不同安全边际下的吞吐量。"
+    }
+   ]
+  },
+  {
+   "en": "To assess transfer beyond our designed benchmarks, we evaluate three practical tasks from Flow [ Niu et al., 2025 ] : conference website design, game development, and LaTeX Beamer generation. We compare SquidAgent with Claude Code. Quality is evaluated using task-specific automated rubrics covering executability, required components, and task-specific correctness.",
+   "zh": "为了评估模型在超出我们设计基准之外的迁移能力，我们对 Flow [ Niu et al., 2025 ] 中的三个实际任务进行了评估：会议网站设计、游戏开发和 LaTeX Beamer 生成。 我们将 SquidAgent 与 Claude Code 进行了比较。 质量评估采用任务特定的自动化评分标准，涵盖可执行性、所需组件以及任务特定的正确性。",
+   "sents": [
+    {
+     "en": "To assess transfer beyond our designed benchmarks, we evaluate three practical tasks from Flow [ Niu et al., 2025 ] : conference website design, game development, and LaTeX Beamer generation.",
+     "zh": "为了评估模型在超出我们设计基准之外的迁移能力，我们对 Flow [ Niu et al., 2025 ] 中的三个实际任务进行了评估：会议网站设计、游戏开发和 LaTeX Beamer 生成。"
+    },
+    {
+     "en": "We compare SquidAgent with Claude Code.",
+     "zh": "我们将 SquidAgent 与 Claude Code 进行了比较。"
+    },
+    {
+     "en": "Quality is evaluated using task-specific automated rubrics covering executability, required components, and task-specific correctness.",
+     "zh": "质量评估采用任务特定的自动化评分标准，涵盖可执行性、所需组件以及任务特定的正确性。"
+    }
+   ]
+  },
+  {
+   "en": "These tasks are relatively lightweight and offer limited opportunities for parallelism. Nevertheless, SquidAgent reduces mean wall time from 386.3 to 260.3 seconds, corresponding to a 1.48 × \\times speedup, while increasing mean throughput from 11.6 to 15.4 words/s and maintaining comparable task-completion quality. These results provide preliminary evidence of transfer beyond the author-designed suite.",
+   "zh": "这些任务相对轻量，且提供的并行性机会有限。 尽管如此，SquidAgent 将平均实际运行时间从 386.3 秒缩短至 260.3 秒，实现了 1.48 × 倍的速度提升，同时将平均吞吐量从 11.6 提升至 15.4 词/秒，并保持了相当的任务完成质量。 这些结果为超越作者设计的任务集之外的迁移能力提供了初步证据。",
+   "sents": [
+    {
+     "en": "These tasks are relatively lightweight and offer limited opportunities for parallelism.",
+     "zh": "这些任务相对轻量，且提供的并行性机会有限。"
+    },
+    {
+     "en": "Nevertheless, SquidAgent reduces mean wall time from 386.3 to 260.3 seconds, corresponding to a 1.48 × \\times speedup, while increasing mean throughput from 11.6 to 15.4 words/s and maintaining comparable task-completion quality.",
+     "zh": "尽管如此，SquidAgent 将平均实际运行时间从 386.3 秒缩短至 260.3 秒，实现了 1.48 × 倍的速度提升，同时将平均吞吐量从 11.6 提升至 15.4 词/秒，并保持了相当的任务完成质量。"
+    },
+    {
+     "en": "These results provide preliminary evidence of transfer beyond the author-designed suite.",
+     "zh": "这些结果为超越作者设计的任务集之外的迁移能力提供了初步证据。"
+    }
+   ]
+  },
+  {
+   "en": "The scheduler relies on the orchestrator LLM to estimate per-task output tokens and per-layer alignment costs. As shown in Figure 2 (a), these estimates are noisy—individual task estimates can differ from actual output by 2–5 × \\times . The margin α \\alpha partially compensates, but it is a global constant rather than being adaptive to the prediction confidence of individual layers. Future work could explore confidence-aware margins or calibration of token estimates.",
+   "zh": "调度器依赖协调器 LLM 来估算每个任务的输出词元数以及每层的对齐成本。 如图 2 (a) 所示，这些估算值存在噪声——单个任务的估算值可能与实际输出相差 2–5 × \\times 。 余量 α \\alpha 可以部分补偿这种差异，但它是一个全局常数，而非根据各层预测的置信度进行自适应调整。 未来的研究可以探索基于置信度的余量设定，或对词元估算值进行校准。",
+   "sents": [
+    {
+     "en": "The scheduler relies on the orchestrator LLM to estimate per-task output tokens and per-layer alignment costs.",
+     "zh": "调度器依赖协调器 LLM 来估算每个任务的输出词元数以及每层的对齐成本。"
+    },
+    {
+     "en": "As shown in Figure 2 (a), these estimates are noisy—individual task estimates can differ from actual output by 2–5 × \\times .",
+     "zh": "如图 2 (a) 所示，这些估算值存在噪声——单个任务的估算值可能与实际输出相差 2–5 × \\times 。"
+    },
+    {
+     "en": "The margin α \\alpha partially compensates, but it is a global constant rather than being adaptive to the prediction confidence of individual layers.",
+     "zh": "余量 α \\alpha 可以部分补偿这种差异，但它是一个全局常数，而非根据各层预测的置信度进行自适应调整。"
+    },
+    {
+     "en": "Future work could explore confidence-aware margins or calibration of token estimates.",
+     "zh": "未来的研究可以探索基于置信度的余量设定，或对词元估算值进行校准。"
+    }
+   ]
+  },
+  {
+   "en": "Predicted output tokens are a practical proxy mainly for LLM-generation-dominated workflows and do not directly capture latency from tool execution, retrieval, environment interaction, or external API calls. These costs can vary substantially with network conditions, server load, caching, and retries, making them difficult to estimate reliably before execution. Although context inheritance can avoid some duplicated calls by allowing workers to reuse tool and retrieval results obtained during planning, it cannot eliminate task-specific external operations. Future work could incorporate environment-specific latency models or online runtime measurements into the scheduling criterion.",
+   "zh": "预测的输出标记主要适用于以 LLM 生成为主导的工作流程，是一种实用的替代指标，但它们并未直接反映工具执行、信息检索、环境交互或外部 API 调用所产生的延迟。 这些成本会因网络状况、服务器负载、缓存机制和重试次数而显著变化，因此在执行前难以可靠地估算。 尽管上下文继承可以通过允许工作单元复用规划阶段获得的工具和检索结果来避免部分重复调用，但它无法消除任务特定的外部操作。 未来的研究可以将特定环境的延迟模型或在线运行时测量数据纳入调度标准中。",
+   "sents": [
+    {
+     "en": "Predicted output tokens are a practical proxy mainly for LLM-generation-dominated workflows and do not directly capture latency from tool execution, retrieval, environment interaction, or external API calls.",
+     "zh": "预测的输出标记主要适用于以 LLM 生成为主导的工作流程，是一种实用的替代指标，但它们并未直接反映工具执行、信息检索、环境交互或外部 API 调用所产生的延迟。"
+    },
+    {
+     "en": "These costs can vary substantially with network conditions, server load, caching, and retries, making them difficult to estimate reliably before execution.",
+     "zh": "这些成本会因网络状况、服务器负载、缓存机制和重试次数而显著变化，因此在执行前难以可靠地估算。"
+    },
+    {
+     "en": "Although context inheritance can avoid some duplicated calls by allowing workers to reuse tool and retrieval results obtained during planning, it cannot eliminate task-specific external operations.",
+     "zh": "尽管上下文继承可以通过允许工作单元复用规划阶段获得的工具和检索结果来避免部分重复调用，但它无法消除任务特定的外部操作。"
+    },
+    {
+     "en": "Future work could incorporate environment-specific latency models or online runtime measurements into the scheduling criterion.",
+     "zh": "未来的研究可以将特定环境的延迟模型或在线运行时测量数据纳入调度标准中。"
+    }
+   ]
+  },
+  {
+   "en": "The cost inequality operates at the DAG layer level: all tasks within a layer receive the same parallel/serial decision. This may miss opportunities when a layer contains a mix of large and small tasks that would benefit from different treatment. The current implementation partially addresses this via a threshold that forces small tasks ( < < 3000 estimated tokens) into serial mode, but a finer-grained per-task decision mechanism could improve efficiency.",
+   "zh": "成本不平等性在 DAG 层级别上起作用：同一层内的所有任务都会得到相同的并行/串行决策。 当一个层同时包含大型和小型任务，而这些任务本可以通过不同处理方式获益时，这种做法可能会错失机会。 当前实现通过一个阈值部分解决了这个问题，该阈值会将小型任务（< < 3000 个预估词元）强制进入串行模式，但一种更精细的按任务决策机制或许能提高效率。",
+   "sents": [
+    {
+     "en": "The cost inequality operates at the DAG layer level: all tasks within a layer receive the same parallel/serial decision.",
+     "zh": "成本不平等性在 DAG 层级别上起作用：同一层内的所有任务都会得到相同的并行/串行决策。"
+    },
+    {
+     "en": "This may miss opportunities when a layer contains a mix of large and small tasks that would benefit from different treatment.",
+     "zh": "当一个层同时包含大型和小型任务，而这些任务本可以通过不同处理方式获益时，这种做法可能会错失机会。"
+    },
+    {
+     "en": "The current implementation partially addresses this via a threshold that forces small tasks ( < < 3000 estimated tokens) into serial mode, but a finer-grained per-task decision mechanism could improve efficiency.",
+     "zh": "当前实现通过一个阈值部分解决了这个问题，该阈值会将小型任务（< < 3000 个预估词元）强制进入串行模式，但一种更精细的按任务决策机制或许能提高效率。"
+    }
+   ]
+  },
+  {
+   "en": "This work proposes a scheduling strategy for coordinating existing LLM agents. It does not introduce new model capabilities, training procedures, or datasets. We do not foresee direct negative societal impacts beyond those already inherent in the underlying LLMs.",
+   "zh": "这项工作提出了一种调度策略，用于协调现有的 LLM 智能体。 它并未引入新的模型能力、训练流程或数据集。 我们预计除了底层 LLM 本身已具备的影响外，不会带来直接的负面社会影响。",
+   "sents": [
+    {
+     "en": "This work proposes a scheduling strategy for coordinating existing LLM agents.",
+     "zh": "这项工作提出了一种调度策略，用于协调现有的 LLM 智能体。"
+    },
+    {
+     "en": "It does not introduce new model capabilities, training procedures, or datasets.",
+     "zh": "它并未引入新的模型能力、训练流程或数据集。"
+    },
+    {
+     "en": "We do not foresee direct negative societal impacts beyond those already inherent in the underlying LLMs.",
+     "zh": "我们预计除了底层 LLM 本身已具备的影响外，不会带来直接的负面社会影响。"
+    }
+   ]
+  },
+  {
+   "en": "Future work could extend SquidAgent along three directions. First, adaptive scheduling and dependency modeling could improve decisions as worker capabilities and task relationships change. Cost estimates could be recalibrated during model adaptation [ Huang et al., 2025 , Cai and Sugiyama, 2026 , Li et al., 2026a , Wang et al., 2026a ] , while causal discovery and effect identifiability [ Li et al., 2025 , Li and Liu, 2025 , Li et al., 2026b ] , together with causal reasoning and failure tracing [ Lin⁢ et al., 2026b , Lin⁢ et al., 2026a , Zhu et al., 2026c ] , could inform investigations of hidden dependencies and error propagation across workers. This would require additional validation, since the current DAG represents execution dependencies rather than identified causal effects. Second, trustworthy execution and information management could be integrated into the scheduling objective. Relevant mechanisms include quality checks for unreliable feedback [ Cai et al., 2025 , Chen et al., 2026b , Huang et al., 2026e ] and misleading visual inputs [ Chen et al., 2026a ] , safeguards against unsafe execution [ Wu et al., 2026 ] and privacy leakage or unauthorized content reuse [ Xiang et al., 2026 , Huang et al., 2026b ] , and controls for knowledge retention [ Huang et al., 2026c ] and long-term memory attribution [ Zhang et al., 2026b ] . Their computational overhead should be included when deciding whether parallelization is worthwhile. Third, cross-domain evaluation could test whether these scheduling principles generalize to interaction and content generation, including dialogue and selling [ Gao et al., 2025 , Gao et al., 2024 , Su et al., 2026 ] and image and game generation [ Chen et al., 2025 , Huang et al., 2026a ] . Further evaluation could cover clinical and driving workflows [ Zhu et al., 2026a , Hu, 2026 , Zhu et al., 2025 , Zhu et al., 2026b , Huang et al., 2026f ] , as well as security analytics and delay-sensitive financial prediction [ Wang et al., 2026c , Ma et al., 2026 , You et al., 2026 ] . Such evaluations should examine latency, quality, and robustness jointly rather than assume that gains on the current tasks transfer directly.",
+   "zh": "未来的工作可以从三个方向扩展 SquidAgent。 首先，自适应调度和依赖建模可以在工作者能力和任务关系发生变化时改进决策。 在模型适应过程中可以重新校准成本估算 [ Huang et al., 2025 , Cai and Sugiyama, 2026 , Li et al., 2026a , Wang et al., 2026a ]，同时因果发现与效应可识别性 [ Li et al., 2025 , Li and Liu, 2025 , Li et al., 2026b ]，以及因果推理与故障追溯 [ Lin⁢ et al., 2026b , Lin⁢ et al., 2026a , Zhu et al., 2026c ]，可以为研究工作者之间的隐藏依赖和错误传播提供依据。 这将需要额外的验证，因为当前的 DAG 表示的是执行依赖关系，而非已识别的因果效应。 其次，可以将可信执行和信息管理整合到调度目标中。 相关机制包括对不可靠反馈的质量检查 [ Cai et al., 2025 , Chen et al., 2026b , Huang et al., 2026e ] 和对误导性视觉输入的处理 [ Chen et al., 2026a ]，防止不安全执行的保障措施 [ Wu et al., 2026 ]，以及防范隐私泄露或未经授权的内容重用 [ Xiang et al., 2026 , Huang et al., 2026b ]，还有知识保留控制 [ Huang et al., 2026c ] 和长期记忆归因控制 [ Zhang et al., 2026b ]。 在判断并行化是否值得时，应将它们的计算开销考虑在内。 第三，跨域评估可以检验这些调度原则是否能推广到交互和内容生成领域，包括对话和销售 [ Gao et al., 2025 , Gao et al., 2024 , Su et al., 2026 ]，以及图像和游戏生成 [ Chen et al., 2025 , Huang et al., 2026a ]。 进一步的评估可以涵盖临床和驾驶工作流程 [ Zhu et al., 2026a , Hu, 2026 , Zhu et al., 2025 , Zhu et al., 2026b , Huang et al., 2026f ]，以及安全分析和对延迟敏感的金融预测 [ Wang et al., 2026c , Ma et al., 2026 , You et al., 2026 ]。 此类评估应同时考察延迟、质量和鲁棒性，而不是假设当前任务上的改进能直接迁移到其他任务中。",
+   "sents": [
+    {
+     "en": "Future work could extend SquidAgent along three directions.",
+     "zh": "未来的工作可以从三个方向扩展 SquidAgent。"
+    },
+    {
+     "en": "First, adaptive scheduling and dependency modeling could improve decisions as worker capabilities and task relationships change.",
+     "zh": "首先，自适应调度和依赖建模可以在工作者能力和任务关系发生变化时改进决策。"
+    },
+    {
+     "en": "Cost estimates could be recalibrated during model adaptation [ Huang et al., 2025 , Cai and Sugiyama, 2026 , Li et al., 2026a , Wang et al., 2026a ] , while causal discovery and effect identifiability [ Li et al., 2025 , Li and Liu, 2025 , Li et al., 2026b ] , together with causal reasoning and failure tracing [ Lin⁢ et al., 2026b , Lin⁢ et al., 2026a , Zhu et al., 2026c ] , could inform investigations of hidden dependencies and error propagation across workers.",
+     "zh": "在模型适应过程中可以重新校准成本估算 [ Huang et al., 2025 , Cai and Sugiyama, 2026 , Li et al., 2026a , Wang et al., 2026a ]，同时因果发现与效应可识别性 [ Li et al., 2025 , Li and Liu, 2025 , Li et al., 2026b ]，以及因果推理与故障追溯 [ Lin⁢ et al., 2026b , Lin⁢ et al., 2026a , Zhu et al., 2026c ]，可以为研究工作者之间的隐藏依赖和错误传播提供依据。"
+    },
+    {
+     "en": "This would require additional validation, since the current DAG represents execution dependencies rather than identified causal effects.",
+     "zh": "这将需要额外的验证，因为当前的 DAG 表示的是执行依赖关系，而非已识别的因果效应。"
+    },
+    {
+     "en": "Second, trustworthy execution and information management could be integrated into the scheduling objective.",
+     "zh": "其次，可以将可信执行和信息管理整合到调度目标中。"
+    },
+    {
+     "en": "Relevant mechanisms include quality checks for unreliable feedback [ Cai et al., 2025 , Chen et al., 2026b , Huang et al., 2026e ] and misleading visual inputs [ Chen et al., 2026a ] , safeguards against unsafe execution [ Wu et al., 2026 ] and privacy leakage or unauthorized content reuse [ Xiang et al., 2026 , Huang et al., 2026b ] , and controls for knowledge retention [ Huang et al., 2026c ] and long-term memory attribution [ Zhang et al., 2026b ] .",
+     "zh": "相关机制包括对不可靠反馈的质量检查 [ Cai et al., 2025 , Chen et al., 2026b , Huang et al., 2026e ] 和对误导性视觉输入的处理 [ Chen et al., 2026a ]，防止不安全执行的保障措施 [ Wu et al., 2026 ]，以及防范隐私泄露或未经授权的内容重用 [ Xiang et al., 2026 , Huang et al., 2026b ]，还有知识保留控制 [ Huang et al., 2026c ] 和长期记忆归因控制 [ Zhang et al., 2026b ]。"
+    },
+    {
+     "en": "Their computational overhead should be included when deciding whether parallelization is worthwhile.",
+     "zh": "在判断并行化是否值得时，应将它们的计算开销考虑在内。"
+    },
+    {
+     "en": "Third, cross-domain evaluation could test whether these scheduling principles generalize to interaction and content generation, including dialogue and selling [ Gao et al., 2025 , Gao et al., 2024 , Su et al., 2026 ] and image and game generation [ Chen et al., 2025 , Huang et al., 2026a ] .",
+     "zh": "第三，跨域评估可以检验这些调度原则是否能推广到交互和内容生成领域，包括对话和销售 [ Gao et al., 2025 , Gao et al., 2024 , Su et al., 2026 ]，以及图像和游戏生成 [ Chen et al., 2025 , Huang et al., 2026a ]。"
+    },
+    {
+     "en": "Further evaluation could cover clinical and driving workflows [ Zhu et al., 2026a , Hu, 2026 , Zhu et al., 2025 , Zhu et al., 2026b , Huang et al., 2026f ] , as well as security analytics and delay-sensitive financial prediction [ Wang et al., 2026c , Ma et al., 2026 , You et al., 2026 ] .",
+     "zh": "进一步的评估可以涵盖临床和驾驶工作流程 [ Zhu et al., 2026a , Hu, 2026 , Zhu et al., 2025 , Zhu et al., 2026b , Huang et al., 2026f ]，以及安全分析和对延迟敏感的金融预测 [ Wang et al., 2026c , Ma et al., 2026 , You et al., 2026 ]。"
+    },
+    {
+     "en": "Such evaluations should examine latency, quality, and robustness jointly rather than assume that gains on the current tasks transfer directly.",
+     "zh": "此类评估应同时考察延迟、质量和鲁棒性，而不是假设当前任务上的改进能直接迁移到其他任务中。"
+    }
+   ]
+  },
+  {
+   "en": "Each task has a task-specific rubric organized into three tiers:",
+   "zh": "每个任务都有一个专门的任务评分标准，分为三个层级：",
+   "sents": null
+  },
+  {
+   "en": "Tier 1 — Task Compliance (Hard Gate): Each item maps directly to a requirement in the benchmark prompt. If any Tier 1 item is NO, the output is marked “not acceptable.” Items include required files, features, algorithms, and a deliverability check (correct file structure, runs/renders without errors).",
+   "zh": "第一层级 — 任务合规性（硬性标准）：每个项目都直接对应基准提示中的一个要求。 如果任何第一层级项目为“否”，则输出将被标记为“不可接受”。这些项目包括必需的文件、功能、算法以及交付性检查（正确的文件结构，能够无错误地运行/渲染）。",
+   "sents": [
+    {
+     "en": "Tier 1 — Task Compliance (Hard Gate): Each item maps directly to a requirement in the benchmark prompt.",
+     "zh": "第一层级 — 任务合规性（硬性标准）：每个项目都直接对应基准提示中的一个要求。"
+    },
+    {
+     "en": "If any Tier 1 item is NO, the output is marked “not acceptable.” Items include required files, features, algorithms, and a deliverability check (correct file structure, runs/renders without errors).",
+     "zh": "如果任何第一层级项目为“否”，则输出将被标记为“不可接受”。这些项目包括必需的文件、功能、算法以及交付性检查（正确的文件结构，能够无错误地运行/渲染）。"
+    }
+   ]
+  },
+  {
+   "en": "Tier 2 — Domain-Specific Correctness: Deeper checks on implementation quality, algorithmic correctness, cross-reference accuracy, and notation consistency.",
+   "zh": "第二级 — 领域特定正确性：对实现质量、算法正确性、交叉引用准确性以及符号一致性进行更深入的检查。",
+   "sents": null
+  },
+  {
+   "en": "Tier 3 — Quality and Polish: Nice-to-have quality indicators such as responsive design, color schemes, benchmark modes, and documentation completeness.",
+   "zh": "第三级 — 质量与完善度：锦上添花的质量指标，例如响应式设计、配色方案、基准模式以及文档的完整性。",
+   "sents": null
+  },
+  {
+   "en": "Each item is scored binary YES (fully met with concrete evidence) or NO (anything less). Claude Opus 4.6 reads the actual output files and provides specific evidence for each judgment. Total items per benchmark range from 21 to 37.",
+   "zh": "每个项目都以二元方式评分：是（有具体证据表明完全满足）或否（任何低于此标准的情况）。 Claude Opus 4.6 会读取实际的输出文件，并为每个判断提供具体证据。 每个基准测试的项目总数在 21 到 37 个之间。",
+   "sents": [
+    {
+     "en": "Each item is scored binary YES (fully met with concrete evidence) or NO (anything less).",
+     "zh": "每个项目都以二元方式评分：是（有具体证据表明完全满足）或否（任何低于此标准的情况）。"
+    },
+    {
+     "en": "Claude Opus 4.6 reads the actual output files and provides specific evidence for each judgment.",
+     "zh": "Claude Opus 4.6 会读取实际的输出文件，并为每个判断提供具体证据。"
+    },
+    {
+     "en": "Total items per benchmark range from 21 to 37.",
+     "zh": "每个基准测试的项目总数在 21 到 37 个之间。"
+    }
+   ]
+  }
+ ]
+}
