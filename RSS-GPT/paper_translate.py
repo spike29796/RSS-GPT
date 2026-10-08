@@ -430,10 +430,15 @@ def gather_paragraphs(entry, log):
 # ---------------------------------------------------------------- 条目处理
 
 def load_existing(path):
-    """读已生成的 json，返回 {en_hash: (zh, sents)} —— 段级增量用。
+    """读已生成的 json，返回 {en_hash: (zh, sents, has_sents)} —— 段级增量用。
 
     sents 也要一起缓存：--force 重跑时若只捞回 zh，句级对照就白跑了，
     整篇会退化成旧的点开看中文。
+
+    has_sents 区分两种情况：
+      False —— 这篇 json 出自句级改造之前，段里根本没有 sents 字段，
+               必须重跑才能补上句级对照；
+      True  —— 有字段，sents 是脚本自己的结论（None = 这段切不了），直接复用。
     """
     try:
         with open(path, encoding='utf-8') as f:
@@ -445,7 +450,7 @@ def load_existing(path):
         en = p.get('en')
         zh = p.get('zh')
         if en and zh:
-            out[para_key(en)] = (zh, p.get('sents'))
+            out[para_key(en)] = (zh, p.get('sents'), 'sents' in p)
     return out
 
 
@@ -468,7 +473,7 @@ def process_entry(entry, source, args, log):
     rows, reused, translated, failed = [], 0, 0, 0
     for en in paragraphs:
         cached = cache.get(para_key(en))
-        if cached and cached[0]:
+        if cached and cached[0] and cached[2]:
             zh, sents = cached[0], cached[1]
             reused += 1
         else:
