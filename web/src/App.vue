@@ -502,12 +502,6 @@ function clearMarks() {
       </div>
     </template>
 
-    <footer class="footer">
-      <span>RSS 订阅：</span>
-      <a v-for="s in SOURCES" :key="s.name" :href="`${s.name}.xml`">{{ s.label }}</a>
-      <a href="feeds.html">全部源</a>
-    </footer>
-
     <!-- T-037：B站视频就地播放遮罩（fixed，不受布局影响） -->
     <PlayerOverlay v-if="playerBvid" :bvid="playerBvid" @close="closePlayer" />
     </div>
