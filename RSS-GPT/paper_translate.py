@@ -535,8 +535,17 @@ def process_entry(entry, source, args, log):
         'paragraphs': rows,
     }
     os.makedirs(PAPER_DIR, exist_ok=True)
-    with open(out_path, 'w', encoding='utf-8') as f:
+    # 2026-10-10：原子写。原来直接 open(out_path,'w') —— 那一刻原文件就被清空，
+    # 之后 json.dump 才一段段填。进程若在填的过程中被杀（空闲任务随时会被
+    # 「用户回来」打断），磁盘上留一个半截 JSON；而「文件存在 = 已翻」的判据
+    # 会让它永久跳过，页面上残篇且查不出原因。改成先写 .tmp 再 os.replace，
+    # 半截只可能烂在 .tmp 里，正式文件要么旧要么新。
+    tmp_path = out_path + '.tmp'
+    with open(tmp_path, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp_path, out_path)
     return 'ok', {
         'id': pid, 'paras': len(rows), 'translated': translated,
         'reused': reused, 'failed': failed, 'path': out_path,

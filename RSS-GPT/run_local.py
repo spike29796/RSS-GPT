@@ -59,6 +59,10 @@ def main():
     py = f'"{sys.executable}"'
     run(f"{py} main.py")
     run(f"{py} bilibili_collect.py")
+    # 2026-10-10：接上论文双语阅读页的译文预生成。不加 --force，
+    # 已翻的条目整条跳过 → 天然增量（不留存量回填）。--limit 卡单轮时长，
+    # 07:00 翻译服务停之前跑多少算多少；跑不完下次续，段级缓存不白跑。
+    run(f"{py} paper_translate.py --limit 20")
 
     run("git add docs/", check=False)
     msg = datetime.datetime.now().strftime("Auto Build at %Y-%m-%d %H:%M")
