@@ -769,7 +769,10 @@ def output(sec, language):
 #                entry.published = parse(entry.published).strftime('%a, %d %b %Y %H:%M:%S %z')
 
             cnt += 1
-            if cnt > max_items:
+            # max_items == 0 means "no cap": summarize every new entry.
+            # (Before 2026-10-09 the guard was `cnt > max_items`, so 0 meant
+            # "summarize nothing" — the opposite of what the config implies.)
+            if max_items and cnt > max_items:
                 entry.summary = None
             elif OPENAI_API_KEY and (llm_deadline is None or datetime.datetime.now().timestamp() <= llm_deadline):
                 # Also gated by the time budget: new items missed today are
@@ -935,9 +938,11 @@ def output(sec, language):
                 if entry_complete(record):
                     continue
                 published = parse_published(record.get('published'))
-                if published is None:
-                    continue
-                if (now - published).days > backfill_days:
+                # 2026-10-09：原来这里把「无日期」和「超窗口」的条目直接
+                # continue 掉，等于永久放弃 —— 裸条永远补不上。
+                # 现在无日期（github-trending 这类 feed 不带日期）照样入队；
+                # 只有「有日期且超出窗口」才跳过。
+                if published is not None and (now - published).days > backfill_days:
                     continue
                 candidates.append((record, record_article(record)))
 
