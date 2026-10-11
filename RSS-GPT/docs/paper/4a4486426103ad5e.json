@@ -1,0 +1,1564 @@
+{
+ "id": "4a4486426103ad5e",
+ "source": "arxiv-agent",
+ "link": "https://arxiv.org/abs/2610.10071v1",
+ "title": "HGP:An on-device personalized agent memory via hybrid graph storage",
+ "title_zh": "<HGP",
+ "published": "2026-10-07T13:37:38Z",
+ "translated_at": "2026-10-11T06:41:10Z",
+ "paragraphs": [
+  {
+   "en": "LLM-based agents face challenges in personalized interactive tasks due to heterogeneous, multi-typed, and implicitly constrained long-term traces. Existing memory mechanisms struggle with accurate routing and retrieval, especially on-device where personalization is critical. Most methods use single-vector representations, blurring type distinctions and relational structure. We propose HGP , a hybrid graph memory framework. HGP employs a lightweight self-enhancement classifier for personalized memory routing and constructs episodic, semantic, and procedural memories as graphs. It also extracts working memory as a state trajectory to capture current state and implicit constraints, ensuring reliable decision-making. The classifier reduces large-model calls, enabling on-device deployment, while graph storage enables accurate retrieval and incremental user profile refinement. Experiments on two benchmarks show that on PAL-Set solution selection, HGP achieves an S-score of 35.58, nearly 7 points above the strongest baseline. Code and data are at https://github.com/Ouan6/HGP-.git .",
+   "zh": "基于大型语言模型（LLM）的智能体在个性化交互任务中面临挑战，因为这些任务涉及异构、多类型且存在隐式约束的长期痕迹。 现有的记忆机制难以实现精准的路线选择与检索，尤其是在设备端，而个性化正是设备端的关键需求。 大多数方法采用单向量表示方式，导致类型差异和关系结构变得模糊不清。 我们提出了 HGP——一种混合图记忆框架。 HGP 采用轻量级的自增强分类器实现个性化记忆路线选择，并将情景性、语义性和程序性记忆构建为图结构。 该框架还将工作记忆提取为状态轨迹，以捕捉当前状态和隐式约束，从而确保决策的可靠性。 分类器减少了大模型调用次数，支持设备端部署；而图存储结构则实现了精准检索和用户画像的增量式优化。 在两个基准数据集上的实验表明，在 PAL-Set 解决方案选择任务中，HGP 的 S-score 达到 35.58，比最强的基线模型高出近 7 分。 代码和数据请访问 https://github.com/Ouan6/HGP-.git 。",
+   "sents": [
+    {
+     "en": "LLM-based agents face challenges in personalized interactive tasks due to heterogeneous, multi-typed, and implicitly constrained long-term traces.",
+     "zh": "基于大型语言模型（LLM）的智能体在个性化交互任务中面临挑战，因为这些任务涉及异构、多类型且存在隐式约束的长期痕迹。"
+    },
+    {
+     "en": "Existing memory mechanisms struggle with accurate routing and retrieval, especially on-device where personalization is critical.",
+     "zh": "现有的记忆机制难以实现精准的路线选择与检索，尤其是在设备端，而个性化正是设备端的关键需求。"
+    },
+    {
+     "en": "Most methods use single-vector representations, blurring type distinctions and relational structure.",
+     "zh": "大多数方法采用单向量表示方式，导致类型差异和关系结构变得模糊不清。"
+    },
+    {
+     "en": "We propose HGP , a hybrid graph memory framework.",
+     "zh": "我们提出了 HGP——一种混合图记忆框架。"
+    },
+    {
+     "en": "HGP employs a lightweight self-enhancement classifier for personalized memory routing and constructs episodic, semantic, and procedural memories as graphs.",
+     "zh": "HGP 采用轻量级的自增强分类器实现个性化记忆路线选择，并将情景性、语义性和程序性记忆构建为图结构。"
+    },
+    {
+     "en": "It also extracts working memory as a state trajectory to capture current state and implicit constraints, ensuring reliable decision-making.",
+     "zh": "该框架还将工作记忆提取为状态轨迹，以捕捉当前状态和隐式约束，从而确保决策的可靠性。"
+    },
+    {
+     "en": "The classifier reduces large-model calls, enabling on-device deployment, while graph storage enables accurate retrieval and incremental user profile refinement.",
+     "zh": "分类器减少了大模型调用次数，支持设备端部署；而图存储结构则实现了精准检索和用户画像的增量式优化。"
+    },
+    {
+     "en": "Experiments on two benchmarks show that on PAL-Set solution selection, HGP achieves an S-score of 35.58, nearly 7 points above the strongest baseline.",
+     "zh": "在两个基准数据集上的实验表明，在 PAL-Set 解决方案选择任务中，HGP 的 S-score 达到 35.58，比最强的基线模型高出近 7 分。"
+    },
+    {
+     "en": "Code and data are at https://github.com/Ouan6/HGP-.git .",
+     "zh": "代码和数据请访问 https://github.com/Ouan6/HGP-.git 。"
+    }
+   ]
+  },
+  {
+   "en": "LLM(Large Language Models)-based agents are increasingly deployed in personalized interactive tasks, such as long-term conversational companionship and constraint-aware task planning Yao et al. (2023) ; Park et al. (2023) . These applications require the agent to access user-related information across turns and generate responses that align with a specific user’s preferences and constraints Zhong et al. (2023) ; Packer et al. (2024) . To compensate for limited context windows and unreliable long-context recall, external memory modules have been widely adopted Lewis et al. (2021) ; Zhao et al. (2024) ; Fan et al. (2024) . Most agent memory systems adopt a unified memory pool, compress each memory item into a single-vector representation, retrieve by semantic similarity, and then concatenate retrieved snippets to support generation Lewis et al. (2021) ; Zhong et al. (2023) . However, such flat memory designs often blur distinctions among memory types and relational structure, which are critical for personalized retrieval and decision making. Robust personalization demands continuously summarizing interaction experience, distilling user preferences and behavioral habits, and reliably activating such signals in subsequent decisions. These capabilities are essential for maintaining consistent user-specific behavior over long interactions Park et al. (2023) ; Liu et al. (2023) . Moreover, a critical but underexplored bottleneck is personalized memory routing: dynamically assigning incoming interaction traces to the appropriate memory type. In practice, histories contain heterogeneous signals (events, profiles, strategies, and actionable states) Atkinson and Shiffrin (1968) ; Tulving (1972) ; Baddeley and Hitch (1974) ; Squire (1992) , and inaccurate routing stores information in the wrong memory type, causing cascading retrieval errors Xu et al. (2025) .",
+   "zh": "基于大型语言模型（LLM）的智能体正越来越多地应用于个性化交互任务，例如长期对话陪伴和考虑约束条件的任务规划 Yao et al. (2023) ; Park et al. (2023) 。 这些应用要求智能体跨轮次访问用户相关信息，并生成与特定用户偏好和约束条件相符的回应 Zhong et al. (2023) ; Packer et al. (2024) 。 为弥补上下文窗口有限以及长期上下文回忆不可靠的问题，外部记忆模块已被广泛采用 Lewis et al. (2021) ; Zhao et al. (2024) ; Fan et al. (2024) 。 大多数智能体记忆系统采用统一的记忆池，将每个记忆项压缩为单向量表示，通过语义相似度进行检索，然后将检索到的片段拼接起来以支持生成 Lewis et al. (2021) ; Zhong et al. (2023) 。 然而，这类扁平化的记忆设计常常模糊了不同记忆类型和关系结构之间的区别，而这些区别对于个性化检索和决策至关重要。 实现稳健的个性化需要持续总结交互经验、提炼用户偏好和行为习惯，并在后续决策中可靠地激活这些信号。 这些能力对于在长期交互中维持一致的用户特定行为至关重要 Park et al. (2023) ; Liu et al. (2023) 。 此外，一个关键但尚未充分研究的瓶颈是个性化记忆路由：即动态地将传入的交互痕迹分配给适当的记忆类型。 在实践中，历史记录包含异构信号（事件、个人资料、策略和可执行状态） Atkinson and Shiffrin (1968) ; Tulving (1972) ; Baddeley and Hitch (1974) ; Squire (1992) ，而不准确的记忆路由会将信息存储到错误的记忆类型中，从而引发连锁式检索错误 Xu et al. (2025) 。",
+   "sents": [
+    {
+     "en": "LLM(Large Language Models)-based agents are increasingly deployed in personalized interactive tasks, such as long-term conversational companionship and constraint-aware task planning Yao et al. (2023) ; Park et al. (2023) .",
+     "zh": "基于大型语言模型（LLM）的智能体正越来越多地应用于个性化交互任务，例如长期对话陪伴和考虑约束条件的任务规划 Yao et al. (2023) ; Park et al. (2023) 。"
+    },
+    {
+     "en": "These applications require the agent to access user-related information across turns and generate responses that align with a specific user’s preferences and constraints Zhong et al. (2023) ; Packer et al. (2024) .",
+     "zh": "这些应用要求智能体跨轮次访问用户相关信息，并生成与特定用户偏好和约束条件相符的回应 Zhong et al. (2023) ; Packer et al. (2024) 。"
+    },
+    {
+     "en": "To compensate for limited context windows and unreliable long-context recall, external memory modules have been widely adopted Lewis et al. (2021) ; Zhao et al. (2024) ; Fan et al. (2024) .",
+     "zh": "为弥补上下文窗口有限以及长期上下文回忆不可靠的问题，外部记忆模块已被广泛采用 Lewis et al. (2021) ; Zhao et al. (2024) ; Fan et al. (2024) 。"
+    },
+    {
+     "en": "Most agent memory systems adopt a unified memory pool, compress each memory item into a single-vector representation, retrieve by semantic similarity, and then concatenate retrieved snippets to support generation Lewis et al. (2021) ; Zhong et al. (2023) .",
+     "zh": "大多数智能体记忆系统采用统一的记忆池，将每个记忆项压缩为单向量表示，通过语义相似度进行检索，然后将检索到的片段拼接起来以支持生成 Lewis et al. (2021) ; Zhong et al. (2023) 。"
+    },
+    {
+     "en": "However, such flat memory designs often blur distinctions among memory types and relational structure, which are critical for personalized retrieval and decision making.",
+     "zh": "然而，这类扁平化的记忆设计常常模糊了不同记忆类型和关系结构之间的区别，而这些区别对于个性化检索和决策至关重要。"
+    },
+    {
+     "en": "Robust personalization demands continuously summarizing interaction experience, distilling user preferences and behavioral habits, and reliably activating such signals in subsequent decisions.",
+     "zh": "实现稳健的个性化需要持续总结交互经验、提炼用户偏好和行为习惯，并在后续决策中可靠地激活这些信号。"
+    },
+    {
+     "en": "These capabilities are essential for maintaining consistent user-specific behavior over long interactions Park et al. (2023) ; Liu et al. (2023) .",
+     "zh": "这些能力对于在长期交互中维持一致的用户特定行为至关重要 Park et al. (2023) ; Liu et al. (2023) 。"
+    },
+    {
+     "en": "Moreover, a critical but underexplored bottleneck is personalized memory routing: dynamically assigning incoming interaction traces to the appropriate memory type.",
+     "zh": "此外，一个关键但尚未充分研究的瓶颈是个性化记忆路由：即动态地将传入的交互痕迹分配给适当的记忆类型。"
+    },
+    {
+     "en": "In practice, histories contain heterogeneous signals (events, profiles, strategies, and actionable states) Atkinson and Shiffrin (1968) ; Tulving (1972) ; Baddeley and Hitch (1974) ; Squire (1992) , and inaccurate routing stores information in the wrong memory type, causing cascading retrieval errors Xu et al. (2025) .",
+     "zh": "在实践中，历史记录包含异构信号（事件、个人资料、策略和可执行状态） Atkinson and Shiffrin (1968) ; Tulving (1972) ; Baddeley and Hitch (1974) ; Squire (1992) ，而不准确的记忆路由会将信息存储到错误的记忆类型中，从而引发连锁式检索错误 Xu et al. (2025) 。"
+    }
+   ]
+  },
+  {
+   "en": "Personalized memory framework is needed. We argue that achieving personalization requires a memory system with two key properties: (a) enabling personalized memory routing with low supervision cost; and (b) explicitly modeling heterogeneous memory types and their relations. First, personalized routing is important because memory distributions vary across users, making it difficult to rely solely on a fixed general-purpose classifier. Given the cost of repeatedly invoking LLMs during online interaction, especially in on-device contexts, a lightweight routing mechanism that amortizes supervisory cost over time becomes essential. In our setting, on-device operation refers to latency-critical online routing and retrieval on a local device, while graph construction and classifier updates are performed asynchronously. Second, an explicit modeling of memory heterogeneity is required: heterogeneous memory types must not be collapsed into a uniform vector space, but should instead retain their distinct attributes and interrelations through structured representations to facilitate retrieval.",
+   "zh": "需要一种个性化的记忆框架。 我们认为，实现个性化需要一个具备两个关键特性的记忆系统：(a) 以较低的监督成本实现个性化记忆路由；以及 (b) 显式地建模异构记忆类型及其关系。 首先，个性化路由至关重要，因为不同用户的记忆分布存在差异，因此仅依赖固定的通用分类器会面临困难。 考虑到在线交互过程中反复调用大语言模型（LLM）的成本，尤其是在本地设备环境中，一种能够随时间摊销监督成本的轻量级路由机制变得不可或缺。 在我们的设定中，本地设备操作指的是在本地设备上执行对延迟敏感的在线路由和检索，而图构建和分类器更新则以异步方式执行。 其次，必须显式地建模记忆的异构性：异构记忆类型不应被压缩为统一的向量空间，而应通过结构化表示保留其独特的属性和相互关系，以方便检索。",
+   "sents": [
+    {
+     "en": "Personalized memory framework is needed.",
+     "zh": "需要一种个性化的记忆框架。"
+    },
+    {
+     "en": "We argue that achieving personalization requires a memory system with two key properties: (a) enabling personalized memory routing with low supervision cost; and (b) explicitly modeling heterogeneous memory types and their relations.",
+     "zh": "我们认为，实现个性化需要一个具备两个关键特性的记忆系统：(a) 以较低的监督成本实现个性化记忆路由；以及 (b) 显式地建模异构记忆类型及其关系。"
+    },
+    {
+     "en": "First, personalized routing is important because memory distributions vary across users, making it difficult to rely solely on a fixed general-purpose classifier.",
+     "zh": "首先，个性化路由至关重要，因为不同用户的记忆分布存在差异，因此仅依赖固定的通用分类器会面临困难。"
+    },
+    {
+     "en": "Given the cost of repeatedly invoking LLMs during online interaction, especially in on-device contexts, a lightweight routing mechanism that amortizes supervisory cost over time becomes essential.",
+     "zh": "考虑到在线交互过程中反复调用大语言模型（LLM）的成本，尤其是在本地设备环境中，一种能够随时间摊销监督成本的轻量级路由机制变得不可或缺。"
+    },
+    {
+     "en": "In our setting, on-device operation refers to latency-critical online routing and retrieval on a local device, while graph construction and classifier updates are performed asynchronously.",
+     "zh": "在我们的设定中，本地设备操作指的是在本地设备上执行对延迟敏感的在线路由和检索，而图构建和分类器更新则以异步方式执行。"
+    },
+    {
+     "en": "Second, an explicit modeling of memory heterogeneity is required: heterogeneous memory types must not be collapsed into a uniform vector space, but should instead retain their distinct attributes and interrelations through structured representations to facilitate retrieval.",
+     "zh": "其次，必须显式地建模记忆的异构性：异构记忆类型不应被压缩为统一的向量空间，而应通过结构化表示保留其独特的属性和相互关系，以方便检索。"
+    }
+   ]
+  },
+  {
+   "en": "Presented work. To address these challenges, we propose HGP, a H ybrid G raph P ersonalized memory framework. Our main contributions are summarized as follows:",
+   "zh": "本文介绍的工作。 为应对这些挑战，我们提出了 HGP——一种混合图个性化记忆框架。 我们的主要贡献总结如下：",
+   "sents": [
+    {
+     "en": "Presented work.",
+     "zh": "本文介绍的工作。"
+    },
+    {
+     "en": "To address these challenges, we propose HGP, a H ybrid G raph P ersonalized memory framework.",
+     "zh": "为应对这些挑战，我们提出了 HGP——一种混合图个性化记忆框架。"
+    },
+    {
+     "en": "Our main contributions are summarized as follows:",
+     "zh": "我们的主要贡献总结如下："
+    }
+   ]
+  },
+  {
+   "en": "Framework design. We develop a framework that moves beyond single-vector compression by organizing episodic, semantic, and procedural memories with type-specific graph structures, including event graphs, knowledge graphs, and rule trees . This is augmented by dynamic working memory-state trajectory graphs that capture and preserve implicit contextual constraints.",
+   "zh": "框架设计。 我们开发了一个框架，它超越了单向量压缩的范畴，通过为事件性、语义性和程序性记忆采用类型特定的图结构（包括事件图、知识图和规则树）来组织这些记忆。 此外，动态工作记忆状态轨迹图也对此进行了增强，能够捕捉并保留隐性的上下文约束。",
+   "sents": [
+    {
+     "en": "Framework design.",
+     "zh": "框架设计。"
+    },
+    {
+     "en": "We develop a framework that moves beyond single-vector compression by organizing episodic, semantic, and procedural memories with type-specific graph structures, including event graphs, knowledge graphs, and rule trees .",
+     "zh": "我们开发了一个框架，它超越了单向量压缩的范畴，通过为事件性、语义性和程序性记忆采用类型特定的图结构（包括事件图、知识图和规则树）来组织这些记忆。"
+    },
+    {
+     "en": "This is augmented by dynamic working memory-state trajectory graphs that capture and preserve implicit contextual constraints.",
+     "zh": "此外，动态工作记忆状态轨迹图也对此进行了增强，能够捕捉并保留隐性的上下文约束。"
+    }
+   ]
+  },
+  {
+   "en": "Self-Enhancement Classifier. We propose a confidence-based LLM-assisted annotation policy for personalized memory routing. A lightweight classifier progressively takes over routing decisions, adapts to user-specific memory distributions, and substantially reduces supervision cost by recycling low-confidence LLM annotations as training data.",
+   "zh": "自我增强分类器。 我们提出了一种基于置信度的、由大型语言模型辅助的标注策略，用于实现个性化记忆路由。 一个轻量级分类器会逐步接管路由决策，适应用户特定的记忆分布，并通过将低置信度的大型语言模型标注结果回收为训练数据来显著降低监督成本。",
+   "sents": [
+    {
+     "en": "Self-Enhancement Classifier.",
+     "zh": "自我增强分类器。"
+    },
+    {
+     "en": "We propose a confidence-based LLM-assisted annotation policy for personalized memory routing.",
+     "zh": "我们提出了一种基于置信度的、由大型语言模型辅助的标注策略，用于实现个性化记忆路由。"
+    },
+    {
+     "en": "A lightweight classifier progressively takes over routing decisions, adapts to user-specific memory distributions, and substantially reduces supervision cost by recycling low-confidence LLM annotations as training data.",
+     "zh": "一个轻量级分类器会逐步接管路由决策，适应用户特定的记忆分布，并通过将低置信度的大型语言模型标注结果回收为训练数据来显著降低监督成本。"
+    }
+   ]
+  },
+  {
+   "en": "Empirical validation. We evaluate HGP on LoCoMo Maharana et al. (2024) and PAL-Set Huang et al. (2025) , demonstrating consistent improvements in personalization quality and decision reliability over strong baselines. We also provide a thorough analysis of how working memory improves robustness under implicit constraints.",
+   "zh": "经验验证。我们在 LoCoMo Maharana 等人（2024）和 PAL-Set Huang 等人（2025）上对 HGP 进行了评估，结果表明，与强大的基线方法相比，个性化质量和决策可靠性均得到了显著提升。我们还深入分析了工作记忆如何在隐式约束下提升系统的鲁棒性。",
+   "sents": null
+  },
+  {
+   "en": "One research direction improves model capacity by extending context windows and developing memory-optimized attention mechanisms, thereby enabling training and inference over significantly longer sequences. Representative approaches include sparse-attention models such as Longformer Beltagy et al. (2020) and BigBird Zaheer et al. (2021) , as well as I/O-efficient exact attention methods like FlashAttention Dao et al. (2022) . Key innovations in positional encoding and length extrapolation, such as RoPE, ALiBi, and their derivatives Su et al. (2023) ; Press et al. (2022) ; Ding et al. (2024) , have driven increases in the effective context window of LLM. Representing a complementary strategy to long-context modeling, retrieval augmentation enhances LLMs by coupling them with an external knowledge store, as exemplified by RAG Lewis et al. (2021) , REALM Guu et al. (2020) , and RETRO Borgeaud et al. (2022) . However, increased context capacity does not guarantee effective information utilization. This limitation is evidenced by findings such as “Lost in the Middle” Liu et al. (2023) , which demonstrate that models often access salient information unevenly within long contexts. More critically, even with unbounded context length, both long-context modeling and retrieval augmentation lack the requisite mechanisms for continuously capturing and structuring user-specific interaction patterns, which are essential for genuine personalization.",
+   "zh": "一个研究方向通过扩展上下文窗口和开发内存优化的注意力机制来提升模型容量，从而使得模型能够训练和处理显著更长的序列。代表性方法包括稀疏注意力模型，如 Longformer（Beltagy 等，2020）和 BigBird（Zaheer 等，2021），以及 I/O 高效的精确注意力方法，如 FlashAttention（Dao 等，2022）。位置编码和长度外推方面的关键创新，例如 RoPE、ALiBi 及其衍生方法（Su 等，2023；Press 等，2022；Ding 等，2024），推动了 LLM 有效上下文窗口的扩大。作为长上下文建模的补充策略，检索增强通过将 LLM 与外部知识库耦合来增强其能力，典型例子包括 RAG（Lewis 等，2021）、REALM（Guu 等，2020）和 RETRO（Borgeaud 等，2022）。然而，上下文容量的增加并不保证信息能被有效利用。这一局限性体现在“迷失在中间”（Lost in the Middle）等研究结果中（Liu 等，2023），这些结果表明模型在处理长上下文时往往无法均匀地访问关键信息。更为关键的是，即使上下文长度不受限制，长上下文建模和检索增强都缺乏持续捕捉并结构化用户特定交互模式所需的关键机制，而这些交互模式正是实现真正个性化所必需的。",
+   "sents": null
+  },
+  {
+   "en": "Recent memory frameworks are increasingly adopting graph-based representations, driven by the promise of explicit relational reasoning Sun et al. (2025) ; Li et al. (2025a) . Moving beyond flat similarity search over text chunks, graph-structured memory enables more structured storage and retrieval through explicit modeling of relations among memory units. GraphRAG-style systems Han et al. (2025) ; Zhang et al. (2024b) ; Zhang et al. (2024a) index knowledge as graphs and retrieve query-relevant subgraphs to support multi-hop evidence aggregation. Representative approaches include graph-traversal-based retrieval, such as HippoRAG Gutiérrez et al. (2025) , and hierarchical indexing with structure-aware retrieval, exemplified by LeanRAG Zhang et al. (2025b) and HiRAG Jiao et al. (2025) . Graph-structured memory has also been explored in agentic settings, including G-Memory Zhang et al. (2025a) , G-Refer Li et al. (2025b) , and the concurrent PlugMem Yang et al. (2026) , which organizes agent experiences into structured memory graphs for efficient retrieval. These works are closely related to HGP in moving beyond raw trajectory retrieval and flat memory storage. However, most of them mainly focus on structure-aware retrieval or task-agnostic agent memory, while HGP focuses on personalized agent memory where heterogeneous user traces must be routed into distinct memory types and stored with type-specific graph structures for later personalized retrieval and decision making.",
+   "zh": "近期的记忆框架正越来越多地采用基于图的结构，这源于其对显式关系推理的潜力 Sun et al. (2025) ; Li et al. (2025a) 。 相较于对文本片段进行扁平化的相似性搜索，图结构记忆通过显式建模记忆单元之间的关系，实现了更具结构化的存储与检索。 GraphRAG 风格的系统 Han et al. (2025) ; Zhang et al. (2024b) ; Zhang et al. (2024a) 将知识索引为图，并检索与查询相关的子图，以支持多跳证据聚合。 代表性方法包括基于图遍历的检索，例如 HippoRAG Gutiérrez et al. (2025) ，以及具有结构感知能力的分层索引检索，典型代表是 LeanRAG Zhang et al. (2025b) 和 HiRAG Jiao et al. (2025) 。 图结构记忆也已在智能体场景中得到探索，包括 G-Memory Zhang et al. (2025a) 、G-Refer Li et al. (2025b) ，以及同步提出的 PlugMem Yang et al. (2026) ，该系统将智能体经验组织为结构化的记忆图，以实现高效检索。 这些工作与 HGP 密切相关，二者都超越了原始轨迹检索和扁平化记忆存储的局限。 然而，其中大多数方法主要关注结构感知检索或任务无关的智能体记忆，而 HGP 则专注于个性化智能体记忆：异质化的用户痕迹必须被路由到不同的记忆类型中，并以类型特定的图结构存储，以便后续进行个性化检索与决策。",
+   "sents": [
+    {
+     "en": "Recent memory frameworks are increasingly adopting graph-based representations, driven by the promise of explicit relational reasoning Sun et al. (2025) ; Li et al. (2025a) .",
+     "zh": "近期的记忆框架正越来越多地采用基于图的结构，这源于其对显式关系推理的潜力 Sun et al. (2025) ; Li et al. (2025a) 。"
+    },
+    {
+     "en": "Moving beyond flat similarity search over text chunks, graph-structured memory enables more structured storage and retrieval through explicit modeling of relations among memory units.",
+     "zh": "相较于对文本片段进行扁平化的相似性搜索，图结构记忆通过显式建模记忆单元之间的关系，实现了更具结构化的存储与检索。"
+    },
+    {
+     "en": "GraphRAG-style systems Han et al. (2025) ; Zhang et al. (2024b) ; Zhang et al.",
+     "zh": "GraphRAG 风格的系统 Han et al. (2025) ; Zhang et al. (2024b) ; Zhang et al."
+    },
+    {
+     "en": "(2024a) index knowledge as graphs and retrieve query-relevant subgraphs to support multi-hop evidence aggregation.",
+     "zh": "(2024a) 将知识索引为图，并检索与查询相关的子图，以支持多跳证据聚合。"
+    },
+    {
+     "en": "Representative approaches include graph-traversal-based retrieval, such as HippoRAG Gutiérrez et al.",
+     "zh": "代表性方法包括基于图遍历的检索，例如 HippoRAG Gutiérrez et al."
+    },
+    {
+     "en": "(2025) , and hierarchical indexing with structure-aware retrieval, exemplified by LeanRAG Zhang et al.",
+     "zh": "(2025) ，以及具有结构感知能力的分层索引检索，典型代表是 LeanRAG Zhang et al."
+    },
+    {
+     "en": "(2025b) and HiRAG Jiao et al. (2025) .",
+     "zh": "(2025b) 和 HiRAG Jiao et al. (2025) 。"
+    },
+    {
+     "en": "Graph-structured memory has also been explored in agentic settings, including G-Memory Zhang et al.",
+     "zh": "图结构记忆也已在智能体场景中得到探索，包括 G-Memory Zhang et al."
+    },
+    {
+     "en": "(2025a) , G-Refer Li et al.",
+     "zh": "(2025a) 、G-Refer Li et al."
+    },
+    {
+     "en": "(2025b) , and the concurrent PlugMem Yang et al.",
+     "zh": "(2025b) ，以及同步提出的 PlugMem Yang et al."
+    },
+    {
+     "en": "(2026) , which organizes agent experiences into structured memory graphs for efficient retrieval.",
+     "zh": "(2026) ，该系统将智能体经验组织为结构化的记忆图，以实现高效检索。"
+    },
+    {
+     "en": "These works are closely related to HGP in moving beyond raw trajectory retrieval and flat memory storage.",
+     "zh": "这些工作与 HGP 密切相关，二者都超越了原始轨迹检索和扁平化记忆存储的局限。"
+    },
+    {
+     "en": "However, most of them mainly focus on structure-aware retrieval or task-agnostic agent memory, while HGP focuses on personalized agent memory where heterogeneous user traces must be routed into distinct memory types and stored with type-specific graph structures for later personalized retrieval and decision making.",
+     "zh": "然而，其中大多数方法主要关注结构感知检索或任务无关的智能体记忆，而 HGP 则专注于个性化智能体记忆：异质化的用户痕迹必须被路由到不同的记忆类型中，并以类型特定的图结构存储，以便后续进行个性化检索与决策。"
+    }
+   ]
+  },
+  {
+   "en": "Memory is a core capability of LLM-based agents. Early systems mainly rely on passive retrieve-and-inject mechanisms such as retrieval-augmented generation (RAG) Lewis et al. (2021) , while agent frameworks like ReAct Yao et al. (2023) and Toolformer Schick et al. (2023) treat memory as an implicit or short-term component. To support personalization and long-term consistency, recent work increasingly incorporates cross-session memory. MemoryBank Zhong et al. (2023) continuously updates persistent user profiles; MemGPT Packer et al. (2024) introduces a memory hierarchy between the context window and external storage; Generative Agents Park et al. (2023) and MemoryOS Kang et al. (2025) further explore structured memory storage and lifecycle management. Typed memory has also been discussed in cognitive agent architectures. For example, CoALA Sumers et al. (2024) formalizes language agents with multiple memory components, including working, episodic, semantic, and procedural memories. Production-oriented systems like Mem0 Chhikara et al. (2025) and A-MEM Xu et al. (2025) target scalable memory pipelines, while recent work ScrapMem Chang and Ren (2026) further considers storage-efficient personalized memory on edge devices. These works motivate persistent and cognitively inspired agent memory, whereas HGP studies how user traces can be routed into heterogeneous memory types and stored with type-specific graph structures for personalization. Our self-enhanced router is related to cost-aware model routing and deferral methods, such as FrugalGPT Chen et al. (2023) and RouteLLM Ong et al. (2025) . Unlike these methods, which route inputs across models, HGP routes memory writes into different memory stores; only low-confidence traces invoke LLM annotation, which is then cached for incremental classifier updates.",
+   "zh": "记忆是基于大型语言模型（LLM）的智能体的核心能力。 早期系统主要依赖被动的检索与注入机制，例如检索增强生成（RAG）Lewis et al. (2021)，而像 ReAct Yao et al. (2023) 和 Toolformer Schick et al. (2023) 这样的智能体框架则将记忆视为隐式或短期组件。 为支持个性化和长期一致性，近期研究越来越多地引入了跨会话记忆。MemoryBank Zhong et al. (2023) 持续更新持久化的用户画像；MemGPT Packer et al. (2024) 在上下文窗口与外部存储之间引入记忆层次结构；Generative Agents Park et al. (2023) 和 MemoryOS Kang et al. (2025) 进一步探索结构化记忆存储与生命周期管理。 类型化记忆也已在认知智能体架构中被讨论。 例如，CoALA Sumers et al. (2024) 将语言智能体形式化为包含工作记忆、情景记忆、语义记忆和程序性记忆等多种记忆组件的系统。 面向生产环境的系统，如 Mem0 Chhikara et al. (2025) 和 A-MEM Xu et al. (2025)，专注于可扩展的记忆处理流程；而近期研究 ScrapMem Chang and Ren (2026) 进一步考虑了边缘设备上存储高效的个性化记忆。 这些工作推动了持久化且受认知启发的智能体记忆发展，而 HGP 则研究了如何将用户轨迹路由至异构记忆类型，并以类型特定的图结构进行存储以实现个性化。 我们的自增强路由器与成本感知的模型路由及延迟执行方法相关，例如 FrugalGPT Chen et al. (2023) 和 RouteLLM Ong et al. (2025)。 与这些将输入在不同模型间路由的方法不同，HGP 将记忆写入操作路由至不同的记忆存储；仅当低置信度的轨迹才会触发 LLM 标注，随后将其缓存用于分类器的增量更新。",
+   "sents": [
+    {
+     "en": "Memory is a core capability of LLM-based agents.",
+     "zh": "记忆是基于大型语言模型（LLM）的智能体的核心能力。"
+    },
+    {
+     "en": "Early systems mainly rely on passive retrieve-and-inject mechanisms such as retrieval-augmented generation (RAG) Lewis et al.",
+     "zh": "早期系统主要依赖被动的检索与注入机制，例如检索增强生成（RAG）Lewis et al."
+    },
+    {
+     "en": "(2021) , while agent frameworks like ReAct Yao et al.",
+     "zh": "(2021)，而像 ReAct Yao et al."
+    },
+    {
+     "en": "(2023) and Toolformer Schick et al.",
+     "zh": "(2023) 和 Toolformer Schick et al."
+    },
+    {
+     "en": "(2023) treat memory as an implicit or short-term component.",
+     "zh": "(2023) 这样的智能体框架则将记忆视为隐式或短期组件。"
+    },
+    {
+     "en": "To support personalization and long-term consistency, recent work increasingly incorporates cross-session memory. MemoryBank Zhong et al.",
+     "zh": "为支持个性化和长期一致性，近期研究越来越多地引入了跨会话记忆。MemoryBank Zhong et al."
+    },
+    {
+     "en": "(2023) continuously updates persistent user profiles; MemGPT Packer et al.",
+     "zh": "(2023) 持续更新持久化的用户画像；MemGPT Packer et al."
+    },
+    {
+     "en": "(2024) introduces a memory hierarchy between the context window and external storage; Generative Agents Park et al.",
+     "zh": "(2024) 在上下文窗口与外部存储之间引入记忆层次结构；Generative Agents Park et al."
+    },
+    {
+     "en": "(2023) and MemoryOS Kang et al.",
+     "zh": "(2023) 和 MemoryOS Kang et al."
+    },
+    {
+     "en": "(2025) further explore structured memory storage and lifecycle management.",
+     "zh": "(2025) 进一步探索结构化记忆存储与生命周期管理。"
+    },
+    {
+     "en": "Typed memory has also been discussed in cognitive agent architectures.",
+     "zh": "类型化记忆也已在认知智能体架构中被讨论。"
+    },
+    {
+     "en": "For example, CoALA Sumers et al.",
+     "zh": "例如，CoALA Sumers et al."
+    },
+    {
+     "en": "(2024) formalizes language agents with multiple memory components, including working, episodic, semantic, and procedural memories.",
+     "zh": "(2024) 将语言智能体形式化为包含工作记忆、情景记忆、语义记忆和程序性记忆等多种记忆组件的系统。"
+    },
+    {
+     "en": "Production-oriented systems like Mem0 Chhikara et al.",
+     "zh": "面向生产环境的系统，如 Mem0 Chhikara et al."
+    },
+    {
+     "en": "(2025) and A-MEM Xu et al.",
+     "zh": "(2025) 和 A-MEM Xu et al."
+    },
+    {
+     "en": "(2025) target scalable memory pipelines, while recent work ScrapMem Chang and Ren (2026) further considers storage-efficient personalized memory on edge devices.",
+     "zh": "(2025)，专注于可扩展的记忆处理流程；而近期研究 ScrapMem Chang and Ren (2026) 进一步考虑了边缘设备上存储高效的个性化记忆。"
+    },
+    {
+     "en": "These works motivate persistent and cognitively inspired agent memory, whereas HGP studies how user traces can be routed into heterogeneous memory types and stored with type-specific graph structures for personalization.",
+     "zh": "这些工作推动了持久化且受认知启发的智能体记忆发展，而 HGP 则研究了如何将用户轨迹路由至异构记忆类型，并以类型特定的图结构进行存储以实现个性化。"
+    },
+    {
+     "en": "Our self-enhanced router is related to cost-aware model routing and deferral methods, such as FrugalGPT Chen et al.",
+     "zh": "我们的自增强路由器与成本感知的模型路由及延迟执行方法相关，例如 FrugalGPT Chen et al."
+    },
+    {
+     "en": "(2023) and RouteLLM Ong et al. (2025) .",
+     "zh": "(2023) 和 RouteLLM Ong et al. (2025)。"
+    },
+    {
+     "en": "Unlike these methods, which route inputs across models, HGP routes memory writes into different memory stores; only low-confidence traces invoke LLM annotation, which is then cached for incremental classifier updates.",
+     "zh": "与这些将输入在不同模型间路由的方法不同，HGP 将记忆写入操作路由至不同的记忆存储；仅当低置信度的轨迹才会触发 LLM 标注，随后将其缓存用于分类器的增量更新。"
+    }
+   ]
+  },
+  {
+   "en": "In this work, we propose HGP, a hybrid graph memory framework for user personalization. As illustrated in Figure 1 , HGP comprises two core components: (1) a self-enhancement classifier ; (2) a hybrid graph-based storage .",
+   "zh": "在这项工作中，我们提出了 HGP，一个用于用户个性化的混合图记忆框架。 如图 1 所示，HGP 包含两个核心组件：(1) 一个自增强分类器；(2) 一个基于混合图的存储模块。",
+   "sents": [
+    {
+     "en": "In this work, we propose HGP, a hybrid graph memory framework for user personalization.",
+     "zh": "在这项工作中，我们提出了 HGP，一个用于用户个性化的混合图记忆框架。"
+    },
+    {
+     "en": "As illustrated in Figure 1 , HGP comprises two core components: (1) a self-enhancement classifier ; (2) a hybrid graph-based storage .",
+     "zh": "如图 1 所示，HGP 包含两个核心组件：(1) 一个自增强分类器；(2) 一个基于混合图的存储模块。"
+    }
+   ]
+  },
+  {
+   "en": "In cross-user scenarios, individual differences in memory-type signals cause substantial distribution shifts, making a general classifier prone to misrouting. To address this, HGP employs a confidence-based, LLM-assisted annotation mechanism that continuously refines the router and amortizes supervision cost. For an input segment x x , the router first predicts a label c ^ θ ​ ( x ) \\hat{c}_{\\theta}(x) with confidence score s ⁡ ( x ) s(x) . The final routing decision is governed by an iteration-adaptive threshold τ t \\tau_{t} :",
+   "zh": "在跨用户场景中，记忆类型信号的个体差异会导致显著的分布偏移，使通用分类器容易误判路由。 为了解决这个问题，HGP 采用了一种基于置信度并由 LLM 辅助的标注机制，该机制能够持续优化路由器并平摊监督成本。 对于输入片段 x x ，路由器首先预测一个标签 c ^ θ ​ ( x ) \\hat{c}_{\\theta}(x) 及其置信度得分 s ⁡ ( x ) s(x) 。 最终的路由决策由一个随迭代自适应的阈值 τ t \\tau_{t} 决定：",
+   "sents": [
+    {
+     "en": "In cross-user scenarios, individual differences in memory-type signals cause substantial distribution shifts, making a general classifier prone to misrouting.",
+     "zh": "在跨用户场景中，记忆类型信号的个体差异会导致显著的分布偏移，使通用分类器容易误判路由。"
+    },
+    {
+     "en": "To address this, HGP employs a confidence-based, LLM-assisted annotation mechanism that continuously refines the router and amortizes supervision cost.",
+     "zh": "为了解决这个问题，HGP 采用了一种基于置信度并由 LLM 辅助的标注机制，该机制能够持续优化路由器并平摊监督成本。"
+    },
+    {
+     "en": "For an input segment x x , the router first predicts a label c ^ θ ​ ( x ) \\hat{c}_{\\theta}(x) with confidence score s ⁡ ( x ) s(x) .",
+     "zh": "对于输入片段 x x ，路由器首先预测一个标签 c ^ θ ​ ( x ) \\hat{c}_{\\theta}(x) 及其置信度得分 s ⁡ ( x ) s(x) 。"
+    },
+    {
+     "en": "The final routing decision is governed by an iteration-adaptive threshold τ t \\tau_{t} :",
+     "zh": "最终的路由决策由一个随迭代自适应的阈值 τ t \\tau_{t} 决定："
+    }
+   ]
+  },
+  {
+   "en": "where c ^ LLM ​ ( x ) \\hat{c}_{\\mathrm{LLM}}(x) denotes the label from the LLM-based router, and τ t \\tau_{t} is the confidence threshold at iteration t t . If s ⁡ ( x ) ≥ τ t s(x)\\geq\\tau_{t} , the predicted label c ^ θ ​ ( x ) \\hat{c}_{\\theta}(x) is retained for downstream memory construction. Otherwise, the segment is deferred to the LLM for annotation, and the resulting labeled pair ( x , c ^ LLM ​ ( x ) ) (x,\\hat{c}_{\\mathrm{LLM}}(x)) is cached into an incremental training pool. Periodically, the classifier is updated on the accumulated pool. We initialize the router conservatively (LLM-dominant) and gradually shift the workload to the classifier via exponential annealing:",
+   "zh": "其中 c ^ LLM ​ ( x ) \\hat{c}_{\\mathrm{LLM}}(x) 表示基于 LLM 的路由器给出的标签，而 τ t \\tau_{t} 是迭代 t t 时的置信度阈值。 如果 s ⁡ ( x ) ≥ τ t s(x)\\geq\\tau_{t} ，则保留预测标签 c ^ θ ​ ( x ) \\hat{c}_{\\theta}(x) 用于下游的记忆构建。 否则，该片段将转交给 LLM 进行标注，并将从中得到的带标签的配对 ( x , c ^ LLM ​ ( x ) ) (x,\\hat{c}_{\\mathrm{LLM}}(x)) 缓存到增量训练池中。 周期性地，分类器会在累积的训练池上进行更新。 我们以保守的方式（以 LLM 为主）初始化路由器，并通过指数退火逐步将工作负载转移到分类器上：",
+   "sents": [
+    {
+     "en": "where c ^ LLM ​ ( x ) \\hat{c}_{\\mathrm{LLM}}(x) denotes the label from the LLM-based router, and τ t \\tau_{t} is the confidence threshold at iteration t t .",
+     "zh": "其中 c ^ LLM ​ ( x ) \\hat{c}_{\\mathrm{LLM}}(x) 表示基于 LLM 的路由器给出的标签，而 τ t \\tau_{t} 是迭代 t t 时的置信度阈值。"
+    },
+    {
+     "en": "If s ⁡ ( x ) ≥ τ t s(x)\\geq\\tau_{t} , the predicted label c ^ θ ​ ( x ) \\hat{c}_{\\theta}(x) is retained for downstream memory construction.",
+     "zh": "如果 s ⁡ ( x ) ≥ τ t s(x)\\geq\\tau_{t} ，则保留预测标签 c ^ θ ​ ( x ) \\hat{c}_{\\theta}(x) 用于下游的记忆构建。"
+    },
+    {
+     "en": "Otherwise, the segment is deferred to the LLM for annotation, and the resulting labeled pair ( x , c ^ LLM ​ ( x ) ) (x,\\hat{c}_{\\mathrm{LLM}}(x)) is cached into an incremental training pool.",
+     "zh": "否则，该片段将转交给 LLM 进行标注，并将从中得到的带标签的配对 ( x , c ^ LLM ​ ( x ) ) (x,\\hat{c}_{\\mathrm{LLM}}(x)) 缓存到增量训练池中。"
+    },
+    {
+     "en": "Periodically, the classifier is updated on the accumulated pool.",
+     "zh": "周期性地，分类器会在累积的训练池上进行更新。"
+    },
+    {
+     "en": "We initialize the router conservatively (LLM-dominant) and gradually shift the workload to the classifier via exponential annealing:",
+     "zh": "我们以保守的方式（以 LLM 为主）初始化路由器，并通过指数退火逐步将工作负载转移到分类器上："
+    }
+   ]
+  },
+  {
+   "en": "where a high initial threshold τ 0 \\tau_{0} encourages deferral, a decay rate β \\beta enables a smooth transition, and a lower bound τ min \\tau_{\\min} prevents overly aggressive self-labeling. As the data pool grows with user-specific samples, the classifier’s decision boundary progressively adapts to the current domain and user patterns, effectively mitigating cross-user distribution shifts. This continuous adaptation sustains long-term personalization, which is especially critical as user behaviors evolve and memory distributions drift over time.",
+   "zh": "其中，较高的初始阈值 τ₀（τ_{0}）会促使延迟决策，衰减率 β（β）则实现了平滑过渡，而下限 τ_min（τ_{\\min}）可防止过度激进的自我标注。 随着数据池通过用户特定样本不断扩充，分类器的决策边界会逐渐适应当前领域和用户模式，从而有效缓解跨用户的分布偏移问题。 这种持续自适应机制能够维持长期个性化效果，而当用户行为不断演变、记忆分布随时间推移发生偏移时，这一点尤为重要。",
+   "sents": [
+    {
+     "en": "where a high initial threshold τ 0 \\tau_{0} encourages deferral, a decay rate β \\beta enables a smooth transition, and a lower bound τ min \\tau_{\\min} prevents overly aggressive self-labeling.",
+     "zh": "其中，较高的初始阈值 τ₀（τ_{0}）会促使延迟决策，衰减率 β（β）则实现了平滑过渡，而下限 τ_min（τ_{\\min}）可防止过度激进的自我标注。"
+    },
+    {
+     "en": "As the data pool grows with user-specific samples, the classifier’s decision boundary progressively adapts to the current domain and user patterns, effectively mitigating cross-user distribution shifts.",
+     "zh": "随着数据池通过用户特定样本不断扩充，分类器的决策边界会逐渐适应当前领域和用户模式，从而有效缓解跨用户的分布偏移问题。"
+    },
+    {
+     "en": "This continuous adaptation sustains long-term personalization, which is especially critical as user behaviors evolve and memory distributions drift over time.",
+     "zh": "这种持续自适应机制能够维持长期个性化效果，而当用户行为不断演变、记忆分布随时间推移发生偏移时，这一点尤为重要。"
+    }
+   ]
+  },
+  {
+   "en": "To preserve heterogeneous memory types and their relations, HGP adopts a hybrid graph storage design. We detail each memory structure below.",
+   "zh": "为了保留异构内存类型及其关系，HGP 采用了一种混合图存储设计。 我们在下文详细说明了每种内存结构。",
+   "sents": [
+    {
+     "en": "To preserve heterogeneous memory types and their relations, HGP adopts a hybrid graph storage design.",
+     "zh": "为了保留异构内存类型及其关系，HGP 采用了一种混合图存储设计。"
+    },
+    {
+     "en": "We detail each memory structure below.",
+     "zh": "我们在下文详细说明了每种内存结构。"
+    }
+   ]
+  },
+  {
+   "en": "Episodic memory stores situated interaction events experienced, preserving traceable trajectories, temporal order, and contextual dependencies. In HGP, episodic memory is represented as an Event Graph . Formally, the event graph is modeled as",
+   "zh": "情节记忆存储了所经历的特定互动事件，保留了可追溯的路径、时间顺序和上下文依赖关系。 在 HGP 中，情节记忆被表示为一个事件图。 从形式上讲，该事件图被建模为",
+   "sents": [
+    {
+     "en": "Episodic memory stores situated interaction events experienced, preserving traceable trajectories, temporal order, and contextual dependencies.",
+     "zh": "情节记忆存储了所经历的特定互动事件，保留了可追溯的路径、时间顺序和上下文依赖关系。"
+    },
+    {
+     "en": "In HGP, episodic memory is represented as an Event Graph .",
+     "zh": "在 HGP 中，情节记忆被表示为一个事件图。"
+    },
+    {
+     "en": "Formally, the event graph is modeled as",
+     "zh": "从形式上讲，该事件图被建模为"
+    }
+   ]
+  },
+  {
+   "en": "where V e V_{e} is the set of atomic episode nodes, V ent V_{\\mathrm{ent}} denotes contextual entity nodes, and E epi E_{\\mathrm{epi}} represents typed edges encoding event–event and event–entity relations.",
+   "zh": "其中，V e V_{e} 是原子事件节点集合，V ent V_{\\mathrm{ent}} 表示上下文实体节点，而 E epi E_{\\mathrm{epi}} 则表示编码事件–事件和事件–实体关系的带类型边。",
+   "sents": null
+  },
+  {
+   "en": "In the event graph, episode nodes serve as structural anchors, connected to other episodes or contextual entities via semantically typed edges. These edges capture structured dependencies between events, such as temporal order, contextual association, and other semantic relations. Each edge is defined as",
+   "zh": "在事件图中，事件节点充当结构锚点，通过带有语义类型的边与其他事件或上下文实体相连。 这些边捕捉了事件之间的结构化依赖关系，例如时间顺序、上下文关联以及其他语义关系。每条边被定义为",
+   "sents": [
+    {
+     "en": "In the event graph, episode nodes serve as structural anchors, connected to other episodes or contextual entities via semantically typed edges.",
+     "zh": "在事件图中，事件节点充当结构锚点，通过带有语义类型的边与其他事件或上下文实体相连。"
+    },
+    {
+     "en": "These edges capture structured dependencies between events, such as temporal order, contextual association, and other semantic relations. Each edge is defined as",
+     "zh": "这些边捕捉了事件之间的结构化依赖关系，例如时间顺序、上下文关联以及其他语义关系。每条边被定义为"
+    }
+   ]
+  },
+  {
+   "en": "where r r specifies the semantic role of the relation between two nodes. Unlike isolated record storage, the event graph links events through shared entities, preserving structured relationships and contextual continuity.",
+   "zh": "其中 r 指定了两个节点之间关系的语义角色。 与孤立记录存储不同，事件图通过共享实体将事件连接起来，从而保留结构化关系和上下文连续性。",
+   "sents": [
+    {
+     "en": "where r r specifies the semantic role of the relation between two nodes.",
+     "zh": "其中 r 指定了两个节点之间关系的语义角色。"
+    },
+    {
+     "en": "Unlike isolated record storage, the event graph links events through shared entities, preserving structured relationships and contextual continuity.",
+     "zh": "与孤立记录存储不同，事件图通过共享实体将事件连接起来，从而保留结构化关系和上下文连续性。"
+    }
+   ]
+  },
+  {
+   "en": "As a core component of the hybrid graph storage, the event graph further supports structure-aware retrieval and long-term evolution. As event graphs accumulate, recurring relational patterns and substructures can be abstracted as:",
+   "zh": "作为混合图存储的核心组件，事件图进一步支持结构感知检索和长期演化。 随着事件图的积累，重复出现的关联模式和子结构可以被抽象为：",
+   "sents": [
+    {
+     "en": "As a core component of the hybrid graph storage, the event graph further supports structure-aware retrieval and long-term evolution.",
+     "zh": "作为混合图存储的核心组件，事件图进一步支持结构感知检索和长期演化。"
+    },
+    {
+     "en": "As event graphs accumulate, recurring relational patterns and substructures can be abstracted as:",
+     "zh": "随着事件图的积累，重复出现的关联模式和子结构可以被抽象为："
+    }
+   ]
+  },
+  {
+   "en": "where 𝒜 ​ abs ​ ( ⋅ ) \\mathcal{A}{\\mathrm{abs}}(\\cdot) denotes a structure abstraction operator instantiated via LLM. Through this process, episodic memory functions not only as a repository of past experiences but also as a structural foundation for deriving higher-level semantic and procedural knowledge.",
+   "zh": "其中 𝒜 abs ( ⋅ ) \\mathcal{A}{\\mathrm{abs}}(\\cdot) 表示一个通过 LLM 实例化的结构抽象算子。 通过这一过程，情景记忆不仅充当过往经验的存储库，还成为推导更高层语义和程序性知识的基础结构。",
+   "sents": [
+    {
+     "en": "where 𝒜 ​ abs ​ ( ⋅ ) \\mathcal{A}{\\mathrm{abs}}(\\cdot) denotes a structure abstraction operator instantiated via LLM.",
+     "zh": "其中 𝒜 abs ( ⋅ ) \\mathcal{A}{\\mathrm{abs}}(\\cdot) 表示一个通过 LLM 实例化的结构抽象算子。"
+    },
+    {
+     "en": "Through this process, episodic memory functions not only as a repository of past experiences but also as a structural foundation for deriving higher-level semantic and procedural knowledge.",
+     "zh": "通过这一过程，情景记忆不仅充当过往经验的存储库，还成为推导更高层语义和程序性知识的基础结构。"
+    }
+   ]
+  },
+  {
+   "en": "Semantic memory captures long-term, decontextualized knowledge such as facts, relations, and user preferences, supporting consistent personalized behavior. In HGP, it is explicitly represented as a knowledge graph :",
+   "zh": "语义记忆存储长期、脱离具体语境的知识，例如事实、关系和用户偏好，从而支持一致且个性化的行为。 在 HGP 中，它被明确表示为一个知识图谱：",
+   "sents": [
+    {
+     "en": "Semantic memory captures long-term, decontextualized knowledge such as facts, relations, and user preferences, supporting consistent personalized behavior.",
+     "zh": "语义记忆存储长期、脱离具体语境的知识，例如事实、关系和用户偏好，从而支持一致且个性化的行为。"
+    },
+    {
+     "en": "In HGP, it is explicitly represented as a knowledge graph :",
+     "zh": "在 HGP 中，它被明确表示为一个知识图谱："
+    }
+   ]
+  },
+  {
+   "en": "where V sem V_{\\mathrm{sem}} denotes semantic nodes encoding user-centric long-term knowledge, and E sem E_{\\mathrm{sem}} represents typed semantic relations among them.",
+   "zh": "其中，V sem V_{\\mathrm{sem}} 表示编码以用户为中心的长期知识的语义节点，而 E sem E_{\\mathrm{sem}} 则表示这些节点之间的带类型语义关系。",
+   "sents": null
+  },
+  {
+   "en": "Each semantic relation is represented as a triple:",
+   "zh": "每个语义关系都表示为一个三元组：",
+   "sents": null
+  },
+  {
+   "en": "where r r is a predicate drawn from a predefined semantic relations (e.g., HAS_SKILL , PREFERS , WORKS_AS ).",
+   "zh": "其中 r r 是一个从预定义语义关系中选取的谓词（例如，HAS_SKILL、PREFERS、WORKS_AS）。",
+   "sents": null
+  },
+  {
+   "en": "Unlike episodic memory, which captures temporally grounded experience fragments, semantic memory focuses on regularities that generalize across interaction contexts. It can be obtained either directly via the self-enhancement classifier or through semantic abstraction over accumulated episodic event graphs:",
+   "zh": "与记录具有时间基础的体验片段的episodic记忆不同，semantic记忆关注的是能够泛化到各种交互情境中的规律性。 它既可以通过自我增强分类器直接获得，也可以通过对累积的episodic事件图进行语义抽象来获得：",
+   "sents": [
+    {
+     "en": "Unlike episodic memory, which captures temporally grounded experience fragments, semantic memory focuses on regularities that generalize across interaction contexts.",
+     "zh": "与记录具有时间基础的体验片段的episodic记忆不同，semantic记忆关注的是能够泛化到各种交互情境中的规律性。"
+    },
+    {
+     "en": "It can be obtained either directly via the self-enhancement classifier or through semantic abstraction over accumulated episodic event graphs:",
+     "zh": "它既可以通过自我增强分类器直接获得，也可以通过对累积的episodic事件图进行语义抽象来获得："
+    }
+   ]
+  },
+  {
+   "en": "The detailed design and prompt templates of 𝒜 sem \\mathcal{A}_{\\mathrm{sem}} are provided in Appendix D.1 .",
+   "zh": "𝒜 sem \\mathcal{A}_{\\mathrm{sem}} 的详细设计和提示模板见附录 D.1。",
+   "sents": null
+  },
+  {
+   "en": "Procedural memory stores reusable, experience-driven behavioral strategies and decision flows, enhancing long-term planning capability. In HGP, procedural memory is structured as a Rule Tree , where nodes represent conditions, actions, or intermediate goals, and edges encode their dependencies. Formally, it is defined as",
+   "zh": "程序性记忆存储了可重复使用的、基于经验的策略行为和决策流程，从而增强了长期规划能力。 在 HGP 中，程序性记忆被组织为一棵规则树，其中节点代表条件、动作或中间目标，而边则编码了它们之间的依赖关系。 从形式上讲，它被定义为",
+   "sents": [
+    {
+     "en": "Procedural memory stores reusable, experience-driven behavioral strategies and decision flows, enhancing long-term planning capability.",
+     "zh": "程序性记忆存储了可重复使用的、基于经验的策略行为和决策流程，从而增强了长期规划能力。"
+    },
+    {
+     "en": "In HGP, procedural memory is structured as a Rule Tree , where nodes represent conditions, actions, or intermediate goals, and edges encode their dependencies.",
+     "zh": "在 HGP 中，程序性记忆被组织为一棵规则树，其中节点代表条件、动作或中间目标，而边则编码了它们之间的依赖关系。"
+    },
+    {
+     "en": "Formally, it is defined as",
+     "zh": "从形式上讲，它被定义为"
+    }
+   ]
+  },
+  {
+   "en": "where V c V_{c} , V a V_{a} , V g V_{g} denote condition, action, and sub-goal nodes, respectively, and E proc E_{\\mathrm{proc}} represents the set of edges encoding control or dependency relations among these nodes.",
+   "zh": "其中，V c V_{c}、V a V_{a} 和 V g V_{g} 分别表示条件、动作和子目标节点，而 E proc E_{\\mathrm{proc}} 表示编码这些节点之间控制或依赖关系的边集合。",
+   "sents": null
+  },
+  {
+   "en": "Procedural memory is sourced directly from the self-enhancement classifier or extracted from episodic event graphs. In the latter case, it is constructed via",
+   "zh": "程序性记忆直接来自自我增强分类器，或从情景事件图中提取。 在后一种情况下，它通过以下方式构建：",
+   "sents": [
+    {
+     "en": "Procedural memory is sourced directly from the self-enhancement classifier or extracted from episodic event graphs.",
+     "zh": "程序性记忆直接来自自我增强分类器，或从情景事件图中提取。"
+    },
+    {
+     "en": "In the latter case, it is constructed via",
+     "zh": "在后一种情况下，它通过以下方式构建："
+    }
+   ]
+  },
+  {
+   "en": "where 𝒜 proc ​ ( ⋅ ) \\mathcal{A}_{\\mathrm{proc}}(\\cdot) is a procedural-abstraction operator instantiated with an LLM. The detailed design and prompt template of 𝒜 proc \\mathcal{A}_{\\mathrm{proc}} are provided in Appendix D.2 .",
+   "zh": "其中 𝒜 proc ​ ( ⋅ ) \\mathcal{A}_{\\mathrm{proc}}(\\cdot) 是一个通过 LLM 实例化的过程抽象算子。 𝒜 proc \\mathcal{A}_{\\mathrm{proc}} 的详细设计和提示模板见附录 D.2。",
+   "sents": [
+    {
+     "en": "where 𝒜 proc ​ ( ⋅ ) \\mathcal{A}_{\\mathrm{proc}}(\\cdot) is a procedural-abstraction operator instantiated with an LLM.",
+     "zh": "其中 𝒜 proc ​ ( ⋅ ) \\mathcal{A}_{\\mathrm{proc}}(\\cdot) 是一个通过 LLM 实例化的过程抽象算子。"
+    },
+    {
+     "en": "The detailed design and prompt template of 𝒜 proc \\mathcal{A}_{\\mathrm{proc}} are provided in Appendix D.2 .",
+     "zh": "𝒜 proc \\mathcal{A}_{\\mathrm{proc}} 的详细设计和提示模板见附录 D.2。"
+    }
+   ]
+  },
+  {
+   "en": "Working memory maintains the states of ongoing interactions or tasks, supplying state information for reasoning and decision-making. In HGP, it is implemented as a State Trajectory Graph , where nodes represent current system or user states and edges encode state transitions. Formally, working memory is defined as",
+   "zh": "工作记忆维持着正在进行中的交互或任务的状态，为推理和决策提供状态信息。 在 HGP 中，它被实现为一个状态轨迹图，其中节点表示系统或用户的当前状态，边则编码状态转换。 从形式上讲，工作记忆被定义为",
+   "sents": [
+    {
+     "en": "Working memory maintains the states of ongoing interactions or tasks, supplying state information for reasoning and decision-making.",
+     "zh": "工作记忆维持着正在进行中的交互或任务的状态，为推理和决策提供状态信息。"
+    },
+    {
+     "en": "In HGP, it is implemented as a State Trajectory Graph , where nodes represent current system or user states and edges encode state transitions.",
+     "zh": "在 HGP 中，它被实现为一个状态轨迹图，其中节点表示系统或用户的当前状态，边则编码状态转换。"
+    },
+    {
+     "en": "Formally, working memory is defined as",
+     "zh": "从形式上讲，工作记忆被定义为"
+    }
+   ]
+  },
+  {
+   "en": "where V state V_{\\mathrm{state}} represents the current states and E state E_{\\mathrm{state}} denotes transitions between states.",
+   "zh": "其中，V state V_{\\mathrm{state}} 表示当前状态，而 E state E_{\\mathrm{state}} 则表示状态之间的转换。",
+   "sents": null
+  },
+  {
+   "en": "Unlike episodic and semantic memory, which retain long-term information, working memory maintains short-lived, dynamic context extracted from recent episodic memory and continuously updated during interaction. Its update process can be expressed as",
+   "zh": "与能够保留长期信息的程序性记忆和语义记忆不同，工作记忆负责维持从近期程序性记忆中提取的短暂、动态上下文，并在交互过程中持续更新。 其更新过程可以表示为",
+   "sents": [
+    {
+     "en": "Unlike episodic and semantic memory, which retain long-term information, working memory maintains short-lived, dynamic context extracted from recent episodic memory and continuously updated during interaction.",
+     "zh": "与能够保留长期信息的程序性记忆和语义记忆不同，工作记忆负责维持从近期程序性记忆中提取的短暂、动态上下文，并在交互过程中持续更新。"
+    },
+    {
+     "en": "Its update process can be expressed as",
+     "zh": "其更新过程可以表示为"
+    }
+   ]
+  },
+  {
+   "en": "where 𝒰 ⁡ ( ⋅ ) \\mathcal{U}(\\cdot) denotes a state update operator. Graph-based modeling of working memory provides an explicit representation of the current state and its evolution, enabling timely reasoning, strategy selection, and action triggering.",
+   "zh": "其中 𝒰 ⁡ ( ⋅ ) \\mathcal{U}(\\cdot) 表示一个状态更新算子。 基于图的短期记忆建模为当前状态及其演化提供了明确的表示，从而支持及时推理、策略选择和行动触发。",
+   "sents": [
+    {
+     "en": "where 𝒰 ⁡ ( ⋅ ) \\mathcal{U}(\\cdot) denotes a state update operator.",
+     "zh": "其中 𝒰 ⁡ ( ⋅ ) \\mathcal{U}(\\cdot) 表示一个状态更新算子。"
+    },
+    {
+     "en": "Graph-based modeling of working memory provides an explicit representation of the current state and its evolution, enabling timely reasoning, strategy selection, and action triggering.",
+     "zh": "基于图的短期记忆建模为当前状态及其演化提供了明确的表示，从而支持及时推理、策略选择和行动触发。"
+    }
+   ]
+  },
+  {
+   "en": "Upon receiving a user query q q , HGP executes a structured retrieval protocol over its hybrid graph memory 𝒢 = { 𝒢 epi , 𝒢 sem , 𝒢 proc , 𝒢 wm } \\mathcal{G}=\\{\\mathcal{G}_{\\mathrm{epi}},\\mathcal{G}_{\\mathrm{sem}},\\mathcal{G}_{\\mathrm{proc}},\\mathcal{G}_{\\mathrm{wm}}\\} . A detailed example of this retrieval workflow is provided in Appendix B . For the query q q , HGP issues parallel queries to each subgraph, each designed to retrieve a particular type of structured evidence:",
+   "zh": "在接收到用户查询 q q 后，HGP 会在其混合图记忆 𝒢 = { 𝒢 epi , 𝒢 sem , 𝒢 proc , 𝒢 wm } \\mathcal{G}=\\{\\mathcal{G}_{\\mathrm{epi}},\\mathcal{G}_{\\mathrm{sem}},\\mathcal{G}_{\\mathrm{proc}},\\mathcal{G}_{\\mathrm{wm}}\\} 上执行结构化检索协议。 关于此检索工作流程的详细说明见附录 B。 对于查询 q q，HGP 会向每个子图发出并行查询，每个子图的设计目的都是检索特定类型的结构化证据：",
+   "sents": [
+    {
+     "en": "Upon receiving a user query q q , HGP executes a structured retrieval protocol over its hybrid graph memory 𝒢 = { 𝒢 epi , 𝒢 sem , 𝒢 proc , 𝒢 wm } \\mathcal{G}=\\{\\mathcal{G}_{\\mathrm{epi}},\\mathcal{G}_{\\mathrm{sem}},\\mathcal{G}_{\\mathrm{proc}},\\mathcal{G}_{\\mathrm{wm}}\\} .",
+     "zh": "在接收到用户查询 q q 后，HGP 会在其混合图记忆 𝒢 = { 𝒢 epi , 𝒢 sem , 𝒢 proc , 𝒢 wm } \\mathcal{G}=\\{\\mathcal{G}_{\\mathrm{epi}},\\mathcal{G}_{\\mathrm{sem}},\\mathcal{G}_{\\mathrm{proc}},\\mathcal{G}_{\\mathrm{wm}}\\} 上执行结构化检索协议。"
+    },
+    {
+     "en": "A detailed example of this retrieval workflow is provided in Appendix B .",
+     "zh": "关于此检索工作流程的详细说明见附录 B。"
+    },
+    {
+     "en": "For the query q q , HGP issues parallel queries to each subgraph, each designed to retrieve a particular type of structured evidence:",
+     "zh": "对于查询 q q，HGP 会向每个子图发出并行查询，每个子图的设计目的都是检索特定类型的结构化证据："
+    }
+   ]
+  },
+  {
+   "en": "Episodic graph 𝒢 epi \\mathcal{G}_{\\mathrm{epi}} : Retrieves a set of temporally or contextually related past interaction nodes. For instance, in a health management scenario, a query about “evening exercise planning” may retrieve nodes representing “night run with elevated heart rate” and “previous over-exertion alert” , connected via shared activity and time entities.",
+   "zh": "事件图 𝒢 epi \\mathcal{G}_{\\mathrm{epi}}：获取一组在时间或语境上相关的过往交互节点。 例如，在健康管理场景中，关于“晚间锻炼计划”的查询可能会获取代表“夜间跑步时心率升高”和“此前过度劳累警报”的节点，这些节点通过共享的活动和时间实体相互连接。",
+   "sents": [
+    {
+     "en": "Episodic graph 𝒢 epi \\mathcal{G}_{\\mathrm{epi}} : Retrieves a set of temporally or contextually related past interaction nodes.",
+     "zh": "事件图 𝒢 epi \\mathcal{G}_{\\mathrm{epi}}：获取一组在时间或语境上相关的过往交互节点。"
+    },
+    {
+     "en": "For instance, in a health management scenario, a query about “evening exercise planning” may retrieve nodes representing “night run with elevated heart rate” and “previous over-exertion alert” , connected via shared activity and time entities.",
+     "zh": "例如，在健康管理场景中，关于“晚间锻炼计划”的查询可能会获取代表“夜间跑步时心率升高”和“此前过度劳累警报”的节点，这些节点通过共享的活动和时间实体相互连接。"
+    }
+   ]
+  },
+  {
+   "en": "Semantic graph 𝒢 sem \\mathcal{G}_{\\mathrm{sem}} : Retrieves a subgraph of factual triples about the user that are semantically relevant to q q . Examples include (User, allergy, Ibuprofen) and (User, condition, Hypertension) , providing stable profile constraints.",
+   "zh": "语义图 𝒢 sem \\mathcal{G}_{\\mathrm{sem}}：获取与用户 q q 在语义上相关的、关于该用户的三元事实子图。 示例包括 (User, allergy, Ibuprofen) 和 (User, condition, Hypertension)，从而提供稳定的用户画像约束。",
+   "sents": [
+    {
+     "en": "Semantic graph 𝒢 sem \\mathcal{G}_{\\mathrm{sem}} : Retrieves a subgraph of factual triples about the user that are semantically relevant to q q .",
+     "zh": "语义图 𝒢 sem \\mathcal{G}_{\\mathrm{sem}}：获取与用户 q q 在语义上相关的、关于该用户的三元事实子图。"
+    },
+    {
+     "en": "Examples include (User, allergy, Ibuprofen) and (User, condition, Hypertension) , providing stable profile constraints.",
+     "zh": "示例包括 (User, allergy, Ibuprofen) 和 (User, condition, Hypertension)，从而提供稳定的用户画像约束。"
+    }
+   ]
+  },
+  {
+   "en": "Procedural graph 𝒢 proc \\mathcal{G}_{\\mathrm{proc}} : Retrieves applicable rule nodes that match the current context. For example, the rule “If NSAID combines with aspirin → check bleeding risk” is retrieved when the query involves taking painkillers after aspirin intake.",
+   "zh": "过程图 𝒢 proc \\mathcal{G}_{\\mathrm{proc}}：获取与当前上下文匹配的可应用规则节点。 例如，当查询涉及服用阿司匹林后使用止痛药时，就会检索到“如果 NSAID 与阿司匹林结合 → 检查出血风险”这条规则。",
+   "sents": [
+    {
+     "en": "Procedural graph 𝒢 proc \\mathcal{G}_{\\mathrm{proc}} : Retrieves applicable rule nodes that match the current context.",
+     "zh": "过程图 𝒢 proc \\mathcal{G}_{\\mathrm{proc}}：获取与当前上下文匹配的可应用规则节点。"
+    },
+    {
+     "en": "For example, the rule “If NSAID combines with aspirin → check bleeding risk” is retrieved when the query involves taking painkillers after aspirin intake.",
+     "zh": "例如，当查询涉及服用阿司匹林后使用止痛药时，就会检索到“如果 NSAID 与阿司匹林结合 → 检查出血风险”这条规则。"
+    }
+   ]
+  },
+  {
+   "en": "Working memory graph 𝒢 wm \\mathcal{G}_{\\mathrm{wm}} : Retrieves the current state trajectory, capturing immediate session constraints such as “aspirin already taken this morning” and “pending dinner recommendation task” .",
+   "zh": "工作记忆图 𝒢 wm \\mathcal{G}_{\\mathrm{wm}}：获取当前的状态轨迹，捕捉即时会话约束，例如“今天早上已服用阿司匹林”和“待处理的晚餐推荐任务”。",
+   "sents": null
+  },
+  {
+   "en": "The retrieved subgraphs are merged into a unified context and passed, together with the original query q q , to the LLM. The model then generates a response grounded in both long-term memory and the user’s current state and implicit constraints, ensuring coherence, personalization, and safety.",
+   "zh": "检索到的子图被合并为一个统一上下文，并与原始查询 q q 一起传递给 LLM。 随后，模型基于长期记忆、用户的当前状态以及隐含约束生成响应，确保其连贯性、个性化和安全性。",
+   "sents": [
+    {
+     "en": "The retrieved subgraphs are merged into a unified context and passed, together with the original query q q , to the LLM.",
+     "zh": "检索到的子图被合并为一个统一上下文，并与原始查询 q q 一起传递给 LLM。"
+    },
+    {
+     "en": "The model then generates a response grounded in both long-term memory and the user’s current state and implicit constraints, ensuring coherence, personalization, and safety.",
+     "zh": "随后，模型基于长期记忆、用户的当前状态以及隐含约束生成响应，确保其连贯性、个性化和安全性。"
+    }
+   ]
+  },
+  {
+   "en": "Method Single-hop Multi-hop Temporal Open-domain Overall J F1 B1 EM J F1 B1 EM J F1 B1 EM J F1 B1 EM J F1 B1 EM TurnRAG 47.52 34.31 28.43 6.03 38.54 20.33 16.60 6.25 60.44 51.71 47.86 19.94 65.28 48.34 43.76 24.97 59.35 44.73 40.11 19.29 LangMem 53.55 32.78 26.35 3.90 41.67 22.97 19.99 10.42 17.76 10.23 8.67 3.74 54.22 34.30 30.64 14.10 45.65 24.74 21.49 8.46 MemoryBank 47.87 19.26 24.29 3.55 37.50 10.89 15.00 7.29 26.17 6.63 7.51 4.05 72.65 40.97 44.37 26.27 56.12 39.83 35.03 16.22 A-Mem 51.42 20.43 25.29 4.96 44.79 13.60 17.00 7.29 59.19 35.21 38.63 19.31 67.59 38.42 41.09 24.82 61.41 32.87 36.15 18.90 HippoRAG2 52.84 21.16 27.69 4.61 40.62 13.25 17.08 8.33 60.75 38.00 41.75 19.94 68.31 39.75 42.84 26.39 62.13 34.29 38.20 19.88 Mem0 52.13 35.18 26.15 5.67 38.54 28.95 22.85 13.54 59.81 52.71 39.70 19.31 66.39 47.98 40.81 26.14 60.63 45.42 36.75 20.14 Ours 56.03 34.44 30.39 5.67 46.88 27.69 23.70 12.50 60.75 50.31 46.24 19.63 71.45 51.33 46.59 26.87 65.08 45.07 42.09 20.54",
+   "zh": "方法 单跳 多跳 时序 开放域 总体 J F1 B1 EM J F1 B1 EM J F1 B1 EM J F1 B1 EM J F1 B1 EM TurnRAG 47.52 34.31 28.43 6.03 38.54 20.33 16.60 6.25 60.44 51.71 47.86 19.94 65.28 48.34 43.76 24.97 59.35 44.73 40.11 19.29 LangMem 53.55 32.78 26.35 3.90 41.67 22.97 19.99 10.42 17.76 10.23 8.67 3.74 54.22 34.30 30.64 14.10 45.65 24.74 21.49 8.46 MemoryBank 47.87 19.26 24.29 3.55 37.50 10.89 15.00 7.29 26.17 6.63 7.51 4.05 72.65 40.97 44.37 26.27 56.12 39.83 35.03 16.22 A-Mem 51.42 20.43 25.29 4.96 44.79 13.60 17.00 7.29 59.19 35.21 38.63 19.31 67.59 38.42 41.09 24.82 61.41 32.87 36.15 18.90 HippoRAG2 52.84 21.16 27.69 4.61 40.62 13.25 17.08 8.33 60.75 38.00 41.75 19.94 68.31 39.75 42.84 26.39 62.13 34.29 38.20 19.88 Mem0 52.13 35.18 26.15 5.67 38.54 28.95 22.85 13.54 59.81 52.71 39.70 19.31 66.39 47.98 40.81 26.14 60.63 45.42 36.75 20.14 我们的方法 56.03 34.44 30.39 5.67 46.88 27.69 23.70 12.50 60.75 50.31 46.24 19.63 71.45 51.33 46.59 26.87 65.08 45.07 42.09 20.54",
+   "sents": null
+  },
+  {
+   "en": "Datasets. We evaluate on two long-term memory benchmarks: LoCoMo Maharana et al. (2024) provides 10 multi-session conversations with ∼ \\sim 200 QA pairs each, covering single-hop, multi-hop, temporal, and open-domain questions. Following Mem0 Chhikara et al. (2025) , we exclude the adversarial category due to missing ground-truth answers. PAL-Set Huang et al. (2025) evaluates memory-aware personalization via user logs and interaction histories. We focus on the Solution Proposal tasks: (1)QA: memory-grounded answer generation; (2)Selection: selecting the best response from candidates based on retrieved memories.",
+   "zh": "数据集。 我们在两个长期记忆基准数据集上进行评估：LoCoMo Maharana 等人 （2024）提供了 10 组多会话对话，每组包含约 \\sim 200 个问答对，涵盖单跳、多跳、时间相关和开放领域问题。 遵循 Mem0 Chhikara 等人 （2025），由于缺乏真实答案，我们排除了对抗性类别。PAL-Set Huang 等人 （2025）通过用户日志和交互历史评估了记忆感知个性化。 我们专注于“解决方案提案”任务：（1）问答：基于记忆的准确回答生成；（2）选择：根据检索到的记忆从候选答案中选择最佳回应。",
+   "sents": [
+    {
+     "en": "Datasets.",
+     "zh": "数据集。"
+    },
+    {
+     "en": "We evaluate on two long-term memory benchmarks: LoCoMo Maharana et al.",
+     "zh": "我们在两个长期记忆基准数据集上进行评估：LoCoMo Maharana 等人"
+    },
+    {
+     "en": "(2024) provides 10 multi-session conversations with ∼ \\sim 200 QA pairs each, covering single-hop, multi-hop, temporal, and open-domain questions.",
+     "zh": "（2024）提供了 10 组多会话对话，每组包含约 \\sim 200 个问答对，涵盖单跳、多跳、时间相关和开放领域问题。"
+    },
+    {
+     "en": "Following Mem0 Chhikara et al.",
+     "zh": "遵循 Mem0 Chhikara 等人"
+    },
+    {
+     "en": "(2025) , we exclude the adversarial category due to missing ground-truth answers. PAL-Set Huang et al.",
+     "zh": "（2025），由于缺乏真实答案，我们排除了对抗性类别。PAL-Set Huang 等人"
+    },
+    {
+     "en": "(2025) evaluates memory-aware personalization via user logs and interaction histories.",
+     "zh": "（2025）通过用户日志和交互历史评估了记忆感知个性化。"
+    },
+    {
+     "en": "We focus on the Solution Proposal tasks: (1)QA: memory-grounded answer generation; (2)Selection: selecting the best response from candidates based on retrieved memories.",
+     "zh": "我们专注于“解决方案提案”任务：（1）问答：基于记忆的准确回答生成；（2）选择：根据检索到的记忆从候选答案中选择最佳回应。"
+    }
+   ]
+  },
+  {
+   "en": "Metrics. On LoCoMo, we report F1, Exact Match (EM), BLEU-1 (B1), and supplement with Mem0-style LLM-as-a-judge(J) to overcome the limits of lexical overlap in long-context reasoning. On PAL-Set, for the QA subtask, we use BLEU-1/2/3/4 as automatic metrics and report an LLM-as-a-judge score as a complementary assessment of answer correctness and usefulness. For comparability, the same judging protocol is applied to both memory-based and non-memory systems. For Selection , we use the benchmark-defined S-score, which measures how well the selected solution matches the user’s needs. The LLM-as-a-judge score is treated as supplementary evidence rather than the sole evaluation criterion; our conclusions are based jointly on automatic QA metrics, the PAL-Set S-score, ablation results, and long-horizon memory evaluation. Full QA judge prompts are provided in Appendix A.1 .",
+   "zh": "指标。 在 LoCoMo 上，我们报告 F1、精确匹配（EM）、BLEU-1（B1），并辅以 Mem0 风格的 LLM 作为评判者（J）的评分，以克服长上下文推理中词汇重叠的局限性。 在 PAL-Set 上，对于问答子任务，我们使用 BLEU-1/2/3/4 作为自动指标，并报告 LLM 作为评判者的分数，以补充评估答案的正确性和实用性。 为确保可比性，记忆依赖系统和非记忆系统均采用相同的评判协议。 对于选择环节，我们使用基准中定义的 S-score，该指标衡量所选解决方案与用户需求的匹配程度。 LLM 作为评判者的分数仅被视为补充证据，而非唯一评估标准；我们的结论综合基于自动问答指标、PAL-Set 的 S-score、消融实验结果以及长期记忆评估。 完整的问答评判提示词见附录 A.1。",
+   "sents": [
+    {
+     "en": "Metrics.",
+     "zh": "指标。"
+    },
+    {
+     "en": "On LoCoMo, we report F1, Exact Match (EM), BLEU-1 (B1), and supplement with Mem0-style LLM-as-a-judge(J) to overcome the limits of lexical overlap in long-context reasoning.",
+     "zh": "在 LoCoMo 上，我们报告 F1、精确匹配（EM）、BLEU-1（B1），并辅以 Mem0 风格的 LLM 作为评判者（J）的评分，以克服长上下文推理中词汇重叠的局限性。"
+    },
+    {
+     "en": "On PAL-Set, for the QA subtask, we use BLEU-1/2/3/4 as automatic metrics and report an LLM-as-a-judge score as a complementary assessment of answer correctness and usefulness.",
+     "zh": "在 PAL-Set 上，对于问答子任务，我们使用 BLEU-1/2/3/4 作为自动指标，并报告 LLM 作为评判者的分数，以补充评估答案的正确性和实用性。"
+    },
+    {
+     "en": "For comparability, the same judging protocol is applied to both memory-based and non-memory systems.",
+     "zh": "为确保可比性，记忆依赖系统和非记忆系统均采用相同的评判协议。"
+    },
+    {
+     "en": "For Selection , we use the benchmark-defined S-score, which measures how well the selected solution matches the user’s needs.",
+     "zh": "对于选择环节，我们使用基准中定义的 S-score，该指标衡量所选解决方案与用户需求的匹配程度。"
+    },
+    {
+     "en": "The LLM-as-a-judge score is treated as supplementary evidence rather than the sole evaluation criterion; our conclusions are based jointly on automatic QA metrics, the PAL-Set S-score, ablation results, and long-horizon memory evaluation.",
+     "zh": "LLM 作为评判者的分数仅被视为补充证据，而非唯一评估标准；我们的结论综合基于自动问答指标、PAL-Set 的 S-score、消融实验结果以及长期记忆评估。"
+    },
+    {
+     "en": "Full QA judge prompts are provided in Appendix A.1 .",
+     "zh": "完整的问答评判提示词见附录 A.1。"
+    }
+   ]
+  },
+  {
+   "en": "Baselines. We compare against two paradigms:",
+   "zh": "基线模型。 我们与两种范式进行比较：",
+   "sents": [
+    {
+     "en": "Baselines.",
+     "zh": "基线模型。"
+    },
+    {
+     "en": "We compare against two paradigms:",
+     "zh": "我们与两种范式进行比较："
+    }
+   ]
+  },
+  {
+   "en": "Non-memory methods. On LoCoMo, we use a standard RAG pipeline. On PAL-Set, following the official benchmark, we include four retrieval-based variants with different context granularities: Vanilla (w/o log) (no history), Vanilla (with log) (logs concatenated into the prompt), Turn-level RAG , and Session-level RAG .",
+   "zh": "非记忆方法。 在 LoCoMo 上，我们使用标准的 RAG 流程。 在 PAL-Set 上，遵循官方基准测试，我们包含四种基于检索的变体，具有不同的上下文粒度：Vanilla（无日志）（无历史）、Vanilla（含日志）（日志被拼接进提示）、Turn-level RAG 和 Session-level RAG。",
+   "sents": [
+    {
+     "en": "Non-memory methods.",
+     "zh": "非记忆方法。"
+    },
+    {
+     "en": "On LoCoMo, we use a standard RAG pipeline.",
+     "zh": "在 LoCoMo 上，我们使用标准的 RAG 流程。"
+    },
+    {
+     "en": "On PAL-Set, following the official benchmark, we include four retrieval-based variants with different context granularities: Vanilla (w/o log) (no history), Vanilla (with log) (logs concatenated into the prompt), Turn-level RAG , and Session-level RAG .",
+     "zh": "在 PAL-Set 上，遵循官方基准测试，我们包含四种基于检索的变体，具有不同的上下文粒度：Vanilla（无日志）（无历史）、Vanilla（含日志）（日志被拼接进提示）、Turn-level RAG 和 Session-level RAG。"
+    }
+   ]
+  },
+  {
+   "en": "Memory-based frameworks. We compare with representative memory-augmented systems: Mem0 Chhikara et al. (2025) , MemoryBank Zhong et al. (2023) , A-Mem Xu et al. (2025) , HippoRAG2 Gutiérrez et al. (2025) , and additionally LangMem on LoCoMo.",
+   "zh": "基于记忆的方法。我们与代表性的记忆增强系统进行了比较：Mem0 Chhikara 等人（2025）、MemoryBank Zhong 等人（2023）、A-Mem Xu 等人（2025）、HippoRAG2 Gutiérrez 等人（2025），以及 LangMem on LoCoMo。",
+   "sents": null
+  },
+  {
+   "en": "Implementation Details. In HGP, memory routing is performed by a lightweight BERT-based classifier ( roberta_L-4_H-512 ). The confidence threshold is initialized at τ 0 = 0.90 \\tau_{0}=0.90 , annealed with rate β = 0.05 \\beta=0.05 , and lower-bounded by τ min = 0.50 \\tau_{\\min}=0.50 . Since working-memory annotations are not available in LoCoMo or PAL-Set, our experiments focus on episodic, semantic, and procedural memories, stored as Neo4j graph databases. Memory extraction uses deepseek-chat ; response generation and LLM-as-a-judge use gpt-4o-mini (temperature 0.0 0.0 ). On LoCoMo, max output length is 100 tokens; dialogue history for TurnRAG is truncated to 4K tokens; retrieval-based methods use K = 30 K=30 items. All methods share the same answer/judge prompts adapted from Mem0 for fairness. On PAL-Set, we follow the official setup with K = 3 K=3 and introduce an additional QA-specific judge prompt for semantic correctness beyond lexical overlap.",
+   "zh": "实现细节。 在 HGP 中，记忆路由由一个轻量级的基于 BERT 的分类器（roberta_L-4_H-512）执行。 置信度阈值初始化为 τ₀ = 0.90 \\tau_{0}=0.90，以速率 β = 0.05 \\beta=0.05 进行退火，并设置下界为 τ_min = 0.50 \\tau_{\\min}=0.50。 由于 LoCoMo 或 PAL-Set 中无法获取工作记忆标注，我们的实验聚焦于以 Neo4j 图数据库形式存储的事件性、语义性和程序性记忆。 记忆提取使用 deepseek-chat；响应生成和 LLM-as-a-judge 使用 gpt-4o-mini（温度 0.0 0.0）。 在 LoCoMo 上，最大输出长度为 100 个词元；TurnRAG 的对话历史被截断至 4K 个词元；基于检索的方法使用 K = 30 K=30 个条目。 为确保公平性，所有方法均使用从 Mem0 改编而来的相同答案/评判提示。 在 PAL-Set 上，我们遵循官方设置（K = 3 K=3），并引入一个额外的问答专用评判提示，以评估超越词汇重叠的语义正确性。",
+   "sents": [
+    {
+     "en": "Implementation Details.",
+     "zh": "实现细节。"
+    },
+    {
+     "en": "In HGP, memory routing is performed by a lightweight BERT-based classifier ( roberta_L-4_H-512 ).",
+     "zh": "在 HGP 中，记忆路由由一个轻量级的基于 BERT 的分类器（roberta_L-4_H-512）执行。"
+    },
+    {
+     "en": "The confidence threshold is initialized at τ 0 = 0.90 \\tau_{0}=0.90 , annealed with rate β = 0.05 \\beta=0.05 , and lower-bounded by τ min = 0.50 \\tau_{\\min}=0.50 .",
+     "zh": "置信度阈值初始化为 τ₀ = 0.90 \\tau_{0}=0.90，以速率 β = 0.05 \\beta=0.05 进行退火，并设置下界为 τ_min = 0.50 \\tau_{\\min}=0.50。"
+    },
+    {
+     "en": "Since working-memory annotations are not available in LoCoMo or PAL-Set, our experiments focus on episodic, semantic, and procedural memories, stored as Neo4j graph databases.",
+     "zh": "由于 LoCoMo 或 PAL-Set 中无法获取工作记忆标注，我们的实验聚焦于以 Neo4j 图数据库形式存储的事件性、语义性和程序性记忆。"
+    },
+    {
+     "en": "Memory extraction uses deepseek-chat ; response generation and LLM-as-a-judge use gpt-4o-mini (temperature 0.0 0.0 ).",
+     "zh": "记忆提取使用 deepseek-chat；响应生成和 LLM-as-a-judge 使用 gpt-4o-mini（温度 0.0 0.0）。"
+    },
+    {
+     "en": "On LoCoMo, max output length is 100 tokens; dialogue history for TurnRAG is truncated to 4K tokens; retrieval-based methods use K = 30 K=30 items.",
+     "zh": "在 LoCoMo 上，最大输出长度为 100 个词元；TurnRAG 的对话历史被截断至 4K 个词元；基于检索的方法使用 K = 30 K=30 个条目。"
+    },
+    {
+     "en": "All methods share the same answer/judge prompts adapted from Mem0 for fairness.",
+     "zh": "为确保公平性，所有方法均使用从 Mem0 改编而来的相同答案/评判提示。"
+    },
+    {
+     "en": "On PAL-Set, we follow the official setup with K = 3 K=3 and introduce an additional QA-specific judge prompt for semantic correctness beyond lexical overlap.",
+     "zh": "在 PAL-Set 上，我们遵循官方设置（K = 3 K=3），并引入一个额外的问答专用评判提示，以评估超越词汇重叠的语义正确性。"
+    }
+   ]
+  },
+  {
+   "en": "LoCoMo performance. Experiments on the LoCoMo dataset demonstrate the strong memory recall capability of HGP. As shown in Table 1 , HGP achieves the best overall performance in Judge (65.08), BLEU-1 (42.09), and EM (20.54), while maintaining competitive F1 (45.07)—outperforming Mem0 by +4.45 (Judge) and +5.34 (BLEU-1). Gains are most pronounced on Open-domain tasks, where HGP attains the highest F1 (51.33), BLEU-1 (46.59), and EM (26.87). This improvement supports the effectiveness of graph-based memory storage: structuring episodic events, semantic profiles, and procedural rules as interconnected graphs provides more reliable evidence for diverse, unconstrained questions. Temporal questions remain comparatively challenging, suggesting opportunities for enhancing temporal ordering.",
+   "zh": "LoCoMo 性能。 在 LoCoMo 数据集上进行的实验表明，HGP 具有强大的记忆回忆能力。 如表 1 所示，HGP 在 Judge（65.08）、BLEU-1（42.09）和 EM（20.54）方面取得了最佳整体性能，同时保持了具有竞争力的 F1（45.07）——分别比 Mem0 高出 +4.45（Judge）和 +5.34（BLEU-1）。 在开放域任务中，这种提升最为显著，HGP 在这些任务中获得了最高的 F1（51.33）、BLEU-1（46.59）和 EM（26.87）。 这一改进支持了基于图的记忆存储方法的有效性：将情节事件、语义特征和程序规则构造成相互连接的图，为多样化且不受限制的问题提供了更可靠的证据。 时间相关的问题仍然具有较大的挑战性，这表明在增强时间顺序方面仍存在改进空间。",
+   "sents": [
+    {
+     "en": "LoCoMo performance.",
+     "zh": "LoCoMo 性能。"
+    },
+    {
+     "en": "Experiments on the LoCoMo dataset demonstrate the strong memory recall capability of HGP.",
+     "zh": "在 LoCoMo 数据集上进行的实验表明，HGP 具有强大的记忆回忆能力。"
+    },
+    {
+     "en": "As shown in Table 1 , HGP achieves the best overall performance in Judge (65.08), BLEU-1 (42.09), and EM (20.54), while maintaining competitive F1 (45.07)—outperforming Mem0 by +4.45 (Judge) and +5.34 (BLEU-1).",
+     "zh": "如表 1 所示，HGP 在 Judge（65.08）、BLEU-1（42.09）和 EM（20.54）方面取得了最佳整体性能，同时保持了具有竞争力的 F1（45.07）——分别比 Mem0 高出 +4.45（Judge）和 +5.34（BLEU-1）。"
+    },
+    {
+     "en": "Gains are most pronounced on Open-domain tasks, where HGP attains the highest F1 (51.33), BLEU-1 (46.59), and EM (26.87).",
+     "zh": "在开放域任务中，这种提升最为显著，HGP 在这些任务中获得了最高的 F1（51.33）、BLEU-1（46.59）和 EM（26.87）。"
+    },
+    {
+     "en": "This improvement supports the effectiveness of graph-based memory storage: structuring episodic events, semantic profiles, and procedural rules as interconnected graphs provides more reliable evidence for diverse, unconstrained questions.",
+     "zh": "这一改进支持了基于图的记忆存储方法的有效性：将情节事件、语义特征和程序规则构造成相互连接的图，为多样化且不受限制的问题提供了更可靠的证据。"
+    },
+    {
+     "en": "Temporal questions remain comparatively challenging, suggesting opportunities for enhancing temporal ordering.",
+     "zh": "时间相关的问题仍然具有较大的挑战性，这表明在增强时间顺序方面仍存在改进空间。"
+    }
+   ]
+  },
+  {
+   "en": "PAL-Set Solution Proposal tasks. Table 2 reports results on Solution QA and Selection. On QA, HGP achieves the highest LLM-judge score (7.46) and the best BLEU-2/3/4 (8.67/4.70/2.78), indicating stronger multi-step coherence. On Selection, non-memory baselines improve only marginally over Vanilla (w/o log) ( + 4.66 +4.66 to + 4.90 +4.90 ), confirming that raw log retrieval is insufficient. HGP attains an S-score of 35.58, surpassing Vanilla (w/o log) (20.34) by + 15.24 +15.24 and the top memory baseline HippoRAG2 (29.22) by + 6.36 +6.36 . These results show that graph-structured memory enables more precise personalized retrieval, better aligning responses with user-specific needs.",
+   "zh": "PAL-Set 解决方案提案任务。 表 2 报告了解决方案 QA 和选择方面的结果。 在 QA 方面，HGP 获得了最高的 LLM-judge 分数（7.46）以及最佳的 BLEU-2/3/4 分数（8.67/4.70/2.78），表明其多步连贯性更强。 在选择方面，非记忆基线模型相比 Vanilla（无日志）仅略有提升（+4.66 至 +4.90），证实了原始日志检索的不足。 HGP 的 S-score 达到 35.58，比 Vanilla（无日志）高出 +15.24，也比顶尖的记忆基线模型 HippoRAG2（29.22）高出 +6.36。 这些结果表明，图结构记忆能够实现更精确的个性化检索，使回答更贴合用户的特定需求。",
+   "sents": [
+    {
+     "en": "PAL-Set Solution Proposal tasks.",
+     "zh": "PAL-Set 解决方案提案任务。"
+    },
+    {
+     "en": "Table 2 reports results on Solution QA and Selection.",
+     "zh": "表 2 报告了解决方案 QA 和选择方面的结果。"
+    },
+    {
+     "en": "On QA, HGP achieves the highest LLM-judge score (7.46) and the best BLEU-2/3/4 (8.67/4.70/2.78), indicating stronger multi-step coherence.",
+     "zh": "在 QA 方面，HGP 获得了最高的 LLM-judge 分数（7.46）以及最佳的 BLEU-2/3/4 分数（8.67/4.70/2.78），表明其多步连贯性更强。"
+    },
+    {
+     "en": "On Selection, non-memory baselines improve only marginally over Vanilla (w/o log) ( + 4.66 +4.66 to + 4.90 +4.90 ), confirming that raw log retrieval is insufficient.",
+     "zh": "在选择方面，非记忆基线模型相比 Vanilla（无日志）仅略有提升（+4.66 至 +4.90），证实了原始日志检索的不足。"
+    },
+    {
+     "en": "HGP attains an S-score of 35.58, surpassing Vanilla (w/o log) (20.34) by + 15.24 +15.24 and the top memory baseline HippoRAG2 (29.22) by + 6.36 +6.36 .",
+     "zh": "HGP 的 S-score 达到 35.58，比 Vanilla（无日志）高出 +15.24，也比顶尖的记忆基线模型 HippoRAG2（29.22）高出 +6.36。"
+    },
+    {
+     "en": "These results show that graph-structured memory enables more precise personalized retrieval, better aligning responses with user-specific needs.",
+     "zh": "这些结果表明，图结构记忆能够实现更精确的个性化检索，使回答更贴合用户的特定需求。"
+    }
+   ]
+  },
+  {
+   "en": "To quantify the contribution of each memory component, We ablate each memory type while keeping the rest of the pipeline unchanged (Table 3 ).",
+   "zh": "为了量化每个记忆组件的贡献，我们在保持其余流程不变的情况下，对每种记忆类型进行了消融分析（表3）。",
+   "sents": null
+  },
+  {
+   "en": "Graph and type structure. Unified-vector collapses all memories into a single vector space, while Typed-vector preserves memory types but removes graph structure. Typed-vector substantially improves over Unified-vector on Selection (33.66 vs. 25.15), showing that memory typing is important for personalized decision making. Full HGP further improves the S-score to 35.58, indicating that type-specific graph storage provides additional gains beyond typed vector retrieval.",
+   "zh": "图与类型结构。 统一向量将所有记忆坍缩到一个单一的向量空间中，而类型化向量则保留记忆类型但移除了图结构。 在“选择”任务上，类型化向量相比统一向量有显著提升（33.66 对比 25.15），这表明记忆类型化对于个性化决策至关重要。 完整的 HGP 进一步将 S 分数提升至 35.58，说明特定类型的图存储带来了超越类型化向量检索的额外增益。",
+   "sents": [
+    {
+     "en": "Graph and type structure.",
+     "zh": "图与类型结构。"
+    },
+    {
+     "en": "Unified-vector collapses all memories into a single vector space, while Typed-vector preserves memory types but removes graph structure.",
+     "zh": "统一向量将所有记忆坍缩到一个单一的向量空间中，而类型化向量则保留记忆类型但移除了图结构。"
+    },
+    {
+     "en": "Typed-vector substantially improves over Unified-vector on Selection (33.66 vs. 25.15), showing that memory typing is important for personalized decision making.",
+     "zh": "在“选择”任务上，类型化向量相比统一向量有显著提升（33.66 对比 25.15），这表明记忆类型化对于个性化决策至关重要。"
+    },
+    {
+     "en": "Full HGP further improves the S-score to 35.58, indicating that type-specific graph storage provides additional gains beyond typed vector retrieval.",
+     "zh": "完整的 HGP 进一步将 S 分数提升至 35.58，说明特定类型的图存储带来了超越类型化向量检索的额外增益。"
+    }
+   ]
+  },
+  {
+   "en": "Episodic Memory(E-Mem). Removing episodic memory causes the largest drop on Solution QA : BLEU-1/2/3/4 fall from 19.66/8.67/4.70/2.78 to 19.53/7.96/3.96/2.23, and the LLM-judge score declines from 7.46 to 7.09. On Selection , the S-score drops from 35.58 to 28.83 ( Δ = − 6.75 \\Delta=-6.75 ). These results confirm that episodic memory, as the foundational trace of user interactions, is essential for both precise answer generation and context-aware solution matching.",
+   "zh": "情节记忆（E-Mem）。 移除情节记忆会导致 Solution QA 的性能出现最大程度的下降：BLEU-1/2/3/4 的分数从 19.66/8.67/4.70/2.78 降至 19.53/7.96/3.96/2.23，而 LLM-judge 评分则从 7.46 下降至 7.09。 在 Selection 环节，S-score 从 35.58 降至 28.83（Δ = − 6.75 \\Delta=-6.75）。 这些结果证实，情节记忆作为用户交互的基础痕迹，对于生成精准答案和进行上下文感知的解决方案匹配都至关重要。",
+   "sents": [
+    {
+     "en": "Episodic Memory(E-Mem).",
+     "zh": "情节记忆（E-Mem）。"
+    },
+    {
+     "en": "Removing episodic memory causes the largest drop on Solution QA : BLEU-1/2/3/4 fall from 19.66/8.67/4.70/2.78 to 19.53/7.96/3.96/2.23, and the LLM-judge score declines from 7.46 to 7.09.",
+     "zh": "移除情节记忆会导致 Solution QA 的性能出现最大程度的下降：BLEU-1/2/3/4 的分数从 19.66/8.67/4.70/2.78 降至 19.53/7.96/3.96/2.23，而 LLM-judge 评分则从 7.46 下降至 7.09。"
+    },
+    {
+     "en": "On Selection , the S-score drops from 35.58 to 28.83 ( Δ = − 6.75 \\Delta=-6.75 ).",
+     "zh": "在 Selection 环节，S-score 从 35.58 降至 28.83（Δ = − 6.75 \\Delta=-6.75）。"
+    },
+    {
+     "en": "These results confirm that episodic memory, as the foundational trace of user interactions, is essential for both precise answer generation and context-aware solution matching.",
+     "zh": "这些结果证实，情节记忆作为用户交互的基础痕迹，对于生成精准答案和进行上下文感知的解决方案匹配都至关重要。"
+    }
+   ]
+  },
+  {
+   "en": "Semantic Memory(S-Mem). Removing semantic memory causes the largest drop on Selection ( Δ = − 9.87 \\Delta=-9.87 ,S-score; Table 3 ), confirming that stable user profiles (long-term preferences, attributes, health facts) are essential for personalized decision-making. On Solution QA , the LLM-judge score also declines (7.46 to 7.23), indicating its contribution to coherent memory recall beyond pure retrieval.",
+   "zh": "语义记忆（S-Mem）。 移除语义记忆会导致选择环节出现最大程度的下降（Δ = −9.87，S得分；表3），这证实了稳定的用户画像（长期偏好、属性、健康信息）对于个性化决策至关重要。 在解决方案问答环节，LLM判官的得分也出现了下降（从7.46降至7.23），这表明它在连贯的记忆回忆方面发挥了超越单纯检索的作用。",
+   "sents": [
+    {
+     "en": "Semantic Memory(S-Mem).",
+     "zh": "语义记忆（S-Mem）。"
+    },
+    {
+     "en": "Removing semantic memory causes the largest drop on Selection ( Δ = − 9.87 \\Delta=-9.87 ,S-score; Table 3 ), confirming that stable user profiles (long-term preferences, attributes, health facts) are essential for personalized decision-making.",
+     "zh": "移除语义记忆会导致选择环节出现最大程度的下降（Δ = −9.87，S得分；表3），这证实了稳定的用户画像（长期偏好、属性、健康信息）对于个性化决策至关重要。"
+    },
+    {
+     "en": "On Solution QA , the LLM-judge score also declines (7.46 to 7.23), indicating its contribution to coherent memory recall beyond pure retrieval.",
+     "zh": "在解决方案问答环节，LLM判官的得分也出现了下降（从7.46降至7.23），这表明它在连贯的记忆回忆方面发挥了超越单纯检索的作用。"
+    }
+   ]
+  },
+  {
+   "en": "Procedural Memory(P-Mem). Removing procedural memory causes a modest but non-negligible drop in Selection ( Δ = − 2.48 \\Delta=-2.48 ), while the impact on Solution QA is minor (judge score 7.46 → 7.31 7.46\\rightarrow 7.31 , BLEU-4 2.78 → 2.76 2.78\\rightarrow 2.76 ). This aligns with its role as high-level strategic guidance rather than direct factual evidence.",
+   "zh": "程序性记忆（P-Mem）。 移除程序性记忆会导致选择得分出现适度但不可忽略的下降（Δ = −2.48），而对解决方案QA的影响则很小（评分从7.46降至7.31，BLEU-4从2.78降至2.76）。 这与它作为高层战略指导而非直接事实证据的作用相符。",
+   "sents": [
+    {
+     "en": "Procedural Memory(P-Mem).",
+     "zh": "程序性记忆（P-Mem）。"
+    },
+    {
+     "en": "Removing procedural memory causes a modest but non-negligible drop in Selection ( Δ = − 2.48 \\Delta=-2.48 ), while the impact on Solution QA is minor (judge score 7.46 → 7.31 7.46\\rightarrow 7.31 , BLEU-4 2.78 → 2.76 2.78\\rightarrow 2.76 ).",
+     "zh": "移除程序性记忆会导致选择得分出现适度但不可忽略的下降（Δ = −2.48），而对解决方案QA的影响则很小（评分从7.46降至7.31，BLEU-4从2.78降至2.76）。"
+    },
+    {
+     "en": "This aligns with its role as high-level strategic guidance rather than direct factual evidence.",
+     "zh": "这与它作为高层战略指导而非直接事实证据的作用相符。"
+    }
+   ]
+  },
+  {
+   "en": "Overall, Table 3 highlights complementary roles: semantic graphs drive personalized selection, episodic graphs supply fine-grained event evidence for QA, and procedural graphs enhance strategy reuse. Integrating all components yields the best performance, validating our hybrid graph memory design.",
+   "zh": "总体而言，表 3 突出了各组件的互补作用：语义图驱动个性化选择，情节图为问答提供精细的事件证据，而过程图则增强了策略的重用性。 整合所有组件可带来最佳性能，从而验证了我们混合图记忆设计的合理性。",
+   "sents": [
+    {
+     "en": "Overall, Table 3 highlights complementary roles: semantic graphs drive personalized selection, episodic graphs supply fine-grained event evidence for QA, and procedural graphs enhance strategy reuse.",
+     "zh": "总体而言，表 3 突出了各组件的互补作用：语义图驱动个性化选择，情节图为问答提供精细的事件证据，而过程图则增强了策略的重用性。"
+    },
+    {
+     "en": "Integrating all components yields the best performance, validating our hybrid graph memory design.",
+     "zh": "整合所有组件可带来最佳性能，从而验证了我们混合图记忆设计的合理性。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 2 illustrates the role of working memory in HGP using a healthcare scenario. Working memory explicitly extracts and maintains the current actionable state, enabling the agent to prioritize immediate actions during response generation.",
+   "zh": "图 2 通过一个医疗场景说明了工作记忆在 HGP 中的作用。 工作记忆明确提取并维持当前的可执行状态，使智能体能够在生成响应时优先处理即时行动。",
+   "sents": [
+    {
+     "en": "Figure 2 illustrates the role of working memory in HGP using a healthcare scenario.",
+     "zh": "图 2 通过一个医疗场景说明了工作记忆在 HGP 中的作用。"
+    },
+    {
+     "en": "Working memory explicitly extracts and maintains the current actionable state, enabling the agent to prioritize immediate actions during response generation.",
+     "zh": "工作记忆明确提取并维持当前的可执行状态，使智能体能够在生成响应时优先处理即时行动。"
+    }
+   ]
+  },
+  {
+   "en": "Setup. We compare three systems: (i) a vanilla LLM without memory, (ii) an LLM augmented with Mem0, and (iii) HGP with working memory enabled. The dialog history contains a pre-meal medication reminder. The user query asks for dinner recommendations without explicitly mentioning medication.",
+   "zh": "设置。 我们比较了三种系统：(i) 一个没有记忆功能的普通 LLM，(ii) 一个集成了 Mem0 的 LLM，以及 (iii) 启用了工作记忆的 HGP。 对话历史中包含一条餐前服药提醒。 用户的查询询问晚餐推荐，但没有明确提及服药。",
+   "sents": [
+    {
+     "en": "Setup.",
+     "zh": "设置。"
+    },
+    {
+     "en": "We compare three systems: (i) a vanilla LLM without memory, (ii) an LLM augmented with Mem0, and (iii) HGP with working memory enabled.",
+     "zh": "我们比较了三种系统：(i) 一个没有记忆功能的普通 LLM，(ii) 一个集成了 Mem0 的 LLM，以及 (iii) 启用了工作记忆的 HGP。"
+    },
+    {
+     "en": "The dialog history contains a pre-meal medication reminder.",
+     "zh": "对话历史中包含一条餐前服药提醒。"
+    },
+    {
+     "en": "The user query asks for dinner recommendations without explicitly mentioning medication.",
+     "zh": "用户的查询询问晚餐推荐，但没有明确提及服药。"
+    }
+   ]
+  },
+  {
+   "en": "Observation. The vanilla LLM directly suggests dinner options. Mem0 generates preference-aligned recommendations but fails to remind the user about the medication. In contrast, HGP retrieves the state “pre-meal medication: unfinished” from the working memory graph and injects it into the prompt, enabling the LLM to proactively issue a medication reminder before dinner and demonstrating state awareness under implicit constraints. (Further details in Appendix 6 .)",
+   "zh": "观察。 普通的 LLM 直接推荐晚餐选项。 Mem0 能生成符合偏好的推荐，但未能提醒用户服药。 相比之下，HGP 从工作记忆图中检索到“餐前服药：未完成”这一状态并将其注入提示中，使 LLM 能够在晚餐前主动发出服药提醒，从而在隐性约束下展现出对状态的感知能力。 （更多细节见附录 6。）",
+   "sents": [
+    {
+     "en": "Observation.",
+     "zh": "观察。"
+    },
+    {
+     "en": "The vanilla LLM directly suggests dinner options.",
+     "zh": "普通的 LLM 直接推荐晚餐选项。"
+    },
+    {
+     "en": "Mem0 generates preference-aligned recommendations but fails to remind the user about the medication.",
+     "zh": "Mem0 能生成符合偏好的推荐，但未能提醒用户服药。"
+    },
+    {
+     "en": "In contrast, HGP retrieves the state “pre-meal medication: unfinished” from the working memory graph and injects it into the prompt, enabling the LLM to proactively issue a medication reminder before dinner and demonstrating state awareness under implicit constraints.",
+     "zh": "相比之下，HGP 从工作记忆图中检索到“餐前服药：未完成”这一状态并将其注入提示中，使 LLM 能够在晚餐前主动发出服药提醒，从而在隐性约束下展现出对状态的感知能力。"
+    },
+    {
+     "en": "(Further details in Appendix 6 .)",
+     "zh": "（更多细节见附录 6。）"
+    }
+   ]
+  },
+  {
+   "en": "Table 4 compares our self-enhancement classifier with an offline classifier, a fixed LLM router, and a zero-shot LLM router. Our classifier achieves the highest macro-F1 (0.9339) and micro-F1 (0.9105) with an average latency of 4.98 ms, roughly 360× faster than the fixed LLM router. Fig. 3 shows the training dynamics: the confidence-based gating progressively shifts routing decisions from the LLM to the classifier, and incremental training every 200 samples drives the system from LLM-dominant to classifier-dominant (Fig. 3 a). Overall, LLM calls drop from 2400 to 807 (a 66.4% reduction), confirming the workload transfer visible in the cumulative curves (Fig. 3 b). These results demonstrate that the classifier effectively captures LLM routing knowledge while substantially lowering inference costs for on-device deployment. Hyperparameter sensitivity and per-stage performance are detailed in Appendix A.2 .",
+   "zh": "表4将我们的自增强分类器与离线分类器、固定LLM路由器和零样本LLM路由器进行了比较。 我们的分类器实现了最高的宏F1（0.9339）和微F1（0.9105），平均延迟为4.98毫秒，比固定LLM路由器快约360倍。 图3展示了训练动态：基于置信度的门控机制逐步将路由决策从LLM转移至分类器，并且每200个样本进行一次增量训练，使系统从以LLM为主转变为以分类器为主（图3a）。 总体而言，LLM调用次数从2400次降至807次（减少了66.4%），这证实了累积曲线中可见的工作负载转移（图3b）。 这些结果表明，该分类器有效捕捉了LLM路由知识，同时显著降低了设备端部署的推理成本。 超参数敏感性和各阶段性能详见附录A.2。",
+   "sents": [
+    {
+     "en": "Table 4 compares our self-enhancement classifier with an offline classifier, a fixed LLM router, and a zero-shot LLM router.",
+     "zh": "表4将我们的自增强分类器与离线分类器、固定LLM路由器和零样本LLM路由器进行了比较。"
+    },
+    {
+     "en": "Our classifier achieves the highest macro-F1 (0.9339) and micro-F1 (0.9105) with an average latency of 4.98 ms, roughly 360× faster than the fixed LLM router.",
+     "zh": "我们的分类器实现了最高的宏F1（0.9339）和微F1（0.9105），平均延迟为4.98毫秒，比固定LLM路由器快约360倍。"
+    },
+    {
+     "en": "Fig. 3 shows the training dynamics: the confidence-based gating progressively shifts routing decisions from the LLM to the classifier, and incremental training every 200 samples drives the system from LLM-dominant to classifier-dominant (Fig. 3 a).",
+     "zh": "图3展示了训练动态：基于置信度的门控机制逐步将路由决策从LLM转移至分类器，并且每200个样本进行一次增量训练，使系统从以LLM为主转变为以分类器为主（图3a）。"
+    },
+    {
+     "en": "Overall, LLM calls drop from 2400 to 807 (a 66.4% reduction), confirming the workload transfer visible in the cumulative curves (Fig. 3 b).",
+     "zh": "总体而言，LLM调用次数从2400次降至807次（减少了66.4%），这证实了累积曲线中可见的工作负载转移（图3b）。"
+    },
+    {
+     "en": "These results demonstrate that the classifier effectively captures LLM routing knowledge while substantially lowering inference costs for on-device deployment.",
+     "zh": "这些结果表明，该分类器有效捕捉了LLM路由知识，同时显著降低了设备端部署的推理成本。"
+    },
+    {
+     "en": "Hyperparameter sensitivity and per-stage performance are detailed in Appendix A.2 .",
+     "zh": "超参数敏感性和各阶段性能详见附录A.2。"
+    }
+   ]
+  },
+  {
+   "en": "In this paper, we address the key challenge of achieving robust and adaptive personalization in LLM-based agents under cross-user heterogeneity and distribution shift. To this end, we propose HGP, a memory-augmented framework that integrates a self-enhancement routing mechanism with a hybrid graph-based memory storage, enabling cost-efficient and structured personalization. Extensive experiments on LoCoMo and PAL-Set validate the effectiveness of HGP in improving memory-recall accuracy and personalization capability, while routing statistics confirm its ability to amortize supervision cost over time. Future work will explore finer-grained modeling of memory graphs, incorporate cross-memory consistency constraints, and extend the framework to a broader range of interactive tasks and tool-augmented agents.",
+   "zh": "在本文中，我们解决了在跨用户异质性和分布偏移条件下，实现基于大型语言模型（LLM）的智能体的稳健且自适应的个性化这一关键挑战。 为此，我们提出了 HGP——一种增强记忆能力的框架，它将自我增强路由机制与混合图结构记忆存储相结合，从而实现了低成本且结构化的个性化。 在 LoCoMo 和 PAL-Set 数据集上进行的广泛实验验证了 HGP 在提升记忆召回准确率和个性化能力方面的有效性，而路由统计数据则证实了其随时间推移摊销监督成本的能力。 未来的工作将探索对记忆图进行更精细的建模，引入跨记忆一致性约束，并将该框架扩展到更广泛的交互任务和工具增强型智能体中。",
+   "sents": [
+    {
+     "en": "In this paper, we address the key challenge of achieving robust and adaptive personalization in LLM-based agents under cross-user heterogeneity and distribution shift.",
+     "zh": "在本文中，我们解决了在跨用户异质性和分布偏移条件下，实现基于大型语言模型（LLM）的智能体的稳健且自适应的个性化这一关键挑战。"
+    },
+    {
+     "en": "To this end, we propose HGP, a memory-augmented framework that integrates a self-enhancement routing mechanism with a hybrid graph-based memory storage, enabling cost-efficient and structured personalization.",
+     "zh": "为此，我们提出了 HGP——一种增强记忆能力的框架，它将自我增强路由机制与混合图结构记忆存储相结合，从而实现了低成本且结构化的个性化。"
+    },
+    {
+     "en": "Extensive experiments on LoCoMo and PAL-Set validate the effectiveness of HGP in improving memory-recall accuracy and personalization capability, while routing statistics confirm its ability to amortize supervision cost over time.",
+     "zh": "在 LoCoMo 和 PAL-Set 数据集上进行的广泛实验验证了 HGP 在提升记忆召回准确率和个性化能力方面的有效性，而路由统计数据则证实了其随时间推移摊销监督成本的能力。"
+    },
+    {
+     "en": "Future work will explore finer-grained modeling of memory graphs, incorporate cross-memory consistency constraints, and extend the framework to a broader range of interactive tasks and tool-augmented agents.",
+     "zh": "未来的工作将探索对记忆图进行更精细的建模，引入跨记忆一致性约束，并将该框架扩展到更广泛的交互任务和工具增强型智能体中。"
+    }
+   ]
+  },
+  {
+   "en": "While HGP demonstrates improvements in personalized memory management, several limitations remain. First, although working memory shows promising qualitative results, existing benchmarks lack explicit working-memory annotations, preventing systematic quantitative evaluation. Constructing datasets with ground-truth state trajectories is an important direction for rigorous assessment. Second, graph construction and maintenance introduce additional offline computation and storage costs, while our on-device claim primarily concerns latency-critical online routing and retrieval. A more complete end-to-end cost analysis remains for future work. In addition, this work focuses mainly on graph storage, while finer-grained retrieval and pruning mechanisms require further study. Finally, we use LLM-as-a-judge evaluation to complement lexical-overlap metrics. Although standardized prompts and temperature 0.0 improve evaluation consistency, LLM judges may still exhibit biases, and their reliability warrants continued attention.",
+   "zh": "尽管 HGP 在个性化内存管理方面展现出改进，但仍存在若干局限性。 首先，虽然工作记忆在定性方面显示出有希望的结果，但现有基准缺乏明确的工作记忆标注，因此无法进行系统性的定量评估。 构建包含真实状态轨迹的数据集是进行严格评估的重要方向。 其次，图结构的构建与维护会引入额外的离线计算和存储成本，而我们的设备端主张主要关注对延迟敏感的在线路由与检索。 更完整的端到端成本分析仍有待未来研究。 此外，本研究主要聚焦于图结构存储，而更精细的检索与剪枝机制仍需进一步探索。 最后，我们采用“大语言模型作为评判者”的评估方法，以补充词汇重叠度指标。 尽管标准化的提示词和温度值 0.0 提升了评估的一致性，但作为评判者的大语言模型仍可能存在偏见，其可靠性值得持续关注。",
+   "sents": [
+    {
+     "en": "While HGP demonstrates improvements in personalized memory management, several limitations remain.",
+     "zh": "尽管 HGP 在个性化内存管理方面展现出改进，但仍存在若干局限性。"
+    },
+    {
+     "en": "First, although working memory shows promising qualitative results, existing benchmarks lack explicit working-memory annotations, preventing systematic quantitative evaluation.",
+     "zh": "首先，虽然工作记忆在定性方面显示出有希望的结果，但现有基准缺乏明确的工作记忆标注，因此无法进行系统性的定量评估。"
+    },
+    {
+     "en": "Constructing datasets with ground-truth state trajectories is an important direction for rigorous assessment.",
+     "zh": "构建包含真实状态轨迹的数据集是进行严格评估的重要方向。"
+    },
+    {
+     "en": "Second, graph construction and maintenance introduce additional offline computation and storage costs, while our on-device claim primarily concerns latency-critical online routing and retrieval.",
+     "zh": "其次，图结构的构建与维护会引入额外的离线计算和存储成本，而我们的设备端主张主要关注对延迟敏感的在线路由与检索。"
+    },
+    {
+     "en": "A more complete end-to-end cost analysis remains for future work.",
+     "zh": "更完整的端到端成本分析仍有待未来研究。"
+    },
+    {
+     "en": "In addition, this work focuses mainly on graph storage, while finer-grained retrieval and pruning mechanisms require further study.",
+     "zh": "此外，本研究主要聚焦于图结构存储，而更精细的检索与剪枝机制仍需进一步探索。"
+    },
+    {
+     "en": "Finally, we use LLM-as-a-judge evaluation to complement lexical-overlap metrics.",
+     "zh": "最后，我们采用“大语言模型作为评判者”的评估方法，以补充词汇重叠度指标。"
+    },
+    {
+     "en": "Although standardized prompts and temperature 0.0 improve evaluation consistency, LLM judges may still exhibit biases, and their reliability warrants continued attention.",
+     "zh": "尽管标准化的提示词和温度值 0.0 提升了评估的一致性，但作为评判者的大语言模型仍可能存在偏见，其可靠性值得持续关注。"
+    }
+   ]
+  },
+  {
+   "en": "This work was supported by the Nanjing University-China Mobile Joint Research Institute.",
+   "zh": "本研究得到了南京大学-中国移动联合研究所的支持。",
+   "sents": null
+  },
+  {
+   "en": "We provide the full LLM-as-a-Judge prompt template for the PAL-Set Solution QA task in Figure 4 . This template is used to compute the LLM-judge scores reported in Table 2 . During evaluation, we supply the judge LLM with the model-generated solution, the task question, and relevant conversation context (when available), along with the corresponding positive and negative reference solutions from the dataset. The judge is instructed to score outputs across multiple dimensions: requirement satisfaction, semantic correctness, step completeness, and user-level personalization. Positive and negative references are provided to calibrate judgments and penalize common error patterns. For ease of aggregation, the judge is constrained to produce strictly formatted JSON outputs, with temperature fixed at 0.0.",
+   "zh": "我们在图 4 中提供了用于 PAL-Set Solution QA 任务的完整 LLM-as-a-Judge 提示模板。 该模板用于计算表 2 中报告的 LLM-judge 分数。 在评估过程中，我们将模型生成的解决方案、任务问题以及相关的对话上下文（如有）提供给法官 LLM，同时提供数据集中对应的正向和反向参考解决方案。 法官被要求从多个维度对输出进行评分：需求满足度、语义正确性、步骤完整性以及用户层面的个性化程度。 提供正向和反向参考用于校准判断，并对常见的错误模式进行扣分。 为便于汇总，法官被限制生成严格格式化的 JSON 输出，且温度固定为 0.0。",
+   "sents": [
+    {
+     "en": "We provide the full LLM-as-a-Judge prompt template for the PAL-Set Solution QA task in Figure 4 .",
+     "zh": "我们在图 4 中提供了用于 PAL-Set Solution QA 任务的完整 LLM-as-a-Judge 提示模板。"
+    },
+    {
+     "en": "This template is used to compute the LLM-judge scores reported in Table 2 .",
+     "zh": "该模板用于计算表 2 中报告的 LLM-judge 分数。"
+    },
+    {
+     "en": "During evaluation, we supply the judge LLM with the model-generated solution, the task question, and relevant conversation context (when available), along with the corresponding positive and negative reference solutions from the dataset.",
+     "zh": "在评估过程中，我们将模型生成的解决方案、任务问题以及相关的对话上下文（如有）提供给法官 LLM，同时提供数据集中对应的正向和反向参考解决方案。"
+    },
+    {
+     "en": "The judge is instructed to score outputs across multiple dimensions: requirement satisfaction, semantic correctness, step completeness, and user-level personalization.",
+     "zh": "法官被要求从多个维度对输出进行评分：需求满足度、语义正确性、步骤完整性以及用户层面的个性化程度。"
+    },
+    {
+     "en": "Positive and negative references are provided to calibrate judgments and penalize common error patterns.",
+     "zh": "提供正向和反向参考用于校准判断，并对常见的错误模式进行扣分。"
+    },
+    {
+     "en": "For ease of aggregation, the judge is constrained to produce strictly formatted JSON outputs, with temperature fixed at 0.0.",
+     "zh": "为便于汇总，法官被限制生成严格格式化的 JSON 输出，且温度固定为 0.0。"
+    }
+   ]
+  },
+  {
+   "en": "To evaluate the robustness of our self-enhancement classifier under different hyperparameter settings, we conducted a full-factor grid search over the three key parameters: initial threshold τ 0 ∈ { 0.8 , 0.9 , 0.95 } \\tau_{0}\\in\\{0.8,0.9,0.95\\} , decay rate β ∈ { 0.02 , 0.05 , 0.1 } \\beta\\in\\{0.02,0.05,0.1\\} , and lower bound τ min ∈ { 0.3 , 0.5 , 0.7 } \\tau_{\\min}\\in\\{0.3,0.5,0.7\\} . This resulted in 27 configurations. For each configuration, we measured the macro F1 score (with standard deviation) and the average inference latency on the same validation set. To comprehensively evaluate each hyperparameter configuration, we define a combined score that balances accuracy, stability, and efficiency. Let μ lat ​ ( c ) \\mu_{\\text{lat}}(c) denote the average inference latency of configuration c c , and let μ lat min \\mu_{\\text{lat}}^{\\min} be the minimum average latency among all candidate configurations:",
+   "zh": "为了评估我们的自我增强分类器在不同超参数设置下的鲁棒性，我们对三个关键参数进行了全因子网格搜索：初始阈值 τ 0 ∈ { 0.8 , 0.9 , 0.95 } \\tau_{0}\\in\\{0.8,0.9,0.95\\}、衰减率 β ∈ { 0.02 , 0.05 , 0.1 } \\beta\\in\\{0.02,0.05,0.1\\}，以及下界 τ min ∈ { 0.3 , 0.5 , 0.7 } \\tau_{\\min}\\in\\{0.3,0.5,0.7\\}。 这共产生了 27 种配置。 对于每种配置，我们测量了宏 F1 分数（及其标准差）以及在同一验证集上的平均推理延迟。 为了全面评估每种超参数配置，我们定义了一个结合分数，该分数平衡了准确性、稳定性和效率。 令 μ lat ​ ( c ) \\mu_{\\text{lat}}(c) 表示配置 c c 的平均推理延迟，并令 μ lat min \\mu_{\\text{lat}}^{\\min} 为所有候选配置中的最小平均延迟：",
+   "sents": [
+    {
+     "en": "To evaluate the robustness of our self-enhancement classifier under different hyperparameter settings, we conducted a full-factor grid search over the three key parameters: initial threshold τ 0 ∈ { 0.8 , 0.9 , 0.95 } \\tau_{0}\\in\\{0.8,0.9,0.95\\} , decay rate β ∈ { 0.02 , 0.05 , 0.1 } \\beta\\in\\{0.02,0.05,0.1\\} , and lower bound τ min ∈ { 0.3 , 0.5 , 0.7 } \\tau_{\\min}\\in\\{0.3,0.5,0.7\\} .",
+     "zh": "为了评估我们的自我增强分类器在不同超参数设置下的鲁棒性，我们对三个关键参数进行了全因子网格搜索：初始阈值 τ 0 ∈ { 0.8 , 0.9 , 0.95 } \\tau_{0}\\in\\{0.8,0.9,0.95\\}、衰减率 β ∈ { 0.02 , 0.05 , 0.1 } \\beta\\in\\{0.02,0.05,0.1\\}，以及下界 τ min ∈ { 0.3 , 0.5 , 0.7 } \\tau_{\\min}\\in\\{0.3,0.5,0.7\\}。"
+    },
+    {
+     "en": "This resulted in 27 configurations.",
+     "zh": "这共产生了 27 种配置。"
+    },
+    {
+     "en": "For each configuration, we measured the macro F1 score (with standard deviation) and the average inference latency on the same validation set.",
+     "zh": "对于每种配置，我们测量了宏 F1 分数（及其标准差）以及在同一验证集上的平均推理延迟。"
+    },
+    {
+     "en": "To comprehensively evaluate each hyperparameter configuration, we define a combined score that balances accuracy, stability, and efficiency.",
+     "zh": "为了全面评估每种超参数配置，我们定义了一个结合分数，该分数平衡了准确性、稳定性和效率。"
+    },
+    {
+     "en": "Let μ lat ​ ( c ) \\mu_{\\text{lat}}(c) denote the average inference latency of configuration c c , and let μ lat min \\mu_{\\text{lat}}^{\\min} be the minimum average latency among all candidate configurations:",
+     "zh": "令 μ lat ​ ( c ) \\mu_{\\text{lat}}(c) 表示配置 c c 的平均推理延迟，并令 μ lat min \\mu_{\\text{lat}}^{\\min} 为所有候选配置中的最小平均延迟："
+    }
+   ]
+  },
+  {
+   "en": "The normalized latency is then defined as:",
+   "zh": "归一化延迟随后定义如下：",
+   "sents": null
+  },
+  {
+   "en": "With penalty coefficients λ s = 0.5 \\lambda_{s}=0.5 and λ l = 0.5 \\lambda_{l}=0.5 , the overall score for configuration c c is:",
+   "zh": "当惩罚系数为 λ s = 0.5 \\lambda_{s}=0.5 和 λ l = 0.5 \\lambda_{l}=0.5 时，配置 c c 的总得分为：",
+   "sents": null
+  },
+  {
+   "en": "where μ F1 ​ ( c ) \\mu_{\\text{F1}}(c) and σ F1 ​ ( c ) \\sigma_{\\text{F1}}(c) are the mean and standard deviation of the macro F1 score, respectively. This score penalizes both performance variability ( σ F1 \\sigma_{\\text{F1}} ) and any latency exceeding the optimal value ( LatencyNorm ⁡ ( c ) − 1 \\mathrm{LatencyNorm}(c)-1 ), thereby encouraging configurations that are accurate, stable, and efficient.",
+   "zh": "其中 μ F1 ​ ( c ) \\mu_{\\text{F1}}(c) 和 σ F1 ​ ( c ) \\sigma_{\\text{F1}}(c) 分别是宏观 F1 分数的均值和标准差。 该分数会对性能波动（ σ F1 \\sigma_{\\text{F1}} ）以及任何超过最优值的延迟（ LatencyNorm ⁡ ( c ) − 1 \\mathrm{LatencyNorm}(c)-1 ）进行惩罚，从而鼓励配置在准确性、稳定性和效率方面均表现优异。",
+   "sents": [
+    {
+     "en": "where μ F1 ​ ( c ) \\mu_{\\text{F1}}(c) and σ F1 ​ ( c ) \\sigma_{\\text{F1}}(c) are the mean and standard deviation of the macro F1 score, respectively.",
+     "zh": "其中 μ F1 ​ ( c ) \\mu_{\\text{F1}}(c) 和 σ F1 ​ ( c ) \\sigma_{\\text{F1}}(c) 分别是宏观 F1 分数的均值和标准差。"
+    },
+    {
+     "en": "This score penalizes both performance variability ( σ F1 \\sigma_{\\text{F1}} ) and any latency exceeding the optimal value ( LatencyNorm ⁡ ( c ) − 1 \\mathrm{LatencyNorm}(c)-1 ), thereby encouraging configurations that are accurate, stable, and efficient.",
+     "zh": "该分数会对性能波动（ σ F1 \\sigma_{\\text{F1}} ）以及任何超过最优值的延迟（ LatencyNorm ⁡ ( c ) − 1 \\mathrm{LatencyNorm}(c)-1 ）进行惩罚，从而鼓励配置在准确性、稳定性和效率方面均表现优异。"
+    }
+   ]
+  },
+  {
+   "en": "As shown in the table 5 , the macro F1 values across all 27 configurations vary within a very small range, demonstrating that the classifier is remarkably insensitive to the choice of these hyperparameters. The best macro F1 (0.9528) is achieved by configuration #21 ( τ 0 = 0.95 , β = 0.02 , τ min = 0.3 \\tau_{0}=0.95,\\beta=0.02,\\tau_{\\min}=0.3 ), but its latency (5.93 ms) is significantly higher than the optimum. The configuration with the lowest latency (4.23 ms) is #1 ( τ 0 = 0.9 , β = 0.02 , τ min = 0.5 \\tau_{0}=0.9,\\beta=0.02,\\tau_{\\min}=0.5 ), which also attains a macro F1 of 0.9490.",
+   "zh": "如表 5 所示，所有 27 种配置下的宏观 F1 值变化范围极小，这表明该分类器对这些超参数的选择具有显著的鲁棒性。 最佳宏观 F1（0.9528）由配置 #21（τ₀ = 0.95，β = 0.02，τ_min = 0.3）实现，但其延迟（5.93 ms）明显高于最优值。 延迟最低的配置（4.23 ms）是 #1（τ₀ = 0.9，β = 0.02，τ_min = 0.5），其宏观 F1 也达到了 0.9490。",
+   "sents": [
+    {
+     "en": "As shown in the table 5 , the macro F1 values across all 27 configurations vary within a very small range, demonstrating that the classifier is remarkably insensitive to the choice of these hyperparameters.",
+     "zh": "如表 5 所示，所有 27 种配置下的宏观 F1 值变化范围极小，这表明该分类器对这些超参数的选择具有显著的鲁棒性。"
+    },
+    {
+     "en": "The best macro F1 (0.9528) is achieved by configuration #21 ( τ 0 = 0.95 , β = 0.02 , τ min = 0.3 \\tau_{0}=0.95,\\beta=0.02,\\tau_{\\min}=0.3 ), but its latency (5.93 ms) is significantly higher than the optimum.",
+     "zh": "最佳宏观 F1（0.9528）由配置 #21（τ₀ = 0.95，β = 0.02，τ_min = 0.3）实现，但其延迟（5.93 ms）明显高于最优值。"
+    },
+    {
+     "en": "The configuration with the lowest latency (4.23 ms) is #1 ( τ 0 = 0.9 , β = 0.02 , τ min = 0.5 \\tau_{0}=0.9,\\beta=0.02,\\tau_{\\min}=0.5 ), which also attains a macro F1 of 0.9490.",
+     "zh": "延迟最低的配置（4.23 ms）是 #1（τ₀ = 0.9，β = 0.02，τ_min = 0.5），其宏观 F1 也达到了 0.9490。"
+    }
+   ]
+  },
+  {
+   "en": "Our default configuration #5 ( τ 0 = 0.9 , β = 0.05 , τ min = 0.5 \\tau_{0}=0.9,\\beta=0.05,\\tau_{\\min}=0.5 ) yields a macro F1 of 0.9474 and a latency of 4.44 ms, which is only marginally worse than the best trade-off. The differences from the top-scoring configuration (#1) are minimal: macro-F1 differs by only 0.0016 (0.9474 vs. 0.9490) and latency by 0.21 ms (4.44 vs.4.23). Both configurations lie on the same near-Pareto frontier. We choose #5 over #1 for the following reasons:",
+   "zh": "我们的默认配置 #5（τ₀ = 0.9，β = 0.05，τ_min = 0.5）实现了 0.9474 的宏观 F1 值和 4.44 毫秒的延迟，仅略逊于最佳权衡方案。 与得分最高的配置（#1）相比，差异极小：宏观 F1 仅相差 0.0016（0.9474 对比 0.9490），延迟相差 0.21 毫秒（4.44 对比 4.23）。 这两种配置都位于同一近帕累托前沿上。 我们基于以下原因选择 #5 而非 #1：",
+   "sents": [
+    {
+     "en": "Our default configuration #5 ( τ 0 = 0.9 , β = 0.05 , τ min = 0.5 \\tau_{0}=0.9,\\beta=0.05,\\tau_{\\min}=0.5 ) yields a macro F1 of 0.9474 and a latency of 4.44 ms, which is only marginally worse than the best trade-off.",
+     "zh": "我们的默认配置 #5（τ₀ = 0.9，β = 0.05，τ_min = 0.5）实现了 0.9474 的宏观 F1 值和 4.44 毫秒的延迟，仅略逊于最佳权衡方案。"
+    },
+    {
+     "en": "The differences from the top-scoring configuration (#1) are minimal: macro-F1 differs by only 0.0016 (0.9474 vs. 0.9490) and latency by 0.21 ms (4.44 vs.4.23).",
+     "zh": "与得分最高的配置（#1）相比，差异极小：宏观 F1 仅相差 0.0016（0.9474 对比 0.9490），延迟相差 0.21 毫秒（4.44 对比 4.23）。"
+    },
+    {
+     "en": "Both configurations lie on the same near-Pareto frontier.",
+     "zh": "这两种配置都位于同一近帕累托前沿上。"
+    },
+    {
+     "en": "We choose #5 over #1 for the following reasons:",
+     "zh": "我们基于以下原因选择 #5 而非 #1："
+    }
+   ]
+  },
+  {
+   "en": "Adaptive threshold updates : The moderate decay rate ( β = 0.05 \\beta=0.05 ) triggers more effective threshold updates during online self-enhancement, whereas a smaller decay ( β = 0.02 \\beta=0.02 ) would keep the threshold nearly unchanged, leading to under-adaptation.",
+   "zh": "自适应阈值更新：中等衰减率（β = 0.05）会在在线自我增强过程中触发更有效的阈值更新，而较小的衰减率（β = 0.02）则会使阈值几乎保持不变，从而导致适应不足。",
+   "sents": null
+  },
+  {
+   "en": "Consistency with our experimental protocol : This setting avoids post-hoc overfitting to a single best point and maintains consistency with the rest of our experiments.",
+   "zh": "与我们实验方案的一致性：此设置可避免事后对单一最佳点的过度拟合，并与我们其余实验保持一致性。",
+   "sents": null
+  },
+  {
+   "en": "Robustness : The performance gap between #5 and the best configuration is negligible, and our main conclusions remain unchanged regardless of which near-optimal configuration is chosen.",
+   "zh": "鲁棒性：#5 与最佳配置之间的性能差距可以忽略不计，无论选择哪种接近最优的配置，我们的主要结论都保持不变。",
+   "sents": null
+  },
+  {
+   "en": "Therefore, we adopt τ 0 = 0.9 , β = 0.05 , τ min = 0.5 \\tau_{0}=0.9,\\beta=0.05,\\tau_{\\min}=0.5 as the default setting for all main experiments. The full ranking of 27 configurations is provided to demonstrate that our results are insensitive to the specific choice among near-optimal settings.",
+   "zh": "因此，我们在所有主要实验中采用 τ₀ = 0.9、β = 0.05、τ_min = 0.5 作为默认设置。 我们提供了全部 27 种配置的完整排名，以证明我们的结果对接近最优设置的特定选择并不敏感。",
+   "sents": [
+    {
+     "en": "Therefore, we adopt τ 0 = 0.9 , β = 0.05 , τ min = 0.5 \\tau_{0}=0.9,\\beta=0.05,\\tau_{\\min}=0.5 as the default setting for all main experiments.",
+     "zh": "因此，我们在所有主要实验中采用 τ₀ = 0.9、β = 0.05、τ_min = 0.5 作为默认设置。"
+    },
+    {
+     "en": "The full ranking of 27 configurations is provided to demonstrate that our results are insensitive to the specific choice among near-optimal settings.",
+     "zh": "我们提供了全部 27 种配置的完整排名，以证明我们的结果对接近最优设置的特定选择并不敏感。"
+    }
+   ]
+  },
+  {
+   "en": "To investigate how the self-enhancement mechanism improves classifier performance over time, we record its performance after each incremental training round. The initial stage (S0) uses an offline-trained classifier without any LLM supervision. Subsequently, every 200 newly LLM-labeled samples trigger one round of incremental fine-tuning, resulting in five rounds (S1 to S5). As shown in Table 6 , the macro F1 steadily increases from 0.8980 (S0) to 0.9554 (S5), an absolute gain of 5.74 percentage points. The micro F1 follows a similar upward trend. The most significant improvements occur in the first two rounds (S0 → \\rightarrow S1: +1.82 points; S1 → \\rightarrow S2: +1.20 points), after which the gains gradually diminish, indicating convergence. These results demonstrate that the self-enhancement mechanism effectively leverages LLM-labeled hard samples to continuously improve routing accuracy without causing performance oscillation or catastrophic forgetting.",
+   "zh": "为了研究自我增强机制如何随时间推移提升分类器的性能，我们在每一轮增量训练后都记录其性能表现。 初始阶段（S0）使用一个未经任何 LLM 监督的离线训练分类器。 随后，每新增 200 个由 LLM 标注的样本便会触发一轮增量微调，最终形成五个阶段（S1 至 S5）。 如表 6 所示，宏 F1 值从 0.8980（S0）稳步提升至 0.9554（S5），绝对增益为 5.74 个百分点。 微 F1 也呈现出类似的上升趋势。 最显著的改进出现在最初两轮（S0 → S1：+1.82 个百分点；S1 → S2：+1.20 个百分点），此后增益逐渐减小，表明模型已收敛。 这些结果表明，自我增强机制能够有效地利用 LLM 标注的困难样本，持续提高路由准确性，且不会导致性能波动或灾难性遗忘。",
+   "sents": [
+    {
+     "en": "To investigate how the self-enhancement mechanism improves classifier performance over time, we record its performance after each incremental training round.",
+     "zh": "为了研究自我增强机制如何随时间推移提升分类器的性能，我们在每一轮增量训练后都记录其性能表现。"
+    },
+    {
+     "en": "The initial stage (S0) uses an offline-trained classifier without any LLM supervision.",
+     "zh": "初始阶段（S0）使用一个未经任何 LLM 监督的离线训练分类器。"
+    },
+    {
+     "en": "Subsequently, every 200 newly LLM-labeled samples trigger one round of incremental fine-tuning, resulting in five rounds (S1 to S5).",
+     "zh": "随后，每新增 200 个由 LLM 标注的样本便会触发一轮增量微调，最终形成五个阶段（S1 至 S5）。"
+    },
+    {
+     "en": "As shown in Table 6 , the macro F1 steadily increases from 0.8980 (S0) to 0.9554 (S5), an absolute gain of 5.74 percentage points.",
+     "zh": "如表 6 所示，宏 F1 值从 0.8980（S0）稳步提升至 0.9554（S5），绝对增益为 5.74 个百分点。"
+    },
+    {
+     "en": "The micro F1 follows a similar upward trend.",
+     "zh": "微 F1 也呈现出类似的上升趋势。"
+    },
+    {
+     "en": "The most significant improvements occur in the first two rounds (S0 → \\rightarrow S1: +1.82 points; S1 → \\rightarrow S2: +1.20 points), after which the gains gradually diminish, indicating convergence.",
+     "zh": "最显著的改进出现在最初两轮（S0 → S1：+1.82 个百分点；S1 → S2：+1.20 个百分点），此后增益逐渐减小，表明模型已收敛。"
+    },
+    {
+     "en": "These results demonstrate that the self-enhancement mechanism effectively leverages LLM-labeled hard samples to continuously improve routing accuracy without causing performance oscillation or catastrophic forgetting.",
+     "zh": "这些结果表明，自我增强机制能够有效地利用 LLM 标注的困难样本，持续提高路由准确性，且不会导致性能波动或灾难性遗忘。"
+    }
+   ]
+  },
+  {
+   "en": "It is important to emphasize the training protocol for this stage-wise evaluation. The classifier first makes predictions on the training set. Samples with low confidence are sent to an LLM for re-labeling, and the (sample, label) pairs are cached. Once a sufficient number of such samples is accumulated, incremental training is performed, and the cycle repeats. The training and test sets are strictly separated. The test set is never used for training, nor does it ever involve LLM inference. For rigorous evaluation, the test set is further partitioned into multiple disjoint subsets, each used exactly once for evaluating the classifier after one incremental training round. This prevents any data leakage across evaluation steps.",
+   "zh": "强调这一阶段式评估的训练方案至关重要。 分类器首先对训练集进行预测。 置信度低的样本会被送入大型语言模型（LLM）重新标注，同时将这些（样本，标签）对缓存起来。 一旦积累了足够数量的此类样本，就会执行增量训练，然后重复这一循环。 训练集和测试集被严格分离。 测试集绝不会用于训练，也从不涉及大型语言模型（LLM）的推理。 为了进行严格的评估，测试集会被进一步划分为多个互不相交的子集，每个子集在每次增量训练轮次后仅用于一次分类器评估。 这可以防止评估步骤之间出现任何数据泄露。",
+   "sents": [
+    {
+     "en": "It is important to emphasize the training protocol for this stage-wise evaluation.",
+     "zh": "强调这一阶段式评估的训练方案至关重要。"
+    },
+    {
+     "en": "The classifier first makes predictions on the training set.",
+     "zh": "分类器首先对训练集进行预测。"
+    },
+    {
+     "en": "Samples with low confidence are sent to an LLM for re-labeling, and the (sample, label) pairs are cached.",
+     "zh": "置信度低的样本会被送入大型语言模型（LLM）重新标注，同时将这些（样本，标签）对缓存起来。"
+    },
+    {
+     "en": "Once a sufficient number of such samples is accumulated, incremental training is performed, and the cycle repeats.",
+     "zh": "一旦积累了足够数量的此类样本，就会执行增量训练，然后重复这一循环。"
+    },
+    {
+     "en": "The training and test sets are strictly separated.",
+     "zh": "训练集和测试集被严格分离。"
+    },
+    {
+     "en": "The test set is never used for training, nor does it ever involve LLM inference.",
+     "zh": "测试集绝不会用于训练，也从不涉及大型语言模型（LLM）的推理。"
+    },
+    {
+     "en": "For rigorous evaluation, the test set is further partitioned into multiple disjoint subsets, each used exactly once for evaluating the classifier after one incremental training round.",
+     "zh": "为了进行严格的评估，测试集会被进一步划分为多个互不相交的子集，每个子集在每次增量训练轮次后仅用于一次分类器评估。"
+    },
+    {
+     "en": "This prevents any data leakage across evaluation steps.",
+     "zh": "这可以防止评估步骤之间出现任何数据泄露。"
+    }
+   ]
+  },
+  {
+   "en": "As shown in Figure 5 , upon receiving a user query q q , HGP executes a structured retrieval protocol over its hybrid graph memory 𝒢 = { 𝒢 epi , 𝒢 sem , 𝒢 proc , 𝒢 wm } \\mathcal{G}=\\{\\mathcal{G}_{\\mathrm{epi}},\\mathcal{G}_{\\mathrm{sem}},\\mathcal{G}_{\\mathrm{proc}},\\mathcal{G}_{\\mathrm{wm}}\\} . Each sub-graph is queried for a specific type of evidence. The retrieved sub-graphs are merged into a unified context and passed, together with q q , to the LLM. The model then generates a response that is aware of both long-term user history and the current implicit constraints, thereby ensuring personalization, safety, and coherence.",
+   "zh": "如图 5 所示，在接收到用户查询 q q 后，HGP 会对其混合图记忆 𝒢 = { 𝒢 epi , 𝒢 sem , 𝒢 proc , 𝒢 wm } \\mathcal{G}=\\{\\mathcal{G}_{\\mathrm{epi}},\\mathcal{G}_{\\mathrm{sem}},\\mathcal{G}_{\\mathrm{proc}},\\mathcal{G}_{\\mathrm{wm}}\\} 执行结构化检索协议。 每个子图都会被查询以获取特定类型的证据。 检索到的子图会被合并为一个统一上下文，并与 q q 一同传递给 LLM。 随后，该模型会生成一个既了解用户长期历史又知晓当前隐式约束的响应，从而确保个性化、安全性和连贯性。",
+   "sents": [
+    {
+     "en": "As shown in Figure 5 , upon receiving a user query q q , HGP executes a structured retrieval protocol over its hybrid graph memory 𝒢 = { 𝒢 epi , 𝒢 sem , 𝒢 proc , 𝒢 wm } \\mathcal{G}=\\{\\mathcal{G}_{\\mathrm{epi}},\\mathcal{G}_{\\mathrm{sem}},\\mathcal{G}_{\\mathrm{proc}},\\mathcal{G}_{\\mathrm{wm}}\\} .",
+     "zh": "如图 5 所示，在接收到用户查询 q q 后，HGP 会对其混合图记忆 𝒢 = { 𝒢 epi , 𝒢 sem , 𝒢 proc , 𝒢 wm } \\mathcal{G}=\\{\\mathcal{G}_{\\mathrm{epi}},\\mathcal{G}_{\\mathrm{sem}},\\mathcal{G}_{\\mathrm{proc}},\\mathcal{G}_{\\mathrm{wm}}\\} 执行结构化检索协议。"
+    },
+    {
+     "en": "Each sub-graph is queried for a specific type of evidence.",
+     "zh": "每个子图都会被查询以获取特定类型的证据。"
+    },
+    {
+     "en": "The retrieved sub-graphs are merged into a unified context and passed, together with q q , to the LLM.",
+     "zh": "检索到的子图会被合并为一个统一上下文，并与 q q 一同传递给 LLM。"
+    },
+    {
+     "en": "The model then generates a response that is aware of both long-term user history and the current implicit constraints, thereby ensuring personalization, safety, and coherence.",
+     "zh": "随后，该模型会生成一个既了解用户长期历史又知晓当前隐式约束的响应，从而确保个性化、安全性和连贯性。"
+    }
+   ]
+  },
+  {
+   "en": "We construct a personalized health scenario where the dialogue history includes a to-do item: take pre-meal medication before dinner . During evaluation, the user only requests dinner recommendations without explicitly mentioning medication. This case tests whether the agent can adhere to implicit constraints inferred from prior interactions and prioritize actions that are required but not explicitly stated in the query.",
+   "zh": "我们构建了一个个性化的健康场景，其中对话历史包含一项待办事项：晚餐前服用餐前药物。 在评估过程中，用户仅请求晚餐推荐，并未明确提及服药事宜。 该案例旨在测试智能体是否能够遵循从先前互动中推断出的隐含约束，并优先执行那些必要但未在查询中明确说明的行动。",
+   "sents": [
+    {
+     "en": "We construct a personalized health scenario where the dialogue history includes a to-do item: take pre-meal medication before dinner .",
+     "zh": "我们构建了一个个性化的健康场景，其中对话历史包含一项待办事项：晚餐前服用餐前药物。"
+    },
+    {
+     "en": "During evaluation, the user only requests dinner recommendations without explicitly mentioning medication.",
+     "zh": "在评估过程中，用户仅请求晚餐推荐，并未明确提及服药事宜。"
+    },
+    {
+     "en": "This case tests whether the agent can adhere to implicit constraints inferred from prior interactions and prioritize actions that are required but not explicitly stated in the query.",
+     "zh": "该案例旨在测试智能体是否能够遵循从先前互动中推断出的隐含约束，并优先执行那些必要但未在查询中明确说明的行动。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 6 illustrates the full pipeline for the case study in Section 4.3 . During retrieval, HGP queries heterogeneous external memories separately: (i) the event graph for diet- and symptom-related logs (episodic memory); (ii) the knowledge graph for user preferences and profile facts (semantic memory); and (iii) the rule tree for reusable strategies that previously received positive feedback (procedural memory). Together, these long-term memories supply user-relevant evidence for personalized dinner suggestions (highlighted in blue).",
+   "zh": "图 6 展示了第 4.3 节案例研究的完整流程。 在检索过程中，HGP 会分别查询异构的外部记忆：(i) 与饮食和症状相关的日志事件图（情景记忆）；(ii) 用户偏好和个人资料事实的知识图谱（语义记忆）；以及 (iii) 先前获得过积极反馈的可复用策略的规则树（程序性记忆）。 这些长期记忆共同为用户提供了与个人晚餐建议相关的证据（以蓝色突出显示）。",
+   "sents": [
+    {
+     "en": "Figure 6 illustrates the full pipeline for the case study in Section 4.3 .",
+     "zh": "图 6 展示了第 4.3 节案例研究的完整流程。"
+    },
+    {
+     "en": "During retrieval, HGP queries heterogeneous external memories separately: (i) the event graph for diet- and symptom-related logs (episodic memory); (ii) the knowledge graph for user preferences and profile facts (semantic memory); and (iii) the rule tree for reusable strategies that previously received positive feedback (procedural memory).",
+     "zh": "在检索过程中，HGP 会分别查询异构的外部记忆：(i) 与饮食和症状相关的日志事件图（情景记忆）；(ii) 用户偏好和个人资料事实的知识图谱（语义记忆）；以及 (iii) 先前获得过积极反馈的可复用策略的规则树（程序性记忆）。"
+    },
+    {
+     "en": "Together, these long-term memories supply user-relevant evidence for personalized dinner suggestions (highlighted in blue).",
+     "zh": "这些长期记忆共同为用户提供了与个人晚餐建议相关的证据（以蓝色突出显示）。"
+    }
+   ]
+  },
+  {
+   "en": "Crucially, HGP also queries the working-memory states from the state trajectory graph to retrieve the current actionable status. In this case, working memory returns “pre-meal medication: incomplete” and injects it as an actionable constraint into the prompt. Then the LLM reminds the user to take the medication before offeringrecommendations (highlighted in yellow).This behavior is difficult to trigger reliably using only episodic, semantic, or procedural retrieval, as it hinges on short-horizon execution state rather than long-term facts, preferences, or strategies.",
+   "zh": "至关重要的是，HGP 还会从状态轨迹图中查询工作记忆状态，以获取当前可执行的状态。 在这种情况下，工作记忆返回“餐前服药：未完成”，并将其作为可执行约束注入提示中。 然后，LLM 会先提醒用户服药，再提供建议（黄色高亮显示）。仅通过情景、语义或程序性检索很难可靠地触发这种行为，因为它依赖于短期执行状态，而非长期事实、偏好或策略。",
+   "sents": [
+    {
+     "en": "Crucially, HGP also queries the working-memory states from the state trajectory graph to retrieve the current actionable status.",
+     "zh": "至关重要的是，HGP 还会从状态轨迹图中查询工作记忆状态，以获取当前可执行的状态。"
+    },
+    {
+     "en": "In this case, working memory returns “pre-meal medication: incomplete” and injects it as an actionable constraint into the prompt.",
+     "zh": "在这种情况下，工作记忆返回“餐前服药：未完成”，并将其作为可执行约束注入提示中。"
+    },
+    {
+     "en": "Then the LLM reminds the user to take the medication before offeringrecommendations (highlighted in yellow).This behavior is difficult to trigger reliably using only episodic, semantic, or procedural retrieval, as it hinges on short-horizon execution state rather than long-term facts, preferences, or strategies.",
+     "zh": "然后，LLM 会先提醒用户服药，再提供建议（黄色高亮显示）。仅通过情景、语义或程序性检索很难可靠地触发这种行为，因为它依赖于短期执行状态，而非长期事实、偏好或策略。"
+    }
+   ]
+  },
+  {
+   "en": "Overall, this case demonstrates HGP ’s ability to deliver personalized, context-aware responses. It also shows that long-term memory retrieval alone cannot guarantee compliance with implicit, actionable constraints. By explicitly tracking short-term states via working memory, HGP enhances behavioral consistency and safety in long-horizon interactions.",
+   "zh": "总体而言，这个案例展示了 HGP 提供个性化且能感知上下文响应的能力。 这也表明，仅靠长期记忆检索无法确保符合隐性的、可执行的限制条件。 通过工作记忆显式追踪短期状态，HGP 提升了长期互动中的行为一致性与安全性。",
+   "sents": [
+    {
+     "en": "Overall, this case demonstrates HGP ’s ability to deliver personalized, context-aware responses.",
+     "zh": "总体而言，这个案例展示了 HGP 提供个性化且能感知上下文响应的能力。"
+    },
+    {
+     "en": "It also shows that long-term memory retrieval alone cannot guarantee compliance with implicit, actionable constraints.",
+     "zh": "这也表明，仅靠长期记忆检索无法确保符合隐性的、可执行的限制条件。"
+    },
+    {
+     "en": "By explicitly tracking short-term states via working memory, HGP enhances behavioral consistency and safety in long-horizon interactions.",
+     "zh": "通过工作记忆显式追踪短期状态，HGP 提升了长期互动中的行为一致性与安全性。"
+    }
+   ]
+  },
+  {
+   "en": "To construct semantic and procedural memory from raw episodic traces, we design two abstraction operators, 𝒜 sem \\mathcal{A}_{\\mathrm{sem}} and 𝒜 proc \\mathcal{A}_{\\mathrm{proc}} , each implemented via a dedicated LLM prompt template. These operators extract structured knowledge from episodic event graphs and convert them into reusable memory formats.",
+   "zh": "为了从原始的事件痕迹中构建语义记忆和程序性记忆，我们设计了两种抽象算子：𝒜 sem \\mathcal{A}_{\\mathrm{sem}} 和 𝒜 proc \\mathcal{A}_{\\mathrm{proc}}，每种算子都通过专门的 LLM 提示模板来实现。 这些算子能够从事件图中提取结构化知识，并将其转换为可重用的记忆格式。",
+   "sents": [
+    {
+     "en": "To construct semantic and procedural memory from raw episodic traces, we design two abstraction operators, 𝒜 sem \\mathcal{A}_{\\mathrm{sem}} and 𝒜 proc \\mathcal{A}_{\\mathrm{proc}} , each implemented via a dedicated LLM prompt template.",
+     "zh": "为了从原始的事件痕迹中构建语义记忆和程序性记忆，我们设计了两种抽象算子：𝒜 sem \\mathcal{A}_{\\mathrm{sem}} 和 𝒜 proc \\mathcal{A}_{\\mathrm{proc}}，每种算子都通过专门的 LLM 提示模板来实现。"
+    },
+    {
+     "en": "These operators extract structured knowledge from episodic event graphs and convert them into reusable memory formats.",
+     "zh": "这些算子能够从事件图中提取结构化知识，并将其转换为可重用的记忆格式。"
+    }
+   ]
+  },
+  {
+   "en": "The semantic abstraction operator 𝒜 sem \\mathcal{A}_{\\mathrm{sem}} extracts static factual knowledge from episodic interactions to construct user profiles, including user attributes, preferences, skills, and long-term constraints. As shown in Figure 7 , 𝒜 sem \\mathcal{A}_{\\mathrm{sem}} employs a structured LLM prompt to identify and summarize semantic triples in the form of a knowledge graph, given episodic memories.",
+   "zh": "语义抽象算子 𝒜 sem \\mathcal{A}_{\\mathrm{sem}} 从事件性交互中提取静态事实知识以构建用户画像，包括用户属性、偏好、技能和长期约束。 如图 7 所示，𝒜 sem \\mathcal{A}_{\\mathrm{sem}} 使用结构化 LLM 提示，在给定事件性记忆的情况下识别并总结以知识图谱形式呈现的语义三元组。",
+   "sents": [
+    {
+     "en": "The semantic abstraction operator 𝒜 sem \\mathcal{A}_{\\mathrm{sem}} extracts static factual knowledge from episodic interactions to construct user profiles, including user attributes, preferences, skills, and long-term constraints.",
+     "zh": "语义抽象算子 𝒜 sem \\mathcal{A}_{\\mathrm{sem}} 从事件性交互中提取静态事实知识以构建用户画像，包括用户属性、偏好、技能和长期约束。"
+    },
+    {
+     "en": "As shown in Figure 7 , 𝒜 sem \\mathcal{A}_{\\mathrm{sem}} employs a structured LLM prompt to identify and summarize semantic triples in the form of a knowledge graph, given episodic memories.",
+     "zh": "如图 7 所示，𝒜 sem \\mathcal{A}_{\\mathrm{sem}} 使用结构化 LLM 提示，在给定事件性记忆的情况下识别并总结以知识图谱形式呈现的语义三元组。"
+    }
+   ]
+  },
+  {
+   "en": "The procedural abstraction operator 𝒜 proc \\mathcal{A}_{\\mathrm{proc}} extracts reusable rules, workflows, and decision strategies from episodic traces. As illustrated in Figure 8 , 𝒜 proc \\mathcal{A}_{\\mathrm{proc}} uses a structured LLM prompt that requires the model to output each rule in a unified JSON format, containing fields such as title, trigger conditions, execution steps, tags, and a tree-structured workflow that supports sequential and branching logic. If no clear workflow is present, the operator returns an empty list. The extracted rules are then stored in the procedural memory graph 𝒢 proc \\mathcal{G}_{\\mathrm{proc}} .",
+   "zh": "过程抽象算子 𝒜 proc \\mathcal{A}_{\\mathrm{proc}} 能够从事件序列中提取可重用的规则、工作流和决策策略。 如图 8 所示，𝒜 proc \\mathcal{A}_{\\mathrm{proc}} 使用一个结构化的 LLM 提示词，要求模型以统一的 JSON 格式输出每条规则，其中包含标题、触发条件、执行步骤、标签等字段，以及支持顺序和分支逻辑的树状工作流。 如果不存在明确的工作流，该算子将返回一个空列表。 提取出的规则随后被存储到过程记忆图 𝒢 proc \\mathcal{G}_{\\mathrm{proc}} 中。",
+   "sents": [
+    {
+     "en": "The procedural abstraction operator 𝒜 proc \\mathcal{A}_{\\mathrm{proc}} extracts reusable rules, workflows, and decision strategies from episodic traces.",
+     "zh": "过程抽象算子 𝒜 proc \\mathcal{A}_{\\mathrm{proc}} 能够从事件序列中提取可重用的规则、工作流和决策策略。"
+    },
+    {
+     "en": "As illustrated in Figure 8 , 𝒜 proc \\mathcal{A}_{\\mathrm{proc}} uses a structured LLM prompt that requires the model to output each rule in a unified JSON format, containing fields such as title, trigger conditions, execution steps, tags, and a tree-structured workflow that supports sequential and branching logic.",
+     "zh": "如图 8 所示，𝒜 proc \\mathcal{A}_{\\mathrm{proc}} 使用一个结构化的 LLM 提示词，要求模型以统一的 JSON 格式输出每条规则，其中包含标题、触发条件、执行步骤、标签等字段，以及支持顺序和分支逻辑的树状工作流。"
+    },
+    {
+     "en": "If no clear workflow is present, the operator returns an empty list.",
+     "zh": "如果不存在明确的工作流，该算子将返回一个空列表。"
+    },
+    {
+     "en": "The extracted rules are then stored in the procedural memory graph 𝒢 proc \\mathcal{G}_{\\mathrm{proc}} .",
+     "zh": "提取出的规则随后被存储到过程记忆图 𝒢 proc \\mathcal{G}_{\\mathrm{proc}} 中。"
+    }
+   ]
+  }
+ ]
+}
