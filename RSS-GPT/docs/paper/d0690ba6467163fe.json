@@ -1,0 +1,1991 @@
+{
+ "id": "d0690ba6467163fe",
+ "source": "arxiv-agent",
+ "link": "https://arxiv.org/abs/2610.12086v1",
+ "title": "EvoAlloc: A Self-Evolving Resource Allocation Agent for Efficient Program Evolution",
+ "title_zh": "",
+ "published": "2026-10-08T14:57:35Z",
+ "translated_at": "2026-10-11T00:00:24Z",
+ "paragraphs": [
+  {
+   "en": "LLM-based program evolution relies on evaluation feedback to guide the iterative search for high-performing programs. However, evaluation is often computationally expensive, making it essential to allocate limited resources to candidates that can most effectively advance the search. Existing LLM-based methods typically rely on fixed allocation strategies throughout the search, potentially wasting resources on low-value candidates while overlooking promising ones. We propose EvoAlloc , a self-evolving resource-allocation agent that learns from search experience to revise its strategy for allocating computational resources across candidates. EvoAlloc periodically consolidates prior search and allocation outcomes into reusable experience, which informs subsequent strategy revisions. It further uses a counterfactual exploration mechanism to occasionally evaluate candidates denied resources by the allocator, revealing their outcomes to enrich its experience for future strategy updates. Across coding and agent-harness optimization benchmarks, EvoAlloc requires 59 59 – 82 82 % fewer full evaluations and 61 61 – 89 89 % fewer total LLM tokens to reach baseline-level performance. Moreover, under the same full-evaluation budget, EvoAlloc achieves 8.7 8.7 – 12.0 12.0 % higher final performance.",
+   "zh": "基于大型语言模型（LLM）的程序演化依赖评估反馈来指导对高性能程序的迭代搜索。 然而，评估通常计算成本高昂，因此必须将有限资源分配给那些能最有效推动搜索进展的候选程序。 现有的基于 LLM 的方法通常在整个搜索过程中依赖固定的分配策略，这可能导致资源被浪费在低价值候选程序上，同时忽略了有潜力的候选程序。 我们提出了 EvoAlloc——一种自我演化的资源分配智能体，它能从搜索经验中学习，从而调整在候选程序间分配计算资源的策略。 EvoAlloc 会定期将先前的搜索和分配结果整合为可重用的经验，以指导后续的策略调整。 此外，它还采用反事实探索机制，偶尔评估那些未被分配器分配资源的候选程序，通过揭示其结果来丰富经验，用于未来的策略更新。 在编码和智能体框架优化基准测试中，EvoAlloc 达到基线水平性能所需的完整评估次数减少了 59%–82%，总 LLM 令牌使用量减少了 61%–89%。 此外，在相同的完整评估预算下，EvoAlloc 的最终性能提升了 8.7%–12.0%。",
+   "sents": [
+    {
+     "en": "LLM-based program evolution relies on evaluation feedback to guide the iterative search for high-performing programs.",
+     "zh": "基于大型语言模型（LLM）的程序演化依赖评估反馈来指导对高性能程序的迭代搜索。"
+    },
+    {
+     "en": "However, evaluation is often computationally expensive, making it essential to allocate limited resources to candidates that can most effectively advance the search.",
+     "zh": "然而，评估通常计算成本高昂，因此必须将有限资源分配给那些能最有效推动搜索进展的候选程序。"
+    },
+    {
+     "en": "Existing LLM-based methods typically rely on fixed allocation strategies throughout the search, potentially wasting resources on low-value candidates while overlooking promising ones.",
+     "zh": "现有的基于 LLM 的方法通常在整个搜索过程中依赖固定的分配策略，这可能导致资源被浪费在低价值候选程序上，同时忽略了有潜力的候选程序。"
+    },
+    {
+     "en": "We propose EvoAlloc , a self-evolving resource-allocation agent that learns from search experience to revise its strategy for allocating computational resources across candidates.",
+     "zh": "我们提出了 EvoAlloc——一种自我演化的资源分配智能体，它能从搜索经验中学习，从而调整在候选程序间分配计算资源的策略。"
+    },
+    {
+     "en": "EvoAlloc periodically consolidates prior search and allocation outcomes into reusable experience, which informs subsequent strategy revisions.",
+     "zh": "EvoAlloc 会定期将先前的搜索和分配结果整合为可重用的经验，以指导后续的策略调整。"
+    },
+    {
+     "en": "It further uses a counterfactual exploration mechanism to occasionally evaluate candidates denied resources by the allocator, revealing their outcomes to enrich its experience for future strategy updates.",
+     "zh": "此外，它还采用反事实探索机制，偶尔评估那些未被分配器分配资源的候选程序，通过揭示其结果来丰富经验，用于未来的策略更新。"
+    },
+    {
+     "en": "Across coding and agent-harness optimization benchmarks, EvoAlloc requires 59 59 – 82 82 % fewer full evaluations and 61 61 – 89 89 % fewer total LLM tokens to reach baseline-level performance.",
+     "zh": "在编码和智能体框架优化基准测试中，EvoAlloc 达到基线水平性能所需的完整评估次数减少了 59%–82%，总 LLM 令牌使用量减少了 61%–89%。"
+    },
+    {
+     "en": "Moreover, under the same full-evaluation budget, EvoAlloc achieves 8.7 8.7 – 12.0 12.0 % higher final performance.",
+     "zh": "此外，在相同的完整评估预算下，EvoAlloc 的最终性能提升了 8.7%–12.0%。"
+    }
+   ]
+  },
+  {
+   "en": "Recent advances in LLM-based program evolution have established a general paradigm for discovering and refining executable programs through iterative cycles of generation, evaluation, and selection. By pairing the ability of language models to propose semantically meaningful code modifications with feedback from program execution, these methods have demonstrated strong potential across mathematical and algorithmic discovery ( Romera-Paredes et al., 2024 ) , scientific and systems optimization ( Novikov et al., 2025 ) , and the automated improvement of coding agents ( Lange et al., 2026 ; Zhang et al., 2026 ; Wang et al., 2026 ) . Evaluation plays a central role in this process because it directly shapes the trajectory of search. Evaluated programs populate the archive from which future parents are drawn ( Wan et al., 2025 ) , whereas a promising candidate that goes unevaluated cannot influence what is explored next. At the same time, fully evaluating a candidate can be expensive, requiring execution over many benchmark instances or random seeds, calls to external models or solvers, or multi-step rollouts of LLM agents ( Robeyns et al., 2025 ) . Deciding which candidates to evaluate, and how much evaluation each should receive, is therefore not merely a matter of saving compute but a central decision of the search itself.",
+   "zh": "基于大型语言模型（LLM）的程序演化领域的最新进展，已经确立了一种通用范式，通过生成、评估和选择的迭代循环来发现并完善可执行程序。 通过将语言模型提出具有语义意义的代码修改的能力与程序执行反馈相结合，这些方法在数学和算法发现（Romera-Paredes 等人，2024）、科学和系统优化（Novikov 等人，2025）以及编码智能体的自动化改进（Lange 等人，2026；Zhang 等人，2026；Wang 等人，2026）方面展现出巨大潜力。 评估在这一过程中起着核心作用，因为它直接决定了搜索的路径走向。 经过评估的程序会填充到档案库中，未来的父程序将从中选取（Wan 等人，2025）；而一个有前景的候选程序若未经评估，则无法影响后续探索的方向。 与此同时，对候选程序进行全面评估可能成本高昂，需要在多个基准实例或随机种子下执行，调用外部模型或求解器，或者执行大型语言模型智能体的多步骤操作（Robeyns 等人，2025）。 因此，决定评估哪些候选程序以及每个候选程序应获得多少评估资源，不仅关乎计算资源的节省，更是搜索过程本身的核心决策。",
+   "sents": [
+    {
+     "en": "Recent advances in LLM-based program evolution have established a general paradigm for discovering and refining executable programs through iterative cycles of generation, evaluation, and selection.",
+     "zh": "基于大型语言模型（LLM）的程序演化领域的最新进展，已经确立了一种通用范式，通过生成、评估和选择的迭代循环来发现并完善可执行程序。"
+    },
+    {
+     "en": "By pairing the ability of language models to propose semantically meaningful code modifications with feedback from program execution, these methods have demonstrated strong potential across mathematical and algorithmic discovery ( Romera-Paredes et al., 2024 ) , scientific and systems optimization ( Novikov et al., 2025 ) , and the automated improvement of coding agents ( Lange et al., 2026 ; Zhang et al., 2026 ; Wang et al., 2026 ) .",
+     "zh": "通过将语言模型提出具有语义意义的代码修改的能力与程序执行反馈相结合，这些方法在数学和算法发现（Romera-Paredes 等人，2024）、科学和系统优化（Novikov 等人，2025）以及编码智能体的自动化改进（Lange 等人，2026；Zhang 等人，2026；Wang 等人，2026）方面展现出巨大潜力。"
+    },
+    {
+     "en": "Evaluation plays a central role in this process because it directly shapes the trajectory of search.",
+     "zh": "评估在这一过程中起着核心作用，因为它直接决定了搜索的路径走向。"
+    },
+    {
+     "en": "Evaluated programs populate the archive from which future parents are drawn ( Wan et al., 2025 ) , whereas a promising candidate that goes unevaluated cannot influence what is explored next.",
+     "zh": "经过评估的程序会填充到档案库中，未来的父程序将从中选取（Wan 等人，2025）；而一个有前景的候选程序若未经评估，则无法影响后续探索的方向。"
+    },
+    {
+     "en": "At the same time, fully evaluating a candidate can be expensive, requiring execution over many benchmark instances or random seeds, calls to external models or solvers, or multi-step rollouts of LLM agents ( Robeyns et al., 2025 ) .",
+     "zh": "与此同时，对候选程序进行全面评估可能成本高昂，需要在多个基准实例或随机种子下执行，调用外部模型或求解器，或者执行大型语言模型智能体的多步骤操作（Robeyns 等人，2025）。"
+    },
+    {
+     "en": "Deciding which candidates to evaluate, and how much evaluation each should receive, is therefore not merely a matter of saving compute but a central decision of the search itself.",
+     "zh": "因此，决定评估哪些候选程序以及每个候选程序应获得多少评估资源，不仅关乎计算资源的节省，更是搜索过程本身的核心决策。"
+    }
+   ]
+  },
+  {
+   "en": "Existing approaches largely make this decision using an allocation rule specified before search begins. The rule may be a predefined multi-fidelity procedure that promotes candidates through increasing evaluation budgets ( Li et al., 2018 ; Li et al., 2020 ) , or an LLM that judges, ranks, or filters candidates before full evaluation ( Foster et al., 2026 ) . While these methods may condition individual decisions on intermediate results or search history, the allocation strategy itself remains fixed. This leaves valuable information unused. Each evaluated candidate reveals whether the decision to evaluate it was worthwhile, and as search proceeds, these outcomes accumulate into experience about which allocation choices advanced the search. Such experience matters because the value of evaluating a candidate is not a property of the candidate alone. It depends on the evolving state of the search. As the incumbent improves, useful improvements become rarer and the remaining budget shrinks, so what is worth evaluating changes over time. We argue that the allocator should therefore co-evolve with the search, improving its strategy from the outcomes of its own decisions.",
+   "zh": "现有方法大多在搜索开始前，依据预先指定的分配规则来做出这一决策。 该规则可能是一种预定义的多保真度流程，通过逐步增加评估预算来推进候选项（Li et al., 2018; Li et al., 2020），也可能是一个大型语言模型（LLM），在全面评估前对候选项进行判断、排序或筛选（Foster et al., 2026）。 尽管这些方法可能会根据中间结果或搜索历史来调整具体决策，但分配策略本身仍然是固定的。 这导致宝贵的信息未被利用。 每个经过评估的候选项都会揭示评估它的决策是否值得；随着搜索推进，这些结果会积累为关于哪些分配选择有助于推进搜索的经验。 这种经验之所以重要，是因为评估一个候选项的价值并非仅取决于该候选项本身。 它还取决于搜索状态的动态变化。 随着当前最优解的改进，有用的改进会变得越来越罕见，剩余预算也会逐渐减少，因此值得评估的对象会随时间而变化。 因此我们认为，分配器应当与搜索过程协同演化，从自身决策的结果中不断优化其策略。",
+   "sents": [
+    {
+     "en": "Existing approaches largely make this decision using an allocation rule specified before search begins.",
+     "zh": "现有方法大多在搜索开始前，依据预先指定的分配规则来做出这一决策。"
+    },
+    {
+     "en": "The rule may be a predefined multi-fidelity procedure that promotes candidates through increasing evaluation budgets ( Li et al., 2018 ; Li et al., 2020 ) , or an LLM that judges, ranks, or filters candidates before full evaluation ( Foster et al., 2026 ) .",
+     "zh": "该规则可能是一种预定义的多保真度流程，通过逐步增加评估预算来推进候选项（Li et al., 2018; Li et al., 2020），也可能是一个大型语言模型（LLM），在全面评估前对候选项进行判断、排序或筛选（Foster et al., 2026）。"
+    },
+    {
+     "en": "While these methods may condition individual decisions on intermediate results or search history, the allocation strategy itself remains fixed.",
+     "zh": "尽管这些方法可能会根据中间结果或搜索历史来调整具体决策，但分配策略本身仍然是固定的。"
+    },
+    {
+     "en": "This leaves valuable information unused.",
+     "zh": "这导致宝贵的信息未被利用。"
+    },
+    {
+     "en": "Each evaluated candidate reveals whether the decision to evaluate it was worthwhile, and as search proceeds, these outcomes accumulate into experience about which allocation choices advanced the search.",
+     "zh": "每个经过评估的候选项都会揭示评估它的决策是否值得；随着搜索推进，这些结果会积累为关于哪些分配选择有助于推进搜索的经验。"
+    },
+    {
+     "en": "Such experience matters because the value of evaluating a candidate is not a property of the candidate alone.",
+     "zh": "这种经验之所以重要，是因为评估一个候选项的价值并非仅取决于该候选项本身。"
+    },
+    {
+     "en": "It depends on the evolving state of the search.",
+     "zh": "它还取决于搜索状态的动态变化。"
+    },
+    {
+     "en": "As the incumbent improves, useful improvements become rarer and the remaining budget shrinks, so what is worth evaluating changes over time.",
+     "zh": "随着当前最优解的改进，有用的改进会变得越来越罕见，剩余预算也会逐渐减少，因此值得评估的对象会随时间而变化。"
+    },
+    {
+     "en": "We argue that the allocator should therefore co-evolve with the search, improving its strategy from the outcomes of its own decisions.",
+     "zh": "因此我们认为，分配器应当与搜索过程协同演化，从自身决策的结果中不断优化其策略。"
+    }
+   ]
+  },
+  {
+   "en": "Building on this view, we introduce EvoAlloc, a self-evolving allocation agent embedded in the program-evolution loop (Figure 1 ). EvoAlloc maintains an explicit allocation strategy that determines whether and how much to evaluate each candidate. Rather than keeping this strategy fixed, EvoAlloc evolves it as the search proceeds, drawing on a reflective memory that distills the search history and past allocation outcomes into reusable experience. Proposed revisions are adopted when shared validation favors them, prioritizing fewer missed new-best candidates and then lower evaluation cost. This self-evolution loop, however, creates a selective-feedback challenge: the agent’s own decisions determine which outcomes become observable. EvoAlloc therefore incorporates counterfactual exploration to gather additional experience beyond what its current strategy would otherwise generate. Across coding and agent-harness optimization benchmarks, EvoAlloc improves final performance by 8.7 8.7 – 12.0 12.0 % over baseline under the same evaluation budget, while requiring 59 59 – 82 82 % fewer full evaluations and 61 61 – 89 89 % fewer recorded LLM tokens to match the baseline’s final performance. Ablations confirm the contributions of strategy evolution and counterfactual exploration.",
+   "zh": "基于这一观点，我们提出了 EvoAlloc——一种嵌入程序演化循环中的自演化分配智能体（图 1）。 EvoAlloc 维护一个显式的分配策略，用于决定是否评估每个候选方案以及评估多少。 与保持该策略固定不同，EvoAlloc 会在搜索过程中不断演化它，并利用一个反思性记忆，将搜索历史和过往的分配结果提炼为可重用的经验。 当共享验证更支持时，系统会采纳所提出的修订方案，优先减少遗漏的新最佳候选方案，其次降低评估成本。 然而，这种自演化循环产生了一个选择性反馈难题：智能体自身的决策决定了哪些结果会被观察到。 因此，EvoAlloc 引入了反事实探索，以收集其当前策略原本无法生成的额外经验。 在编码和智能体框架优化的基准测试中，在相同的评估预算下，EvoAlloc 的最终性能相比基线提升了 8.7–12.0%，同时所需的完整评估次数减少了 59–82%，记录下来的 LLM 令牌数也减少了 61–89%，才能达到基线的最终性能。 消融实验证实了策略演化和反事实探索各自做出的贡献。",
+   "sents": [
+    {
+     "en": "Building on this view, we introduce EvoAlloc, a self-evolving allocation agent embedded in the program-evolution loop (Figure 1 ).",
+     "zh": "基于这一观点，我们提出了 EvoAlloc——一种嵌入程序演化循环中的自演化分配智能体（图 1）。"
+    },
+    {
+     "en": "EvoAlloc maintains an explicit allocation strategy that determines whether and how much to evaluate each candidate.",
+     "zh": "EvoAlloc 维护一个显式的分配策略，用于决定是否评估每个候选方案以及评估多少。"
+    },
+    {
+     "en": "Rather than keeping this strategy fixed, EvoAlloc evolves it as the search proceeds, drawing on a reflective memory that distills the search history and past allocation outcomes into reusable experience.",
+     "zh": "与保持该策略固定不同，EvoAlloc 会在搜索过程中不断演化它，并利用一个反思性记忆，将搜索历史和过往的分配结果提炼为可重用的经验。"
+    },
+    {
+     "en": "Proposed revisions are adopted when shared validation favors them, prioritizing fewer missed new-best candidates and then lower evaluation cost.",
+     "zh": "当共享验证更支持时，系统会采纳所提出的修订方案，优先减少遗漏的新最佳候选方案，其次降低评估成本。"
+    },
+    {
+     "en": "This self-evolution loop, however, creates a selective-feedback challenge: the agent’s own decisions determine which outcomes become observable.",
+     "zh": "然而，这种自演化循环产生了一个选择性反馈难题：智能体自身的决策决定了哪些结果会被观察到。"
+    },
+    {
+     "en": "EvoAlloc therefore incorporates counterfactual exploration to gather additional experience beyond what its current strategy would otherwise generate.",
+     "zh": "因此，EvoAlloc 引入了反事实探索，以收集其当前策略原本无法生成的额外经验。"
+    },
+    {
+     "en": "Across coding and agent-harness optimization benchmarks, EvoAlloc improves final performance by 8.7 8.7 – 12.0 12.0 % over baseline under the same evaluation budget, while requiring 59 59 – 82 82 % fewer full evaluations and 61 61 – 89 89 % fewer recorded LLM tokens to match the baseline’s final performance.",
+     "zh": "在编码和智能体框架优化的基准测试中，在相同的评估预算下，EvoAlloc 的最终性能相比基线提升了 8.7–12.0%，同时所需的完整评估次数减少了 59–82%，记录下来的 LLM 令牌数也减少了 61–89%，才能达到基线的最终性能。"
+    },
+    {
+     "en": "Ablations confirm the contributions of strategy evolution and counterfactual exploration.",
+     "zh": "消融实验证实了策略演化和反事实探索各自做出的贡献。"
+    }
+   ]
+  },
+  {
+   "en": "We introduce a view of evaluation allocation as an evolving component of program evolution. We reframe allocation from fixed per-proposal judgments into an evolving decision process that uses the outcomes of prior allocation decisions to inform future ones.",
+   "zh": "我们将评估分配视为程序演化中一个不断演变的组成部分。 我们将分配方式从针对每个提案的固定判断，重新定义为一种动态决策过程，该过程利用先前分配决策的结果来指导未来的决策。",
+   "sents": [
+    {
+     "en": "We introduce a view of evaluation allocation as an evolving component of program evolution.",
+     "zh": "我们将评估分配视为程序演化中一个不断演变的组成部分。"
+    },
+    {
+     "en": "We reframe allocation from fixed per-proposal judgments into an evolving decision process that uses the outcomes of prior allocation decisions to inform future ones.",
+     "zh": "我们将分配方式从针对每个提案的固定判断，重新定义为一种动态决策过程，该过程利用先前分配决策的结果来指导未来的决策。"
+    }
+   ]
+  },
+  {
+   "en": "We introduce EvoAlloc, a self-evolving resource-allocation agent. EvoAlloc acts through an explicit strategy, accumulates reusable experience from its interaction with the search, explores counterfactual outcomes, and revises future allocation behavior.",
+   "zh": "我们提出 EvoAlloc，一种能够自我演化的资源分配智能体。 EvoAlloc 通过明确的策略进行运作，从与搜索的交互中积累可重用的经验，探索反事实结果，并修正未来的分配行为。",
+   "sents": [
+    {
+     "en": "We introduce EvoAlloc, a self-evolving resource-allocation agent.",
+     "zh": "我们提出 EvoAlloc，一种能够自我演化的资源分配智能体。"
+    },
+    {
+     "en": "EvoAlloc acts through an explicit strategy, accumulates reusable experience from its interaction with the search, explores counterfactual outcomes, and revises future allocation behavior.",
+     "zh": "EvoAlloc 通过明确的策略进行运作，从与搜索的交互中积累可重用的经验，探索反事实结果，并修正未来的分配行为。"
+    }
+   ]
+  },
+  {
+   "en": "We provide an empirical analysis of how evolving evaluation allocation reshapes program search. Across coding and agent-harness benchmarks, we show that adaptive allocation improves search under limited budgets and analyze how it changes resource use, candidate coverage, and the resulting search trajectories.",
+   "zh": "我们对评估分配方式演变如何重塑程序搜索进行了实证分析。 在编码和智能体测试基准中，我们发现自适应分配能在预算有限时提升搜索效果，并分析了其如何改变资源使用、候选项覆盖范围以及最终的搜索轨迹。",
+   "sents": [
+    {
+     "en": "We provide an empirical analysis of how evolving evaluation allocation reshapes program search.",
+     "zh": "我们对评估分配方式演变如何重塑程序搜索进行了实证分析。"
+    },
+    {
+     "en": "Across coding and agent-harness benchmarks, we show that adaptive allocation improves search under limited budgets and analyze how it changes resource use, candidate coverage, and the resulting search trajectories.",
+     "zh": "在编码和智能体测试基准中，我们发现自适应分配能在预算有限时提升搜索效果，并分析了其如何改变资源使用、候选项覆盖范围以及最终的搜索轨迹。"
+    }
+   ]
+  },
+  {
+   "en": "Program Evolution and Self-Improving Search. Program evolution has a long history in genetic programming, where evolutionary variation and selection are applied directly to executable programs ( Cramer, 1985 ; Dickmanns et al., 1987 ) . LLM-based systems extend this paradigm by using language models to generate, revise, and recombine candidate programs within iterative search ( Romera-Paredes et al., 2024 ; Novikov et al., 2025 ) . Recent work has further made the search process itself more adaptive through mechanisms such as parent selection, novelty control, population management, and learned search strategies ( Lange et al., 2026 ; Assumpção et al., 2025 ; Wan et al., 2025 ) . A related line of work considers self-improvement beyond the candidate programs themselves. Early meta-evolution explored evolving program-modification mechanisms ( Schmidhuber, 1987 ) , while the Gödel Machine formalized self-improvement as rewriting its own code once a modification is proven useful ( Schmidhuber, 2007 ) . More recent systems such as Darwin Gödel Machine and Huxley-Gödel Machine pursue this idea empirically by evolving coding agents and their problem-solving procedures ( Zhang et al., 2026 ; Wang et al., 2026 ) . While these approaches largely adapt how candidates are generated and searched, the evaluation mechanism that allocates compute typically remains fixed; EvoAlloc allows this mechanism to evolve as well, drawing on accumulated search experience.",
+   "zh": "程序演化与自我改进搜索。 程序演化在遗传编程领域拥有悠久的历史，其中演化变异和选择被直接应用于可执行程序（Cramer, 1985；Dickmanns 等，1987）。 基于大型语言模型的系统通过利用语言模型生成、修订和重组迭代搜索中的候选程序，扩展了这一范式（Romera-Paredes 等，2024；Novikov 等，2025）。 近期的研究进一步通过亲本选择、新颖性控制、种群管理和学习到的搜索策略等机制，使搜索过程本身更具适应性（Lange 等，2026；Assumpção 等，2025；Wan 等，2025）。 相关研究则将自我改进的范畴扩展到了候选程序本身之外。 早期的元演化探索了程序修改机制的演化（Schmidhuber, 1987），而哥德尔机则将自我改进形式化为：一旦某种修改被证明有效，就重写自身的代码（Schmidhuber, 2007）。 更近期的系统，如达尔文·哥德尔机和赫胥黎-哥德尔机，通过演化编码智能体及其问题求解流程，以经验方式追求这一理念（Zhang 等，2026；Wang 等，2026）。 尽管这些方法主要调整了候选程序的生成和搜索方式，但分配计算资源的评估机制通常保持不变；EvoAlloc 则允许该机制也一同演化，并利用累积的搜索经验。",
+   "sents": [
+    {
+     "en": "Program Evolution and Self-Improving Search.",
+     "zh": "程序演化与自我改进搜索。"
+    },
+    {
+     "en": "Program evolution has a long history in genetic programming, where evolutionary variation and selection are applied directly to executable programs ( Cramer, 1985 ; Dickmanns et al., 1987 ) .",
+     "zh": "程序演化在遗传编程领域拥有悠久的历史，其中演化变异和选择被直接应用于可执行程序（Cramer, 1985；Dickmanns 等，1987）。"
+    },
+    {
+     "en": "LLM-based systems extend this paradigm by using language models to generate, revise, and recombine candidate programs within iterative search ( Romera-Paredes et al., 2024 ; Novikov et al., 2025 ) .",
+     "zh": "基于大型语言模型的系统通过利用语言模型生成、修订和重组迭代搜索中的候选程序，扩展了这一范式（Romera-Paredes 等，2024；Novikov 等，2025）。"
+    },
+    {
+     "en": "Recent work has further made the search process itself more adaptive through mechanisms such as parent selection, novelty control, population management, and learned search strategies ( Lange et al., 2026 ; Assumpção et al., 2025 ; Wan et al., 2025 ) .",
+     "zh": "近期的研究进一步通过亲本选择、新颖性控制、种群管理和学习到的搜索策略等机制，使搜索过程本身更具适应性（Lange 等，2026；Assumpção 等，2025；Wan 等，2025）。"
+    },
+    {
+     "en": "A related line of work considers self-improvement beyond the candidate programs themselves.",
+     "zh": "相关研究则将自我改进的范畴扩展到了候选程序本身之外。"
+    },
+    {
+     "en": "Early meta-evolution explored evolving program-modification mechanisms ( Schmidhuber, 1987 ) , while the Gödel Machine formalized self-improvement as rewriting its own code once a modification is proven useful ( Schmidhuber, 2007 ) .",
+     "zh": "早期的元演化探索了程序修改机制的演化（Schmidhuber, 1987），而哥德尔机则将自我改进形式化为：一旦某种修改被证明有效，就重写自身的代码（Schmidhuber, 2007）。"
+    },
+    {
+     "en": "More recent systems such as Darwin Gödel Machine and Huxley-Gödel Machine pursue this idea empirically by evolving coding agents and their problem-solving procedures ( Zhang et al., 2026 ; Wang et al., 2026 ) .",
+     "zh": "更近期的系统，如达尔文·哥德尔机和赫胥黎-哥德尔机，通过演化编码智能体及其问题求解流程，以经验方式追求这一理念（Zhang 等，2026；Wang 等，2026）。"
+    },
+    {
+     "en": "While these approaches largely adapt how candidates are generated and searched, the evaluation mechanism that allocates compute typically remains fixed; EvoAlloc allows this mechanism to evolve as well, drawing on accumulated search experience.",
+     "zh": "尽管这些方法主要调整了候选程序的生成和搜索方式，但分配计算资源的评估机制通常保持不变；EvoAlloc 则允许该机制也一同演化，并利用累积的搜索经验。"
+    }
+   ]
+  },
+  {
+   "en": "Selective Evaluation and Adaptive Resource Allocation. Efficient search depends on how computation is allocated, particularly when candidate evaluation is expensive. Earlier work on online algorithm portfolios adaptively allocated computation among a given set of search algorithms or parameter configurations, using performance prediction or bandit-based methods to adjust resource shares online ( Gagliolo et al., 2004 ; Gagliolo and Schmidhuber, 2005 ; Gagliolo and Schmidhuber, 2009 ) . A complementary line of work allocates evaluation effort across candidate solutions: surrogate-assisted methods predict candidate quality to reduce expensive evaluations ( Snoek et al., 2012 ; Jin, 2011 ) , while multi-fidelity methods progressively allocate resources using partial evaluations ( Li et al., 2018 ; Li et al., 2020 ) . Racing and adaptive capping discard unpromising configurations or terminate runs early ( Hutter et al., 2009 ; López-Ibáñez et al., 2016 ) . In LLM-based program evolution, selective evaluation takes the form of cascade evaluation through increasingly comprehensive tests ( Novikov et al., 2025 ) , novelty-based rejection of near-duplicate proposals ( Lange et al., 2026 ) , and LLM-based candidate ranking or filtering before costly evaluation ( Foster et al., 2026 ) . These program-evolution approaches can adapt individual decisions to available evidence while retaining predefined allocation rules. EvoAlloc instead revises an explicit allocation strategy using accumulated search and evaluation outcomes.",
+   "zh": "选择性评估与自适应资源分配。 高效的搜索取决于计算资源的分配方式，尤其是在候选方案评估成本高昂时。 早期关于在线算法组合的研究通过自适应方式，在给定的一组搜索算法或参数配置之间分配计算资源，并利用性能预测或基于多臂老虎机的方法在线调整资源分配比例（Gagliolo 等人，2004；Gagliolo 和 Schmidhuber，2005；Gagliolo 和 Schmidhuber，2009）。 另一条互补的研究路线则是在候选解决方案之间分配评估努力：代理辅助方法通过预测候选方案的质量来减少昂贵的评估（Snoek 等人，2012；Jin，2011），而多保真度方法则利用部分评估结果逐步分配资源（Li 等人，2018；Li 等人，2020）。 竞赛机制与自适应截断会淘汰前景不佳的配置或提前终止运行（Hutter 等人，2009；López-Ibáñez 等人，2016）。 在基于大型语言模型的程序演化中，选择性评估表现为通过逐步更全面的测试进行级联评估（Novikov 等人，2025）、基于新颖性拒绝近似重复的方案（Lange 等人，2026），以及在昂贵评估前使用大型语言模型对候选方案进行排序或过滤（Foster 等人，2026）。 这些程序演化方法能够在保留预定义分配规则的同时，根据可用证据调整个体决策。 相比之下，EvoAlloc 则利用累积的搜索和评估结果来修正明确的分配策略。",
+   "sents": [
+    {
+     "en": "Selective Evaluation and Adaptive Resource Allocation.",
+     "zh": "选择性评估与自适应资源分配。"
+    },
+    {
+     "en": "Efficient search depends on how computation is allocated, particularly when candidate evaluation is expensive.",
+     "zh": "高效的搜索取决于计算资源的分配方式，尤其是在候选方案评估成本高昂时。"
+    },
+    {
+     "en": "Earlier work on online algorithm portfolios adaptively allocated computation among a given set of search algorithms or parameter configurations, using performance prediction or bandit-based methods to adjust resource shares online ( Gagliolo et al., 2004 ; Gagliolo and Schmidhuber, 2005 ; Gagliolo and Schmidhuber, 2009 ) .",
+     "zh": "早期关于在线算法组合的研究通过自适应方式，在给定的一组搜索算法或参数配置之间分配计算资源，并利用性能预测或基于多臂老虎机的方法在线调整资源分配比例（Gagliolo 等人，2004；Gagliolo 和 Schmidhuber，2005；Gagliolo 和 Schmidhuber，2009）。"
+    },
+    {
+     "en": "A complementary line of work allocates evaluation effort across candidate solutions: surrogate-assisted methods predict candidate quality to reduce expensive evaluations ( Snoek et al., 2012 ; Jin, 2011 ) , while multi-fidelity methods progressively allocate resources using partial evaluations ( Li et al., 2018 ; Li et al., 2020 ) .",
+     "zh": "另一条互补的研究路线则是在候选解决方案之间分配评估努力：代理辅助方法通过预测候选方案的质量来减少昂贵的评估（Snoek 等人，2012；Jin，2011），而多保真度方法则利用部分评估结果逐步分配资源（Li 等人，2018；Li 等人，2020）。"
+    },
+    {
+     "en": "Racing and adaptive capping discard unpromising configurations or terminate runs early ( Hutter et al., 2009 ; López-Ibáñez et al., 2016 ) .",
+     "zh": "竞赛机制与自适应截断会淘汰前景不佳的配置或提前终止运行（Hutter 等人，2009；López-Ibáñez 等人，2016）。"
+    },
+    {
+     "en": "In LLM-based program evolution, selective evaluation takes the form of cascade evaluation through increasingly comprehensive tests ( Novikov et al., 2025 ) , novelty-based rejection of near-duplicate proposals ( Lange et al., 2026 ) , and LLM-based candidate ranking or filtering before costly evaluation ( Foster et al., 2026 ) .",
+     "zh": "在基于大型语言模型的程序演化中，选择性评估表现为通过逐步更全面的测试进行级联评估（Novikov 等人，2025）、基于新颖性拒绝近似重复的方案（Lange 等人，2026），以及在昂贵评估前使用大型语言模型对候选方案进行排序或过滤（Foster 等人，2026）。"
+    },
+    {
+     "en": "These program-evolution approaches can adapt individual decisions to available evidence while retaining predefined allocation rules.",
+     "zh": "这些程序演化方法能够在保留预定义分配规则的同时，根据可用证据调整个体决策。"
+    },
+    {
+     "en": "EvoAlloc instead revises an explicit allocation strategy using accumulated search and evaluation outcomes.",
+     "zh": "相比之下，EvoAlloc 则利用累积的搜索和评估结果来修正明确的分配策略。"
+    }
+   ]
+  },
+  {
+   "en": "Consider a program-evolution process that iteratively generates candidate programs, evaluates them, and uses the evaluated programs to guide subsequent generation. We formulate evaluation allocation within this process as a sequential decision problem solved by an allocation agent 𝒜 \\mathcal{A} , which distributes a limited evaluation budget across candidates to maximize the best program score reached by the search. At each search step t t , a candidate program x t x_{t} is generated, and the agent observes a decision-time context c t c_{t} containing information available before evaluating x t x_{t} , such as the parent program and its score, the best score found so far, and the remaining budget.",
+   "zh": "考虑一个程序演化过程，该过程迭代生成候选程序、评估它们，并利用评估结果指导后续程序的生成。 我们将此过程中的评估分配问题建模为一个序列决策问题，由分配智能体 𝒜 \\mathcal{A} 解决；该智能体在候选程序间分配有限的评估预算，以最大化搜索所能达到的最佳程序得分。 在每个搜索步骤 t t 中，会生成一个候选程序 x t x_{t}，此时智能体会观察到一个决策时刻上下文 c t c_{t}，其中包含在评估 x t x_{t} 之前可用的信息，例如父程序及其得分、目前找到的最佳得分以及剩余预算。",
+   "sents": [
+    {
+     "en": "Consider a program-evolution process that iteratively generates candidate programs, evaluates them, and uses the evaluated programs to guide subsequent generation.",
+     "zh": "考虑一个程序演化过程，该过程迭代生成候选程序、评估它们，并利用评估结果指导后续程序的生成。"
+    },
+    {
+     "en": "We formulate evaluation allocation within this process as a sequential decision problem solved by an allocation agent 𝒜 \\mathcal{A} , which distributes a limited evaluation budget across candidates to maximize the best program score reached by the search.",
+     "zh": "我们将此过程中的评估分配问题建模为一个序列决策问题，由分配智能体 𝒜 \\mathcal{A} 解决；该智能体在候选程序间分配有限的评估预算，以最大化搜索所能达到的最佳程序得分。"
+    },
+    {
+     "en": "At each search step t t , a candidate program x t x_{t} is generated, and the agent observes a decision-time context c t c_{t} containing information available before evaluating x t x_{t} , such as the parent program and its score, the best score found so far, and the remaining budget.",
+     "zh": "在每个搜索步骤 t t 中，会生成一个候选程序 x t x_{t}，此时智能体会观察到一个决策时刻上下文 c t c_{t}，其中包含在评估 x t x_{t} 之前可用的信息，例如父程序及其得分、目前找到的最佳得分以及剩余预算。"
+    }
+   ]
+  },
+  {
+   "en": "For candidate x t x_{t} , allocation may involve multiple decisions. Let j = 0 , 1 , … , K t j=0,1,\\ldots,K_{t} index the decisions within its allocation episode, and let a t , j a_{t,j} denote the allocation action taken at decision j j . Each intermediate action a t , j a_{t,j} ( j < K t j<K_{t} ) acquires evaluation evidence e t , j e_{t,j} about x t x_{t} , which becomes available to subsequent decisions, and the final action a t , K t a_{t,K_{t}} either commits the candidate to full evaluation or stops further evaluation. The agent may condition each decision on the candidate, the decision-time context, and the evidence acquired earlier in the same episode:",
+   "zh": "对于候选体 x_t，分配过程可能涉及多个决策。 令 j = 0, 1, …, K_t 表示其分配阶段内的各个决策，并令 a_{t,j} 表示在第 j 个决策中采取的分配动作。 每个中间动作 a_{t,j}（j < K_t）都会获得关于 x_t 的评估证据 e_{t,j}，该证据可供后续决策使用；而最终动作 a_{t,K_t} 则决定是将该候选体提交完整评估，还是停止进一步评估。 智能体可将每个决策的条件建立在候选体、决策时的上下文以及同一阶段中早期获得的证据之上：",
+   "sents": [
+    {
+     "en": "For candidate x t x_{t} , allocation may involve multiple decisions.",
+     "zh": "对于候选体 x_t，分配过程可能涉及多个决策。"
+    },
+    {
+     "en": "Let j = 0 , 1 , … , K t j=0,1,\\ldots,K_{t} index the decisions within its allocation episode, and let a t , j a_{t,j} denote the allocation action taken at decision j j .",
+     "zh": "令 j = 0, 1, …, K_t 表示其分配阶段内的各个决策，并令 a_{t,j} 表示在第 j 个决策中采取的分配动作。"
+    },
+    {
+     "en": "Each intermediate action a t , j a_{t,j} ( j < K t j<K_{t} ) acquires evaluation evidence e t , j e_{t,j} about x t x_{t} , which becomes available to subsequent decisions, and the final action a t , K t a_{t,K_{t}} either commits the candidate to full evaluation or stops further evaluation.",
+     "zh": "每个中间动作 a_{t,j}（j < K_t）都会获得关于 x_t 的评估证据 e_{t,j}，该证据可供后续决策使用；而最终动作 a_{t,K_t} 则决定是将该候选体提交完整评估，还是停止进一步评估。"
+    },
+    {
+     "en": "The agent may condition each decision on the candidate, the decision-time context, and the evidence acquired earlier in the same episode:",
+     "zh": "智能体可将每个决策的条件建立在候选体、决策时的上下文以及同一阶段中早期获得的证据之上："
+    }
+   ]
+  },
+  {
+   "en": "where e t , < j := ( e t , 0 , … , e t , j − 1 ) e_{t,<j}:=(e_{t,0},\\ldots,e_{t,j-1}) , with e t , < 0 := ∅ e_{t,<0}:=\\varnothing . The resulting allocation episode is τ t = ( a t , 0 , e t , 0 , … , a t , K t − 1 , e t , K t − 1 , a t , K t ) \\tau_{t}=(a_{t,0},e_{t,0},\\ldots,a_{t,K_{t}-1},e_{t,K_{t}-1},a_{t,K_{t}}) . Let y t ∈ ℝ y_{t}\\in\\mathbb{R} denote the full-evaluation score of x t x_{t} , which is defined regardless of whether x t x_{t} is actually fully evaluated. The score observed from the allocation episode is",
+   "zh": "其中 e t , < j := ( e t , 0 , … , e t , j − 1 ) e_{t,<j}:=(e_{t,0},\\ldots,e_{t,j-1})，且 e t , < 0 := ∅ e_{t,<0}:=\\varnothing。 由此得到的分配过程为 τ t = ( a t , 0 , e t , 0 , … , a t , K t − 1 , e t , K t − 1 , a t , K t ) \\tau_{t}=(a_{t,0},e_{t,0},\\ldots,a_{t,K_{t}-1},e_{t,K_{t}-1},a_{t,K_{t}})。 令 y t ∈ ℝ y_{t}\\in\\mathbb{R} 表示 x t x_{t} 的完整评估得分，无论 x t x_{t} 是否实际被完整评估，该得分均有定义。 从分配过程中观察到的得分为",
+   "sents": [
+    {
+     "en": "where e t , < j := ( e t , 0 , … , e t , j − 1 ) e_{t,<j}:=(e_{t,0},\\ldots,e_{t,j-1}) , with e t , < 0 := ∅ e_{t,<0}:=\\varnothing .",
+     "zh": "其中 e t , < j := ( e t , 0 , … , e t , j − 1 ) e_{t,<j}:=(e_{t,0},\\ldots,e_{t,j-1})，且 e t , < 0 := ∅ e_{t,<0}:=\\varnothing。"
+    },
+    {
+     "en": "The resulting allocation episode is τ t = ( a t , 0 , e t , 0 , … , a t , K t − 1 , e t , K t − 1 , a t , K t ) \\tau_{t}=(a_{t,0},e_{t,0},\\ldots,a_{t,K_{t}-1},e_{t,K_{t}-1},a_{t,K_{t}}) .",
+     "zh": "由此得到的分配过程为 τ t = ( a t , 0 , e t , 0 , … , a t , K t − 1 , e t , K t − 1 , a t , K t ) \\tau_{t}=(a_{t,0},e_{t,0},\\ldots,a_{t,K_{t}-1},e_{t,K_{t}-1},a_{t,K_{t}})。"
+    },
+    {
+     "en": "Let y t ∈ ℝ y_{t}\\in\\mathbb{R} denote the full-evaluation score of x t x_{t} , which is defined regardless of whether x t x_{t} is actually fully evaluated.",
+     "zh": "令 y t ∈ ℝ y_{t}\\in\\mathbb{R} 表示 x t x_{t} 的完整评估得分，无论 x t x_{t} 是否实际被完整评估，该得分均有定义。"
+    },
+    {
+     "en": "The score observed from the allocation episode is",
+     "zh": "从分配过程中观察到的得分为"
+    }
+   ]
+  },
+  {
+   "en": "Only y t obs y_{t}^{\\mathrm{obs}} is available to the search and to the agent; the scores of candidates that are not fully evaluated remain hidden.",
+   "zh": "搜索和智能体仅能获取 y t obs y_{t}^{\\mathrm{obs}}；尚未完全评估的候选项的得分仍然不可见。",
+   "sents": null
+  },
+  {
+   "en": "Let b t b_{t} denote the cumulative resource consumed after proposal t t , measured, for example, by completed full evaluations or cumulative LLM tokens. Using this resource variable, we evaluate 𝒜 \\mathcal{A} through the resulting search trajectory. Let Q 0 Q_{0} denote the best score among the initial programs. For any resource level b b , define",
+   "zh": "令 b t b_{t} 表示提案 t t 之后消耗的累积资源，例如，可以用已完成的全量评估或累积的 LLM token 来衡量。 利用这个资源变量，我们通过由此产生的搜索轨迹来评估 𝒜 \\mathcal{A}。 令 Q 0 Q_{0} 表示初始程序中的最佳得分。 对于任意资源水平 b b ，定义",
+   "sents": [
+    {
+     "en": "Let b t b_{t} denote the cumulative resource consumed after proposal t t , measured, for example, by completed full evaluations or cumulative LLM tokens.",
+     "zh": "令 b t b_{t} 表示提案 t t 之后消耗的累积资源，例如，可以用已完成的全量评估或累积的 LLM token 来衡量。"
+    },
+    {
+     "en": "Using this resource variable, we evaluate 𝒜 \\mathcal{A} through the resulting search trajectory.",
+     "zh": "利用这个资源变量，我们通过由此产生的搜索轨迹来评估 𝒜 \\mathcal{A}。"
+    },
+    {
+     "en": "Let Q 0 Q_{0} denote the best score among the initial programs.",
+     "zh": "令 Q 0 Q_{0} 表示初始程序中的最佳得分。"
+    },
+    {
+     "en": "For any resource level b b , define",
+     "zh": "对于任意资源水平 b b ，定义"
+    }
+   ]
+  },
+  {
+   "en": "which gives the best fully evaluated program score obtained after consuming at most resource b b . Given a total resource budget B B , the objective is to choose an allocation agent 𝒜 \\mathcal{A} that maximizes 𝔼 ⁡ [ Q 𝒜 ⋆ ​ ( B ) ] \\mathbb{E}[Q_{\\mathcal{A}}^{\\star}(B)] , where the expectation is over the stochasticity of both the search process and the allocation agent. Conversely, for a target score q q , the resource required to reach it is C q ​ ( 𝒜 ) = inf { b ≥ 0 : Q 𝒜 ⋆ ​ ( b ) ≥ q } C_{q}(\\mathcal{A})=\\inf\\{b\\geq 0:Q_{\\mathcal{A}}^{\\star}(b)\\geq q\\} . These objectives make evaluation allocation a search-level sequential decision problem rather than independent proposal-level decisions. Resources saved on one candidate remain available for later search, while fully evaluated candidates can influence which programs are explored next.",
+   "zh": "这给出了在消耗至多资源 b 后获得的最佳完整评估程序得分。 给定总资源预算 B，目标在于选择一个分配智能体 𝒜，以最大化 𝔼 [ Q 𝒜 ⋆ ​ ( B ) ]，其中期望值涵盖搜索过程和分配智能体的随机性。 反之，对于目标得分 q，达到该得分所需的资源为 C q ​ ( 𝒜 ) = inf { b ≥ 0 : Q 𝒜 ⋆ ​ ( b ) ≥ q }。 这些目标使评估分配成为一个搜索层面的序列决策问题，而非独立的提案层面决策。 在某个候选方案上节省的资源仍可用于后续搜索，而经过完整评估的候选方案会影响接下来要探索的程序。",
+   "sents": [
+    {
+     "en": "which gives the best fully evaluated program score obtained after consuming at most resource b b .",
+     "zh": "这给出了在消耗至多资源 b 后获得的最佳完整评估程序得分。"
+    },
+    {
+     "en": "Given a total resource budget B B , the objective is to choose an allocation agent 𝒜 \\mathcal{A} that maximizes 𝔼 ⁡ [ Q 𝒜 ⋆ ​ ( B ) ] \\mathbb{E}[Q_{\\mathcal{A}}^{\\star}(B)] , where the expectation is over the stochasticity of both the search process and the allocation agent.",
+     "zh": "给定总资源预算 B，目标在于选择一个分配智能体 𝒜，以最大化 𝔼 [ Q 𝒜 ⋆ ​ ( B ) ]，其中期望值涵盖搜索过程和分配智能体的随机性。"
+    },
+    {
+     "en": "Conversely, for a target score q q , the resource required to reach it is C q ​ ( 𝒜 ) = inf { b ≥ 0 : Q 𝒜 ⋆ ​ ( b ) ≥ q } C_{q}(\\mathcal{A})=\\inf\\{b\\geq 0:Q_{\\mathcal{A}}^{\\star}(b)\\geq q\\} .",
+     "zh": "反之，对于目标得分 q，达到该得分所需的资源为 C q ​ ( 𝒜 ) = inf { b ≥ 0 : Q 𝒜 ⋆ ​ ( b ) ≥ q }。"
+    },
+    {
+     "en": "These objectives make evaluation allocation a search-level sequential decision problem rather than independent proposal-level decisions.",
+     "zh": "这些目标使评估分配成为一个搜索层面的序列决策问题，而非独立的提案层面决策。"
+    },
+    {
+     "en": "Resources saved on one candidate remain available for later search, while fully evaluated candidates can influence which programs are explored next.",
+     "zh": "在某个候选方案上节省的资源仍可用于后续搜索，而经过完整评估的候选方案会影响接下来要探索的程序。"
+    }
+   ]
+  },
+  {
+   "en": "Across proposals, the agent accumulates the interaction history ℋ t = { ( x i , c i , τ i , y i obs ) } i < t \\mathcal{H}_{t}=\\{(x_{i},c_{i},\\tau_{i},y_{i}^{\\mathrm{obs}})\\}_{i<t} , which contains all allocation interactions before search step t t . Here, τ i \\tau_{i} records the allocation actions and intermediate evidence for candidate x i x_{i} . Episodes without Full evaluation are also included, with y i obs = ∅ y_{i}^{\\mathrm{obs}}=\\varnothing , although these candidates cannot participate in subsequent program evolution.",
+   "zh": "在所有提案中，智能体会累积交互历史 ℋ t = { ( x i , c i , τ i , y i obs ) } i < t \\mathcal{H}_{t}=\\{(x_{i},c_{i},\\tau_{i},y_{i}^{\\mathrm{obs}})\\}_{i<t}，其中包含搜索步骤 t 之前的所有分配交互。 此处，τ i 记录了候选项 x i 的分配动作和中间证据。 未进行完整评估的回合也会被纳入，此时 y i obs = ∅，但这些候选项无法参与后续的程序演化。",
+   "sents": [
+    {
+     "en": "Across proposals, the agent accumulates the interaction history ℋ t = { ( x i , c i , τ i , y i obs ) } i < t \\mathcal{H}_{t}=\\{(x_{i},c_{i},\\tau_{i},y_{i}^{\\mathrm{obs}})\\}_{i<t} , which contains all allocation interactions before search step t t .",
+     "zh": "在所有提案中，智能体会累积交互历史 ℋ t = { ( x i , c i , τ i , y i obs ) } i < t \\mathcal{H}_{t}=\\{(x_{i},c_{i},\\tau_{i},y_{i}^{\\mathrm{obs}})\\}_{i<t}，其中包含搜索步骤 t 之前的所有分配交互。"
+    },
+    {
+     "en": "Here, τ i \\tau_{i} records the allocation actions and intermediate evidence for candidate x i x_{i} .",
+     "zh": "此处，τ i 记录了候选项 x i 的分配动作和中间证据。"
+    },
+    {
+     "en": "Episodes without Full evaluation are also included, with y i obs = ∅ y_{i}^{\\mathrm{obs}}=\\varnothing , although these candidates cannot participate in subsequent program evolution.",
+     "zh": "未进行完整评估的回合也会被纳入，此时 y i obs = ∅，但这些候选项无法参与后续的程序演化。"
+    }
+   ]
+  },
+  {
+   "en": "We represent the allocation agent over the search as 𝒜 = ( 𝒜 t ) t ≥ 0 \\mathcal{A}=(\\mathcal{A}_{t})_{t\\geq 0} , where 𝒜 t \\mathcal{A}_{t} denotes its decision mechanism at search step t t . A fixed allocation agent may make different decisions as the proposal, search context, and within-episode evidence change, while its decision mechanism remains unchanged: 𝒜 t = 𝒜 0 \\mathcal{A}_{t}=\\mathcal{A}_{0} for all t t . We call an allocation agent self-evolving when it can also revise this mechanism using the accumulated interaction history: 𝒜 t + 1 = 𝒰 ⁡ ( 𝒜 t , ℋ t + 1 ) \\mathcal{A}_{t+1}=\\mathcal{U}(\\mathcal{A}_{t},\\mathcal{H}_{t+1}) , where 𝒰 \\mathcal{U} denotes the agent-update process and leaves 𝒜 t \\mathcal{A}_{t} unchanged when no update is performed. Section 4 instantiates this formulation in EvoAlloc, where 𝒜 t \\mathcal{A}_{t} is guided by an explicit allocation Strategy S t S_{t} and reusable Experiences E t E_{t} distilled from observed search outcomes.",
+   "zh": "我们将搜索过程中的分配智能体表示为 𝒜 = ( 𝒜 t ) t ≥ 0 \\mathcal{A}=(\\mathcal{A}_{t})_{t\\geq 0}，其中 𝒜 t \\mathcal{A}_{t} 表示其在搜索步骤 t t 时的决策机制。 一个固定的分配智能体可能会随着提案、搜索上下文和单轮证据的变化而做出不同决策，但其决策机制保持不变：对于所有 t t，都有 𝒜 t = 𝒜 0 \\mathcal{A}_{t}=\\mathcal{A}_{0}。 当分配智能体能够利用累积的交互历史来修订这一机制时，我们称其为自演化智能体：𝒜 t + 1 = 𝒰 ⁡ ( 𝒜 t , ℋ t + 1 ) \\mathcal{A}_{t+1}=\\mathcal{U}(\\mathcal{A}_{t},\\mathcal{H}_{t+1})，其中 𝒰 \\mathcal{U} 表示智能体更新过程，且在没有执行更新时会保持 𝒜 t \\mathcal{A}_{t} 不变。 第 4 节在 EvoAlloc 中具体实现了这一框架，其中 𝒜 t \\mathcal{A}_{t} 由显式的分配策略 S t S_{t} 以及从观测到的搜索结果中提取的可复用经验 E t E_{t} 共同引导。",
+   "sents": [
+    {
+     "en": "We represent the allocation agent over the search as 𝒜 = ( 𝒜 t ) t ≥ 0 \\mathcal{A}=(\\mathcal{A}_{t})_{t\\geq 0} , where 𝒜 t \\mathcal{A}_{t} denotes its decision mechanism at search step t t .",
+     "zh": "我们将搜索过程中的分配智能体表示为 𝒜 = ( 𝒜 t ) t ≥ 0 \\mathcal{A}=(\\mathcal{A}_{t})_{t\\geq 0}，其中 𝒜 t \\mathcal{A}_{t} 表示其在搜索步骤 t t 时的决策机制。"
+    },
+    {
+     "en": "A fixed allocation agent may make different decisions as the proposal, search context, and within-episode evidence change, while its decision mechanism remains unchanged: 𝒜 t = 𝒜 0 \\mathcal{A}_{t}=\\mathcal{A}_{0} for all t t .",
+     "zh": "一个固定的分配智能体可能会随着提案、搜索上下文和单轮证据的变化而做出不同决策，但其决策机制保持不变：对于所有 t t，都有 𝒜 t = 𝒜 0 \\mathcal{A}_{t}=\\mathcal{A}_{0}。"
+    },
+    {
+     "en": "We call an allocation agent self-evolving when it can also revise this mechanism using the accumulated interaction history: 𝒜 t + 1 = 𝒰 ⁡ ( 𝒜 t , ℋ t + 1 ) \\mathcal{A}_{t+1}=\\mathcal{U}(\\mathcal{A}_{t},\\mathcal{H}_{t+1}) , where 𝒰 \\mathcal{U} denotes the agent-update process and leaves 𝒜 t \\mathcal{A}_{t} unchanged when no update is performed.",
+     "zh": "当分配智能体能够利用累积的交互历史来修订这一机制时，我们称其为自演化智能体：𝒜 t + 1 = 𝒰 ⁡ ( 𝒜 t , ℋ t + 1 ) \\mathcal{A}_{t+1}=\\mathcal{U}(\\mathcal{A}_{t},\\mathcal{H}_{t+1})，其中 𝒰 \\mathcal{U} 表示智能体更新过程，且在没有执行更新时会保持 𝒜 t \\mathcal{A}_{t} 不变。"
+    },
+    {
+     "en": "Section 4 instantiates this formulation in EvoAlloc, where 𝒜 t \\mathcal{A}_{t} is guided by an explicit allocation Strategy S t S_{t} and reusable Experiences E t E_{t} distilled from observed search outcomes.",
+     "zh": "第 4 节在 EvoAlloc 中具体实现了这一框架，其中 𝒜 t \\mathcal{A}_{t} 由显式的分配策略 S t S_{t} 以及从观测到的搜索结果中提取的可复用经验 E t E_{t} 共同引导。"
+    }
+   ]
+  },
+  {
+   "en": "EvoAlloc is a self-evolving evaluation-allocation agent for program evolution. It follows an explicit strategy that allocates evaluation resources to each candidate using the information available at decision time. As outcomes accumulate, EvoAlloc distills prior allocation episodes into reusable experience and uses it to evolve the strategy. It further uses counterfactual exploration to reveal outcomes of selected candidates that would otherwise remain unevaluated, providing additional feedback for subsequent strategy evolution. The following sections describe these three mechanisms: explicit evaluation allocation (Section 4.1 ), experience-driven strategy evolution (Section 4.2 ), and counterfactual exploration (Section 4.3 ).",
+   "zh": "EvoAlloc 是一种能够自我演化的评估分配智能体，用于程序演化。 它遵循一种明确的策略，在决策时利用可用信息为每个候选项分配评估资源。 随着结果不断积累，EvoAlloc 会将过往的分配过程提炼为可重用的经验，并以此演化其策略。 此外，它还通过反事实探索揭示那些原本无法被评估的候选项的结果，从而为后续的策略演化提供额外反馈。 以下各节将描述这三种机制：明确的评估分配（第 4.1 节）、以经验驱动的策略演化（第 4.2 节）以及反事实探索（第 4.3 节）。",
+   "sents": [
+    {
+     "en": "EvoAlloc is a self-evolving evaluation-allocation agent for program evolution.",
+     "zh": "EvoAlloc 是一种能够自我演化的评估分配智能体，用于程序演化。"
+    },
+    {
+     "en": "It follows an explicit strategy that allocates evaluation resources to each candidate using the information available at decision time.",
+     "zh": "它遵循一种明确的策略，在决策时利用可用信息为每个候选项分配评估资源。"
+    },
+    {
+     "en": "As outcomes accumulate, EvoAlloc distills prior allocation episodes into reusable experience and uses it to evolve the strategy.",
+     "zh": "随着结果不断积累，EvoAlloc 会将过往的分配过程提炼为可重用的经验，并以此演化其策略。"
+    },
+    {
+     "en": "It further uses counterfactual exploration to reveal outcomes of selected candidates that would otherwise remain unevaluated, providing additional feedback for subsequent strategy evolution.",
+     "zh": "此外，它还通过反事实探索揭示那些原本无法被评估的候选项的结果，从而为后续的策略演化提供额外反馈。"
+    },
+    {
+     "en": "The following sections describe these three mechanisms: explicit evaluation allocation (Section 4.1 ), experience-driven strategy evolution (Section 4.2 ), and counterfactual exploration (Section 4.3 ).",
+     "zh": "以下各节将描述这三种机制：明确的评估分配（第 4.1 节）、以经验驱动的策略演化（第 4.2 节）以及反事实探索（第 4.3 节）。"
+    }
+   ]
+  },
+  {
+   "en": "EvoAlloc maintains an explicit natural-language allocation strategy S t S_{t} that persists across candidates and is revised as the search progresses (Sec. 4.2 ). Rather than making each allocation decision from its current inputs alone, S t S_{t} captures search-level guidance for allocating evaluation resources. It specifies both the allocator’s overall selectivity and conditional guidance for choosing allocation actions under different search contexts. Representative strategy trajectories are provided in Appendix C .",
+   "zh": "EvoAlloc 维护一个明确的自然语言分配策略 S t S_{t}，该策略在所有候选者之间保持一致，并随着搜索的推进而不断修订（第 4.2 节）。 S t S_{t} 并非仅基于当前输入单独做出每次分配决策，而是体现了在分配评估资源时的搜索层面指导方针。 它既规定了分配器的整体选择性，也规定了在不同搜索背景下选择分配动作的条件性指导。 具有代表性的策略轨迹在附录 C 中提供。",
+   "sents": [
+    {
+     "en": "EvoAlloc maintains an explicit natural-language allocation strategy S t S_{t} that persists across candidates and is revised as the search progresses (Sec. 4.2 ).",
+     "zh": "EvoAlloc 维护一个明确的自然语言分配策略 S t S_{t}，该策略在所有候选者之间保持一致，并随着搜索的推进而不断修订（第 4.2 节）。"
+    },
+    {
+     "en": "Rather than making each allocation decision from its current inputs alone, S t S_{t} captures search-level guidance for allocating evaluation resources.",
+     "zh": "S t S_{t} 并非仅基于当前输入单独做出每次分配决策，而是体现了在分配评估资源时的搜索层面指导方针。"
+    },
+    {
+     "en": "It specifies both the allocator’s overall selectivity and conditional guidance for choosing allocation actions under different search contexts.",
+     "zh": "它既规定了分配器的整体选择性，也规定了在不同搜索背景下选择分配动作的条件性指导。"
+    },
+    {
+     "en": "Representative strategy trajectories are provided in Appendix C .",
+     "zh": "具有代表性的策略轨迹在附录 C 中提供。"
+    }
+   ]
+  },
+  {
+   "en": "In EvoAlloc, the agent 𝒜 t \\mathcal{A}_{t} at search step t t is determined by its current Strategy S t S_{t} and Experiences E t E_{t} , which are provided to a fixed allocator LLM together with the inputs of Eq. ( 1 ). Here, c t c_{t} captures the decision-time search context, including the parent score, evaluated sibling outcomes, current best score, and remaining budget, while e t , < j e_{t,<j} contains evidence acquired earlier in the same allocation episode. Across candidates, E t E_{t} summarizes reusable evidence from observed outcomes, and S t S_{t} provides the current run-level allocation guidance. The allocation action space is task-dependent. In all settings, EvoAlloc may choose FULL_EVAL to commit the candidate to full evaluation or DISCARD to stop further evaluation. When a meaningful lower-cost intermediate evaluator is available, the agent may additionally choose PARTIAL_EVAL to acquire further evidence. After such evidence is observed, the subsequent action is either CONTINUE_TO_FULL or STOP . These actions instantiate the multi-step allocation episode defined in Section 3.1 .",
+   "zh": "在 EvoAlloc 中，搜索步 t 时的智能体 𝒜 t \\mathcal{A}_{t} 由其当前的策略 S t S_{t} 和经验 E t E_{t} 共同决定，这些内容会与方程 (1) 的输入一起提供给固定的分配器 LLM。 此处，c t c_{t} 表示决策时的搜索上下文，包括父节点得分、已评估的兄弟节点结果、当前最佳得分以及剩余预算；而 e t , < j e_{t,<j} 则包含在同一分配回合中早期获取的证据。 在所有候选项中，E t E_{t} 总结了来自观测结果的可复用证据，而 S t S_{t} 提供了当前运行级别的分配指导。 分配动作空间取决于具体任务。 在所有设置中，EvoAlloc 可以选择 FULL_EVAL 将候选项提交至完整评估，或选择 DISCARD 以停止进一步评估。 当存在一个具有实际意义的、成本更低的中间评估器时，智能体还可以选择 PARTIAL_EVAL 以获取更多证据。 在观察到此类证据后，后续动作将是 CONTINUE_TO_FULL 或 STOP。 这些动作实现了第 3.1 节中定义的多步分配回合。",
+   "sents": [
+    {
+     "en": "In EvoAlloc, the agent 𝒜 t \\mathcal{A}_{t} at search step t t is determined by its current Strategy S t S_{t} and Experiences E t E_{t} , which are provided to a fixed allocator LLM together with the inputs of Eq. ( 1 ).",
+     "zh": "在 EvoAlloc 中，搜索步 t 时的智能体 𝒜 t \\mathcal{A}_{t} 由其当前的策略 S t S_{t} 和经验 E t E_{t} 共同决定，这些内容会与方程 (1) 的输入一起提供给固定的分配器 LLM。"
+    },
+    {
+     "en": "Here, c t c_{t} captures the decision-time search context, including the parent score, evaluated sibling outcomes, current best score, and remaining budget, while e t , < j e_{t,<j} contains evidence acquired earlier in the same allocation episode.",
+     "zh": "此处，c t c_{t} 表示决策时的搜索上下文，包括父节点得分、已评估的兄弟节点结果、当前最佳得分以及剩余预算；而 e t , < j e_{t,<j} 则包含在同一分配回合中早期获取的证据。"
+    },
+    {
+     "en": "Across candidates, E t E_{t} summarizes reusable evidence from observed outcomes, and S t S_{t} provides the current run-level allocation guidance.",
+     "zh": "在所有候选项中，E t E_{t} 总结了来自观测结果的可复用证据，而 S t S_{t} 提供了当前运行级别的分配指导。"
+    },
+    {
+     "en": "The allocation action space is task-dependent.",
+     "zh": "分配动作空间取决于具体任务。"
+    },
+    {
+     "en": "In all settings, EvoAlloc may choose FULL_EVAL to commit the candidate to full evaluation or DISCARD to stop further evaluation.",
+     "zh": "在所有设置中，EvoAlloc 可以选择 FULL_EVAL 将候选项提交至完整评估，或选择 DISCARD 以停止进一步评估。"
+    },
+    {
+     "en": "When a meaningful lower-cost intermediate evaluator is available, the agent may additionally choose PARTIAL_EVAL to acquire further evidence.",
+     "zh": "当存在一个具有实际意义的、成本更低的中间评估器时，智能体还可以选择 PARTIAL_EVAL 以获取更多证据。"
+    },
+    {
+     "en": "After such evidence is observed, the subsequent action is either CONTINUE_TO_FULL or STOP .",
+     "zh": "在观察到此类证据后，后续动作将是 CONTINUE_TO_FULL 或 STOP。"
+    },
+    {
+     "en": "These actions instantiate the multi-step allocation episode defined in Section 3.1 .",
+     "zh": "这些动作实现了第 3.1 节中定义的多步分配回合。"
+    }
+   ]
+  },
+  {
+   "en": "EvoAlloc implements the agent-update process 𝒰 \\mathcal{U} of Section 3.2 by updating two complementary components from observed outcomes. Experiences E t E_{t} summarize recurring patterns across observed cases, and the Strategy S t S_{t} translates these patterns into allocation criteria.",
+   "zh": "EvoAlloc 通过根据观察到的结果更新两个互补的组件，来实现第 3.2 节中所述的智能体更新过程 𝒰 \\mathcal{U}。 经验 E t E_{t} 总结了观察到的案例中重复出现的模式，而策略 S t S_{t} 将这些模式转化为分配标准。",
+   "sents": [
+    {
+     "en": "EvoAlloc implements the agent-update process 𝒰 \\mathcal{U} of Section 3.2 by updating two complementary components from observed outcomes.",
+     "zh": "EvoAlloc 通过根据观察到的结果更新两个互补的组件，来实现第 3.2 节中所述的智能体更新过程 𝒰 \\mathcal{U}。"
+    },
+    {
+     "en": "Experiences E t E_{t} summarize recurring patterns across observed cases, and the Strategy S t S_{t} translates these patterns into allocation criteria.",
+     "zh": "经验 E t E_{t} 总结了观察到的案例中重复出现的模式，而策略 S t S_{t} 将这些模式转化为分配标准。"
+    }
+   ]
+  },
+  {
+   "en": "After every k E k_{E} newly observed Full outcomes, the LLM consolidates the new cases into E t E_{t} by adding, updating, or removing Experiences. Each Experience maintains the indices of its supporting and contradicting cases and a status of tentative , active , or stale . The case indices are chronological, preserving how the evidence for an Experience changes over time. New patterns enter as tentative ; during later updates, the LLM may promote well-supported Experiences to active or mark outdated ones as stale as new evidence accumulates. Stale Experiences remain as historical records but no longer guide allocation.",
+   "zh": "每观察到 k E k_{E} 个新的完整结果后，LLM 就会通过添加、更新或删除经验，将这些新案例整合到 E t E_{t} 中。 每个经验都会记录支持该经验和反对该经验的案例的索引，并带有“暂定”“活跃”或“过时”的状态。 案例索引按时间顺序排列，保留了某项经验所依据的证据随时间的变化过程。 新模式最初以“暂定”状态进入；在后续更新中，随着新证据的积累，LLM 可能会将支持充分的经验提升为“活跃”，或将过时的经验标记为“过时”。 “过时”的经验仍作为历史记录保留，但不再指导分配决策。",
+   "sents": [
+    {
+     "en": "After every k E k_{E} newly observed Full outcomes, the LLM consolidates the new cases into E t E_{t} by adding, updating, or removing Experiences.",
+     "zh": "每观察到 k E k_{E} 个新的完整结果后，LLM 就会通过添加、更新或删除经验，将这些新案例整合到 E t E_{t} 中。"
+    },
+    {
+     "en": "Each Experience maintains the indices of its supporting and contradicting cases and a status of tentative , active , or stale .",
+     "zh": "每个经验都会记录支持该经验和反对该经验的案例的索引，并带有“暂定”“活跃”或“过时”的状态。"
+    },
+    {
+     "en": "The case indices are chronological, preserving how the evidence for an Experience changes over time.",
+     "zh": "案例索引按时间顺序排列，保留了某项经验所依据的证据随时间的变化过程。"
+    },
+    {
+     "en": "New patterns enter as tentative ; during later updates, the LLM may promote well-supported Experiences to active or mark outdated ones as stale as new evidence accumulates.",
+     "zh": "新模式最初以“暂定”状态进入；在后续更新中，随着新证据的积累，LLM 可能会将支持充分的经验提升为“活跃”，或将过时的经验标记为“过时”。"
+    },
+    {
+     "en": "Stale Experiences remain as historical records but no longer guide allocation.",
+     "zh": "“过时”的经验仍作为历史记录保留，但不再指导分配决策。"
+    }
+   ]
+  },
+  {
+   "en": "EvoAlloc starts from an initial strategy S 0 S_{0} derived from a few example cases. Each run begins with a short warm-up in which the allocator acts under S 0 S_{0} but every candidate is fully evaluated, seeding run-specific evidence. Thereafter, every k S k_{S} newly observed Full outcomes, EvoAlloc reflects on the current strategy, Experiences, and recent cases to propose a challenger S ~ \\widetilde{S} . The challenger is validated against the current strategy on subsequent candidates that induce different allocation paths under the two strategies (disagreements). For each disagreement, EvoAlloc executes the union of both strategies’ requested evaluations and shares the resulting evidence. Validation ends after two disagreements with an observed Full outcome. Sharing evaluations prevents outcomes requested only by the challenger from being censored in favor of the incumbent (Appendix D.7 ). The two strategies are then compared lexicographically on the realized consequences of their decisions: fewer missed new-best candidates, then fewer Full evaluations, then fewer Partial evaluations. The challenger is adopted if it is better on the first criterion where the two differ; otherwise, the current strategy is retained. This grounds strategy updates in observed allocation consequences rather than in LLM judgment alone. Implementation details and prompts are provided in Appendix E .",
+   "zh": "EvoAlloc 从一个基于少数示例案例推导出的初始策略 S₀（S_{0}）开始。 每次运行首先进行短暂的预热阶段，在此阶段分配器按照 S₀（S_{0}）行动，但会对每个候选项进行全面评估，从而为本次运行生成特定的证据。 此后，每当观察到 k 个新的完整结果 S_k（S_{k}），EvoAlloc 就会反思当前策略、经验以及近期案例，以提出一个挑战者策略 S̃（\\widetilde{S}）。 该挑战者策略将在后续候选项上通过与当前策略的对比进行验证；这些候选项在两种策略下会引发不同的分配路径（即分歧）。 对于每个分歧，EvoAlloc 都会执行两种策略所要求评估的并集，并共享由此产生的证据。 当观察到两个分歧对应的完整结果后，验证过程即告结束。 共享评估结果可防止仅由挑战者策略请求的评估结果因偏向当前策略而被忽略（附录 D.7）。 随后，两种策略将根据其决策所实现的后果进行字典序比较：首先比较遗漏的新最佳候选项数量，其次比较完整评估次数，最后比较部分评估次数。 如果挑战者策略在第一个存在差异的标准上表现更优，则采用该策略；否则保留当前策略。 这一机制将策略更新的基础建立在可观察的分配后果之上，而非仅依赖 LLM 的判断。 实现细节和提示词见附录 E。",
+   "sents": [
+    {
+     "en": "EvoAlloc starts from an initial strategy S 0 S_{0} derived from a few example cases.",
+     "zh": "EvoAlloc 从一个基于少数示例案例推导出的初始策略 S₀（S_{0}）开始。"
+    },
+    {
+     "en": "Each run begins with a short warm-up in which the allocator acts under S 0 S_{0} but every candidate is fully evaluated, seeding run-specific evidence.",
+     "zh": "每次运行首先进行短暂的预热阶段，在此阶段分配器按照 S₀（S_{0}）行动，但会对每个候选项进行全面评估，从而为本次运行生成特定的证据。"
+    },
+    {
+     "en": "Thereafter, every k S k_{S} newly observed Full outcomes, EvoAlloc reflects on the current strategy, Experiences, and recent cases to propose a challenger S ~ \\widetilde{S} .",
+     "zh": "此后，每当观察到 k 个新的完整结果 S_k（S_{k}），EvoAlloc 就会反思当前策略、经验以及近期案例，以提出一个挑战者策略 S̃（\\widetilde{S}）。"
+    },
+    {
+     "en": "The challenger is validated against the current strategy on subsequent candidates that induce different allocation paths under the two strategies (disagreements).",
+     "zh": "该挑战者策略将在后续候选项上通过与当前策略的对比进行验证；这些候选项在两种策略下会引发不同的分配路径（即分歧）。"
+    },
+    {
+     "en": "For each disagreement, EvoAlloc executes the union of both strategies’ requested evaluations and shares the resulting evidence.",
+     "zh": "对于每个分歧，EvoAlloc 都会执行两种策略所要求评估的并集，并共享由此产生的证据。"
+    },
+    {
+     "en": "Validation ends after two disagreements with an observed Full outcome.",
+     "zh": "当观察到两个分歧对应的完整结果后，验证过程即告结束。"
+    },
+    {
+     "en": "Sharing evaluations prevents outcomes requested only by the challenger from being censored in favor of the incumbent (Appendix D.7 ).",
+     "zh": "共享评估结果可防止仅由挑战者策略请求的评估结果因偏向当前策略而被忽略（附录 D.7）。"
+    },
+    {
+     "en": "The two strategies are then compared lexicographically on the realized consequences of their decisions: fewer missed new-best candidates, then fewer Full evaluations, then fewer Partial evaluations.",
+     "zh": "随后，两种策略将根据其决策所实现的后果进行字典序比较：首先比较遗漏的新最佳候选项数量，其次比较完整评估次数，最后比较部分评估次数。"
+    },
+    {
+     "en": "The challenger is adopted if it is better on the first criterion where the two differ; otherwise, the current strategy is retained.",
+     "zh": "如果挑战者策略在第一个存在差异的标准上表现更优，则采用该策略；否则保留当前策略。"
+    },
+    {
+     "en": "This grounds strategy updates in observed allocation consequences rather than in LLM judgment alone.",
+     "zh": "这一机制将策略更新的基础建立在可观察的分配后果之上，而非仅依赖 LLM 的判断。"
+    },
+    {
+     "en": "Implementation details and prompts are provided in Appendix E .",
+     "zh": "实现细节和提示词见附录 E。"
+    }
+   ]
+  },
+  {
+   "en": "Strategy evolution requires evaluation feedback, yet selective allocation itself determines which feedback becomes observable. As defined in Sec. 3.1 , candidates that terminate without full evaluation have y t obs = ∅ y_{t}^{\\mathrm{obs}}=\\varnothing . The resulting feedback is therefore filtered by the current strategy: systematic allocation errors can remain hidden because the corresponding candidates are never evaluated. To expose such missing feedback, EvoAlloc introduces counterfactual exploration . For each candidate whose allocation episode terminates in DISCARD or STOP , EvoAlloc independently samples z t ∼ Bernoulli ⁡ ( ρ ) z_{t}\\sim\\mathrm{Bernoulli}(\\rho) , where ρ \\rho is the exploration rate ( 0.3 0.3 by default). When z t = 1 z_{t}=1 , EvoAlloc executes EXPLORE_EVAL , fully evaluating the otherwise skipped candidate and revealing y t obs = y t y_{t}^{\\mathrm{obs}}=y_{t} . Exploratory outcomes are marked separately from strategy-selected feedback. Strong outcomes provide counterevidence to the current allocation criteria, while weak ones support them; both inform subsequent experience and strategy updates. Once fully evaluated, an explored candidate participates in the underlying program search as usual.",
+   "zh": "策略演化需要评估反馈，但选择性的分配本身决定了哪些反馈能够被观察到。 如第 3.1 节所定义，在没有完成全部评估即终止的候选项，其 y t obs = ∅ y_{t}^{\\mathrm{obs}}=\\varnothing 。 因此，最终的反馈会受到当前策略的过滤：系统性的分配错误可能始终未被发现，因为对应的候选项从未被评估。 为了揭示这类缺失的反馈，EvoAlloc 引入了反事实探索。 对于每个分配流程以 DISCARD 或 STOP 终止的候选项，EvoAlloc 会独立采样 z t ∼ Bernoulli ⁡ ( ρ ) z_{t}\\sim\\mathrm{Bernoulli}(\\rho) ，其中 ρ \\rho 是探索率（默认为 0.3）。 当 z t = 1 z_{t}=1 时，EvoAlloc 会执行 EXPLORE_EVAL，对原本会被跳过的候选项进行完整评估，并揭示 y t obs = y t y_{t}^{\\mathrm{obs}}=y_{t} 。 探索性结果会与策略选择的反馈分开标记。 强结果能为当前分配标准提供反证，而弱结果则支持该标准；两者都会影响后续的经验积累和策略更新。 一旦完成全部评估，被探索的候选项便会像往常一样参与底层的程序搜索。",
+   "sents": [
+    {
+     "en": "Strategy evolution requires evaluation feedback, yet selective allocation itself determines which feedback becomes observable.",
+     "zh": "策略演化需要评估反馈，但选择性的分配本身决定了哪些反馈能够被观察到。"
+    },
+    {
+     "en": "As defined in Sec. 3.1 , candidates that terminate without full evaluation have y t obs = ∅ y_{t}^{\\mathrm{obs}}=\\varnothing .",
+     "zh": "如第 3.1 节所定义，在没有完成全部评估即终止的候选项，其 y t obs = ∅ y_{t}^{\\mathrm{obs}}=\\varnothing 。"
+    },
+    {
+     "en": "The resulting feedback is therefore filtered by the current strategy: systematic allocation errors can remain hidden because the corresponding candidates are never evaluated.",
+     "zh": "因此，最终的反馈会受到当前策略的过滤：系统性的分配错误可能始终未被发现，因为对应的候选项从未被评估。"
+    },
+    {
+     "en": "To expose such missing feedback, EvoAlloc introduces counterfactual exploration .",
+     "zh": "为了揭示这类缺失的反馈，EvoAlloc 引入了反事实探索。"
+    },
+    {
+     "en": "For each candidate whose allocation episode terminates in DISCARD or STOP , EvoAlloc independently samples z t ∼ Bernoulli ⁡ ( ρ ) z_{t}\\sim\\mathrm{Bernoulli}(\\rho) , where ρ \\rho is the exploration rate ( 0.3 0.3 by default).",
+     "zh": "对于每个分配流程以 DISCARD 或 STOP 终止的候选项，EvoAlloc 会独立采样 z t ∼ Bernoulli ⁡ ( ρ ) z_{t}\\sim\\mathrm{Bernoulli}(\\rho) ，其中 ρ \\rho 是探索率（默认为 0.3）。"
+    },
+    {
+     "en": "When z t = 1 z_{t}=1 , EvoAlloc executes EXPLORE_EVAL , fully evaluating the otherwise skipped candidate and revealing y t obs = y t y_{t}^{\\mathrm{obs}}=y_{t} .",
+     "zh": "当 z t = 1 z_{t}=1 时，EvoAlloc 会执行 EXPLORE_EVAL，对原本会被跳过的候选项进行完整评估，并揭示 y t obs = y t y_{t}^{\\mathrm{obs}}=y_{t} 。"
+    },
+    {
+     "en": "Exploratory outcomes are marked separately from strategy-selected feedback.",
+     "zh": "探索性结果会与策略选择的反馈分开标记。"
+    },
+    {
+     "en": "Strong outcomes provide counterevidence to the current allocation criteria, while weak ones support them; both inform subsequent experience and strategy updates.",
+     "zh": "强结果能为当前分配标准提供反证，而弱结果则支持该标准；两者都会影响后续的经验积累和策略更新。"
+    },
+    {
+     "en": "Once fully evaluated, an explored candidate participates in the underlying program search as usual.",
+     "zh": "一旦完成全部评估，被探索的候选项便会像往常一样参与底层的程序搜索。"
+    }
+   ]
+  },
+  {
+   "en": "Together, these components form a closed loop: the Strategy guides the agent’s decisions, and the outcomes of these decisions are used to revise the Strategy. Figure 2 illustrates this loop through two cases. In Case 1, the Strategy’s evidence threshold leads the agent to request Partial evaluation before committing to Full evaluation, and accumulated outcomes later refine this threshold. In Case 2, counterfactual exploration reveals the outcome of a candidate the agent had discarded, exposing feedback that would otherwise remain unobserved and informing a revised Strategy.",
+   "zh": "这些组件共同构成了一个闭环：策略指导智能体的决策，而这些决策的结果又用于修正策略。 图 2 通过两个案例展示了这一闭环。 在案例 1 中，策略的证据阈值使智能体在做出完全评估的决定之前请求部分评估，而累积的结果随后会调整这一阈值。 在案例 2 中，反事实探索揭示了智能体此前已放弃的候选项的结果，从而暴露了原本无法观察到的反馈，并据此形成了修正后的策略。",
+   "sents": [
+    {
+     "en": "Together, these components form a closed loop: the Strategy guides the agent’s decisions, and the outcomes of these decisions are used to revise the Strategy.",
+     "zh": "这些组件共同构成了一个闭环：策略指导智能体的决策，而这些决策的结果又用于修正策略。"
+    },
+    {
+     "en": "Figure 2 illustrates this loop through two cases.",
+     "zh": "图 2 通过两个案例展示了这一闭环。"
+    },
+    {
+     "en": "In Case 1, the Strategy’s evidence threshold leads the agent to request Partial evaluation before committing to Full evaluation, and accumulated outcomes later refine this threshold.",
+     "zh": "在案例 1 中，策略的证据阈值使智能体在做出完全评估的决定之前请求部分评估，而累积的结果随后会调整这一阈值。"
+    },
+    {
+     "en": "In Case 2, counterfactual exploration reveals the outcome of a candidate the agent had discarded, exposing feedback that would otherwise remain unobserved and informing a revised Strategy.",
+     "zh": "在案例 2 中，反事实探索揭示了智能体此前已放弃的候选项的结果，从而暴露了原本无法观察到的反馈，并据此形成了修正后的策略。"
+    }
+   ]
+  },
+  {
+   "en": "We implement EvoAlloc within the ShinkaEvolve program-evolution framework ( Lange et al., 2026 ) , with all methods sharing the search pipeline except for evaluation allocation. Unless otherwise stated, experiments use five independent seeds. We report mean best-so-far performance against Full evaluations and cumulative LLM tokens, together with final best performance. Our primary efficiency metric is matched-target cost. We first average best-so-far scores and cumulative token usage across five seeds at each completed Full-evaluation index. We then find the first index at which the mean score reaches a common target and report that index and its corresponding mean cumulative token usage (Appendix D.3 ).",
+   "zh": "我们在 ShinkaEvolve 程序演化框架（Lange 等人，2026）中实现了 EvoAlloc，除评估分配外，所有方法均共享相同的搜索流程。 除非另有说明，实验均使用五个独立的随机种子。 我们报告了相对于完整评估和累积 LLM 令牌数的当前最佳性能均值，以及最终的最佳性能。 我们的主要效率指标是匹配目标的成本。 首先，我们在每个完成完整评估的索引处，对五个随机种子的当前最佳得分和累积令牌使用量进行平均。 然后，我们找出均值得分达到共同目标时的首个索引，并报告该索引及其对应的累积令牌使用量均值（附录 D.3）。",
+   "sents": [
+    {
+     "en": "We implement EvoAlloc within the ShinkaEvolve program-evolution framework ( Lange et al., 2026 ) , with all methods sharing the search pipeline except for evaluation allocation.",
+     "zh": "我们在 ShinkaEvolve 程序演化框架（Lange 等人，2026）中实现了 EvoAlloc，除评估分配外，所有方法均共享相同的搜索流程。"
+    },
+    {
+     "en": "Unless otherwise stated, experiments use five independent seeds.",
+     "zh": "除非另有说明，实验均使用五个独立的随机种子。"
+    },
+    {
+     "en": "We report mean best-so-far performance against Full evaluations and cumulative LLM tokens, together with final best performance.",
+     "zh": "我们报告了相对于完整评估和累积 LLM 令牌数的当前最佳性能均值，以及最终的最佳性能。"
+    },
+    {
+     "en": "Our primary efficiency metric is matched-target cost.",
+     "zh": "我们的主要效率指标是匹配目标的成本。"
+    },
+    {
+     "en": "We first average best-so-far scores and cumulative token usage across five seeds at each completed Full-evaluation index.",
+     "zh": "首先，我们在每个完成完整评估的索引处，对五个随机种子的当前最佳得分和累积令牌使用量进行平均。"
+    },
+    {
+     "en": "We then find the first index at which the mean score reaches a common target and report that index and its corresponding mean cumulative token usage (Appendix D.3 ).",
+     "zh": "然后，我们找出均值得分达到共同目标时的首个索引，并报告该索引及其对应的累积令牌使用量均值（附录 D.3）。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate EvoAlloc across program-evolution settings spanning reasoning-harness optimization and solution-program optimization, with differing access to intermediate evaluation feedback. ADAS-AIME evolves programmatic reasoning harnesses around a fixed Qwen3-8B solver on the 30 AIME 2024 problems. Each candidate is scored by its mean accuracy over three independent runs. A Full evaluation uses all 30 problems, while a Partial evaluation uses the first eight before deciding whether to continue to Full. Circle Packing evolves Python programs that arrange 26 non-overlapping circles within the unit square to maximize the sum of their radii. Its evaluator is deterministic, and since no lower-cost intermediate evaluation is available, the allocator chooses directly between Full and Discard.",
+   "zh": "我们在涵盖推理框架优化和解决方案程序优化的程序演化设置中，评估了 EvoAlloc 的性能，同时考虑了对中间评估反馈的不同访问权限。 ADAS-AIME 围绕一个固定的 Qwen3-8B 求解器，针对 30 道 AIME 2024 题目演化程序化的推理框架。 每个候选方案通过其在三次独立运行中的平均准确率进行评分。 完整评估使用全部 30 道题目，而部分评估则仅使用前八道题目，之后再决定是否继续执行完整评估。 Circle Packing 会演化 Python 程序，这些程序能够在单位正方形内排列 26 个互不重叠的圆，以最大化它们的半径之和。 其评估器是确定性的，并且由于没有成本更低的中间评估可用，分配器只能在“完整”和“丢弃”之间直接做出选择。",
+   "sents": [
+    {
+     "en": "We evaluate EvoAlloc across program-evolution settings spanning reasoning-harness optimization and solution-program optimization, with differing access to intermediate evaluation feedback.",
+     "zh": "我们在涵盖推理框架优化和解决方案程序优化的程序演化设置中，评估了 EvoAlloc 的性能，同时考虑了对中间评估反馈的不同访问权限。"
+    },
+    {
+     "en": "ADAS-AIME evolves programmatic reasoning harnesses around a fixed Qwen3-8B solver on the 30 AIME 2024 problems.",
+     "zh": "ADAS-AIME 围绕一个固定的 Qwen3-8B 求解器，针对 30 道 AIME 2024 题目演化程序化的推理框架。"
+    },
+    {
+     "en": "Each candidate is scored by its mean accuracy over three independent runs.",
+     "zh": "每个候选方案通过其在三次独立运行中的平均准确率进行评分。"
+    },
+    {
+     "en": "A Full evaluation uses all 30 problems, while a Partial evaluation uses the first eight before deciding whether to continue to Full.",
+     "zh": "完整评估使用全部 30 道题目，而部分评估则仅使用前八道题目，之后再决定是否继续执行完整评估。"
+    },
+    {
+     "en": "Circle Packing evolves Python programs that arrange 26 non-overlapping circles within the unit square to maximize the sum of their radii.",
+     "zh": "Circle Packing 会演化 Python 程序，这些程序能够在单位正方形内排列 26 个互不重叠的圆，以最大化它们的半径之和。"
+    },
+    {
+     "en": "Its evaluator is deterministic, and since no lower-cost intermediate evaluation is available, the allocator chooses directly between Full and Discard.",
+     "zh": "其评估器是确定性的，并且由于没有成本更低的中间评估可用，分配器只能在“完整”和“丢弃”之间直接做出选择。"
+    }
+   ]
+  },
+  {
+   "en": "We compare against four baselines within the same search framework. ShinkaEvolve ( Lange et al., 2026 ) fully evaluates every proposal that passes the standard checks, providing a reference without evaluation allocation. One-Step LLM Allocator uses the same allocator LLM and search context as EvoAlloc, but makes each allocation decision directly without an explicit Strategy or accumulated Experience. Lineage-UCB is an LLM-free adaptive allocator that builds a Beta posterior from parent-improvement outcomes in the local lineage and applies a fixed UCB rule for evaluation allocation. RPM ( Foster et al., 2026 ) is a recent LLM-based evaluation-allocation method that generates 15 proposals at each selection step and uses pairwise LLM comparisons in a knockout tournament to select one for Full evaluation. Implementation details, hyperparameters, token accounting, and baseline adaptations are provided in Appendices B and D .",
+   "zh": "我们在同一搜索框架内与四种基线方法进行了比较。 ShinkaEvolve（Lange 等人，2026）会对通过标准检查的每个提案进行全面评估，从而提供一个无需分配评估资源的参考方案。 One-Step LLM Allocator 使用了与 EvoAlloc 相同的分配器 LLM 和搜索上下文，但无需显式的策略或累积经验，而是直接做出每次分配决策。 Lineage-UCB 是一种无需 LLM 的自适应分配方法，它从局部谱系中父节点改进的结果构建贝塔后验分布，并应用固定的 UCB 规则进行评估资源分配。 RPM（Foster 等人，2026）是一种基于 LLM 的最新评估分配方法，它在每个选择步骤中生成 15 个提案，并通过淘汰赛中的成对 LLM 比较来挑选一个提案进行完整评估。 实现细节、超参数、令牌计算以及基线方法的调整内容均列于附录 B 和 D 中。",
+   "sents": [
+    {
+     "en": "We compare against four baselines within the same search framework.",
+     "zh": "我们在同一搜索框架内与四种基线方法进行了比较。"
+    },
+    {
+     "en": "ShinkaEvolve ( Lange et al., 2026 ) fully evaluates every proposal that passes the standard checks, providing a reference without evaluation allocation.",
+     "zh": "ShinkaEvolve（Lange 等人，2026）会对通过标准检查的每个提案进行全面评估，从而提供一个无需分配评估资源的参考方案。"
+    },
+    {
+     "en": "One-Step LLM Allocator uses the same allocator LLM and search context as EvoAlloc, but makes each allocation decision directly without an explicit Strategy or accumulated Experience.",
+     "zh": "One-Step LLM Allocator 使用了与 EvoAlloc 相同的分配器 LLM 和搜索上下文，但无需显式的策略或累积经验，而是直接做出每次分配决策。"
+    },
+    {
+     "en": "Lineage-UCB is an LLM-free adaptive allocator that builds a Beta posterior from parent-improvement outcomes in the local lineage and applies a fixed UCB rule for evaluation allocation.",
+     "zh": "Lineage-UCB 是一种无需 LLM 的自适应分配方法，它从局部谱系中父节点改进的结果构建贝塔后验分布，并应用固定的 UCB 规则进行评估资源分配。"
+    },
+    {
+     "en": "RPM ( Foster et al., 2026 ) is a recent LLM-based evaluation-allocation method that generates 15 proposals at each selection step and uses pairwise LLM comparisons in a knockout tournament to select one for Full evaluation.",
+     "zh": "RPM（Foster 等人，2026）是一种基于 LLM 的最新评估分配方法，它在每个选择步骤中生成 15 个提案，并通过淘汰赛中的成对 LLM 比较来挑选一个提案进行完整评估。"
+    },
+    {
+     "en": "Implementation details, hyperparameters, token accounting, and baseline adaptations are provided in Appendices B and D .",
+     "zh": "实现细节、超参数、令牌计算以及基线方法的调整内容均列于附录 B 和 D 中。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 3 shows that EvoAlloc achieves the highest mean final performance among all evaluated methods on both benchmarks. Relative to ShinkaEvolve, the underlying program-evolution framework, EvoAlloc improves mean final performance by 12.0 12.0 % on ADAS-AIME and 8.7 8.7 % on Circle Packing. It also substantially reduces matched-target cost, requiring 59 59 – 82 82 % fewer Full evaluations and 61 61 – 89 89 % fewer LLM tokens to reach ShinkaEvolve’s final-performance target. LLM-token cost includes all input and output tokens consumed during search, including proposal generation, benchmark evaluation, and method-specific allocation or selection calls. The improvements persist across both evaluation settings: on Circle Packing, where no Partial evaluation is available, EvoAlloc still benefits from selectively allocating Full evaluations, showing that the gains are not simply due to access to an additional evaluation stage. The consistent advantage over the One-Step LLM Allocator further supports the value of maintaining an explicit Strategy and accumulated Experience across the search rather than making independent LLM allocation decisions. Complete statistics, matched-target costs, and auxiliary trajectory AUC are reported in Appendix D .",
+   "zh": "图3显示，在所有评估方法中，EvoAlloc在两个基准测试上都实现了最高的平均最终性能。 与底层程序演化框架ShinkaEvolve相比，EvoAlloc在ADAS-AIME上的平均最终性能提升了12.0%，在Circle Packing上提升了8.7%。 它还显著降低了匹配目标成本，达到ShinkaEvolve的最终性能目标所需的完整评估次数减少了59%–82%，LLM令牌使用量减少了61%–89%。 LLM令牌成本包括搜索过程中消耗的所有输入和输出令牌，涵盖提案生成、基准测试评估以及方法特定的分配或选择调用。 这些改进在两种评估设置中均保持一致：在Circle Packing中，由于无法进行部分评估，EvoAlloc仍能通过选择性分配完整评估获得收益，这表明性能提升并非单纯源于获得了额外的评估阶段。 与单步LLM分配器相比持续存在的优势进一步证明了在整个搜索过程中保留显式策略和累积经验的价值，而非做出独立的LLM分配决策。 完整的统计数据、匹配目标成本以及辅助轨迹AUC报告见附录D。",
+   "sents": [
+    {
+     "en": "Figure 3 shows that EvoAlloc achieves the highest mean final performance among all evaluated methods on both benchmarks.",
+     "zh": "图3显示，在所有评估方法中，EvoAlloc在两个基准测试上都实现了最高的平均最终性能。"
+    },
+    {
+     "en": "Relative to ShinkaEvolve, the underlying program-evolution framework, EvoAlloc improves mean final performance by 12.0 12.0 % on ADAS-AIME and 8.7 8.7 % on Circle Packing.",
+     "zh": "与底层程序演化框架ShinkaEvolve相比，EvoAlloc在ADAS-AIME上的平均最终性能提升了12.0%，在Circle Packing上提升了8.7%。"
+    },
+    {
+     "en": "It also substantially reduces matched-target cost, requiring 59 59 – 82 82 % fewer Full evaluations and 61 61 – 89 89 % fewer LLM tokens to reach ShinkaEvolve’s final-performance target.",
+     "zh": "它还显著降低了匹配目标成本，达到ShinkaEvolve的最终性能目标所需的完整评估次数减少了59%–82%，LLM令牌使用量减少了61%–89%。"
+    },
+    {
+     "en": "LLM-token cost includes all input and output tokens consumed during search, including proposal generation, benchmark evaluation, and method-specific allocation or selection calls.",
+     "zh": "LLM令牌成本包括搜索过程中消耗的所有输入和输出令牌，涵盖提案生成、基准测试评估以及方法特定的分配或选择调用。"
+    },
+    {
+     "en": "The improvements persist across both evaluation settings: on Circle Packing, where no Partial evaluation is available, EvoAlloc still benefits from selectively allocating Full evaluations, showing that the gains are not simply due to access to an additional evaluation stage.",
+     "zh": "这些改进在两种评估设置中均保持一致：在Circle Packing中，由于无法进行部分评估，EvoAlloc仍能通过选择性分配完整评估获得收益，这表明性能提升并非单纯源于获得了额外的评估阶段。"
+    },
+    {
+     "en": "The consistent advantage over the One-Step LLM Allocator further supports the value of maintaining an explicit Strategy and accumulated Experience across the search rather than making independent LLM allocation decisions.",
+     "zh": "与单步LLM分配器相比持续存在的优势进一步证明了在整个搜索过程中保留显式策略和累积经验的价值，而非做出独立的LLM分配决策。"
+    },
+    {
+     "en": "Complete statistics, matched-target costs, and auxiliary trajectory AUC are reported in Appendix D .",
+     "zh": "完整的统计数据、匹配目标成本以及辅助轨迹AUC报告见附录D。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 5 (a–b) compares variants of EvoAlloc. One-Step Alloc replaces the maintained Strategy with independent one-step allocation decisions, using the same allocator LLM and decision-time search context as EvoAlloc. w/o Evolution uses fixed custom allocation guidance, distilled from baseline run examples and manually refined (Appendix D.1 ). w/o Exploration removes counterfactual exploration while leaving the remaining adaptation mechanisms unchanged. Across both benchmarks, the full EvoAlloc achieves the strongest mean best-so-far trajectories. The full EvoAlloc outperforms both one-step allocation and fixed custom guidance. Removing exploration also weakens performance, reflecting the value of counterfactual outcomes that selective allocation would otherwise leave unobserved. Figure 5 (c) varies the exploration rate ρ \\rho on Circle Packing. Final performance is similar across rates, but the LLM tokens needed to reach ShinkaEvolve’s final performance vary substantially, with ρ = 0.3 \\rho=0.3 the most efficient. Too little exploration provides limited feedback on skipped candidates, whereas too much offsets the savings from selective allocation.",
+   "zh": "图 5 (a–b) 比较了 EvoAlloc 的不同变体。 One-Step Alloc 用独立的单步分配决策取代了原有的策略，但与 EvoAlloc 使用相同的分配器 LLM 和决策时的搜索上下文。w/o Evolution 使用固定的自定义分配指导，该指导从基准运行示例中提取并经过人工优化（附录 D.1）。w/o Exploration 移除了反事实探索，但保留了其余的适应机制不变。 在两个基准测试中，完整的 EvoAlloc 实现了最强的“迄今最佳”平均轨迹。 完整的 EvoAlloc 的表现优于单步分配和固定自定义指导两种方法。 移除探索也会削弱性能，这反映了反事实结果的价值——这些结果在选择性分配下原本可能无法被观察到。 图 5 (c) 展示了 Circle Packing 中探索率 ρ \\rho 的变化情况。 不同探索率下的最终表现相似，但达到 ShinkaEvolve 最终性能所需的 LLM 令牌数量差异显著，其中 ρ = 0.3 \\rho=0.3 的效率最高。 探索不足会导致对跳过候选项的反馈有限，而过度探索则会抵消选择性分配带来的节省效果。",
+   "sents": [
+    {
+     "en": "Figure 5 (a–b) compares variants of EvoAlloc.",
+     "zh": "图 5 (a–b) 比较了 EvoAlloc 的不同变体。"
+    },
+    {
+     "en": "One-Step Alloc replaces the maintained Strategy with independent one-step allocation decisions, using the same allocator LLM and decision-time search context as EvoAlloc. w/o Evolution uses fixed custom allocation guidance, distilled from baseline run examples and manually refined (Appendix D.1 ). w/o Exploration removes counterfactual exploration while leaving the remaining adaptation mechanisms unchanged.",
+     "zh": "One-Step Alloc 用独立的单步分配决策取代了原有的策略，但与 EvoAlloc 使用相同的分配器 LLM 和决策时的搜索上下文。w/o Evolution 使用固定的自定义分配指导，该指导从基准运行示例中提取并经过人工优化（附录 D.1）。w/o Exploration 移除了反事实探索，但保留了其余的适应机制不变。"
+    },
+    {
+     "en": "Across both benchmarks, the full EvoAlloc achieves the strongest mean best-so-far trajectories.",
+     "zh": "在两个基准测试中，完整的 EvoAlloc 实现了最强的“迄今最佳”平均轨迹。"
+    },
+    {
+     "en": "The full EvoAlloc outperforms both one-step allocation and fixed custom guidance.",
+     "zh": "完整的 EvoAlloc 的表现优于单步分配和固定自定义指导两种方法。"
+    },
+    {
+     "en": "Removing exploration also weakens performance, reflecting the value of counterfactual outcomes that selective allocation would otherwise leave unobserved.",
+     "zh": "移除探索也会削弱性能，这反映了反事实结果的价值——这些结果在选择性分配下原本可能无法被观察到。"
+    },
+    {
+     "en": "Figure 5 (c) varies the exploration rate ρ \\rho on Circle Packing.",
+     "zh": "图 5 (c) 展示了 Circle Packing 中探索率 ρ \\rho 的变化情况。"
+    },
+    {
+     "en": "Final performance is similar across rates, but the LLM tokens needed to reach ShinkaEvolve’s final performance vary substantially, with ρ = 0.3 \\rho=0.3 the most efficient.",
+     "zh": "不同探索率下的最终表现相似，但达到 ShinkaEvolve 最终性能所需的 LLM 令牌数量差异显著，其中 ρ = 0.3 \\rho=0.3 的效率最高。"
+    },
+    {
+     "en": "Too little exploration provides limited feedback on skipped candidates, whereas too much offsets the savings from selective allocation.",
+     "zh": "探索不足会导致对跳过候选项的反馈有限，而过度探索则会抵消选择性分配带来的节省效果。"
+    }
+   ]
+  },
+  {
+   "en": "What is worth evaluating depends on the state of the search: early outcomes are hard to predict and gains are frequent, so broad evaluation is informative, whereas later gains become rare and the budget is better spent on fewer, stronger candidates. EvoAlloc’s evolved strategies follow this shift (Figure 5 ; see Appendix C.2 for Circle Packing). On ADAS-AIME, allocation moves from gathering evidence through Partial evaluation with no direct discards to discarding most proposals outright. This greater selectivity does not stop discovery, as EvoAlloc still finds a late improvement. These stage-wise changes support revising allocation criteria as search experience accumulates.",
+   "zh": "值得评估的内容取决于搜索的状态：早期结果难以预测且收益频繁，因此广泛评估能提供有用信息；而后期收益变得稀少，此时将预算用于更少但更优的候选方案会更有效。 EvoAlloc 演化出的策略遵循了这一转变（图 5；关于圆形打包问题，请参见附录 C.2）。 在 ADAS-AIME 上，分配策略从通过部分评估收集证据（不直接舍弃任何方案）转变为直接舍弃大多数提案。 这种更强的选择性并未阻碍发现过程，因为 EvoAlloc 仍然在后期找到了改进方案。 这些分阶段的变化支持随着搜索经验的积累而调整分配标准。",
+   "sents": [
+    {
+     "en": "What is worth evaluating depends on the state of the search: early outcomes are hard to predict and gains are frequent, so broad evaluation is informative, whereas later gains become rare and the budget is better spent on fewer, stronger candidates.",
+     "zh": "值得评估的内容取决于搜索的状态：早期结果难以预测且收益频繁，因此广泛评估能提供有用信息；而后期收益变得稀少，此时将预算用于更少但更优的候选方案会更有效。"
+    },
+    {
+     "en": "EvoAlloc’s evolved strategies follow this shift (Figure 5 ; see Appendix C.2 for Circle Packing).",
+     "zh": "EvoAlloc 演化出的策略遵循了这一转变（图 5；关于圆形打包问题，请参见附录 C.2）。"
+    },
+    {
+     "en": "On ADAS-AIME, allocation moves from gathering evidence through Partial evaluation with no direct discards to discarding most proposals outright.",
+     "zh": "在 ADAS-AIME 上，分配策略从通过部分评估收集证据（不直接舍弃任何方案）转变为直接舍弃大多数提案。"
+    },
+    {
+     "en": "This greater selectivity does not stop discovery, as EvoAlloc still finds a late improvement.",
+     "zh": "这种更强的选择性并未阻碍发现过程，因为 EvoAlloc 仍然在后期找到了改进方案。"
+    },
+    {
+     "en": "These stage-wise changes support revising allocation criteria as search experience accumulates.",
+     "zh": "这些分阶段的变化支持随着搜索经验的积累而调整分配标准。"
+    }
+   ]
+  },
+  {
+   "en": "Selective allocation does more than reduce cost: every evaluation withheld from a weak candidate is reinvested in further search. With the same Full-evaluation budget on the same seed, EvoAlloc examines 124 proposals on ADAS-AIME versus 75 for ShinkaEvolve (Figure 6 ), and 302 versus 150 on Circle Packing (Appendix C.3 ). The extra proposals expand the tree with additional siblings and descendants. The candidates EvoAlloc chooses to evaluate also tend to score higher, even though each choice is made before the Full outcome is known, so the broader coverage does not come at the expense of evaluation quality. This reinvestment is why EvoAlloc improves final performance under a fixed budget, not only the cost of reaching a given target.",
+   "zh": "选择性分配的作用不仅限于降低成本：每个未对弱势候选者进行的评估，都会重新投入用于进一步的搜索。 在相同种子和相同的完整评估预算下，EvoAlloc 在 ADAS-AIME 上检查了 124 个提案，而 ShinkaEvolve 仅检查了 75 个（图 6）；在 Circle Packing 上，前者检查了 302 个，后者为 150 个（附录 C.3）。 这些额外的提案通过增加兄弟节点和子代节点来扩展树结构。 EvoAlloc 选择进行评估的候选者往往得分更高，尽管每个选择都是在完整结果已知之前做出的，因此更广泛的覆盖范围并未以评估质量为代价。 正是这种再投资机制，使得 EvoAlloc 在固定预算下能够提升最终性能，而不仅仅是降低达到特定目标所需的成本。",
+   "sents": [
+    {
+     "en": "Selective allocation does more than reduce cost: every evaluation withheld from a weak candidate is reinvested in further search.",
+     "zh": "选择性分配的作用不仅限于降低成本：每个未对弱势候选者进行的评估，都会重新投入用于进一步的搜索。"
+    },
+    {
+     "en": "With the same Full-evaluation budget on the same seed, EvoAlloc examines 124 proposals on ADAS-AIME versus 75 for ShinkaEvolve (Figure 6 ), and 302 versus 150 on Circle Packing (Appendix C.3 ).",
+     "zh": "在相同种子和相同的完整评估预算下，EvoAlloc 在 ADAS-AIME 上检查了 124 个提案，而 ShinkaEvolve 仅检查了 75 个（图 6）；在 Circle Packing 上，前者检查了 302 个，后者为 150 个（附录 C.3）。"
+    },
+    {
+     "en": "The extra proposals expand the tree with additional siblings and descendants.",
+     "zh": "这些额外的提案通过增加兄弟节点和子代节点来扩展树结构。"
+    },
+    {
+     "en": "The candidates EvoAlloc chooses to evaluate also tend to score higher, even though each choice is made before the Full outcome is known, so the broader coverage does not come at the expense of evaluation quality.",
+     "zh": "EvoAlloc 选择进行评估的候选者往往得分更高，尽管每个选择都是在完整结果已知之前做出的，因此更广泛的覆盖范围并未以评估质量为代价。"
+    },
+    {
+     "en": "This reinvestment is why EvoAlloc improves final performance under a fixed budget, not only the cost of reaching a given target.",
+     "zh": "正是这种再投资机制，使得 EvoAlloc 在固定预算下能够提升最终性能，而不仅仅是降低达到特定目标所需的成本。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 7 shows how removing each component changes allocation behavior on ADAS-AIME. One-Step Alloc sees the same search history, but without a Strategy that consolidates it into explicit criteria, the LLM cannot confidently decline, and it therefore sends most proposals to Full evaluation and saves little budget. With fixed custom guidance, allocation remains Partial-heavy throughout the search, unlike the stage-wise shifts of EvoAlloc. Without exploration, discarded outcomes stay hidden, leaving no counterexamples to the current criteria, so pruning errors go uncorrected and falsely pruned candidates never enter the archive as parents. Effective allocation thus requires explicit criteria, their evolution with the search, and exploration to check them against hidden outcomes.",
+   "zh": "图 7 展示了移除每个组件如何改变 ADAS-AIME 上的分配行为。 One-Step Alloc 能看到相同的搜索历史，但如果没有将历史整合为明确标准的策略，LLM 就无法自信地拒绝提议，因此会将大多数提议提交至完整评估，导致预算消耗极少。 在固定自定义指导策略下，整个搜索过程中分配仍以部分评估为主，这与 EvoAlloc 的分阶段变化不同。 如果没有探索机制，被舍弃的结果将始终隐藏，无法为当前标准提供反例，因此修剪错误不会被纠正，而被错误修剪的候选项也永远不会作为父项进入存档。 因此，有效的分配需要明确的标准、随搜索过程演化的标准，以及用于验证这些标准与隐藏结果之间关系的探索机制。",
+   "sents": [
+    {
+     "en": "Figure 7 shows how removing each component changes allocation behavior on ADAS-AIME.",
+     "zh": "图 7 展示了移除每个组件如何改变 ADAS-AIME 上的分配行为。"
+    },
+    {
+     "en": "One-Step Alloc sees the same search history, but without a Strategy that consolidates it into explicit criteria, the LLM cannot confidently decline, and it therefore sends most proposals to Full evaluation and saves little budget.",
+     "zh": "One-Step Alloc 能看到相同的搜索历史，但如果没有将历史整合为明确标准的策略，LLM 就无法自信地拒绝提议，因此会将大多数提议提交至完整评估，导致预算消耗极少。"
+    },
+    {
+     "en": "With fixed custom guidance, allocation remains Partial-heavy throughout the search, unlike the stage-wise shifts of EvoAlloc.",
+     "zh": "在固定自定义指导策略下，整个搜索过程中分配仍以部分评估为主，这与 EvoAlloc 的分阶段变化不同。"
+    },
+    {
+     "en": "Without exploration, discarded outcomes stay hidden, leaving no counterexamples to the current criteria, so pruning errors go uncorrected and falsely pruned candidates never enter the archive as parents.",
+     "zh": "如果没有探索机制，被舍弃的结果将始终隐藏，无法为当前标准提供反例，因此修剪错误不会被纠正，而被错误修剪的候选项也永远不会作为父项进入存档。"
+    },
+    {
+     "en": "Effective allocation thus requires explicit criteria, their evolution with the search, and exploration to check them against hidden outcomes.",
+     "zh": "因此，有效的分配需要明确的标准、随搜索过程演化的标准，以及用于验证这些标准与隐藏结果之间关系的探索机制。"
+    }
+   ]
+  },
+  {
+   "en": "We introduced EvoAlloc, a self-evolving agent that treats evaluation allocation as an evolving component of program evolution. EvoAlloc revises an explicit allocation Strategy from accumulated Experiences and uses counterfactual exploration to recover feedback that selective allocation would otherwise leave hidden. Across ADAS-AIME and Circle Packing, EvoAlloc improves final performance and reaches the reference final-performance targets with 59 59 – 82 82 % fewer Full evaluations and 61 61 – 89 89 % fewer LLM tokens. These findings point toward self-improving systems that learn not only what to search, but also where to spend their evaluation effort.",
+   "zh": "我们提出了 EvoAlloc，这是一种自我演化的智能体，它将评估分配视为程序演化中一个不断演变的组成部分。 EvoAlloc 会从积累的经验中修订明确的分配策略，并利用反事实探索来恢复那些选择性分配原本会掩盖的反馈信息。 在 ADAS-AIME 和 Circle Packing 测试中，EvoAlloc 提升了最终性能，并且所需的完整评估次数减少了 59%–82%，LLM 令牌使用量减少了 61%–89%，从而达到了参考的最终性能目标。 这些发现表明，自改进系统不仅能学习搜索方向，还能学习如何分配评估资源。",
+   "sents": [
+    {
+     "en": "We introduced EvoAlloc, a self-evolving agent that treats evaluation allocation as an evolving component of program evolution.",
+     "zh": "我们提出了 EvoAlloc，这是一种自我演化的智能体，它将评估分配视为程序演化中一个不断演变的组成部分。"
+    },
+    {
+     "en": "EvoAlloc revises an explicit allocation Strategy from accumulated Experiences and uses counterfactual exploration to recover feedback that selective allocation would otherwise leave hidden.",
+     "zh": "EvoAlloc 会从积累的经验中修订明确的分配策略，并利用反事实探索来恢复那些选择性分配原本会掩盖的反馈信息。"
+    },
+    {
+     "en": "Across ADAS-AIME and Circle Packing, EvoAlloc improves final performance and reaches the reference final-performance targets with 59 59 – 82 82 % fewer Full evaluations and 61 61 – 89 89 % fewer LLM tokens.",
+     "zh": "在 ADAS-AIME 和 Circle Packing 测试中，EvoAlloc 提升了最终性能，并且所需的完整评估次数减少了 59%–82%，LLM 令牌使用量减少了 61%–89%，从而达到了参考的最终性能目标。"
+    },
+    {
+     "en": "These findings point toward self-improving systems that learn not only what to search, but also where to spend their evaluation effort.",
+     "zh": "这些发现表明，自改进系统不仅能学习搜索方向，还能学习如何分配评估资源。"
+    }
+   ]
+  },
+  {
+   "en": "Our study examines self-evolving allocation at the evaluation layer on two benchmarks with contrasting evaluators, within a single search run and with generation, evaluators, and update mechanisms held fixed. Extending resource allocation to generation and allowing evaluation and update mechanisms to evolve could broaden the scope of self-improvement ( Robeyns et al., 2025 ; Zhang et al., 2026 ) . Retaining allocation experience across runs could allow future allocators to build on previously learned strategies, supporting longer-term knowledge accumulation and inheritance, as learngenes do by passing condensed knowledge across generations of agents ( Feng et al., 2025 ) . More broadly, adaptive resource allocation could help systems pursuing open-ended self-improvement continually refine how they invest finite computation in future progress.",
+   "zh": "我们的研究在单一搜索运行中，考察了评估层上的自我演化分配，并使用了两个具有对比性评估器的基准测试，同时保持生成、评估器和更新机制不变。 将资源分配扩展到生成环节，并允许评估和更新机制发生演化，可能会拓展自我改进的范围（Robeyns 等，2025；Zhang 等，2026）。 在不同运行之间保留分配经验，可能使未来的分配器能够基于先前学到的策略进行改进，从而支持更长期的知识积累与继承，正如学习基因通过在各代智能体之间传递浓缩知识所实现的那样（Feng 等，2025）。 从更广泛的视角来看，自适应资源分配可能帮助追求开放-ended自我改进的系统，持续优化如何将有限的计算资源投入未来的进步。",
+   "sents": [
+    {
+     "en": "Our study examines self-evolving allocation at the evaluation layer on two benchmarks with contrasting evaluators, within a single search run and with generation, evaluators, and update mechanisms held fixed.",
+     "zh": "我们的研究在单一搜索运行中，考察了评估层上的自我演化分配，并使用了两个具有对比性评估器的基准测试，同时保持生成、评估器和更新机制不变。"
+    },
+    {
+     "en": "Extending resource allocation to generation and allowing evaluation and update mechanisms to evolve could broaden the scope of self-improvement ( Robeyns et al., 2025 ; Zhang et al., 2026 ) .",
+     "zh": "将资源分配扩展到生成环节，并允许评估和更新机制发生演化，可能会拓展自我改进的范围（Robeyns 等，2025；Zhang 等，2026）。"
+    },
+    {
+     "en": "Retaining allocation experience across runs could allow future allocators to build on previously learned strategies, supporting longer-term knowledge accumulation and inheritance, as learngenes do by passing condensed knowledge across generations of agents ( Feng et al., 2025 ) .",
+     "zh": "在不同运行之间保留分配经验，可能使未来的分配器能够基于先前学到的策略进行改进，从而支持更长期的知识积累与继承，正如学习基因通过在各代智能体之间传递浓缩知识所实现的那样（Feng 等，2025）。"
+    },
+    {
+     "en": "More broadly, adaptive resource allocation could help systems pursuing open-ended self-improvement continually refine how they invest finite computation in future progress.",
+     "zh": "从更广泛的视角来看，自适应资源分配可能帮助追求开放-ended自我改进的系统，持续优化如何将有限的计算资源投入未来的进步。"
+    }
+   ]
+  },
+  {
+   "en": "Generative AI tools were used to assist with code implementation and debugging, as well as language editing and presentation of the manuscript. The core research idea and experimental design were developed by the authors. AI-assisted code was reviewed and tested by the authors before use in the experiments, and all AI-assisted manuscript content was manually reviewed and revised for technical correctness and consistency with the reported results. The authors take full responsibility for the final content of the paper.",
+   "zh": "生成式人工智能工具被用于协助代码实现与调试，以及语言编辑和手稿的呈现。 核心研究思想和实验设计由作者完成。 在实验中使用前，作者对人工智能辅助生成的代码进行了审查和测试；所有人工智能辅助编写的手稿内容均经过人工审查和修订，以确保技术正确性并与报告结果保持一致。 作者对论文的最终内容承担全部责任。",
+   "sents": [
+    {
+     "en": "Generative AI tools were used to assist with code implementation and debugging, as well as language editing and presentation of the manuscript.",
+     "zh": "生成式人工智能工具被用于协助代码实现与调试，以及语言编辑和手稿的呈现。"
+    },
+    {
+     "en": "The core research idea and experimental design were developed by the authors.",
+     "zh": "核心研究思想和实验设计由作者完成。"
+    },
+    {
+     "en": "AI-assisted code was reviewed and tested by the authors before use in the experiments, and all AI-assisted manuscript content was manually reviewed and revised for technical correctness and consistency with the reported results.",
+     "zh": "在实验中使用前，作者对人工智能辅助生成的代码进行了审查和测试；所有人工智能辅助编写的手稿内容均经过人工审查和修订，以确保技术正确性并与报告结果保持一致。"
+    },
+    {
+     "en": "The authors take full responsibility for the final content of the paper.",
+     "zh": "作者对论文的最终内容承担全部责任。"
+    }
+   ]
+  },
+  {
+   "en": "We provide detailed information to support reproducibility in the appendix, including the EvoAlloc pseudocode, implementation details and hyperparameters, benchmark and evaluation protocols, budget accounting, and all prompts required to reproduce the method. We additionally report five-seed results and allocation breakdowns to facilitate verification of the main findings. The code and configurations will be released upon acceptance.",
+   "zh": "我们在附录中提供了支持可重复性的详细信息，包括 EvoAlloc 伪代码、实现细节和超参数、基准测试与评估协议、预算计算以及重现该方法所需的所有提示。 此外，我们还报告了五种种子结果和分配明细，以便验证主要发现。 代码和配置将在论文被接受后发布。",
+   "sents": [
+    {
+     "en": "We provide detailed information to support reproducibility in the appendix, including the EvoAlloc pseudocode, implementation details and hyperparameters, benchmark and evaluation protocols, budget accounting, and all prompts required to reproduce the method.",
+     "zh": "我们在附录中提供了支持可重复性的详细信息，包括 EvoAlloc 伪代码、实现细节和超参数、基准测试与评估协议、预算计算以及重现该方法所需的所有提示。"
+    },
+    {
+     "en": "We additionally report five-seed results and allocation breakdowns to facilitate verification of the main findings.",
+     "zh": "此外，我们还报告了五种种子结果和分配明细，以便验证主要发现。"
+    },
+    {
+     "en": "The code and configurations will be released upon acceptance.",
+     "zh": "代码和配置将在论文被接受后发布。"
+    }
+   ]
+  },
+  {
+   "en": "Algorithm A highlights EvoAlloc-specific operations. Parent selection, proposal generation, archive updates, and benchmark evaluation follow the underlying search procedure.",
+   "zh": "算法 A 突出了 EvoAlloc 特有的操作。 父代选择、提议生成、档案更新和基准评估均遵循底层的搜索流程。",
+   "sents": [
+    {
+     "en": "Algorithm A highlights EvoAlloc-specific operations.",
+     "zh": "算法 A 突出了 EvoAlloc 特有的操作。"
+    },
+    {
+     "en": "Parent selection, proposal generation, archive updates, and benchmark evaluation follow the underlying search procedure.",
+     "zh": "父代选择、提议生成、档案更新和基准评估均遵循底层的搜索流程。"
+    }
+   ]
+  },
+  {
+   "en": "Algorithm 1: Program evolution with EvoAlloc",
+   "zh": "算法 1：使用 EvoAlloc 的程序演化",
+   "sents": null
+  },
+  {
+   "en": "Input: initial programs ; example cases ; Full-evaluation budget B B ; exploration rate ρ \\rho ; update intervals k E , k S k_{E},k_{S} .",
+   "zh": "输入：初始程序；示例案例；完整评估预算 B B；探索率 ρ \\rho；更新间隔 k E , k S k_{E},k_{S}。",
+   "sents": null
+  },
+  {
+   "en": "Here, 𝒫 \\mathcal{P} is the search archive and H H the interaction history (Section 3.2 ), retaining original allocation episodes even when outcomes are later revealed. Allocate follows the allocation procedure in Section 4.1 . During validation, the union of requested evaluations is executed once and the resulting evidence is shared. All Full evaluations, including warm-up, validation, and exploration, count toward B B .",
+   "zh": "此处，𝒫 \\mathcal{P} 是搜索存档，H H 是交互历史（第 3.2 节），即使结果在之后才被揭示，也会保留原始的分配回合。 Allocate 遵循第 4.1 节中的分配流程。 在验证期间，所请求评估的并集会被执行一次，且产生的证据会被共享。 所有完整的评估（包括热身、验证和探索）都计入 B B 。",
+   "sents": [
+    {
+     "en": "Here, 𝒫 \\mathcal{P} is the search archive and H H the interaction history (Section 3.2 ), retaining original allocation episodes even when outcomes are later revealed.",
+     "zh": "此处，𝒫 \\mathcal{P} 是搜索存档，H H 是交互历史（第 3.2 节），即使结果在之后才被揭示，也会保留原始的分配回合。"
+    },
+    {
+     "en": "Allocate follows the allocation procedure in Section 4.1 .",
+     "zh": "Allocate 遵循第 4.1 节中的分配流程。"
+    },
+    {
+     "en": "During validation, the union of requested evaluations is executed once and the resulting evidence is shared.",
+     "zh": "在验证期间，所请求评估的并集会被执行一次，且产生的证据会被共享。"
+    },
+    {
+     "en": "All Full evaluations, including warm-up, validation, and exploration, count toward B B .",
+     "zh": "所有完整的评估（包括热身、验证和探索）都计入 B B 。"
+    }
+   ]
+  },
+  {
+   "en": "EvoAlloc is implemented on top of the public ShinkaEvolve program-evolution loop ( Lange et al., 2026 ) . Unless otherwise stated, substrate hyperparameters follow the default ShinkaEvolve configuration. All language models are open-weight and locally served on NVIDIA A100 GPUs, with the same serving setup used across all compared methods. Table B.1 summarizes the backbone models, the main EvoAlloc configuration, and the benchmark-specific settings.",
+   "zh": "EvoAlloc 是在公开的 ShinkaEvolve 程序演化循环（Lange 等人，2026）的基础上实现的。 除非另有说明，底层的超参数均遵循 ShinkaEvolve 的默认配置。 所有语言模型均为开放权重，并在 NVIDIA A100 GPU 上本地提供服务，所有对比方法均采用相同的部署配置。 表 B.1 总结了基础模型、主要的 EvoAlloc 配置以及基准测试特定的设置。",
+   "sents": [
+    {
+     "en": "EvoAlloc is implemented on top of the public ShinkaEvolve program-evolution loop ( Lange et al., 2026 ) .",
+     "zh": "EvoAlloc 是在公开的 ShinkaEvolve 程序演化循环（Lange 等人，2026）的基础上实现的。"
+    },
+    {
+     "en": "Unless otherwise stated, substrate hyperparameters follow the default ShinkaEvolve configuration.",
+     "zh": "除非另有说明，底层的超参数均遵循 ShinkaEvolve 的默认配置。"
+    },
+    {
+     "en": "All language models are open-weight and locally served on NVIDIA A100 GPUs, with the same serving setup used across all compared methods.",
+     "zh": "所有语言模型均为开放权重，并在 NVIDIA A100 GPU 上本地提供服务，所有对比方法均采用相同的部署配置。"
+    },
+    {
+     "en": "Table B.1 summarizes the backbone models, the main EvoAlloc configuration, and the benchmark-specific settings.",
+     "zh": "表 B.1 总结了基础模型、主要的 EvoAlloc 配置以及基准测试特定的设置。"
+    }
+   ]
+  },
+  {
+   "en": "Table 1: Implementation and benchmark configuration. Shared model and controller settings with benchmark-specific budgets, action spaces, and Partial-evaluation availability.",
+   "zh": "表 1：实现与基准测试配置。 共享模型与控制器设置，包含基准测试特定的预算、动作空间以及部分评估的可用性。",
+   "sents": [
+    {
+     "en": "Table 1: Implementation and benchmark configuration.",
+     "zh": "表 1：实现与基准测试配置。"
+    },
+    {
+     "en": "Shared model and controller settings with benchmark-specific budgets, action spaces, and Partial-evaluation availability.",
+     "zh": "共享模型与控制器设置，包含基准测试特定的预算、动作空间以及部分评估的可用性。"
+    }
+   ]
+  },
+  {
+   "en": "We initialize S 0 S_{0} by summarizing 50 example cases, comprising 10 candidate evaluation records from each of five ShinkaEvolve baseline runs with different seeds. The initial selectivity is set to low . The cost of obtaining these baseline cases is excluded from the reported search costs.",
+   "zh": "我们通过总结 50 个示例案例来初始化 S₀（S_{0}），这些案例包括五个不同随机种子运行的 ShinkaEvolve 基线实验中各 10 条候选评估记录。 初始选择性被设置为较低水平。 获取这些基线案例的成本不包含在报告中的搜索成本内。",
+   "sents": [
+    {
+     "en": "We initialize S 0 S_{0} by summarizing 50 example cases, comprising 10 candidate evaluation records from each of five ShinkaEvolve baseline runs with different seeds.",
+     "zh": "我们通过总结 50 个示例案例来初始化 S₀（S_{0}），这些案例包括五个不同随机种子运行的 ShinkaEvolve 基线实验中各 10 条候选评估记录。"
+    },
+    {
+     "en": "The initial selectivity is set to low .",
+     "zh": "初始选择性被设置为较低水平。"
+    },
+    {
+     "en": "The cost of obtaining these baseline cases is excluded from the reported search costs.",
+     "zh": "获取这些基线案例的成本不包含在报告中的搜索成本内。"
+    }
+   ]
+  },
+  {
+   "en": "ADAS-AIME evolves the Python scaffold around a fixed mathematical-reasoning solver on the 30 AIME 2024 problems. A candidate is a reusable Agent : it may query the solver, vary sampling temperature, combine responses, filter or vote over candidate answers, and extract the final integer answer returned to the benchmark harness. The solver weights and benchmark questions are fixed; the evolved object is the reasoning scaffold.",
+   "zh": "ADAS-AIME 围绕一个固定的数学推理求解器，针对 2024 年 AIME 的 30 道题目演化出 Python 框架。 候选智能体是一种可重用的智能体：它可以查询求解器、调整采样温度、组合响应、筛选或投票选择候选答案，并提取最终返回给基准测试框架的整数答案。 求解器的权重和基准测试题目是固定的；被演化的对象是推理框架。",
+   "sents": [
+    {
+     "en": "ADAS-AIME evolves the Python scaffold around a fixed mathematical-reasoning solver on the 30 AIME 2024 problems.",
+     "zh": "ADAS-AIME 围绕一个固定的数学推理求解器，针对 2024 年 AIME 的 30 道题目演化出 Python 框架。"
+    },
+    {
+     "en": "A candidate is a reusable Agent : it may query the solver, vary sampling temperature, combine responses, filter or vote over candidate answers, and extract the final integer answer returned to the benchmark harness.",
+     "zh": "候选智能体是一种可重用的智能体：它可以查询求解器、调整采样温度、组合响应、筛选或投票选择候选答案，并提取最终返回给基准测试框架的整数答案。"
+    },
+    {
+     "en": "The solver weights and benchmark questions are fixed; the evolved object is the reasoning scaffold.",
+     "zh": "求解器的权重和基准测试题目是固定的；被演化的对象是推理框架。"
+    }
+   ]
+  },
+  {
+   "en": "Following the ShinkaEvolve evaluation protocol, each candidate is evaluated over all 30 AIME 2024 problems in three independent runs, and the resulting accuracies are averaged. These three repetitions together count as one Full evaluation in the search budget. For allocation decisions, we use a Partial evaluation on the first 8 of 30 problems using a single evaluation seed. After observing the Partial result, the allocator chooses CONTINUE_TO_FULL or STOP . The Partial result is used only to decide whether the current proposal deserves the remaining full-evaluation cost; final performance is always measured by the full evaluator. Search and evaluation use the same fixed 30-problem suite.",
+   "zh": "遵循 ShinkaEvolve 评估协议，每个候选智能体在所有 30 道 AIME 2024 题目上进行三次独立运行评估，并将所得准确率取平均值。 这三次重复运行共同计为搜索预算中的单次完整评估。 在分配决策中，我们使用单一评估种子对前 8 道题目进行部分评估。 观察到部分评估结果后，分配器会选择“继续完整评估”或“停止”。 部分评估结果仅用于判断当前方案是否值得消耗剩余的完整评估成本；最终性能始终由完整评估器衡量。 搜索与评估均使用相同的固定 30 题题库。",
+   "sents": [
+    {
+     "en": "Following the ShinkaEvolve evaluation protocol, each candidate is evaluated over all 30 AIME 2024 problems in three independent runs, and the resulting accuracies are averaged.",
+     "zh": "遵循 ShinkaEvolve 评估协议，每个候选智能体在所有 30 道 AIME 2024 题目上进行三次独立运行评估，并将所得准确率取平均值。"
+    },
+    {
+     "en": "These three repetitions together count as one Full evaluation in the search budget.",
+     "zh": "这三次重复运行共同计为搜索预算中的单次完整评估。"
+    },
+    {
+     "en": "For allocation decisions, we use a Partial evaluation on the first 8 of 30 problems using a single evaluation seed.",
+     "zh": "在分配决策中，我们使用单一评估种子对前 8 道题目进行部分评估。"
+    },
+    {
+     "en": "After observing the Partial result, the allocator chooses CONTINUE_TO_FULL or STOP .",
+     "zh": "观察到部分评估结果后，分配器会选择“继续完整评估”或“停止”。"
+    },
+    {
+     "en": "The Partial result is used only to decide whether the current proposal deserves the remaining full-evaluation cost; final performance is always measured by the full evaluator.",
+     "zh": "部分评估结果仅用于判断当前方案是否值得消耗剩余的完整评估成本；最终性能始终由完整评估器衡量。"
+    },
+    {
+     "en": "Search and evaluation use the same fixed 30-problem suite.",
+     "zh": "搜索与评估均使用相同的固定 30 题题库。"
+    }
+   ]
+  },
+  {
+   "en": "The example below illustrates a reasoning harness that samples eight solutions at three temperatures, extracts candidate answers, and selects the most frequent answer by majority voting.",
+   "zh": "以下示例展示了一种推理框架：该框架在三种温度下采样八个解决方案，提取候选答案，并通过多数投票选出出现频率最高的答案。",
+   "sents": null
+  },
+  {
+   "en": "Circle Packing evolves compact Python programs that construct feasible placements of 26 circles in the unit square. The evaluator checks boundary and non-overlap constraints, computes the induced radii, and returns the packing objective. Unlike ADAS-AIME, the evaluator is deterministic and non-LLM; the artifact is a constructive geometric algorithm rather than a language-model scaffold.",
+   "zh": "Circle Packing 会演化出紧凑的 Python 程序，用于在单位正方形内构建 26 个圆形的可行布局。 评估器会检查边界约束和不重叠约束，计算由此产生的半径，并返回打包目标值。 与 ADAS-AIME 不同，该评估器是确定性的且非 LLM；其产物是一种构造性几何算法，而非语言模型框架。",
+   "sents": [
+    {
+     "en": "Circle Packing evolves compact Python programs that construct feasible placements of 26 circles in the unit square.",
+     "zh": "Circle Packing 会演化出紧凑的 Python 程序，用于在单位正方形内构建 26 个圆形的可行布局。"
+    },
+    {
+     "en": "The evaluator checks boundary and non-overlap constraints, computes the induced radii, and returns the packing objective.",
+     "zh": "评估器会检查边界约束和不重叠约束，计算由此产生的半径，并返回打包目标值。"
+    },
+    {
+     "en": "Unlike ADAS-AIME, the evaluator is deterministic and non-LLM; the artifact is a constructive geometric algorithm rather than a language-model scaffold.",
+     "zh": "与 ADAS-AIME 不同，该评估器是确定性的且非 LLM；其产物是一种构造性几何算法，而非语言模型框架。"
+    }
+   ]
+  },
+  {
+   "en": "We do not use Partial evaluation in this setting. The allocator therefore chooses directly between FULL_EVAL and DISCARD . This setting isolates adaptive full-evaluation allocation on a deterministic algorithm-design task.",
+   "zh": "在此设定中，我们不使用部分求值。 因此，分配器直接在 FULL_EVAL 和 DISCARD 之间进行选择。 此设定将自适应完全求值分配与确定性算法设计任务隔离开来。",
+   "sents": [
+    {
+     "en": "We do not use Partial evaluation in this setting.",
+     "zh": "在此设定中，我们不使用部分求值。"
+    },
+    {
+     "en": "The allocator therefore chooses directly between FULL_EVAL and DISCARD .",
+     "zh": "因此，分配器直接在 FULL_EVAL 和 DISCARD 之间进行选择。"
+    },
+    {
+     "en": "This setting isolates adaptive full-evaluation allocation on a deterministic algorithm-design task.",
+     "zh": "此设定将自适应完全求值分配与确定性算法设计任务隔离开来。"
+    }
+   ]
+  },
+  {
+   "en": "Example evolved program (excerpt): Circle Packing",
+   "zh": "示例演化程序（节选）：圆形排列",
+   "sents": null
+  },
+  {
+   "en": "This appendix examines how EvoAlloc’s Strategy and Experiences evolve during search, and how these changes reshape the search itself. We first trace their evolution on ADAS-AIME and Circle Packing, then analyze the resulting search trees.",
+   "zh": "本附录探讨了 EvoAlloc 的策略与经验在搜索过程中如何演化，以及这些变化如何重塑搜索过程本身。 我们首先追踪它们在 ADAS-AIME 和 Circle Packing 问题上的演化过程，然后分析由此产生的搜索树。",
+   "sents": [
+    {
+     "en": "This appendix examines how EvoAlloc’s Strategy and Experiences evolve during search, and how these changes reshape the search itself.",
+     "zh": "本附录探讨了 EvoAlloc 的策略与经验在搜索过程中如何演化，以及这些变化如何重塑搜索过程本身。"
+    },
+    {
+     "en": "We first trace their evolution on ADAS-AIME and Circle Packing, then analyze the resulting search trees.",
+     "zh": "我们首先追踪它们在 ADAS-AIME 和 Circle Packing 问题上的演化过程，然后分析由此产生的搜索树。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 5 visualizes the representative ADAS-AIME run analyzed here. The adopted Strategy starts permissive, moves to medium selectivity once sufficient evidence has accumulated, and then passes through two highly selective stages. Its criteria also become more specific over time: the generic guidance of S0 gives way to explicit Partial-evaluation thresholds conditioned on lineage trends. Table C.1 lists each stage’s Full-evaluation window, selectivity level, and complete Strategy text; the final Experience inventory is reported afterward.",
+   "zh": "图 5 展示了本文分析的典型 ADAS-AIME 运行过程。 所采用的策略最初采取宽松模式，在积累足够证据后转为中等选择性，随后经过两个高度选择性的阶段。 其标准也随时间推移而更加具体：S0 的通用指导原则逐渐让位于基于谱系趋势的明确部分评估阈值。 表 C.1 列出了每个阶段的完整评估窗口、选择性水平以及完整的策略文本；最终的体验清单则在此之后报告。",
+   "sents": [
+    {
+     "en": "Figure 5 visualizes the representative ADAS-AIME run analyzed here.",
+     "zh": "图 5 展示了本文分析的典型 ADAS-AIME 运行过程。"
+    },
+    {
+     "en": "The adopted Strategy starts permissive, moves to medium selectivity once sufficient evidence has accumulated, and then passes through two highly selective stages.",
+     "zh": "所采用的策略最初采取宽松模式，在积累足够证据后转为中等选择性，随后经过两个高度选择性的阶段。"
+    },
+    {
+     "en": "Its criteria also become more specific over time: the generic guidance of S0 gives way to explicit Partial-evaluation thresholds conditioned on lineage trends.",
+     "zh": "其标准也随时间推移而更加具体：S0 的通用指导原则逐渐让位于基于谱系趋势的明确部分评估阈值。"
+    },
+    {
+     "en": "Table C.1 lists each stage’s Full-evaluation window, selectivity level, and complete Strategy text; the final Experience inventory is reported afterward.",
+     "zh": "表 C.1 列出了每个阶段的完整评估窗口、选择性水平以及完整的策略文本；最终的体验清单则在此之后报告。"
+    }
+   ]
+  },
+  {
+   "en": "Table 2: Evolution of the learned allocation Strategy on ADAS-AIME. Each row lists one Strategy stage with its full-evaluation window, selectivity level, and complete Strategy text, with “smoke” replaced by “partial evaluation” for consistency with the main text.",
+   "zh": "表 2：在 ADAS-AIME 上已学习分配策略的演化过程。 每一行均列出了一个策略阶段，包括其完整评估窗口、选择性和完整的策略文本；为与正文保持一致，“smoke”已被替换为“部分评估”。",
+   "sents": [
+    {
+     "en": "Table 2: Evolution of the learned allocation Strategy on ADAS-AIME.",
+     "zh": "表 2：在 ADAS-AIME 上已学习分配策略的演化过程。"
+    },
+    {
+     "en": "Each row lists one Strategy stage with its full-evaluation window, selectivity level, and complete Strategy text, with “smoke” replaced by “partial evaluation” for consistency with the main text.",
+     "zh": "每一行均列出了一个策略阶段，包括其完整评估窗口、选择性和完整的策略文本；为与正文保持一致，“smoke”已被替换为“部分评估”。"
+    }
+   ]
+  },
+  {
+   "en": "The Experience inventory records recurring search situations and the outcome tendencies distilled from them during the run. Each entry specifies an applicability condition, an expected tendency, and its supporting and contradicting evidence. Unlike the run-level Strategy, Experiences retain local, case-grounded information that can be reused when similar search states reappear. Conditions that refer to Partial-evaluation results apply only after Partial evaluation has been observed. As in Table C.1 , “smoke” in the original text is replaced by “partial evaluation”.",
+   "zh": "经验库存记录了重复出现的搜索情境，以及运行期间从中提炼出的结果倾向。 每条记录都指定了一个适用性条件、一个预期倾向，以及支持或反驳该倾向的证据。 与运行级别的策略不同，经验会保留局部且基于具体案例的信息，这些信息在类似搜索状态再次出现时可以被重新使用。 引用部分评估结果的条件，只有在观察到部分评估之后才会生效。 与表 C.1 中一样，原文中的“smoke”被替换为“部分评估”。",
+   "sents": [
+    {
+     "en": "The Experience inventory records recurring search situations and the outcome tendencies distilled from them during the run.",
+     "zh": "经验库存记录了重复出现的搜索情境，以及运行期间从中提炼出的结果倾向。"
+    },
+    {
+     "en": "Each entry specifies an applicability condition, an expected tendency, and its supporting and contradicting evidence.",
+     "zh": "每条记录都指定了一个适用性条件、一个预期倾向，以及支持或反驳该倾向的证据。"
+    },
+    {
+     "en": "Unlike the run-level Strategy, Experiences retain local, case-grounded information that can be reused when similar search states reappear.",
+     "zh": "与运行级别的策略不同，经验会保留局部且基于具体案例的信息，这些信息在类似搜索状态再次出现时可以被重新使用。"
+    },
+    {
+     "en": "Conditions that refer to Partial-evaluation results apply only after Partial evaluation has been observed.",
+     "zh": "引用部分评估结果的条件，只有在观察到部分评估之后才会生效。"
+    },
+    {
+     "en": "As in Table C.1 , “smoke” in the original text is replaced by “partial evaluation”.",
+     "zh": "与表 C.1 中一样，原文中的“smoke”被替换为“部分评估”。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 8 shows a representative Circle Packing run. Its Strategy follows a progression in selectivity similar to ADAS-AIME, but without Partial evaluation, so each decision is made directly between Full evaluation and discard. The allocator first evaluates proposals broadly, then becomes increasingly selective as evidence accumulates and the search matures. Table 8 lists the corresponding Strategy stages.",
+   "zh": "图 8 展示了一次典型的圆形打包运行过程。 其策略的选择性变化趋势与 ADAS-AIME 类似，但没有部分评估，因此每个决策都直接在完全评估和丢弃之间做出。 分配器首先对提案进行广泛评估，然后随着证据的积累和搜索的深入，逐渐变得更加具有选择性。 表 8 列出了相应的策略阶段。",
+   "sents": [
+    {
+     "en": "Figure 8 shows a representative Circle Packing run.",
+     "zh": "图 8 展示了一次典型的圆形打包运行过程。"
+    },
+    {
+     "en": "Its Strategy follows a progression in selectivity similar to ADAS-AIME, but without Partial evaluation, so each decision is made directly between Full evaluation and discard.",
+     "zh": "其策略的选择性变化趋势与 ADAS-AIME 类似，但没有部分评估，因此每个决策都直接在完全评估和丢弃之间做出。"
+    },
+    {
+     "en": "The allocator first evaluates proposals broadly, then becomes increasingly selective as evidence accumulates and the search matures.",
+     "zh": "分配器首先对提案进行广泛评估，然后随着证据的积累和搜索的深入，逐渐变得更加具有选择性。"
+    },
+    {
+     "en": "Table 8 lists the corresponding Strategy stages.",
+     "zh": "表 8 列出了相应的策略阶段。"
+    }
+   ]
+  },
+  {
+   "en": "Table 3: Evolution of the learned allocation Strategy on Circle Packing. Each row lists one Strategy stage with its full-evaluation window, selectivity level, and complete Strategy text.",
+   "zh": "表 3：圆形打包问题中已学习分配策略的演化过程。 每一行均列出了一个策略阶段，包括其完整评估窗口、选择性和完整的策略文本。",
+   "sents": [
+    {
+     "en": "Table 3: Evolution of the learned allocation Strategy on Circle Packing.",
+     "zh": "表 3：圆形打包问题中已学习分配策略的演化过程。"
+    },
+    {
+     "en": "Each row lists one Strategy stage with its full-evaluation window, selectivity level, and complete Strategy text.",
+     "zh": "每一行均列出了一个策略阶段，包括其完整评估窗口、选择性和完整的策略文本。"
+    }
+   ]
+  },
+  {
+   "en": "The final inventory summarizes recurring proposal patterns and their observed outcomes. Descriptions such as “valid but non-improving” characterize past evaluated cases, not conditions to be checked on a new candidate. These Experiences inform Strategy revision and expectations about related proposals through visible code changes and known lineage outcomes. Allocation uses only information available at decision time, without access to the current candidate’s Full outcome (Appendix E.2 ).",
+   "zh": "最终库存总结了重复出现的提案模式及其观察到的结果。 “有效但未改进”之类的描述用于刻画过去评估过的案例，而非需要在新候选体上检查的条件。 这些经验通过可见的代码变更和已知的谱系结果，为策略修订以及对相关提案的预期提供信息。 分配仅使用决策时可获得的信息，无法访问当前候选体的完整结果（附录 E.2）。",
+   "sents": [
+    {
+     "en": "The final inventory summarizes recurring proposal patterns and their observed outcomes.",
+     "zh": "最终库存总结了重复出现的提案模式及其观察到的结果。"
+    },
+    {
+     "en": "Descriptions such as “valid but non-improving” characterize past evaluated cases, not conditions to be checked on a new candidate.",
+     "zh": "“有效但未改进”之类的描述用于刻画过去评估过的案例，而非需要在新候选体上检查的条件。"
+    },
+    {
+     "en": "These Experiences inform Strategy revision and expectations about related proposals through visible code changes and known lineage outcomes.",
+     "zh": "这些经验通过可见的代码变更和已知的谱系结果，为策略修订以及对相关提案的预期提供信息。"
+    },
+    {
+     "en": "Allocation uses only information available at decision time, without access to the current candidate’s Full outcome (Appendix E.2 ).",
+     "zh": "分配仅使用决策时可获得的信息，无法访问当前候选体的完整结果（附录 E.2）。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 9 complements Section 5.4 with Circle Packing search trees. With the same seed and 150 Full evaluations, EvoAlloc considers 302 proposals, compared with 150 for ShinkaEvolve. Since Circle Packing has no Partial evaluation, this expansion comes entirely from deciding which proposals receive Full evaluation. Highlighted edges trace the lineages of the best programs.",
+   "zh": "图 9 通过圆堆积搜索树对第 5.4 节进行了补充。 在相同种子和 150 次完整评估的情况下，EvoAlloc 考虑了 302 个提案，而 ShinkaEvolve 仅考虑了 150 个。 由于圆堆积没有部分评估，这种扩展完全取决于决定哪些提案需要进行完整评估。 高亮的边追踪了最佳程序的谱系。",
+   "sents": [
+    {
+     "en": "Figure 9 complements Section 5.4 with Circle Packing search trees.",
+     "zh": "图 9 通过圆堆积搜索树对第 5.4 节进行了补充。"
+    },
+    {
+     "en": "With the same seed and 150 Full evaluations, EvoAlloc considers 302 proposals, compared with 150 for ShinkaEvolve.",
+     "zh": "在相同种子和 150 次完整评估的情况下，EvoAlloc 考虑了 302 个提案，而 ShinkaEvolve 仅考虑了 150 个。"
+    },
+    {
+     "en": "Since Circle Packing has no Partial evaluation, this expansion comes entirely from deciding which proposals receive Full evaluation.",
+     "zh": "由于圆堆积没有部分评估，这种扩展完全取决于决定哪些提案需要进行完整评估。"
+    },
+    {
+     "en": "Highlighted edges trace the lineages of the best programs.",
+     "zh": "高亮的边追踪了最佳程序的谱系。"
+    }
+   ]
+  },
+  {
+   "en": "This appendix describes the baseline and ablation configurations and reports detailed performance, resource costs, and allocation breakdowns. Implementation settings and benchmark protocols are given in Appendix B .",
+   "zh": "本附录介绍了基线配置和消融实验配置，并报告了详细的性能、资源成本及分配明细。 实现设置和基准测试协议见附录 B。",
+   "sents": [
+    {
+     "en": "This appendix describes the baseline and ablation configurations and reports detailed performance, resource costs, and allocation breakdowns.",
+     "zh": "本附录介绍了基线配置和消融实验配置，并报告了详细的性能、资源成本及分配明细。"
+    },
+    {
+     "en": "Implementation settings and benchmark protocols are given in Appendix B .",
+     "zh": "实现设置和基准测试协议见附录 B。"
+    }
+   ]
+  },
+  {
+   "en": "All methods run within the same ShinkaEvolve framework, using its default configuration and benchmark evaluation protocols unless stated otherwise in Appendix B . They differ only in how evaluation resources are allocated after a candidate is generated. Following the framework’s default behavior, a candidate that does not ultimately receive Full evaluation is discarded and cannot be selected as a parent. Allocation therefore determines which candidates enter the archive, and different methods may consequently induce different proposal streams over the course of a run; we treat this interaction as part of the closed-loop allocation problem. While the default configuration uses a single seed, we run each method with five seeds and report averages for more reliable comparisons.",
+   "zh": "除非附录 B 另有说明，所有方法都在同一个 ShinkaEvolve 框架内运行，并使用其默认配置和基准评估协议。 它们唯一的区别在于候选者生成后如何分配评估资源。 按照框架的默认行为，最终未获得完整评估的候选者将被丢弃，且无法被选作父代。 因此，资源分配决定了哪些候选者会进入存档，不同方法可能会在运行过程中引发不同的提案流；我们将这种相互作用视为闭环分配问题的一部分。 虽然默认配置使用单个种子，但我们为每种方法运行五个种子，并报告平均值以获得更可靠的比较结果。",
+   "sents": [
+    {
+     "en": "All methods run within the same ShinkaEvolve framework, using its default configuration and benchmark evaluation protocols unless stated otherwise in Appendix B .",
+     "zh": "除非附录 B 另有说明，所有方法都在同一个 ShinkaEvolve 框架内运行，并使用其默认配置和基准评估协议。"
+    },
+    {
+     "en": "They differ only in how evaluation resources are allocated after a candidate is generated.",
+     "zh": "它们唯一的区别在于候选者生成后如何分配评估资源。"
+    },
+    {
+     "en": "Following the framework’s default behavior, a candidate that does not ultimately receive Full evaluation is discarded and cannot be selected as a parent.",
+     "zh": "按照框架的默认行为，最终未获得完整评估的候选者将被丢弃，且无法被选作父代。"
+    },
+    {
+     "en": "Allocation therefore determines which candidates enter the archive, and different methods may consequently induce different proposal streams over the course of a run; we treat this interaction as part of the closed-loop allocation problem.",
+     "zh": "因此，资源分配决定了哪些候选者会进入存档，不同方法可能会在运行过程中引发不同的提案流；我们将这种相互作用视为闭环分配问题的一部分。"
+    },
+    {
+     "en": "While the default configuration uses a single seed, we run each method with five seeds and report averages for more reliable comparisons.",
+     "zh": "虽然默认配置使用单个种子，但我们为每种方法运行五个种子，并报告平均值以获得更可靠的比较结果。"
+    }
+   ]
+  },
+  {
+   "en": "ShinkaEvolve ( Lange et al., 2026 ) is the program-evolution framework underlying all methods and serves as the full-evaluation reference, in which every generated candidate receives Full evaluation. We retain its main search mechanisms, including an ensemble of proposer LLMs sampled at multiple temperatures, a meta model that periodically reflects on evaluated programs to guide subsequent proposals, and novelty filtering that combines embedding similarity with an LLM novelty judge to reject near-duplicate candidates. The models used for each role are listed in Table B.1 . We rerun ShinkaEvolve with the same locally served open-weight search models used by EvoAlloc and the other baselines (Table B.1 ). This differs from the proprietary model ensemble used in the original study, so the reported scores should be interpreted within our shared model configuration rather than as a reproduction of its published results. Our comparisons assess evaluation allocation under a common search backbone and matched Full-evaluation budgets.",
+   "zh": "ShinkaEvolve（Lange 等人，2026）是支撑所有方法的基础程序演化框架，同时也是完整评估的参考基准，其中每个生成的候选方案都会接受完整评估。 我们保留了其主要搜索机制，包括在多种温度下采样的提议者 LLM 集成、定期反思已评估程序以指导后续提议的元模型，以及结合嵌入相似性与 LLM 新颖性判断器来拒绝近似重复候选方案的新颖性过滤机制。 各角色所用模型列于表 B.1 中。 我们重新运行了 ShinkaEvolve，使用的是与 EvoAlloc 及其他基线方法相同的本地部署开放权重搜索模型（表 B.1）。 这与原始研究中使用的专有模型集成不同，因此所报告的分数应结合我们的共享模型配置进行解读，而非视为对其已发表结果的复现。 我们的比较评估了在共同搜索基础架构和匹配的完整评估预算下，评估分配的表现。",
+   "sents": [
+    {
+     "en": "ShinkaEvolve ( Lange et al., 2026 ) is the program-evolution framework underlying all methods and serves as the full-evaluation reference, in which every generated candidate receives Full evaluation.",
+     "zh": "ShinkaEvolve（Lange 等人，2026）是支撑所有方法的基础程序演化框架，同时也是完整评估的参考基准，其中每个生成的候选方案都会接受完整评估。"
+    },
+    {
+     "en": "We retain its main search mechanisms, including an ensemble of proposer LLMs sampled at multiple temperatures, a meta model that periodically reflects on evaluated programs to guide subsequent proposals, and novelty filtering that combines embedding similarity with an LLM novelty judge to reject near-duplicate candidates.",
+     "zh": "我们保留了其主要搜索机制，包括在多种温度下采样的提议者 LLM 集成、定期反思已评估程序以指导后续提议的元模型，以及结合嵌入相似性与 LLM 新颖性判断器来拒绝近似重复候选方案的新颖性过滤机制。"
+    },
+    {
+     "en": "The models used for each role are listed in Table B.1 .",
+     "zh": "各角色所用模型列于表 B.1 中。"
+    },
+    {
+     "en": "We rerun ShinkaEvolve with the same locally served open-weight search models used by EvoAlloc and the other baselines (Table B.1 ).",
+     "zh": "我们重新运行了 ShinkaEvolve，使用的是与 EvoAlloc 及其他基线方法相同的本地部署开放权重搜索模型（表 B.1）。"
+    },
+    {
+     "en": "This differs from the proprietary model ensemble used in the original study, so the reported scores should be interpreted within our shared model configuration rather than as a reproduction of its published results.",
+     "zh": "这与原始研究中使用的专有模型集成不同，因此所报告的分数应结合我们的共享模型配置进行解读，而非视为对其已发表结果的复现。"
+    },
+    {
+     "en": "Our comparisons assess evaluation allocation under a common search backbone and matched Full-evaluation budgets.",
+     "zh": "我们的比较评估了在共同搜索基础架构和匹配的完整评估预算下，评估分配的表现。"
+    }
+   ]
+  },
+  {
+   "en": "This baseline isolates the effect of EvoAlloc’s persistent allocation state while matching its allocator, action space, counterfactual exploration, and decision context. Each decision is conditioned on the same search information available to EvoAlloc, including recent cases, retrieved similar cases, and the current search state. The baseline differs only in maintaining neither an explicit Strategy nor distilled Experiences; instead, it maps the available context directly to an allocation action at each step. This comparison evaluates the benefit of explicitly consolidating search history into reusable Experiences and an evolving Strategy, beyond directly conditioning an LLM allocator on the search history.",
+   "zh": "该基线模型在匹配其分配器、动作空间、反事实探索和决策上下文的同时，隔离了 EvoAlloc 持续分配状态的影响。 每个决策都以 EvoAlloc 可用的相同搜索信息为条件，包括近期案例、检索到的相似案例以及当前的搜索状态。 该基线模型唯一的区别在于既不维护显式的策略，也不提炼经验；相反，它在每一步都将可用上下文直接映射到分配动作。 此比较评估了将搜索历史明确整合为可重用的经验和不断演化的策略所带来的益处，这超越了仅让 LLM 分配器直接以搜索历史为条件的做法。",
+   "sents": [
+    {
+     "en": "This baseline isolates the effect of EvoAlloc’s persistent allocation state while matching its allocator, action space, counterfactual exploration, and decision context.",
+     "zh": "该基线模型在匹配其分配器、动作空间、反事实探索和决策上下文的同时，隔离了 EvoAlloc 持续分配状态的影响。"
+    },
+    {
+     "en": "Each decision is conditioned on the same search information available to EvoAlloc, including recent cases, retrieved similar cases, and the current search state.",
+     "zh": "每个决策都以 EvoAlloc 可用的相同搜索信息为条件，包括近期案例、检索到的相似案例以及当前的搜索状态。"
+    },
+    {
+     "en": "The baseline differs only in maintaining neither an explicit Strategy nor distilled Experiences; instead, it maps the available context directly to an allocation action at each step.",
+     "zh": "该基线模型唯一的区别在于既不维护显式的策略，也不提炼经验；相反，它在每一步都将可用上下文直接映射到分配动作。"
+    },
+    {
+     "en": "This comparison evaluates the benefit of explicitly consolidating search history into reusable Experiences and an evolving Strategy, beyond directly conditioning an LLM allocator on the search history.",
+     "zh": "此比较评估了将搜索历史明确整合为可重用的经验和不断演化的策略所带来的益处，这超越了仅让 LLM 分配器直接以搜索历史为条件的做法。"
+    }
+   ]
+  },
+  {
+   "en": "Lineage-UCB represents classical adaptive allocation based on a fixed statistical rule, in the spirit of bandit-based methods. It uses a binary action space of Full evaluation or discard on both benchmarks. For each candidate, it estimates the improvement tendency of its local lineage using a Beta posterior initialized as Beta ⁡ ( 1 , 1 ) \\mathrm{Beta}(1,1) and updated from previously observed outcomes, with weight 1 1 for direct relatives and 0.5 0.5 for second-level relatives. A candidate receives Full evaluation if the posterior mean plus one standard deviation is at least 0.5 0.5 , and is otherwise discarded. The allocator requires no LLM calls. This comparison isolates the benefit of learned, structured allocation guidance beyond online adaptation under a fixed statistical rule.",
+   "zh": "Lineage-UCB 代表一种基于固定统计规则的经典自适应分配方法，其理念与基于老虎机问题的方法一致。 它在两个基准测试中都使用二元动作空间：完全评估或丢弃。 对于每个候选项，它通过一个初始化为 Beta(1,1) 的贝塔后验分布来估计其局部谱系中的改进趋势，该分布根据先前观察到的结果进行更新，其中直系亲属的权重为 1，二级亲属的权重为 0.5。 如果后验均值加上一个标准差至少为 0.5，则候选项将获得完全评估；否则将被丢弃。 该分配器无需任何 LLM 调用。 这一比较凸显了学习到的结构化分配指导所带来的优势，这种优势超越了在固定统计规则下仅依赖在线自适应的策略。",
+   "sents": [
+    {
+     "en": "Lineage-UCB represents classical adaptive allocation based on a fixed statistical rule, in the spirit of bandit-based methods.",
+     "zh": "Lineage-UCB 代表一种基于固定统计规则的经典自适应分配方法，其理念与基于老虎机问题的方法一致。"
+    },
+    {
+     "en": "It uses a binary action space of Full evaluation or discard on both benchmarks.",
+     "zh": "它在两个基准测试中都使用二元动作空间：完全评估或丢弃。"
+    },
+    {
+     "en": "For each candidate, it estimates the improvement tendency of its local lineage using a Beta posterior initialized as Beta ⁡ ( 1 , 1 ) \\mathrm{Beta}(1,1) and updated from previously observed outcomes, with weight 1 1 for direct relatives and 0.5 0.5 for second-level relatives.",
+     "zh": "对于每个候选项，它通过一个初始化为 Beta(1,1) 的贝塔后验分布来估计其局部谱系中的改进趋势，该分布根据先前观察到的结果进行更新，其中直系亲属的权重为 1，二级亲属的权重为 0.5。"
+    },
+    {
+     "en": "A candidate receives Full evaluation if the posterior mean plus one standard deviation is at least 0.5 0.5 , and is otherwise discarded.",
+     "zh": "如果后验均值加上一个标准差至少为 0.5，则候选项将获得完全评估；否则将被丢弃。"
+    },
+    {
+     "en": "The allocator requires no LLM calls.",
+     "zh": "该分配器无需任何 LLM 调用。"
+    },
+    {
+     "en": "This comparison isolates the benefit of learned, structured allocation guidance beyond online adaptation under a fixed statistical rule.",
+     "zh": "这一比较凸显了学习到的结构化分配指导所带来的优势，这种优势超越了在固定统计规则下仅依赖在线自适应的策略。"
+    }
+   ]
+  },
+  {
+   "en": "We include RPM ( Foster et al., 2026 ) as a recent LLM-based proposal-selection baseline that addresses the closely related problem of deciding which candidates merit computationally expensive evaluation. We adapt its inference-time selector to our setting. At each selection step, 15 candidates are generated from the same parent and compared through a seeded, randomly ordered knockout tournament, with the winner receiving Full evaluation and all others discarded. The batch size of 15 follows the end-to-end configuration in the original RPM study. Each pairwise comparison is conditioned on the two candidates’ plans and code, together with up to 10 previously evaluated programs retrieved from the search history. We use Qwen3-Coder-Next as the judge with temperature 0 and a maximum of 4,096 output tokens. Unlike EvoAlloc, RPM performs batch-level selection among competing candidates and follows a fixed selection rule throughout search. LLM tokens consumed by all generated candidates, including those not selected for evaluation, are included in the total cost.",
+   "zh": "我们将 RPM（Foster 等人，2026）纳入研究，作为近期一种基于大型语言模型（LLM）的提案选择基线方法，该方法解决了密切相关的问题：决定哪些候选方案值得进行计算成本高昂的评估。 我们将该方法的推理阶段选择器适配到我们的设定中。 在每个选择步骤中，会从同一父节点生成 15 个候选方案，并通过一个预设种子、随机排序的淘汰赛进行比较，获胜者将获得完整评估，其余所有方案则被舍弃。 15 的批量大小遵循了原始 RPM 研究中的端到端配置。 每次成对比较都以两个候选方案的计划和代码为基础，并结合从搜索历史中检索出的最多 10 个先前已评估的程序。 我们使用 Qwen3-Coder-Next 作为评判模型，设置温度为 0，最大输出令牌数为 4,096。 与 EvoAlloc 不同，RPM 在竞争候选方案之间执行批量级选择，并在整个搜索过程中遵循固定的选择规则。 所有生成候选方案所消耗的大型语言模型（LLM）令牌数（包括未被选中进行评估的方案）均计入总成本。",
+   "sents": [
+    {
+     "en": "We include RPM ( Foster et al., 2026 ) as a recent LLM-based proposal-selection baseline that addresses the closely related problem of deciding which candidates merit computationally expensive evaluation.",
+     "zh": "我们将 RPM（Foster 等人，2026）纳入研究，作为近期一种基于大型语言模型（LLM）的提案选择基线方法，该方法解决了密切相关的问题：决定哪些候选方案值得进行计算成本高昂的评估。"
+    },
+    {
+     "en": "We adapt its inference-time selector to our setting.",
+     "zh": "我们将该方法的推理阶段选择器适配到我们的设定中。"
+    },
+    {
+     "en": "At each selection step, 15 candidates are generated from the same parent and compared through a seeded, randomly ordered knockout tournament, with the winner receiving Full evaluation and all others discarded.",
+     "zh": "在每个选择步骤中，会从同一父节点生成 15 个候选方案，并通过一个预设种子、随机排序的淘汰赛进行比较，获胜者将获得完整评估，其余所有方案则被舍弃。"
+    },
+    {
+     "en": "The batch size of 15 follows the end-to-end configuration in the original RPM study.",
+     "zh": "15 的批量大小遵循了原始 RPM 研究中的端到端配置。"
+    },
+    {
+     "en": "Each pairwise comparison is conditioned on the two candidates’ plans and code, together with up to 10 previously evaluated programs retrieved from the search history.",
+     "zh": "每次成对比较都以两个候选方案的计划和代码为基础，并结合从搜索历史中检索出的最多 10 个先前已评估的程序。"
+    },
+    {
+     "en": "We use Qwen3-Coder-Next as the judge with temperature 0 and a maximum of 4,096 output tokens.",
+     "zh": "我们使用 Qwen3-Coder-Next 作为评判模型，设置温度为 0，最大输出令牌数为 4,096。"
+    },
+    {
+     "en": "Unlike EvoAlloc, RPM performs batch-level selection among competing candidates and follows a fixed selection rule throughout search.",
+     "zh": "与 EvoAlloc 不同，RPM 在竞争候选方案之间执行批量级选择，并在整个搜索过程中遵循固定的选择规则。"
+    },
+    {
+     "en": "LLM tokens consumed by all generated candidates, including those not selected for evaluation, are included in the total cost.",
+     "zh": "所有生成候选方案所消耗的大型语言模型（LLM）令牌数（包括未被选中进行评估的方案）均计入总成本。"
+    }
+   ]
+  },
+  {
+   "en": "Section 5.3 compares EvoAlloc with variants using one-step allocation, fixed allocation guidance, and no counterfactual exploration. One-Step Alloc corresponds to the One-Step LLM Allocator described above, removing both the persistent Strategy and distilled Experiences. w/o Evolution uses fixed custom allocation guidance: a medium-selectivity Strategy and seeded Experiences distilled from baseline run examples, with the Strategy manually refined into reasonable allocation criteria. This guidance remains fixed throughout search. w/o Exploration sets ρ = 0 \\rho=0 , preventing discarded or stopped candidates from receiving exploratory Full evaluation and thus leaving their Full outcomes unobserved.",
+   "zh": "第 5.3 节将 EvoAlloc 与采用单步分配、固定分配指导以及无反事实探索的变体进行了比较。 单步分配对应于上文描述的“单步 LLM 分配器”，移除了持续策略和蒸馏经验。“无演化”则使用固定的自定义分配指导：一种中等选择性的策略，以及从基线运行示例中蒸馏出的初始经验，其中策略经过人工优化，形成了合理的分配标准。 这种指导在整个搜索过程中保持不变。“无探索”将 ρ = 0 \\rho=0，从而防止被丢弃或终止的候选项获得探索性的完整评估，导致其完整结果无法被观察到。",
+   "sents": [
+    {
+     "en": "Section 5.3 compares EvoAlloc with variants using one-step allocation, fixed allocation guidance, and no counterfactual exploration.",
+     "zh": "第 5.3 节将 EvoAlloc 与采用单步分配、固定分配指导以及无反事实探索的变体进行了比较。"
+    },
+    {
+     "en": "One-Step Alloc corresponds to the One-Step LLM Allocator described above, removing both the persistent Strategy and distilled Experiences. w/o Evolution uses fixed custom allocation guidance: a medium-selectivity Strategy and seeded Experiences distilled from baseline run examples, with the Strategy manually refined into reasonable allocation criteria.",
+     "zh": "单步分配对应于上文描述的“单步 LLM 分配器”，移除了持续策略和蒸馏经验。“无演化”则使用固定的自定义分配指导：一种中等选择性的策略，以及从基线运行示例中蒸馏出的初始经验，其中策略经过人工优化，形成了合理的分配标准。"
+    },
+    {
+     "en": "This guidance remains fixed throughout search. w/o Exploration sets ρ = 0 \\rho=0 , preventing discarded or stopped candidates from receiving exploratory Full evaluation and thus leaving their Full outcomes unobserved.",
+     "zh": "这种指导在整个搜索过程中保持不变。“无探索”将 ρ = 0 \\rho=0，从而防止被丢弃或终止的候选项获得探索性的完整评估，导致其完整结果无法被观察到。"
+    }
+   ]
+  },
+  {
+   "en": "Table 4 reports final performance and normalized trajectory AUC as an auxiliary anytime measure; matched-target cost remains the primary efficiency metric. For each seed, we normalize the area under the best-so-far curve by the range length, using the full evaluation budget for eval-budget AUC and the common token range covered by all methods and seeds for token-budget AUC ( 0.62 0.62 – 55.1 55.1 M tokens on ADAS-AIME and 0.27 0.27 – 4.68 4.68 M on Circle Packing). We report the mean and standard deviation across five seeds, with standard deviations computed under the population convention to match the shaded bands in Figure 3 .",
+   "zh": "表 4 报告了最终性能以及归一化轨迹 AUC 作为辅助的实时性指标；匹配目标成本仍然是主要的效率度量标准。 对于每个种子，我们将迄今为止最佳曲线下的面积通过范围长度进行归一化：在评估预算 AUC 中，使用完整的评估预算；在令牌预算 AUC 中，则使用所有方法和种子共同覆盖的通用令牌范围（ADAS-AIME 上的范围是 0.62–55.1 M 个令牌，Circle Packing 上的范围是 0.27–4.68 M 个令牌）。 我们报告了五个种子的平均值和标准差，其中标准差的计算遵循总体惯例，以匹配图 3 中的阴影带。",
+   "sents": [
+    {
+     "en": "Table 4 reports final performance and normalized trajectory AUC as an auxiliary anytime measure; matched-target cost remains the primary efficiency metric.",
+     "zh": "表 4 报告了最终性能以及归一化轨迹 AUC 作为辅助的实时性指标；匹配目标成本仍然是主要的效率度量标准。"
+    },
+    {
+     "en": "For each seed, we normalize the area under the best-so-far curve by the range length, using the full evaluation budget for eval-budget AUC and the common token range covered by all methods and seeds for token-budget AUC ( 0.62 0.62 – 55.1 55.1 M tokens on ADAS-AIME and 0.27 0.27 – 4.68 4.68 M on Circle Packing).",
+     "zh": "对于每个种子，我们将迄今为止最佳曲线下的面积通过范围长度进行归一化：在评估预算 AUC 中，使用完整的评估预算；在令牌预算 AUC 中，则使用所有方法和种子共同覆盖的通用令牌范围（ADAS-AIME 上的范围是 0.62–55.1 M 个令牌，Circle Packing 上的范围是 0.27–4.68 M 个令牌）。"
+    },
+    {
+     "en": "We report the mean and standard deviation across five seeds, with standard deviations computed under the population convention to match the shaded bands in Figure 3 .",
+     "zh": "我们报告了五个种子的平均值和标准差，其中标准差的计算遵循总体惯例，以匹配图 3 中的阴影带。"
+    }
+   ]
+  },
+  {
+   "en": "Table 5 summarizes the Full evaluations and total LLM tokens needed to reach matched performance targets. For each method, we align the five seed trajectories by completed Full evaluations and average both their best-so-far scores and cumulative token usage at each evaluation index. We then identify the first index at which the mean score reaches the target. The reported costs are this Full-evaluation index and the corresponding mean cumulative token usage.",
+   "zh": "表5总结了完整评估以及达到匹配性能目标所需的总LLM令牌数。 对于每种方法，我们根据已完成的完整评估对五个种子轨迹进行对齐，并在每个评估索引处对其迄今为止的最佳分数和累计令牌使用量取平均值。 然后，我们确定平均分数首次达到目标时的第一个索引。 报告的成本包括该完整评估索引以及相应的平均累计令牌使用量。",
+   "sents": [
+    {
+     "en": "Table 5 summarizes the Full evaluations and total LLM tokens needed to reach matched performance targets.",
+     "zh": "表5总结了完整评估以及达到匹配性能目标所需的总LLM令牌数。"
+    },
+    {
+     "en": "For each method, we align the five seed trajectories by completed Full evaluations and average both their best-so-far scores and cumulative token usage at each evaluation index.",
+     "zh": "对于每种方法，我们根据已完成的完整评估对五个种子轨迹进行对齐，并在每个评估索引处对其迄今为止的最佳分数和累计令牌使用量取平均值。"
+    },
+    {
+     "en": "We then identify the first index at which the mean score reaches the target.",
+     "zh": "然后，我们确定平均分数首次达到目标时的第一个索引。"
+    },
+    {
+     "en": "The reported costs are this Full-evaluation index and the corresponding mean cumulative token usage.",
+     "zh": "报告的成本包括该完整评估索引以及相应的平均累计令牌使用量。"
+    }
+   ]
+  },
+  {
+   "en": "Target matching is therefore performed after averaging across seeds, rather than averaging each seed’s individual first-hit cost. In particular, the reported token cost is not the first-hit token budget of the token-aligned mean performance curve shown in Figure 3 . It is the mean cumulative token usage at the target-reaching Full-evaluation index, as used consistently in Table 5 and the bottom panels of Figure 3 .",
+   "zh": "因此，目标匹配是在对多个种子进行平均之后执行的，而不是先对每个种子的首次命中成本分别求平均。 具体来说，所报告的令牌成本并非图 3 中所示的令牌对齐平均性能曲线的首次命中令牌预算。 它指的是在达到目标时的完整评估指数处的平均累计令牌使用量，这一用法在表 5 和图 3 的下方面板中始终保持一致。",
+   "sents": [
+    {
+     "en": "Target matching is therefore performed after averaging across seeds, rather than averaging each seed’s individual first-hit cost.",
+     "zh": "因此，目标匹配是在对多个种子进行平均之后执行的，而不是先对每个种子的首次命中成本分别求平均。"
+    },
+    {
+     "en": "In particular, the reported token cost is not the first-hit token budget of the token-aligned mean performance curve shown in Figure 3 .",
+     "zh": "具体来说，所报告的令牌成本并非图 3 中所示的令牌对齐平均性能曲线的首次命中令牌预算。"
+    },
+    {
+     "en": "It is the mean cumulative token usage at the target-reaching Full-evaluation index, as used consistently in Table 5 and the bottom panels of Figure 3 .",
+     "zh": "它指的是在达到目标时的完整评估指数处的平均累计令牌使用量，这一用法在表 5 和图 3 的下方面板中始终保持一致。"
+    }
+   ]
+  },
+  {
+   "en": "The reference final target is ShinkaEvolve’s five-seed mean final score. Let Q initial Q_{\\mathrm{initial}} and Q final Q_{\\mathrm{final}} denote the first and final values of its mean best-so-far curve. The 95%-gain target is",
+   "zh": "参考的最终目标是 ShinkaEvolve 的五种子平均最终得分。 令 Q initial Q_{\\mathrm{initial}} 和 Q final Q_{\\mathrm{final}} 分别表示其“迄今最佳”平均曲线的首个值和最终值。95% 增益目标为",
+   "sents": [
+    {
+     "en": "The reference final target is ShinkaEvolve’s five-seed mean final score.",
+     "zh": "参考的最终目标是 ShinkaEvolve 的五种子平均最终得分。"
+    },
+    {
+     "en": "Let Q initial Q_{\\mathrm{initial}} and Q final Q_{\\mathrm{final}} denote the first and final values of its mean best-so-far curve. The 95%-gain target is",
+     "zh": "令 Q initial Q_{\\mathrm{initial}} 和 Q final Q_{\\mathrm{final}} 分别表示其“迄今最佳”平均曲线的首个值和最终值。95% 增益目标为"
+    }
+   ]
+  },
+  {
+   "en": "corresponding to 95% of ShinkaEvolve’s improvement over its initial score.",
+   "zh": "相当于ShinkaEvolve相较于其初始分数的提升的95%。",
+   "sents": null
+  },
+  {
+   "en": "All Full evaluations performed during online search count toward the same search budget, including those from warm-up, counterfactual exploration, and Strategy validation; shared evaluations are counted once. Recorded LLM usage includes proposal generation, benchmark evaluation, and allocator calls for resource allocation, self-evolution, and shadow validation, and Partial evaluations are counted whether a proposal stops or continues. For RPM, allocator costs are the tokens spent on pairwise comparisons; Lineage-UCB requires no LLM calls for allocation. Table 6 reports costs at the full evaluation budget. At this budget, EvoAlloc consumes more total tokens than ShinkaEvolve, since the evaluations it withholds are reinvested in examining additional proposals (Section 5.4 ). Its allocator accounts for 1.02 1.02 M tokens on ADAS-AIME and 1.67 1.67 M on Circle Packing. Total usage need not scale linearly with the number of proposals, as generated programs differ in their evaluation costs. The savings in Table 5 therefore reflect how quickly each method reaches a given performance level, rather than its total consumption once the budget is exhausted.",
+   "zh": "在线搜索期间执行的所有完整评估均计入同一搜索预算，包括来自热身、反事实探索和策略验证的评估；共享评估仅计算一次。 记录的 LLM 使用量包括提案生成、基准评估以及用于资源分配、自我进化和影子验证的分配器调用；部分评估无论提案是否停止都会被计数。 对于 RPM，分配器成本是成对比较所消耗的令牌；Lineage-UCB 在分配过程中无需任何 LLM 调用。 表 6 报告了完整评估预算下的成本。 在此预算下，EvoAlloc 消耗的总令牌数多于 ShinkaEvolve，因为它保留的评估被重新用于检查更多提案（第 5.4 节）。 其分配器在 ADAS-AIME 上消耗了 1.02 M 个令牌，在 Circle Packing 上消耗了 1.67 M 个令牌。 总使用量不必与提案数量呈线性关系，因为生成的程序在评估成本上存在差异。 因此，表 5 中的节省量反映了每种方法达到特定性能水平所需的时间，而非预算耗尽后的总消耗量。",
+   "sents": [
+    {
+     "en": "All Full evaluations performed during online search count toward the same search budget, including those from warm-up, counterfactual exploration, and Strategy validation; shared evaluations are counted once.",
+     "zh": "在线搜索期间执行的所有完整评估均计入同一搜索预算，包括来自热身、反事实探索和策略验证的评估；共享评估仅计算一次。"
+    },
+    {
+     "en": "Recorded LLM usage includes proposal generation, benchmark evaluation, and allocator calls for resource allocation, self-evolution, and shadow validation, and Partial evaluations are counted whether a proposal stops or continues.",
+     "zh": "记录的 LLM 使用量包括提案生成、基准评估以及用于资源分配、自我进化和影子验证的分配器调用；部分评估无论提案是否停止都会被计数。"
+    },
+    {
+     "en": "For RPM, allocator costs are the tokens spent on pairwise comparisons; Lineage-UCB requires no LLM calls for allocation.",
+     "zh": "对于 RPM，分配器成本是成对比较所消耗的令牌；Lineage-UCB 在分配过程中无需任何 LLM 调用。"
+    },
+    {
+     "en": "Table 6 reports costs at the full evaluation budget.",
+     "zh": "表 6 报告了完整评估预算下的成本。"
+    },
+    {
+     "en": "At this budget, EvoAlloc consumes more total tokens than ShinkaEvolve, since the evaluations it withholds are reinvested in examining additional proposals (Section 5.4 ).",
+     "zh": "在此预算下，EvoAlloc 消耗的总令牌数多于 ShinkaEvolve，因为它保留的评估被重新用于检查更多提案（第 5.4 节）。"
+    },
+    {
+     "en": "Its allocator accounts for 1.02 1.02 M tokens on ADAS-AIME and 1.67 1.67 M on Circle Packing.",
+     "zh": "其分配器在 ADAS-AIME 上消耗了 1.02 M 个令牌，在 Circle Packing 上消耗了 1.67 M 个令牌。"
+    },
+    {
+     "en": "Total usage need not scale linearly with the number of proposals, as generated programs differ in their evaluation costs.",
+     "zh": "总使用量不必与提案数量呈线性关系，因为生成的程序在评估成本上存在差异。"
+    },
+    {
+     "en": "The savings in Table 5 therefore reflect how quickly each method reaches a given performance level, rather than its total consumption once the budget is exhausted.",
+     "zh": "因此，表 5 中的节省量反映了每种方法达到特定性能水平所需的时间，而非预算耗尽后的总消耗量。"
+    }
+   ]
+  },
+  {
+   "en": "Table 6 shows how each method spends the same Full-evaluation budget. At this budget, EvoAlloc considers 136.8 136.8 proposals per seed on ADAS-AIME and 243.0 243.0 on Circle Packing, compared with 75.0 75.0 and 150.0 150.0 for ShinkaEvolve. Proposal counts include all candidates that reach the allocation stage and complete their allocation episode, with initialization and warm-up candidates counted as Direct Full. Allocation percentages are computed per seed over the same candidates and record each candidate’s original decision rather than its evaluation outcome: candidates evaluated for Strategy validation remain in their original category, and Explore → \\to Full counts only candidates revealed by counterfactual exploration. For RPM, we report the nominal counts prescribed by its protocol, with 15 proposals per Full evaluation of which one is selected, while its token costs are measured from the actual runs.",
+   "zh": "表6展示了每种方法在相同的完整评估预算下的分配情况。 在此预算下，EvoAlloc 在 ADAS-AIME 上每个种子考虑 136.8 个提案，在 Circle Packing 上考虑 243.0 个提案，而 ShinkaEvolve 分别为 75.0 和 150.0。 提案数量包括所有进入分配阶段并完成其分配回合的候选者，其中初始化和预热阶段的候选者被计为“直接完整”。 分配百分比按每个种子计算，基于相同的候选者，并记录每个候选者的原始决策而非其评估结果：用于策略验证而被评估的候选者仍保留在原始类别中，而“探索 → 完整”仅统计通过反事实探索揭示的候选者。 对于 RPM，我们报告其协议规定的名义数量：每次完整评估有 15 个提案，其中选择一个；而其令牌成本则根据实际运行测量。",
+   "sents": [
+    {
+     "en": "Table 6 shows how each method spends the same Full-evaluation budget.",
+     "zh": "表6展示了每种方法在相同的完整评估预算下的分配情况。"
+    },
+    {
+     "en": "At this budget, EvoAlloc considers 136.8 136.8 proposals per seed on ADAS-AIME and 243.0 243.0 on Circle Packing, compared with 75.0 75.0 and 150.0 150.0 for ShinkaEvolve.",
+     "zh": "在此预算下，EvoAlloc 在 ADAS-AIME 上每个种子考虑 136.8 个提案，在 Circle Packing 上考虑 243.0 个提案，而 ShinkaEvolve 分别为 75.0 和 150.0。"
+    },
+    {
+     "en": "Proposal counts include all candidates that reach the allocation stage and complete their allocation episode, with initialization and warm-up candidates counted as Direct Full.",
+     "zh": "提案数量包括所有进入分配阶段并完成其分配回合的候选者，其中初始化和预热阶段的候选者被计为“直接完整”。"
+    },
+    {
+     "en": "Allocation percentages are computed per seed over the same candidates and record each candidate’s original decision rather than its evaluation outcome: candidates evaluated for Strategy validation remain in their original category, and Explore → \\to Full counts only candidates revealed by counterfactual exploration.",
+     "zh": "分配百分比按每个种子计算，基于相同的候选者，并记录每个候选者的原始决策而非其评估结果：用于策略验证而被评估的候选者仍保留在原始类别中，而“探索 → 完整”仅统计通过反事实探索揭示的候选者。"
+    },
+    {
+     "en": "For RPM, we report the nominal counts prescribed by its protocol, with 15 proposals per Full evaluation of which one is selected, while its token costs are measured from the actual runs.",
+     "zh": "对于 RPM，我们报告其协议规定的名义数量：每次完整评估有 15 个提案，其中选择一个；而其令牌成本则根据实际运行测量。"
+    }
+   ]
+  },
+  {
+   "en": "To examine whether content-independent filtering can reproduce EvoAlloc’s gains, we evaluate Random Allocation on Circle Packing. After warm-up, this allocator discards each candidate with probability 0.5 0.5 , independently of its content, and otherwise requests Full evaluation. We compare five-seed results under a budget of 150 Full evaluations per run, using the main-experiment EvoAlloc results as the reference.",
+   "zh": "为了检验与内容无关的过滤方法能否重现 EvoAlloc 的收益，我们在 Circle Packing 上对随机分配方法进行了评估。 预热阶段结束后，该分配器以 0.5 的概率丢弃每个候选项（与其内容无关），否则则请求完整评估。 在每次运行中预算为 150 次完整评估的条件下，我们比较了五种种子设置下的结果，并以主实验中 EvoAlloc 的结果作为参考。",
+   "sents": [
+    {
+     "en": "To examine whether content-independent filtering can reproduce EvoAlloc’s gains, we evaluate Random Allocation on Circle Packing.",
+     "zh": "为了检验与内容无关的过滤方法能否重现 EvoAlloc 的收益，我们在 Circle Packing 上对随机分配方法进行了评估。"
+    },
+    {
+     "en": "After warm-up, this allocator discards each candidate with probability 0.5 0.5 , independently of its content, and otherwise requests Full evaluation.",
+     "zh": "预热阶段结束后，该分配器以 0.5 的概率丢弃每个候选项（与其内容无关），否则则请求完整评估。"
+    },
+    {
+     "en": "We compare five-seed results under a budget of 150 Full evaluations per run, using the main-experiment EvoAlloc results as the reference.",
+     "zh": "在每次运行中预算为 150 次完整评估的条件下，我们比较了五种种子设置下的结果，并以主实验中 EvoAlloc 的结果作为参考。"
+    }
+   ]
+  },
+  {
+   "en": "EvoAlloc achieves a final sum of radii of 2.547 ± 0.030 2.547\\pm 0.030 , compared with 2.404 ± 0.184 2.404\\pm 0.184 for Random Allocation. Figure 10 also shows higher mean best-so-far performance for EvoAlloc against both Full evaluations and cumulative LLM tokens. Randomly withholding evaluations at this fixed probability therefore does not reproduce EvoAlloc’s observed performance.",
+   "zh": "EvoAlloc 实现的最终半径总和为 2.547 ± 0.030 2.547\\pm 0.030，而随机分配（Random Allocation）的结果为 2.404 ± 0.184 2.404\\pm 0.184。 图 10 还显示，与完整评估（Full evaluations）和累积 LLM 令牌数相比，EvoAlloc 的当前最佳性能均值更高。 因此，以该固定概率随机保留评估，无法重现 EvoAlloc 所观察到的性能。",
+   "sents": [
+    {
+     "en": "EvoAlloc achieves a final sum of radii of 2.547 ± 0.030 2.547\\pm 0.030 , compared with 2.404 ± 0.184 2.404\\pm 0.184 for Random Allocation.",
+     "zh": "EvoAlloc 实现的最终半径总和为 2.547 ± 0.030 2.547\\pm 0.030，而随机分配（Random Allocation）的结果为 2.404 ± 0.184 2.404\\pm 0.184。"
+    },
+    {
+     "en": "Figure 10 also shows higher mean best-so-far performance for EvoAlloc against both Full evaluations and cumulative LLM tokens.",
+     "zh": "图 10 还显示，与完整评估（Full evaluations）和累积 LLM 令牌数相比，EvoAlloc 的当前最佳性能均值更高。"
+    },
+    {
+     "en": "Randomly withholding evaluations at this fixed probability therefore does not reproduce EvoAlloc’s observed performance.",
+     "zh": "因此，以该固定概率随机保留评估，无法重现 EvoAlloc 所观察到的性能。"
+    }
+   ]
+  },
+  {
+   "en": "The w/o Exploration ablation in Section 5.3 removes exploratory evaluations together with the feedback they provide. To examine the feedback contribution while retaining exploration, we introduce w/o Exploration Feedback . This variant keeps the exploration probability at ρ = 0.3 \\rho=0.3 : explored candidates still receive Full evaluation, enter the search archive, and can improve the best-so-far score or serve as parents. However, their outcome cases are withheld from subsequent allocation decisions, Experience updates, and Strategy revisions. The ablation thus removes explicit case feedback while preserving explored candidates’ participation in program search.",
+   "zh": "第 5.3 节中的“无探索”消融实验移除了探索性评估及其提供的反馈。 为了在保留探索性的同时考察反馈的贡献，我们引入了“无探索反馈”变体。 该变体将探索概率固定为 ρ = 0.3 \\rho=0.3：被探索的候选项仍然接受完整评估、进入搜索存档，并且能够提升当前最佳得分或作为父项使用。 然而，它们的结果案例不会被用于后续的分配决策、经验更新和策略修订。 因此，该消融实验在保留被探索候选项对程序搜索的参与度的同时，移除了明确的结果反馈。",
+   "sents": [
+    {
+     "en": "The w/o Exploration ablation in Section 5.3 removes exploratory evaluations together with the feedback they provide.",
+     "zh": "第 5.3 节中的“无探索”消融实验移除了探索性评估及其提供的反馈。"
+    },
+    {
+     "en": "To examine the feedback contribution while retaining exploration, we introduce w/o Exploration Feedback .",
+     "zh": "为了在保留探索性的同时考察反馈的贡献，我们引入了“无探索反馈”变体。"
+    },
+    {
+     "en": "This variant keeps the exploration probability at ρ = 0.3 \\rho=0.3 : explored candidates still receive Full evaluation, enter the search archive, and can improve the best-so-far score or serve as parents.",
+     "zh": "该变体将探索概率固定为 ρ = 0.3 \\rho=0.3：被探索的候选项仍然接受完整评估、进入搜索存档，并且能够提升当前最佳得分或作为父项使用。"
+    },
+    {
+     "en": "However, their outcome cases are withheld from subsequent allocation decisions, Experience updates, and Strategy revisions.",
+     "zh": "然而，它们的结果案例不会被用于后续的分配决策、经验更新和策略修订。"
+    },
+    {
+     "en": "The ablation thus removes explicit case feedback while preserving explored candidates’ participation in program search.",
+     "zh": "因此，该消融实验在保留被探索候选项对程序搜索的参与度的同时，移除了明确的结果反馈。"
+    }
+   ]
+  },
+  {
+   "en": "We compare five-seed results with the main-experiment EvoAlloc reference, using budgets of 150 150 Full evaluations on Circle Packing and 75 75 on ADAS-AIME. On Circle Packing, w/o Exploration Feedback achieves 2.446 ± 0.110 2.446\\pm 0.110 , compared with 2.547 ± 0.030 2.547\\pm 0.030 for EvoAlloc; the corresponding trajectories are shown in Figure 11 . On ADAS-AIME, the final accuracies are ( 32.22 ± 4.10 ) % (32.22\\pm 4.10)\\% and ( 39.56 ± 6.80 ) % (39.56\\pm 6.80)\\% , respectively. The lower mean performance without explicit feedback is consistent with exploration helping not only by recovering candidates, but also by informing subsequent allocation.",
+   "zh": "我们将五种子智能体的结果与主实验中的 EvoAlloc 参考结果进行比较，在 Circle Packing 上使用 150 次完整评估的预算，在 ADAS-AIME 上使用 75 次完整评估的预算。 在 Circle Packing 上，无探索反馈的方法实现了 2.446 ± 0.110 的结果，而 EvoAlloc 的结果为 2.547 ± 0.030；相应的轨迹如图 11 所示。 在 ADAS-AIME 上，最终准确率分别为 (32.22 ± 4.10)% 和 (39.56 ± 6.80)%。 在没有显式反馈的情况下，平均性能较低这一现象与探索不仅有助于恢复候选方案，还有助于指导后续分配的观点一致。",
+   "sents": [
+    {
+     "en": "We compare five-seed results with the main-experiment EvoAlloc reference, using budgets of 150 150 Full evaluations on Circle Packing and 75 75 on ADAS-AIME.",
+     "zh": "我们将五种子智能体的结果与主实验中的 EvoAlloc 参考结果进行比较，在 Circle Packing 上使用 150 次完整评估的预算，在 ADAS-AIME 上使用 75 次完整评估的预算。"
+    },
+    {
+     "en": "On Circle Packing, w/o Exploration Feedback achieves 2.446 ± 0.110 2.446\\pm 0.110 , compared with 2.547 ± 0.030 2.547\\pm 0.030 for EvoAlloc; the corresponding trajectories are shown in Figure 11 .",
+     "zh": "在 Circle Packing 上，无探索反馈的方法实现了 2.446 ± 0.110 的结果，而 EvoAlloc 的结果为 2.547 ± 0.030；相应的轨迹如图 11 所示。"
+    },
+    {
+     "en": "On ADAS-AIME, the final accuracies are ( 32.22 ± 4.10 ) % (32.22\\pm 4.10)\\% and ( 39.56 ± 6.80 ) % (39.56\\pm 6.80)\\% , respectively.",
+     "zh": "在 ADAS-AIME 上，最终准确率分别为 (32.22 ± 4.10)% 和 (39.56 ± 6.80)%。"
+    },
+    {
+     "en": "The lower mean performance without explicit feedback is consistent with exploration helping not only by recovering candidates, but also by informing subsequent allocation.",
+     "zh": "在没有显式反馈的情况下，平均性能较低这一现象与探索不仅有助于恢复候选方案，还有助于指导后续分配的观点一致。"
+    }
+   ]
+  },
+  {
+   "en": "We analyze candidates with Full outcomes obtained through random counterfactual exploration ( ρ = 0.3 \\rho=0.3 ) from five runs per benchmark. We count only exploration following Discard or Stop , excluding warm-up and shared-validation evaluations. Candidates are grouped by the Strategy active at decision time: S 0 S_{0} is the initial Strategy, and subsequent indices denote successive adopted revisions within each run. A candidate is new-best if its Full score exceeds the decision-time best-so-far score, and improved-parent if it exceeds its parent’s score; the latter includes new-best candidates.",
+   "zh": "我们对每个基准测试的五次运行中，通过随机反事实探索（ρ = 0.3）获得的完整结果进行分析。 我们仅统计在“丢弃”或“停止”之后进行的探索，不包括预热阶段和共享验证评估。 候选体根据决策时刻生效的策略进行分组：S₀ 是初始策略，后续索引表示每次运行中依次采用的修订版本。 如果候选体的完整得分高于决策时刻的当前最佳得分，则其为“新最佳”；如果其得分高于父节点的得分，则其为“改进父节点”，后者包含“新最佳”候选体。",
+   "sents": [
+    {
+     "en": "We analyze candidates with Full outcomes obtained through random counterfactual exploration ( ρ = 0.3 \\rho=0.3 ) from five runs per benchmark.",
+     "zh": "我们对每个基准测试的五次运行中，通过随机反事实探索（ρ = 0.3）获得的完整结果进行分析。"
+    },
+    {
+     "en": "We count only exploration following Discard or Stop , excluding warm-up and shared-validation evaluations.",
+     "zh": "我们仅统计在“丢弃”或“停止”之后进行的探索，不包括预热阶段和共享验证评估。"
+    },
+    {
+     "en": "Candidates are grouped by the Strategy active at decision time: S 0 S_{0} is the initial Strategy, and subsequent indices denote successive adopted revisions within each run.",
+     "zh": "候选体根据决策时刻生效的策略进行分组：S₀ 是初始策略，后续索引表示每次运行中依次采用的修订版本。"
+    },
+    {
+     "en": "A candidate is new-best if its Full score exceeds the decision-time best-so-far score, and improved-parent if it exceeds its parent’s score; the latter includes new-best candidates.",
+     "zh": "如果候选体的完整得分高于决策时刻的当前最佳得分，则其为“新最佳”；如果其得分高于父节点的得分，则其为“改进父节点”，后者包含“新最佳”候选体。"
+    }
+   ]
+  },
+  {
+   "en": "Table 7 shows that these recoveries are not confined to the initial Strategy: all six new-best candidates on ADAS-AIME occur under S 2 S_{2} or S 3 S_{3} , while Circle Packing recovers 15 under S 2 S_{2} . Exploration thus reveals missed improvements even after multiple Strategy revisions, exposing outcomes that the allocator’s decisions alone would leave unobserved. Stage coverage differs across runs, with only one run per benchmark reaching S 3 S_{3} , so the pooled rates should not be interpreted as a common temporal trend.",
+   "zh": "表7显示，这些恢复并不仅限于初始策略：ADAS-AIME 上的六个新最佳候选方案均出现在 S₂ 或 S₃ 下，而“圆形打包”在 S₂ 下恢复了 15 个。 因此，探索过程揭示了即使在多次策略修订之后仍被遗漏的改进，从而暴露了仅凭分配器决策所无法观察到的结果。 各阶段的覆盖范围在不同运行中有所不同，每个基准测试中只有一个运行达到了 S₃，因此不应将这些汇总比率解释为一种共同的时序趋势。",
+   "sents": [
+    {
+     "en": "Table 7 shows that these recoveries are not confined to the initial Strategy: all six new-best candidates on ADAS-AIME occur under S 2 S_{2} or S 3 S_{3} , while Circle Packing recovers 15 under S 2 S_{2} .",
+     "zh": "表7显示，这些恢复并不仅限于初始策略：ADAS-AIME 上的六个新最佳候选方案均出现在 S₂ 或 S₃ 下，而“圆形打包”在 S₂ 下恢复了 15 个。"
+    },
+    {
+     "en": "Exploration thus reveals missed improvements even after multiple Strategy revisions, exposing outcomes that the allocator’s decisions alone would leave unobserved.",
+     "zh": "因此，探索过程揭示了即使在多次策略修订之后仍被遗漏的改进，从而暴露了仅凭分配器决策所无法观察到的结果。"
+    },
+    {
+     "en": "Stage coverage differs across runs, with only one run per benchmark reaching S 3 S_{3} , so the pooled rates should not be interpreted as a common temporal trend.",
+     "zh": "各阶段的覆盖范围在不同运行中有所不同，每个基准测试中只有一个运行达到了 S₃，因此不应将这些汇总比率解释为一种共同的时序趋势。"
+    }
+   ]
+  },
+  {
+   "en": "During validation, the incumbent Strategy S S and the challenger S ~ \\widetilde{S} are applied to the same online proposals with the same archive, Experiences, and decision-time information. EvoAlloc executes the union of their requested evaluations once, charges them to the search budget, and shares the resulting evidence with both Strategies. A candidate requested for Full evaluation only by the challenger is therefore still evaluated, so validation is not restricted to outcomes selected by the incumbent. Outcomes of candidates that neither Strategy sends to Full evaluation are revealed only through counterfactual exploration (Section 4.3 ), which also supplies evidence for skipped candidates outside validation windows.",
+   "zh": "在验证过程中，当前策略 S 和挑战者策略 S ~ \\widetilde{S} 会针对相同的在线提案、相同的存档（Experiences）以及决策时刻的信息进行应用。 EvoAlloc 会一次性执行它们所请求的评估的并集，将其计入搜索预算，并将由此产生的证据共享给两种策略。 因此，即使某个候选者仅被挑战者请求进行完整评估，它仍然会被评估，所以验证并不局限于当前策略所选中的结果。 那些未被任一策略送入完整评估的候选者的结果，只能通过反事实探索（第 4.3 节）来揭示，而这一过程也会为验证窗口之外的被跳过候选者提供证据。",
+   "sents": [
+    {
+     "en": "During validation, the incumbent Strategy S S and the challenger S ~ \\widetilde{S} are applied to the same online proposals with the same archive, Experiences, and decision-time information.",
+     "zh": "在验证过程中，当前策略 S 和挑战者策略 S ~ \\widetilde{S} 会针对相同的在线提案、相同的存档（Experiences）以及决策时刻的信息进行应用。"
+    },
+    {
+     "en": "EvoAlloc executes the union of their requested evaluations once, charges them to the search budget, and shares the resulting evidence with both Strategies.",
+     "zh": "EvoAlloc 会一次性执行它们所请求的评估的并集，将其计入搜索预算，并将由此产生的证据共享给两种策略。"
+    },
+    {
+     "en": "A candidate requested for Full evaluation only by the challenger is therefore still evaluated, so validation is not restricted to outcomes selected by the incumbent.",
+     "zh": "因此，即使某个候选者仅被挑战者请求进行完整评估，它仍然会被评估，所以验证并不局限于当前策略所选中的结果。"
+    },
+    {
+     "en": "Outcomes of candidates that neither Strategy sends to Full evaluation are revealed only through counterfactual exploration (Section 4.3 ), which also supplies evidence for skipped candidates outside validation windows.",
+     "zh": "那些未被任一策略送入完整评估的候选者的结果，只能通过反事实探索（第 4.3 节）来揭示，而这一过程也会为验证窗口之外的被跳过候选者提供证据。"
+    }
+   ]
+  },
+  {
+   "en": "Let I I denote the proposals in a validation window on which the two Strategies select different allocation paths and the Full outcome is known, whether requested by either Strategy or revealed by exploration; a window closes once | I | = 2 |I|=2 . For T ∈ { S , S ~ } T\\in\\{S,\\widetilde{S}\\} , let m best ​ ( T ) m_{\\mathrm{best}}(T) count proposals in I I whose Full score exceeds the best score in the shared archive at decision time but whose allocation path under T T would leave that outcome hidden. Let n F ​ ( T ) n_{F}(T) and n P ​ ( T ) n_{P}(T) count the Full and Partial evaluations requested under T T on these proposals, rather than those executed for the union. The challenger is adopted if",
+   "zh": "令 I I 表示验证窗口中两个策略选择了不同分配路径且完整结果已知的提案；无论该结果是由任一策略请求还是通过探索揭示，只要 | I | = 2 |I|=2 ，该窗口即关闭。 对于 T ∈ { S , S ~ } T\\in\\{S,\\widetilde{S}\\} ，令 m best ​ ( T ) m_{\\mathrm{best}}(T) 表示 I I 中那些完整得分超过决策时刻共享档案中的最佳得分，但在 T T 下的分配路径会使该结果保持隐藏的提案数量。 令 n F ​ ( T ) n_{F}(T) 和 n P ​ ( T ) n_{P}(T) 分别表示在 T T 下针对这些提案所请求的完整评估和局部评估数量，而非为它们的并集所执行的评估数量。 如果",
+   "sents": [
+    {
+     "en": "Let I I denote the proposals in a validation window on which the two Strategies select different allocation paths and the Full outcome is known, whether requested by either Strategy or revealed by exploration; a window closes once | I | = 2 |I|=2 .",
+     "zh": "令 I I 表示验证窗口中两个策略选择了不同分配路径且完整结果已知的提案；无论该结果是由任一策略请求还是通过探索揭示，只要 | I | = 2 |I|=2 ，该窗口即关闭。"
+    },
+    {
+     "en": "For T ∈ { S , S ~ } T\\in\\{S,\\widetilde{S}\\} , let m best ​ ( T ) m_{\\mathrm{best}}(T) count proposals in I I whose Full score exceeds the best score in the shared archive at decision time but whose allocation path under T T would leave that outcome hidden.",
+     "zh": "对于 T ∈ { S , S ~ } T\\in\\{S,\\widetilde{S}\\} ，令 m best ​ ( T ) m_{\\mathrm{best}}(T) 表示 I I 中那些完整得分超过决策时刻共享档案中的最佳得分，但在 T T 下的分配路径会使该结果保持隐藏的提案数量。"
+    },
+    {
+     "en": "Let n F ​ ( T ) n_{F}(T) and n P ​ ( T ) n_{P}(T) count the Full and Partial evaluations requested under T T on these proposals, rather than those executed for the union.",
+     "zh": "令 n F ​ ( T ) n_{F}(T) 和 n P ​ ( T ) n_{P}(T) 分别表示在 T T 下针对这些提案所请求的完整评估和局部评估数量，而非为它们的并集所执行的评估数量。"
+    },
+    {
+     "en": "The challenger is adopted if",
+     "zh": "如果"
+    }
+   ]
+  },
+  {
+   "en": "is lexicographically smaller for S ~ \\widetilde{S} than for S S ; a complete tie retains the incumbent, and the last component is omitted when no Partial evaluator is available. This establishes a preference over realized allocation consequences within a finite window, not a guarantee of improvement in 𝔼 ⁡ [ Q 𝒜 ⋆ ​ ( B ) ] \\mathbb{E}[Q^{\\star}_{\\mathcal{A}}(B)] ; continued search supplies evidence for subsequent Strategy revisions.",
+   "zh": "对于 S ~ \\widetilde{S}，该值在字典序上比 S S 更小；完全打平时保留当前方案，且当没有可用的部分评估器时，最后一个组件将被省略。 这确立了一个有限窗口内对已实现分配结果的偏好，而非保证 𝔼 ⁡ [ Q 𝒜 ⋆ ​ ( B ) ] \\mathbb{E}[Q^{\\star}_{\\mathcal{A}}(B)] 会改善；持续搜索将为后续策略修订提供证据。",
+   "sents": [
+    {
+     "en": "is lexicographically smaller for S ~ \\widetilde{S} than for S S ; a complete tie retains the incumbent, and the last component is omitted when no Partial evaluator is available.",
+     "zh": "对于 S ~ \\widetilde{S}，该值在字典序上比 S S 更小；完全打平时保留当前方案，且当没有可用的部分评估器时，最后一个组件将被省略。"
+    },
+    {
+     "en": "This establishes a preference over realized allocation consequences within a finite window, not a guarantee of improvement in 𝔼 ⁡ [ Q 𝒜 ⋆ ​ ( B ) ] \\mathbb{E}[Q^{\\star}_{\\mathcal{A}}(B)] ; continued search supplies evidence for subsequent Strategy revisions.",
+     "zh": "这确立了一个有限窗口内对已实现分配结果的偏好，而非保证 𝔼 ⁡ [ Q 𝒜 ⋆ ​ ( B ) ] \\mathbb{E}[Q^{\\star}_{\\mathcal{A}}(B)] 会改善；持续搜索将为后续策略修订提供证据。"
+    }
+   ]
+  },
+  {
+   "en": "Table 8 summarizes how often proposed challengers were adopted across both benchmarks, together with the distribution of adoption criteria. Each validation window compares a challenger with the incumbent on shared proposals; completed windows are those that reached a decision to adopt the challenger or retain the incumbent. The reported adoptions were driven by fewer Full or Partial evaluations, while matching the incumbent’s missed-new-best count within the corresponding validation windows. Validation thus primarily favored more selective use of evaluation resources, refining how much evaluation to allocate to each candidate.",
+   "zh": "表 8 总结了在两个基准测试中，所提出的挑战者被采纳的频率，以及采纳标准的分布情况。 每个验证窗口都会将挑战者与现任者在共享提案上进行比较；已完成的窗口是指那些决定采纳挑战者或保留现任者的窗口。 报告中的采纳情况主要源于较少的全量或部分评估，同时需要在相应的验证窗口内与现任者错过的“新最佳”次数相匹配。 因此，验证过程主要倾向于更选择性地使用评估资源，从而优化分配给每个候选人的评估资源量。",
+   "sents": [
+    {
+     "en": "Table 8 summarizes how often proposed challengers were adopted across both benchmarks, together with the distribution of adoption criteria.",
+     "zh": "表 8 总结了在两个基准测试中，所提出的挑战者被采纳的频率，以及采纳标准的分布情况。"
+    },
+    {
+     "en": "Each validation window compares a challenger with the incumbent on shared proposals; completed windows are those that reached a decision to adopt the challenger or retain the incumbent.",
+     "zh": "每个验证窗口都会将挑战者与现任者在共享提案上进行比较；已完成的窗口是指那些决定采纳挑战者或保留现任者的窗口。"
+    },
+    {
+     "en": "The reported adoptions were driven by fewer Full or Partial evaluations, while matching the incumbent’s missed-new-best count within the corresponding validation windows.",
+     "zh": "报告中的采纳情况主要源于较少的全量或部分评估，同时需要在相应的验证窗口内与现任者错过的“新最佳”次数相匹配。"
+    },
+    {
+     "en": "Validation thus primarily favored more selective use of evaluation resources, refining how much evaluation to allocate to each candidate.",
+     "zh": "因此，验证过程主要倾向于更选择性地使用评估资源，从而优化分配给每个候选人的评估资源量。"
+    }
+   ]
+  },
+  {
+   "en": "This appendix details the inputs, prompts, and representative outputs of the two LLM calls in EvoAlloc: resource allocation for each candidate (Section 4.1 ), and self-evolution, which updates Experiences and proposes Strategy revisions (Section 4.2 ).",
+   "zh": "本附录详细说明了 EvoAlloc 中两次 LLM 调用的输入、提示词和典型输出：分别为每个候选者分配资源（第 4.1 节），以及自我演化，即更新经验并提出策略修订方案（第 4.2 节）。",
+   "sents": null
+  },
+  {
+   "en": "Each LLM call in EvoAlloc is conditioned on a structured context assembled from the ongoing search, summarized in Table 9 . Resource allocation and self-evolution both receive the benchmark setup, the current allocation guidance, recent cases, and a summary of search progress. Resource allocation additionally receives the current candidate, its search context, and historical cases retrieved by similarity; together with search progress, these form the decision-time context c t c_{t} of Section 3.1 . Since allocation decisions are made before the candidate is fully evaluated, its own Full outcome is never part of this context.",
+   "zh": "EvoAlloc 中的每次 LLM 调用都以一个结构化上下文为条件，该上下文由持续进行的搜索过程组装而成，并总结于表 9。 资源分配和自我演化都接收基准设置、当前的分配指导、近期案例以及搜索进度的摘要。 资源分配还接收当前候选项、其搜索上下文以及通过相似性检索的历史案例；这些内容与搜索进度共同构成了第 3.1 节中的决策时刻上下文 c t c_{t}。 由于分配决策是在候选项被完全评估之前做出的，因此其自身的完整结果绝不会成为该上下文的一部分。",
+   "sents": [
+    {
+     "en": "Each LLM call in EvoAlloc is conditioned on a structured context assembled from the ongoing search, summarized in Table 9 .",
+     "zh": "EvoAlloc 中的每次 LLM 调用都以一个结构化上下文为条件，该上下文由持续进行的搜索过程组装而成，并总结于表 9。"
+    },
+    {
+     "en": "Resource allocation and self-evolution both receive the benchmark setup, the current allocation guidance, recent cases, and a summary of search progress.",
+     "zh": "资源分配和自我演化都接收基准设置、当前的分配指导、近期案例以及搜索进度的摘要。"
+    },
+    {
+     "en": "Resource allocation additionally receives the current candidate, its search context, and historical cases retrieved by similarity; together with search progress, these form the decision-time context c t c_{t} of Section 3.1 .",
+     "zh": "资源分配还接收当前候选项、其搜索上下文以及通过相似性检索的历史案例；这些内容与搜索进度共同构成了第 3.1 节中的决策时刻上下文 c t c_{t}。"
+    },
+    {
+     "en": "Since allocation decisions are made before the candidate is fully evaluated, its own Full outcome is never part of this context.",
+     "zh": "由于分配决策是在候选项被完全评估之前做出的，因此其自身的完整结果绝不会成为该上下文的一部分。"
+    }
+   ]
+  },
+  {
+   "en": "The prompt below guides resource allocation using the current Strategy, relevant Experiences, and available search context. Representative structured outputs illustrate the initial allocation and post-Partial continuation decisions.",
+   "zh": "下方的提示词利用当前的策略、相关的经验以及可用的搜索上下文来指导资源分配。 典型的结构化输出展示了初始分配以及部分延续决策后的结果。",
+   "sents": [
+    {
+     "en": "The prompt below guides resource allocation using the current Strategy, relevant Experiences, and available search context.",
+     "zh": "下方的提示词利用当前的策略、相关的经验以及可用的搜索上下文来指导资源分配。"
+    },
+    {
+     "en": "Representative structured outputs illustrate the initial allocation and post-Partial continuation decisions.",
+     "zh": "典型的结构化输出展示了初始分配以及部分延续决策后的结果。"
+    }
+   ]
+  },
+  {
+   "en": "When Partial evaluation is requested, its verified observation is appended to the original allocation context and the allocator makes a second decision using the same proposal, Strategy, Experiences, and search context.",
+   "zh": "当请求部分求值时，其经过验证的观察结果将被附加到原始分配上下文中，然后分配器将使用相同的提案、策略、经验和搜索上下文做出第二次决策。",
+   "sents": null
+  },
+  {
+   "en": "The outputs use structured JSON. Ellipses in the abbreviated examples denote generated text.",
+   "zh": "输出使用了结构化 JSON。 缩写示例中的省略号表示生成的文本。",
+   "sents": [
+    {
+     "en": "The outputs use structured JSON.",
+     "zh": "输出使用了结构化 JSON。"
+    },
+    {
+     "en": "Ellipses in the abbreviated examples denote generated text.",
+     "zh": "缩写示例中的省略号表示生成的文本。"
+    }
+   ]
+  },
+  {
+   "en": "The prompts below specify separate updates to Experiences and the Strategy. Experience updates maintain case-grounded evidence, while Strategy updates propose challengers for shadow validation.",
+   "zh": "以下提示分别指定了对“经验”和“策略”的更新。 “经验”的更新保留基于案例的证据，而“策略”的更新则为影子验证提出挑战者。",
+   "sents": [
+    {
+     "en": "The prompts below specify separate updates to Experiences and the Strategy.",
+     "zh": "以下提示分别指定了对“经验”和“策略”的更新。"
+    },
+    {
+     "en": "Experience updates maintain case-grounded evidence, while Strategy updates propose challengers for shadow validation.",
+     "zh": "“经验”的更新保留基于案例的证据，而“策略”的更新则为影子验证提出挑战者。"
+    }
+   ]
+  },
+  {
+   "en": "ADD introduces a new Experience with initial status tentative . UPDATE attaches supporting or contradicting evidence to an existing Experience and may change its status, but cannot rewrite its content, so accumulated evidence always refers to a fixed statement. DELETE removes an Experience. Rewriting an Experience therefore requires deleting it and adding a new one, and no operation is performed when evidence is insufficient. Each Experience has one of three statuses: tentative (limited or mixed evidence), active (consistent evidence), or stale (retained as a historical record but no longer guiding current decisions). Unlike DELETE , marking an Experience stale keeps it in memory.",
+   "zh": "ADD 会引入一个具有“暂定”初始状态的新体验。 UPDATE 会将支持性或矛盾性的证据附加到现有体验上，并可能改变其状态，但无法改写其内容，因此累积的证据始终指向一个固定的陈述。 DELETE 会移除一个体验。 因此，要改写一个体验，需要将其删除并添加一个新的体验；当证据不足时，则不会执行任何操作。 每个体验都有三种状态之一：暂定（证据有限或混杂）、有效（证据一致），或过时（作为历史记录保留，但不再指导当前决策）。 与 DELETE 不同，将体验标记为过时并不会将其从记忆中移除。",
+   "sents": [
+    {
+     "en": "ADD introduces a new Experience with initial status tentative .",
+     "zh": "ADD 会引入一个具有“暂定”初始状态的新体验。"
+    },
+    {
+     "en": "UPDATE attaches supporting or contradicting evidence to an existing Experience and may change its status, but cannot rewrite its content, so accumulated evidence always refers to a fixed statement.",
+     "zh": "UPDATE 会将支持性或矛盾性的证据附加到现有体验上，并可能改变其状态，但无法改写其内容，因此累积的证据始终指向一个固定的陈述。"
+    },
+    {
+     "en": "DELETE removes an Experience.",
+     "zh": "DELETE 会移除一个体验。"
+    },
+    {
+     "en": "Rewriting an Experience therefore requires deleting it and adding a new one, and no operation is performed when evidence is insufficient.",
+     "zh": "因此，要改写一个体验，需要将其删除并添加一个新的体验；当证据不足时，则不会执行任何操作。"
+    },
+    {
+     "en": "Each Experience has one of three statuses: tentative (limited or mixed evidence), active (consistent evidence), or stale (retained as a historical record but no longer guiding current decisions).",
+     "zh": "每个体验都有三种状态之一：暂定（证据有限或混杂）、有效（证据一致），或过时（作为历史记录保留，但不再指导当前决策）。"
+    },
+    {
+     "en": "Unlike DELETE , marking an Experience stale keeps it in memory.",
+     "zh": "与 DELETE 不同，将体验标记为过时并不会将其从记忆中移除。"
+    }
+   ]
+  },
+  {
+   "en": "Each observed candidate is summarized as a case card, which records the proposal, its search context, the allocation decision, and the observed outcomes. Case cards provide the recent and retrieved cases in the input context of resource allocation and self-evolution (Table 9 ). The examples below show two ADAS-AIME case cards: Partial evaluation followed by Full evaluation, and Partial evaluation followed by STOP and later counterfactual exploration.",
+   "zh": "每个观察到的候选项都会被总结为一个案例卡，其中记录了提案、其搜索上下文、分配决策以及观察到的结果。 案例卡提供了资源分配和自我演化输入上下文中的近期和已检索的案例（表9）。 下面的示例展示了两个 ADAS-AIME 案例卡：部分评估后接完整评估，以及部分评估后接停止并随后进行反事实探索。",
+   "sents": [
+    {
+     "en": "Each observed candidate is summarized as a case card, which records the proposal, its search context, the allocation decision, and the observed outcomes.",
+     "zh": "每个观察到的候选项都会被总结为一个案例卡，其中记录了提案、其搜索上下文、分配决策以及观察到的结果。"
+    },
+    {
+     "en": "Case cards provide the recent and retrieved cases in the input context of resource allocation and self-evolution (Table 9 ).",
+     "zh": "案例卡提供了资源分配和自我演化输入上下文中的近期和已检索的案例（表9）。"
+    },
+    {
+     "en": "The examples below show two ADAS-AIME case cards: Partial evaluation followed by Full evaluation, and Partial evaluation followed by STOP and later counterfactual exploration.",
+     "zh": "下面的示例展示了两个 ADAS-AIME 案例卡：部分评估后接完整评估，以及部分评估后接停止并随后进行反事实探索。"
+    }
+   ]
+  }
+ ]
+}

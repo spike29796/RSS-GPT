@@ -1,0 +1,1948 @@
+{
+ "id": "d231f62af8c77d41",
+ "source": "arxiv-agent",
+ "link": "https://arxiv.org/abs/2610.12002v1",
+ "title": "Agentic-TTT: Training test-time policy for test-time training",
+ "title_zh": "Agentic-TTT:测试时间训练的测试时间政策训练",
+ "published": "2026-10-08T14:06:26Z",
+ "translated_at": "2026-10-11T00:21:19Z",
+ "paragraphs": [
+  {
+   "en": "Test-time training (TTT) adapts an LLM’s parameters using signals derived from test inputs, and can make striking improvements in pre-specified settings such as IMO competitions or designated open problems. By turning deployment experience into parameter updates, TTT provides a direct mechanism for model-level self-improvement. Yet TTT is not universally beneficial: each TTT algorithm works in different settings, and applying an ill-suited method could waste test-time compute or even damage model performance. Therefore, such parameter-level self-improvement requires agency: the model must decide when TTT is warranted, which algorithm to invoke, and whether an existing skill can be reused. To fill this gap, we introduce Agentic-TTT , which learns a test-time policy to govern those decisions. Agentic-TTT turns TTT procedures into callable tools, treats accumulated skills as an evolving deployment environment, and trains its policy using the observed utility gains from its decisions. On our benchmark, Agentic-TTT nearly doubles the utility over the backbone model, learns to trade off utility against compute, and generalizes to domains unseen during training. Together, these results point toward autonomous self-improvement: models that can decide how to learn from their own deployment experience.",
+   "zh": "测试时训练（TTT）利用来自测试输入的信号来调整大型语言模型（LLM）的参数，并能在预先指定的场景（如国际数学奥林匹克竞赛或特定的开放性问题）中带来显著的提升。 通过将部署经验转化为参数更新，TTT 为模型层面的自我改进提供了一种直接机制。 然而，TTT 并非在所有情况下都有益：每种 TTT 算法在不同场景中的效果各异，若使用不匹配的方法，可能会浪费测试时的计算资源，甚至损害模型性能。 因此，这种参数层面的自我改进需要智能体能力：模型必须决定何时适合进行 TTT、调用哪种算法，以及是否可复用已有技能。 为填补这一空白，我们提出了 Agentic-TTT，它能学习一种测试时策略来管理这些决策。 Agentic-TTT 将 TTT 流程转化为可调用的工具，把积累的技能视为不断演化的部署环境，并利用其决策带来的实际效用提升来训练策略。 在我们的基准测试中，Agentic-TTT 的效用几乎比基础模型翻了一番，它学会了在效用与计算资源之间进行权衡，并能泛化到训练时未接触过的领域。 综合来看，这些结果指向了自主自我改进：模型能够自行决定如何从自身的部署经验中学习。",
+   "sents": [
+    {
+     "en": "Test-time training (TTT) adapts an LLM’s parameters using signals derived from test inputs, and can make striking improvements in pre-specified settings such as IMO competitions or designated open problems.",
+     "zh": "测试时训练（TTT）利用来自测试输入的信号来调整大型语言模型（LLM）的参数，并能在预先指定的场景（如国际数学奥林匹克竞赛或特定的开放性问题）中带来显著的提升。"
+    },
+    {
+     "en": "By turning deployment experience into parameter updates, TTT provides a direct mechanism for model-level self-improvement.",
+     "zh": "通过将部署经验转化为参数更新，TTT 为模型层面的自我改进提供了一种直接机制。"
+    },
+    {
+     "en": "Yet TTT is not universally beneficial: each TTT algorithm works in different settings, and applying an ill-suited method could waste test-time compute or even damage model performance.",
+     "zh": "然而，TTT 并非在所有情况下都有益：每种 TTT 算法在不同场景中的效果各异，若使用不匹配的方法，可能会浪费测试时的计算资源，甚至损害模型性能。"
+    },
+    {
+     "en": "Therefore, such parameter-level self-improvement requires agency: the model must decide when TTT is warranted, which algorithm to invoke, and whether an existing skill can be reused.",
+     "zh": "因此，这种参数层面的自我改进需要智能体能力：模型必须决定何时适合进行 TTT、调用哪种算法，以及是否可复用已有技能。"
+    },
+    {
+     "en": "To fill this gap, we introduce Agentic-TTT , which learns a test-time policy to govern those decisions.",
+     "zh": "为填补这一空白，我们提出了 Agentic-TTT，它能学习一种测试时策略来管理这些决策。"
+    },
+    {
+     "en": "Agentic-TTT turns TTT procedures into callable tools, treats accumulated skills as an evolving deployment environment, and trains its policy using the observed utility gains from its decisions.",
+     "zh": "Agentic-TTT 将 TTT 流程转化为可调用的工具，把积累的技能视为不断演化的部署环境，并利用其决策带来的实际效用提升来训练策略。"
+    },
+    {
+     "en": "On our benchmark, Agentic-TTT nearly doubles the utility over the backbone model, learns to trade off utility against compute, and generalizes to domains unseen during training.",
+     "zh": "在我们的基准测试中，Agentic-TTT 的效用几乎比基础模型翻了一番，它学会了在效用与计算资源之间进行权衡，并能泛化到训练时未接触过的领域。"
+    },
+    {
+     "en": "Together, these results point toward autonomous self-improvement: models that can decide how to learn from their own deployment experience.",
+     "zh": "综合来看，这些结果指向了自主自我改进：模型能够自行决定如何从自身的部署经验中学习。"
+    }
+   ]
+  },
+  {
+   "en": "In 1945, von Neumann proposed the stored-program architecture, enabling self-modifying code : programs that rewrite their own instructions based on runtime data ( Von Neumann, 1945 ) . Alan Turing later recognized a deeper promise in such self-modification, arguing that “the possibility of letting the machine alter its own instructions provides the mechanism for learning from experience” ( Turing, 1986 ) . Eight decades later, neural networks have acquired remarkable abilities to perceive, generate, and reason, yet their parameters are typically frozen after deployment. Data encountered during deployment can shape the model’s computation, but ordinarily leaves its parameters and thus its parameterized capabilities unchanged. What would it take for a neural model to continue growing its own capabilities after deployment?",
+   "zh": "1945年，冯·诺依曼提出了存储程序架构，使自修改代码成为可能：即程序能够根据运行时数据重写自身的指令（Von Neumann, 1945）。 艾伦·图灵后来认识到这种自修改所蕴含的更深层潜力，他认为，“让机器能够改变自身指令的可能性，为从经验中学习提供了机制”（Turing, 1986）。 八十年后，神经网络已经获得了感知、生成和推理方面的卓越能力，但其参数在部署后通常会被固定不变。 部署过程中遇到的数据可以影响模型的计算过程，但通常不会改变其参数，因此也不会改变其参数化的能力。 一个神经模型在部署后需要满足什么条件，才能持续增强自身的能力？",
+   "sents": [
+    {
+     "en": "In 1945, von Neumann proposed the stored-program architecture, enabling self-modifying code : programs that rewrite their own instructions based on runtime data ( Von Neumann, 1945 ) .",
+     "zh": "1945年，冯·诺依曼提出了存储程序架构，使自修改代码成为可能：即程序能够根据运行时数据重写自身的指令（Von Neumann, 1945）。"
+    },
+    {
+     "en": "Alan Turing later recognized a deeper promise in such self-modification, arguing that “the possibility of letting the machine alter its own instructions provides the mechanism for learning from experience” ( Turing, 1986 ) .",
+     "zh": "艾伦·图灵后来认识到这种自修改所蕴含的更深层潜力，他认为，“让机器能够改变自身指令的可能性，为从经验中学习提供了机制”（Turing, 1986）。"
+    },
+    {
+     "en": "Eight decades later, neural networks have acquired remarkable abilities to perceive, generate, and reason, yet their parameters are typically frozen after deployment.",
+     "zh": "八十年后，神经网络已经获得了感知、生成和推理方面的卓越能力，但其参数在部署后通常会被固定不变。"
+    },
+    {
+     "en": "Data encountered during deployment can shape the model’s computation, but ordinarily leaves its parameters and thus its parameterized capabilities unchanged.",
+     "zh": "部署过程中遇到的数据可以影响模型的计算过程，但通常不会改变其参数，因此也不会改变其参数化的能力。"
+    },
+    {
+     "en": "What would it take for a neural model to continue growing its own capabilities after deployment?",
+     "zh": "一个神经模型在部署后需要满足什么条件，才能持续增强自身的能力？"
+    }
+   ]
+  },
+  {
+   "en": "A prominent line of modern self-improving agents carries this vision forward at the level of the surrounding system. Through reflection and memory, these agents distill past interactions into textual lessons that guide subsequent decisions ( Shinn et al., 2023 ; Zhao et al., 2024 ) . They can also evolve their prompts, search over entire agentic workflows, and accumulate executable skills for reuse across tasks ( Fernando et al., 2024 ; Zhang et al., 2025a ; Wang et al., 2024 ) . Although these mechanisms genuinely improve the agent as a whole, the self-improvement largely resides in the scaffold around the model, including its context, control flow, and external action repertoire; the model parameters themselves remain unchanged.",
+   "zh": "现代自我改进智能体的一个主要流派，将这一愿景推进到了周围系统的层面。 通过反思和记忆，这些智能体将过去的互动提炼为文本形式的经验教训，以指导后续决策（Shinn 等，2023；Zhao 等，2024）。 它们还可以演化自己的提示词，搜索整个智能体工作流程，并积累可重用的技能，以便跨任务重复使用（Fernando 等，2024；Zhang 等，2025a；Wang 等，2024）。 尽管这些机制确实提升了智能体的整体表现，但这种自我改进主要存在于模型周围的框架中，包括其上下文、控制流和外部行动库；模型参数本身则保持不变。",
+   "sents": [
+    {
+     "en": "A prominent line of modern self-improving agents carries this vision forward at the level of the surrounding system.",
+     "zh": "现代自我改进智能体的一个主要流派，将这一愿景推进到了周围系统的层面。"
+    },
+    {
+     "en": "Through reflection and memory, these agents distill past interactions into textual lessons that guide subsequent decisions ( Shinn et al., 2023 ; Zhao et al., 2024 ) .",
+     "zh": "通过反思和记忆，这些智能体将过去的互动提炼为文本形式的经验教训，以指导后续决策（Shinn 等，2023；Zhao 等，2024）。"
+    },
+    {
+     "en": "They can also evolve their prompts, search over entire agentic workflows, and accumulate executable skills for reuse across tasks ( Fernando et al., 2024 ; Zhang et al., 2025a ; Wang et al., 2024 ) .",
+     "zh": "它们还可以演化自己的提示词，搜索整个智能体工作流程，并积累可重用的技能，以便跨任务重复使用（Fernando 等，2024；Zhang 等，2025a；Wang 等，2024）。"
+    },
+    {
+     "en": "Although these mechanisms genuinely improve the agent as a whole, the self-improvement largely resides in the scaffold around the model, including its context, control flow, and external action repertoire; the model parameters themselves remain unchanged.",
+     "zh": "尽管这些机制确实提升了智能体的整体表现，但这种自我改进主要存在于模型周围的框架中，包括其上下文、控制流和外部行动库；模型参数本身则保持不变。"
+    }
+   ]
+  },
+  {
+   "en": "Other self-evolving systems update model parameters through self-generated tasks and trajectories, but organize this learning before deployment ( Hu et al., 2025b ; Zhao et al., 2026 ) . Test-time training (TTT) moves parameter adaptation into deployment itself, using signals derived from test inputs to update model weights ( Zuo et al., 2025 ; Zweiger et al., 2025 ; Akyürek et al., 2025 ; Yuksekgonul et al., 2026 ) , enabling model-level self-improvement from deployment experience. TTT has achieved striking results in pre-specified settings, including AlphaProof’s silver-medal IMO performance ( Hubert et al., 2025 ) and TTT-Discover’s advances on open scientific problems ( Yuksekgonul et al., 2026 ) .",
+   "zh": "其他自我演化系统通过自生成的任务和轨迹更新模型参数，但在学习前就已完成这种学习过程的组织（Hu et al., 2025b；Zhao et al., 2026）。 测试时训练（TTT）将参数适应过程移至部署阶段本身，利用来自测试输入的信号来更新模型权重（Zuo et al., 2025；Zweiger et al., 2025；Akyürek et al., 2025；Yuksekgonul et al., 2026），从而实现基于部署经验的模型级自我改进。 TTT 在预设场景下取得了显著成果，包括 AlphaProof 在国际数学奥林匹克竞赛中获得的银牌表现（Hubert et al., 2025），以及 TTT-Discover 在开放科学问题上的突破（Yuksekgonul et al., 2026）。",
+   "sents": [
+    {
+     "en": "Other self-evolving systems update model parameters through self-generated tasks and trajectories, but organize this learning before deployment ( Hu et al., 2025b ; Zhao et al., 2026 ) .",
+     "zh": "其他自我演化系统通过自生成的任务和轨迹更新模型参数，但在学习前就已完成这种学习过程的组织（Hu et al., 2025b；Zhao et al., 2026）。"
+    },
+    {
+     "en": "Test-time training (TTT) moves parameter adaptation into deployment itself, using signals derived from test inputs to update model weights ( Zuo et al., 2025 ; Zweiger et al., 2025 ; Akyürek et al., 2025 ; Yuksekgonul et al., 2026 ) , enabling model-level self-improvement from deployment experience.",
+     "zh": "测试时训练（TTT）将参数适应过程移至部署阶段本身，利用来自测试输入的信号来更新模型权重（Zuo et al., 2025；Zweiger et al., 2025；Akyürek et al., 2025；Yuksekgonul et al., 2026），从而实现基于部署经验的模型级自我改进。"
+    },
+    {
+     "en": "TTT has achieved striking results in pre-specified settings, including AlphaProof’s silver-medal IMO performance ( Hubert et al., 2025 ) and TTT-Discover’s advances on open scientific problems ( Yuksekgonul et al., 2026 ) .",
+     "zh": "TTT 在预设场景下取得了显著成果，包括 AlphaProof 在国际数学奥林匹克竞赛中获得的银牌表现（Hubert et al., 2025），以及 TTT-Discover 在开放科学问题上的突破（Yuksekgonul et al., 2026）。"
+    }
+   ]
+  },
+  {
+   "en": "Yet these methods typically assume the deployer has already identified both the capability to acquire and the procedure for acquiring it. In open-world deployment, where the test distribution is heterogeneous and unpredictable, an ill-suited TTT procedure can waste substantial test-time compute and may even underperform the frozen model. Realizing deployment-time capability growth therefore requires agency : deciding whether a query warrants adaptation, whether a capability acquired earlier already suffices, and which TTT method can best convert test-time compute into utility gain. To our knowledge, this model-level agency over TTT remains unexplored in open-ended LLM deployment. We fill this gap with Agentic-TTT , which turns TTT procedures into model-invokable tools and trains a test-time policy to govern their use.",
+   "zh": "然而，这些方法通常假设部署者已经确定了获取该能力的途径以及获取它的具体流程。 在开放世界的部署环境中，测试分布具有异质性和不可预测性，不合适的 TTT 流程可能会浪费大量测试时的计算资源，甚至可能表现不如冻结模型。 因此，实现部署时的能力增长需要智能体机制：判断某个查询是否需要进行适配、早期获取的能力是否已经足够，以及哪种 TTT 方法能最有效地将测试时的计算资源转化为效用增益。 据我们所知，在开放式 LLM 部署中，这种针对 TTT 的模型层智能体机制尚未被探索。 我们通过 Agentic-TTT 填补了这一空白，它将 TTT 流程转化为可被模型调用的工具，并训练一个测试时策略来管理这些工具的使用。",
+   "sents": [
+    {
+     "en": "Yet these methods typically assume the deployer has already identified both the capability to acquire and the procedure for acquiring it.",
+     "zh": "然而，这些方法通常假设部署者已经确定了获取该能力的途径以及获取它的具体流程。"
+    },
+    {
+     "en": "In open-world deployment, where the test distribution is heterogeneous and unpredictable, an ill-suited TTT procedure can waste substantial test-time compute and may even underperform the frozen model.",
+     "zh": "在开放世界的部署环境中，测试分布具有异质性和不可预测性，不合适的 TTT 流程可能会浪费大量测试时的计算资源，甚至可能表现不如冻结模型。"
+    },
+    {
+     "en": "Realizing deployment-time capability growth therefore requires agency : deciding whether a query warrants adaptation, whether a capability acquired earlier already suffices, and which TTT method can best convert test-time compute into utility gain.",
+     "zh": "因此，实现部署时的能力增长需要智能体机制：判断某个查询是否需要进行适配、早期获取的能力是否已经足够，以及哪种 TTT 方法能最有效地将测试时的计算资源转化为效用增益。"
+    },
+    {
+     "en": "To our knowledge, this model-level agency over TTT remains unexplored in open-ended LLM deployment.",
+     "zh": "据我们所知，在开放式 LLM 部署中，这种针对 TTT 的模型层智能体机制尚未被探索。"
+    },
+    {
+     "en": "We fill this gap with Agentic-TTT , which turns TTT procedures into model-invokable tools and trains a test-time policy to govern their use.",
+     "zh": "我们通过 Agentic-TTT 填补了这一空白，它将 TTT 流程转化为可被模型调用的工具，并训练一个测试时策略来管理这些工具的使用。"
+    }
+   ]
+  },
+  {
+   "en": "Agentic-TTT formulates this agency as sequential decision-making over a stream of test queries. At a high level, given a query and the current skill library, the policy decides whether to answer with the frozen model, reuse an existing skill, or acquire a new capability through a selected TTT method. Each TTT invocation produces an isolated LoRA skill over the frozen backbone ( Hu et al., 2022 ) . Storing these skills in a persistent library expands the options available to future queries, making the skill library an evolving capability environment. We train the policy to maximize utility gain over the frozen model while accounting for test-time computation. Agentic-TTT thereby turns the model from a passive target of adaptation into an active agent of self-improvement.",
+   "zh": "Agentic-TTT 将这种智能体行为定义为对一系列测试查询进行序列决策的过程。 从高层来看，在给定一个查询和当前技能库的情况下，策略会决定是使用冻结模型回答、复用现有技能，还是通过选定的 TTT 方法获取新能力。 每次 TTT 调用都会在冻结主干模型上生成一个独立的 LoRA 技能（Hu et al., 2022）。 将这些技能存储在持久化库中，可以为未来的查询提供更多选择，使技能库成为一个不断演化的能力环境。 我们训练该策略，使其在考虑测试时计算成本的同时，最大化相对于冻结模型的效用增益。 因此，Agentic-TTT 将模型从被动的适应目标转变为主动的自我提升智能体。",
+   "sents": [
+    {
+     "en": "Agentic-TTT formulates this agency as sequential decision-making over a stream of test queries.",
+     "zh": "Agentic-TTT 将这种智能体行为定义为对一系列测试查询进行序列决策的过程。"
+    },
+    {
+     "en": "At a high level, given a query and the current skill library, the policy decides whether to answer with the frozen model, reuse an existing skill, or acquire a new capability through a selected TTT method.",
+     "zh": "从高层来看，在给定一个查询和当前技能库的情况下，策略会决定是使用冻结模型回答、复用现有技能，还是通过选定的 TTT 方法获取新能力。"
+    },
+    {
+     "en": "Each TTT invocation produces an isolated LoRA skill over the frozen backbone ( Hu et al., 2022 ) .",
+     "zh": "每次 TTT 调用都会在冻结主干模型上生成一个独立的 LoRA 技能（Hu et al., 2022）。"
+    },
+    {
+     "en": "Storing these skills in a persistent library expands the options available to future queries, making the skill library an evolving capability environment.",
+     "zh": "将这些技能存储在持久化库中，可以为未来的查询提供更多选择，使技能库成为一个不断演化的能力环境。"
+    },
+    {
+     "en": "We train the policy to maximize utility gain over the frozen model while accounting for test-time computation.",
+     "zh": "我们训练该策略，使其在考虑测试时计算成本的同时，最大化相对于冻结模型的效用增益。"
+    },
+    {
+     "en": "Agentic-TTT thereby turns the model from a passive target of adaptation into an active agent of self-improvement.",
+     "zh": "因此，Agentic-TTT 将模型从被动的适应目标转变为主动的自我提升智能体。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate Agentic-TTT on a heterogeneous query stream drawn from eleven benchmark families across eight domains. We deliberately enrich the benchmark so that most queries exhibit TTT benefits during screening, allowing us to compare how effectively different policies exploit these adaptation opportunities. The reported gains therefore characterize this curated evaluation setting. The evaluated fixed-method baselines show uneven benefits and can degrade performance in some domains. In contrast, Agentic-TTT nearly doubles Qwen2.5-7B’s overall utility over direct inference, with positive gains in every evaluated domain. The policy also supports controllable utility-compute trade-offs and retains substantial gains on domains excluded from policy training. Improvements persist with the stronger Qwen2.5-14B backbone.",
+   "zh": "我们在一个异质查询流上评估了 Agentic-TTT，该查询流来自八个领域中的十一个基准测试系列。 我们特意丰富了这个基准测试，使得大多数查询在筛选阶段都能体现出 TTT 的优势，从而让我们能够比较不同策略有效利用这些适应机会的能力。 因此，报告的性能提升反映了这一经过精心设计的评估环境的特点。 所评估的固定方法基线模型表现出参差不齐的收益，并且在某些领域可能会导致性能下降。 相比之下，Agentic-TTT 在直接推理的基础上几乎将 Qwen2.5-7B 的整体效用提升了一倍，并且在所有评估领域都取得了正向收益。 该策略还支持对效用与计算资源之间的权衡进行可控调整，并且在与策略训练无关的领域上仍能保持显著的性能提升。 即使使用更强大的 Qwen2.5-14B 模型作为基础，这些改进依然有效。",
+   "sents": [
+    {
+     "en": "We evaluate Agentic-TTT on a heterogeneous query stream drawn from eleven benchmark families across eight domains.",
+     "zh": "我们在一个异质查询流上评估了 Agentic-TTT，该查询流来自八个领域中的十一个基准测试系列。"
+    },
+    {
+     "en": "We deliberately enrich the benchmark so that most queries exhibit TTT benefits during screening, allowing us to compare how effectively different policies exploit these adaptation opportunities.",
+     "zh": "我们特意丰富了这个基准测试，使得大多数查询在筛选阶段都能体现出 TTT 的优势，从而让我们能够比较不同策略有效利用这些适应机会的能力。"
+    },
+    {
+     "en": "The reported gains therefore characterize this curated evaluation setting.",
+     "zh": "因此，报告的性能提升反映了这一经过精心设计的评估环境的特点。"
+    },
+    {
+     "en": "The evaluated fixed-method baselines show uneven benefits and can degrade performance in some domains.",
+     "zh": "所评估的固定方法基线模型表现出参差不齐的收益，并且在某些领域可能会导致性能下降。"
+    },
+    {
+     "en": "In contrast, Agentic-TTT nearly doubles Qwen2.5-7B’s overall utility over direct inference, with positive gains in every evaluated domain.",
+     "zh": "相比之下，Agentic-TTT 在直接推理的基础上几乎将 Qwen2.5-7B 的整体效用提升了一倍，并且在所有评估领域都取得了正向收益。"
+    },
+    {
+     "en": "The policy also supports controllable utility-compute trade-offs and retains substantial gains on domains excluded from policy training.",
+     "zh": "该策略还支持对效用与计算资源之间的权衡进行可控调整，并且在与策略训练无关的领域上仍能保持显著的性能提升。"
+    },
+    {
+     "en": "Improvements persist with the stronger Qwen2.5-14B backbone.",
+     "zh": "即使使用更强大的 Qwen2.5-14B 模型作为基础，这些改进依然有效。"
+    }
+   ]
+  },
+  {
+   "en": "Taken together, our work reframes test-time training from a fixed adaptation procedure into a problem of learned agency over deployment-time self-improvement. Agentic-TTT realizes this agency through a test-time policy that governs when and how to build or reuse parameter-space skills during deployment. Across a diverse suite of test domains, the learned policy nearly doubles overall utility over direct inference, delivers positive gains in every evaluated domain, supports controllable utility-compute trade-offs, and generalizes its TTT decisions to unseen data sources. These results suggest that the next frontier of TTT lies not in a single universal adaptation rule, but in models that learn when and how to draw on a diverse portfolio of TTT methods for self-improvement.",
+   "zh": "综合来看，我们的工作将测试时训练从一个固定的适应过程重新定义为一个关于在部署时实现自我改进的、可通过学习获得智能体能力的难题。 Agentic-TTT 通过一种测试时策略实现了这种智能体能力，该策略负责在部署期间决定何时以及如何构建或复用参数空间中的技能。 在一套多样化的测试领域中，这种通过学习获得的策略相比直接推理几乎将整体效用提升了一倍，在所有评估领域均带来了正向增益，支持了效用与计算资源之间的可控权衡，并且其 TTT 决策能够泛化到未见过的数据源。 这些结果表明，TTT 的下一个突破方向并非单一的通用适应规则，而是能够学习在何时以及如何利用多样化 TTT 方法组合来实现自我改进的模型。",
+   "sents": [
+    {
+     "en": "Taken together, our work reframes test-time training from a fixed adaptation procedure into a problem of learned agency over deployment-time self-improvement.",
+     "zh": "综合来看，我们的工作将测试时训练从一个固定的适应过程重新定义为一个关于在部署时实现自我改进的、可通过学习获得智能体能力的难题。"
+    },
+    {
+     "en": "Agentic-TTT realizes this agency through a test-time policy that governs when and how to build or reuse parameter-space skills during deployment.",
+     "zh": "Agentic-TTT 通过一种测试时策略实现了这种智能体能力，该策略负责在部署期间决定何时以及如何构建或复用参数空间中的技能。"
+    },
+    {
+     "en": "Across a diverse suite of test domains, the learned policy nearly doubles overall utility over direct inference, delivers positive gains in every evaluated domain, supports controllable utility-compute trade-offs, and generalizes its TTT decisions to unseen data sources.",
+     "zh": "在一套多样化的测试领域中，这种通过学习获得的策略相比直接推理几乎将整体效用提升了一倍，在所有评估领域均带来了正向增益，支持了效用与计算资源之间的可控权衡，并且其 TTT 决策能够泛化到未见过的数据源。"
+    },
+    {
+     "en": "These results suggest that the next frontier of TTT lies not in a single universal adaptation rule, but in models that learn when and how to draw on a diverse portfolio of TTT methods for self-improvement.",
+     "zh": "这些结果表明，TTT 的下一个突破方向并非单一的通用适应规则，而是能够学习在何时以及如何利用多样化 TTT 方法组合来实现自我改进的模型。"
+    }
+   ]
+  },
+  {
+   "en": "Test-time training (TTT) offers the potential for self-improvement at deployment, but realizing such potential requires knowing which adaptation, if any, is appropriate for each test query. Agentic-TTT provides this missing agency: it learns when and how to build new capabilities through TTT, and when to improve an answer by creating or reusing TTT skills.",
+   "zh": "测试时训练（TTT）具备在部署阶段自我提升的潜力，但要实现这一潜力，需要明确针对每个测试查询应采用何种适配方法（如果有的话）。 Agentic-TTT 提供了这种缺失的智能体能力：它能学习何时以及如何通过 TTT 构建新能力，并知道何时通过创建或复用 TTT 技能来改进答案。",
+   "sents": [
+    {
+     "en": "Test-time training (TTT) offers the potential for self-improvement at deployment, but realizing such potential requires knowing which adaptation, if any, is appropriate for each test query.",
+     "zh": "测试时训练（TTT）具备在部署阶段自我提升的潜力，但要实现这一潜力，需要明确针对每个测试查询应采用何种适配方法（如果有的话）。"
+    },
+    {
+     "en": "Agentic-TTT provides this missing agency: it learns when and how to build new capabilities through TTT, and when to improve an answer by creating or reusing TTT skills.",
+     "zh": "Agentic-TTT 提供了这种缺失的智能体能力：它能学习何时以及如何通过 TTT 构建新能力，并知道何时通过创建或复用 TTT 技能来改进答案。"
+    }
+   ]
+  },
+  {
+   "en": "We formalize this agency as sequential decision-making over a stream of test queries x 1 , … , x T x_{1},\\ldots,x_{T} . Some TTT methods can adapt from a single query when it contains sufficient training material. For example, SEAL ( Zweiger et al., 2025 ) learns from a bundled document, whereas TTT-fewshot ( Akyürek et al., 2025 ) adapts from few-shot demonstrations. By contrast, a multi-query method such as TTRL ( Zuo et al., 2025 ) aggregates self-consistency signals across multiple same-domain queries. To support such methods, the environment maintains adaptation pools 𝒫 t \\mathcal{P}_{t} . Each pool ρ ∈ 𝒫 t \\rho\\in\\mathcal{P}_{t} stores a collection of compatible queries, together with any bundled material needed for adaptation, until they can be used jointly in a TTT run. The base model remains frozen throughout. Whether produced from a single query or an adaptation pool, each adaptation is represented as a LoRA adapter and stored as a reusable parametric skill s s in the skill library ℒ t \\mathcal{L}_{t} . Each skill s s is accompanied by a natural-language description of its learned capability, allowing the policy to assess its relevance to future queries. The pools and library persist across queries and shape subsequent decisions, forming the cross-query state S t = ( ℒ t , 𝒫 t ) S_{t}=\\left(\\mathcal{L}_{t},\\mathcal{P}_{t}\\right) before processing each x t x_{t} . Processing x t x_{t} may update either adaptation pools or skill library, and the resulting evolved state S t + 1 S_{t+1} is carried forward to x t + 1 x_{t+1} .",
+   "zh": "我们将这种智能体行为形式化为对测试查询流 x₁, …, x_T 的序列决策过程。 某些 TTT 方法可以在单个查询包含足够训练材料时进行自适应。 例如，SEAL（Zweiger 等人，2025）从捆绑文档中学习，而 TTT-fewshot（Akyürek 等人，2025）则通过少样本演示进行自适应。 相比之下，像 TTRL（Zuo 等人，2025）这样的多查询方法会聚合来自多个相同领域查询的自我一致性信号。 为了支持此类方法，环境会维护适应池 𝒫_t。 每个池 ρ ∈ 𝒫_t 存储一组兼容的查询以及自适应所需的任何捆绑材料，直到它们可以在一次 TTT 运行中共同使用。 基础模型在整个过程中保持冻结状态。 无论来自单个查询还是适应池，每次自适应都以 LoRA 适配器的形式表示，并作为可重用的参数化技能 s 存储在技能库 ℒ_t 中。 每个技能 s 都附带对其所学能力的自然语言描述，使策略能够评估其对未来查询的相关性。 这些池和技能库在多个查询之间持续存在，并影响后续决策，在处理每个 x_t 之前形成跨查询状态 S_t = (ℒ_t, 𝒫_t)。 处理 x_t 可能会更新适应池或技能库，而由此产生的演化状态 S_{t+1} 会被带到下一个查询 x_{t+1}。",
+   "sents": [
+    {
+     "en": "We formalize this agency as sequential decision-making over a stream of test queries x 1 , … , x T x_{1},\\ldots,x_{T} .",
+     "zh": "我们将这种智能体行为形式化为对测试查询流 x₁, …, x_T 的序列决策过程。"
+    },
+    {
+     "en": "Some TTT methods can adapt from a single query when it contains sufficient training material.",
+     "zh": "某些 TTT 方法可以在单个查询包含足够训练材料时进行自适应。"
+    },
+    {
+     "en": "For example, SEAL ( Zweiger et al., 2025 ) learns from a bundled document, whereas TTT-fewshot ( Akyürek et al., 2025 ) adapts from few-shot demonstrations.",
+     "zh": "例如，SEAL（Zweiger 等人，2025）从捆绑文档中学习，而 TTT-fewshot（Akyürek 等人，2025）则通过少样本演示进行自适应。"
+    },
+    {
+     "en": "By contrast, a multi-query method such as TTRL ( Zuo et al., 2025 ) aggregates self-consistency signals across multiple same-domain queries.",
+     "zh": "相比之下，像 TTRL（Zuo 等人，2025）这样的多查询方法会聚合来自多个相同领域查询的自我一致性信号。"
+    },
+    {
+     "en": "To support such methods, the environment maintains adaptation pools 𝒫 t \\mathcal{P}_{t} .",
+     "zh": "为了支持此类方法，环境会维护适应池 𝒫_t。"
+    },
+    {
+     "en": "Each pool ρ ∈ 𝒫 t \\rho\\in\\mathcal{P}_{t} stores a collection of compatible queries, together with any bundled material needed for adaptation, until they can be used jointly in a TTT run.",
+     "zh": "每个池 ρ ∈ 𝒫_t 存储一组兼容的查询以及自适应所需的任何捆绑材料，直到它们可以在一次 TTT 运行中共同使用。"
+    },
+    {
+     "en": "The base model remains frozen throughout.",
+     "zh": "基础模型在整个过程中保持冻结状态。"
+    },
+    {
+     "en": "Whether produced from a single query or an adaptation pool, each adaptation is represented as a LoRA adapter and stored as a reusable parametric skill s s in the skill library ℒ t \\mathcal{L}_{t} .",
+     "zh": "无论来自单个查询还是适应池，每次自适应都以 LoRA 适配器的形式表示，并作为可重用的参数化技能 s 存储在技能库 ℒ_t 中。"
+    },
+    {
+     "en": "Each skill s s is accompanied by a natural-language description of its learned capability, allowing the policy to assess its relevance to future queries.",
+     "zh": "每个技能 s 都附带对其所学能力的自然语言描述，使策略能够评估其对未来查询的相关性。"
+    },
+    {
+     "en": "The pools and library persist across queries and shape subsequent decisions, forming the cross-query state S t = ( ℒ t , 𝒫 t ) S_{t}=\\left(\\mathcal{L}_{t},\\mathcal{P}_{t}\\right) before processing each x t x_{t} .",
+     "zh": "这些池和技能库在多个查询之间持续存在，并影响后续决策，在处理每个 x_t 之前形成跨查询状态 S_t = (ℒ_t, 𝒫_t)。"
+    },
+    {
+     "en": "Processing x t x_{t} may update either adaptation pools or skill library, and the resulting evolved state S t + 1 S_{t+1} is carried forward to x t + 1 x_{t+1} .",
+     "zh": "处理 x_t 可能会更新适应池或技能库，而由此产生的演化状态 S_{t+1} 会被带到下一个查询 x_{t+1}。"
+    }
+   ]
+  },
+  {
+   "en": "Processing a query may require a sequence of actions over multiple interaction turns. At each turn k k , the policy selects one of four primitive actions:",
+   "zh": "处理一个查询可能需要跨越多个交互回合的一系列操作。 在每个回合 k 时，策略会选择四个基本动作中的一个：",
+   "sents": [
+    {
+     "en": "Processing a query may require a sequence of actions over multiple interaction turns.",
+     "zh": "处理一个查询可能需要跨越多个交互回合的一系列操作。"
+    },
+    {
+     "en": "At each turn k k , the policy selects one of four primitive actions:",
+     "zh": "在每个回合 k 时，策略会选择四个基本动作中的一个："
+    }
+   ]
+  },
+  {
+   "en": "where Assign adds adaptation material from x t x_{t} to pool ρ \\rho , Adapt applies TTT method m m to pool ρ \\rho and produces a skill, Load mounts an existing skill s s , whereas Generate produces the final answer and terminates the interaction. To select a t , k a_{t,k} , the policy conditions on the current query, the cross-query state, and the preceding interaction history. We denote this context by c t , k c_{t,k} . The policy first generates a reasoning trace z t , k z_{t,k} and then selects the action a t , k a_{t,k} conditioned on that reasoning. We denote the complete sequence of reasoning traces, actions, and environment feedback by τ t \\tau_{t} , and its prefix before turn k k by τ t , < k \\tau_{t,<k} . After executing a t , k a_{t,k} , the environment appends its feedback to τ t , < k + 1 \\tau_{t,<k+1} . Formally,",
+   "zh": "其中，Assign 将来自 x t x_{t} 的适应材料添加到池 ρ \\rho 中；Adapt 对池 ρ \\rho 应用 TTT 方法 m m 并生成一个技能；Load 加载一个现有的技能 s s；而 Generate 则生成最终答案并终止交互。 为了选择 a t , k a_{t,k}，策略会基于当前查询、跨查询状态以及之前的交互历史进行条件判断。 我们将此上下文表示为 c t , k c_{t,k}。 策略首先生成一个推理轨迹 z t , k z_{t,k}，然后基于该推理选择动作 a t , k a_{t,k}。 我们将推理轨迹、动作和环境反馈的完整序列表示为 τ t \\tau_{t}，并将其在第 k k 轮之前的前缀表示为 τ t , < k \\tau_{t,<k}。 在执行 a t , k a_{t,k} 之后，环境会将其反馈追加到 τ t , < k + 1 \\tau_{t,<k+1} 中。形式上，",
+   "sents": [
+    {
+     "en": "where Assign adds adaptation material from x t x_{t} to pool ρ \\rho , Adapt applies TTT method m m to pool ρ \\rho and produces a skill, Load mounts an existing skill s s , whereas Generate produces the final answer and terminates the interaction.",
+     "zh": "其中，Assign 将来自 x t x_{t} 的适应材料添加到池 ρ \\rho 中；Adapt 对池 ρ \\rho 应用 TTT 方法 m m 并生成一个技能；Load 加载一个现有的技能 s s；而 Generate 则生成最终答案并终止交互。"
+    },
+    {
+     "en": "To select a t , k a_{t,k} , the policy conditions on the current query, the cross-query state, and the preceding interaction history.",
+     "zh": "为了选择 a t , k a_{t,k}，策略会基于当前查询、跨查询状态以及之前的交互历史进行条件判断。"
+    },
+    {
+     "en": "We denote this context by c t , k c_{t,k} .",
+     "zh": "我们将此上下文表示为 c t , k c_{t,k}。"
+    },
+    {
+     "en": "The policy first generates a reasoning trace z t , k z_{t,k} and then selects the action a t , k a_{t,k} conditioned on that reasoning.",
+     "zh": "策略首先生成一个推理轨迹 z t , k z_{t,k}，然后基于该推理选择动作 a t , k a_{t,k}。"
+    },
+    {
+     "en": "We denote the complete sequence of reasoning traces, actions, and environment feedback by τ t \\tau_{t} , and its prefix before turn k k by τ t , < k \\tau_{t,<k} .",
+     "zh": "我们将推理轨迹、动作和环境反馈的完整序列表示为 τ t \\tau_{t}，并将其在第 k k 轮之前的前缀表示为 τ t , < k \\tau_{t,<k}。"
+    },
+    {
+     "en": "After executing a t , k a_{t,k} , the environment appends its feedback to τ t , < k + 1 \\tau_{t,<k+1} . Formally,",
+     "zh": "在执行 a t , k a_{t,k} 之后，环境会将其反馈追加到 τ t , < k + 1 \\tau_{t,<k+1} 中。形式上，"
+    }
+   ]
+  },
+  {
+   "en": "Let U ⁡ ( τ t ) U(\\tau_{t}) denote the utility of the final answer, and let C ⁡ ( τ t ) C(\\tau_{t}) denote the computation cost modeling of the trajectory, which may include policy reasoning, TTT actions and final answer generation. We compare each trajectory with direct inference with the frozen base model τ t Generate \\tau_{t}^{\\textsc{Generate}} , and define the base-relative return as:",
+   "zh": "令 U ⁡ ( τ t ) U(\\tau_{t}) 表示最终答案的效用，并令 C ⁡ ( τ t ) C(\\tau_{t}) 表示轨迹的计算成本模型，该模型可能包括策略推理、TTT 动作以及最终答案生成。 我们将每条轨迹与使用冻结基础模型 τ t Generate \\tau_{t}^{\\textsc{Generate}} 进行直接推理的结果进行比较，并将相对于基础模型的回报定义为：",
+   "sents": [
+    {
+     "en": "Let U ⁡ ( τ t ) U(\\tau_{t}) denote the utility of the final answer, and let C ⁡ ( τ t ) C(\\tau_{t}) denote the computation cost modeling of the trajectory, which may include policy reasoning, TTT actions and final answer generation.",
+     "zh": "令 U ⁡ ( τ t ) U(\\tau_{t}) 表示最终答案的效用，并令 C ⁡ ( τ t ) C(\\tau_{t}) 表示轨迹的计算成本模型，该模型可能包括策略推理、TTT 动作以及最终答案生成。"
+    },
+    {
+     "en": "We compare each trajectory with direct inference with the frozen base model τ t Generate \\tau_{t}^{\\textsc{Generate}} , and define the base-relative return as:",
+     "zh": "我们将每条轨迹与使用冻结基础模型 τ t Generate \\tau_{t}^{\\textsc{Generate}} 进行直接推理的结果进行比较，并将相对于基础模型的回报定义为："
+    }
+   ]
+  },
+  {
+   "en": "where λ ≥ 0 \\lambda\\geq 0 controls the trade-off between answer quality and computation. An agentic trajectory is therefore beneficial only when its utility improvement justifies its additional cost. Agentic-TTT therefore seeks a policy π θ ⋆ \\pi_{\\theta^{\\star}} that maximizes the expected cumulative return when deployed over a query stream:",
+   "zh": "其中 λ ≥ 0 \\lambda\\geq 0 用于控制答案质量与计算量之间的权衡。 因此，智能体轨迹只有在其效用提升足以弥补额外成本时才是有益的。 因此，Agentic-TTT 旨在寻找一个策略 π θ ⋆ \\pi_{\\theta^{\\star}}，当在查询流中部署时，能够最大化期望的累积回报：",
+   "sents": [
+    {
+     "en": "where λ ≥ 0 \\lambda\\geq 0 controls the trade-off between answer quality and computation.",
+     "zh": "其中 λ ≥ 0 \\lambda\\geq 0 用于控制答案质量与计算量之间的权衡。"
+    },
+    {
+     "en": "An agentic trajectory is therefore beneficial only when its utility improvement justifies its additional cost.",
+     "zh": "因此，智能体轨迹只有在其效用提升足以弥补额外成本时才是有益的。"
+    },
+    {
+     "en": "Agentic-TTT therefore seeks a policy π θ ⋆ \\pi_{\\theta^{\\star}} that maximizes the expected cumulative return when deployed over a query stream:",
+     "zh": "因此，Agentic-TTT 旨在寻找一个策略 π θ ⋆ \\pi_{\\theta^{\\star}}，当在查询流中部署时，能够最大化期望的累积回报："
+    }
+   ]
+  },
+  {
+   "en": "Learning the Agentic-TTT policy directly from outcome rewards poses a cold-start problem. Since the initial policy is unfamiliar with the execution protocol, it may rarely sample valid trajectories, leaving little useful signal for reinforcement learning. We therefore train the policy in two stages. Guidance distillation policy learning first establishes reliable interaction and a useful prior over TTT decisions. Building on this behavioral foundation, outcome-driven reinforcement learning further maximizes the measured utility gain of each trajectory while penalizing its computation cost.",
+   "zh": "直接从结果奖励中学习 Agentic-TTT 策略会面临冷启动问题。 由于初始策略不熟悉执行协议，它可能很少采样到有效轨迹，导致强化学习几乎没有可用信号。 因此，我们将策略训练分为两个阶段。 引导蒸馏策略学习首先建立可靠的交互机制，并为 TTT 决策提供有用的先验知识。 在此基础上，以结果为导向的强化学习将进一步最大化每条轨迹的实测效用增益，同时对其计算成本进行惩罚。",
+   "sents": [
+    {
+     "en": "Learning the Agentic-TTT policy directly from outcome rewards poses a cold-start problem.",
+     "zh": "直接从结果奖励中学习 Agentic-TTT 策略会面临冷启动问题。"
+    },
+    {
+     "en": "Since the initial policy is unfamiliar with the execution protocol, it may rarely sample valid trajectories, leaving little useful signal for reinforcement learning.",
+     "zh": "由于初始策略不熟悉执行协议，它可能很少采样到有效轨迹，导致强化学习几乎没有可用信号。"
+    },
+    {
+     "en": "We therefore train the policy in two stages.",
+     "zh": "因此，我们将策略训练分为两个阶段。"
+    },
+    {
+     "en": "Guidance distillation policy learning first establishes reliable interaction and a useful prior over TTT decisions.",
+     "zh": "引导蒸馏策略学习首先建立可靠的交互机制，并为 TTT 决策提供有用的先验知识。"
+    },
+    {
+     "en": "Building on this behavioral foundation, outcome-driven reinforcement learning further maximizes the measured utility gain of each trajectory while penalizing its computation cost.",
+     "zh": "在此基础上，以结果为导向的强化学习将进一步最大化每条轨迹的实测效用增益，同时对其计算成本进行惩罚。"
+    }
+   ]
+  },
+  {
+   "en": "Since the base model has never been exposed to our execution harness, appropriate action sequences may initially have negligible probability. When the policy is unlikely to sample a valid action sequence, the correct behavior remains almost invisible to reward-based learning and cannot be effectively reinforced. We address this cold-start issue by Guidance Distillation Policy Learning .",
+   "zh": "由于基础模型从未接触过我们的执行框架，因此合适的动作序列在初期可能具有极低的概率。 当策略不太可能采样出有效的动作序列时，正确的行为在基于奖励的学习中几乎不可见，也无法得到有效强化。 我们通过引导蒸馏策略学习来解决这一冷启动问题。",
+   "sents": [
+    {
+     "en": "Since the base model has never been exposed to our execution harness, appropriate action sequences may initially have negligible probability.",
+     "zh": "由于基础模型从未接触过我们的执行框架，因此合适的动作序列在初期可能具有极低的概率。"
+    },
+    {
+     "en": "When the policy is unlikely to sample a valid action sequence, the correct behavior remains almost invisible to reward-based learning and cannot be effectively reinforced.",
+     "zh": "当策略不太可能采样出有效的动作序列时，正确的行为在基于奖励的学习中几乎不可见，也无法得到有效强化。"
+    },
+    {
+     "en": "We address this cold-start issue by Guidance Distillation Policy Learning .",
+     "zh": "我们通过引导蒸馏策略学习来解决这一冷启动问题。"
+    }
+   ]
+  },
+  {
+   "en": "We collect SFT demonstrations through hint-guided rollout collection. For each training query x t x_{t} , heuristic rules propose a sequence of turn-level gold actions a t , k ⋆ a_{t,k}^{\\star} , which we retain only after empirical TTT evaluation confirms its predicted benefit. At each turn, a context-specific hint h t , k h_{t,k} identifies the next gold action and explains why it is appropriate. The initial policy π θ 0 \\pi_{\\theta_{0}} then samples its own reasoning and action:",
+   "zh": "我们通过提示引导的展开收集来采集 SFT 演示。 对于每个训练查询 x t x_{t}，启发式规则会提出一个回合级黄金动作序列 a t , k ⋆ a_{t,k}^{\\star}，但只有在经验 TTT 评估确认其预测收益后，我们才会保留该序列。 在每个回合中，一个与上下文相关的提示 h t , k h_{t,k} 会识别出下一个黄金动作，并解释为何该动作是合适的。 初始策略 π θ 0 \\pi_{\\theta_{0}} 随后会自行采样推理和动作：",
+   "sents": [
+    {
+     "en": "We collect SFT demonstrations through hint-guided rollout collection.",
+     "zh": "我们通过提示引导的展开收集来采集 SFT 演示。"
+    },
+    {
+     "en": "For each training query x t x_{t} , heuristic rules propose a sequence of turn-level gold actions a t , k ⋆ a_{t,k}^{\\star} , which we retain only after empirical TTT evaluation confirms its predicted benefit.",
+     "zh": "对于每个训练查询 x t x_{t}，启发式规则会提出一个回合级黄金动作序列 a t , k ⋆ a_{t,k}^{\\star}，但只有在经验 TTT 评估确认其预测收益后，我们才会保留该序列。"
+    },
+    {
+     "en": "At each turn, a context-specific hint h t , k h_{t,k} identifies the next gold action and explains why it is appropriate.",
+     "zh": "在每个回合中，一个与上下文相关的提示 h t , k h_{t,k} 会识别出下一个黄金动作，并解释为何该动作是合适的。"
+    },
+    {
+     "en": "The initial policy π θ 0 \\pi_{\\theta_{0}} then samples its own reasoning and action:",
+     "zh": "初始策略 π θ 0 \\pi_{\\theta_{0}} 随后会自行采样推理和动作："
+    }
+   ]
+  },
+  {
+   "en": "After each accepted action is executed, its environment feedback enters c t , k + 1 c_{t,k+1} , and a new hint guides the next turn until the trajectory terminates. Each rationale z t , k z_{t,k} is thus generated on-policy by π θ 0 \\pi_{\\theta_{0}} itself, rather than imposing an external teacher’s reasoning style.",
+   "zh": "每次被接受的动作执行后，其环境反馈会进入 c t , k + 1 c_{t,k+1}，然后一个新的提示将引导下一轮操作，直到轨迹终止。 因此，每个推理依据 z t , k z_{t,k} 都是由 π θ 0 \\pi_{\\theta_{0}} 本身按照策略生成的，而不是强加外部教师的推理风格。",
+   "sents": [
+    {
+     "en": "After each accepted action is executed, its environment feedback enters c t , k + 1 c_{t,k+1} , and a new hint guides the next turn until the trajectory terminates.",
+     "zh": "每次被接受的动作执行后，其环境反馈会进入 c t , k + 1 c_{t,k+1}，然后一个新的提示将引导下一轮操作，直到轨迹终止。"
+    },
+    {
+     "en": "Each rationale z t , k z_{t,k} is thus generated on-policy by π θ 0 \\pi_{\\theta_{0}} itself, rather than imposing an external teacher’s reasoning style.",
+     "zh": "因此，每个推理依据 z t , k z_{t,k} 都是由 π θ 0 \\pi_{\\theta_{0}} 本身按照策略生成的，而不是强加外部教师的推理风格。"
+    }
+   ]
+  },
+  {
+   "en": "After collection, we remove all hints and construct 𝒟 SFT \\mathcal{D}_{\\mathrm{SFT}} from all the turn-level triples ( c t , k , z t , k , a t , k ⋆ ) (c_{t,k},z_{t,k},a_{t,k}^{\\star}) . Tokens in c t , k c_{t,k} serve only as the conditioning context and are masked from the loss, so supervision applies only to the self-generated rationale z t , k z_{t,k} and the gold action block a t , k ⋆ a_{t,k}^{\\star} . The action block a t , k ⋆ a_{t,k}^{\\star} must follow a canonical harness-defined format that is unfamiliar to the initial policy yet crucial for reliable execution. Under a uniform token-averaged objective, longer rationales would dilute the learning signal assigned to the action tokens; therefore, we optimize the following role-weighted SFT objective:",
+   "zh": "收集完成后，我们移除所有提示，并从所有回合级三元组 (c_{t,k}, z_{t,k}, a_{t,k}^{\\star}) 中构建 𝒟 SFT \\mathcal{D}_{\\mathrm{SFT}}。 c_{t,k} 中的 token 仅用作条件上下文，并且会从损失函数中屏蔽，因此监督仅适用于自生成的推理 z_{t,k} 和标准动作块 a_{t,k}^{\\star}。 动作块 a_{t,k}^{\\star} 必须遵循由规范框架定义的特定格式，这种格式对初始策略而言并不熟悉，但对于可靠执行却至关重要。 在均匀 token 平均目标下，较长的推理会稀释分配给动作 token 的学习信号；因此，我们优化以下带有角色权重的 SFT 目标：",
+   "sents": [
+    {
+     "en": "After collection, we remove all hints and construct 𝒟 SFT \\mathcal{D}_{\\mathrm{SFT}} from all the turn-level triples ( c t , k , z t , k , a t , k ⋆ ) (c_{t,k},z_{t,k},a_{t,k}^{\\star}) .",
+     "zh": "收集完成后，我们移除所有提示，并从所有回合级三元组 (c_{t,k}, z_{t,k}, a_{t,k}^{\\star}) 中构建 𝒟 SFT \\mathcal{D}_{\\mathrm{SFT}}。"
+    },
+    {
+     "en": "Tokens in c t , k c_{t,k} serve only as the conditioning context and are masked from the loss, so supervision applies only to the self-generated rationale z t , k z_{t,k} and the gold action block a t , k ⋆ a_{t,k}^{\\star} .",
+     "zh": "c_{t,k} 中的 token 仅用作条件上下文，并且会从损失函数中屏蔽，因此监督仅适用于自生成的推理 z_{t,k} 和标准动作块 a_{t,k}^{\\star}。"
+    },
+    {
+     "en": "The action block a t , k ⋆ a_{t,k}^{\\star} must follow a canonical harness-defined format that is unfamiliar to the initial policy yet crucial for reliable execution.",
+     "zh": "动作块 a_{t,k}^{\\star} 必须遵循由规范框架定义的特定格式，这种格式对初始策略而言并不熟悉，但对于可靠执行却至关重要。"
+    },
+    {
+     "en": "Under a uniform token-averaged objective, longer rationales would dilute the learning signal assigned to the action tokens; therefore, we optimize the following role-weighted SFT objective:",
+     "zh": "在均匀 token 平均目标下，较长的推理会稀释分配给动作 token 的学习信号；因此，我们优化以下带有角色权重的 SFT 目标："
+    }
+   ]
+  },
+  {
+   "en": "We set ω z = 1 \\omega_{z}=1 and ω a = 4 \\omega_{a}=4 , giving action tokens stronger supervision guidance than rationale tokens. Minimizing this objective yields π θ SFT \\pi_{\\theta_{\\mathrm{SFT}}} , which initializes outcome-driven reinforcement learning.",
+   "zh": "我们设置 ω z = 1 \\omega_{z}=1 和 ω a = 4 \\omega_{a}=4，使动作令牌比推理令牌获得更强的监督引导。 最小化该目标函数可得到 π θ SFT \\pi_{\\theta_{\\mathrm{SFT}}}，它为结果驱动的强化学习提供初始化。",
+   "sents": [
+    {
+     "en": "We set ω z = 1 \\omega_{z}=1 and ω a = 4 \\omega_{a}=4 , giving action tokens stronger supervision guidance than rationale tokens.",
+     "zh": "我们设置 ω z = 1 \\omega_{z}=1 和 ω a = 4 \\omega_{a}=4，使动作令牌比推理令牌获得更强的监督引导。"
+    },
+    {
+     "en": "Minimizing this objective yields π θ SFT \\pi_{\\theta_{\\mathrm{SFT}}} , which initializes outcome-driven reinforcement learning.",
+     "zh": "最小化该目标函数可得到 π θ SFT \\pi_{\\theta_{\\mathrm{SFT}}}，它为结果驱动的强化学习提供初始化。"
+    }
+   ]
+  },
+  {
+   "en": "We initialize π θ \\pi_{\\theta} from π θ SFT \\pi_{\\theta_{\\mathrm{SFT}}} and refine it through outcome-driven reinforcement learning . By optimizing multi-turn trajectory outcomes directly, the policy learns when the utility gain from TTT justifies its cost and when direct generation is preferable.",
+   "zh": "我们从 π θ SFT \\pi_{\\theta_{\\mathrm{SFT}}} 初始化 π θ \\pi_{\\theta}，并通过结果驱动强化学习对其进行优化。 通过直接优化多轮轨迹的结果，策略能够学会在何种情况下 TTT 带来的效用增益足以抵消其成本，以及在何种情况下直接生成更为合适。",
+   "sents": [
+    {
+     "en": "We initialize π θ \\pi_{\\theta} from π θ SFT \\pi_{\\theta_{\\mathrm{SFT}}} and refine it through outcome-driven reinforcement learning .",
+     "zh": "我们从 π θ SFT \\pi_{\\theta_{\\mathrm{SFT}}} 初始化 π θ \\pi_{\\theta}，并通过结果驱动强化学习对其进行优化。"
+    },
+    {
+     "en": "By optimizing multi-turn trajectory outcomes directly, the policy learns when the utility gain from TTT justifies its cost and when direct generation is preferable.",
+     "zh": "通过直接优化多轮轨迹的结果，策略能够学会在何种情况下 TTT 带来的效用增益足以抵消其成本，以及在何种情况下直接生成更为合适。"
+    }
+   ]
+  },
+  {
+   "en": "Since deployment-time self-improvement depends on capabilities accumulated across queries, we train the policy in a streaming environment. When processing x t x_{t} , the policy observes a cross-query state S t S_{t} shaped by the training events that precede it. At the beginning of each epoch, we reset the skill library and adaptation pools and reshuffle the training queries subject to prerequisite-order constraints. This exposes each query to varied cross-query states and reduces overfitting to fixed ( x t , S t ) (x_{t},S_{t}) pairs. When a training event ( x t , S t ) (x_{t},S_{t}) is reached, we snapshot S t S_{t} and independently sample G G complete trajectories:",
+   "zh": "由于部署时的自我改进依赖于跨查询积累的能力，我们在流式环境中训练策略。 在处理 x t x_{t} 时，策略会观察到一个由先前训练事件塑造的跨查询状态 S t S_{t}。 在每个周期的开始，我们会重置技能库和适应池，并在满足先决条件顺序约束的前提下重新排列训练查询。 这使得每个查询都能接触到多样的跨查询状态，并减少了对固定 ( x t , S t ) (x_{t},S_{t}) 对的过拟合。 当到达一个训练事件 ( x t , S t ) (x_{t},S_{t}) 时，我们会对 S t S_{t} 进行快照，并独立采样 G G 条完整轨迹：",
+   "sents": [
+    {
+     "en": "Since deployment-time self-improvement depends on capabilities accumulated across queries, we train the policy in a streaming environment.",
+     "zh": "由于部署时的自我改进依赖于跨查询积累的能力，我们在流式环境中训练策略。"
+    },
+    {
+     "en": "When processing x t x_{t} , the policy observes a cross-query state S t S_{t} shaped by the training events that precede it.",
+     "zh": "在处理 x t x_{t} 时，策略会观察到一个由先前训练事件塑造的跨查询状态 S t S_{t}。"
+    },
+    {
+     "en": "At the beginning of each epoch, we reset the skill library and adaptation pools and reshuffle the training queries subject to prerequisite-order constraints.",
+     "zh": "在每个周期的开始，我们会重置技能库和适应池，并在满足先决条件顺序约束的前提下重新排列训练查询。"
+    },
+    {
+     "en": "This exposes each query to varied cross-query states and reduces overfitting to fixed ( x t , S t ) (x_{t},S_{t}) pairs.",
+     "zh": "这使得每个查询都能接触到多样的跨查询状态，并减少了对固定 ( x t , S t ) (x_{t},S_{t}) 对的过拟合。"
+    },
+    {
+     "en": "When a training event ( x t , S t ) (x_{t},S_{t}) is reached, we snapshot S t S_{t} and independently sample G G complete trajectories:",
+     "zh": "当到达一个训练事件 ( x t , S t ) (x_{t},S_{t}) 时，我们会对 S t S_{t} 进行快照，并独立采样 G G 条完整轨迹："
+    }
+   ]
+  },
+  {
+   "en": "These rollouts provide local counterfactual outcomes from the same state snapshot and are rolled back after evaluation and optimization. The training stream instead advances by executing the annotated gold action sequence for x t x_{t} , producing a single valid successor state S t + 1 S_{t+1} . Oracle stream advancement therefore determines only the cross-query states on which RL is trained; at deployment, the policy advances the stream autonomously.",
+   "zh": "这些展开过程基于同一状态快照提供局部反事实结果，并在评估与优化后回滚。 相比之下，训练流通过执行 x t x_{t} 的标注黄金动作序列来推进，从而生成一个有效的后续状态 S t + 1 S_{t+1} 。 因此，Oracle 流的推进仅决定了强化学习所训练的跨查询状态；在部署时，策略将自主推进该流。",
+   "sents": [
+    {
+     "en": "These rollouts provide local counterfactual outcomes from the same state snapshot and are rolled back after evaluation and optimization.",
+     "zh": "这些展开过程基于同一状态快照提供局部反事实结果，并在评估与优化后回滚。"
+    },
+    {
+     "en": "The training stream instead advances by executing the annotated gold action sequence for x t x_{t} , producing a single valid successor state S t + 1 S_{t+1} .",
+     "zh": "相比之下，训练流通过执行 x t x_{t} 的标注黄金动作序列来推进，从而生成一个有效的后续状态 S t + 1 S_{t+1} 。"
+    },
+    {
+     "en": "Oracle stream advancement therefore determines only the cross-query states on which RL is trained; at deployment, the policy advances the stream autonomously.",
+     "zh": "因此，Oracle 流的推进仅决定了强化学习所训练的跨查询状态；在部署时，策略将自主推进该流。"
+    }
+   ]
+  },
+  {
+   "en": "For each sampled rollout τ = τ t ( g ) \\tau=\\tau_{t}^{(g)} , we set the reward as the base-relative return",
+   "zh": "对于每个采样的展开序列 τ = τ t ( g ) \\tau=\\tau_{t}^{(g)}，我们将奖励设为基准相对回报。",
+   "sents": null
+  },
+  {
+   "en": "Here, τ Generate \\tau^{\\textsc{Generate}} denotes the direct answer trajectory from the frozen base model without Assign , Adapt , or Load actions. The cost model C C and coefficient λ comp \\lambda_{\\mathrm{comp}} are instantiated according to the desired utility-compute trade-off, with the exact configurations specified in the experimental setup. P inv ​ ( τ ) P_{\\mathrm{inv}}(\\tau) is a graded penalty for invalid actions. We observe that the policy may perform invalid actions such as invoking nonexistent skills or attempting adaptation before its prerequisites are satisfied. The environment rejects such actions with an error message, but neither terminates the rollout nor changes its state. Consequently, a rollout may repeatedly take invalid actions while leaving both its final utility and its modeled adaptation cost unchanged. Therefore, we introduce P inv ​ ( τ ) P_{\\mathrm{inv}}(\\tau) to provide a direct and dense learning signal that favors clean and valid trajectories reaching the same outcome more efficiently. We keep this penalty small and capped so that it shapes execution without overwhelming the utility signal or discouraging the use of TTT actions. Specifically, P inv P_{\\mathrm{inv}} adds 0.5 0.5 for each rejected action, with its total capped at 2.0 2.0 ; we set λ inv = 0.15 \\lambda_{\\mathrm{inv}}=0.15 through all experiments unless otherwise specified.",
+   "zh": "此处，τ Generate \\tau^{\\textsc{Generate}} 表示由冻结的基础模型直接生成的答案轨迹，其中不包含 Assign、Adapt 或 Load 操作。 成本模型 C C 和系数 λ comp \\lambda_{\\mathrm{comp}} 根据期望的效用-计算权衡进行实例化，具体配置在实验设置中明确说明。 P inv ​ ( τ ) P_{\\mathrm{inv}}(\\tau) 是对无效操作的分级惩罚。 我们观察到，策略可能会执行无效操作，例如调用不存在的技能，或在前提条件未满足时尝试适应。 环境会通过错误消息拒绝此类操作，但既不会终止展开过程，也不会改变其状态。 因此，一次展开过程可能会重复执行无效操作，同时其最终效用和模拟的适应成本均保持不变。 因此，我们引入 P inv ​ ( τ ) P_{\\mathrm{inv}}(\\tau) 以提供一个直接且密集的学习信号，从而更有效地促进干净且有效的轨迹达到相同结果。 我们将此惩罚值设置得较小并加以限制，使其能够引导执行过程，而不会压倒效用信号或抑制 TTT 操作的使用。 具体而言，P inv P_{\\mathrm{inv}} 对每次被拒绝的操作增加 0.5 0.5，总惩罚值上限为 2.0 2.0；除非另有说明，我们在所有实验中均设置 λ inv = 0.15 \\lambda_{\\mathrm{inv}}=0.15。",
+   "sents": [
+    {
+     "en": "Here, τ Generate \\tau^{\\textsc{Generate}} denotes the direct answer trajectory from the frozen base model without Assign , Adapt , or Load actions.",
+     "zh": "此处，τ Generate \\tau^{\\textsc{Generate}} 表示由冻结的基础模型直接生成的答案轨迹，其中不包含 Assign、Adapt 或 Load 操作。"
+    },
+    {
+     "en": "The cost model C C and coefficient λ comp \\lambda_{\\mathrm{comp}} are instantiated according to the desired utility-compute trade-off, with the exact configurations specified in the experimental setup.",
+     "zh": "成本模型 C C 和系数 λ comp \\lambda_{\\mathrm{comp}} 根据期望的效用-计算权衡进行实例化，具体配置在实验设置中明确说明。"
+    },
+    {
+     "en": "P inv ​ ( τ ) P_{\\mathrm{inv}}(\\tau) is a graded penalty for invalid actions.",
+     "zh": "P inv ​ ( τ ) P_{\\mathrm{inv}}(\\tau) 是对无效操作的分级惩罚。"
+    },
+    {
+     "en": "We observe that the policy may perform invalid actions such as invoking nonexistent skills or attempting adaptation before its prerequisites are satisfied.",
+     "zh": "我们观察到，策略可能会执行无效操作，例如调用不存在的技能，或在前提条件未满足时尝试适应。"
+    },
+    {
+     "en": "The environment rejects such actions with an error message, but neither terminates the rollout nor changes its state.",
+     "zh": "环境会通过错误消息拒绝此类操作，但既不会终止展开过程，也不会改变其状态。"
+    },
+    {
+     "en": "Consequently, a rollout may repeatedly take invalid actions while leaving both its final utility and its modeled adaptation cost unchanged.",
+     "zh": "因此，一次展开过程可能会重复执行无效操作，同时其最终效用和模拟的适应成本均保持不变。"
+    },
+    {
+     "en": "Therefore, we introduce P inv ​ ( τ ) P_{\\mathrm{inv}}(\\tau) to provide a direct and dense learning signal that favors clean and valid trajectories reaching the same outcome more efficiently.",
+     "zh": "因此，我们引入 P inv ​ ( τ ) P_{\\mathrm{inv}}(\\tau) 以提供一个直接且密集的学习信号，从而更有效地促进干净且有效的轨迹达到相同结果。"
+    },
+    {
+     "en": "We keep this penalty small and capped so that it shapes execution without overwhelming the utility signal or discouraging the use of TTT actions.",
+     "zh": "我们将此惩罚值设置得较小并加以限制，使其能够引导执行过程，而不会压倒效用信号或抑制 TTT 操作的使用。"
+    },
+    {
+     "en": "Specifically, P inv P_{\\mathrm{inv}} adds 0.5 0.5 for each rejected action, with its total capped at 2.0 2.0 ; we set λ inv = 0.15 \\lambda_{\\mathrm{inv}}=0.15 through all experiments unless otherwise specified.",
+     "zh": "具体而言，P inv P_{\\mathrm{inv}} 对每次被拒绝的操作增加 0.5 0.5，总惩罚值上限为 2.0 2.0；除非另有说明，我们在所有实验中均设置 λ inv = 0.15 \\lambda_{\\mathrm{inv}}=0.15。"
+    }
+   ]
+  },
+  {
+   "en": "Within each rollout group, we compute the mean-centered advantage following Dr. GRPO ( Liu et al., 2025b ) . We omit group standard-deviation normalization to preserve the magnitude of reward differences, and avoid implicitly reweighting queries by reward variance:",
+   "zh": "在每个 rollout 组内，我们遵循 Dr. GRPO（Liu 等人，2025b）的方法计算均值中心化优势。我们省略了组标准差归一化，以保留奖励差异的幅度，并避免通过奖励方差对查询进行隐式重新加权：",
+   "sents": null
+  },
+  {
+   "en": "Using A t ( g ) A_{t}^{(g)} , we optimize the standard clipped GRPO objective over policy-generated reasoning and action tokens with a KL regularizer:",
+   "zh": "使用 A t ( g ) A_{t}^{(g)}，我们在策略生成的推理和行动标记上优化标准的裁剪 GRPO 目标函数，并加入 KL 正则化项：",
+   "sents": null
+  },
+  {
+   "en": "where ρ t , g , i \\rho_{t,g,i} is the probability ratio between the current and rollout policies for the i i -th generated token, and ℒ KL \\mathcal{L}_{\\mathrm{KL}} regularizes the policy toward the frozen base distribution.",
+   "zh": "其中，ρ t , g , i ρ_{t,g,i} 是第 i 个生成标记在当前策略与展开策略之间的概率比，而 ℒ KL \\mathcal{L}_{\\mathrm{KL}} 则将策略正则化至冻结的基础分布。",
+   "sents": null
+  },
+  {
+   "en": "Together, the two training stages produce a policy that can reliably decide whether and how to use TTT. Guidance distillation first makes valid TTT trajectories executable and likely to be sampled, while outcome-driven reinforcement learning calibrates these decisions using utility gains, computation costs, and invalid-action penalties.",
+   "zh": "这两个训练阶段共同生成了一种策略，能够可靠地决定是否以及如何使用 TTT。 指导蒸馏首先使有效的 TTT 轨迹变得可执行且更有可能被采样，而结果驱动的强化学习则通过效用增益、计算成本和无效动作惩罚来校准这些决策。",
+   "sents": [
+    {
+     "en": "Together, the two training stages produce a policy that can reliably decide whether and how to use TTT.",
+     "zh": "这两个训练阶段共同生成了一种策略，能够可靠地决定是否以及如何使用 TTT。"
+    },
+    {
+     "en": "Guidance distillation first makes valid TTT trajectories executable and likely to be sampled, while outcome-driven reinforcement learning calibrates these decisions using utility gains, computation costs, and invalid-action penalties.",
+     "zh": "指导蒸馏首先使有效的 TTT 轨迹变得可执行且更有可能被采样，而结果驱动的强化学习则通过效用增益、计算成本和无效动作惩罚来校准这些决策。"
+    }
+   ]
+  },
+  {
+   "en": "In this section, we ask whether Agentic-TTT can achieve self-improvement through learned agency over TTT skills; whether its inference-time compute can be controlled; and whether the learned policy transfers beyond the training distributions.",
+   "zh": "在本节中，我们将探讨以下问题：Agentic-TTT 能否通过所学习的智能体能力对 TTT 技能实现自我改进；其推理时的计算资源是否可控；以及所学策略能否迁移到训练分布之外的场景。",
+   "sents": null
+  },
+  {
+   "en": "Our dataset covers eight domains drawn from 11 11 benchmark families. Guidance distillation uses 2,072 2{,}072 turn-level examples from 177 177 trajectories, and reinforcement learning uses a stream of 187 187 training inputs. Evaluation follows a fixed sequential stream containing 176 176 held-out scored queries, starting with an empty skill library. Library state is not shared across training or evaluation runs. Overall utility is the mean binary score assigned by task-specific automatic verifiers. Appendix B details the data sources, splits, stream construction, and scoring rules.",
+   "zh": "我们的数据集涵盖了从 11 个基准家族中选取的八个领域。 指导蒸馏使用了来自 177 条轨迹的 2,072 个回合级示例，而强化学习则使用了一个包含 187 个训练输入的流。 评估遵循一个固定的顺序流，其中包含 176 个预留的评分查询，并以一个空的技能库开始。 技能库的状态在训练或评估运行之间不共享。 整体效用是由任务特定的自动验证器分配的均值二进制分数。 附录 B 详细说明了数据源、分割方式、流构建以及评分规则。",
+   "sents": [
+    {
+     "en": "Our dataset covers eight domains drawn from 11 11 benchmark families.",
+     "zh": "我们的数据集涵盖了从 11 个基准家族中选取的八个领域。"
+    },
+    {
+     "en": "Guidance distillation uses 2,072 2{,}072 turn-level examples from 177 177 trajectories, and reinforcement learning uses a stream of 187 187 training inputs.",
+     "zh": "指导蒸馏使用了来自 177 条轨迹的 2,072 个回合级示例，而强化学习则使用了一个包含 187 个训练输入的流。"
+    },
+    {
+     "en": "Evaluation follows a fixed sequential stream containing 176 176 held-out scored queries, starting with an empty skill library.",
+     "zh": "评估遵循一个固定的顺序流，其中包含 176 个预留的评分查询，并以一个空的技能库开始。"
+    },
+    {
+     "en": "Library state is not shared across training or evaluation runs.",
+     "zh": "技能库的状态在训练或评估运行之间不共享。"
+    },
+    {
+     "en": "Overall utility is the mean binary score assigned by task-specific automatic verifiers.",
+     "zh": "整体效用是由任务特定的自动验证器分配的均值二进制分数。"
+    },
+    {
+     "en": "Appendix B details the data sources, splits, stream construction, and scoring rules.",
+     "zh": "附录 B 详细说明了数据源、分割方式、流构建以及评分规则。"
+    }
+   ]
+  },
+  {
+   "en": "Unless otherwise specified, we use Qwen2.5-7B-Instruct ( Hui et al., 2024 ) with five TTT methods: PoT ( Jiao et al., 2026 ) , TTT-FS ( Akyürek et al., 2025 ) , TTRL ( Zuo et al., 2025 ) , SEAL ( Zweiger et al., 2025 ) , and TLM ( Hu et al., 2025a ) . The policy and TTT skills use separate LoRAs; final-answer decoding disables the policy LoRA and receives only the original query. Both policy and answer decoding are greedy at evaluation. For trained policies, we report the mean and sample standard deviation over three independent training runs, evaluating each checkpoint once. Harness and optimization details appear in Appendices C and D .",
+   "zh": "除非另有说明，我们使用 Qwen2.5-7B-Instruct（Hui 等人，2024），并结合五种 TTT 方法：PoT（Jiao 等人，2026）、TTT-FS（Akyürek 等人，2025）、TTRL（Zuo 等人，2025）、SEAL（Zweiger 等人，2025）和 TLM（Hu 等人，2025a）。 策略与 TTT 技能使用独立的 LoRA；最终答案解码时会禁用策略 LoRA，且仅接收原始查询。 在评估阶段，策略与答案解码均采用贪心策略。 对于训练后的策略，我们报告了三次独立训练运行的平均值和样本标准差，并对每个检查点进行一次评估。 工具调用和优化细节见附录 C 和 D。",
+   "sents": [
+    {
+     "en": "Unless otherwise specified, we use Qwen2.5-7B-Instruct ( Hui et al., 2024 ) with five TTT methods: PoT ( Jiao et al., 2026 ) , TTT-FS ( Akyürek et al., 2025 ) , TTRL ( Zuo et al., 2025 ) , SEAL ( Zweiger et al., 2025 ) , and TLM ( Hu et al., 2025a ) .",
+     "zh": "除非另有说明，我们使用 Qwen2.5-7B-Instruct（Hui 等人，2024），并结合五种 TTT 方法：PoT（Jiao 等人，2026）、TTT-FS（Akyürek 等人，2025）、TTRL（Zuo 等人，2025）、SEAL（Zweiger 等人，2025）和 TLM（Hu 等人，2025a）。"
+    },
+    {
+     "en": "The policy and TTT skills use separate LoRAs; final-answer decoding disables the policy LoRA and receives only the original query.",
+     "zh": "策略与 TTT 技能使用独立的 LoRA；最终答案解码时会禁用策略 LoRA，且仅接收原始查询。"
+    },
+    {
+     "en": "Both policy and answer decoding are greedy at evaluation.",
+     "zh": "在评估阶段，策略与答案解码均采用贪心策略。"
+    },
+    {
+     "en": "For trained policies, we report the mean and sample standard deviation over three independent training runs, evaluating each checkpoint once.",
+     "zh": "对于训练后的策略，我们报告了三次独立训练运行的平均值和样本标准差，并对每个检查点进行一次评估。"
+    },
+    {
+     "en": "Harness and optimization details appear in Appendices C and D .",
+     "zh": "工具调用和优化细节见附录 C 和 D。"
+    }
+   ]
+  },
+  {
+   "en": "We compare all methods using the same backbone LLM and execution environment. Direct Answer answers without any TTT, while Prompted uses the same Agentic-TTT prompt instruction but without any policy training. Always-TLM , Always-SEAL , and Always-TTRL each use a fixed adaptation method. Semantic Router selects a method from annotated training examples retrieved by query-embedding similarity. Within our training pipeline, SFT-only shows the result only after guidance distillation training, whereas SFT+RL completes both training stages. Oracle executes annotation-derived action sequences for skill construction and reuse, with methods selected through offline empirical profiling. It serves as a non-deployable reference, not a strict upper bound.",
+   "zh": "我们使用相同的骨干 LLM 和执行环境来比较所有方法。 Direct Answer 无需任何 TTT 即可直接回答，而 Prompted 方法则使用相同的 Agentic-TTT 提示指令，但不包含任何策略训练。 Always-TLM、Always-SEAL 和 Always-TTRL 各自采用一种固定的适配方法。 Semantic Router 通过查询嵌入相似性检索标注好的训练示例，并从中选择一种方法。 在我们的训练流程中，SFT-only 仅在指导蒸馏训练结束后显示结果，而 SFT+RL 则完成两个训练阶段。 Oracle 会执行基于标注生成的动作序列以实现技能构建与复用，其中方法的选择通过离线经验性分析确定。 它仅作为一个无法部署的参考，而非严格意义上的上限。",
+   "sents": [
+    {
+     "en": "We compare all methods using the same backbone LLM and execution environment.",
+     "zh": "我们使用相同的骨干 LLM 和执行环境来比较所有方法。"
+    },
+    {
+     "en": "Direct Answer answers without any TTT, while Prompted uses the same Agentic-TTT prompt instruction but without any policy training.",
+     "zh": "Direct Answer 无需任何 TTT 即可直接回答，而 Prompted 方法则使用相同的 Agentic-TTT 提示指令，但不包含任何策略训练。"
+    },
+    {
+     "en": "Always-TLM , Always-SEAL , and Always-TTRL each use a fixed adaptation method.",
+     "zh": "Always-TLM、Always-SEAL 和 Always-TTRL 各自采用一种固定的适配方法。"
+    },
+    {
+     "en": "Semantic Router selects a method from annotated training examples retrieved by query-embedding similarity.",
+     "zh": "Semantic Router 通过查询嵌入相似性检索标注好的训练示例，并从中选择一种方法。"
+    },
+    {
+     "en": "Within our training pipeline, SFT-only shows the result only after guidance distillation training, whereas SFT+RL completes both training stages.",
+     "zh": "在我们的训练流程中，SFT-only 仅在指导蒸馏训练结束后显示结果，而 SFT+RL 则完成两个训练阶段。"
+    },
+    {
+     "en": "Oracle executes annotation-derived action sequences for skill construction and reuse, with methods selected through offline empirical profiling.",
+     "zh": "Oracle 会执行基于标注生成的动作序列以实现技能构建与复用，其中方法的选择通过离线经验性分析确定。"
+    },
+    {
+     "en": "It serves as a non-deployable reference, not a strict upper bound.",
+     "zh": "它仅作为一个无法部署的参考，而非严格意义上的上限。"
+    }
+   ]
+  },
+  {
+   "en": "Table 1 shows that Agentic-TTT increases overall utility from 0.256 0.256 to 0.510 0.510 , with positive gains in all eight domains. Fixed-method benefits vary substantially across domains: for example, Always-SEAL improves Passage QA but degrades mathematics and code generation. Prompting and embedding-based routing provide smaller overall gains, reaching 0.271 0.271 and 0.347 0.347 , respectively. Within our training pipeline, guidance distillation raises utility to 0.375 0.375 , and outcome-driven RL further improves it to 0.510 0.510 , demonstrating additional benefit from optimizing measured trajectory outcomes. Agentic-TTT also exceeds the annotation-derived Oracle on Grid Puzzles and Logic Games, showing that the learned policy can discover more effective adaptation decisions than the prescribed reference actions.",
+   "zh": "表1显示，Agentic-TTT将整体效用从0.256 0.256提升至0.510 0.510，且八个领域均实现正向增益。 固定方法带来的收益在不同领域差异显著：例如，Always-SEAL能提升段落问答能力，但会削弱数学和代码生成表现。 基于提示词和嵌入的路线选择方法带来的整体增益较小，分别达到0.271 0.271和0.347 0.347。 在我们的训练流程中，指导蒸馏将效用提升至0.375 0.375，而结果驱动强化学习则进一步将其提升至0.510 0.510，表明优化可测量的轨迹结果能带来额外收益。 Agentic-TTT在网格谜题和逻辑游戏任务上也超越了基于标注的Oracle模型，这表明所学习的策略能够发现比预设参考动作更有效的适应决策。",
+   "sents": [
+    {
+     "en": "Table 1 shows that Agentic-TTT increases overall utility from 0.256 0.256 to 0.510 0.510 , with positive gains in all eight domains.",
+     "zh": "表1显示，Agentic-TTT将整体效用从0.256 0.256提升至0.510 0.510，且八个领域均实现正向增益。"
+    },
+    {
+     "en": "Fixed-method benefits vary substantially across domains: for example, Always-SEAL improves Passage QA but degrades mathematics and code generation.",
+     "zh": "固定方法带来的收益在不同领域差异显著：例如，Always-SEAL能提升段落问答能力，但会削弱数学和代码生成表现。"
+    },
+    {
+     "en": "Prompting and embedding-based routing provide smaller overall gains, reaching 0.271 0.271 and 0.347 0.347 , respectively.",
+     "zh": "基于提示词和嵌入的路线选择方法带来的整体增益较小，分别达到0.271 0.271和0.347 0.347。"
+    },
+    {
+     "en": "Within our training pipeline, guidance distillation raises utility to 0.375 0.375 , and outcome-driven RL further improves it to 0.510 0.510 , demonstrating additional benefit from optimizing measured trajectory outcomes.",
+     "zh": "在我们的训练流程中，指导蒸馏将效用提升至0.375 0.375，而结果驱动强化学习则进一步将其提升至0.510 0.510，表明优化可测量的轨迹结果能带来额外收益。"
+    },
+    {
+     "en": "Agentic-TTT also exceeds the annotation-derived Oracle on Grid Puzzles and Logic Games, showing that the learned policy can discover more effective adaptation decisions than the prescribed reference actions.",
+     "zh": "Agentic-TTT在网格谜题和逻辑游戏任务上也超越了基于标注的Oracle模型，这表明所学习的策略能够发现比预设参考动作更有效的适应决策。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 2 reveals how the learned policy manages TTT across tasks. As shown in Figure 2 (a), the policy does not follow a rigid routing strategy, but instead selects from a diverse portfolio of TTT methods, while retaining the option to answer with the frozen backbone. Across three evaluation runs, Agentic-TTT converts 141 141 incorrect direct answers into correct ones, while reversing only 7 7 correct direct answers, yielding a help-to-harm ratio of approximately 20 : 1 20{:}1 . Figure 2 (b) further shows that the policy learns more than method routing alone. Across the three runs, it answers 100 100 queries using previously constructed skills; these reuse decisions help on 61 61 queries and harm only one relative to Direct Answer. Loading these skills requires no additional adaptation, allowing their construction cost to be amortized across subsequent queries.",
+   "zh": "图 2 揭示了所学策略如何在不同任务中管理 TTT。 如图 2 (a) 所示，该策略并未遵循僵化的路由方案，而是从多样化的 TTT 方法组合中进行选择，同时保留了使用冻结主干模型作答的选项。 在三次评估运行中，Agentic-TTT 将 141 个错误直接答案转化为正确答案，而仅将 7 个正确直接答案逆转，从而获得了约 20:1 的帮助与伤害比。 图 2 (b) 进一步表明，该策略所学到的内容不仅限于方法路由本身。 在三次运行中，它使用先前构建的技能回答了 100 个问题；这些重复使用的决策在 61 个问题中提供了帮助，而相对于直接回答法仅对一个问题造成了负面影响。 加载这些技能无需额外调整，因此其构建成本可以在后续问题中得到摊销。",
+   "sents": [
+    {
+     "en": "Figure 2 reveals how the learned policy manages TTT across tasks.",
+     "zh": "图 2 揭示了所学策略如何在不同任务中管理 TTT。"
+    },
+    {
+     "en": "As shown in Figure 2 (a), the policy does not follow a rigid routing strategy, but instead selects from a diverse portfolio of TTT methods, while retaining the option to answer with the frozen backbone.",
+     "zh": "如图 2 (a) 所示，该策略并未遵循僵化的路由方案，而是从多样化的 TTT 方法组合中进行选择，同时保留了使用冻结主干模型作答的选项。"
+    },
+    {
+     "en": "Across three evaluation runs, Agentic-TTT converts 141 141 incorrect direct answers into correct ones, while reversing only 7 7 correct direct answers, yielding a help-to-harm ratio of approximately 20 : 1 20{:}1 .",
+     "zh": "在三次评估运行中，Agentic-TTT 将 141 个错误直接答案转化为正确答案，而仅将 7 个正确直接答案逆转，从而获得了约 20:1 的帮助与伤害比。"
+    },
+    {
+     "en": "Figure 2 (b) further shows that the policy learns more than method routing alone.",
+     "zh": "图 2 (b) 进一步表明，该策略所学到的内容不仅限于方法路由本身。"
+    },
+    {
+     "en": "Across the three runs, it answers 100 100 queries using previously constructed skills; these reuse decisions help on 61 61 queries and harm only one relative to Direct Answer.",
+     "zh": "在三次运行中，它使用先前构建的技能回答了 100 个问题；这些重复使用的决策在 61 个问题中提供了帮助，而相对于直接回答法仅对一个问题造成了负面影响。"
+    },
+    {
+     "en": "Loading these skills requires no additional adaptation, allowing their construction cost to be amortized across subsequent queries.",
+     "zh": "加载这些技能无需额外调整，因此其构建成本可以在后续问题中得到摊销。"
+    }
+   ]
+  },
+  {
+   "en": "To study whether Agentic-TTT can explicitly control its adaptation compute, we train a family of policies with compute penalties λ comp ∈ { 0 , 0.1 , 0.2 , 0.4 } \\lambda_{\\mathrm{comp}}\\in\\{0,0.1,0.2,0.4\\} . For each TTT method m m , we measure the FLOPs required for one successful adaptation, and normalize them by the FLOPs of one direct answer, yielding a method-specific normalized cost c m c_{m} . During guidance distillation, we retain a TTT trajectory only when its empirical utility gain amortized over expected future reuse, justifies its compute cost λ comp ​ log 10 ⁡ ( 1 + c m ) \\lambda_{\\mathrm{comp}}\\log_{10}(1+c_{m}) ; otherwise, we use a direct-answer trajectory. During RL, we subtract the same cost term from the sequence-level advantage. The setting λ comp = 0 \\lambda_{\\mathrm{comp}}=0 therefore serves as a compute-unconstrained, utility-only reference under the same training pipeline.",
+   "zh": "为了研究 Agentic-TTT 能否显式控制其适应计算量，我们训练了一系列带有计算惩罚项 λ comp ∈ { 0 , 0.1 , 0.2 , 0.4 } \\lambda_{\\mathrm{comp}}\\in\\{0,0.1,0.2,0.4\\} 的策略。 对于每种 TTT 方法 m m，我们测量一次成功适应所需的 FLOPs，并将其归一化为单次直接回答的 FLOPs，从而得到该方法特定的归一化成本 c m c_{m}。 在引导蒸馏过程中，只有当 TTT 轨迹的经验效用增益（按预期未来重复使用次数摊销）足以证明其计算成本 λ comp ​ log 10 ⁡ ( 1 + c m ) \\lambda_{\\mathrm{comp}}\\log_{10}(1+c_{m}) 时，我们才会保留该轨迹；否则，我们将使用直接回答的轨迹。 在强化学习过程中，我们从序列级别的优劣势中减去相同的成本项。 因此，设置 λ comp = 0 \\lambda_{\\mathrm{comp}}=0 可作为在同一训练流程下、仅考虑效用而不受计算限制的参考方案。",
+   "sents": [
+    {
+     "en": "To study whether Agentic-TTT can explicitly control its adaptation compute, we train a family of policies with compute penalties λ comp ∈ { 0 , 0.1 , 0.2 , 0.4 } \\lambda_{\\mathrm{comp}}\\in\\{0,0.1,0.2,0.4\\} .",
+     "zh": "为了研究 Agentic-TTT 能否显式控制其适应计算量，我们训练了一系列带有计算惩罚项 λ comp ∈ { 0 , 0.1 , 0.2 , 0.4 } \\lambda_{\\mathrm{comp}}\\in\\{0,0.1,0.2,0.4\\} 的策略。"
+    },
+    {
+     "en": "For each TTT method m m , we measure the FLOPs required for one successful adaptation, and normalize them by the FLOPs of one direct answer, yielding a method-specific normalized cost c m c_{m} .",
+     "zh": "对于每种 TTT 方法 m m，我们测量一次成功适应所需的 FLOPs，并将其归一化为单次直接回答的 FLOPs，从而得到该方法特定的归一化成本 c m c_{m}。"
+    },
+    {
+     "en": "During guidance distillation, we retain a TTT trajectory only when its empirical utility gain amortized over expected future reuse, justifies its compute cost λ comp ​ log 10 ⁡ ( 1 + c m ) \\lambda_{\\mathrm{comp}}\\log_{10}(1+c_{m}) ; otherwise, we use a direct-answer trajectory.",
+     "zh": "在引导蒸馏过程中，只有当 TTT 轨迹的经验效用增益（按预期未来重复使用次数摊销）足以证明其计算成本 λ comp ​ log 10 ⁡ ( 1 + c m ) \\lambda_{\\mathrm{comp}}\\log_{10}(1+c_{m}) 时，我们才会保留该轨迹；否则，我们将使用直接回答的轨迹。"
+    },
+    {
+     "en": "During RL, we subtract the same cost term from the sequence-level advantage.",
+     "zh": "在强化学习过程中，我们从序列级别的优劣势中减去相同的成本项。"
+    },
+    {
+     "en": "The setting λ comp = 0 \\lambda_{\\mathrm{comp}}=0 therefore serves as a compute-unconstrained, utility-only reference under the same training pipeline.",
+     "zh": "因此，设置 λ comp = 0 \\lambda_{\\mathrm{comp}}=0 可作为在同一训练流程下、仅考虑效用而不受计算限制的参考方案。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 3 shows a clear behavioral response to the compute penalty. As λ comp \\lambda_{\\mathrm{comp}} increases from 0 0 to 0.4 0.4 , the mean direct-answer rate rises monotonically from 11.8 % 11.8\\% to 39.8 % 39.8\\% , while normalized adaptation compute decreases from 1375.5 1375.5 to 886.9 886.9 , a reduction of 35.5 % 35.5\\% . Interestingly, moderate penalties like λ comp = 0.1 \\lambda_{\\mathrm{comp}}=0.1 and 0.2 0.2 , yield particularly favorable trade-offs: they reduce compute by approximately 30 % 30\\% while achieving higher mean utility than λ comp = 0 \\lambda_{\\mathrm{comp}}=0 . This suggests that without an explicit compute cost, the policy may overuse TTT and become less selective about when adaptation is beneficial.",
+   "zh": "图3显示了对计算惩罚的明确行为响应。 随着 λ comp \\lambda_{\\mathrm{comp}} 从 0 0 增加到 0.4 0.4，平均直接回答率单调上升，从 11.8 % 11.8\\% 增至 39.8 % 39.8\\%，而标准化适应计算量则从 1375.5 降至 886.9 886.9，减少了 35.5 % 35.5\\%。 有趣的是，中等强度的惩罚，如 λ comp = 0.1 \\lambda_{\\mathrm{comp}}=0.1 和 0.2 0.2，能带来尤为理想的权衡：它们将计算量减少了约 30 % 30\\%，同时实现了比 λ comp = 0 \\lambda_{\\mathrm{comp}}=0 更高的平均效用。 这表明，如果没有明确的计算成本，策略可能会过度使用 TTT，并降低对适应行为是否有益的判断选择性。",
+   "sents": [
+    {
+     "en": "Figure 3 shows a clear behavioral response to the compute penalty.",
+     "zh": "图3显示了对计算惩罚的明确行为响应。"
+    },
+    {
+     "en": "As λ comp \\lambda_{\\mathrm{comp}} increases from 0 0 to 0.4 0.4 , the mean direct-answer rate rises monotonically from 11.8 % 11.8\\% to 39.8 % 39.8\\% , while normalized adaptation compute decreases from 1375.5 1375.5 to 886.9 886.9 , a reduction of 35.5 % 35.5\\% .",
+     "zh": "随着 λ comp \\lambda_{\\mathrm{comp}} 从 0 0 增加到 0.4 0.4，平均直接回答率单调上升，从 11.8 % 11.8\\% 增至 39.8 % 39.8\\%，而标准化适应计算量则从 1375.5 降至 886.9 886.9，减少了 35.5 % 35.5\\%。"
+    },
+    {
+     "en": "Interestingly, moderate penalties like λ comp = 0.1 \\lambda_{\\mathrm{comp}}=0.1 and 0.2 0.2 , yield particularly favorable trade-offs: they reduce compute by approximately 30 % 30\\% while achieving higher mean utility than λ comp = 0 \\lambda_{\\mathrm{comp}}=0 .",
+     "zh": "有趣的是，中等强度的惩罚，如 λ comp = 0.1 \\lambda_{\\mathrm{comp}}=0.1 和 0.2 0.2，能带来尤为理想的权衡：它们将计算量减少了约 30 % 30\\%，同时实现了比 λ comp = 0 \\lambda_{\\mathrm{comp}}=0 更高的平均效用。"
+    },
+    {
+     "en": "This suggests that without an explicit compute cost, the policy may overuse TTT and become less selective about when adaptation is beneficial.",
+     "zh": "这表明，如果没有明确的计算成本，策略可能会过度使用 TTT，并降低对适应行为是否有益的判断选择性。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 4 examines how this compute reduction is distributed across TTT methods. As shown in Figure 4 (a), different TTT methods have markedly different cost-gain profiles. For example, TTRL incurs a high adaptation cost but a marginal utility gain, whereas TLM lies at the other extreme. Importantly, these utility gains are measured only on the training distributions matched to each method. When a method is applied to unsuitable inputs, its realized gain may be substantially smaller or even negative. Figure 4 (b) shows that, under stronger compute penalties, the policy selectively reduces costly methods with limited expected benefit. TTRL usage nearly halves, decreasing from 21.3 21.3 to 11.7 11.7 invocations, whereas TLM usage increases slightly. This shift is consistent with the policy reallocating adaptation toward less expensive methods. These method-specific shifts show that Agentic-TTT learns a benefit-aware allocation of adaptation compute, rather than merely suppressing TTT uniformly.",
+   "zh": "图 4 研究了这种计算资源削减在 TTT 方法中的分布情况。 如图 4 (a) 所示，不同的 TTT 方法在成本与收益方面存在显著差异。 例如，TTRL 会产生较高的适应成本，但带来的效用增益却微乎其微，而 TLM 则处于另一极端。 重要的是，这些效用增益仅针对与每种方法相匹配的训练分布进行测量。 当某种方法被应用于不合适的输入时，其实际获得的增益可能会大幅降低，甚至为负值。 图 4 (b) 显示，在计算资源惩罚更严格的情况下，策略会选择性地减少那些成本高昂且预期收益有限的方法。 TTRL 的使用量几乎减半，从 21.3 次调用降至 11.7 次调用，而 TLM 的使用量则略有增加。 这种转变与策略将适应资源重新分配至成本较低的方法的趋势一致。 这些针对特定方法的转变表明，Agentic-TTT 学习的是基于收益的适应计算资源分配策略，而不仅仅是统一地抑制 TTT。",
+   "sents": [
+    {
+     "en": "Figure 4 examines how this compute reduction is distributed across TTT methods.",
+     "zh": "图 4 研究了这种计算资源削减在 TTT 方法中的分布情况。"
+    },
+    {
+     "en": "As shown in Figure 4 (a), different TTT methods have markedly different cost-gain profiles.",
+     "zh": "如图 4 (a) 所示，不同的 TTT 方法在成本与收益方面存在显著差异。"
+    },
+    {
+     "en": "For example, TTRL incurs a high adaptation cost but a marginal utility gain, whereas TLM lies at the other extreme.",
+     "zh": "例如，TTRL 会产生较高的适应成本，但带来的效用增益却微乎其微，而 TLM 则处于另一极端。"
+    },
+    {
+     "en": "Importantly, these utility gains are measured only on the training distributions matched to each method.",
+     "zh": "重要的是，这些效用增益仅针对与每种方法相匹配的训练分布进行测量。"
+    },
+    {
+     "en": "When a method is applied to unsuitable inputs, its realized gain may be substantially smaller or even negative.",
+     "zh": "当某种方法被应用于不合适的输入时，其实际获得的增益可能会大幅降低，甚至为负值。"
+    },
+    {
+     "en": "Figure 4 (b) shows that, under stronger compute penalties, the policy selectively reduces costly methods with limited expected benefit.",
+     "zh": "图 4 (b) 显示，在计算资源惩罚更严格的情况下，策略会选择性地减少那些成本高昂且预期收益有限的方法。"
+    },
+    {
+     "en": "TTRL usage nearly halves, decreasing from 21.3 21.3 to 11.7 11.7 invocations, whereas TLM usage increases slightly.",
+     "zh": "TTRL 的使用量几乎减半，从 21.3 次调用降至 11.7 次调用，而 TLM 的使用量则略有增加。"
+    },
+    {
+     "en": "This shift is consistent with the policy reallocating adaptation toward less expensive methods.",
+     "zh": "这种转变与策略将适应资源重新分配至成本较低的方法的趋势一致。"
+    },
+    {
+     "en": "These method-specific shifts show that Agentic-TTT learns a benefit-aware allocation of adaptation compute, rather than merely suppressing TTT uniformly.",
+     "zh": "这些针对特定方法的转变表明，Agentic-TTT 学习的是基于收益的适应计算资源分配策略，而不仅仅是统一地抑制 TTT。"
+    }
+   ]
+  },
+  {
+   "en": "Since test inputs may often fall outside the training distribution and cannot be fully anticipated, the learned TTT agency must generalize beyond data sources observed during training. To evaluate this capability, we construct three source-restricted training regimes. G1 is trained only on Code, General Reasoning, and Logic Games, whereas G2 is trained only on Math, Grid Puzzles, and Medical QA. G3 is trained on the union of these six domains. For each regime, the excluded domains are absent from both guidance distillation and reinforcement learning. Passage QA and LongBook are additionally withheld from all three regimes, providing a common set of jointly unseen domains. We evaluate every trained policy on the same complete eight-domain suite and report its utility gain relative to Direct Answer within each domain.",
+   "zh": "由于测试输入常常可能超出训练分布且无法完全预测，因此学习到的 TTT 智能体必须能够泛化到训练期间未观察过的数据源之外。 为了评估这一能力，我们构建了三种限制来源的训练方案。 G1 仅在代码、一般推理和逻辑游戏上进行训练，而 G2 仅在数学、网格谜题和医学问答上进行训练。 G3 则在这六个领域的并集上进行训练。 对于每种训练方案，被排除的领域都不会出现在引导蒸馏和强化学习中。 此外，段落问答和 LongBook 也被从所有三种训练方案中排除，从而形成一组共同未见的领域。 我们对每个训练好的策略都在相同的完整八领域套件上进行评估，并报告其在每个领域中相对于直接回答的效用增益。",
+   "sents": [
+    {
+     "en": "Since test inputs may often fall outside the training distribution and cannot be fully anticipated, the learned TTT agency must generalize beyond data sources observed during training.",
+     "zh": "由于测试输入常常可能超出训练分布且无法完全预测，因此学习到的 TTT 智能体必须能够泛化到训练期间未观察过的数据源之外。"
+    },
+    {
+     "en": "To evaluate this capability, we construct three source-restricted training regimes.",
+     "zh": "为了评估这一能力，我们构建了三种限制来源的训练方案。"
+    },
+    {
+     "en": "G1 is trained only on Code, General Reasoning, and Logic Games, whereas G2 is trained only on Math, Grid Puzzles, and Medical QA.",
+     "zh": "G1 仅在代码、一般推理和逻辑游戏上进行训练，而 G2 仅在数学、网格谜题和医学问答上进行训练。"
+    },
+    {
+     "en": "G3 is trained on the union of these six domains.",
+     "zh": "G3 则在这六个领域的并集上进行训练。"
+    },
+    {
+     "en": "For each regime, the excluded domains are absent from both guidance distillation and reinforcement learning.",
+     "zh": "对于每种训练方案，被排除的领域都不会出现在引导蒸馏和强化学习中。"
+    },
+    {
+     "en": "Passage QA and LongBook are additionally withheld from all three regimes, providing a common set of jointly unseen domains.",
+     "zh": "此外，段落问答和 LongBook 也被从所有三种训练方案中排除，从而形成一组共同未见的领域。"
+    },
+    {
+     "en": "We evaluate every trained policy on the same complete eight-domain suite and report its utility gain relative to Direct Answer within each domain.",
+     "zh": "我们对每个训练好的策略都在相同的完整八领域套件上进行评估，并报告其在每个领域中相对于直接回答的效用增益。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 5 shows that the learned TTT agency is not confined to the data sources used for policy training. For both G1 and G2, the gains on held-out domains are broadly comparable to those on domains seen during training. In some cases, transfer is particularly strong: G1 achieves its largest improvement on Grid Puzzles, despite never observing this domain during training. Finally, G3 performs best on Passage and LongBook QA, which are unseen by all three policies, suggesting that greater diversity in the training sources supports stronger extrapolation to entirely new domains. Overall, Agentic-TTT learns transferable principles for selecting and managing TTT skills, rather than merely memorizing source-specific action patterns.",
+   "zh": "图 5 显示，学习到的 TTT 智能体并不局限于策略训练所用到的数据源。 对于 G1 和 G2 而言，在保留域上的增益与训练期间见过的域上的增益大致相当。 在某些情况下，迁移效果尤为显著：尽管 G1 在训练期间从未观察到网格谜题这一域，但它在此域上实现了最大的改进。 最后，G3 在“段落”和“长书问答”任务上的表现最佳，而这两个域是三种策略均未接触过的，这表明训练来源的多样性越高，就越能支持向全新域的更强外推能力。 总体而言，Agentic-TTT 学习的是选择和管理 TTT 技能的通用原则，而不仅仅是记忆特定来源的动作模式。",
+   "sents": [
+    {
+     "en": "Figure 5 shows that the learned TTT agency is not confined to the data sources used for policy training.",
+     "zh": "图 5 显示，学习到的 TTT 智能体并不局限于策略训练所用到的数据源。"
+    },
+    {
+     "en": "For both G1 and G2, the gains on held-out domains are broadly comparable to those on domains seen during training.",
+     "zh": "对于 G1 和 G2 而言，在保留域上的增益与训练期间见过的域上的增益大致相当。"
+    },
+    {
+     "en": "In some cases, transfer is particularly strong: G1 achieves its largest improvement on Grid Puzzles, despite never observing this domain during training.",
+     "zh": "在某些情况下，迁移效果尤为显著：尽管 G1 在训练期间从未观察到网格谜题这一域，但它在此域上实现了最大的改进。"
+    },
+    {
+     "en": "Finally, G3 performs best on Passage and LongBook QA, which are unseen by all three policies, suggesting that greater diversity in the training sources supports stronger extrapolation to entirely new domains.",
+     "zh": "最后，G3 在“段落”和“长书问答”任务上的表现最佳，而这两个域是三种策略均未接触过的，这表明训练来源的多样性越高，就越能支持向全新域的更强外推能力。"
+    },
+    {
+     "en": "Overall, Agentic-TTT learns transferable principles for selecting and managing TTT skills, rather than merely memorizing source-specific action patterns.",
+     "zh": "总体而言，Agentic-TTT 学习的是选择和管理 TTT 技能的通用原则，而不仅仅是记忆特定来源的动作模式。"
+    }
+   ]
+  },
+  {
+   "en": "(b) Per-domain utility gain of our policy",
+   "zh": "(b) 我们策略在每个领域上的效用增益",
+   "sents": null
+  },
+  {
+   "en": "We evaluate Llama-3.1-8B and GLM-4-9B to assess generality across model families, and Qwen2.5-14B to assess gains with a stronger backbone. Each policy is compared against baselines using the same backbone, with all other settings identical to the main experiments.",
+   "zh": "我们评估 Llama-3.1-8B 和 GLM-4-9B，以检验不同模型家族之间的通用性，并评估 Qwen2.5-14B 在采用更强主干架构后的性能提升。 每个策略都使用相同的主干架构与基线模型进行比较，其他所有设置均与主实验保持一致。",
+   "sents": [
+    {
+     "en": "We evaluate Llama-3.1-8B and GLM-4-9B to assess generality across model families, and Qwen2.5-14B to assess gains with a stronger backbone.",
+     "zh": "我们评估 Llama-3.1-8B 和 GLM-4-9B，以检验不同模型家族之间的通用性，并评估 Qwen2.5-14B 在采用更强主干架构后的性能提升。"
+    },
+    {
+     "en": "Each policy is compared against baselines using the same backbone, with all other settings identical to the main experiments.",
+     "zh": "每个策略都使用相同的主干架构与基线模型进行比较，其他所有设置均与主实验保持一致。"
+    }
+   ]
+  },
+  {
+   "en": "Agentic-TTT improves overall utility by 0.254 0.254 on Qwen-7B, 0.136 0.136 on Llama-8B, and 0.142 0.142 on GLM-9B, substantially outperforming prompting alone. This confirms that the learned TTT agency is not specific to Qwen2.5. However, the gains are model-dependent: Llama degrades on mathematics and code, while GLM degrades on Logic Games and Long-context QA. These failures indicate that the policy does not always abstain from TTT when direct answering would be more reliable, leaving room for better backbone-aware decision making.",
+   "zh": "Agentic-TTT 在 Qwen-7B 上的整体效用提升了 0.254 0.254，在 Llama-8B 上提升了 0.136 0.136，在 GLM-9B 上提升了 0.142 0.142，显著优于仅使用提示的方法。 这证实了所学习的 TTT 智能体并非 Qwen2.5 所特有。 然而，这种提升因模型而异：Llama 在数学和代码任务上表现下降，而 GLM 则在逻辑游戏和长上下文问答任务上表现下降。 这些失败表明，当直接回答更可靠时，该策略并不总能避免使用 TTT，这为更善于感知基础模型特性的决策机制留下了改进空间。",
+   "sents": [
+    {
+     "en": "Agentic-TTT improves overall utility by 0.254 0.254 on Qwen-7B, 0.136 0.136 on Llama-8B, and 0.142 0.142 on GLM-9B, substantially outperforming prompting alone.",
+     "zh": "Agentic-TTT 在 Qwen-7B 上的整体效用提升了 0.254 0.254，在 Llama-8B 上提升了 0.136 0.136，在 GLM-9B 上提升了 0.142 0.142，显著优于仅使用提示的方法。"
+    },
+    {
+     "en": "This confirms that the learned TTT agency is not specific to Qwen2.5.",
+     "zh": "这证实了所学习的 TTT 智能体并非 Qwen2.5 所特有。"
+    },
+    {
+     "en": "However, the gains are model-dependent: Llama degrades on mathematics and code, while GLM degrades on Logic Games and Long-context QA.",
+     "zh": "然而，这种提升因模型而异：Llama 在数学和代码任务上表现下降，而 GLM 则在逻辑游戏和长上下文问答任务上表现下降。"
+    },
+    {
+     "en": "These failures indicate that the policy does not always abstain from TTT when direct answering would be more reliable, leaving room for better backbone-aware decision making.",
+     "zh": "这些失败表明，当直接回答更可靠时，该策略并不总能避免使用 TTT，这为更善于感知基础模型特性的决策机制留下了改进空间。"
+    }
+   ]
+  },
+  {
+   "en": "The gains also persist as the backbone becomes stronger. Qwen-14B already achieves 0.432 0.432 utility through direct answering, yet Agentic-TTT provides a further gain of 0.189 0.189 , raising its overall utility to 0.621 0.621 . Its improvement profile differs from that of Qwen-7B, suggesting that stronger models retain different capability gaps. However, negative gains on Logic Games and Medical QA highlight the need for better calibration of adaptation decisions on stronger backbones.",
+   "zh": "随着骨干模型变得更强，这种增益也会持续存在。 Qwen-14B 通过直接回答已经实现了 0.432 0.432 的效用，但 Agentic-TTT 带来了额外的 0.189 0.189 的增益，使其总效用提升至 0.621 0.621。 其改进模式与 Qwen-7B 不同，这表明更强大的模型仍保留着不同的能力差距。 然而，在逻辑游戏和医学问答方面的负向增益凸显了需要在更强骨干模型上对适应决策进行更精准的校准。",
+   "sents": [
+    {
+     "en": "The gains also persist as the backbone becomes stronger.",
+     "zh": "随着骨干模型变得更强，这种增益也会持续存在。"
+    },
+    {
+     "en": "Qwen-14B already achieves 0.432 0.432 utility through direct answering, yet Agentic-TTT provides a further gain of 0.189 0.189 , raising its overall utility to 0.621 0.621 .",
+     "zh": "Qwen-14B 通过直接回答已经实现了 0.432 0.432 的效用，但 Agentic-TTT 带来了额外的 0.189 0.189 的增益，使其总效用提升至 0.621 0.621。"
+    },
+    {
+     "en": "Its improvement profile differs from that of Qwen-7B, suggesting that stronger models retain different capability gaps.",
+     "zh": "其改进模式与 Qwen-7B 不同，这表明更强大的模型仍保留着不同的能力差距。"
+    },
+    {
+     "en": "However, negative gains on Logic Games and Medical QA highlight the need for better calibration of adaptation decisions on stronger backbones.",
+     "zh": "然而，在逻辑游戏和医学问答方面的负向增益凸显了需要在更强骨干模型上对适应决策进行更精准的校准。"
+    }
+   ]
+  },
+  {
+   "en": "We compare ω a = 1 \\omega_{a}=1 and 4 4 , and apply the same subsequent RL recipe to both checkpoints. In Table 4 , invalid actions are generated action blocks that fail parsing or action-schema validation. Increasing ω a \\omega_{a} from 1 1 to 4 4 improves final utility by 0.046 0.046 and reduces the invalid-action rate from 4.08 % 4.08\\% to 1.72 % 1.72\\% . Thus, upweighting the relatively sparse action tokens can increase action reliability and translate into better downstream utility.",
+   "zh": "我们将 ω a = 1 \\omega_{a}=1 和 4 4 进行比较，并对这两个检查点应用相同的后续强化学习流程。 在表 4 中，无效动作是指生成后无法通过解析或动作模式验证的动作块。 将 ω a \\omega_{a} 从 1 1 增加到 4 4，可使最终效用提升 0.046，并将无效动作率从 4.08 % 降低至 1.72 %。 因此，提高相对稀疏的动作标记的权重可以提升动作可靠性，并带来更优的下游效用。",
+   "sents": [
+    {
+     "en": "We compare ω a = 1 \\omega_{a}=1 and 4 4 , and apply the same subsequent RL recipe to both checkpoints.",
+     "zh": "我们将 ω a = 1 \\omega_{a}=1 和 4 4 进行比较，并对这两个检查点应用相同的后续强化学习流程。"
+    },
+    {
+     "en": "In Table 4 , invalid actions are generated action blocks that fail parsing or action-schema validation.",
+     "zh": "在表 4 中，无效动作是指生成后无法通过解析或动作模式验证的动作块。"
+    },
+    {
+     "en": "Increasing ω a \\omega_{a} from 1 1 to 4 4 improves final utility by 0.046 0.046 and reduces the invalid-action rate from 4.08 % 4.08\\% to 1.72 % 1.72\\% .",
+     "zh": "将 ω a \\omega_{a} 从 1 1 增加到 4 4，可使最终效用提升 0.046，并将无效动作率从 4.08 % 降低至 1.72 %。"
+    },
+    {
+     "en": "Thus, upweighting the relatively sparse action tokens can increase action reliability and translate into better downstream utility.",
+     "zh": "因此，提高相对稀疏的动作标记的权重可以提升动作可靠性，并带来更优的下游效用。"
+    }
+   ]
+  },
+  {
+   "en": "We compare RL training with and without the invalid-action penalty. The budget-exhaustion rate in Table 4 is the fraction of trajectories that consume their entire 6 action budget. Setting λ inv = 0.15 \\lambda_{\\mathrm{inv}}=0.15 improves utility by 0.043 0.043 and reduces budget exhaustion by 7.87 7.87 percentage points. The penalty therefore helps the policy avoid unproductive action sequences and preserve its finite action budget for completing the task.",
+   "zh": "我们比较了使用和不使用无效动作惩罚的强化学习训练效果。 表4中的预算耗尽率是指消耗完全部6个动作预算的轨迹所占的比例。 设置 λ inv = 0.15 \\lambda_{\\mathrm{inv}}=0.15 可将效用提升0.043 0.043，并将预算耗尽率降低7.87 7.87个百分点。 因此，这种惩罚有助于策略避免无益的动作序列，并保留有限的动作预算以完成任务。",
+   "sents": [
+    {
+     "en": "We compare RL training with and without the invalid-action penalty.",
+     "zh": "我们比较了使用和不使用无效动作惩罚的强化学习训练效果。"
+    },
+    {
+     "en": "The budget-exhaustion rate in Table 4 is the fraction of trajectories that consume their entire 6 action budget.",
+     "zh": "表4中的预算耗尽率是指消耗完全部6个动作预算的轨迹所占的比例。"
+    },
+    {
+     "en": "Setting λ inv = 0.15 \\lambda_{\\mathrm{inv}}=0.15 improves utility by 0.043 0.043 and reduces budget exhaustion by 7.87 7.87 percentage points.",
+     "zh": "设置 λ inv = 0.15 \\lambda_{\\mathrm{inv}}=0.15 可将效用提升0.043 0.043，并将预算耗尽率降低7.87 7.87个百分点。"
+    },
+    {
+     "en": "The penalty therefore helps the policy avoid unproductive action sequences and preserve its finite action budget for completing the task.",
+     "zh": "因此，这种惩罚有助于策略避免无益的动作序列，并保留有限的动作预算以完成任务。"
+    }
+   ]
+  },
+  {
+   "en": "Our results suggest that enabling neural models to grow after deployment requires more than the ability to update their parameters; it requires agency over those updates. Agentic-TTT provides this agency through a learned test-time policy that manages heterogeneous TTT procedures and reusable parameter-space skills across a stream of queries. Experiments show that no fixed TTT method is broadly effective, whereas Agentic-TTT nearly doubles utility over direct inference, balances utility against compute, and transfers to domains unseen during training. Taken together, this work reframes TTT from a fixed adaptation procedure into a learned decision process, pointing toward models that can decide how to learn from their own deployment experience.",
+   "zh": "我们的研究结果表明，要让神经模型在部署后继续成长，仅能更新其参数是不够的；还需要对这些更新拥有自主决策权。 Agentic-TTT 通过一种经过学习的测试时策略实现了这种自主权，该策略能够管理异构的 TTT 流程，并在一系列查询中复用参数空间中的技能。 实验表明，没有任何固定的 TTT 方法能广泛有效，而 Agentic-TTT 的效用几乎比直接推理高出两倍，同时能在效用与计算资源之间取得平衡，并能够迁移到训练时未接触过的领域。 综合来看，这项工作将 TTT 从一种固定的适应流程重新定义为一种经过学习的决策过程，为模型如何基于自身部署经验进行学习提供了新的方向。",
+   "sents": [
+    {
+     "en": "Our results suggest that enabling neural models to grow after deployment requires more than the ability to update their parameters; it requires agency over those updates.",
+     "zh": "我们的研究结果表明，要让神经模型在部署后继续成长，仅能更新其参数是不够的；还需要对这些更新拥有自主决策权。"
+    },
+    {
+     "en": "Agentic-TTT provides this agency through a learned test-time policy that manages heterogeneous TTT procedures and reusable parameter-space skills across a stream of queries.",
+     "zh": "Agentic-TTT 通过一种经过学习的测试时策略实现了这种自主权，该策略能够管理异构的 TTT 流程，并在一系列查询中复用参数空间中的技能。"
+    },
+    {
+     "en": "Experiments show that no fixed TTT method is broadly effective, whereas Agentic-TTT nearly doubles utility over direct inference, balances utility against compute, and transfers to domains unseen during training.",
+     "zh": "实验表明，没有任何固定的 TTT 方法能广泛有效，而 Agentic-TTT 的效用几乎比直接推理高出两倍，同时能在效用与计算资源之间取得平衡，并能够迁移到训练时未接触过的领域。"
+    },
+    {
+     "en": "Taken together, this work reframes TTT from a fixed adaptation procedure into a learned decision process, pointing toward models that can decide how to learn from their own deployment experience.",
+     "zh": "综合来看，这项工作将 TTT 从一种固定的适应流程重新定义为一种经过学习的决策过程，为模型如何基于自身部署经验进行学习提供了新的方向。"
+    }
+   ]
+  },
+  {
+   "en": "The appendix is organized as follows. Section A reviews related work. Section B details benchmark construction. Section C provides detailed training implementations and configurations. Section D describes the execution harness and prompting configuration. Section E discusses the limitations of this work and outlines future research directions.",
+   "zh": "附录的组织结构如下。 A 节回顾了相关研究。 B 节详细阐述了基准的构建过程。 C 节提供了详细的训练实现和配置信息。 D 节描述了执行框架和提示配置。 E 节讨论了本研究的局限性，并概述了未来的研究方向。",
+   "sents": [
+    {
+     "en": "The appendix is organized as follows.",
+     "zh": "附录的组织结构如下。"
+    },
+    {
+     "en": "Section A reviews related work.",
+     "zh": "A 节回顾了相关研究。"
+    },
+    {
+     "en": "Section B details benchmark construction.",
+     "zh": "B 节详细阐述了基准的构建过程。"
+    },
+    {
+     "en": "Section C provides detailed training implementations and configurations.",
+     "zh": "C 节提供了详细的训练实现和配置信息。"
+    },
+    {
+     "en": "Section D describes the execution harness and prompting configuration.",
+     "zh": "D 节描述了执行框架和提示配置。"
+    },
+    {
+     "en": "Section E discusses the limitations of this work and outlines future research directions.",
+     "zh": "E 节讨论了本研究的局限性，并概述了未来的研究方向。"
+    }
+   ]
+  },
+  {
+   "en": "Test-time training(TTT) methods adapt LLMs during inference using signals derived from test inputs. These signals include majority-vote pseudo-labels for reinforcement learning in TTRL ( Zuo et al., 2025 ) , model-generated self-edits in SEAL ( Zweiger et al., 2025 ) , input perplexity in TLM ( Hu et al., 2025a ) , leave-one-out reconstruction of few-shot demonstrations ( Akyürek et al., 2025 ) and more. Per-problem iterative search and adaptation in TTT-Discover ( Yuksekgonul et al., 2026 ) and auxiliary RL training in AlphaProof ( Hubert et al., 2025 ) have provided super-human level open scientific and mathematical problem solving. Related work further improves task-level adaptation through verifier-guided sample selection, targeted test-time curricula, and exploration-aware reinforcement learning ( Moradi et al., 2025 ; Hübotter et al., 2025 ; Liu et al., 2025a ) .",
+   "zh": "测试时训练（TTT）方法通过在推理阶段利用来自测试输入的信号来适配大型语言模型（LLM）。 这些信号包括 TTRL 中用于强化学习的大多数投票伪标签（Zuo 等人，2025）、SEAL 中由模型生成的自我编辑（Zweiger 等人，2025）、TLM 中的输入困惑度（Hu 等人，2025a）、少样本演示的留一法重建（Akyürek 等人，2025）等。 TTT-Discover 中针对每个问题的迭代搜索与适配（Yuksekgonul 等人，2026），以及 AlphaProof 中的辅助强化学习训练（Hubert 等人，2025），已实现了超越人类水平的开放科学和数学问题求解能力。 相关研究进一步通过验证器引导的样本选择、有针对性的测试时课程以及探索感知的强化学习，提升了任务级别的适配能力（Moradi 等人，2025；Hübotter 等人，2025；Liu 等人，2025a）。",
+   "sents": [
+    {
+     "en": "Test-time training(TTT) methods adapt LLMs during inference using signals derived from test inputs.",
+     "zh": "测试时训练（TTT）方法通过在推理阶段利用来自测试输入的信号来适配大型语言模型（LLM）。"
+    },
+    {
+     "en": "These signals include majority-vote pseudo-labels for reinforcement learning in TTRL ( Zuo et al., 2025 ) , model-generated self-edits in SEAL ( Zweiger et al., 2025 ) , input perplexity in TLM ( Hu et al., 2025a ) , leave-one-out reconstruction of few-shot demonstrations ( Akyürek et al., 2025 ) and more.",
+     "zh": "这些信号包括 TTRL 中用于强化学习的大多数投票伪标签（Zuo 等人，2025）、SEAL 中由模型生成的自我编辑（Zweiger 等人，2025）、TLM 中的输入困惑度（Hu 等人，2025a）、少样本演示的留一法重建（Akyürek 等人，2025）等。"
+    },
+    {
+     "en": "Per-problem iterative search and adaptation in TTT-Discover ( Yuksekgonul et al., 2026 ) and auxiliary RL training in AlphaProof ( Hubert et al., 2025 ) have provided super-human level open scientific and mathematical problem solving.",
+     "zh": "TTT-Discover 中针对每个问题的迭代搜索与适配（Yuksekgonul 等人，2026），以及 AlphaProof 中的辅助强化学习训练（Hubert 等人，2025），已实现了超越人类水平的开放科学和数学问题求解能力。"
+    },
+    {
+     "en": "Related work further improves task-level adaptation through verifier-guided sample selection, targeted test-time curricula, and exploration-aware reinforcement learning ( Moradi et al., 2025 ; Hübotter et al., 2025 ; Liu et al., 2025a ) .",
+     "zh": "相关研究进一步通过验证器引导的样本选择、有针对性的测试时课程以及探索感知的强化学习，提升了任务级别的适配能力（Moradi 等人，2025；Hübotter 等人，2025；Liu 等人，2025a）。"
+    }
+   ]
+  },
+  {
+   "en": "While these methods show strong empirical gains within a pre-specified task or evaluation settings like IMO competition ( Hubert et al., 2025 ) , in an open-world deployment, the assumption typically fails: live workloads contain free-form, unpredictable and highly diverse queries which cannot be assumed in advance. Previous work have proposed selective test-time adaptation which filters uninformative samples within a fixed domain (primarily in computer vision) ( Niu et al., 2022 ; Niu et al., 2023 ; Gong et al., 2023 ) , In contrast, heterogeneous LLM workloads require higher-level autonomy: whether to enhance the model with TTT or just answer with the frozen base model, which TTT method to invoke, and whether an existing adaptation already suffices. To our knowledge, no prior work on LLM test-time training has jointly addressed these gap.",
+   "zh": "尽管这些方法在预先指定的任务或评估设置（如 IMO 竞赛）中展现出显著的实证优势（Hubert et al., 2025），但在开放世界的部署环境中，这一假设通常并不成立：实际工作负载包含自由形式、不可预测且高度多样化的查询，无法提前做出假设。 先前的研究提出了选择性的测试时自适应方法，用于在固定领域内过滤掉无信息价值的样本（主要应用于计算机视觉领域）（Niu et al., 2022; Niu et al., 2023; Gong et al., 2023）。相比之下，异构 LLM 工作负载需要更高层级的自主决策：是否使用 TTT 增强模型，还是仅用冻结的基础模型作答；调用哪种 TTT 方法；以及现有的自适应方案是否已经足够。 据我们所知，目前尚无关于 LLM 测试时训练的研究同时解决了这些空白问题。",
+   "sents": [
+    {
+     "en": "While these methods show strong empirical gains within a pre-specified task or evaluation settings like IMO competition ( Hubert et al., 2025 ) , in an open-world deployment, the assumption typically fails: live workloads contain free-form, unpredictable and highly diverse queries which cannot be assumed in advance.",
+     "zh": "尽管这些方法在预先指定的任务或评估设置（如 IMO 竞赛）中展现出显著的实证优势（Hubert et al., 2025），但在开放世界的部署环境中，这一假设通常并不成立：实际工作负载包含自由形式、不可预测且高度多样化的查询，无法提前做出假设。"
+    },
+    {
+     "en": "Previous work have proposed selective test-time adaptation which filters uninformative samples within a fixed domain (primarily in computer vision) ( Niu et al., 2022 ; Niu et al., 2023 ; Gong et al., 2023 ) , In contrast, heterogeneous LLM workloads require higher-level autonomy: whether to enhance the model with TTT or just answer with the frozen base model, which TTT method to invoke, and whether an existing adaptation already suffices.",
+     "zh": "先前的研究提出了选择性的测试时自适应方法，用于在固定领域内过滤掉无信息价值的样本（主要应用于计算机视觉领域）（Niu et al., 2022; Niu et al., 2023; Gong et al., 2023）。相比之下，异构 LLM 工作负载需要更高层级的自主决策：是否使用 TTT 增强模型，还是仅用冻结的基础模型作答；调用哪种 TTT 方法；以及现有的自适应方案是否已经足够。"
+    },
+    {
+     "en": "To our knowledge, no prior work on LLM test-time training has jointly addressed these gap.",
+     "zh": "据我们所知，目前尚无关于 LLM 测试时训练的研究同时解决了这些空白问题。"
+    }
+   ]
+  },
+  {
+   "en": "A separate line of TTT uses test-time updated fast weights as internal memory for long-context modeling, often integrating this mechanism into the model architecture or pretraining scheme ( Sun et al., 2025 ; Zhang et al., 2025b ; Feng et al., 2026 ; Tandon et al., 2025 ) . This complementary line falls outside our scope: fast-weight TTT designs the model’s memory substrate, whereas Agentic-TTT governs the deployment-time acquisition and reuse of capabilities in post-trained LLMs.",
+   "zh": "另一条 TTT 研究路线在推理时利用更新后的快速权重作为内部记忆进行长上下文建模，通常将该机制整合到模型架构或预训练方案中（Sun 等人，2025；Zhang 等人，2025b；Feng 等人，2026；Tandon 等人，2025）。 这条互补的研究路线不在我们的研究范围内：快速权重 TTT 设计的是模型的记忆基础结构，而 Agentic-TTT 则负责在部署时获取和复用已预训练 LLM 的能力。",
+   "sents": [
+    {
+     "en": "A separate line of TTT uses test-time updated fast weights as internal memory for long-context modeling, often integrating this mechanism into the model architecture or pretraining scheme ( Sun et al., 2025 ; Zhang et al., 2025b ; Feng et al., 2026 ; Tandon et al., 2025 ) .",
+     "zh": "另一条 TTT 研究路线在推理时利用更新后的快速权重作为内部记忆进行长上下文建模，通常将该机制整合到模型架构或预训练方案中（Sun 等人，2025；Zhang 等人，2025b；Feng 等人，2026；Tandon 等人，2025）。"
+    },
+    {
+     "en": "This complementary line falls outside our scope: fast-weight TTT designs the model’s memory substrate, whereas Agentic-TTT governs the deployment-time acquisition and reuse of capabilities in post-trained LLMs.",
+     "zh": "这条互补的研究路线不在我们的研究范围内：快速权重 TTT 设计的是模型的记忆基础结构，而 Agentic-TTT 则负责在部署时获取和复用已预训练 LLM 的能力。"
+    }
+   ]
+  },
+  {
+   "en": "Modular adapters store specialized capabilities in parameter modules while keeping the base model frozen ( Hu et al., 2022 ; Pfeiffer et al., 2021 ) . Prior work builds libraries of such adapters and selects, routes, or composes them for different tasks ( Huang et al., 2024a ; Ostapenko et al., 2024 ; Shekar and Krishnan, 2025 ; Bertolissi et al., 2025 ; Dhasade et al., 2026 ) . Related approaches organize adapters as learned mixtures or generate them from task descriptions ( Huang et al., 2024b ; Li et al., 2024 ; Charakorn et al., 2025 ) . These studies make model capabilities modular and reusable, but generally assume that the adapter pool or its generation mechanism is established before deployment.",
+   "zh": "模块化适配器将专用能力存储在参数模块中，同时保持基础模型冻结（Hu et al., 2022；Pfeiffer et al., 2021）。 先前的研究构建了此类适配器的库，并为不同任务选择、路由或组合它们（Huang et al., 2024a；Ostapenko et al., 2024；Shekar and Krishnan, 2025；Bertolissi et al., 2025；Dhasade et al., 2026）。 相关方法将适配器组织为可学习的混合体，或根据任务描述生成它们（Huang et al., 2024b；Li et al., 2024；Charakorn et al., 2025）。 这些研究使模型能力具有模块化和可重用的特性，但通常假设适配器池或其生成机制在部署前已经建立。",
+   "sents": [
+    {
+     "en": "Modular adapters store specialized capabilities in parameter modules while keeping the base model frozen ( Hu et al., 2022 ; Pfeiffer et al., 2021 ) .",
+     "zh": "模块化适配器将专用能力存储在参数模块中，同时保持基础模型冻结（Hu et al., 2022；Pfeiffer et al., 2021）。"
+    },
+    {
+     "en": "Prior work builds libraries of such adapters and selects, routes, or composes them for different tasks ( Huang et al., 2024a ; Ostapenko et al., 2024 ; Shekar and Krishnan, 2025 ; Bertolissi et al., 2025 ; Dhasade et al., 2026 ) .",
+     "zh": "先前的研究构建了此类适配器的库，并为不同任务选择、路由或组合它们（Huang et al., 2024a；Ostapenko et al., 2024；Shekar and Krishnan, 2025；Bertolissi et al., 2025；Dhasade et al., 2026）。"
+    },
+    {
+     "en": "Related approaches organize adapters as learned mixtures or generate them from task descriptions ( Huang et al., 2024b ; Li et al., 2024 ; Charakorn et al., 2025 ) .",
+     "zh": "相关方法将适配器组织为可学习的混合体，或根据任务描述生成它们（Huang et al., 2024b；Li et al., 2024；Charakorn et al., 2025）。"
+    },
+    {
+     "en": "These studies make model capabilities modular and reusable, but generally assume that the adapter pool or its generation mechanism is established before deployment.",
+     "zh": "这些研究使模型能力具有模块化和可重用的特性，但通常假设适配器池或其生成机制在部署前已经建立。"
+    }
+   ]
+  },
+  {
+   "en": "Self-expanding networks tackle new tasks or distribution shifts by adding specialized modules rather than repeatedly overwriting a shared parameter state ( Rusu et al., 2016 ; Yoon et al., 2018 ; Ostapenko et al., 2021 ; Wang et al., 2025a ) . Recent online and test-time adaptation methods bring this expansion into deployment ( Moradi et al., 2025 ; Wei et al., 2025b ; Acikgoz et al., 2025 ) . However, module creation is typically governed by predefined task boundaries or fixed adaptation rules; for example, SAGE ( Wei et al., 2025a ) triggers LoRA construction when reasoning failures are detected. Agentic-TTT instead turns test-time training into an agentic capability-management problem: the LLM policy not only selects among existing capabilities, but also decides when and how to expand a persistent skill library, thereby reshaping the capability space available to its future decisions.",
+   "zh": "自扩展网络通过添加专用模块来处理新任务或分布偏移，而不是重复覆盖共享的参数状态（Rusu 等，2016；Yoon 等，2018；Ostapenko 等，2021；Wang 等，2025a）。 近期的在线和测试时自适应方法将这种扩展机制引入实际部署（Moradi 等，2025；Wei 等，2025b；Acikgoz 等，2025）。 然而，模块的创建通常受预定义的任务边界或固定的自适应规则约束；例如，SAGE（Wei 等，2025a）在检测到推理失败时会触发 LoRA 的构建。 Agentic-TTT 则将测试时训练转化为一个智能体能力管理问题：LLM 策略不仅需要在现有能力中进行选择，还要决定何时以及如何扩展持久化的技能库，从而重塑其未来决策可用的能力空间。",
+   "sents": [
+    {
+     "en": "Self-expanding networks tackle new tasks or distribution shifts by adding specialized modules rather than repeatedly overwriting a shared parameter state ( Rusu et al., 2016 ; Yoon et al., 2018 ; Ostapenko et al., 2021 ; Wang et al., 2025a ) .",
+     "zh": "自扩展网络通过添加专用模块来处理新任务或分布偏移，而不是重复覆盖共享的参数状态（Rusu 等，2016；Yoon 等，2018；Ostapenko 等，2021；Wang 等，2025a）。"
+    },
+    {
+     "en": "Recent online and test-time adaptation methods bring this expansion into deployment ( Moradi et al., 2025 ; Wei et al., 2025b ; Acikgoz et al., 2025 ) .",
+     "zh": "近期的在线和测试时自适应方法将这种扩展机制引入实际部署（Moradi 等，2025；Wei 等，2025b；Acikgoz 等，2025）。"
+    },
+    {
+     "en": "However, module creation is typically governed by predefined task boundaries or fixed adaptation rules; for example, SAGE ( Wei et al., 2025a ) triggers LoRA construction when reasoning failures are detected.",
+     "zh": "然而，模块的创建通常受预定义的任务边界或固定的自适应规则约束；例如，SAGE（Wei 等，2025a）在检测到推理失败时会触发 LoRA 的构建。"
+    },
+    {
+     "en": "Agentic-TTT instead turns test-time training into an agentic capability-management problem: the LLM policy not only selects among existing capabilities, but also decides when and how to expand a persistent skill library, thereby reshaping the capability space available to its future decisions.",
+     "zh": "Agentic-TTT 则将测试时训练转化为一个智能体能力管理问题：LLM 策略不仅需要在现有能力中进行选择，还要决定何时以及如何扩展持久化的技能库，从而重塑其未来决策可用的能力空间。"
+    }
+   ]
+  },
+  {
+   "en": "Self-improving agents turn experience into reusable skills that can be stored, retrieved and applied across tasks. These skills take diverse forms, including program and code libraries ( Ellis et al., 2021 ; Grand et al., 2024 ) , executable or text-described procedures ( Wang et al., 2024 ; Zheng et al., 2025 ) , and reusable robot policies ( Wan et al., 2024 ; Tziafas and Kasaei, 2024 ) . Recent systems go beyond accumulating skills to induce and verify them online, or to train agents to generate and use a growing skill library ( Wang et al., 2025b ; Wang et al., 2026 ) . Agentic-TTT extends this paradigm to parameter-space skills: heterogeneous TTT methods create isolated LoRA adaptations, while a learned LLM policy governs their construction and reuse over a frozen base model, supporting self-improvement during deployment ( Duan et al., 2026 ) .",
+   "zh": "自我改进的智能体能够将经验转化为可重复使用的技能，这些技能可以存储、检索并应用于不同任务。 这些技能形式多样，包括程序和代码库（Ellis 等，2021；Grand 等，2024）、可执行或文本描述的流程（Wang 等，2024；Zheng 等，2025），以及可重复使用的机器人策略（Wan 等，2024；Tziafas 和 Kasaei，2024）。 近期的系统不仅积累技能，还能在线诱导和验证这些技能，或训练智能体生成并使用不断增长的技能库（Wang 等，2025b；Wang 等，2026）。 Agentic-TTT 将这一范式扩展到参数空间技能：异构的 TTT 方法会创建孤立的 LoRA 适配，而一个经过学习的 LLM 策略则负责在冻结的基础模型上管理这些适配的构建与重复使用，从而支持部署过程中的自我改进（Duan 等，2026）。",
+   "sents": [
+    {
+     "en": "Self-improving agents turn experience into reusable skills that can be stored, retrieved and applied across tasks.",
+     "zh": "自我改进的智能体能够将经验转化为可重复使用的技能，这些技能可以存储、检索并应用于不同任务。"
+    },
+    {
+     "en": "These skills take diverse forms, including program and code libraries ( Ellis et al., 2021 ; Grand et al., 2024 ) , executable or text-described procedures ( Wang et al., 2024 ; Zheng et al., 2025 ) , and reusable robot policies ( Wan et al., 2024 ; Tziafas and Kasaei, 2024 ) .",
+     "zh": "这些技能形式多样，包括程序和代码库（Ellis 等，2021；Grand 等，2024）、可执行或文本描述的流程（Wang 等，2024；Zheng 等，2025），以及可重复使用的机器人策略（Wan 等，2024；Tziafas 和 Kasaei，2024）。"
+    },
+    {
+     "en": "Recent systems go beyond accumulating skills to induce and verify them online, or to train agents to generate and use a growing skill library ( Wang et al., 2025b ; Wang et al., 2026 ) .",
+     "zh": "近期的系统不仅积累技能，还能在线诱导和验证这些技能，或训练智能体生成并使用不断增长的技能库（Wang 等，2025b；Wang 等，2026）。"
+    },
+    {
+     "en": "Agentic-TTT extends this paradigm to parameter-space skills: heterogeneous TTT methods create isolated LoRA adaptations, while a learned LLM policy governs their construction and reuse over a frozen base model, supporting self-improvement during deployment ( Duan et al., 2026 ) .",
+     "zh": "Agentic-TTT 将这一范式扩展到参数空间技能：异构的 TTT 方法会创建孤立的 LoRA 适配，而一个经过学习的 LLM 策略则负责在冻结的基础模型上管理这些适配的构建与重复使用，从而支持部署过程中的自我改进（Duan 等，2026）。"
+    }
+   ]
+  },
+  {
+   "en": "Our main experiments cover eight domains drawn from eleven benchmark families. The dataset contains 229 training queries, 45 development queries, and 176 test queries. The training split provides the pool from which subsets are drawn for guidance distillation and reinforcement learning. Guidance distillation uses 2,072 supervised turns collected from rollouts of training queries. We use the development split for validation and hyperparameter selection during policy training. Development queries are excluded from SFT and RL updates for the main policy. LSAT-AR and MedMCQA provide sequential workloads for TTRL, where the policy can accumulate related queries, construct an adaptation, and reuse it on subsequent queries. For each of these two domains, we construct one 30-query sequence for training and another for testing. Each sequence contains 16 initial queries for collecting adaptation data, followed by 14 queries for assessing skill reuse. For MedMCQA, the training and test sequences are drawn from Pathology and Dental, respectively.",
+   "zh": "我们的主要实验涵盖了从十一个基准数据集族中选取的八个领域。 该数据集包含 229 条训练查询、45 条开发查询和 176 条测试查询。 训练集为引导蒸馏和强化学习提供了用于抽取子集的查询池。 引导蒸馏使用了从训练查询的展开过程中收集的 2,072 个有监督交互回合。 我们在策略训练期间使用开发集进行验证和超参数选择。 开发查询被排除在主要策略的 SFT 和 RL 更新之外。 LSAT-AR 和 MedMCQA 为 TTRL 提供了序列式任务负载，其中策略可以累积相关查询、构建一个适应方案，并在后续查询中重复使用它。 对于这两个领域中的每一个，我们都构建了一个包含 30 条查询的训练序列和另一个测试序列。 每个序列包含 16 条初始查询用于收集适应数据，随后是 14 条用于评估技能复用能力的查询。 对于 MedMCQA，训练序列和测试序列分别来自病理学和牙科领域。",
+   "sents": [
+    {
+     "en": "Our main experiments cover eight domains drawn from eleven benchmark families.",
+     "zh": "我们的主要实验涵盖了从十一个基准数据集族中选取的八个领域。"
+    },
+    {
+     "en": "The dataset contains 229 training queries, 45 development queries, and 176 test queries.",
+     "zh": "该数据集包含 229 条训练查询、45 条开发查询和 176 条测试查询。"
+    },
+    {
+     "en": "The training split provides the pool from which subsets are drawn for guidance distillation and reinforcement learning.",
+     "zh": "训练集为引导蒸馏和强化学习提供了用于抽取子集的查询池。"
+    },
+    {
+     "en": "Guidance distillation uses 2,072 supervised turns collected from rollouts of training queries.",
+     "zh": "引导蒸馏使用了从训练查询的展开过程中收集的 2,072 个有监督交互回合。"
+    },
+    {
+     "en": "We use the development split for validation and hyperparameter selection during policy training.",
+     "zh": "我们在策略训练期间使用开发集进行验证和超参数选择。"
+    },
+    {
+     "en": "Development queries are excluded from SFT and RL updates for the main policy.",
+     "zh": "开发查询被排除在主要策略的 SFT 和 RL 更新之外。"
+    },
+    {
+     "en": "LSAT-AR and MedMCQA provide sequential workloads for TTRL, where the policy can accumulate related queries, construct an adaptation, and reuse it on subsequent queries.",
+     "zh": "LSAT-AR 和 MedMCQA 为 TTRL 提供了序列式任务负载，其中策略可以累积相关查询、构建一个适应方案，并在后续查询中重复使用它。"
+    },
+    {
+     "en": "For each of these two domains, we construct one 30-query sequence for training and another for testing.",
+     "zh": "对于这两个领域中的每一个，我们都构建了一个包含 30 条查询的训练序列和另一个测试序列。"
+    },
+    {
+     "en": "Each sequence contains 16 initial queries for collecting adaptation data, followed by 14 queries for assessing skill reuse.",
+     "zh": "每个序列包含 16 条初始查询用于收集适应数据，随后是 14 条用于评估技能复用能力的查询。"
+    },
+    {
+     "en": "For MedMCQA, the training and test sequences are drawn from Pathology and Dental, respectively.",
+     "zh": "对于 MedMCQA，训练序列和测试序列分别来自病理学和牙科领域。"
+    }
+   ]
+  },
+  {
+   "en": "MBPP and LiveCodeBench queries include public test cases in their problem statements: three per query for MBPP and two to four for LiveCodeBench. When PoT is selected, these public tests provide execution feedback to guide test-time search. For final evaluation, we augment the public tests with 12 additional cases per query which are withheld from public test cases, drawn from MBPP+ for MBPP and from the hidden test suite for LiveCodeBench. A solution receives a utility score of one only if it passes every test in the combined suite, and zero otherwise. This separation provides a stricter assessment of code correctness and reduces the risk of overfitting to public test examples.",
+   "zh": "MBPP 和 LiveCodeBench 的查询在其问题陈述中包含了公共测试用例：MBPP 每个查询包含三个，LiveCodeBench 每个查询包含两个到四个。 当选择 PoT 时，这些公共测试会提供执行反馈，以指导测试时的搜索。 在最终评估中，我们将每个查询的公共测试用例补充了 12 个额外的测试用例，这些用例未包含在公共测试用例中，其中 MBPP 的额外用例来自 MBPP+，而 LiveCodeBench 的则来自隐藏测试套件。 只有当解决方案通过合并后的所有测试时，它才能获得一分的效用分数；否则得分为零。 这种分离方式能够更严格地评估代码的正确性，并降低对公共测试用例过拟合的风险。",
+   "sents": [
+    {
+     "en": "MBPP and LiveCodeBench queries include public test cases in their problem statements: three per query for MBPP and two to four for LiveCodeBench.",
+     "zh": "MBPP 和 LiveCodeBench 的查询在其问题陈述中包含了公共测试用例：MBPP 每个查询包含三个，LiveCodeBench 每个查询包含两个到四个。"
+    },
+    {
+     "en": "When PoT is selected, these public tests provide execution feedback to guide test-time search.",
+     "zh": "当选择 PoT 时，这些公共测试会提供执行反馈，以指导测试时的搜索。"
+    },
+    {
+     "en": "For final evaluation, we augment the public tests with 12 additional cases per query which are withheld from public test cases, drawn from MBPP+ for MBPP and from the hidden test suite for LiveCodeBench.",
+     "zh": "在最终评估中，我们将每个查询的公共测试用例补充了 12 个额外的测试用例，这些用例未包含在公共测试用例中，其中 MBPP 的额外用例来自 MBPP+，而 LiveCodeBench 的则来自隐藏测试套件。"
+    },
+    {
+     "en": "A solution receives a utility score of one only if it passes every test in the combined suite, and zero otherwise.",
+     "zh": "只有当解决方案通过合并后的所有测试时，它才能获得一分的效用分数；否则得分为零。"
+    },
+    {
+     "en": "This separation provides a stricter assessment of code correctness and reduces the risk of overfitting to public test examples.",
+     "zh": "这种分离方式能够更严格地评估代码的正确性，并降低对公共测试用例过拟合的风险。"
+    }
+   ]
+  },
+  {
+   "en": "These tasks evaluate the acquisition and reuse of document knowledge as parametric memory. A motivating workload involves multiple queries about the same reference material, such as a book, a research paper, or technical documentation. A reusable adaptation can retain knowledge beyond the current context and support subsequent queries, creating an opportunity to amortize adaptation cost across repeated use. We therefore separate document ingestion from question answering and omit the original text from the answer-generation context. This provides a controlled setting for evaluating whether the policy can construct useful document skills and select them for later questions. For SQuAD, this follows the knowledge-incorporation setting of Zweiger et al. (2025) . The selected SQuAD subset contains 70 queries associated with 31 passages, averaging 2.26 queries per passage. LongBook extends this evaluation to longer reference material, containing 29 queries associated with 25 books, averaging 1.16 queries per book. We partition these sources into training, development and test splits at the document level, keeping each passage or book and all its associated queries in the same split. Neither document identifiers nor document texts overlap across splits. This separation tests generalization to unseen documents and prevents direct memorization of document-specific routing sequences for the evaluation documents during policy training. Each document defines a sequence beginning with an unscored ingestion event, followed by its associated questions. During RL training, we randomize the interleaving of groups while preserving the order within each group. This ensures that each document arrives before any of its associated questions and preserves the accumulation-before-reuse order of the TTRL sequences. The same ordering constraints apply to evaluation. The evaluation stream therefore contains 19 document events (11 passages and 8 books) in addition to the 176 scored queries, giving 195 events in total. During document ingestion, the policy can archive material and construct adaptations for subsequent questions. These document events receive no task-accuracy score and are excluded from the utility denominator; overall utility is computed over the 176 scored queries. Any adaptation performed during document ingestion still incurs computational cost.",
+   "zh": "这些任务评估了文档知识作为参数化记忆的被获取和重复使用过程。 一个具有启发性的工作负载涉及对同一参考材料（例如一本书、一篇研究论文或技术文档）的多次查询。 可重复使用的适配能够保留当前上下文之外的知识，并支持后续查询，从而为重复使用分摊适配成本创造了机会。 因此，我们将文档摄入与问答过程分离，并在答案生成上下文中省略原始文本。 这提供了一个受控的环境，用于评估策略是否能够构建有用的文档技能，并在后续问题中选择使用这些技能。 对于 SQuAD，这一设置遵循了 Zweiger 等人（2025）提出的知识整合设定。 所选的 SQuAD 子集包含 70 个与 31 段文本相关的查询，平均每段文本有 2.26 个查询。 LongBook 将这一评估扩展到了更长的参考材料，其中包含 29 个与 25 本书相关的查询，平均每本书有 1.16 个查询。 我们在文档级别将这些来源划分为训练、开发和测试集，确保每段文本或每本书及其所有相关查询都保留在同一个划分集中。 各个划分集中既没有文档标识符的重叠，也没有文档文本的重叠。 这种分离检验了模型对未见文档的泛化能力，并防止了在策略训练期间直接记忆评估文档特有的路由序列。 每份文档定义了一个序列，以一次无分数的摄入事件开始，随后是其相关的提问。 在强化学习训练过程中，我们在保持每组内部顺序的同时，随机打乱各组的交错顺序。 这确保了每份文档都会在其相关提问之前出现，并保留了 TTRL 序列中“先积累、后复用”的顺序。 评估过程也遵循相同的顺序约束。 因此，评估流除了 176 个计分的查询外，还包含 19 个文档事件（11 段文本和 8 本书），总计 195 个事件。 在文档摄入过程中，策略可以存档材料并为后续提问构建适配。 这些文档事件不会获得任务准确性分数，也不计入效用分母；整体效用是基于 176 个计分的查询计算的。 在文档摄入期间执行的任何适配仍然会产生计算成本。",
+   "sents": [
+    {
+     "en": "These tasks evaluate the acquisition and reuse of document knowledge as parametric memory.",
+     "zh": "这些任务评估了文档知识作为参数化记忆的被获取和重复使用过程。"
+    },
+    {
+     "en": "A motivating workload involves multiple queries about the same reference material, such as a book, a research paper, or technical documentation.",
+     "zh": "一个具有启发性的工作负载涉及对同一参考材料（例如一本书、一篇研究论文或技术文档）的多次查询。"
+    },
+    {
+     "en": "A reusable adaptation can retain knowledge beyond the current context and support subsequent queries, creating an opportunity to amortize adaptation cost across repeated use.",
+     "zh": "可重复使用的适配能够保留当前上下文之外的知识，并支持后续查询，从而为重复使用分摊适配成本创造了机会。"
+    },
+    {
+     "en": "We therefore separate document ingestion from question answering and omit the original text from the answer-generation context.",
+     "zh": "因此，我们将文档摄入与问答过程分离，并在答案生成上下文中省略原始文本。"
+    },
+    {
+     "en": "This provides a controlled setting for evaluating whether the policy can construct useful document skills and select them for later questions.",
+     "zh": "这提供了一个受控的环境，用于评估策略是否能够构建有用的文档技能，并在后续问题中选择使用这些技能。"
+    },
+    {
+     "en": "For SQuAD, this follows the knowledge-incorporation setting of Zweiger et al. (2025) .",
+     "zh": "对于 SQuAD，这一设置遵循了 Zweiger 等人（2025）提出的知识整合设定。"
+    },
+    {
+     "en": "The selected SQuAD subset contains 70 queries associated with 31 passages, averaging 2.26 queries per passage.",
+     "zh": "所选的 SQuAD 子集包含 70 个与 31 段文本相关的查询，平均每段文本有 2.26 个查询。"
+    },
+    {
+     "en": "LongBook extends this evaluation to longer reference material, containing 29 queries associated with 25 books, averaging 1.16 queries per book.",
+     "zh": "LongBook 将这一评估扩展到了更长的参考材料，其中包含 29 个与 25 本书相关的查询，平均每本书有 1.16 个查询。"
+    },
+    {
+     "en": "We partition these sources into training, development and test splits at the document level, keeping each passage or book and all its associated queries in the same split.",
+     "zh": "我们在文档级别将这些来源划分为训练、开发和测试集，确保每段文本或每本书及其所有相关查询都保留在同一个划分集中。"
+    },
+    {
+     "en": "Neither document identifiers nor document texts overlap across splits.",
+     "zh": "各个划分集中既没有文档标识符的重叠，也没有文档文本的重叠。"
+    },
+    {
+     "en": "This separation tests generalization to unseen documents and prevents direct memorization of document-specific routing sequences for the evaluation documents during policy training.",
+     "zh": "这种分离检验了模型对未见文档的泛化能力，并防止了在策略训练期间直接记忆评估文档特有的路由序列。"
+    },
+    {
+     "en": "Each document defines a sequence beginning with an unscored ingestion event, followed by its associated questions.",
+     "zh": "每份文档定义了一个序列，以一次无分数的摄入事件开始，随后是其相关的提问。"
+    },
+    {
+     "en": "During RL training, we randomize the interleaving of groups while preserving the order within each group.",
+     "zh": "在强化学习训练过程中，我们在保持每组内部顺序的同时，随机打乱各组的交错顺序。"
+    },
+    {
+     "en": "This ensures that each document arrives before any of its associated questions and preserves the accumulation-before-reuse order of the TTRL sequences.",
+     "zh": "这确保了每份文档都会在其相关提问之前出现，并保留了 TTRL 序列中“先积累、后复用”的顺序。"
+    },
+    {
+     "en": "The same ordering constraints apply to evaluation.",
+     "zh": "评估过程也遵循相同的顺序约束。"
+    },
+    {
+     "en": "The evaluation stream therefore contains 19 document events (11 passages and 8 books) in addition to the 176 scored queries, giving 195 events in total.",
+     "zh": "因此，评估流除了 176 个计分的查询外，还包含 19 个文档事件（11 段文本和 8 本书），总计 195 个事件。"
+    },
+    {
+     "en": "During document ingestion, the policy can archive material and construct adaptations for subsequent questions.",
+     "zh": "在文档摄入过程中，策略可以存档材料并为后续提问构建适配。"
+    },
+    {
+     "en": "These document events receive no task-accuracy score and are excluded from the utility denominator; overall utility is computed over the 176 scored queries.",
+     "zh": "这些文档事件不会获得任务准确性分数，也不计入效用分母；整体效用是基于 176 个计分的查询计算的。"
+    },
+    {
+     "en": "Any adaptation performed during document ingestion still incurs computational cost.",
+     "zh": "在文档摄入期间执行的任何适配仍然会产生计算成本。"
+    }
+   ]
+  },
+  {
+   "en": "Queries with observed adaptation benefits constitute a majority of both our training and test splits, accounting for approximately 65% of the curated benchmark overall. This composition deliberately differs from the source distributions. For comparison, only 35 of the 500 queries in the complete MATH-500 dataset (7.0%) satisfy our high-gain criterion under the PoT reference procedure with Qwen2.5-7B-Instruct. The prevalence of beneficial adaptation depends on the backbone, data, TTT method, and computation budget. We deliberately enrich both training and evaluation with beneficial cases to provide substantial improvement opportunities and examine how effectively TTT agency can exploit them. The resulting gains therefore characterize this curated setting and should not be interpreted as expected gains under the original source distributions.",
+   "zh": "观察到适应益处的查询构成了我们训练集和测试集的多数，在整体精选基准数据中约占 65%。 这种构成是有意与原始分布不同的。 作为对比，在完整的 MATH-500 数据集的 500 条查询中，仅有 35 条（7.0%）在采用 Qwen2.5-7B-Instruct 的 PoT 参考流程下满足我们的高收益标准。 有益适应的出现频率取决于基础模型、数据、TTT 方法以及计算预算。 我们特意在训练和评估中加入了更多有益案例，以提供显著的提升机会，并考察 TTT 智能体能够多有效地利用这些机会。 因此，由此产生的收益反映了这一精选设置的特点，不应被解释为原始分布下的预期收益。",
+   "sents": [
+    {
+     "en": "Queries with observed adaptation benefits constitute a majority of both our training and test splits, accounting for approximately 65% of the curated benchmark overall.",
+     "zh": "观察到适应益处的查询构成了我们训练集和测试集的多数，在整体精选基准数据中约占 65%。"
+    },
+    {
+     "en": "This composition deliberately differs from the source distributions.",
+     "zh": "这种构成是有意与原始分布不同的。"
+    },
+    {
+     "en": "For comparison, only 35 of the 500 queries in the complete MATH-500 dataset (7.0%) satisfy our high-gain criterion under the PoT reference procedure with Qwen2.5-7B-Instruct.",
+     "zh": "作为对比，在完整的 MATH-500 数据集的 500 条查询中，仅有 35 条（7.0%）在采用 Qwen2.5-7B-Instruct 的 PoT 参考流程下满足我们的高收益标准。"
+    },
+    {
+     "en": "The prevalence of beneficial adaptation depends on the backbone, data, TTT method, and computation budget.",
+     "zh": "有益适应的出现频率取决于基础模型、数据、TTT 方法以及计算预算。"
+    },
+    {
+     "en": "We deliberately enrich both training and evaluation with beneficial cases to provide substantial improvement opportunities and examine how effectively TTT agency can exploit them.",
+     "zh": "我们特意在训练和评估中加入了更多有益案例，以提供显著的提升机会，并考察 TTT 智能体能够多有效地利用这些机会。"
+    },
+    {
+     "en": "The resulting gains therefore characterize this curated setting and should not be interpreted as expected gains under the original source distributions.",
+     "zh": "因此，由此产生的收益反映了这一精选设置的特点，不应被解释为原始分布下的预期收益。"
+    }
+   ]
+  },
+  {
+   "en": "The prevalence of beneficial queries also shapes the policy’s learning incentives. Our training distribution frequently rewards appropriate adaptation and skill reuse, encouraging more frequent use of TTT. Under a distribution with fewer beneficial opportunities, the same cost-sensitive objective favors more conservative behavior, concentrating TTT on queries for which adaptation offers positive expected net returns. The desired behavior remains conditional: the policy should learn where adaptation is worthwhile from the outcomes observed during training. Our pipeline prescribes no fixed adaptation frequency; the learned behavior is shaped by the observed trade-off between adaptation benefits and costs under the training distribution.",
+   "zh": "有益查询的普遍性也影响着策略的学习激励。 我们的训练分布通常会奖励适当的适应和技能的重复利用，从而鼓励更频繁地使用 TTT。 在有益机会较少的分布下，相同的成本敏感目标会更倾向于保守的行为，将 TTT 集中在那些通过适应能获得正期望净收益的查询上。 期望的行为仍然是有条件的：策略应当从训练期间观察到的结果中，学会在何处进行适应是值得的。 我们的流程并未规定固定的适应频率；所学习到的行为由训练分布下适应收益与成本之间观察到的权衡关系所决定。",
+   "sents": [
+    {
+     "en": "The prevalence of beneficial queries also shapes the policy’s learning incentives.",
+     "zh": "有益查询的普遍性也影响着策略的学习激励。"
+    },
+    {
+     "en": "Our training distribution frequently rewards appropriate adaptation and skill reuse, encouraging more frequent use of TTT.",
+     "zh": "我们的训练分布通常会奖励适当的适应和技能的重复利用，从而鼓励更频繁地使用 TTT。"
+    },
+    {
+     "en": "Under a distribution with fewer beneficial opportunities, the same cost-sensitive objective favors more conservative behavior, concentrating TTT on queries for which adaptation offers positive expected net returns.",
+     "zh": "在有益机会较少的分布下，相同的成本敏感目标会更倾向于保守的行为，将 TTT 集中在那些通过适应能获得正期望净收益的查询上。"
+    },
+    {
+     "en": "The desired behavior remains conditional: the policy should learn where adaptation is worthwhile from the outcomes observed during training.",
+     "zh": "期望的行为仍然是有条件的：策略应当从训练期间观察到的结果中，学会在何处进行适应是值得的。"
+    },
+    {
+     "en": "Our pipeline prescribes no fixed adaptation frequency; the learned behavior is shaped by the observed trade-off between adaptation benefits and costs under the training distribution.",
+     "zh": "我们的流程并未规定固定的适应频率；所学习到的行为由训练分布下适应收益与成本之间观察到的权衡关系所决定。"
+    }
+   ]
+  },
+  {
+   "en": "Our benchmark prioritizes tasks with explicit reference answers or executable tests. Fixed scoring rules reduce ambiguity in measuring adaptation gains and support reliable utility estimates without relying on LLM judges. At deployment, reference answers are generally unavailable, and task-provided checks can verify outcomes only within their coverage. Without ground truth or a reliable verifier, we cannot directly confirm whether TTT helped on an individual query. The policy therefore draws on training experience to select actions with positive expected returns on similar deployment queries. This is a general challenge for TTT without outcome feedback, and resolving it falls outside the scope of this work.",
+   "zh": "我们的基准测试优先选择具有明确参考答案或可执行测试的任务。 固定的评分规则减少了衡量适应收益时的模糊性，并支持在不依赖 LLM 评判者的情况下获得可靠的效用估计。 在实际部署时，通常无法获取参考答案，而任务提供的检查机制只能在自身覆盖范围内验证结果。 在没有基准真相或可靠验证器的情况下，我们无法直接确认 TTT 是否对单个查询产生了帮助。 因此，该策略会利用训练经验来选择在类似部署查询中具有正向预期回报的行动。 这是 TTT 在没有结果反馈时面临的一个普遍挑战，而解决这一问题超出了本研究的范围。",
+   "sents": [
+    {
+     "en": "Our benchmark prioritizes tasks with explicit reference answers or executable tests.",
+     "zh": "我们的基准测试优先选择具有明确参考答案或可执行测试的任务。"
+    },
+    {
+     "en": "Fixed scoring rules reduce ambiguity in measuring adaptation gains and support reliable utility estimates without relying on LLM judges.",
+     "zh": "固定的评分规则减少了衡量适应收益时的模糊性，并支持在不依赖 LLM 评判者的情况下获得可靠的效用估计。"
+    },
+    {
+     "en": "At deployment, reference answers are generally unavailable, and task-provided checks can verify outcomes only within their coverage.",
+     "zh": "在实际部署时，通常无法获取参考答案，而任务提供的检查机制只能在自身覆盖范围内验证结果。"
+    },
+    {
+     "en": "Without ground truth or a reliable verifier, we cannot directly confirm whether TTT helped on an individual query.",
+     "zh": "在没有基准真相或可靠验证器的情况下，我们无法直接确认 TTT 是否对单个查询产生了帮助。"
+    },
+    {
+     "en": "The policy therefore draws on training experience to select actions with positive expected returns on similar deployment queries.",
+     "zh": "因此，该策略会利用训练经验来选择在类似部署查询中具有正向预期回报的行动。"
+    },
+    {
+     "en": "This is a general challenge for TTT without outcome feedback, and resolving it falls outside the scope of this work.",
+     "zh": "这是 TTT 在没有结果反馈时面临的一个普遍挑战，而解决这一问题超出了本研究的范围。"
+    }
+   ]
+  },
+  {
+   "en": "Given constraints on access to model weights and training resources, our benchmark targets the evaluated backbones and is not designed to assess TTT agency in frontier models. Evaluating TTT agency in such models calls for substantially harder benchmarks at their capability boundaries, where direct inference leaves meaningful room for improvement. The underlying decision problem remains relevant: whenever TTT can resolve otherwise unsuccessful tasks at an acceptable cost, there is value in learning to identify those tasks and select an effective adaptation procedure. Extending this evaluation therefore requires new measurements on workloads tailored to the target model. Such workloads could include challenging mathematical, scientific, and engineering tasks, potentially extending to open research problems with independently verifiable outcomes. The benchmark must evolve with model capabilities, while the objective of learning conditional TTT decisions remains applicable.",
+   "zh": "鉴于对模型权重和训练资源访问的限制，我们的基准测试针对已评估的基础模型，并非用于评估前沿模型中的 TTT 智能体能力。 要评估此类模型中的 TTT 智能体能力，需要在其能力边界上设置难度显著更高的基准测试，在这些边界条件下，直接推理仍存在明显的改进空间。 其背后的决策问题仍然具有现实意义：只要 TTT 能够在可接受的成本下解决原本无法完成的任务，那么学习识别这些任务并选择有效的适应策略就是有价值的。 因此，要扩展这种评估方法，就需要针对目标模型设计新的工作负载进行测量。 这类工作负载可以包括具有挑战性的数学、科学和工程任务，甚至可能扩展到具有可独立验证结果的研究性开放问题。 基准测试必须随着模型能力的提升而演进，但学习条件 TTT 决策这一目标仍然适用。",
+   "sents": [
+    {
+     "en": "Given constraints on access to model weights and training resources, our benchmark targets the evaluated backbones and is not designed to assess TTT agency in frontier models.",
+     "zh": "鉴于对模型权重和训练资源访问的限制，我们的基准测试针对已评估的基础模型，并非用于评估前沿模型中的 TTT 智能体能力。"
+    },
+    {
+     "en": "Evaluating TTT agency in such models calls for substantially harder benchmarks at their capability boundaries, where direct inference leaves meaningful room for improvement.",
+     "zh": "要评估此类模型中的 TTT 智能体能力，需要在其能力边界上设置难度显著更高的基准测试，在这些边界条件下，直接推理仍存在明显的改进空间。"
+    },
+    {
+     "en": "The underlying decision problem remains relevant: whenever TTT can resolve otherwise unsuccessful tasks at an acceptable cost, there is value in learning to identify those tasks and select an effective adaptation procedure.",
+     "zh": "其背后的决策问题仍然具有现实意义：只要 TTT 能够在可接受的成本下解决原本无法完成的任务，那么学习识别这些任务并选择有效的适应策略就是有价值的。"
+    },
+    {
+     "en": "Extending this evaluation therefore requires new measurements on workloads tailored to the target model.",
+     "zh": "因此，要扩展这种评估方法，就需要针对目标模型设计新的工作负载进行测量。"
+    },
+    {
+     "en": "Such workloads could include challenging mathematical, scientific, and engineering tasks, potentially extending to open research problems with independently verifiable outcomes.",
+     "zh": "这类工作负载可以包括具有挑战性的数学、科学和工程任务，甚至可能扩展到具有可独立验证结果的研究性开放问题。"
+    },
+    {
+     "en": "The benchmark must evolve with model capabilities, while the objective of learning conditional TTT decisions remains applicable.",
+     "zh": "基准测试必须随着模型能力的提升而演进，但学习条件 TTT 决策这一目标仍然适用。"
+    }
+   ]
+  },
+  {
+   "en": "Unless otherwise specified, we use Qwen2.5-7B-Instruct ( Hui et al., 2024 ) with a rank- 16 16 policy LoRA. Both training stages optimize only the policy LoRA using AdamW, while keeping the backbone frozen. Guidance distillation runs for two epochs with learning rate 10 − 5 10^{-5} and batch size 32 32 . Reasoning and action tokens receive loss weights ω z = 1 \\omega_{z}=1 and ω a = 4 \\omega_{a}=4 , respectively, and the summed weighted loss is divided by 64 64 to set the gradient scale. Reinforcement learning starts from the distilled checkpoint and runs for three epochs with learning rate 5 × 10 − 6 5\\times 10^{-6} . Each rollout group contains G = 8 G=8 trajectories sampled at temperature 0.9 0.9 . We use a GRPO clipping parameter of 0.2 0.2 , a KL coefficient of 0.02 0.02 , and gradient accumulation over three rollout groups. An event is retired after all trajectories in one group reach its measured reward bound, with revisit probability 0.05 0.05 . The default cost per successful adaptation is 0.1 0.1 , and the invalid-action penalty coefficient is 0.15 0.15 . At evaluation time, both policy generation and final-answer decoding are greedy. For trained policies, we report the mean and sample standard deviation over three independent training runs, evaluating each checkpoint once.",
+   "zh": "除非另有说明，我们使用 Qwen2.5-7B-Instruct（Hui 等人，2024），并采用秩为 16 的策略 LoRA。 两个训练阶段均仅使用 AdamW 优化策略 LoRA，同时保持主干网络冻结。 引导蒸馏运行两个周期，学习率为 10^{-5}，批量大小为 32。 推理和动作标记分别获得损失权重 ω_z = 1 和 ω_a = 4，加权的总损失除以 64 以设置梯度规模。 强化学习从蒸馏后的检查点开始，运行三个周期，学习率为 5 × 10^{-6}。 每个展开组包含 G = 8 条在温度 0.9 下采样的轨迹。 我们使用 0.2 的 GRPO 裁剪参数、0.02 的 KL 系数，并对三个展开组进行梯度累积。 当一组中的所有轨迹都达到其测得的奖励界限时，该事件即被终止，重访概率为 0.05。 每次成功适应的默认成本为 0.1，无效动作的惩罚系数为 0.15。 在评估阶段，策略生成和最终答案解码均采用贪心策略。 对于训练后的策略，我们报告三次独立训练运行的均值和样本标准差，并对每个检查点进行一次评估。",
+   "sents": [
+    {
+     "en": "Unless otherwise specified, we use Qwen2.5-7B-Instruct ( Hui et al., 2024 ) with a rank- 16 16 policy LoRA.",
+     "zh": "除非另有说明，我们使用 Qwen2.5-7B-Instruct（Hui 等人，2024），并采用秩为 16 的策略 LoRA。"
+    },
+    {
+     "en": "Both training stages optimize only the policy LoRA using AdamW, while keeping the backbone frozen.",
+     "zh": "两个训练阶段均仅使用 AdamW 优化策略 LoRA，同时保持主干网络冻结。"
+    },
+    {
+     "en": "Guidance distillation runs for two epochs with learning rate 10 − 5 10^{-5} and batch size 32 32 .",
+     "zh": "引导蒸馏运行两个周期，学习率为 10^{-5}，批量大小为 32。"
+    },
+    {
+     "en": "Reasoning and action tokens receive loss weights ω z = 1 \\omega_{z}=1 and ω a = 4 \\omega_{a}=4 , respectively, and the summed weighted loss is divided by 64 64 to set the gradient scale.",
+     "zh": "推理和动作标记分别获得损失权重 ω_z = 1 和 ω_a = 4，加权的总损失除以 64 以设置梯度规模。"
+    },
+    {
+     "en": "Reinforcement learning starts from the distilled checkpoint and runs for three epochs with learning rate 5 × 10 − 6 5\\times 10^{-6} .",
+     "zh": "强化学习从蒸馏后的检查点开始，运行三个周期，学习率为 5 × 10^{-6}。"
+    },
+    {
+     "en": "Each rollout group contains G = 8 G=8 trajectories sampled at temperature 0.9 0.9 .",
+     "zh": "每个展开组包含 G = 8 条在温度 0.9 下采样的轨迹。"
+    },
+    {
+     "en": "We use a GRPO clipping parameter of 0.2 0.2 , a KL coefficient of 0.02 0.02 , and gradient accumulation over three rollout groups.",
+     "zh": "我们使用 0.2 的 GRPO 裁剪参数、0.02 的 KL 系数，并对三个展开组进行梯度累积。"
+    },
+    {
+     "en": "An event is retired after all trajectories in one group reach its measured reward bound, with revisit probability 0.05 0.05 .",
+     "zh": "当一组中的所有轨迹都达到其测得的奖励界限时，该事件即被终止，重访概率为 0.05。"
+    },
+    {
+     "en": "The default cost per successful adaptation is 0.1 0.1 , and the invalid-action penalty coefficient is 0.15 0.15 .",
+     "zh": "每次成功适应的默认成本为 0.1，无效动作的惩罚系数为 0.15。"
+    },
+    {
+     "en": "At evaluation time, both policy generation and final-answer decoding are greedy.",
+     "zh": "在评估阶段，策略生成和最终答案解码均采用贪心策略。"
+    },
+    {
+     "en": "For trained policies, we report the mean and sample standard deviation over three independent training runs, evaluating each checkpoint once.",
+     "zh": "对于训练后的策略，我们报告三次独立训练运行的均值和样本标准差，并对每个检查点进行一次评估。"
+    }
+   ]
+  },
+  {
+   "en": "We equip Agentic-TTT with five TTT methods covering different adaptation signals and temporal granularities. PoT ( Jiao et al., 2026 ) performs per-query search and online adaptation using execution feedback or answer agreement. TTT-FS ( Akyürek et al., 2025 ) converts in-context demonstrations into a task-specific adapter through leave-one-out augmentation. TTRL ( Zuo et al., 2025 ) performs reinforcement learning over accumulated related queries using majority-vote pseudo-labels. SEAL ( Zweiger et al., 2025 ) generates self-edits from input text and distills them into an adapter. TLM ( Hu et al., 2025a ) directly minimizes language-modeling loss on the input text. Table 7 summarizes their required materials, training signals, and hyperparameter settings.",
+   "zh": "我们为 Agentic-TTT 配备了五种 TTT 方法，涵盖了不同的适应信号和时间粒度。 PoT（Jiao 等，2026）通过执行反馈或答案一致性进行每次查询的搜索和在线适应。 TTT-FS（Akyürek 等，2025）通过留一法增强将上下文中的演示转换为特定任务的适配器。 TTRL（Zuo 等，2025）基于多数投票伪标签，对累积的相关查询进行强化学习。 SEAL（Zweiger 等，2025）从输入文本中生成自我编辑，并将其蒸馏为适配器。 TLM（Hu 等，2025a）直接最小化输入文本上的语言建模损失。 表 7 总结了它们所需的材料、训练信号和超参数设置。",
+   "sents": [
+    {
+     "en": "We equip Agentic-TTT with five TTT methods covering different adaptation signals and temporal granularities.",
+     "zh": "我们为 Agentic-TTT 配备了五种 TTT 方法，涵盖了不同的适应信号和时间粒度。"
+    },
+    {
+     "en": "PoT ( Jiao et al., 2026 ) performs per-query search and online adaptation using execution feedback or answer agreement.",
+     "zh": "PoT（Jiao 等，2026）通过执行反馈或答案一致性进行每次查询的搜索和在线适应。"
+    },
+    {
+     "en": "TTT-FS ( Akyürek et al., 2025 ) converts in-context demonstrations into a task-specific adapter through leave-one-out augmentation.",
+     "zh": "TTT-FS（Akyürek 等，2025）通过留一法增强将上下文中的演示转换为特定任务的适配器。"
+    },
+    {
+     "en": "TTRL ( Zuo et al., 2025 ) performs reinforcement learning over accumulated related queries using majority-vote pseudo-labels.",
+     "zh": "TTRL（Zuo 等，2025）基于多数投票伪标签，对累积的相关查询进行强化学习。"
+    },
+    {
+     "en": "SEAL ( Zweiger et al., 2025 ) generates self-edits from input text and distills them into an adapter.",
+     "zh": "SEAL（Zweiger 等，2025）从输入文本中生成自我编辑，并将其蒸馏为适配器。"
+    },
+    {
+     "en": "TLM ( Hu et al., 2025a ) directly minimizes language-modeling loss on the input text.",
+     "zh": "TLM（Hu 等，2025a）直接最小化输入文本上的语言建模损失。"
+    },
+    {
+     "en": "Table 7 summarizes their required materials, training signals, and hyperparameter settings.",
+     "zh": "表 7 总结了它们所需的材料、训练信号和超参数设置。"
+    }
+   ]
+  },
+  {
+   "en": "TTT adaptation is computationally expensive, and the same adaptation configuration may recur across training epochs. We therefore cache its measured outcomes. For each newly encountered configuration, we perform three independent TTT runs, evaluate the resulting adapters, and cache their mean utility gain as an estimate of the expected gain. Subsequent occurrences reuse this estimate instead of repeating the adaptation. This reduces training overhead and mitigates reward variability caused by stochastic TTT optimization.",
+   "zh": "TTT 适应过程计算成本高昂，且相同的适应配置可能在不同训练轮次中重复出现。 因此，我们将其测量结果进行缓存。 对于每个新遇到的配置，我们都会执行三次独立的 TTT 运行，评估由此产生的适配器，并将它们的平均效用增益缓存下来，作为预期增益的估计值。 后续出现时，将直接复用该估计值，而无需重复适应过程。 这降低了训练开销，并减轻了随机 TTT 优化所导致的奖励波动。",
+   "sents": [
+    {
+     "en": "TTT adaptation is computationally expensive, and the same adaptation configuration may recur across training epochs.",
+     "zh": "TTT 适应过程计算成本高昂，且相同的适应配置可能在不同训练轮次中重复出现。"
+    },
+    {
+     "en": "We therefore cache its measured outcomes.",
+     "zh": "因此，我们将其测量结果进行缓存。"
+    },
+    {
+     "en": "For each newly encountered configuration, we perform three independent TTT runs, evaluate the resulting adapters, and cache their mean utility gain as an estimate of the expected gain.",
+     "zh": "对于每个新遇到的配置，我们都会执行三次独立的 TTT 运行，评估由此产生的适配器，并将它们的平均效用增益缓存下来，作为预期增益的估计值。"
+    },
+    {
+     "en": "Subsequent occurrences reuse this estimate instead of repeating the adaptation.",
+     "zh": "后续出现时，将直接复用该估计值，而无需重复适应过程。"
+    },
+    {
+     "en": "This reduces training overhead and mitigates reward variability caused by stochastic TTT optimization.",
+     "zh": "这降低了训练开销，并减轻了随机 TTT 优化所导致的奖励波动。"
+    }
+   ]
+  },
+  {
+   "en": "We train on a single NVIDIA H200 GPU and use vLLM to accelerate inference wherever supported. Without TTT caching, a training run with a 7B backbone takes approximately 11 11 GPU-hours.",
+   "zh": "我们在单块 NVIDIA H200 GPU 上进行训练，并在所有支持的情况下使用 vLLM 来加速推理。 如果没有 TTT 缓存，使用 7B 骨干模型进行的一次训练大约需要 11 个 GPU 小时。",
+   "sents": [
+    {
+     "en": "We train on a single NVIDIA H200 GPU and use vLLM to accelerate inference wherever supported.",
+     "zh": "我们在单块 NVIDIA H200 GPU 上进行训练，并在所有支持的情况下使用 vLLM 来加速推理。"
+    },
+    {
+     "en": "Without TTT caching, a training run with a 7B backbone takes approximately 11 11 GPU-hours.",
+     "zh": "如果没有 TTT 缓存，使用 7B 骨干模型进行的一次训练大约需要 11 个 GPU 小时。"
+    }
+   ]
+  },
+  {
+   "en": "The harness maintains separate contexts for policy interaction and answer generation. The policy context contains the current query, a relevance-ranked view of the adaptation pools and available skills, and the interaction history accumulated within the current query. At each turn, the frozen backbone equipped with the learned policy LoRA generates a reasoning trace followed by a structured action. The harness executes the action and, for a nonterminal action, appends its feedback and an updated state snapshot to the conversation. The policy then continues from this expanded context, retaining its previous reasoning, actions, and observations. For final-answer decoding, the harness disables the policy LoRA and uses the frozen backbone either without an adapter or with the selected skill LoRA, as specified by the action sequence. The answer-generation context contains only the original query; it excludes the policy reasoning, action history, and environment observations. The resulting response is submitted as the final answer, terminating the interaction for that query.",
+   "zh": "该框架为策略交互和答案生成维护了独立的上下文。 策略上下文包含当前查询、按相关性排序的适配池和可用技能视图，以及在当前查询中累积的交互历史。 在每个回合中，配备已学习策略 LoRA 的冻结主干模型会生成一条推理轨迹，随后输出一个结构化动作。 该框架执行该动作，并且对于非终结动作，会将反馈和更新后的状态快照附加到对话中。 随后，策略基于这一扩展后的上下文继续处理，同时保留其先前的推理、动作和观察结果。 在最终答案解码时，该框架会禁用策略 LoRA，并根据动作序列的指定，使用不带适配器的冻结主干模型，或使用选定的技能 LoRA。 答案生成上下文仅包含原始查询；它不包含策略推理、动作历史和环境观察结果。 最终生成的响应将作为最终答案提交，从而结束该查询的交互。",
+   "sents": [
+    {
+     "en": "The harness maintains separate contexts for policy interaction and answer generation.",
+     "zh": "该框架为策略交互和答案生成维护了独立的上下文。"
+    },
+    {
+     "en": "The policy context contains the current query, a relevance-ranked view of the adaptation pools and available skills, and the interaction history accumulated within the current query.",
+     "zh": "策略上下文包含当前查询、按相关性排序的适配池和可用技能视图，以及在当前查询中累积的交互历史。"
+    },
+    {
+     "en": "At each turn, the frozen backbone equipped with the learned policy LoRA generates a reasoning trace followed by a structured action.",
+     "zh": "在每个回合中，配备已学习策略 LoRA 的冻结主干模型会生成一条推理轨迹，随后输出一个结构化动作。"
+    },
+    {
+     "en": "The harness executes the action and, for a nonterminal action, appends its feedback and an updated state snapshot to the conversation.",
+     "zh": "该框架执行该动作，并且对于非终结动作，会将反馈和更新后的状态快照附加到对话中。"
+    },
+    {
+     "en": "The policy then continues from this expanded context, retaining its previous reasoning, actions, and observations.",
+     "zh": "随后，策略基于这一扩展后的上下文继续处理，同时保留其先前的推理、动作和观察结果。"
+    },
+    {
+     "en": "For final-answer decoding, the harness disables the policy LoRA and uses the frozen backbone either without an adapter or with the selected skill LoRA, as specified by the action sequence.",
+     "zh": "在最终答案解码时，该框架会禁用策略 LoRA，并根据动作序列的指定，使用不带适配器的冻结主干模型，或使用选定的技能 LoRA。"
+    },
+    {
+     "en": "The answer-generation context contains only the original query; it excludes the policy reasoning, action history, and environment observations.",
+     "zh": "答案生成上下文仅包含原始查询；它不包含策略推理、动作历史和环境观察结果。"
+    },
+    {
+     "en": "The resulting response is submitted as the final answer, terminating the interaction for that query.",
+     "zh": "最终生成的响应将作为最终答案提交，从而结束该查询的交互。"
+    }
+   ]
+  },
+  {
+   "en": "Each policy turn emits one structured action following its reasoning trace. Table 6 summarizes the action arguments, execution effects, and preconditions. Only Generate terminates the interaction; the other actions return observations that inform the policy’s next decision. Each query allows at most six policy turns and one successful adaptation. Parsing errors, unmet preconditions, and recoverable execution failures are reported through observations, allowing the policy to revise its action. Every policy turn consumes the turn budget, including rejected actions and policy-issued retries, whereas a rejected Adapt does not consume the adaptation allowance. If the turn budget is exhausted before the policy submits an answer, the harness forces direct answer generation with the frozen backbone and no skill adapter.",
+   "zh": "每个策略回合都会根据其推理轨迹发出一个结构化动作。 表 6 总结了动作参数、执行效果及前提条件。 只有“生成”操作会终止交互；其他动作则会返回观察结果，为策略的下一步决策提供信息。 每次查询最多允许六个策略回合和一次成功适配。 解析错误、未满足的前提条件以及可恢复的执行失败会通过观察结果报告，从而让策略能够修正其动作。 每个策略回合都会消耗回合预算，包括被拒绝的动作和策略发起的重试；而被拒绝的“适配”操作则不会消耗适配配额。 如果策略在提交答案前用尽了回合预算，系统框架将强制使用冻结的主干架构且无需技能适配器来直接生成答案。",
+   "sents": [
+    {
+     "en": "Each policy turn emits one structured action following its reasoning trace.",
+     "zh": "每个策略回合都会根据其推理轨迹发出一个结构化动作。"
+    },
+    {
+     "en": "Table 6 summarizes the action arguments, execution effects, and preconditions.",
+     "zh": "表 6 总结了动作参数、执行效果及前提条件。"
+    },
+    {
+     "en": "Only Generate terminates the interaction; the other actions return observations that inform the policy’s next decision.",
+     "zh": "只有“生成”操作会终止交互；其他动作则会返回观察结果，为策略的下一步决策提供信息。"
+    },
+    {
+     "en": "Each query allows at most six policy turns and one successful adaptation.",
+     "zh": "每次查询最多允许六个策略回合和一次成功适配。"
+    },
+    {
+     "en": "Parsing errors, unmet preconditions, and recoverable execution failures are reported through observations, allowing the policy to revise its action.",
+     "zh": "解析错误、未满足的前提条件以及可恢复的执行失败会通过观察结果报告，从而让策略能够修正其动作。"
+    },
+    {
+     "en": "Every policy turn consumes the turn budget, including rejected actions and policy-issued retries, whereas a rejected Adapt does not consume the adaptation allowance.",
+     "zh": "每个策略回合都会消耗回合预算，包括被拒绝的动作和策略发起的重试；而被拒绝的“适配”操作则不会消耗适配配额。"
+    },
+    {
+     "en": "If the turn budget is exhausted before the policy submits an answer, the harness forces direct answer generation with the frozen backbone and no skill adapter.",
+     "zh": "如果策略在提交答案前用尽了回合预算，系统框架将强制使用冻结的主干架构且无需技能适配器来直接生成答案。"
+    }
+   ]
+  },
+  {
+   "en": "The policy provides method-specific payloads through structured actions. The harness parses each Adapt action block, retrieves the inputs from the specified pool, and executes the requested TTT method. Table 7 summarizes the required materials, training signals, and hyperparameter settings.",
+   "zh": "该策略通过结构化动作提供特定方法的有效载荷。 该框架解析每个 Adapt 动作块，从指定的池中获取输入，并执行所请求的 TTT 方法。 表 7 总结了所需的材料、训练信号和超参数设置。",
+   "sents": [
+    {
+     "en": "The policy provides method-specific payloads through structured actions.",
+     "zh": "该策略通过结构化动作提供特定方法的有效载荷。"
+    },
+    {
+     "en": "The harness parses each Adapt action block, retrieves the inputs from the specified pool, and executes the requested TTT method.",
+     "zh": "该框架解析每个 Adapt 动作块，从指定的池中获取输入，并执行所请求的 TTT 方法。"
+    },
+    {
+     "en": "Table 7 summarizes the required materials, training signals, and hyperparameter settings.",
+     "zh": "表 7 总结了所需的材料、训练信号和超参数设置。"
+    }
+   ]
+  },
+  {
+   "en": "The policy decides whether to archive the current query based on its content, the relevance of the visible pools, and the material available for adaptation. To perform Assign , it specifies a pool name and a structured payload. The harness constructs pool names from a query-type prefix and a descriptor or identifier derived from the input. For example, mcq-medical-4opt encodes the multiple-choice format, a rule-derived domain label, and the number of options, The resulting name is shown to the policy and validated when processing Assign .",
+   "zh": "策略会根据当前查询的内容、可见池的相关性以及可用于改编的材料，决定是否将其归档。 要执行“分配”，需要指定一个池名称和一个结构化负载。 工具会从查询类型前缀以及从输入中派生的描述符或标识符中构建池名称。 例如，mcq-medical-4opt 编码了多项选择题格式、由规则推导出的领域标签以及选项数量，最终生成的名称会显示给策略，并在处理“分配”时进行验证。",
+   "sents": [
+    {
+     "en": "The policy decides whether to archive the current query based on its content, the relevance of the visible pools, and the material available for adaptation.",
+     "zh": "策略会根据当前查询的内容、可见池的相关性以及可用于改编的材料，决定是否将其归档。"
+    },
+    {
+     "en": "To perform Assign , it specifies a pool name and a structured payload.",
+     "zh": "要执行“分配”，需要指定一个池名称和一个结构化负载。"
+    },
+    {
+     "en": "The harness constructs pool names from a query-type prefix and a descriptor or identifier derived from the input.",
+     "zh": "工具会从查询类型前缀以及从输入中派生的描述符或标识符中构建池名称。"
+    },
+    {
+     "en": "For example, mcq-medical-4opt encodes the multiple-choice format, a rule-derived domain label, and the number of options, The resulting name is shown to the policy and validated when processing Assign .",
+     "zh": "例如，mcq-medical-4opt 编码了多项选择题格式、由规则推导出的领域标签以及选项数量，最终生成的名称会显示给策略，并在处理“分配”时进行验证。"
+    }
+   ]
+  },
+  {
+   "en": "Each pool retains its archived samples and at most one current skill adapter. The first successful Adapt creates this adapter. For incremental re-adaptation, the harness warm-starts from the existing adapter and trains on newly accumulated samples together with up to eight randomly selected replay samples. The updated adapter replaces its predecessor, while the archived samples remain in the pool. Pools and stored adapters persist across queries. Each visible pool entry shows its name, material excerpts, total and unconsumed sample counts, and training state, along with the adapter ID and TTT method when available. The training state indicates whether the pool is untrained , up-to-date , or growing with additional unconsumed samples. A growing pool’s existing adapter remains available for reuse until the policy requests another adaptation.",
+   "zh": "每个池子都保留其存档样本和最多一个当前的技能适配器。 首次成功的 Adapt 操作会创建该适配器。 对于增量重新适配，系统会从现有适配器进行暖启动，并基于新积累的样本以及最多八个随机选择的重复播放样本进行训练。 更新后的适配器将取代其前身，而存档样本仍保留在池子中。 池子和存储的适配器会在多次查询之间持续存在。 每个可见的池子条目都会显示其名称、材料摘录、样本总数和未消耗样本数以及训练状态；如果可用，还会显示适配器 ID 和 TTT 方法。 训练状态表明该池子是未训练、已更新，还是正在通过添加更多未消耗样本而持续增长。 对于正在增长的池子，其现有适配器在策略请求另一次适配之前仍可用于重复使用。",
+   "sents": [
+    {
+     "en": "Each pool retains its archived samples and at most one current skill adapter.",
+     "zh": "每个池子都保留其存档样本和最多一个当前的技能适配器。"
+    },
+    {
+     "en": "The first successful Adapt creates this adapter.",
+     "zh": "首次成功的 Adapt 操作会创建该适配器。"
+    },
+    {
+     "en": "For incremental re-adaptation, the harness warm-starts from the existing adapter and trains on newly accumulated samples together with up to eight randomly selected replay samples.",
+     "zh": "对于增量重新适配，系统会从现有适配器进行暖启动，并基于新积累的样本以及最多八个随机选择的重复播放样本进行训练。"
+    },
+    {
+     "en": "The updated adapter replaces its predecessor, while the archived samples remain in the pool.",
+     "zh": "更新后的适配器将取代其前身，而存档样本仍保留在池子中。"
+    },
+    {
+     "en": "Pools and stored adapters persist across queries.",
+     "zh": "池子和存储的适配器会在多次查询之间持续存在。"
+    },
+    {
+     "en": "Each visible pool entry shows its name, material excerpts, total and unconsumed sample counts, and training state, along with the adapter ID and TTT method when available.",
+     "zh": "每个可见的池子条目都会显示其名称、材料摘录、样本总数和未消耗样本数以及训练状态；如果可用，还会显示适配器 ID 和 TTT 方法。"
+    },
+    {
+     "en": "The training state indicates whether the pool is untrained , up-to-date , or growing with additional unconsumed samples.",
+     "zh": "训练状态表明该池子是未训练、已更新，还是正在通过添加更多未消耗样本而持续增长。"
+    },
+    {
+     "en": "A growing pool’s existing adapter remains available for reuse until the policy requests another adaptation.",
+     "zh": "对于正在增长的池子，其现有适配器在策略请求另一次适配之前仍可用于重复使用。"
+    }
+   ]
+  },
+  {
+   "en": "The harness ranks pools using semantic embeddings and BM25 lexical matching over query text and material excerpts. For each pool, semantic similarities are aggregated over its most relevant samples and rescaled to obtain the displayed relevance score. The semantic and lexical rankings are then combined to select the top- k k pools presented to the policy, limiting the context overhead as the skill library grows. We set k = 8 k=8 in our experiments.",
+   "zh": "该框架通过语义嵌入和 BM25 词汇匹配，基于查询文本和材料节选对池进行排序。 对于每个池，系统会对其最相关的样本进行语义相似度聚合，并重新缩放以获得显示的相关性得分。 随后，系统将语义排名和词汇排名相结合，以选择前 k 个池呈现给策略，从而在技能库增长时限制上下文开销。 在我们的实验中，我们设置 k = 8。",
+   "sents": [
+    {
+     "en": "The harness ranks pools using semantic embeddings and BM25 lexical matching over query text and material excerpts.",
+     "zh": "该框架通过语义嵌入和 BM25 词汇匹配，基于查询文本和材料节选对池进行排序。"
+    },
+    {
+     "en": "For each pool, semantic similarities are aggregated over its most relevant samples and rescaled to obtain the displayed relevance score.",
+     "zh": "对于每个池，系统会对其最相关的样本进行语义相似度聚合，并重新缩放以获得显示的相关性得分。"
+    },
+    {
+     "en": "The semantic and lexical rankings are then combined to select the top- k k pools presented to the policy, limiting the context overhead as the skill library grows.",
+     "zh": "随后，系统将语义排名和词汇排名相结合，以选择前 k 个池呈现给策略，从而在技能库增长时限制上下文开销。"
+    },
+    {
+     "en": "We set k = 8 k=8 in our experiments.",
+     "zh": "在我们的实验中，我们设置 k = 8。"
+    }
+   ]
+  },
+  {
+   "en": "The following system prompt specifies the policy’s role, the available actions and TTT methods, and the required response format. This is the system prompt we consistently used in our model training and the prompted baseline.",
+   "zh": "以下系统提示指定了策略的角色、可用的动作和 TTT 方法，以及所需的响应格式。 这是我们在模型训练和提示基准测试中始终使用的系统提示。",
+   "sents": [
+    {
+     "en": "The following system prompt specifies the policy’s role, the available actions and TTT methods, and the required response format.",
+     "zh": "以下系统提示指定了策略的角色、可用的动作和 TTT 方法，以及所需的响应格式。"
+    },
+    {
+     "en": "This is the system prompt we consistently used in our model training and the prompted baseline.",
+     "zh": "这是我们在模型训练和提示基准测试中始终使用的系统提示。"
+    }
+   ]
+  },
+  {
+   "en": "The following templates specify the internal prompts and training-input formats of the TTT methods. Braced fields denote substituted content, and role labels indicate message boundaries. TTRL samples responses directly from the queries stored in the pool, without adding a method-specific instruction. TLM trains directly on the input text or its chunks, without an additional generation prompt.",
+   "zh": "以下模板指定了 TTT 方法的内部提示词和训练输入格式。 花括号内的字段表示待替换的内容，角色标签则表示消息的边界。 TTRL 直接从池中存储的查询中采样响应，无需添加特定于该方法的指令。 TLM 直接对输入文本或其分块进行训练，无需额外的生成提示词。",
+   "sents": [
+    {
+     "en": "The following templates specify the internal prompts and training-input formats of the TTT methods.",
+     "zh": "以下模板指定了 TTT 方法的内部提示词和训练输入格式。"
+    },
+    {
+     "en": "Braced fields denote substituted content, and role labels indicate message boundaries.",
+     "zh": "花括号内的字段表示待替换的内容，角色标签则表示消息的边界。"
+    },
+    {
+     "en": "TTRL samples responses directly from the queries stored in the pool, without adding a method-specific instruction.",
+     "zh": "TTRL 直接从池中存储的查询中采样响应，无需添加特定于该方法的指令。"
+    },
+    {
+     "en": "TLM trains directly on the input text or its chunks, without an additional generation prompt.",
+     "zh": "TLM 直接对输入文本或其分块进行训练，无需额外的生成提示词。"
+    }
+   ]
+  },
+  {
+   "en": "During guided rollout collection, the policy receives a hint specifying the next target action and explaining its execution. The first-turn hint is appended to the current query, while subsequent hints are appended to the corresponding observations. The first box provides the shared wrappers and action descriptions. For the first turn, the wrapper contains one rationale from the second box; for compute-aware direct-generation examples, a rationale from the third box replaces the regular rationale. Later turns use the shorter wrapper, with a state or cost reminder when applicable. An exact action block accompanies the action description. Target actions and guidance variants are selected from the training annotations. Query excerpts come from the current input; pool names, adapter identifiers, and sample counts are filled from the target action and current harness state. All collection hints are removed from the policy input prefixes when constructing SFT examples and are absent during evaluation.",
+   "zh": "在引导式展开收集过程中，策略会收到一个提示，其中指定了下一个目标动作并解释了其执行方式。 第一轮的提示会附加到当前查询中，而后续提示则附加到相应的观察结果中。 第一个框提供了共享的包装器和动作描述。 对于第一轮，包装器包含来自第二个框的一个理由；对于计算感知直接生成示例，来自第三个框的理由将取代常规理由。 后续轮次使用较短的包装器，并在适用时加入状态或成本提醒。 一个精确的动作块会伴随动作描述一同出现。 目标动作和引导变体均从训练标注中选取。 查询片段来自当前输入；池名称、适配器标识符和样本数量则根据目标动作和当前执行环境的状态填充。 在构建 SFT 示例时，所有收集提示都会被从策略输入前缀中移除，并且在评估阶段不会出现。",
+   "sents": [
+    {
+     "en": "During guided rollout collection, the policy receives a hint specifying the next target action and explaining its execution.",
+     "zh": "在引导式展开收集过程中，策略会收到一个提示，其中指定了下一个目标动作并解释了其执行方式。"
+    },
+    {
+     "en": "The first-turn hint is appended to the current query, while subsequent hints are appended to the corresponding observations.",
+     "zh": "第一轮的提示会附加到当前查询中，而后续提示则附加到相应的观察结果中。"
+    },
+    {
+     "en": "The first box provides the shared wrappers and action descriptions.",
+     "zh": "第一个框提供了共享的包装器和动作描述。"
+    },
+    {
+     "en": "For the first turn, the wrapper contains one rationale from the second box; for compute-aware direct-generation examples, a rationale from the third box replaces the regular rationale.",
+     "zh": "对于第一轮，包装器包含来自第二个框的一个理由；对于计算感知直接生成示例，来自第三个框的理由将取代常规理由。"
+    },
+    {
+     "en": "Later turns use the shorter wrapper, with a state or cost reminder when applicable.",
+     "zh": "后续轮次使用较短的包装器，并在适用时加入状态或成本提醒。"
+    },
+    {
+     "en": "An exact action block accompanies the action description.",
+     "zh": "一个精确的动作块会伴随动作描述一同出现。"
+    },
+    {
+     "en": "Target actions and guidance variants are selected from the training annotations.",
+     "zh": "目标动作和引导变体均从训练标注中选取。"
+    },
+    {
+     "en": "Query excerpts come from the current input; pool names, adapter identifiers, and sample counts are filled from the target action and current harness state.",
+     "zh": "查询片段来自当前输入；池名称、适配器标识符和样本数量则根据目标动作和当前执行环境的状态填充。"
+    },
+    {
+     "en": "All collection hints are removed from the policy input prefixes when constructing SFT examples and are absent during evaluation.",
+     "zh": "在构建 SFT 示例时，所有收集提示都会被从策略输入前缀中移除，并且在评估阶段不会出现。"
+    }
+   ]
+  },
+  {
+   "en": "In this section, we discuss the limitations of this work and highlight opportunities for future research.",
+   "zh": "在本节中，我们将讨论本研究的局限性，并指出未来研究的机会。",
+   "sents": null
+  },
+  {
+   "en": "Our benchmark deliberately enriches queries with observed TTT benefits to evaluate how effectively the proposed pipeline can train a policy to exploit adaptation opportunities. This outcome-based selection limits the generality of the reported gains. On workloads where beneficial adaptation is rare or yields only modest improvements, the achievable aggregate gains may be substantially smaller, and the performance gap over competing baselines may narrow or disappear. Our results therefore do not establish a consistent advantage across arbitrary deployment distributions. The potential benefit of TTT agency is constrained by the available TTT methods, their suitability for the target workload, the backbone’s remaining improvement headroom, and the computation budget. Policy learning can help realize this potential through appropriate adaptation and reuse decisions, but cannot guarantee gains where no TTT method can provide useful improvement.",
+   "zh": "我们的基准测试特意通过加入已观察到的 TTT 收益来丰富查询，以评估所提出的流程能多有效地训练策略，从而利用适应机会。 这种基于结果的筛选方式限制了所报告收益的普遍性。 在有益适应罕见或仅带来轻微改进的工作负载中，可实现的总体收益可能显著更小，与竞争基线模型之间的性能差距也可能缩小甚至消失。 因此，我们的结果并未证明该方法在任何部署分布下都具有持续的优势。 TTT 智能体的潜在收益受到可用 TTT 方法、这些方法对目标工作负载的适用性、主干模型剩余的改进空间以及计算预算的限制。 策略学习可以通过适当的适应和重用决策来帮助实现这一潜力，但在没有 TTT 方法能够提供有效改进的情况下，它无法保证产生收益。",
+   "sents": [
+    {
+     "en": "Our benchmark deliberately enriches queries with observed TTT benefits to evaluate how effectively the proposed pipeline can train a policy to exploit adaptation opportunities.",
+     "zh": "我们的基准测试特意通过加入已观察到的 TTT 收益来丰富查询，以评估所提出的流程能多有效地训练策略，从而利用适应机会。"
+    },
+    {
+     "en": "This outcome-based selection limits the generality of the reported gains.",
+     "zh": "这种基于结果的筛选方式限制了所报告收益的普遍性。"
+    },
+    {
+     "en": "On workloads where beneficial adaptation is rare or yields only modest improvements, the achievable aggregate gains may be substantially smaller, and the performance gap over competing baselines may narrow or disappear.",
+     "zh": "在有益适应罕见或仅带来轻微改进的工作负载中，可实现的总体收益可能显著更小，与竞争基线模型之间的性能差距也可能缩小甚至消失。"
+    },
+    {
+     "en": "Our results therefore do not establish a consistent advantage across arbitrary deployment distributions.",
+     "zh": "因此，我们的结果并未证明该方法在任何部署分布下都具有持续的优势。"
+    },
+    {
+     "en": "The potential benefit of TTT agency is constrained by the available TTT methods, their suitability for the target workload, the backbone’s remaining improvement headroom, and the computation budget.",
+     "zh": "TTT 智能体的潜在收益受到可用 TTT 方法、这些方法对目标工作负载的适用性、主干模型剩余的改进空间以及计算预算的限制。"
+    },
+    {
+     "en": "Policy learning can help realize this potential through appropriate adaptation and reuse decisions, but cannot guarantee gains where no TTT method can provide useful improvement.",
+     "zh": "策略学习可以通过适当的适应和重用决策来帮助实现这一潜力，但在没有 TTT 方法能够提供有效改进的情况下，它无法保证产生收益。"
+    }
+   ]
+  },
+  {
+   "en": "Our RL stage optimizes query-level returns, while the training stream advances through annotated gold actions. Equation equation 4 therefore specifies the deployment objective, which is not directly optimized over complete streams during training. Sample accumulation and skill construction for future reuse are primarily supported by the priors established through heuristic-guided SFT, while RL refines decisions using current-query outcomes. Although RL rollouts are sampled from the policy, their initial library and pool states are generated by gold action histories. This creates a mismatch with autonomous deployment, where earlier policy decisions determine subsequent states, and can introduce exposure bias. Learning across queries requires addressing delayed credit assignment: the benefit of collecting material or constructing a skill may emerge much later, and a single successful answer may depend on several earlier decisions. Attributing such benefits to the contributing actions is a central challenge. We leave training on autonomous streams with explicit cross-query credit assignment to future work. Such training could improve both long-term utility and robustness to states arising from the policy’s own decisions.",
+   "zh": "我们的强化学习阶段优化查询级别的回报，而训练流程则通过标注的黄金动作逐步推进。 因此，方程 4 明确了部署目标，该目标在训练期间不会直接针对完整的流程进行优化。 样本积累和未来可重用的技能构建主要由通过启发式引导的 SFT 建立的先验知识支持，而强化学习则利用当前查询的结果来优化决策。 尽管强化学习的展开是从策略中采样的，但其初始库和池状态是由黄金动作历史生成的。 这与自主部署存在不匹配：在自主部署中，早期的策略决策会决定后续状态，并可能引入暴露偏差。 跨查询的学习需要解决延迟信用分配问题：收集材料或构建技能的收益可能在很久之后才显现，而单个成功的答案可能依赖于多个早期的决策。 将此类收益归因于有贡献的动作是一项核心挑战。 我们将带有明确跨查询信用分配的自主流程训练留待未来工作处理。 此类训练能够提升长期效用，并增强对策略自身决策所产生状态的鲁棒性。",
+   "sents": [
+    {
+     "en": "Our RL stage optimizes query-level returns, while the training stream advances through annotated gold actions.",
+     "zh": "我们的强化学习阶段优化查询级别的回报，而训练流程则通过标注的黄金动作逐步推进。"
+    },
+    {
+     "en": "Equation equation 4 therefore specifies the deployment objective, which is not directly optimized over complete streams during training.",
+     "zh": "因此，方程 4 明确了部署目标，该目标在训练期间不会直接针对完整的流程进行优化。"
+    },
+    {
+     "en": "Sample accumulation and skill construction for future reuse are primarily supported by the priors established through heuristic-guided SFT, while RL refines decisions using current-query outcomes.",
+     "zh": "样本积累和未来可重用的技能构建主要由通过启发式引导的 SFT 建立的先验知识支持，而强化学习则利用当前查询的结果来优化决策。"
+    },
+    {
+     "en": "Although RL rollouts are sampled from the policy, their initial library and pool states are generated by gold action histories.",
+     "zh": "尽管强化学习的展开是从策略中采样的，但其初始库和池状态是由黄金动作历史生成的。"
+    },
+    {
+     "en": "This creates a mismatch with autonomous deployment, where earlier policy decisions determine subsequent states, and can introduce exposure bias.",
+     "zh": "这与自主部署存在不匹配：在自主部署中，早期的策略决策会决定后续状态，并可能引入暴露偏差。"
+    },
+    {
+     "en": "Learning across queries requires addressing delayed credit assignment: the benefit of collecting material or constructing a skill may emerge much later, and a single successful answer may depend on several earlier decisions.",
+     "zh": "跨查询的学习需要解决延迟信用分配问题：收集材料或构建技能的收益可能在很久之后才显现，而单个成功的答案可能依赖于多个早期的决策。"
+    },
+    {
+     "en": "Attributing such benefits to the contributing actions is a central challenge.",
+     "zh": "将此类收益归因于有贡献的动作是一项核心挑战。"
+    },
+    {
+     "en": "We leave training on autonomous streams with explicit cross-query credit assignment to future work.",
+     "zh": "我们将带有明确跨查询信用分配的自主流程训练留待未来工作处理。"
+    },
+    {
+     "en": "Such training could improve both long-term utility and robustness to states arising from the policy’s own decisions.",
+     "zh": "此类训练能够提升长期效用，并增强对策略自身决策所产生状态的鲁棒性。"
+    }
+   ]
+  },
+  {
+   "en": "TTRL’s model-generated pseudo-labels may reinforce incorrect predictions, and a shared skill library may propagate errors or become a target for poisoning through adaptation material. Our design provides a degree of containment: each skill is an isolated LoRA adapter, and the pretrained backbone remains frozen. A harmful skill can therefore be disabled or removed independently, without reverting the backbone or unrelated adapters. Compared with continual full-parameter updates, this separation makes harmful parameter changes easier to isolate and roll back. However, reversibility does not prevent harmful outputs while a compromised skill is active or undo their downstream consequences. Detecting poisoned skills and assessing robustness under adversarial adaptation remain important directions for future work.",
+   "zh": "TTRL 模型生成的伪标签可能会强化错误预测，而共享的技能库则可能通过适配材料传播错误或成为投毒的目标。 我们的设计提供了一定程度的隔离：每个技能都是一个独立的 LoRA 适配器，且预训练的骨干网络保持冻结状态。 因此，有害技能可以被独立禁用或移除，而无需回退骨干网络或无关的适配器。 与持续的全参数更新相比，这种分离使得有害的参数变更更容易被隔离和回滚。 然而，可逆性并不能在受影响的技能处于激活状态时阻止有害输出，也无法消除其下游后果。 检测被投毒的技能并评估其在对抗性适配下的鲁棒性，仍然是未来研究的重要方向。",
+   "sents": [
+    {
+     "en": "TTRL’s model-generated pseudo-labels may reinforce incorrect predictions, and a shared skill library may propagate errors or become a target for poisoning through adaptation material.",
+     "zh": "TTRL 模型生成的伪标签可能会强化错误预测，而共享的技能库则可能通过适配材料传播错误或成为投毒的目标。"
+    },
+    {
+     "en": "Our design provides a degree of containment: each skill is an isolated LoRA adapter, and the pretrained backbone remains frozen.",
+     "zh": "我们的设计提供了一定程度的隔离：每个技能都是一个独立的 LoRA 适配器，且预训练的骨干网络保持冻结状态。"
+    },
+    {
+     "en": "A harmful skill can therefore be disabled or removed independently, without reverting the backbone or unrelated adapters.",
+     "zh": "因此，有害技能可以被独立禁用或移除，而无需回退骨干网络或无关的适配器。"
+    },
+    {
+     "en": "Compared with continual full-parameter updates, this separation makes harmful parameter changes easier to isolate and roll back.",
+     "zh": "与持续的全参数更新相比，这种分离使得有害的参数变更更容易被隔离和回滚。"
+    },
+    {
+     "en": "However, reversibility does not prevent harmful outputs while a compromised skill is active or undo their downstream consequences.",
+     "zh": "然而，可逆性并不能在受影响的技能处于激活状态时阻止有害输出，也无法消除其下游后果。"
+    },
+    {
+     "en": "Detecting poisoned skills and assessing robustness under adversarial adaptation remain important directions for future work.",
+     "zh": "检测被投毒的技能并评估其在对抗性适配下的鲁棒性，仍然是未来研究的重要方向。"
+    }
+   ]
+  }
+ ]
+}
