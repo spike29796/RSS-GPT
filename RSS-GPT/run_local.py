@@ -71,6 +71,15 @@ def main():
         print("（无变更可提交，跳过）")
 
     if "--push" in sys.argv:
+        # 2026-10-11：push 前先同步远端。原来只 push 不 pull，
+        # 只要别的机器推过（本机空闲翻译 IdlePaperTranslate 每 2 小时推一次），
+        # 这里的 push 就是 non-fast-forward，必被拒（10-11 连拒 3 次、返回码 1）。
+        # pull 失败（例如文件级冲突）就地 abort，不让 rebase 半途状态污染后面的 push。
+        rc_pull = run("git pull --rebase --autostash origin main", check=False)
+        if rc_pull != 0:
+            print("[pull] 失败（可能冲突），清理 rebase 状态后继续。")
+            run("git rebase --abort", check=False)
+
         # 2026-10-03 修：原来这一句是 `run("git push origin main", check=False)` ——
         # 推送失败被静默吞掉，任务照样 exit 0，commit 只留在本地、站点不更新
         # （10-03 就发生了：本地 afe8d14 领先远端 1 个，Pages 没动）。
