@@ -1,0 +1,1998 @@
+{
+ "id": "3b995e2dd2f44f8b",
+ "source": "arxiv-agent",
+ "link": "https://arxiv.org/abs/2609.40330v1",
+ "title": "Turbo Harness: Instance-Adaptive Harness Optimization",
+ "title_zh": "Turbo Harness：实例自适应执行框架优化",
+ "published": "2026-09-30T17:56:09Z",
+ "translated_at": "2026-10-13T02:54:40Z",
+ "paragraphs": [
+  {
+   "en": "Automating the search for effective harnesses is an important step toward enabling agents to recursively self-improve. Existing harness optimizations typically produce a single global harness that is applied uniformly across task instances. However, a harness that works well on average may not be optimal for every instance. We introduce Turbo Harness , a framework that can adapt a globally optimized harness to each instance by reusing information generated during the original optimization process. Specifically, Turbo Harness recycles artifacts produced during a completed global harness optimization run, and summarizes them into a structured playbook. We train a harness editor to leverage this prior optimization experience to generate instance-specific patches to the global harness. At inference time, the editor uses the instance and the playbook to construct a tailored harness in which the execution model operates. Through numerical experiments, we show that Turbo Harness consistently outperforms existing harness optimization baselines across seven benchmarks spanning interactive agent tasks, software engineering, and long-horizon terminal tasks.",
+   "zh": "自动化地寻找有效的 harness 是使智能体能够递归自我改进的重要一步。 现有的 harness 优化方法通常会产生一个全局性的 harness，并统一应用于所有任务实例。 然而，在平均表现良好的 harness 可能并非每个实例的最优选择。 我们提出了 Turbo Harness——一个框架，它可以通过复用原始优化过程中生成的信息，将全局优化的 harness 适配到每个具体实例。 具体来说，Turbo Harness 会回收已完成的全局 harness 优化运行中产生的产物，并将其总结为结构化的执行方案。 我们训练了一个 harness 编辑器，使其能够利用这些先前的优化经验，为每个实例生成针对全局 harness 的特定补丁。 在推理阶段，该编辑器会结合具体实例和执行方案，构建一个定制化的 harness，供执行模型在其中运行。 通过数值实验，我们证明 Turbo Harness 在涵盖交互式智能体任务、软件工程和长期终端任务的七个基准测试中，始终优于现有的 harness 优化基线方法。",
+   "sents": [
+    {
+     "en": "Automating the search for effective harnesses is an important step toward enabling agents to recursively self-improve.",
+     "zh": "自动化地寻找有效的 harness 是使智能体能够递归自我改进的重要一步。"
+    },
+    {
+     "en": "Existing harness optimizations typically produce a single global harness that is applied uniformly across task instances.",
+     "zh": "现有的 harness 优化方法通常会产生一个全局性的 harness，并统一应用于所有任务实例。"
+    },
+    {
+     "en": "However, a harness that works well on average may not be optimal for every instance.",
+     "zh": "然而，在平均表现良好的 harness 可能并非每个实例的最优选择。"
+    },
+    {
+     "en": "We introduce Turbo Harness , a framework that can adapt a globally optimized harness to each instance by reusing information generated during the original optimization process.",
+     "zh": "我们提出了 Turbo Harness——一个框架，它可以通过复用原始优化过程中生成的信息，将全局优化的 harness 适配到每个具体实例。"
+    },
+    {
+     "en": "Specifically, Turbo Harness recycles artifacts produced during a completed global harness optimization run, and summarizes them into a structured playbook.",
+     "zh": "具体来说，Turbo Harness 会回收已完成的全局 harness 优化运行中产生的产物，并将其总结为结构化的执行方案。"
+    },
+    {
+     "en": "We train a harness editor to leverage this prior optimization experience to generate instance-specific patches to the global harness.",
+     "zh": "我们训练了一个 harness 编辑器，使其能够利用这些先前的优化经验，为每个实例生成针对全局 harness 的特定补丁。"
+    },
+    {
+     "en": "At inference time, the editor uses the instance and the playbook to construct a tailored harness in which the execution model operates.",
+     "zh": "在推理阶段，该编辑器会结合具体实例和执行方案，构建一个定制化的 harness，供执行模型在其中运行。"
+    },
+    {
+     "en": "Through numerical experiments, we show that Turbo Harness consistently outperforms existing harness optimization baselines across seven benchmarks spanning interactive agent tasks, software engineering, and long-horizon terminal tasks.",
+     "zh": "通过数值实验，我们证明 Turbo Harness 在涵盖交互式智能体任务、软件工程和长期终端任务的七个基准测试中，始终优于现有的 harness 优化基线方法。"
+    }
+   ]
+  },
+  {
+   "en": "Large language models (LLMs) and their surrounding harnesses are two fundamental building blocks of modern agents ( Tian et al., 2026 ) . The notion of a harness has expanded well beyond simply exposing an LLM to an environment or a collection of tools ( Yao et al., 2022b ) . Today, it encompasses nearly all of the runtime machinery surrounding the model (e.g., context management, memory, workflow orchestration, and verification) ( Huang et al., 2026 ; Zhong and Zhu, 2026 ; Zhou et al., 2026 ) . These mechanisms can substantially extend the effective capabilities of a static LLM, particularly on long-horizon, scientific, and open-ended tasks ( Ma et al., 2026 ; Wu et al., 2026 ) . At the same time, this broad definition creates an enormous design space: for an application of interest, one must decide what information to expose to the model, what state to maintain, when and how to intervene, and how much computation to allocate. Designing an effective harness is therefore a challenging optimization problem in its own right.",
+   "zh": "大型语言模型（LLM）及其周围的配套机制是现代智能体的两个基本构建模块（Tian 等，2026）。 “配套机制”这一概念已远远超越了仅仅将 LLM 暴露于环境或工具集之外的简单范畴（Yao 等，2022b）。 如今，它几乎涵盖了模型周围的所有运行时机制（例如上下文管理、记忆、工作流协调和验证）（Huang 等，2026；Zhong 和 Zhu，2026；Zhou 等，2026）。 这些机制能够显著提升静态 LLM 的实际能力，尤其是在长期规划、科学探索以及开放性问题任务中（Ma 等，2026；Wu 等，2026）。 与此同时，这种宽泛的定义也创造了一个巨大的设计空间：对于某个特定应用，必须决定向模型暴露哪些信息、维持何种状态、何时以及如何介入，以及分配多少计算资源。 因此，设计一个高效的配套机制本身就是一个极具挑战性的优化问题。",
+   "sents": [
+    {
+     "en": "Large language models (LLMs) and their surrounding harnesses are two fundamental building blocks of modern agents ( Tian et al., 2026 ) .",
+     "zh": "大型语言模型（LLM）及其周围的配套机制是现代智能体的两个基本构建模块（Tian 等，2026）。"
+    },
+    {
+     "en": "The notion of a harness has expanded well beyond simply exposing an LLM to an environment or a collection of tools ( Yao et al., 2022b ) .",
+     "zh": "“配套机制”这一概念已远远超越了仅仅将 LLM 暴露于环境或工具集之外的简单范畴（Yao 等，2022b）。"
+    },
+    {
+     "en": "Today, it encompasses nearly all of the runtime machinery surrounding the model (e.g., context management, memory, workflow orchestration, and verification) ( Huang et al., 2026 ; Zhong and Zhu, 2026 ; Zhou et al., 2026 ) .",
+     "zh": "如今，它几乎涵盖了模型周围的所有运行时机制（例如上下文管理、记忆、工作流协调和验证）（Huang 等，2026；Zhong 和 Zhu，2026；Zhou 等，2026）。"
+    },
+    {
+     "en": "These mechanisms can substantially extend the effective capabilities of a static LLM, particularly on long-horizon, scientific, and open-ended tasks ( Ma et al., 2026 ; Wu et al., 2026 ) .",
+     "zh": "这些机制能够显著提升静态 LLM 的实际能力，尤其是在长期规划、科学探索以及开放性问题任务中（Ma 等，2026；Wu 等，2026）。"
+    },
+    {
+     "en": "At the same time, this broad definition creates an enormous design space: for an application of interest, one must decide what information to expose to the model, what state to maintain, when and how to intervene, and how much computation to allocate.",
+     "zh": "与此同时，这种宽泛的定义也创造了一个巨大的设计空间：对于某个特定应用，必须决定向模型暴露哪些信息、维持何种状态、何时以及如何介入，以及分配多少计算资源。"
+    },
+    {
+     "en": "Designing an effective harness is therefore a challenging optimization problem in its own right.",
+     "zh": "因此，设计一个高效的配套机制本身就是一个极具挑战性的优化问题。"
+    }
+   ]
+  },
+  {
+   "en": "A growing line of work seeks to automate this process through harness optimization ( Anthropic, 2025a ; Lee et al., 2026b ; Lee et al., 2026a ) . For example, Meta-Harness ( Lee et al., 2026b ) adopts an outer-loop program-search approach, in which a separate agent proposes new harnesses based on the execution traces of previously evaluated candidates; Harness-R1 ( Shao et al., 2026 ) trains a harness engineer with reinforcement learning (RL) to transform batches of agent failures into executable runtime patches. Despite their promise, existing approaches have two limitations. First, they optimize a single global harness that is then applied uniformly across all, or a batch of, test instances. Yet a harness that is effective for one instance may be suboptimal for another. For example, SWE-Bench-style instances may come from different GitHub repositories with distinct development workflows and testing conventions, and may benefit from different harness configurations. Second, harness optimization is expensive and much of the information generated during this process is ultimately underutilized. During optimization, the system accumulates a rich history of candidate harnesses and evidence about which strategies succeed or fail under different conditions. Existing methods use this experience to improve the global harness ( Lee et al., 2026b ; Lee et al., 2026a ; Sengupta and Wang, 2026 ) . Once optimization is complete, however, much of the instance-specific signal contained in this history is discarded. This leads to a fundamental question:",
+   "zh": "越来越多的研究试图通过优化测试框架（harness）来自动化这一过程（Anthropic, 2025a；Lee et al., 2026b；Lee et al., 2026a）。 例如，Meta-Harness（Lee et al., 2026b）采用了一种外层循环的程序搜索方法：一个独立的智能体根据先前评估过的候选框架的执行轨迹提出新的测试框架；而Harness-R1（Shao et al., 2026）则通过强化学习（RL）训练一个“框架工程师”，将成批的智能体失败案例转化为可执行的运行时补丁。 尽管现有方法展现出潜力，但它们存在两个局限性。 首先，这些方法优化的是一个全局统一的测试框架，随后将其统一应用于所有或一批测试实例。 然而，对某个实例有效的测试框架，在另一个实例上可能并非最优。 例如，SWE-Bench风格的测试实例可能来自不同的GitHub仓库，这些仓库具有独特的开发流程与测试规范，因此可能需要不同的测试框架配置才能获得最佳效果。 其次，测试框架的优化成本高昂，且在此过程中生成的许多信息最终并未得到充分利用。 在优化过程中，系统会积累丰富的候选测试框架历史，以及关于不同策略在不同条件下成功或失败的相关证据。 现有方法利用这些经验来改进全局测试框架（Lee et al., 2026b；Lee et al., 2026a；Sengupta and Wang, 2026）。 然而，一旦优化完成，这段历史中所包含的大量与特定实例相关的信息便会被丢弃。 这引出了一个根本性问题：",
+   "sents": [
+    {
+     "en": "A growing line of work seeks to automate this process through harness optimization ( Anthropic, 2025a ; Lee et al., 2026b ; Lee et al., 2026a ) .",
+     "zh": "越来越多的研究试图通过优化测试框架（harness）来自动化这一过程（Anthropic, 2025a；Lee et al., 2026b；Lee et al., 2026a）。"
+    },
+    {
+     "en": "For example, Meta-Harness ( Lee et al., 2026b ) adopts an outer-loop program-search approach, in which a separate agent proposes new harnesses based on the execution traces of previously evaluated candidates; Harness-R1 ( Shao et al., 2026 ) trains a harness engineer with reinforcement learning (RL) to transform batches of agent failures into executable runtime patches.",
+     "zh": "例如，Meta-Harness（Lee et al., 2026b）采用了一种外层循环的程序搜索方法：一个独立的智能体根据先前评估过的候选框架的执行轨迹提出新的测试框架；而Harness-R1（Shao et al., 2026）则通过强化学习（RL）训练一个“框架工程师”，将成批的智能体失败案例转化为可执行的运行时补丁。"
+    },
+    {
+     "en": "Despite their promise, existing approaches have two limitations.",
+     "zh": "尽管现有方法展现出潜力，但它们存在两个局限性。"
+    },
+    {
+     "en": "First, they optimize a single global harness that is then applied uniformly across all, or a batch of, test instances.",
+     "zh": "首先，这些方法优化的是一个全局统一的测试框架，随后将其统一应用于所有或一批测试实例。"
+    },
+    {
+     "en": "Yet a harness that is effective for one instance may be suboptimal for another.",
+     "zh": "然而，对某个实例有效的测试框架，在另一个实例上可能并非最优。"
+    },
+    {
+     "en": "For example, SWE-Bench-style instances may come from different GitHub repositories with distinct development workflows and testing conventions, and may benefit from different harness configurations.",
+     "zh": "例如，SWE-Bench风格的测试实例可能来自不同的GitHub仓库，这些仓库具有独特的开发流程与测试规范，因此可能需要不同的测试框架配置才能获得最佳效果。"
+    },
+    {
+     "en": "Second, harness optimization is expensive and much of the information generated during this process is ultimately underutilized.",
+     "zh": "其次，测试框架的优化成本高昂，且在此过程中生成的许多信息最终并未得到充分利用。"
+    },
+    {
+     "en": "During optimization, the system accumulates a rich history of candidate harnesses and evidence about which strategies succeed or fail under different conditions.",
+     "zh": "在优化过程中，系统会积累丰富的候选测试框架历史，以及关于不同策略在不同条件下成功或失败的相关证据。"
+    },
+    {
+     "en": "Existing methods use this experience to improve the global harness ( Lee et al., 2026b ; Lee et al., 2026a ; Sengupta and Wang, 2026 ) .",
+     "zh": "现有方法利用这些经验来改进全局测试框架（Lee et al., 2026b；Lee et al., 2026a；Sengupta and Wang, 2026）。"
+    },
+    {
+     "en": "Once optimization is complete, however, much of the instance-specific signal contained in this history is discarded.",
+     "zh": "然而，一旦优化完成，这段历史中所包含的大量与特定实例相关的信息便会被丢弃。"
+    },
+    {
+     "en": "This leads to a fundamental question:",
+     "zh": "这引出了一个根本性问题："
+    }
+   ]
+  },
+  {
+   "en": "Can we adapt a globally optimized harness to each individual instance by reusing the experience accumulated during harness optimization?",
+   "zh": "我们能否通过复用在约束优化过程中积累的经验，将全局最优的约束适配到每个具体实例？",
+   "sents": null
+  },
+  {
+   "en": "In this paper, we introduce Turbo Harness 1 1 1 We adopt the name “Turbo Harness” by analogy to a turbocharger, which recovers energy from exhaust gas and reuses it to improve engine performance. . It is a new harness optimization framework that reuses artifacts from a completed outer-loop harness search to adapt a globally optimized harness to individual task instances.",
+   "zh": "在本文中，我们介绍了 Turbo Harness。1 1 1 我们采用“Turbo Harness”这一名称，是类比于涡轮增压器——它从废气中回收能量并重新利用，以提升发动机性能。 这是一个全新的 harness 优化框架，它通过复用已完成的外环 harness 搜索所产生的产物，将全局优化的 harness 适配到具体的任务实例中。",
+   "sents": [
+    {
+     "en": "In this paper, we introduce Turbo Harness 1 1 1 We adopt the name “Turbo Harness” by analogy to a turbocharger, which recovers energy from exhaust gas and reuses it to improve engine performance. .",
+     "zh": "在本文中，我们介绍了 Turbo Harness。1 1 1 我们采用“Turbo Harness”这一名称，是类比于涡轮增压器——它从废气中回收能量并重新利用，以提升发动机性能。"
+    },
+    {
+     "en": "It is a new harness optimization framework that reuses artifacts from a completed outer-loop harness search to adapt a globally optimized harness to individual task instances.",
+     "zh": "这是一个全新的 harness 优化框架，它通过复用已完成的外环 harness 搜索所产生的产物，将全局优化的 harness 适配到具体的任务实例中。"
+    }
+   ]
+  },
+  {
+   "en": "Specifically, we reuse the search archive produced during outer-loop optimization and summarize it into a structured playbook ( Zhang et al., 2026c ) . This playbook records both successful and unsuccessful harness-editing strategies, including the specific edits that lead to performance improvements and those that fail to do so. We then train a harness editor , an RL-fine-tuned open-source model responsible for adapting the global harness to each instance. At deployment time, the harness editor receives a test instance together with access to the playbook and proposes a patch to the globally optimized harness. The resulting instance-specific harness is then used by the main execution model, which can be any model, to solve the test instance. Figure 1 illustrates this instance-specific adaptation and shows its gains on Terminal-Bench-2.1.",
+   "zh": "具体来说，我们复用外层循环优化过程中生成的搜索存档，并将其总结为一份结构化的操作指南（Zhang et al., 2026c）。 该操作指南记录了成功和失败的约束编辑策略，包括能带来性能提升的具体编辑以及未能实现这一目标的编辑。 接着，我们训练一个约束编辑器——一个经过强化学习微调的开源模型，负责将全局约束适配到每个实例。 在部署时，约束编辑器会接收一个测试实例以及对操作指南的访问权限，并针对全局优化的约束提出一个补丁方案。 由此生成的特定于该实例的约束随后会被主执行模型使用（该模型可以是任何模型），以解决这个测试实例。 图1展示了这种针对具体实例的适配过程，并显示了其在 Terminal-Bench-2.1 上的性能提升。",
+   "sents": [
+    {
+     "en": "Specifically, we reuse the search archive produced during outer-loop optimization and summarize it into a structured playbook ( Zhang et al., 2026c ) .",
+     "zh": "具体来说，我们复用外层循环优化过程中生成的搜索存档，并将其总结为一份结构化的操作指南（Zhang et al., 2026c）。"
+    },
+    {
+     "en": "This playbook records both successful and unsuccessful harness-editing strategies, including the specific edits that lead to performance improvements and those that fail to do so.",
+     "zh": "该操作指南记录了成功和失败的约束编辑策略，包括能带来性能提升的具体编辑以及未能实现这一目标的编辑。"
+    },
+    {
+     "en": "We then train a harness editor , an RL-fine-tuned open-source model responsible for adapting the global harness to each instance.",
+     "zh": "接着，我们训练一个约束编辑器——一个经过强化学习微调的开源模型，负责将全局约束适配到每个实例。"
+    },
+    {
+     "en": "At deployment time, the harness editor receives a test instance together with access to the playbook and proposes a patch to the globally optimized harness.",
+     "zh": "在部署时，约束编辑器会接收一个测试实例以及对操作指南的访问权限，并针对全局优化的约束提出一个补丁方案。"
+    },
+    {
+     "en": "The resulting instance-specific harness is then used by the main execution model, which can be any model, to solve the test instance.",
+     "zh": "由此生成的特定于该实例的约束随后会被主执行模型使用（该模型可以是任何模型），以解决这个测试实例。"
+    },
+    {
+     "en": "Figure 1 illustrates this instance-specific adaptation and shows its gains on Terminal-Bench-2.1.",
+     "zh": "图1展示了这种针对具体实例的适配过程，并显示了其在 Terminal-Bench-2.1 上的性能提升。"
+    }
+   ]
+  },
+  {
+   "en": "Our framework offers three advantages. First, instance-adaptive harnessing provides more flexibility than a single global harness across all task instances, consistently improving task performance in our experiments. For example, on SWE-smith-MR, Turbo Harness improves pass rate from 50.7% to 64.0% with Claude Haiku 4.5 and from 70.7% to 88.0% with Gemini 3.7 Flash. Second, training the harness editor is lightweight: rather than generating a new harness from scratch, it only needs to patch a globally optimized harness, guided by a playbook that summarizes successful and unsuccessful edits from the outer-loop search. This allows us to use a relatively small editor model (Qwen3.5-9B in our experiments). Finally, Turbo Harness adds little inference-time overhead because the editor is called only once per instance; moreover, the adapted harness can often reduce the number of execution steps required by the much larger execution model, potentially even lowering overall inference-time compute (see e.g., Table 2 and 3 ).",
+   "zh": "我们的框架具有三项优势。 首先，实例自适应的利用方式比适用于所有任务实例的单一全局利用方式更具灵活性，并在我们的实验中持续提升了任务性能。 例如，在 SWE-smith-MR 数据集上，使用 Claude Haiku 4.5 时，Turbo Harness 将通过率从 50.7% 提升至 64.0%；使用 Gemini 3.7 Flash 时，则从 70.7% 提升至 88.0%。 其次，训练利用编辑器所需的计算量很小：它无需从头生成新的利用方案，而只需在外部循环搜索中总结成功与失败的编辑操作所形成的指导方案引导下，对全局优化的利用方案进行局部修正。 这使得我们能够使用相对较小的编辑器模型（在我们的实验中为 Qwen3.5-9B）。 最后，Turbo Harness 几乎不会增加推理时的额外开销，因为每个实例只需调用一次编辑器；此外，经过自适应的利用方案通常能减少规模大得多的执行模型所需的执行步骤数，甚至可能降低整体的推理计算量（参见例如表 2 和表 3）。",
+   "sents": [
+    {
+     "en": "Our framework offers three advantages.",
+     "zh": "我们的框架具有三项优势。"
+    },
+    {
+     "en": "First, instance-adaptive harnessing provides more flexibility than a single global harness across all task instances, consistently improving task performance in our experiments.",
+     "zh": "首先，实例自适应的利用方式比适用于所有任务实例的单一全局利用方式更具灵活性，并在我们的实验中持续提升了任务性能。"
+    },
+    {
+     "en": "For example, on SWE-smith-MR, Turbo Harness improves pass rate from 50.7% to 64.0% with Claude Haiku 4.5 and from 70.7% to 88.0% with Gemini 3.7 Flash.",
+     "zh": "例如，在 SWE-smith-MR 数据集上，使用 Claude Haiku 4.5 时，Turbo Harness 将通过率从 50.7% 提升至 64.0%；使用 Gemini 3.7 Flash 时，则从 70.7% 提升至 88.0%。"
+    },
+    {
+     "en": "Second, training the harness editor is lightweight: rather than generating a new harness from scratch, it only needs to patch a globally optimized harness, guided by a playbook that summarizes successful and unsuccessful edits from the outer-loop search.",
+     "zh": "其次，训练利用编辑器所需的计算量很小：它无需从头生成新的利用方案，而只需在外部循环搜索中总结成功与失败的编辑操作所形成的指导方案引导下，对全局优化的利用方案进行局部修正。"
+    },
+    {
+     "en": "This allows us to use a relatively small editor model (Qwen3.5-9B in our experiments).",
+     "zh": "这使得我们能够使用相对较小的编辑器模型（在我们的实验中为 Qwen3.5-9B）。"
+    },
+    {
+     "en": "Finally, Turbo Harness adds little inference-time overhead because the editor is called only once per instance; moreover, the adapted harness can often reduce the number of execution steps required by the much larger execution model, potentially even lowering overall inference-time compute (see e.g., Table 2 and 3 ).",
+     "zh": "最后，Turbo Harness 几乎不会增加推理时的额外开销，因为每个实例只需调用一次编辑器；此外，经过自适应的利用方案通常能减少规模大得多的执行模型所需的执行步骤数，甚至可能降低整体的推理计算量（参见例如表 2 和表 3）。"
+    }
+   ]
+  },
+  {
+   "en": "We formulate instance-adaptive harness optimization and highlight the limitations of deploying a single globally optimized harness across all task instances.",
+   "zh": "我们将问题表述为实例自适应的约束优化问题，并指出了在所有任务实例中部署单一全局优化约束所带来的局限性。",
+   "sents": null
+  },
+  {
+   "en": "We propose Turbo Harness, which reuses the artifacts collected during the outer-loop harness search to train a harness editor that adapts the global harness to each individual task instance.",
+   "zh": "我们提出了 Turbo Harness，它重用了外层循环的 harness 搜索过程中收集到的产物，以训练一个 harness 编辑器，从而将全局 harness 适配到每个单独的任务实例。",
+   "sents": null
+  },
+  {
+   "en": "We show that Turbo Harness is lightweight: the editor only patches a globally optimized harness, can be instantiated with a small model, and is invoked only once per task instance.",
+   "zh": "我们证明了 Turbo Harness 具有轻量级特性：编辑器仅对全局优化的 harness 进行修补，可以用小型模型进行实例化，并且在每个任务实例中仅被调用一次。",
+   "sents": null
+  },
+  {
+   "en": "We demonstrate that instance-specific harness adaptation consistently outperforms globally optimized harnesses across seven benchmarks spanning interactive agent tasks, software engineering, and long-horizon terminal tasks, while often reducing execution steps and costs.",
+   "zh": "我们证明，针对具体实例的 harness 自适应方法在涵盖交互式智能体任务、软件工程以及长期终端任务的七个基准测试中，始终优于全局优化的 harness，同时通常能减少执行步骤和成本。",
+   "sents": null
+  },
+  {
+   "en": "Prompt and Context Optimization. A growing line of work improves frozen language models by optimizing their prompts or, more broadly, the information provided to them during inference ( Ramnath et al., 2025 ; Li et al., 2025 ) . For example, GEPA ( Agrawal et al., 2026 ) evaluates execution trajectories to evolve prompt candidates via a Pareto-based search. ACE ( Zhang et al., 2026c ) accumulates and refines an evolving playbook of strategies through generation, reflection, and curation. MCE ( Ye et al., 2026 ) further expands this design space by co-evolving context-engineering skills and query-conditioned context functions, whose artifacts may include files and code. They primarily optimize the model’s context. Harness engineering, however, encompasses a broader design space: beyond deciding what information is presented to the model, it can modify the executable runtime itself, including control flow, tool-use workflows, permissions, and verification mechanisms.",
+   "zh": "提示与上下文优化。 越来越多的研究通过优化提示，或者更广泛地说，通过优化推理过程中提供给模型的信息，来改进固定语言模型（Ramnath 等人，2025；Li 等人，2025）。 例如，GEPA（Agrawal 等人，2026）通过基于帕累托的搜索评估执行轨迹，从而演化提示候选方案。 ACE（Zhang 等人，2026c）通过生成、反思和整理，积累并完善一个不断演变的策略方案库。 MCE（Ye 等人，2026）进一步扩展了这一设计空间：它通过协同演化上下文工程技能与查询条件化的上下文函数来实现，其产物可能包括文件和代码。 它们主要优化模型的上下文。 然而，工程利用涵盖了一个更广泛的设计空间：除了决定向模型呈现哪些信息外，它还可以修改可执行的运行时本身，包括控制流、工具使用流程、权限和验证机制。",
+   "sents": [
+    {
+     "en": "Prompt and Context Optimization.",
+     "zh": "提示与上下文优化。"
+    },
+    {
+     "en": "A growing line of work improves frozen language models by optimizing their prompts or, more broadly, the information provided to them during inference ( Ramnath et al., 2025 ; Li et al., 2025 ) .",
+     "zh": "越来越多的研究通过优化提示，或者更广泛地说，通过优化推理过程中提供给模型的信息，来改进固定语言模型（Ramnath 等人，2025；Li 等人，2025）。"
+    },
+    {
+     "en": "For example, GEPA ( Agrawal et al., 2026 ) evaluates execution trajectories to evolve prompt candidates via a Pareto-based search.",
+     "zh": "例如，GEPA（Agrawal 等人，2026）通过基于帕累托的搜索评估执行轨迹，从而演化提示候选方案。"
+    },
+    {
+     "en": "ACE ( Zhang et al., 2026c ) accumulates and refines an evolving playbook of strategies through generation, reflection, and curation.",
+     "zh": "ACE（Zhang 等人，2026c）通过生成、反思和整理，积累并完善一个不断演变的策略方案库。"
+    },
+    {
+     "en": "MCE ( Ye et al., 2026 ) further expands this design space by co-evolving context-engineering skills and query-conditioned context functions, whose artifacts may include files and code.",
+     "zh": "MCE（Ye 等人，2026）进一步扩展了这一设计空间：它通过协同演化上下文工程技能与查询条件化的上下文函数来实现，其产物可能包括文件和代码。"
+    },
+    {
+     "en": "They primarily optimize the model’s context.",
+     "zh": "它们主要优化模型的上下文。"
+    },
+    {
+     "en": "Harness engineering, however, encompasses a broader design space: beyond deciding what information is presented to the model, it can modify the executable runtime itself, including control flow, tool-use workflows, permissions, and verification mechanisms.",
+     "zh": "然而，工程利用涵盖了一个更广泛的设计空间：除了决定向模型呈现哪些信息外，它还可以修改可执行的运行时本身，包括控制流、工具使用流程、权限和验证机制。"
+    }
+   ]
+  },
+  {
+   "en": "Automatic Harness Optimization. Recent methods ( Sengupta and Wang, 2026 ; Lin et al., 2026 ; Pan et al., 2026 ; Park et al., 2026 ) optimize the agent scaffold itself. Meta-Harness ( Lee et al., 2026b ) uses a strong external coding agent to search over executable harnesses by inspecting previous implementations, scores, and execution traces. Self-Harness ( Zhang et al., 2026b ) removes the stronger external proposer, allowing the target model to identify failure patterns, propose harness modifications, and validate them through testing. Both methods produce harnesses intended to generalize across a collection of instances. AutoDesign ( Luo et al., 2026 ) likewise applies meta-harness optimization to long-horizon agentic design tasks. Recursive Harness Self-Improvement ( Lee et al., 2026a ) performs lightweight optimization by representing the agent loop as a prompt-level object and repeatedly revising it using pairwise feedback from its revision history. Unlike them, our method introduces an instance-adaptive harness without requiring a new multi-round search for each instance. This strategy enables more flexibility, which translates into consistent performance gains in our experiments.",
+   "zh": "自动测试框架优化。 近期方法（Sengupta 和 Wang，2026；Lin 等，2026；Pan 等，2026；Park 等，2026）对智能体架构本身进行优化。 Meta-Harness（Lee 等，2026b）利用一个强大的外部编码智能体，通过检查过往实现、评分和执行轨迹来搜索可执行的测试框架。 Self-Harness（Zhang 等，2026b）移除了更强大的外部提案者，使目标模型能够识别失败模式、提出测试框架的修改方案，并通过测试进行验证。 这两种方法生成的测试框架都旨在对一系列实例实现泛化。 AutoDesign（Luo 等，2026）同样将元测试框架优化应用于长期智能体设计任务。 Recursive Harness Self-Improvement（Lee 等，2026a）通过将智能体循环表示为提示层对象，并利用其修订历史中的成对反馈进行反复修改，从而实现轻量级优化。 与这些方法不同，我们的方法引入了一种可适应具体实例的测试框架，而无需为每个实例执行新的多轮搜索。 这一策略带来了更高的灵活性，在我们的实验中转化为持续的性能提升。",
+   "sents": [
+    {
+     "en": "Automatic Harness Optimization.",
+     "zh": "自动测试框架优化。"
+    },
+    {
+     "en": "Recent methods ( Sengupta and Wang, 2026 ; Lin et al., 2026 ; Pan et al., 2026 ; Park et al., 2026 ) optimize the agent scaffold itself.",
+     "zh": "近期方法（Sengupta 和 Wang，2026；Lin 等，2026；Pan 等，2026；Park 等，2026）对智能体架构本身进行优化。"
+    },
+    {
+     "en": "Meta-Harness ( Lee et al., 2026b ) uses a strong external coding agent to search over executable harnesses by inspecting previous implementations, scores, and execution traces.",
+     "zh": "Meta-Harness（Lee 等，2026b）利用一个强大的外部编码智能体，通过检查过往实现、评分和执行轨迹来搜索可执行的测试框架。"
+    },
+    {
+     "en": "Self-Harness ( Zhang et al., 2026b ) removes the stronger external proposer, allowing the target model to identify failure patterns, propose harness modifications, and validate them through testing.",
+     "zh": "Self-Harness（Zhang 等，2026b）移除了更强大的外部提案者，使目标模型能够识别失败模式、提出测试框架的修改方案，并通过测试进行验证。"
+    },
+    {
+     "en": "Both methods produce harnesses intended to generalize across a collection of instances.",
+     "zh": "这两种方法生成的测试框架都旨在对一系列实例实现泛化。"
+    },
+    {
+     "en": "AutoDesign ( Luo et al., 2026 ) likewise applies meta-harness optimization to long-horizon agentic design tasks.",
+     "zh": "AutoDesign（Luo 等，2026）同样将元测试框架优化应用于长期智能体设计任务。"
+    },
+    {
+     "en": "Recursive Harness Self-Improvement ( Lee et al., 2026a ) performs lightweight optimization by representing the agent loop as a prompt-level object and repeatedly revising it using pairwise feedback from its revision history.",
+     "zh": "Recursive Harness Self-Improvement（Lee 等，2026a）通过将智能体循环表示为提示层对象，并利用其修订历史中的成对反馈进行反复修改，从而实现轻量级优化。"
+    },
+    {
+     "en": "Unlike them, our method introduces an instance-adaptive harness without requiring a new multi-round search for each instance.",
+     "zh": "与这些方法不同，我们的方法引入了一种可适应具体实例的测试框架，而无需为每个实例执行新的多轮搜索。"
+    },
+    {
+     "en": "This strategy enables more flexibility, which translates into consistent performance gains in our experiments.",
+     "zh": "这一策略带来了更高的灵活性，在我们的实验中转化为持续的性能提升。"
+    }
+   ]
+  },
+  {
+   "en": "Adaptive Prompt and Harness Optimization. A related line of work studies prompt and harness optimization that tailors the resulting prompt or harness to individual task instances. For example, Advisor Models ( Asawa et al., 2025 ) trains an advisor model that enables instance-specific prompt optimization. TTHE ( Nie et al., 2026 ) performs harness search on unlabeled test batches and carries the selected program to subsequent batches. Harness-R1 ( Shao et al., 2026 ) trains a harness engineer from batches of failure trajectories and evaluates each candidate patch by rerunning the same tasks under the modified harness. A concurrent work JIT-Agent ( Zhang et al., 2026a ) also targets instance-specific harnesses, but generates each harness from scratch via teacher distillation and evolutionary RL. In contrast, Turbo Harness at deployment time introduces only a single additional call to a small model, avoiding the two-pass procedure required by Harness-R1 ( Shao et al., 2026 ) to first collect a failure trajectory and then rerun the task under the resulting patch. Moreover, Turbo Harness edits an existing global harness rather than synthesizing a new harness from scratch for each task instance.",
+   "zh": "自适应提示与工具优化。 相关研究关注提示与工具的优化，旨在根据具体任务实例定制生成的提示或工具。 例如，顾问模型（Asawa 等人，2025）训练了一个顾问模型，以实现针对具体实例的提示优化。 TTHE（Nie 等人，2026）在未标注的测试批次上执行工具搜索，并将选中的程序应用于后续批次。 Harness-R1（Shao 等人，2026）从失败轨迹批次中训练一个工具工程师，并通过在修改后的工具下重新运行相同任务来评估每个候选补丁。 一项同步研究 JIT-Agent（Zhang 等人，2026a）也针对具体实例的工具进行优化，但通过教师蒸馏和进化强化学习从头生成每个工具。 相比之下，Turbo Harness 在部署时仅需额外调用一次小型模型，避免了 Harness-R1（Shao 等人，2026）所需的两步流程——即先收集失败轨迹，再在生成的补丁下重新运行任务。 此外，Turbo Harness 编辑的是现有的全局工具，而非为每个任务实例从头合成新的工具。",
+   "sents": [
+    {
+     "en": "Adaptive Prompt and Harness Optimization.",
+     "zh": "自适应提示与工具优化。"
+    },
+    {
+     "en": "A related line of work studies prompt and harness optimization that tailors the resulting prompt or harness to individual task instances.",
+     "zh": "相关研究关注提示与工具的优化，旨在根据具体任务实例定制生成的提示或工具。"
+    },
+    {
+     "en": "For example, Advisor Models ( Asawa et al., 2025 ) trains an advisor model that enables instance-specific prompt optimization.",
+     "zh": "例如，顾问模型（Asawa 等人，2025）训练了一个顾问模型，以实现针对具体实例的提示优化。"
+    },
+    {
+     "en": "TTHE ( Nie et al., 2026 ) performs harness search on unlabeled test batches and carries the selected program to subsequent batches.",
+     "zh": "TTHE（Nie 等人，2026）在未标注的测试批次上执行工具搜索，并将选中的程序应用于后续批次。"
+    },
+    {
+     "en": "Harness-R1 ( Shao et al., 2026 ) trains a harness engineer from batches of failure trajectories and evaluates each candidate patch by rerunning the same tasks under the modified harness.",
+     "zh": "Harness-R1（Shao 等人，2026）从失败轨迹批次中训练一个工具工程师，并通过在修改后的工具下重新运行相同任务来评估每个候选补丁。"
+    },
+    {
+     "en": "A concurrent work JIT-Agent ( Zhang et al., 2026a ) also targets instance-specific harnesses, but generates each harness from scratch via teacher distillation and evolutionary RL.",
+     "zh": "一项同步研究 JIT-Agent（Zhang 等人，2026a）也针对具体实例的工具进行优化，但通过教师蒸馏和进化强化学习从头生成每个工具。"
+    },
+    {
+     "en": "In contrast, Turbo Harness at deployment time introduces only a single additional call to a small model, avoiding the two-pass procedure required by Harness-R1 ( Shao et al., 2026 ) to first collect a failure trajectory and then rerun the task under the resulting patch.",
+     "zh": "相比之下，Turbo Harness 在部署时仅需额外调用一次小型模型，避免了 Harness-R1（Shao 等人，2026）所需的两步流程——即先收集失败轨迹，再在生成的补丁下重新运行任务。"
+    },
+    {
+     "en": "Moreover, Turbo Harness edits an existing global harness rather than synthesizing a new harness from scratch for each task instance.",
+     "zh": "此外，Turbo Harness 编辑的是现有的全局工具，而非为每个任务实例从头合成新的工具。"
+    }
+   ]
+  },
+  {
+   "en": "Objective of Harness Optimization. An agent consists of a language model M and a harness H . Given a task instance x x , the agent executes M under H to interact with the task environment and produce an output. The harness is an executable program that governs this interaction, including context construction, tool use, state management, and execution control.",
+   "zh": "约束优化的目标。 一个智能体由语言模型 M 和约束 H 组成。 给定任务实例 x x，智能体在约束 H 下执行 M，以与任务环境交互并生成输出。 约束是一个可执行程序，负责管理这种交互，包括上下文构建、工具使用、状态管理和执行控制。",
+   "sents": [
+    {
+     "en": "Objective of Harness Optimization.",
+     "zh": "约束优化的目标。"
+    },
+    {
+     "en": "An agent consists of a language model M and a harness H .",
+     "zh": "一个智能体由语言模型 M 和约束 H 组成。"
+    },
+    {
+     "en": "Given a task instance x x , the agent executes M under H to interact with the task environment and produce an output.",
+     "zh": "给定任务实例 x x，智能体在约束 H 下执行 M，以与任务环境交互并生成输出。"
+    },
+    {
+     "en": "The harness is an executable program that governs this interaction, including context construction, tool use, state management, and execution control.",
+     "zh": "约束是一个可执行程序，负责管理这种交互，包括上下文构建、工具使用、状态管理和执行控制。"
+    }
+   ]
+  },
+  {
+   "en": "Given a frozen model M , a task distribution 𝒯 \\mathcal{T} , and an admissible harness space ℋ \\mathcal{H} , harness optimization seeks a harness that maximizes the expected task performance:",
+   "zh": "给定一个冻结模型 M、一个任务分布 𝒯 \\mathcal{T} 以及一个可接受的测试空间 ℋ \\mathcal{H}，测试优化旨在找到一个能够最大化预期任务性能的测试：",
+   "sents": null
+  },
+  {
+   "en": "where r r denotes the task-level evaluation function, with the expectation also accounting for stochasticity in agent execution.",
+   "zh": "其中 r r 表示任务级别的评估函数，其期望值也考虑了智能体执行中的随机性。",
+   "sents": null
+  },
+  {
+   "en": "Inner- and Outer-loop Optimization. A standard approach to optimizing Equation 1 is to organize search into an inner loop and an outer loop ( Lee et al., 2026b ; Lee et al., 2026a ; Zhang et al., 2026b ) . The inner loop evaluates a candidate harness by running the corresponding agent on a set of task instances and collecting feedback, including task scores, execution traces, tool outputs, and failures. The outer loop then uses this feedback to diagnose the current harness and propose an improved candidate. Repeating these stages yields an iterative search process in which agent executions provide the evidence used to update the harness.",
+   "zh": "内循环与外循环优化。 优化方程 1 的一种标准方法是将搜索组织为内循环和外循环（Lee et al., 2026b；Lee et al., 2026a；Zhang et al., 2026b）。 内循环通过在一组任务实例上运行相应的智能体并收集反馈来评估候选框架，反馈包括任务得分、执行轨迹、工具输出和失败情况。 外循环随后利用这些反馈诊断当前框架，并提出改进的候选方案。 重复这些阶段可产生一个迭代搜索过程，其中智能体的执行提供了用于更新框架的证据。",
+   "sents": [
+    {
+     "en": "Inner- and Outer-loop Optimization.",
+     "zh": "内循环与外循环优化。"
+    },
+    {
+     "en": "A standard approach to optimizing Equation 1 is to organize search into an inner loop and an outer loop ( Lee et al., 2026b ; Lee et al., 2026a ; Zhang et al., 2026b ) .",
+     "zh": "优化方程 1 的一种标准方法是将搜索组织为内循环和外循环（Lee et al., 2026b；Lee et al., 2026a；Zhang et al., 2026b）。"
+    },
+    {
+     "en": "The inner loop evaluates a candidate harness by running the corresponding agent on a set of task instances and collecting feedback, including task scores, execution traces, tool outputs, and failures.",
+     "zh": "内循环通过在一组任务实例上运行相应的智能体并收集反馈来评估候选框架，反馈包括任务得分、执行轨迹、工具输出和失败情况。"
+    },
+    {
+     "en": "The outer loop then uses this feedback to diagnose the current harness and propose an improved candidate.",
+     "zh": "外循环随后利用这些反馈诊断当前框架，并提出改进的候选方案。"
+    },
+    {
+     "en": "Repeating these stages yields an iterative search process in which agent executions provide the evidence used to update the harness.",
+     "zh": "重复这些阶段可产生一个迭代搜索过程，其中智能体的执行提供了用于更新框架的证据。"
+    }
+   ]
+  },
+  {
+   "en": "The outer-loop optimizer may range from a hand-designed update rule ( Agrawal et al., 2026 ; Yang et al., 2024a ; Yuksekgonul et al., 2024 ) to an LLM-based agent that automatically modifies prompts, control logic, or the harness program itself ( Ursekar et al., 2026 ; Lee et al., 2026b ) . In the latter case, Meta-Harness ( Lee et al., 2026b ) , for example, uses a coding agent to search over harness programs by inspecting previous candidates, evaluation results, and execution traces. However, Meta-Harness produces a globally optimized harness that is applied across future task instances. This can be suboptimal when different instances benefit from different harness strategies. For example, a simple coding task can be solved by a lightweight edit-and-test loop, whereas a difficult task may require specialized tools or more extensive verification.",
+   "zh": "外层循环优化器可以是从人工设计的更新规则（Agrawal 等人，2026；Yang 等人，2024a；Yuksekgonul 等人，2024）到基于大语言模型（LLM）的智能体，后者能够自动修改提示、控制逻辑或测试程序本身（Ursekar 等人，2026；Lee 等人，2026b）。 在后一种情况下，例如 Meta-Harness（Lee 等人，2026b）会利用一个编码智能体，通过检查先前的候选方案、评估结果和执行轨迹来搜索测试程序。 然而，Meta-Harness 生成的是一个全局优化的测试程序，该程序将应用于未来的所有任务实例。 当不同任务实例从不同的测试策略中受益时，这种做法可能并非最优。 例如，一个简单的编码任务可以通过轻量级的“编辑-测试”循环解决，而一个困难的任务可能需要专门的工具或更全面的验证。",
+   "sents": [
+    {
+     "en": "The outer-loop optimizer may range from a hand-designed update rule ( Agrawal et al., 2026 ; Yang et al., 2024a ; Yuksekgonul et al., 2024 ) to an LLM-based agent that automatically modifies prompts, control logic, or the harness program itself ( Ursekar et al., 2026 ; Lee et al., 2026b ) .",
+     "zh": "外层循环优化器可以是从人工设计的更新规则（Agrawal 等人，2026；Yang 等人，2024a；Yuksekgonul 等人，2024）到基于大语言模型（LLM）的智能体，后者能够自动修改提示、控制逻辑或测试程序本身（Ursekar 等人，2026；Lee 等人，2026b）。"
+    },
+    {
+     "en": "In the latter case, Meta-Harness ( Lee et al., 2026b ) , for example, uses a coding agent to search over harness programs by inspecting previous candidates, evaluation results, and execution traces.",
+     "zh": "在后一种情况下，例如 Meta-Harness（Lee 等人，2026b）会利用一个编码智能体，通过检查先前的候选方案、评估结果和执行轨迹来搜索测试程序。"
+    },
+    {
+     "en": "However, Meta-Harness produces a globally optimized harness that is applied across future task instances.",
+     "zh": "然而，Meta-Harness 生成的是一个全局优化的测试程序，该程序将应用于未来的所有任务实例。"
+    },
+    {
+     "en": "This can be suboptimal when different instances benefit from different harness strategies.",
+     "zh": "当不同任务实例从不同的测试策略中受益时，这种做法可能并非最优。"
+    },
+    {
+     "en": "For example, a simple coding task can be solved by a lightweight edit-and-test loop, whereas a difficult task may require specialized tools or more extensive verification.",
+     "zh": "例如，一个简单的编码任务可以通过轻量级的“编辑-测试”循环解决，而一个困难的任务可能需要专门的工具或更全面的验证。"
+    }
+   ]
+  },
+  {
+   "en": "We introduce Turbo Harness (Figure 2 ), which adapts a global harness to each task instance by reusing experience collected during the outer-loop harness search. Our goal is: for each task instance x x , find an optimal harness H x \\texttt{H}_{x} such that",
+   "zh": "我们提出了 Turbo Harness（图 2），它通过复用外层循环中的 harness 搜索过程中收集的经验，为每个任务实例适配一个全局 harness。 我们的目标是：对于每个任务实例 x x ，找到一个最优的 harness H x \\texttt{H}_{x}，使得",
+   "sents": [
+    {
+     "en": "We introduce Turbo Harness (Figure 2 ), which adapts a global harness to each task instance by reusing experience collected during the outer-loop harness search.",
+     "zh": "我们提出了 Turbo Harness（图 2），它通过复用外层循环中的 harness 搜索过程中收集的经验，为每个任务实例适配一个全局 harness。"
+    },
+    {
+     "en": "Our goal is: for each task instance x x , find an optimal harness H x \\texttt{H}_{x} such that",
+     "zh": "我们的目标是：对于每个任务实例 x x ，找到一个最优的 harness H x \\texttt{H}_{x}，使得"
+    }
+   ]
+  },
+  {
+   "en": "To achieve it, we train a lightweight LLM, which we call the harness editor, to take as input a task instance together with experience gathered during the outer-loop search and propose edits to the global harness. Below, Section 4.1 describes our instance-specific adaptation method and Section 4.2 shows how we train the harness editor.",
+   "zh": "为实现这一目标，我们训练了一个轻量级的大型语言模型（LLM），我们称之为“约束编辑器”，该模型以任务实例以及外层循环搜索过程中收集的经验作为输入，并对全局约束提出修改建议。 下文第 4.1 节将介绍我们的实例特定自适应方法，第 4.2 节则会展示我们如何训练“约束编辑器”。",
+   "sents": [
+    {
+     "en": "To achieve it, we train a lightweight LLM, which we call the harness editor, to take as input a task instance together with experience gathered during the outer-loop search and propose edits to the global harness.",
+     "zh": "为实现这一目标，我们训练了一个轻量级的大型语言模型（LLM），我们称之为“约束编辑器”，该模型以任务实例以及外层循环搜索过程中收集的经验作为输入，并对全局约束提出修改建议。"
+    },
+    {
+     "en": "Below, Section 4.1 describes our instance-specific adaptation method and Section 4.2 shows how we train the harness editor.",
+     "zh": "下文第 4.1 节将介绍我们的实例特定自适应方法，第 4.2 节则会展示我们如何训练“约束编辑器”。"
+    }
+   ]
+  },
+  {
+   "en": "Harness Editor. Searching for an optimal harness independently for each task instance can be expensive, as it may require evaluating multiple candidate harnesses per instance. Instead, we train a harness editor π θ \\pi_{\\theta} to propose instance-specific code edits to the globally optimized harness H ⋆ \\texttt{H}^{\\star} obtained from the outer-loop optimization in Eq. 1 . The harness editor is a small open-weight LLM with trainable parameters θ \\theta (e.g., we use Qwen3.5-9B in our experiments). Because it is lightweight and called only once per task instance, its deployment overhead is minimal.",
+   "zh": "约束编辑器。 为每个任务实例独立搜索最优约束可能成本高昂，因为每个实例可能需要评估多个候选约束。 因此，我们训练一个约束编辑器 π θ \\pi_{\\theta}，用于针对具体实例对通过公式 1 中外部循环优化获得的全局最优约束 H ⋆ \\texttt{H}^{\\star} 提出代码修改建议。 该约束编辑器是一个小型开放权重 LLM，具有可训练的参数 θ \\theta（例如，我们在实验中使用了 Qwen3.5-9B）。 由于它轻量且每个任务实例仅调用一次，因此其部署开销极小。",
+   "sents": [
+    {
+     "en": "Harness Editor.",
+     "zh": "约束编辑器。"
+    },
+    {
+     "en": "Searching for an optimal harness independently for each task instance can be expensive, as it may require evaluating multiple candidate harnesses per instance.",
+     "zh": "为每个任务实例独立搜索最优约束可能成本高昂，因为每个实例可能需要评估多个候选约束。"
+    },
+    {
+     "en": "Instead, we train a harness editor π θ \\pi_{\\theta} to propose instance-specific code edits to the globally optimized harness H ⋆ \\texttt{H}^{\\star} obtained from the outer-loop optimization in Eq. 1 .",
+     "zh": "因此，我们训练一个约束编辑器 π θ \\pi_{\\theta}，用于针对具体实例对通过公式 1 中外部循环优化获得的全局最优约束 H ⋆ \\texttt{H}^{\\star} 提出代码修改建议。"
+    },
+    {
+     "en": "The harness editor is a small open-weight LLM with trainable parameters θ \\theta (e.g., we use Qwen3.5-9B in our experiments).",
+     "zh": "该约束编辑器是一个小型开放权重 LLM，具有可训练的参数 θ \\theta（例如，我们在实验中使用了 Qwen3.5-9B）。"
+    },
+    {
+     "en": "Because it is lightweight and called only once per task instance, its deployment overhead is minimal.",
+     "zh": "由于它轻量且每个任务实例仅调用一次，因此其部署开销极小。"
+    }
+   ]
+  },
+  {
+   "en": "To further reduce training cost, we reuse the experience collected during outer-loop harness optimization. In particular, the search archive records the outcomes of all evaluated harnesses, including candidates discarded during search. Following ACE ( Zhang et al., 2026c ) , we summarize these successes and failures into a playbook 𝒫 \\mathcal{P} of editing strategies and the conditions under which they are useful. This way, the harness editor does not need to discover new strategies from scratch. It only needs to learn how to use the playbook and identify which previously discovered strategies are relevant to a given task instance. This strategy significantly reduces the training cost and enables the use of a small LLM.",
+   "zh": "为了进一步降低训练成本，我们重用了在外层循环的 harness 优化过程中收集到的经验。 具体来说，搜索档案记录了所有已评估 harness 的结果，包括在搜索过程中被舍弃的候选方案。 遵循 ACE（Zhang et al., 2026c）的方法，我们将这些成功与失败案例总结为一份编辑策略及其适用条件的 playbook 𝒫 \\mathcal{P}。 这样一来，harness 编辑器就不需要从头开始探索新的策略了。 它只需学习如何运用这份 playbook，并识别哪些先前发现的策略适用于给定的任务实例即可。 这一策略显著降低了训练成本，并使得使用小型 LLM 成为可能。",
+   "sents": [
+    {
+     "en": "To further reduce training cost, we reuse the experience collected during outer-loop harness optimization.",
+     "zh": "为了进一步降低训练成本，我们重用了在外层循环的 harness 优化过程中收集到的经验。"
+    },
+    {
+     "en": "In particular, the search archive records the outcomes of all evaluated harnesses, including candidates discarded during search.",
+     "zh": "具体来说，搜索档案记录了所有已评估 harness 的结果，包括在搜索过程中被舍弃的候选方案。"
+    },
+    {
+     "en": "Following ACE ( Zhang et al., 2026c ) , we summarize these successes and failures into a playbook 𝒫 \\mathcal{P} of editing strategies and the conditions under which they are useful.",
+     "zh": "遵循 ACE（Zhang et al., 2026c）的方法，我们将这些成功与失败案例总结为一份编辑策略及其适用条件的 playbook 𝒫 \\mathcal{P}。"
+    },
+    {
+     "en": "This way, the harness editor does not need to discover new strategies from scratch.",
+     "zh": "这样一来，harness 编辑器就不需要从头开始探索新的策略了。"
+    },
+    {
+     "en": "It only needs to learn how to use the playbook and identify which previously discovered strategies are relevant to a given task instance.",
+     "zh": "它只需学习如何运用这份 playbook，并识别哪些先前发现的策略适用于给定的任务实例即可。"
+    },
+    {
+     "en": "This strategy significantly reduces the training cost and enables the use of a small LLM.",
+     "zh": "这一策略显著降低了训练成本，并使得使用小型 LLM 成为可能。"
+    }
+   ]
+  },
+  {
+   "en": "Specifically, given the instance x x , the source code of H ⋆ \\texttt{H}^{\\star} , and the playbook 𝒫 \\mathcal{P} , the harness editor π θ \\pi_{\\theta} generates a patch p x p_{x} that produces the adapted harness H x \\texttt{H}_{x} when applied to H ⋆ \\texttt{H}^{\\star} :",
+   "zh": "具体来说，给定实例 x x、H ⋆ \\texttt{H}^{\\star} 的源代码以及剧本 𝒫 \\mathcal{P}，测试框架编辑器 π θ \\pi_{\\theta} 会生成一个补丁 p x p_{x}，当将其应用于 H ⋆ \\texttt{H}^{\\star} 时，即可得到适配后的测试框架 H x \\texttt{H}_{x}：",
+   "sents": null
+  },
+  {
+   "en": "where ⊕ \\oplus denotes applying code edits to a harness.",
+   "zh": "其中 ⊕ \\oplus 表示对测试框架应用代码编辑。",
+   "sents": null
+  },
+  {
+   "en": "We train the harness editor π θ \\pi_{\\theta} to favor edits to the global harness H ⋆ \\texttt{H}^{\\star} that improve task performance when the frozen LLM executes the task. We optimize the editor with RL, using the resulting task performance as the reward. For each training instance, we evaluate multiple candidate edits and optimize the policy based on their relative rewards.",
+   "zh": "我们训练约束编辑器 π θ \\pi_{\\theta}，使其倾向于对全局约束 H ⋆ \\texttt{H}^{\\star} 进行那些能在冻结 LLM 执行任务时提升任务性能的编辑。 我们通过强化学习（RL）优化该编辑器，并将由此产生的任务性能作为奖励。 对于每个训练实例，我们会评估多个候选编辑，并根据它们的相对奖励来优化策略。",
+   "sents": [
+    {
+     "en": "We train the harness editor π θ \\pi_{\\theta} to favor edits to the global harness H ⋆ \\texttt{H}^{\\star} that improve task performance when the frozen LLM executes the task.",
+     "zh": "我们训练约束编辑器 π θ \\pi_{\\theta}，使其倾向于对全局约束 H ⋆ \\texttt{H}^{\\star} 进行那些能在冻结 LLM 执行任务时提升任务性能的编辑。"
+    },
+    {
+     "en": "We optimize the editor with RL, using the resulting task performance as the reward.",
+     "zh": "我们通过强化学习（RL）优化该编辑器，并将由此产生的任务性能作为奖励。"
+    },
+    {
+     "en": "For each training instance, we evaluate multiple candidate edits and optimize the policy based on their relative rewards.",
+     "zh": "对于每个训练实例，我们会评估多个候选编辑，并根据它们的相对奖励来优化策略。"
+    }
+   ]
+  },
+  {
+   "en": "Training Rewards. For each instance x x in the training set 𝒟 train \\mathcal{D}_{\\mathrm{train}} , we sample G G candidate harness edits { p x , g } g = 1 G \\{p_{x,g}\\}_{g=1}^{G} from π θ \\pi_{\\theta} . We apply each edit to H ⋆ \\texttt{H}^{\\star} to obtain H x , g \\texttt{H}_{x,g} , execute 𝖠𝗀𝖾𝗇𝗍 ⁡ ( M , H x , g , x ) \\mathsf{Agent}(\\texttt{M},\\texttt{H}_{x,g},x) , and compute a reward R x , g R_{x,g} from the resulting task performance and task-specific evaluation metrics. Edits that cannot be applied or fail validation receive zero reward and are not executed.",
+   "zh": "训练奖励。 对于训练集 𝒟 train \\mathcal{D}_{\\mathrm{train}} 中的每个实例 x，我们从 π θ \\pi_{\\theta} 中采样 G 个候选 harness 编辑 { p x , g } g = 1 G \\{p_{x,g}\\}_{g=1}^{G}。 我们将每个编辑应用于 H ⋆ \\texttt{H}^{\\star}，得到 H x , g \\texttt{H}_{x,g}，执行 𝖠𝗀𝖾𝗇𝗍 ⁡ ( M , H x , g , x ) \\mathsf{Agent}(\\texttt{M},\\texttt{H}_{x,g},x)，并根据最终的任务表现和任务特定的评估指标计算奖励 R x , g R_{x,g}。 无法应用或验证失败的编辑将获得零奖励且不会被执行。",
+   "sents": [
+    {
+     "en": "Training Rewards.",
+     "zh": "训练奖励。"
+    },
+    {
+     "en": "For each instance x x in the training set 𝒟 train \\mathcal{D}_{\\mathrm{train}} , we sample G G candidate harness edits { p x , g } g = 1 G \\{p_{x,g}\\}_{g=1}^{G} from π θ \\pi_{\\theta} .",
+     "zh": "对于训练集 𝒟 train \\mathcal{D}_{\\mathrm{train}} 中的每个实例 x，我们从 π θ \\pi_{\\theta} 中采样 G 个候选 harness 编辑 { p x , g } g = 1 G \\{p_{x,g}\\}_{g=1}^{G}。"
+    },
+    {
+     "en": "We apply each edit to H ⋆ \\texttt{H}^{\\star} to obtain H x , g \\texttt{H}_{x,g} , execute 𝖠𝗀𝖾𝗇𝗍 ⁡ ( M , H x , g , x ) \\mathsf{Agent}(\\texttt{M},\\texttt{H}_{x,g},x) , and compute a reward R x , g R_{x,g} from the resulting task performance and task-specific evaluation metrics.",
+     "zh": "我们将每个编辑应用于 H ⋆ \\texttt{H}^{\\star}，得到 H x , g \\texttt{H}_{x,g}，执行 𝖠𝗀𝖾𝗇𝗍 ⁡ ( M , H x , g , x ) \\mathsf{Agent}(\\texttt{M},\\texttt{H}_{x,g},x)，并根据最终的任务表现和任务特定的评估指标计算奖励 R x , g R_{x,g}。"
+    },
+    {
+     "en": "Edits that cannot be applied or fail validation receive zero reward and are not executed.",
+     "zh": "无法应用或验证失败的编辑将获得零奖励且不会被执行。"
+    }
+   ]
+  },
+  {
+   "en": "Optimization. We optimize π θ \\pi_{\\theta} with GRPO ( Shao et al., 2024 ) . Let ℬ \\mathcal{B} be the set of candidate indices in an update minibatch, with i = ( x , g ) i=(x,g) and p i = p x , g p_{i}=p_{x,g} . For proposals sampled from the pre-update policy π θ old \\pi_{\\theta_{\\mathrm{old}}} , the standard GRPO objective is",
+   "zh": "优化。 我们使用 GRPO（Shao 等人，2024）来优化 π θ \\pi_{\\theta}。 令 ℬ \\mathcal{B} 为更新小批量中的候选索引集合，其中 i = ( x , g ) i=(x,g)，且 p i = p x , g p_{i}=p_{x,g}。 对于从更新前策略 π θ old \\pi_{\\theta_{\\mathrm{old}}} 中采样的提议，标准的 GRPO 目标函数为",
+   "sents": [
+    {
+     "en": "Optimization.",
+     "zh": "优化。"
+    },
+    {
+     "en": "We optimize π θ \\pi_{\\theta} with GRPO ( Shao et al., 2024 ) .",
+     "zh": "我们使用 GRPO（Shao 等人，2024）来优化 π θ \\pi_{\\theta}。"
+    },
+    {
+     "en": "Let ℬ \\mathcal{B} be the set of candidate indices in an update minibatch, with i = ( x , g ) i=(x,g) and p i = p x , g p_{i}=p_{x,g} .",
+     "zh": "令 ℬ \\mathcal{B} 为更新小批量中的候选索引集合，其中 i = ( x , g ) i=(x,g)，且 p i = p x , g p_{i}=p_{x,g}。"
+    },
+    {
+     "en": "For proposals sampled from the pre-update policy π θ old \\pi_{\\theta_{\\mathrm{old}}} , the standard GRPO objective is",
+     "zh": "对于从更新前策略 π θ old \\pi_{\\theta_{\\mathrm{old}}} 中采样的提议，标准的 GRPO 目标函数为"
+    }
+   ]
+  },
+  {
+   "en": "Here, | p i | |p_{i}| is the token length of proposal p i p_{i} , p i , t p_{i,t} its t t -th token, and p i , < t p_{i,<t} its preceding prefix. The advantage a ^ i \\widehat{a}_{i} is computed from the rewards { R x , g } g = 1 G \\{R_{x,g}\\}_{g=1}^{G} of candidates for the same instance x x . The token probability ratio is ρ i , t = π θ ​ ( p i , t ∣ x , H ⋆ , 𝒫 , p i , < t ) π θ old ​ ( p i , t ∣ x , H ⋆ , 𝒫 , p i , < t ) \\rho_{i,t}=\\frac{\\pi_{\\theta}(p_{i,t}\\mid x,\\texttt{H}^{\\star},\\mathcal{P},p_{i,<t})}{\\pi_{\\theta_{\\mathrm{old}}}(p_{i,t}\\mid x,\\texttt{H}^{\\star},\\mathcal{P},p_{i,<t})} .",
+   "zh": "此处，| p i | |p_{i}| 是提案 p i p_{i} 的令牌长度，p i , t p_{i,t} 是其第 t t 个令牌，而 p i , < t p_{i,<t} 是其前面的前缀。 优势 a ^ i \\widehat{a}_{i} 是根据同一实例 x x 的候选项的奖励 { R x , g } g = 1 G \\{R_{x,g}\\}_{g=1}^{G} 计算得出的。 令牌概率比是 ρ i , t = π θ ​ ( p i , t ∣ x , H ⋆ , 𝒫 , p i , < t ) π θ old ​ ( p i , t ∣ x , H ⋆ , 𝒫 , p i , < t ) \\rho_{i,t}=\\frac{\\pi_{\\theta}(p_{i,t}\\mid x,\\texttt{H}^{\\star},\\mathcal{P},p_{i,<t})}{\\pi_{\\theta_{\\mathrm{old}}}(p_{i,t}\\mid x,\\texttt{H}^{\\star},\\mathcal{P},p_{i,<t})}。",
+   "sents": [
+    {
+     "en": "Here, | p i | |p_{i}| is the token length of proposal p i p_{i} , p i , t p_{i,t} its t t -th token, and p i , < t p_{i,<t} its preceding prefix.",
+     "zh": "此处，| p i | |p_{i}| 是提案 p i p_{i} 的令牌长度，p i , t p_{i,t} 是其第 t t 个令牌，而 p i , < t p_{i,<t} 是其前面的前缀。"
+    },
+    {
+     "en": "The advantage a ^ i \\widehat{a}_{i} is computed from the rewards { R x , g } g = 1 G \\{R_{x,g}\\}_{g=1}^{G} of candidates for the same instance x x .",
+     "zh": "优势 a ^ i \\widehat{a}_{i} 是根据同一实例 x x 的候选项的奖励 { R x , g } g = 1 G \\{R_{x,g}\\}_{g=1}^{G} 计算得出的。"
+    },
+    {
+     "en": "The token probability ratio is ρ i , t = π θ ​ ( p i , t ∣ x , H ⋆ , 𝒫 , p i , < t ) π θ old ​ ( p i , t ∣ x , H ⋆ , 𝒫 , p i , < t ) \\rho_{i,t}=\\frac{\\pi_{\\theta}(p_{i,t}\\mid x,\\texttt{H}^{\\star},\\mathcal{P},p_{i,<t})}{\\pi_{\\theta_{\\mathrm{old}}}(p_{i,t}\\mid x,\\texttt{H}^{\\star},\\mathcal{P},p_{i,<t})} .",
+     "zh": "令牌概率比是 ρ i , t = π θ ​ ( p i , t ∣ x , H ⋆ , 𝒫 , p i , < t ) π θ old ​ ( p i , t ∣ x , H ⋆ , 𝒫 , p i , < t ) \\rho_{i,t}=\\frac{\\pi_{\\theta}(p_{i,t}\\mid x,\\texttt{H}^{\\star},\\mathcal{P},p_{i,<t})}{\\pi_{\\theta_{\\mathrm{old}}}(p_{i,t}\\mid x,\\texttt{H}^{\\star},\\mathcal{P},p_{i,<t})}。"
+    }
+   ]
+  },
+  {
+   "en": "The reference policy π ref \\pi_{\\mathrm{ref}} is the frozen initial editor, D KL ( π θ ∥ π ref ) \\textnormal{D}_{\\scalebox{.6}{{K}L}}(\\pi_{\\theta}\\|\\pi_{\\mathrm{ref}}) is the sampled KL penalty ( Shao et al., 2024 ; Ouyang et al., 2022 ; Schulman et al., 2017 ) , and ϵ , β \\epsilon,\\beta control clipping and KL regularization; the execution model M remains frozen throughout training.",
+   "zh": "参考策略 π ref \\pi_{\\mathrm{ref}} 是冻结的初始编辑器，D KL ( π θ ∥ π ref ) \\textnormal{D}_{\\scalebox{.6}{{K}L}}(\\pi_{\\theta}\\|\\pi_{\\mathrm{ref}}) 是采样得到的 KL 惩罚项（Shao et al., 2024 ; Ouyang et al., 2022 ; Schulman et al., 2017），而 ϵ , β \\epsilon,\\beta 用于控制裁剪和 KL 正则化；执行模型 M 在整个训练过程中保持冻结。",
+   "sents": null
+  },
+  {
+   "en": "At inference, a single editor call conditions on H ⋆ \\texttt{H}^{\\star} and the playbook 𝒫 \\mathcal{P} to turn each test instance x x into a patch p x p_{x} , adapting H ⋆ \\texttt{H}^{\\star} into an instance-specific harness H x \\texttt{H}_{x} (falling back to H ⋆ \\texttt{H}^{\\star} if the patch fails to apply), which the frozen execution model M then runs; Algorithm 1 and Figure 2 give the end-to-end pipeline.",
+   "zh": "在推理阶段，单次编辑器调用以 H ⋆ \\texttt{H}^{\\star} 和剧本 𝒫 \\mathcal{P} 为条件，将每个测试实例 x x 转换为一个补丁 p x p_{x}，从而将 H ⋆ \\texttt{H}^{\\star} 适配为针对该实例的专用测试框架 H x \\texttt{H}_{x}（如果补丁无法应用，则回退到 H ⋆ \\texttt{H}^{\\star}），随后由冻结的执行模型 M 运行该框架；算法 1 和图 2 展示了完整的端到端流程。",
+   "sents": null
+  },
+  {
+   "en": "We evaluate Turbo Harness on seven benchmarks spanning interactive agent tasks, software engineering, and long-horizon terminal tasks, comparing it with recent harness optimization and prompt-based baselines. We assess gains in task performance and execution efficiency, and conduct ablation studies to investigate where the gains come from.",
+   "zh": "我们在涵盖交互式智能体任务、软件工程以及长期终端任务的七个基准上对 Turbo Harness 进行了评估，并将其与近期的 harness 优化方法以及基于提示的基线方法进行了比较。 我们评估了任务性能和执行效率的提升，并开展了消融研究，以探究这些提升的来源。",
+   "sents": [
+    {
+     "en": "We evaluate Turbo Harness on seven benchmarks spanning interactive agent tasks, software engineering, and long-horizon terminal tasks, comparing it with recent harness optimization and prompt-based baselines.",
+     "zh": "我们在涵盖交互式智能体任务、软件工程以及长期终端任务的七个基准上对 Turbo Harness 进行了评估，并将其与近期的 harness 优化方法以及基于提示的基线方法进行了比较。"
+    },
+    {
+     "en": "We assess gains in task performance and execution efficiency, and conduct ablation studies to investigate where the gains come from.",
+     "zh": "我们评估了任务性能和执行效率的提升，并开展了消融研究，以探究这些提升的来源。"
+    }
+   ]
+  },
+  {
+   "en": "Benchmarks. We evaluate Turbo Harness on seven benchmarks spanning agentic tasks, software engineering, and long-horizon terminal interaction. For the four agentic benchmarks, ALFWorld ( Shridhar et al., 2020 ) , ScienceWorld ( Wang et al., 2022 ) , DBBench ( Liu et al., 2024 ) , and WebShop ( Yao et al., 2022a ) , we report success rate, mean environment score in [ 0,100 ] [0,100] , accuracy, and Success@1, respectively. For software engineering, we use SWE-smith-MR , our multi-repository subset of SWE-smith ( Yang et al., 2026 ) , and SWE-bench Verified ( Jimenez et al., 2024 ) . On both coding benchmarks, pass rate is the fraction of test issues resolved by explicitly submitted code patches, with unsubmitted attempts counted as failures. For Terminal-Bench-2.1 (TB2.1) ( Merrill et al., 2026 ) , we report task pass rate. Higher values indicate better performance for all seven task metrics.",
+   "zh": "基准测试。 我们在涵盖智能体任务、软件工程和长期终端交互的七个基准测试上对 Turbo Harness 进行了评估。 对于四个智能体基准测试，即 ALFWorld（Shridhar 等人，2020）、ScienceWorld（Wang 等人，2022）、DBBench（Liu 等人，2024）和 WebShop（Yao 等人，2022a），我们分别报告了成功率、[0,100] 范围内的平均环境得分、准确率以及 Success@1。 在软件工程方面，我们使用了 SWE-smith-MR——这是 SWE-smith（Yang 等人，2026）的多仓库子集——以及 SWE-bench Verified（Jimenez 等人，2024）。 在这两个编码基准测试中，通过率是指通过明确提交的代码补丁解决测试问题的比例，未提交的尝试则被视为失败。 对于 Terminal-Bench-2.1（TB2.1）（Merrill 等人，2026），我们报告了任务通过率。 所有七个任务指标中，数值越高表示性能越好。",
+   "sents": [
+    {
+     "en": "Benchmarks.",
+     "zh": "基准测试。"
+    },
+    {
+     "en": "We evaluate Turbo Harness on seven benchmarks spanning agentic tasks, software engineering, and long-horizon terminal interaction.",
+     "zh": "我们在涵盖智能体任务、软件工程和长期终端交互的七个基准测试上对 Turbo Harness 进行了评估。"
+    },
+    {
+     "en": "For the four agentic benchmarks, ALFWorld ( Shridhar et al., 2020 ) , ScienceWorld ( Wang et al., 2022 ) , DBBench ( Liu et al., 2024 ) , and WebShop ( Yao et al., 2022a ) , we report success rate, mean environment score in [ 0,100 ] [0,100] , accuracy, and Success@1, respectively.",
+     "zh": "对于四个智能体基准测试，即 ALFWorld（Shridhar 等人，2020）、ScienceWorld（Wang 等人，2022）、DBBench（Liu 等人，2024）和 WebShop（Yao 等人，2022a），我们分别报告了成功率、[0,100] 范围内的平均环境得分、准确率以及 Success@1。"
+    },
+    {
+     "en": "For software engineering, we use SWE-smith-MR , our multi-repository subset of SWE-smith ( Yang et al., 2026 ) , and SWE-bench Verified ( Jimenez et al., 2024 ) .",
+     "zh": "在软件工程方面，我们使用了 SWE-smith-MR——这是 SWE-smith（Yang 等人，2026）的多仓库子集——以及 SWE-bench Verified（Jimenez 等人，2024）。"
+    },
+    {
+     "en": "On both coding benchmarks, pass rate is the fraction of test issues resolved by explicitly submitted code patches, with unsubmitted attempts counted as failures.",
+     "zh": "在这两个编码基准测试中，通过率是指通过明确提交的代码补丁解决测试问题的比例，未提交的尝试则被视为失败。"
+    },
+    {
+     "en": "For Terminal-Bench-2.1 (TB2.1) ( Merrill et al., 2026 ) , we report task pass rate.",
+     "zh": "对于 Terminal-Bench-2.1（TB2.1）（Merrill 等人，2026），我们报告了任务通过率。"
+    },
+    {
+     "en": "Higher values indicate better performance for all seven task metrics.",
+     "zh": "所有七个任务指标中，数值越高表示性能越好。"
+    }
+   ]
+  },
+  {
+   "en": "Data splits and budgets. We evaluate on held-out test instances using the benchmark-specific splits in Appendix A.2 . SWE-smith-MR contains 50 50 training and 50 50 test issues sampled from 25 25 Python repositories. SWE-bench Verified uses a repository-stratified split of 251 251 training, 99 99 validation, and 150 150 test issues. Both coding benchmarks hold out issues within the selected repositories and impose a 40 40 -step execution limit and a $3 cost limit per issue. Compared with the 250 250 -step budget commonly used for SWE-bench Verified evaluation, this tighter budget is intended to stress-test harness quality by limiting the extent to which additional interaction can compensate for ineffective runtime guidance. TB2.1 uses a held-out test split of 44 44 tasks.",
+   "zh": "数据划分与预算。 我们使用附录 A.2 中基准测试特定的划分方式，在预留的测试实例上进行评估。 SWE-smith-MR 包含从 25 个 Python 代码库中抽取的 50 个训练问题和 50 个测试问题。 SWE-bench Verified 采用按代码库分层划分的方案，包括 251 个训练问题、99 个验证问题和 150 个测试问题。 这两个编码基准测试都会在选定的代码库中预留部分问题，并对每个问题施加 40 步执行限制和 3 美元的成本限制。 与 SWE-bench Verified 评估中常用的 250 步预算相比，这一更严格的预算旨在通过限制额外交互对低效运行时指导的补偿程度，来对测试框架的质量进行压力测试。 TB2.1 使用一个包含 44 个任务的预留测试集。",
+   "sents": [
+    {
+     "en": "Data splits and budgets.",
+     "zh": "数据划分与预算。"
+    },
+    {
+     "en": "We evaluate on held-out test instances using the benchmark-specific splits in Appendix A.2 .",
+     "zh": "我们使用附录 A.2 中基准测试特定的划分方式，在预留的测试实例上进行评估。"
+    },
+    {
+     "en": "SWE-smith-MR contains 50 50 training and 50 50 test issues sampled from 25 25 Python repositories.",
+     "zh": "SWE-smith-MR 包含从 25 个 Python 代码库中抽取的 50 个训练问题和 50 个测试问题。"
+    },
+    {
+     "en": "SWE-bench Verified uses a repository-stratified split of 251 251 training, 99 99 validation, and 150 150 test issues.",
+     "zh": "SWE-bench Verified 采用按代码库分层划分的方案，包括 251 个训练问题、99 个验证问题和 150 个测试问题。"
+    },
+    {
+     "en": "Both coding benchmarks hold out issues within the selected repositories and impose a 40 40 -step execution limit and a $3 cost limit per issue.",
+     "zh": "这两个编码基准测试都会在选定的代码库中预留部分问题，并对每个问题施加 40 步执行限制和 3 美元的成本限制。"
+    },
+    {
+     "en": "Compared with the 250 250 -step budget commonly used for SWE-bench Verified evaluation, this tighter budget is intended to stress-test harness quality by limiting the extent to which additional interaction can compensate for ineffective runtime guidance.",
+     "zh": "与 SWE-bench Verified 评估中常用的 250 步预算相比，这一更严格的预算旨在通过限制额外交互对低效运行时指导的补偿程度，来对测试框架的质量进行压力测试。"
+    },
+    {
+     "en": "TB2.1 uses a held-out test split of 44 44 tasks.",
+     "zh": "TB2.1 使用一个包含 44 个任务的预留测试集。"
+    }
+   ]
+  },
+  {
+   "en": "Models. We use Qwen3.5-9B ( Qwen Team, 2026 ) for the four agentic benchmarks, evaluate each coding benchmark with Claude Haiku 4.5 ( Anthropic, 2025b ) and Gemini 3.7 Flash ( Google DeepMind, 2026 ) separately, and use Claude Sonnet 4.5 ( Anthropic, 2025c ) for TB2.1. Qwen3.5-9B serves as the trainable harness editor in our experiment. Meta-Harness proposals and playbook curation use Claude Sonnet 4.5, except on TB2.1, which use Claude Opus 4.6 ( Anthropic, 2026 ) .",
+   "zh": "模型。 我们使用 Qwen3.5-9B（Qwen Team，2026）进行四项智能体基准测试；对每个编码基准测试分别使用 Claude Haiku 4.5（Anthropic，2025b）和 Gemini 3.7 Flash（Google DeepMind，2026）进行评估；TB2.1 则使用 Claude Sonnet 4.5（Anthropic，2025c）。 Qwen3.5-9B 在我们的实验中充当可训练的 harness 编辑器。 Meta-Harness 提案和 playbook 整理工作使用 Claude Sonnet 4.5，但 TB2.1 除外，TB2.1 使用 Claude Opus 4.6（Anthropic，2026）。",
+   "sents": [
+    {
+     "en": "Models.",
+     "zh": "模型。"
+    },
+    {
+     "en": "We use Qwen3.5-9B ( Qwen Team, 2026 ) for the four agentic benchmarks, evaluate each coding benchmark with Claude Haiku 4.5 ( Anthropic, 2025b ) and Gemini 3.7 Flash ( Google DeepMind, 2026 ) separately, and use Claude Sonnet 4.5 ( Anthropic, 2025c ) for TB2.1.",
+     "zh": "我们使用 Qwen3.5-9B（Qwen Team，2026）进行四项智能体基准测试；对每个编码基准测试分别使用 Claude Haiku 4.5（Anthropic，2025b）和 Gemini 3.7 Flash（Google DeepMind，2026）进行评估；TB2.1 则使用 Claude Sonnet 4.5（Anthropic，2025c）。"
+    },
+    {
+     "en": "Qwen3.5-9B serves as the trainable harness editor in our experiment.",
+     "zh": "Qwen3.5-9B 在我们的实验中充当可训练的 harness 编辑器。"
+    },
+    {
+     "en": "Meta-Harness proposals and playbook curation use Claude Sonnet 4.5, except on TB2.1, which use Claude Opus 4.6 ( Anthropic, 2026 ) .",
+     "zh": "Meta-Harness 提案和 playbook 整理工作使用 Claude Sonnet 4.5，但 TB2.1 除外，TB2.1 使用 Claude Opus 4.6（Anthropic，2026）。"
+    }
+   ]
+  },
+  {
+   "en": "Baselines. Our primary comparison is Meta-Harness ( Lee et al., 2026b ) , whose globally optimized harness and search archive provide the starting point for Turbo Harness. This comparison evaluates the added value of instance-specific adaptation. We also compare with Default , the initial scaffold without harness optimization: mini-swe-agent ( Yang et al., 2024b ) for the coding benchmarks and a basic tool-calling loop for each agentic benchmark. Terminus-Kira ( KRAFTON AI and Ludo Robotics, 2026 ) and Terminus-2 ( Merrill et al., 2026 ) serve as the default harnesses on TB2.1. Additional agentic baselines include ReAct ( Yao et al., 2022b ) , Self-Refine ( Madaan et al., 2023 ) , Reflection ( Shinn et al., 2023 ) , and Harness-R1 ( Shao et al., 2026 ) . We adapt Harness-R1 to ScienceWorld by porting its code-hook method into the Harness-R1 runtime. Appendix C details the Default and prompt-based implementations, including Reflection’s second attempt; Appendix C.3 documents Harness-R1’s runtime and rollout-budget differences.",
+   "zh": "基线模型。 我们的主要对比对象是 Meta-Harness（Lee 等人，2026b），其全局优化的 harness 和搜索存档为 Turbo Harness 提供了起点。 该对比评估了针对具体实例进行自适应所带来的附加价值。 我们还与 Default 进行了对比，即未经 harness 优化的初始框架：在编码基准测试中使用 mini-swe-agent（Yang 等人，2024b），在每个智能体基准测试中使用基础的工具调用循环。 Terminus-Kira（KRAFTON AI 和 Ludo Robotics，2026）以及 Terminus-2（Merrill 等人，2026）在 TB2.1 上作为默认 harness 使用。 其他智能体基线模型包括 ReAct（Yao 等人，2022b）、Self-Refine（Madaan 等人，2023）、Reflection（Shinn 等人，2023）以及 Harness-R1（Shao 等人，2026）。 我们将 Harness-R1 适配到 ScienceWorld，方法是将它的代码挂钩机制移植到 Harness-R1 运行时中。 附录 C 详细描述了 Default 和基于提示的实现，包括 Reflection 的第二次尝试；附录 C.3 记录了 Harness-R1 在运行时和部署预算方面的差异。",
+   "sents": [
+    {
+     "en": "Baselines.",
+     "zh": "基线模型。"
+    },
+    {
+     "en": "Our primary comparison is Meta-Harness ( Lee et al., 2026b ) , whose globally optimized harness and search archive provide the starting point for Turbo Harness.",
+     "zh": "我们的主要对比对象是 Meta-Harness（Lee 等人，2026b），其全局优化的 harness 和搜索存档为 Turbo Harness 提供了起点。"
+    },
+    {
+     "en": "This comparison evaluates the added value of instance-specific adaptation.",
+     "zh": "该对比评估了针对具体实例进行自适应所带来的附加价值。"
+    },
+    {
+     "en": "We also compare with Default , the initial scaffold without harness optimization: mini-swe-agent ( Yang et al., 2024b ) for the coding benchmarks and a basic tool-calling loop for each agentic benchmark.",
+     "zh": "我们还与 Default 进行了对比，即未经 harness 优化的初始框架：在编码基准测试中使用 mini-swe-agent（Yang 等人，2024b），在每个智能体基准测试中使用基础的工具调用循环。"
+    },
+    {
+     "en": "Terminus-Kira ( KRAFTON AI and Ludo Robotics, 2026 ) and Terminus-2 ( Merrill et al., 2026 ) serve as the default harnesses on TB2.1.",
+     "zh": "Terminus-Kira（KRAFTON AI 和 Ludo Robotics，2026）以及 Terminus-2（Merrill 等人，2026）在 TB2.1 上作为默认 harness 使用。"
+    },
+    {
+     "en": "Additional agentic baselines include ReAct ( Yao et al., 2022b ) , Self-Refine ( Madaan et al., 2023 ) , Reflection ( Shinn et al., 2023 ) , and Harness-R1 ( Shao et al., 2026 ) .",
+     "zh": "其他智能体基线模型包括 ReAct（Yao 等人，2022b）、Self-Refine（Madaan 等人，2023）、Reflection（Shinn 等人，2023）以及 Harness-R1（Shao 等人，2026）。"
+    },
+    {
+     "en": "We adapt Harness-R1 to ScienceWorld by porting its code-hook method into the Harness-R1 runtime.",
+     "zh": "我们将 Harness-R1 适配到 ScienceWorld，方法是将它的代码挂钩机制移植到 Harness-R1 运行时中。"
+    },
+    {
+     "en": "Appendix C details the Default and prompt-based implementations, including Reflection’s second attempt; Appendix C.3 documents Harness-R1’s runtime and rollout-budget differences.",
+     "zh": "附录 C 详细描述了 Default 和基于提示的实现，包括 Reflection 的第二次尝试；附录 C.3 记录了 Harness-R1 在运行时和部署预算方面的差异。"
+    }
+   ]
+  },
+  {
+   "en": "Editor training. For each benchmark and execution model, we construct a playbook from the completed Meta-Harness search and hold it fixed during editor training and evaluation. We train the editor with GRPO ( Shao et al., 2024 ) using the task-specific rewards in Appendix B.3 . Appendix B.4 specifies checkpoint selection and the WebShop-specific training configuration.",
+   "zh": "智能体训练。 对于每个基准和执行模型，我们从完成的 Meta-Harness 搜索中构建一个策略指南，并在智能体训练和评估期间保持其不变。 我们使用附录 B.3 中的任务特定奖励，通过 GRPO（Shao 等人，2024）训练智能体。 附录 B.4 说明了检查点的选择以及 WebShop 特定的训练配置。",
+   "sents": [
+    {
+     "en": "Editor training.",
+     "zh": "智能体训练。"
+    },
+    {
+     "en": "For each benchmark and execution model, we construct a playbook from the completed Meta-Harness search and hold it fixed during editor training and evaluation.",
+     "zh": "对于每个基准和执行模型，我们从完成的 Meta-Harness 搜索中构建一个策略指南，并在智能体训练和评估期间保持其不变。"
+    },
+    {
+     "en": "We train the editor with GRPO ( Shao et al., 2024 ) using the task-specific rewards in Appendix B.3 .",
+     "zh": "我们使用附录 B.3 中的任务特定奖励，通过 GRPO（Shao 等人，2024）训练智能体。"
+    },
+    {
+     "en": "Appendix B.4 specifies checkpoint selection and the WebShop-specific training configuration.",
+     "zh": "附录 B.4 说明了检查点的选择以及 WebShop 特定的训练配置。"
+    }
+   ]
+  },
+  {
+   "en": "Agentic benchmarks. Turbo Harness improves over Meta-Harness on all four agentic benchmarks (Table 1 ): by 10.0 % 10.0\\% on ALFWorld, 7.3 7.3 on ScienceWorld’s [ 0,100 ] [0,100] score, 4.2 % 4.2\\% on DBBench, and 2.0 % 2.0\\% on WebShop. It also surpasses the three prompt-based baselines (ReAct, Self-Refine, and Reflection) on every benchmark, and outperforms Harness-R1 on ALFWorld, ScienceWorld, and DBBench while performing comparably on WebShop ( 42.0 % 42.0\\% versus 42.2 % 42.2\\% ).",
+   "zh": "智能体基准测试。 Turbo Harness 在全部四项智能体基准测试中均优于 Meta-Harness（表 1）：在 ALFWorld 上提升 10.0% 10.0\\%，在 ScienceWorld 的 [ 0,100 ] [0,100] 分数上提升 7.3 7.3，在 DBBench 上提升 4.2% 4.2\\%，在 WebShop 上提升 2.0% 2.0\\%。 它在所有基准测试中也超越了三种基于提示词的方法（ReAct、Self-Refine 和 Reflection），并在 ALFWorld、ScienceWorld 和 DBBench 上的表现优于 Harness-R1，而在 WebShop 上的表现则相当接近（42.0% 42.0\\% 对比 42.2% 42.2\\%）。",
+   "sents": [
+    {
+     "en": "Agentic benchmarks.",
+     "zh": "智能体基准测试。"
+    },
+    {
+     "en": "Turbo Harness improves over Meta-Harness on all four agentic benchmarks (Table 1 ): by 10.0 % 10.0\\% on ALFWorld, 7.3 7.3 on ScienceWorld’s [ 0,100 ] [0,100] score, 4.2 % 4.2\\% on DBBench, and 2.0 % 2.0\\% on WebShop.",
+     "zh": "Turbo Harness 在全部四项智能体基准测试中均优于 Meta-Harness（表 1）：在 ALFWorld 上提升 10.0% 10.0\\%，在 ScienceWorld 的 [ 0,100 ] [0,100] 分数上提升 7.3 7.3，在 DBBench 上提升 4.2% 4.2\\%，在 WebShop 上提升 2.0% 2.0\\%。"
+    },
+    {
+     "en": "It also surpasses the three prompt-based baselines (ReAct, Self-Refine, and Reflection) on every benchmark, and outperforms Harness-R1 on ALFWorld, ScienceWorld, and DBBench while performing comparably on WebShop ( 42.0 % 42.0\\% versus 42.2 % 42.2\\% ).",
+     "zh": "它在所有基准测试中也超越了三种基于提示词的方法（ReAct、Self-Refine 和 Reflection），并在 ALFWorld、ScienceWorld 和 DBBench 上的表现优于 Harness-R1，而在 WebShop 上的表现则相当接近（42.0% 42.0\\% 对比 42.2% 42.2\\%）。"
+    }
+   ]
+  },
+  {
+   "en": "SWE-smith-MR. On SWE-smith-MR, instance-specific adaptation produces large gains with both execution models (Table 2 ): Turbo Harness raises the pass rate from 50.7 % 50.7\\% to 64.0 % 64.0\\% with Haiku and from 70.7 % 70.7\\% to 88.0 % 88.0\\% with Gemini, improvements of 13.3 13.3 and 17.3 17.3 percentage points over Meta-Harness. The remaining baselines isolate the harness as the operative lever: averaged across both coding benchmarks, reflective prompt optimization (GEPA) ( Agrawal et al., 2026 ) and context engineering (ACE) ( Zhang et al., 2026c ) improve over Default but do not reach Meta-Harness ( 45.9 45.9 and 44.3 44.3 versus 54.1 54.1 ), let alone Turbo Harness ( 66.4 66.4 ). A single global harness thus leaves substantial headroom across issues from different repositories, even under a fixed execution model, and adapting the harness per instance recovers much of it.",
+   "zh": "SWE-smith-MR。 在 SWE-smith-MR 中，针对具体实例的适配为两种执行模型都带来了显著提升（表 2）：使用 Haiku 时，Turbo Harness 将通过率从 50.7% 提升至 64.0%，使用 Gemini 时则从 70.7% 提升至 88.0%，分别比 Meta-Harness 提高了 13.3 和 17.3 个百分点。 其余基线方法表明，测试框架是起关键作用的因素：在两个编码基准测试中取平均值，反思性提示优化（GEPA）（Agrawal 等人，2026）和上下文工程（ACE）（Zhang 等人，2026c）虽然优于 Default，但仍未达到 Meta-Harness 的水平（分别为 45.9% 和 44.3%，对比 54.1%），更无法与 Turbo Harness（66.4%）相比。 因此，即使在执行模型固定的情况下，单一的通用测试框架在不同仓库的问题上仍存在较大的提升空间，而针对每个实例对测试框架进行适配，则能恢复其中大部分性能。",
+   "sents": [
+    {
+     "en": "SWE-smith-MR.",
+     "zh": "SWE-smith-MR。"
+    },
+    {
+     "en": "On SWE-smith-MR, instance-specific adaptation produces large gains with both execution models (Table 2 ): Turbo Harness raises the pass rate from 50.7 % 50.7\\% to 64.0 % 64.0\\% with Haiku and from 70.7 % 70.7\\% to 88.0 % 88.0\\% with Gemini, improvements of 13.3 13.3 and 17.3 17.3 percentage points over Meta-Harness.",
+     "zh": "在 SWE-smith-MR 中，针对具体实例的适配为两种执行模型都带来了显著提升（表 2）：使用 Haiku 时，Turbo Harness 将通过率从 50.7% 提升至 64.0%，使用 Gemini 时则从 70.7% 提升至 88.0%，分别比 Meta-Harness 提高了 13.3 和 17.3 个百分点。"
+    },
+    {
+     "en": "The remaining baselines isolate the harness as the operative lever: averaged across both coding benchmarks, reflective prompt optimization (GEPA) ( Agrawal et al., 2026 ) and context engineering (ACE) ( Zhang et al., 2026c ) improve over Default but do not reach Meta-Harness ( 45.9 45.9 and 44.3 44.3 versus 54.1 54.1 ), let alone Turbo Harness ( 66.4 66.4 ).",
+     "zh": "其余基线方法表明，测试框架是起关键作用的因素：在两个编码基准测试中取平均值，反思性提示优化（GEPA）（Agrawal 等人，2026）和上下文工程（ACE）（Zhang 等人，2026c）虽然优于 Default，但仍未达到 Meta-Harness 的水平（分别为 45.9% 和 44.3%，对比 54.1%），更无法与 Turbo Harness（66.4%）相比。"
+    },
+    {
+     "en": "A single global harness thus leaves substantial headroom across issues from different repositories, even under a fixed execution model, and adapting the harness per instance recovers much of it.",
+     "zh": "因此，即使在执行模型固定的情况下，单一的通用测试框架在不同仓库的问题上仍存在较大的提升空间，而针对每个实例对测试框架进行适配，则能恢复其中大部分性能。"
+    }
+   ]
+  },
+  {
+   "en": "SWE-bench Verified. The same pattern holds on SWE-bench Verified, a second coding benchmark drawn from real-world GitHub issues, where Turbo Harness again outperforms or matches Meta-Harness. With Gemini, the pass rate rises from 38.4 % 38.4\\% to 54.4 % 54.4\\% ; with Haiku, it rises from 56.7 % 56.7\\% to 59.3 % 59.3\\% , a smaller 2.7 2.7 -point improvement. The size of the gain tracks the executor’s remaining headroom: Meta-Harness already lifts Haiku from 31.6 % 31.6\\% to 56.7 % 56.7\\% , capturing most of the improvement over the default harness and leaving little for instance-specific adaptation, whereas Gemini’s lower Meta-Harness baseline leaves ample room that Turbo Harness exploits.",
+   "zh": "SWE-bench 验证通过。 在 SWE-bench Verified 中，这一模式同样成立。SWE-bench Verified 是另一个从真实 GitHub 问题中提取的编码基准测试，其中 Turbo Harness 再次超越或达到了 Meta-Harness 的表现。 使用 Gemini 时，通过率从 38.4% 提升至 54.4%；使用 Haiku 时，则从 56.7% 提升至 59.3%，提升幅度较小，仅为 2.7 个百分点。 提升幅度的大小与执行器剩余的优化空间相关：Meta-Harness 已将 Haiku 的通过率从 31.6% 提升至 56.7%，几乎完全实现了相对于默认执行器的性能提升，留给特定实例的优化空间很小；而 Gemini 的 Meta-Harness 基线较低，因此仍有大量空间可供 Turbo Harness 利用。",
+   "sents": [
+    {
+     "en": "SWE-bench Verified.",
+     "zh": "SWE-bench 验证通过。"
+    },
+    {
+     "en": "The same pattern holds on SWE-bench Verified, a second coding benchmark drawn from real-world GitHub issues, where Turbo Harness again outperforms or matches Meta-Harness.",
+     "zh": "在 SWE-bench Verified 中，这一模式同样成立。SWE-bench Verified 是另一个从真实 GitHub 问题中提取的编码基准测试，其中 Turbo Harness 再次超越或达到了 Meta-Harness 的表现。"
+    },
+    {
+     "en": "With Gemini, the pass rate rises from 38.4 % 38.4\\% to 54.4 % 54.4\\% ; with Haiku, it rises from 56.7 % 56.7\\% to 59.3 % 59.3\\% , a smaller 2.7 2.7 -point improvement.",
+     "zh": "使用 Gemini 时，通过率从 38.4% 提升至 54.4%；使用 Haiku 时，则从 56.7% 提升至 59.3%，提升幅度较小，仅为 2.7 个百分点。"
+    },
+    {
+     "en": "The size of the gain tracks the executor’s remaining headroom: Meta-Harness already lifts Haiku from 31.6 % 31.6\\% to 56.7 % 56.7\\% , capturing most of the improvement over the default harness and leaving little for instance-specific adaptation, whereas Gemini’s lower Meta-Harness baseline leaves ample room that Turbo Harness exploits.",
+     "zh": "提升幅度的大小与执行器剩余的优化空间相关：Meta-Harness 已将 Haiku 的通过率从 31.6% 提升至 56.7%，几乎完全实现了相对于默认执行器的性能提升，留给特定实例的优化空间很小；而 Gemini 的 Meta-Harness 基线较低，因此仍有大量空间可供 Turbo Harness 利用。"
+    }
+   ]
+  },
+  {
+   "en": "Beyond raising accuracy, Turbo Harness also lowers execution cost in three of the four coding settings, resolving each issue in fewer steps and at lower API cost than the global Meta-Harness (Table 2 ). The savings are largest on SWE-smith-MR with Gemini, where Turbo Harness averages 8.7 8.7 steps per issue rather than 23.1 23.1 and $0.046 rather than $0.310, a roughly 6.7 × 6.7\\times reduction in execution cost; with Haiku it uses 17.3 17.3 steps rather than 18.5 18.5 at $0.136 rather than $0.151. On SWE-bench Verified, Gemini shows the same direction, 25.9 25.9 steps rather than 32.5 32.5 and $0.331 rather than $0.470. The exception is Haiku on SWE-bench Verified, the same setting where the pass-rate gain was smallest ( + 2.7 +2.7 points): there Turbo Harness spends slightly more than Meta-Harness, 20.4 20.4 steps rather than 18.8 18.8 per issue. All costs in Table 2 cover only the execution model; they exclude both the offline optimization and the one-time per-instance editor call.",
+   "zh": "除了提升准确率，Turbo Harness 还在四种编码设置中的三种降低了执行成本，解决每个问题所需的步骤更少，API 成本也低于全局 Meta-Harness（表 2）。 在 SWE-smith-MR 场景下，Gemini 的节省效果最为显著：Turbo Harness 平均每个问题只需 8.7 步（而非 23.1 步），成本为 $0.046（而非 $0.310），执行成本降低了约 6.7 倍；而 Haiku 则使用 17.3 步（而非 18.5 步），成本为 $0.136（而非 $0.151）。 在 SWE-bench Verified 上，Gemini 也呈现出相同趋势：25.9 步（而非 32.5 步），成本为 $0.331（而非 $0.470）。 例外情况是 Haiku 在 SWE-bench Verified 上的表现，这也是其通过率提升最小的设置（+2.7 个百分点）：在此场景下，Turbo Harness 比 Meta-Harness 花费略多，平均每个问题需要 20.4 步（而非 18.8 步）。 表 2 中的所有成本仅包含执行模型的费用，未包含离线优化和每次实例的一次性编辑器调用成本。",
+   "sents": [
+    {
+     "en": "Beyond raising accuracy, Turbo Harness also lowers execution cost in three of the four coding settings, resolving each issue in fewer steps and at lower API cost than the global Meta-Harness (Table 2 ).",
+     "zh": "除了提升准确率，Turbo Harness 还在四种编码设置中的三种降低了执行成本，解决每个问题所需的步骤更少，API 成本也低于全局 Meta-Harness（表 2）。"
+    },
+    {
+     "en": "The savings are largest on SWE-smith-MR with Gemini, where Turbo Harness averages 8.7 8.7 steps per issue rather than 23.1 23.1 and $0.046 rather than $0.310, a roughly 6.7 × 6.7\\times reduction in execution cost; with Haiku it uses 17.3 17.3 steps rather than 18.5 18.5 at $0.136 rather than $0.151.",
+     "zh": "在 SWE-smith-MR 场景下，Gemini 的节省效果最为显著：Turbo Harness 平均每个问题只需 8.7 步（而非 23.1 步），成本为 $0.046（而非 $0.310），执行成本降低了约 6.7 倍；而 Haiku 则使用 17.3 步（而非 18.5 步），成本为 $0.136（而非 $0.151）。"
+    },
+    {
+     "en": "On SWE-bench Verified, Gemini shows the same direction, 25.9 25.9 steps rather than 32.5 32.5 and $0.331 rather than $0.470.",
+     "zh": "在 SWE-bench Verified 上，Gemini 也呈现出相同趋势：25.9 步（而非 32.5 步），成本为 $0.331（而非 $0.470）。"
+    },
+    {
+     "en": "The exception is Haiku on SWE-bench Verified, the same setting where the pass-rate gain was smallest ( + 2.7 +2.7 points): there Turbo Harness spends slightly more than Meta-Harness, 20.4 20.4 steps rather than 18.8 18.8 per issue.",
+     "zh": "例外情况是 Haiku 在 SWE-bench Verified 上的表现，这也是其通过率提升最小的设置（+2.7 个百分点）：在此场景下，Turbo Harness 比 Meta-Harness 花费略多，平均每个问题需要 20.4 步（而非 18.8 步）。"
+    },
+    {
+     "en": "All costs in Table 2 cover only the execution model; they exclude both the offline optimization and the one-time per-instance editor call.",
+     "zh": "表 2 中的所有成本仅包含执行模型的费用，未包含离线优化和每次实例的一次性编辑器调用成本。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate Turbo Harness on Terminal-Bench-2.1 (TB2.1), a benchmark for long-horizon terminal tasks, using a frozen Claude Sonnet 4.5 as the execution model. TB2.1 provides a more challenging test of our premise: unlike on the other benchmarks, the model-optimized harness produced by Meta-Harness does not outperform the human-crafted harnesses (Table 3 ). Even so, per-instance adaptation recovers the lead, as Turbo Harness attains the highest mean pass rate of 55.5 % 55.5\\% , 5.0 5.0 points above Meta-Harness and 3.2 3.2 above the strongest default, Terminus-Kira. The gain is consistent, with Turbo Harness posting the top mean in all five runs.",
+   "zh": "我们使用一个冻结的 Claude Sonnet 4.5 作为执行模型，在用于长时程终端任务的基准测试 Terminal-Bench-2.1（TB2.1）上对 Turbo Harness 进行了评估。 TB2.1 对我们的前提提出了更具挑战性的检验：与其他基准测试不同，由 Meta-Harness 生成的模型优化型工具包并未超越人工设计的工具包（表 3）。 即便如此，逐实例自适应仍恢复了领先优势：Turbo Harness 实现了最高的平均通过率 55.5%（55.5\\%），比 Meta-Harness 高出 5.0 分，比最强的默认方案 Terminus-Kira 高出 3.2 分。 这种提升表现稳定，Turbo Harness 在所有五次运行中均取得了最高的平均值。",
+   "sents": [
+    {
+     "en": "We evaluate Turbo Harness on Terminal-Bench-2.1 (TB2.1), a benchmark for long-horizon terminal tasks, using a frozen Claude Sonnet 4.5 as the execution model.",
+     "zh": "我们使用一个冻结的 Claude Sonnet 4.5 作为执行模型，在用于长时程终端任务的基准测试 Terminal-Bench-2.1（TB2.1）上对 Turbo Harness 进行了评估。"
+    },
+    {
+     "en": "TB2.1 provides a more challenging test of our premise: unlike on the other benchmarks, the model-optimized harness produced by Meta-Harness does not outperform the human-crafted harnesses (Table 3 ).",
+     "zh": "TB2.1 对我们的前提提出了更具挑战性的检验：与其他基准测试不同，由 Meta-Harness 生成的模型优化型工具包并未超越人工设计的工具包（表 3）。"
+    },
+    {
+     "en": "Even so, per-instance adaptation recovers the lead, as Turbo Harness attains the highest mean pass rate of 55.5 % 55.5\\% , 5.0 5.0 points above Meta-Harness and 3.2 3.2 above the strongest default, Terminus-Kira.",
+     "zh": "即便如此，逐实例自适应仍恢复了领先优势：Turbo Harness 实现了最高的平均通过率 55.5%（55.5\\%），比 Meta-Harness 高出 5.0 分，比最强的默认方案 Terminus-Kira 高出 3.2 分。"
+    },
+    {
+     "en": "The gain is consistent, with Turbo Harness posting the top mean in all five runs.",
+     "zh": "这种提升表现稳定，Turbo Harness 在所有五次运行中均取得了最高的平均值。"
+    }
+   ]
+  },
+  {
+   "en": "We observe that Turbo Harness lies on the accuracy-cost Pareto frontier. The lightweight OpenHands ( Wang et al., 2025 ) harness is the cheapest overall ($0.85 per task, 54.4 54.4 turns, 1.55 1.55 M input tokens) but also the least accurate ( 47.3 % 47.3\\% ), spending little because it attempts less. Every harness that is competitive on pass rate costs more, yet Turbo Harness is at once the most accurate and the cheapest among them: relative to Meta-Harness it cuts turns per task from 76.3 76.3 to 71.2 71.2 , cost from $1.56 to $1.38, and input tokens from 3.15 3.15 M to 2.65 2.65 M, and it likewise undercuts the other competitive harnesses, Terminus-Kira and Terminus-2. Per-instance adaptation thus buys higher accuracy while trimming cost, whereas the heavier global and default harnesses spend more for less.",
+   "zh": "我们观察到，Turbo Harness 位于准确性与成本的帕累托前沿上。 轻量级的 OpenHands（Wang 等人，2025）Harness 总体成本最低（每任务 0.85 美元，54.4 次轮次，155 万输入令牌），但准确性也最差（47.3%），因为它尝试的次数较少，因此花费更少。 所有在通过率方面具有竞争力的 Harness 成本都更高，但 Turbo Harness 同时是其中准确性最高且成本最低的：与 Meta-Harness 相比，它将每任务的轮次从 76.3 次减少到 71.2 次，成本从 1.56 美元降至 1.38 美元，输入令牌从 315 万降至 265 万；同时它也比其他具有竞争力的 Harness——Terminus-Kira 和 Terminus-2——更具成本优势。 因此，按实例进行适配可以在降低成本的同时提升准确性，而更复杂的全局和默认 Harness 则花费更多却效果有限。",
+   "sents": [
+    {
+     "en": "We observe that Turbo Harness lies on the accuracy-cost Pareto frontier.",
+     "zh": "我们观察到，Turbo Harness 位于准确性与成本的帕累托前沿上。"
+    },
+    {
+     "en": "The lightweight OpenHands ( Wang et al., 2025 ) harness is the cheapest overall ($0.85 per task, 54.4 54.4 turns, 1.55 1.55 M input tokens) but also the least accurate ( 47.3 % 47.3\\% ), spending little because it attempts less.",
+     "zh": "轻量级的 OpenHands（Wang 等人，2025）Harness 总体成本最低（每任务 0.85 美元，54.4 次轮次，155 万输入令牌），但准确性也最差（47.3%），因为它尝试的次数较少，因此花费更少。"
+    },
+    {
+     "en": "Every harness that is competitive on pass rate costs more, yet Turbo Harness is at once the most accurate and the cheapest among them: relative to Meta-Harness it cuts turns per task from 76.3 76.3 to 71.2 71.2 , cost from $1.56 to $1.38, and input tokens from 3.15 3.15 M to 2.65 2.65 M, and it likewise undercuts the other competitive harnesses, Terminus-Kira and Terminus-2.",
+     "zh": "所有在通过率方面具有竞争力的 Harness 成本都更高，但 Turbo Harness 同时是其中准确性最高且成本最低的：与 Meta-Harness 相比，它将每任务的轮次从 76.3 次减少到 71.2 次，成本从 1.56 美元降至 1.38 美元，输入令牌从 315 万降至 265 万；同时它也比其他具有竞争力的 Harness——Terminus-Kira 和 Terminus-2——更具成本优势。"
+    },
+    {
+     "en": "Per-instance adaptation thus buys higher accuracy while trimming cost, whereas the heavier global and default harnesses spend more for less.",
+     "zh": "因此，按实例进行适配可以在降低成本的同时提升准确性，而更复杂的全局和默认 Harness 则花费更多却效果有限。"
+    }
+   ]
+  },
+  {
+   "en": "We next study what enables Turbo Harness to improve over the globally optimized harness. We focus on two questions: whether RL and the recycled playbook are both necessary, and how the editor model’s capability and RL training affect the ability to leverage the playbook.",
+   "zh": "接下来，我们将研究是什么让 Turbo Harness 能够超越全局优化的 harness。 我们重点关注两个问题：强化学习和复用剧本是否都不可或缺，以及编辑器模型的能力与强化学习训练如何影响利用剧本的能力。",
+   "sents": [
+    {
+     "en": "We next study what enables Turbo Harness to improve over the globally optimized harness.",
+     "zh": "接下来，我们将研究是什么让 Turbo Harness 能够超越全局优化的 harness。"
+    },
+    {
+     "en": "We focus on two questions: whether RL and the recycled playbook are both necessary, and how the editor model’s capability and RL training affect the ability to leverage the playbook.",
+     "zh": "我们重点关注两个问题：强化学习和复用剧本是否都不可或缺，以及编辑器模型的能力与强化学习训练如何影响利用剧本的能力。"
+    }
+   ]
+  },
+  {
+   "en": "RL and the playbook are complementary. We first isolate the contributions of RL and playbook conditioning using the same Qwen3.5-9B editor on SWE-smith-MR with a frozen Haiku 4.5 executor (Figure 3 Left). The globally optimized Meta-Harness achieves a pass rate of 50.7%. Introducing an untrained 9B editor without the playbook yields 51.3%, while providing the same editor with the playbook gives 50.0%. Likewise, an RL-trained editor without the playbook reaches only 49.3%. In contrast, combining RL training with playbook conditioning raises the pass rate to 64.0%, a 14.7-point improvement over the same RL-trained editor without the playbook. Thus, for the lightweight editor, neither generic per-instance editing, access to the playbook alone, nor RL alone explains the gain. The improvement emerges when RL trains the editor to identify and apply useful strategies distilled from the outer-loop search.",
+   "zh": "强化学习（RL）与策略手册是互补的。 我们首先使用相同的 Qwen3.5-9B 编辑器在 SWE-smith-MR 数据集上进行实验，并冻结 Haiku 4.5 执行器，以分别分析强化学习和策略手册条件化各自的贡献（图 3 左）。 全局优化的 Meta-Harness 实现了 50.7% 的通过率。 引入一个未经训练且没有策略手册的 9B 编辑器时，通过率为 51.3%；而使用相同的编辑器并加入策略手册时，通过率为 50.0%。 同样地，一个经过强化学习训练但无策略手册的编辑器，其通过率仅为 49.3%。 相比之下，将强化学习训练与策略手册条件化相结合，使通过率提升至 64.0%，比相同条件下无策略手册的强化学习编辑器提升了 14.7 个百分点。 因此，对于轻量级编辑器而言，通用实例编辑、单独使用策略手册或仅依赖强化学习都无法解释这一性能提升。 这种改进源于强化学习训练了编辑器，使其能够识别并应用从外层循环搜索中提炼出的有效策略。",
+   "sents": [
+    {
+     "en": "RL and the playbook are complementary.",
+     "zh": "强化学习（RL）与策略手册是互补的。"
+    },
+    {
+     "en": "We first isolate the contributions of RL and playbook conditioning using the same Qwen3.5-9B editor on SWE-smith-MR with a frozen Haiku 4.5 executor (Figure 3 Left).",
+     "zh": "我们首先使用相同的 Qwen3.5-9B 编辑器在 SWE-smith-MR 数据集上进行实验，并冻结 Haiku 4.5 执行器，以分别分析强化学习和策略手册条件化各自的贡献（图 3 左）。"
+    },
+    {
+     "en": "The globally optimized Meta-Harness achieves a pass rate of 50.7%.",
+     "zh": "全局优化的 Meta-Harness 实现了 50.7% 的通过率。"
+    },
+    {
+     "en": "Introducing an untrained 9B editor without the playbook yields 51.3%, while providing the same editor with the playbook gives 50.0%.",
+     "zh": "引入一个未经训练且没有策略手册的 9B 编辑器时，通过率为 51.3%；而使用相同的编辑器并加入策略手册时，通过率为 50.0%。"
+    },
+    {
+     "en": "Likewise, an RL-trained editor without the playbook reaches only 49.3%.",
+     "zh": "同样地，一个经过强化学习训练但无策略手册的编辑器，其通过率仅为 49.3%。"
+    },
+    {
+     "en": "In contrast, combining RL training with playbook conditioning raises the pass rate to 64.0%, a 14.7-point improvement over the same RL-trained editor without the playbook.",
+     "zh": "相比之下，将强化学习训练与策略手册条件化相结合，使通过率提升至 64.0%，比相同条件下无策略手册的强化学习编辑器提升了 14.7 个百分点。"
+    },
+    {
+     "en": "Thus, for the lightweight editor, neither generic per-instance editing, access to the playbook alone, nor RL alone explains the gain.",
+     "zh": "因此，对于轻量级编辑器而言，通用实例编辑、单独使用策略手册或仅依赖强化学习都无法解释这一性能提升。"
+    },
+    {
+     "en": "The improvement emerges when RL trains the editor to identify and apply useful strategies distilled from the outer-loop search.",
+     "zh": "这种改进源于强化学习训练了编辑器，使其能够识别并应用从外层循环搜索中提炼出的有效策略。"
+    }
+   ]
+  },
+  {
+   "en": "RL enables a small editor to exploit the playbook. We next vary the editor model while holding the playbook fixed (Figure 3 Right). The untrained Qwen3.5-9B editor achieves 50.0%, indicating that simply exposing a small model to the playbook is insufficient. A stronger frozen Sonnet-4.5 editor improves to 55.3%, while Opus-4.6 reaches 61.3%, showing that sufficiently capable models can better leverage the information stored in the playbook even without task-specific fine-tuning. Using our RL-trained Qwen3.5-9B editor enables the agent to achieve a 64.0% pass rate, matching the performance of Opus-4.6 as the harness editor and outperforming Sonnet-4.5, while remaining small enough to run efficiently on local hardware. These results suggest that the outer-loop search archive already contains useful harness editing strategies, while RL enables a lightweight model to select and apply them effectively.",
+   "zh": "强化学习使一个小型编辑器能够利用策略手册。 接下来，我们在保持策略手册不变的情况下，改变编辑器模型（图3右侧）。 未经训练的 Qwen3.5-9B 编辑器实现了 50.0% 的通过率，表明仅让小型模型接触策略手册是不足的。 性能更强的固定版 Sonnet-4.5 编辑器将通过率提升至 55.3%，而 Opus-4.6 则达到了 61.3%，这表明能力足够强的模型即使没有针对特定任务的微调，也能更好地利用策略手册中存储的信息。 使用我们经过强化学习训练的 Qwen3.5-9B 编辑器，智能体实现了 64.0% 的通过率，与 Opus-4.6 作为工具编辑器的性能相当，并优于 Sonnet-4.5，同时其模型规模仍足够小，可在本地硬件上高效运行。 这些结果表明，外层循环搜索存档中已经包含了有用的工具编辑策略，而强化学习则使轻量级模型能够有效地选择和应用这些策略。",
+   "sents": [
+    {
+     "en": "RL enables a small editor to exploit the playbook.",
+     "zh": "强化学习使一个小型编辑器能够利用策略手册。"
+    },
+    {
+     "en": "We next vary the editor model while holding the playbook fixed (Figure 3 Right).",
+     "zh": "接下来，我们在保持策略手册不变的情况下，改变编辑器模型（图3右侧）。"
+    },
+    {
+     "en": "The untrained Qwen3.5-9B editor achieves 50.0%, indicating that simply exposing a small model to the playbook is insufficient.",
+     "zh": "未经训练的 Qwen3.5-9B 编辑器实现了 50.0% 的通过率，表明仅让小型模型接触策略手册是不足的。"
+    },
+    {
+     "en": "A stronger frozen Sonnet-4.5 editor improves to 55.3%, while Opus-4.6 reaches 61.3%, showing that sufficiently capable models can better leverage the information stored in the playbook even without task-specific fine-tuning.",
+     "zh": "性能更强的固定版 Sonnet-4.5 编辑器将通过率提升至 55.3%，而 Opus-4.6 则达到了 61.3%，这表明能力足够强的模型即使没有针对特定任务的微调，也能更好地利用策略手册中存储的信息。"
+    },
+    {
+     "en": "Using our RL-trained Qwen3.5-9B editor enables the agent to achieve a 64.0% pass rate, matching the performance of Opus-4.6 as the harness editor and outperforming Sonnet-4.5, while remaining small enough to run efficiently on local hardware.",
+     "zh": "使用我们经过强化学习训练的 Qwen3.5-9B 编辑器，智能体实现了 64.0% 的通过率，与 Opus-4.6 作为工具编辑器的性能相当，并优于 Sonnet-4.5，同时其模型规模仍足够小，可在本地硬件上高效运行。"
+    },
+    {
+     "en": "These results suggest that the outer-loop search archive already contains useful harness editing strategies, while RL enables a lightweight model to select and apply them effectively.",
+     "zh": "这些结果表明，外层循环搜索存档中已经包含了有用的工具编辑策略，而强化学习则使轻量级模型能够有效地选择和应用这些策略。"
+    }
+   ]
+  },
+  {
+   "en": "We introduced Turbo Harness, an instance-adaptive harness optimization framework that reuses experience from a completed global harness search. Turbo Harness summarizes this search experience into a playbook and trains a lightweight editor to adapt the global harness to each instance. Across our experiments, these instance-specific adaptations consistently outperform the corresponding global harness. Moreover, it provides more flexibility, which we find often translates into lower execution costs.",
+   "zh": "我们提出了 Turbo Harness，这是一个能够适应具体实例的约束优化框架，它可复用已完成的全局约束搜索中的经验。 Turbo Harness 将这种搜索经验总结为一份策略手册，并训练一个轻量级编辑器，以针对每个实例调整全局约束。 在我们的各项实验中，这些针对具体实例的调整始终优于对应的全局约束方案。 此外，它还提供了更高的灵活性，我们发现这通常能带来更低的执行成本。",
+   "sents": [
+    {
+     "en": "We introduced Turbo Harness, an instance-adaptive harness optimization framework that reuses experience from a completed global harness search.",
+     "zh": "我们提出了 Turbo Harness，这是一个能够适应具体实例的约束优化框架，它可复用已完成的全局约束搜索中的经验。"
+    },
+    {
+     "en": "Turbo Harness summarizes this search experience into a playbook and trains a lightweight editor to adapt the global harness to each instance.",
+     "zh": "Turbo Harness 将这种搜索经验总结为一份策略手册，并训练一个轻量级编辑器，以针对每个实例调整全局约束。"
+    },
+    {
+     "en": "Across our experiments, these instance-specific adaptations consistently outperform the corresponding global harness.",
+     "zh": "在我们的各项实验中，这些针对具体实例的调整始终优于对应的全局约束方案。"
+    },
+    {
+     "en": "Moreover, it provides more flexibility, which we find often translates into lower execution costs.",
+     "zh": "此外，它还提供了更高的灵活性，我们发现这通常能带来更低的执行成本。"
+    }
+   ]
+  },
+  {
+   "en": "Our method has two main limitations. First, Turbo Harness builds on a completed global harness search, so its effectiveness depends on the quality and diversity of the harness candidates, trajectories, and feedback collected during that process. If the original search explores only weak strategies or provides limited useful experience, the gains from instance-specific adaptation may also be limited. Second, training the harness editor requires additional environment rollouts. This can be costly on agentic tasks. Future work could reduce this training cost through more sample-efficient optimization or reuse of existing rollout data, and investigate whether editors and playbooks can transfer across tasks, domains, or harness-search runs. More broadly, Turbo Harness suggests that the intermediate artifacts produced during harness optimization can serve as reusable experience rather than disposable byproducts.",
+   "zh": "我们的方法存在两个主要局限性。 首先，Turbo Harness 基于已完成的全局 harness 搜索构建而成，因此其有效性取决于在此过程中收集到的 harness 候选项、轨迹和反馈的质量与多样性。 如果原始搜索仅探索了较弱的策略，或仅提供有限的有效经验，那么通过针对具体实例进行自适应所获得的收益也可能受到限制。 其次，训练 harness 编辑器需要额外的环境运行。 在智能体任务中，这可能会产生高昂的成本。 未来的研究可以通过更高效利用样本的优化方法，或复用现有的运行数据来降低这一训练成本，并进一步探究编辑器和 playbook 是否可以在不同任务、领域或 harness 搜索运行之间迁移使用。 更广泛地说，Turbo Harness 表明，在 harness 优化过程中产生的中间产物可以被视为可重用的经验，而非一次性副产品。",
+   "sents": [
+    {
+     "en": "Our method has two main limitations.",
+     "zh": "我们的方法存在两个主要局限性。"
+    },
+    {
+     "en": "First, Turbo Harness builds on a completed global harness search, so its effectiveness depends on the quality and diversity of the harness candidates, trajectories, and feedback collected during that process.",
+     "zh": "首先，Turbo Harness 基于已完成的全局 harness 搜索构建而成，因此其有效性取决于在此过程中收集到的 harness 候选项、轨迹和反馈的质量与多样性。"
+    },
+    {
+     "en": "If the original search explores only weak strategies or provides limited useful experience, the gains from instance-specific adaptation may also be limited.",
+     "zh": "如果原始搜索仅探索了较弱的策略，或仅提供有限的有效经验，那么通过针对具体实例进行自适应所获得的收益也可能受到限制。"
+    },
+    {
+     "en": "Second, training the harness editor requires additional environment rollouts.",
+     "zh": "其次，训练 harness 编辑器需要额外的环境运行。"
+    },
+    {
+     "en": "This can be costly on agentic tasks.",
+     "zh": "在智能体任务中，这可能会产生高昂的成本。"
+    },
+    {
+     "en": "Future work could reduce this training cost through more sample-efficient optimization or reuse of existing rollout data, and investigate whether editors and playbooks can transfer across tasks, domains, or harness-search runs.",
+     "zh": "未来的研究可以通过更高效利用样本的优化方法，或复用现有的运行数据来降低这一训练成本，并进一步探究编辑器和 playbook 是否可以在不同任务、领域或 harness 搜索运行之间迁移使用。"
+    },
+    {
+     "en": "More broadly, Turbo Harness suggests that the intermediate artifacts produced during harness optimization can serve as reusable experience rather than disposable byproducts.",
+     "zh": "更广泛地说，Turbo Harness 表明，在 harness 优化过程中产生的中间产物可以被视为可重用的经验，而非一次性副产品。"
+    }
+   ]
+  },
+  {
+   "en": "We thank Akash Srivastava for valuable discussions and for sharing relevant literature with us. We are also grateful to Haizhou Shi for taking the time to discuss this work and for the insights he shared. Finally, we thank members of the Red Hat AI Innovation team for their help and support.",
+   "zh": "我们感谢 Akash Srivastava 提出的宝贵意见，并感谢他与我们分享了相关文献。 我们也感谢 Haizhou Shi 抽出时间讨论这项工作，并分享了他的见解。 最后，我们还要感谢 Red Hat AI Innovation 团队的成员们提供的帮助与支持。",
+   "sents": [
+    {
+     "en": "We thank Akash Srivastava for valuable discussions and for sharing relevant literature with us.",
+     "zh": "我们感谢 Akash Srivastava 提出的宝贵意见，并感谢他与我们分享了相关文献。"
+    },
+    {
+     "en": "We are also grateful to Haizhou Shi for taking the time to discuss this work and for the insights he shared.",
+     "zh": "我们也感谢 Haizhou Shi 抽出时间讨论这项工作，并分享了他的见解。"
+    },
+    {
+     "en": "Finally, we thank members of the Red Hat AI Innovation team for their help and support.",
+     "zh": "最后，我们还要感谢 Red Hat AI Innovation 团队的成员们提供的帮助与支持。"
+    }
+   ]
+  },
+  {
+   "en": "Benchmark descriptions. Our seven benchmarks span three families that differ in interaction modality, horizon, and how much the harness can influence behavior.",
+   "zh": "基准测试描述。 我们的七个基准测试涵盖三个类别，这些类别在交互方式、时间跨度以及控制机制对行为的影响程度方面各不相同。",
+   "sents": [
+    {
+     "en": "Benchmark descriptions.",
+     "zh": "基准测试描述。"
+    },
+    {
+     "en": "Our seven benchmarks span three families that differ in interaction modality, horizon, and how much the harness can influence behavior.",
+     "zh": "我们的七个基准测试涵盖三个类别，这些类别在交互方式、时间跨度以及控制机制对行为的影响程度方面各不相同。"
+    }
+   ]
+  },
+  {
+   "en": "ALFWorld ( Shridhar et al., 2020 ) is a text-based embodied environment in which the agent completes household tasks (e.g., pick-and-place, clean, heat, cool, look, and pick-two) by issuing textual actions and observing environment feedback. Success is a binary indicator of whether the goal configuration is achieved.",
+   "zh": "ALFWorld（Shridhar 等人，2020）是一个基于文本的具身环境，智能体通过发出文本指令并观察环境的反馈来完成家务任务（例如，取放、清洁、加热、冷却、查看和双选）。 成功与否是一个二元指标，用于判断目标配置是否达成。",
+   "sents": [
+    {
+     "en": "ALFWorld ( Shridhar et al., 2020 ) is a text-based embodied environment in which the agent completes household tasks (e.g., pick-and-place, clean, heat, cool, look, and pick-two) by issuing textual actions and observing environment feedback.",
+     "zh": "ALFWorld（Shridhar 等人，2020）是一个基于文本的具身环境，智能体通过发出文本指令并观察环境的反馈来完成家务任务（例如，取放、清洁、加热、冷却、查看和双选）。"
+    },
+    {
+     "en": "Success is a binary indicator of whether the goal configuration is achieved.",
+     "zh": "成功与否是一个二元指标，用于判断目标配置是否达成。"
+    }
+   ]
+  },
+  {
+   "en": "ScienceWorld ( Wang et al., 2022 ) is an interactive text environment covering many elementary-science task types (e.g., changes of state, electrical conductivity, and life stages), each requiring a multi-step experimental procedure. The environment returns a partial-credit score in [ 0,100 ] [0,100] , and progress is gated by a focus action, making it sensitive to procedure and timing.",
+   "zh": "ScienceWorld（Wang 等人，2022）是一个交互式文本环境，涵盖多种基础科学任务类型（例如，物态变化、导电性和生命阶段），每种任务都需要多步骤的实验流程。 该环境返回一个位于 [0,100] 范围内的部分得分，且进度受“聚焦”操作的限制，因此对实验流程和时机十分敏感。",
+   "sents": [
+    {
+     "en": "ScienceWorld ( Wang et al., 2022 ) is an interactive text environment covering many elementary-science task types (e.g., changes of state, electrical conductivity, and life stages), each requiring a multi-step experimental procedure.",
+     "zh": "ScienceWorld（Wang 等人，2022）是一个交互式文本环境，涵盖多种基础科学任务类型（例如，物态变化、导电性和生命阶段），每种任务都需要多步骤的实验流程。"
+    },
+    {
+     "en": "The environment returns a partial-credit score in [ 0,100 ] [0,100] , and progress is gated by a focus action, making it sensitive to procedure and timing.",
+     "zh": "该环境返回一个位于 [0,100] 范围内的部分得分，且进度受“聚焦”操作的限制，因此对实验流程和时机十分敏感。"
+    }
+   ]
+  },
+  {
+   "en": "DBBench ( Liu et al., 2024 ) is a database-interaction benchmark in which the agent answers a question about a relational database by issuing SQL queries and then committing a final answer. Accuracy is measured against the ground-truth answer; we run it against a MySQL backend.",
+   "zh": "DBBench（Liu 等人，2024）是一个数据库交互基准测试，其中智能体通过发出 SQL 查询来回答有关关系数据库的问题，然后提交最终答案。 准确性通过与真实答案的对比进行衡量；我们在 MySQL 后端上运行该测试。",
+   "sents": [
+    {
+     "en": "DBBench ( Liu et al., 2024 ) is a database-interaction benchmark in which the agent answers a question about a relational database by issuing SQL queries and then committing a final answer.",
+     "zh": "DBBench（Liu 等人，2024）是一个数据库交互基准测试，其中智能体通过发出 SQL 查询来回答有关关系数据库的问题，然后提交最终答案。"
+    },
+    {
+     "en": "Accuracy is measured against the ground-truth answer; we run it against a MySQL backend.",
+     "zh": "准确性通过与真实答案的对比进行衡量；我们在 MySQL 后端上运行该测试。"
+    }
+   ]
+  },
+  {
+   "en": "WebShop ( Yao et al., 2022a ) is a simulated e-commerce environment in which the agent searches and navigates product pages to purchase an item matching a natural-language instruction. The environment returns a dense attribute-match score in [ 0 , 1 ] [0,1] ; we report Success@1, the fraction of goals attaining a score of 1 1 .",
+   "zh": "WebShop（Yao 等人，2022a）是一个模拟的电子商务环境，其中智能体通过搜索和浏览产品页面来购买符合自然语言指令的商品。 该环境返回一个位于 [0, 1] 范围内的密集属性匹配分数；我们报告 Success@1，即达成分数为 1 的目标比例。",
+   "sents": [
+    {
+     "en": "WebShop ( Yao et al., 2022a ) is a simulated e-commerce environment in which the agent searches and navigates product pages to purchase an item matching a natural-language instruction.",
+     "zh": "WebShop（Yao 等人，2022a）是一个模拟的电子商务环境，其中智能体通过搜索和浏览产品页面来购买符合自然语言指令的商品。"
+    },
+    {
+     "en": "The environment returns a dense attribute-match score in [ 0 , 1 ] [0,1] ; we report Success@1, the fraction of goals attaining a score of 1 1 .",
+     "zh": "该环境返回一个位于 [0, 1] 范围内的密集属性匹配分数；我们报告 Success@1，即达成分数为 1 的目标比例。"
+    }
+   ]
+  },
+  {
+   "en": "SWE-smith-MR is our multi-repository subset of SWE-smith ( Yang et al., 2026 ) . Each instance is a bug-fix issue in a Python repository with a hidden test suite; the agent edits the repository and submits a code patch, which resolves the issue if the associated tests pass. Its construction and rationale are described in Appendix A.2 .",
+   "zh": "SWE-smith-MR 是我们从 SWE-smith（Yang et al., 2026）中提取的多仓库子集。 每个实例都是一个 Python 仓库中的错误修复问题，并附带一个隐藏的测试套件；智能体会编辑该仓库并提交代码补丁，如果相关的测试通过，则问题得以解决。 其构建过程和原理在附录 A.2 中有详细说明。",
+   "sents": [
+    {
+     "en": "SWE-smith-MR is our multi-repository subset of SWE-smith ( Yang et al., 2026 ) .",
+     "zh": "SWE-smith-MR 是我们从 SWE-smith（Yang et al., 2026）中提取的多仓库子集。"
+    },
+    {
+     "en": "Each instance is a bug-fix issue in a Python repository with a hidden test suite; the agent edits the repository and submits a code patch, which resolves the issue if the associated tests pass.",
+     "zh": "每个实例都是一个 Python 仓库中的错误修复问题，并附带一个隐藏的测试套件；智能体会编辑该仓库并提交代码补丁，如果相关的测试通过，则问题得以解决。"
+    },
+    {
+     "en": "Its construction and rationale are described in Appendix A.2 .",
+     "zh": "其构建过程和原理在附录 A.2 中有详细说明。"
+    }
+   ]
+  },
+  {
+   "en": "SWE-bench Verified ( Jimenez et al., 2024 ) is a human-validated set of 500 500 real-world GitHub issues with associated test suites. As in SWE-smith-MR, an issue is resolved when the agent’s submitted patch passes the hidden tests.",
+   "zh": "SWE-bench Verified (Jimenez 等人，2024) 是一个经过人类验证的集合，包含 500 个真实世界的 GitHub 问题及其相关的测试套件。 与 SWE-smith-MR 中一样，当智能体提交的补丁通过隐藏测试时，该问题即被视为已解决。",
+   "sents": [
+    {
+     "en": "SWE-bench Verified ( Jimenez et al., 2024 ) is a human-validated set of 500 500 real-world GitHub issues with associated test suites.",
+     "zh": "SWE-bench Verified (Jimenez 等人，2024) 是一个经过人类验证的集合，包含 500 个真实世界的 GitHub 问题及其相关的测试套件。"
+    },
+    {
+     "en": "As in SWE-smith-MR, an issue is resolved when the agent’s submitted patch passes the hidden tests.",
+     "zh": "与 SWE-smith-MR 中一样，当智能体提交的补丁通过隐藏测试时，该问题即被视为已解决。"
+    }
+   ]
+  },
+  {
+   "en": "Terminal-Bench-2.1 (TB2.1) ( Merrill et al., 2026 ) is a benchmark of long-horizon terminal tasks in which the agent operates a shell to accomplish goals verified by task-specific test scripts. It provides live terminal feedback over long interaction horizons, making the harness an operative lever.",
+   "zh": "Terminal-Bench-2.1 (TB2.1)（Merrill 等，2026）是一个长时程终端任务的基准测试，其中智能体通过操作一个外壳来完成由任务专用测试脚本验证的目标。 它在长期的交互过程中提供实时的终端反馈，使该测试框架成为一个有效的操作工具。",
+   "sents": [
+    {
+     "en": "Terminal-Bench-2.1 (TB2.1) ( Merrill et al., 2026 ) is a benchmark of long-horizon terminal tasks in which the agent operates a shell to accomplish goals verified by task-specific test scripts.",
+     "zh": "Terminal-Bench-2.1 (TB2.1)（Merrill 等，2026）是一个长时程终端任务的基准测试，其中智能体通过操作一个外壳来完成由任务专用测试脚本验证的目标。"
+    },
+    {
+     "en": "It provides live terminal feedback over long interaction horizons, making the harness an operative lever.",
+     "zh": "它在长期的交互过程中提供实时的终端反馈，使该测试框架成为一个有效的操作工具。"
+    }
+   ]
+  },
+  {
+   "en": "Data splits. We use the following benchmark-specific splits:",
+   "zh": "数据划分。 我们使用以下针对特定基准测试的划分方式：",
+   "sents": [
+    {
+     "en": "Data splits.",
+     "zh": "数据划分。"
+    },
+    {
+     "en": "We use the following benchmark-specific splits:",
+     "zh": "我们使用以下针对特定基准测试的划分方式："
+    }
+   ]
+  },
+  {
+   "en": "ALFWorld: 100 100 training games, 169 169 loadable validation games from valid_seen , and 150 150 loadable test games from valid_unseen .",
+   "zh": "ALFWorld：100 个训练游戏，169 个来自 valid_seen 的可加载验证游戏，以及 150 个来自 valid_unseen 的可加载测试游戏。",
+   "sents": null
+  },
+  {
+   "en": "ScienceWorld: 120 120 training instances, 60 60 validation instances from held-out development variations, and 149 149 test instances.",
+   "zh": "ScienceWorld：120 个训练实例、60 个来自预留开发变体的验证实例以及 149 个测试实例。",
+   "sents": null
+  },
+  {
+   "en": "DBBench: a stratified split of 300 300 tasks into 120 120 training, 60 60 validation, and 120 120 test instances, using seed 42 42 .",
+   "zh": "DBBench：将 300 个任务按分层方式划分为 120 个训练实例、60 个验证实例和 120 个测试实例，使用种子值 42。",
+   "sents": null
+  },
+  {
+   "en": "WebShop: training goals 1000 1000 – 1119 1119 , validation goals 1500 1500 – 1559 1559 , and 200 200 test goals ( 0 0 – 199 199 ), with goal_seed = 233 =233 . The reported editor is trained on a filtered subset of the training goals, as described below.",
+   "zh": "WebShop：训练目标为 1000 1000 – 1119 1119，验证目标为 1500 1500 – 1559 1559，测试目标为 200 200（0 0 – 199 199），且 goal_seed = 233 =233。 所报告的编辑器是在经过过滤的训练目标子集上训练的，具体如下文所述。",
+   "sents": [
+    {
+     "en": "WebShop: training goals 1000 1000 – 1119 1119 , validation goals 1500 1500 – 1559 1559 , and 200 200 test goals ( 0 0 – 199 199 ), with goal_seed = 233 =233 .",
+     "zh": "WebShop：训练目标为 1000 1000 – 1119 1119，验证目标为 1500 1500 – 1559 1559，测试目标为 200 200（0 0 – 199 199），且 goal_seed = 233 =233。"
+    },
+    {
+     "en": "The reported editor is trained on a filtered subset of the training goals, as described below.",
+     "zh": "所报告的编辑器是在经过过滤的训练目标子集上训练的，具体如下文所述。"
+    }
+   ]
+  },
+  {
+   "en": "SWE-smith-MR: we construct this subset from the SWE-smith training split by selecting 25 25 Python repositories and sampling two training and two test issues per repository with seed 42 42 , yielding 50 50 training and 50 50 test issues. The issue sets are disjoint, but share the same repositories; this evaluates held-out issues within the selected repositories, not generalization to unseen repositories. We do not use a validation set for this subset.",
+   "zh": "SWE-smith-MR：我们从 SWE-smith 训练分割集中构建这个子集，通过选择 25 个 Python 仓库，并以种子值 42 为每个仓库采样两个训练问题和两个测试问题，最终得到 50 个训练问题和 50 个测试问题。 这些问题集互不重叠，但共享相同的仓库；这评估的是所选仓库中被保留的问题，而非对未见仓库的泛化能力。 我们未为该子集使用验证集。",
+   "sents": [
+    {
+     "en": "SWE-smith-MR: we construct this subset from the SWE-smith training split by selecting 25 25 Python repositories and sampling two training and two test issues per repository with seed 42 42 , yielding 50 50 training and 50 50 test issues.",
+     "zh": "SWE-smith-MR：我们从 SWE-smith 训练分割集中构建这个子集，通过选择 25 个 Python 仓库，并以种子值 42 为每个仓库采样两个训练问题和两个测试问题，最终得到 50 个训练问题和 50 个测试问题。"
+    },
+    {
+     "en": "The issue sets are disjoint, but share the same repositories; this evaluates held-out issues within the selected repositories, not generalization to unseen repositories.",
+     "zh": "这些问题集互不重叠，但共享相同的仓库；这评估的是所选仓库中被保留的问题，而非对未见仓库的泛化能力。"
+    },
+    {
+     "en": "We do not use a validation set for this subset.",
+     "zh": "我们未为该子集使用验证集。"
+    }
+   ]
+  },
+  {
+   "en": "SWE-bench Verified: 251 251 training, 99 99 validation, and 150 150 test issues, using a repository-stratified split with seed 42 42 . The three issue sets are disjoint and together cover all 500 500 issues. Meta-Harness search and editor training both use the full 251 251 -issue training split; the playbook is derived from the training search archive. This is an issue-level split, not a held-out-repository evaluation.",
+   "zh": "SWE-bench 验证数据：251 个训练问题、99 个验证问题和 150 个测试问题，采用按仓库分层的划分方式，随机种子为 42。 这三个问题集互不重叠，共同覆盖了全部 500 个问题。 Meta-Harness 的搜索和编辑器训练均使用完整的 251 个问题训练集；其执行计划源自训练搜索存档。 这是一种按问题划分的策略，而非对独立仓库的评估。",
+   "sents": [
+    {
+     "en": "SWE-bench Verified: 251 251 training, 99 99 validation, and 150 150 test issues, using a repository-stratified split with seed 42 42 .",
+     "zh": "SWE-bench 验证数据：251 个训练问题、99 个验证问题和 150 个测试问题，采用按仓库分层的划分方式，随机种子为 42。"
+    },
+    {
+     "en": "The three issue sets are disjoint and together cover all 500 500 issues.",
+     "zh": "这三个问题集互不重叠，共同覆盖了全部 500 个问题。"
+    },
+    {
+     "en": "Meta-Harness search and editor training both use the full 251 251 -issue training split; the playbook is derived from the training search archive.",
+     "zh": "Meta-Harness 的搜索和编辑器训练均使用完整的 251 个问题训练集；其执行计划源自训练搜索存档。"
+    },
+    {
+     "en": "This is an issue-level split, not a held-out-repository evaluation.",
+     "zh": "这是一种按问题划分的策略，而非对独立仓库的评估。"
+    }
+   ]
+  },
+  {
+   "en": "Terminal-Bench-2.1: a difficulty-stratified split of 45 45 training and 44 44 test tasks. Harness search, playbook construction, and editor training use only the training split.",
+   "zh": "Terminal-Bench-2.1：一个按难度分层的划分，包含 45 个训练任务和 44 个测试任务。 利用搜索、策略构建和编辑器训练时仅使用训练集。",
+   "sents": [
+    {
+     "en": "Terminal-Bench-2.1: a difficulty-stratified split of 45 45 training and 44 44 test tasks.",
+     "zh": "Terminal-Bench-2.1：一个按难度分层的划分，包含 45 个训练任务和 44 个测试任务。"
+    },
+    {
+     "en": "Harness search, playbook construction, and editor training use only the training split.",
+     "zh": "利用搜索、策略构建和编辑器训练时仅使用训练集。"
+    }
+   ]
+  },
+  {
+   "en": "SWE-smith-MR design rationale. We construct this subset to evaluate instance-specific adaptation across issues with potentially different execution requirements. The selected repositories span web frameworks, data processing, developer tools, and other Python projects, whose project structures and testing conventions may call for different exploration and validation strategies. This motivates our hypothesis that a single global harness can make tradeoffs across repositories that instance-specific adaptation can help resolve. Sampling the same number of issues from each repository gives each repository equal weight in the evaluation, while holding out issues within these repositories tests adaptation to new issues.",
+   "zh": "SWE-smith-MR 的设计原理。 我们构建这个子集，以评估在不同问题中针对具体实例的适应能力，这些问题可能具有不同的执行要求。 所选仓库涵盖了 Web 框架、数据处理、开发者工具和其他 Python 项目，这些项目的项目结构和测试惯例可能需要不同的探索与验证策略。 这促使我们提出一个假设：一个统一的全局测试框架可以在不同仓库之间进行权衡，而针对具体实例的适应能力有助于解决这些权衡问题。 从每个仓库中抽取相同数量的问题，可以确保每个仓库在评估中拥有相等的权重；同时，保留这些仓库中的部分问题可用于测试对新问题的适应能力。",
+   "sents": [
+    {
+     "en": "SWE-smith-MR design rationale.",
+     "zh": "SWE-smith-MR 的设计原理。"
+    },
+    {
+     "en": "We construct this subset to evaluate instance-specific adaptation across issues with potentially different execution requirements.",
+     "zh": "我们构建这个子集，以评估在不同问题中针对具体实例的适应能力，这些问题可能具有不同的执行要求。"
+    },
+    {
+     "en": "The selected repositories span web frameworks, data processing, developer tools, and other Python projects, whose project structures and testing conventions may call for different exploration and validation strategies.",
+     "zh": "所选仓库涵盖了 Web 框架、数据处理、开发者工具和其他 Python 项目，这些项目的项目结构和测试惯例可能需要不同的探索与验证策略。"
+    },
+    {
+     "en": "This motivates our hypothesis that a single global harness can make tradeoffs across repositories that instance-specific adaptation can help resolve.",
+     "zh": "这促使我们提出一个假设：一个统一的全局测试框架可以在不同仓库之间进行权衡，而针对具体实例的适应能力有助于解决这些权衡问题。"
+    },
+    {
+     "en": "Sampling the same number of issues from each repository gives each repository equal weight in the evaluation, while holding out issues within these repositories tests adaptation to new issues.",
+     "zh": "从每个仓库中抽取相同数量的问题，可以确保每个仓库在评估中拥有相等的权重；同时，保留这些仓库中的部分问题可用于测试对新问题的适应能力。"
+    }
+   ]
+  },
+  {
+   "en": "Playbook construction. The playbook 𝒫 \\mathcal{P} is built once per benchmark and execution model from the completed Meta-Harness search archive, following ACE ( Zhang et al., 2026c ) , and is then held fixed during editor training and inference. Construction proceeds in three offline stages.",
+   "zh": "剧本构建。 剧本 𝒫 \\mathcal{P} 根据已完成的 Meta-Harness 搜索存档，按照 ACE（Zhang et al., 2026c）的方法，在每次基准测试和执行模型中仅构建一次，之后在编辑器训练和推理过程中保持固定不变。 构建过程分为三个离线阶段进行。",
+   "sents": [
+    {
+     "en": "Playbook construction.",
+     "zh": "剧本构建。"
+    },
+    {
+     "en": "The playbook 𝒫 \\mathcal{P} is built once per benchmark and execution model from the completed Meta-Harness search archive, following ACE ( Zhang et al., 2026c ) , and is then held fixed during editor training and inference.",
+     "zh": "剧本 𝒫 \\mathcal{P} 根据已完成的 Meta-Harness 搜索存档，按照 ACE（Zhang et al., 2026c）的方法，在每次基准测试和执行模型中仅构建一次，之后在编辑器训练和推理过程中保持固定不变。"
+    },
+    {
+     "en": "Construction proceeds in three offline stages.",
+     "zh": "构建过程分为三个离线阶段进行。"
+    }
+   ]
+  },
+  {
+   "en": "First, extraction assembles one experience record per training instance from the search archive, without any model calls. Each record collects the per-harness outcomes and full execution traces recorded during search and classifies the instance as contrastive (some harness variant solved it while another failed), uniformly solved , or uniformly unsolved . For contrastive instances, we additionally pair the most dissimilar solving and failing variants and compute the source-level diff between them, which localizes the harness change responsible for the differing outcome.",
+   "zh": "首先，提取过程从搜索存档中为每个训练实例组装一条经验记录，且无需任何模型调用。 每条记录都会收集每次测试框架在搜索过程中记录的结果和完整的执行轨迹，并将该实例分类为对比性实例（某个测试框架变体成功解决了问题，而另一个则失败）、统一解决或统一未解决。 对于对比性实例，我们还会将最不相同的成功解决变体和失败变体进行配对，并计算它们之间的源代码级别差异，从而定位导致结果不同的测试框架变更。",
+   "sents": [
+    {
+     "en": "First, extraction assembles one experience record per training instance from the search archive, without any model calls.",
+     "zh": "首先，提取过程从搜索存档中为每个训练实例组装一条经验记录，且无需任何模型调用。"
+    },
+    {
+     "en": "Each record collects the per-harness outcomes and full execution traces recorded during search and classifies the instance as contrastive (some harness variant solved it while another failed), uniformly solved , or uniformly unsolved .",
+     "zh": "每条记录都会收集每次测试框架在搜索过程中记录的结果和完整的执行轨迹，并将该实例分类为对比性实例（某个测试框架变体成功解决了问题，而另一个则失败）、统一解决或统一未解决。"
+    },
+    {
+     "en": "For contrastive instances, we additionally pair the most dissimilar solving and failing variants and compute the source-level diff between them, which localizes the harness change responsible for the differing outcome.",
+     "zh": "对于对比性实例，我们还会将最不相同的成功解决变体和失败变体进行配对，并计算它们之间的源代码级别差异，从而定位导致结果不同的测试框架变更。"
+    }
+   ]
+  },
+  {
+   "en": "Second, reflection uses a frontier model to analyze each record and emit a short structured reflection: the salient instance characteristics, the behavioral difference between the harness variants, a candidate editing strategy, a rationale, and a confidence score. Contrastive records are analyzed against both traces and the harness diff, whereas uniform records are analyzed to explain why the outcome did not depend on the harness. Reflections that name known anti-patterns or fall below a confidence threshold are discarded.",
+   "zh": "其次，反思过程会利用一个前沿模型来分析每条记录，并生成一段简短的结构化反思内容：关键实例特征、不同 harness 变体之间的行为差异、候选编辑策略、推理依据以及置信度分数。 对比性记录会与追踪信息和 harness 差异一同进行分析，而统一性记录则用于解释为何结果不依赖于 harness。 若反思中提及已知的反模式或置信度低于阈值，则会被舍弃。",
+   "sents": [
+    {
+     "en": "Second, reflection uses a frontier model to analyze each record and emit a short structured reflection: the salient instance characteristics, the behavioral difference between the harness variants, a candidate editing strategy, a rationale, and a confidence score.",
+     "zh": "其次，反思过程会利用一个前沿模型来分析每条记录，并生成一段简短的结构化反思内容：关键实例特征、不同 harness 变体之间的行为差异、候选编辑策略、推理依据以及置信度分数。"
+    },
+    {
+     "en": "Contrastive records are analyzed against both traces and the harness diff, whereas uniform records are analyzed to explain why the outcome did not depend on the harness.",
+     "zh": "对比性记录会与追踪信息和 harness 差异一同进行分析，而统一性记录则用于解释为何结果不依赖于 harness。"
+    },
+    {
+     "en": "Reflections that name known anti-patterns or fall below a confidence threshold are discarded.",
+     "zh": "若反思中提及已知的反模式或置信度低于阈值，则会被舍弃。"
+    }
+   ]
+  },
+  {
+   "en": "Third, curation consolidates the surviving reflections into the playbook with a single frontier-model call. Semantically equivalent strategies are clustered into one canonical entry that merges their applicability conditions and aggregates helpful and harmful evidence counts and confidence; strategies whose evidence is net-harmful become anti-patterns , and vague or over-specified strategies are filtered out. Each retained entry records the condition under which it applies, the strategy text, its evidence and confidence, and a type tag distinguishing edits to the scaffold’s control flow ( scaffold_modification ) from edits to the information shown to the model ( text_injection ). The result is a compact list of conditional strategies together with a list of anti-patterns and a few general notes; for example, the TB2.1 playbook comprises six strategies and nine anti-patterns. At both training and inference time, the entire playbook is placed in the editor’s context, so the editor learns which previously discovered strategies are relevant to each instance rather than retrieving them.",
+   "zh": "第三，整理过程通过单次调用前沿模型，将保留下来的反思整合到策略手册中。 语义等价的策略会被聚类为一个标准条目，该条目合并了它们的可适用性条件，并汇总了有益与有害证据的数量及置信度；证据净效应为有害的策略会变为反模式，而模糊或过度指定的策略则会被过滤掉。 每个保留的条目都会记录其适用条件、策略文本、相关证据与置信度，以及一个类型标签，用于区分对框架控制流（scaffold_modification）的修改与向模型展示的信息（text_injection）的修改。 最终结果是一个包含条件策略的紧凑列表，同时附带反模式列表和若干通用说明；例如，TB2.1 策略手册包括六个策略和九个反模式。 在训练和推理阶段，整个策略手册都会被置于编辑器的上下文中，这样编辑器就能学会判断哪些先前发现的策略与每个实例相关，而无需主动检索它们。",
+   "sents": [
+    {
+     "en": "Third, curation consolidates the surviving reflections into the playbook with a single frontier-model call.",
+     "zh": "第三，整理过程通过单次调用前沿模型，将保留下来的反思整合到策略手册中。"
+    },
+    {
+     "en": "Semantically equivalent strategies are clustered into one canonical entry that merges their applicability conditions and aggregates helpful and harmful evidence counts and confidence; strategies whose evidence is net-harmful become anti-patterns , and vague or over-specified strategies are filtered out.",
+     "zh": "语义等价的策略会被聚类为一个标准条目，该条目合并了它们的可适用性条件，并汇总了有益与有害证据的数量及置信度；证据净效应为有害的策略会变为反模式，而模糊或过度指定的策略则会被过滤掉。"
+    },
+    {
+     "en": "Each retained entry records the condition under which it applies, the strategy text, its evidence and confidence, and a type tag distinguishing edits to the scaffold’s control flow ( scaffold_modification ) from edits to the information shown to the model ( text_injection ).",
+     "zh": "每个保留的条目都会记录其适用条件、策略文本、相关证据与置信度，以及一个类型标签，用于区分对框架控制流（scaffold_modification）的修改与向模型展示的信息（text_injection）的修改。"
+    },
+    {
+     "en": "The result is a compact list of conditional strategies together with a list of anti-patterns and a few general notes; for example, the TB2.1 playbook comprises six strategies and nine anti-patterns.",
+     "zh": "最终结果是一个包含条件策略的紧凑列表，同时附带反模式列表和若干通用说明；例如，TB2.1 策略手册包括六个策略和九个反模式。"
+    },
+    {
+     "en": "At both training and inference time, the entire playbook is placed in the editor’s context, so the editor learns which previously discovered strategies are relevant to each instance rather than retrieving them.",
+     "zh": "在训练和推理阶段，整个策略手册都会被置于编辑器的上下文中，这样编辑器就能学会判断哪些先前发现的策略与每个实例相关，而无需主动检索它们。"
+    }
+   ]
+  },
+  {
+   "en": "Training configuration. All harness editors are Qwen3.5-9B models, full-parameter fine-tuned with FSDP (no low-rank adaptation) using GRPO. Unless noted below, we use a learning rate of 10 − 6 10^{-6} , a KL-penalty coefficient β = 10 − 3 \\beta=10^{-3} , within-group advantage standardization, one gradient update per batch with a per-GPU micro-batch of 1 1 , and rollout sampling at temperature 0.8 0.8 (top- p p 0.999 0.999 ). Rollouts are served with vLLM at tensor-parallel size 1 1 , and generations that do not terminate normally receive zero reward. We checkpoint every 10 10 steps ( 5 5 for TB2.1). At inference, the editor decodes with temperature 0.3 0.3 and up to 16,384 16{,}384 tokens. Table 4 lists the per-benchmark settings, where the group size G G is the number of candidate edits sampled per instance. The abstention penalty and reward-shaping terms are described in Appendix B.3 , and checkpoint selection in Appendix B.4 .",
+   "zh": "训练配置。 所有 harness 编辑器均为 Qwen3.5-9B 模型，使用 FSDP（无低秩适配）和 GRPO 进行全参数微调。 除非下文另有说明，我们使用的学习率为 10⁻⁶，KL 惩罚系数 β = 10⁻³，采用组内优势标准化，每个批次进行一次梯度更新，每个 GPU 的微批次大小为 1，并在温度 0.8（top-p 0.999）下进行 rollout 采样。 Rollout 通过 vLLM 以张量并行大小 1 提供服务，且非正常终止的生成将获得零奖励。 我们每 10 步保存一次检查点（TB2.1 为 5 步）。 在推理阶段，编辑器以温度 0.3 进行解码，最多处理 16,384 个 token。 表 4 列出了各基准测试的设置，其中组大小 G 表示每个实例采样的候选编辑数量。 弃权惩罚和奖励塑造项在附录 B.3 中描述，检查点选择则在附录 B.4 中说明。",
+   "sents": [
+    {
+     "en": "Training configuration.",
+     "zh": "训练配置。"
+    },
+    {
+     "en": "All harness editors are Qwen3.5-9B models, full-parameter fine-tuned with FSDP (no low-rank adaptation) using GRPO.",
+     "zh": "所有 harness 编辑器均为 Qwen3.5-9B 模型，使用 FSDP（无低秩适配）和 GRPO 进行全参数微调。"
+    },
+    {
+     "en": "Unless noted below, we use a learning rate of 10 − 6 10^{-6} , a KL-penalty coefficient β = 10 − 3 \\beta=10^{-3} , within-group advantage standardization, one gradient update per batch with a per-GPU micro-batch of 1 1 , and rollout sampling at temperature 0.8 0.8 (top- p p 0.999 0.999 ).",
+     "zh": "除非下文另有说明，我们使用的学习率为 10⁻⁶，KL 惩罚系数 β = 10⁻³，采用组内优势标准化，每个批次进行一次梯度更新，每个 GPU 的微批次大小为 1，并在温度 0.8（top-p 0.999）下进行 rollout 采样。"
+    },
+    {
+     "en": "Rollouts are served with vLLM at tensor-parallel size 1 1 , and generations that do not terminate normally receive zero reward.",
+     "zh": "Rollout 通过 vLLM 以张量并行大小 1 提供服务，且非正常终止的生成将获得零奖励。"
+    },
+    {
+     "en": "We checkpoint every 10 10 steps ( 5 5 for TB2.1).",
+     "zh": "我们每 10 步保存一次检查点（TB2.1 为 5 步）。"
+    },
+    {
+     "en": "At inference, the editor decodes with temperature 0.3 0.3 and up to 16,384 16{,}384 tokens.",
+     "zh": "在推理阶段，编辑器以温度 0.3 进行解码，最多处理 16,384 个 token。"
+    },
+    {
+     "en": "Table 4 lists the per-benchmark settings, where the group size G G is the number of candidate edits sampled per instance.",
+     "zh": "表 4 列出了各基准测试的设置，其中组大小 G 表示每个实例采样的候选编辑数量。"
+    },
+    {
+     "en": "The abstention penalty and reward-shaping terms are described in Appendix B.3 , and checkpoint selection in Appendix B.4 .",
+     "zh": "弃权惩罚和奖励塑造项在附录 B.3 中描述，检查点选择则在附录 B.4 中说明。"
+    }
+   ]
+  },
+  {
+   "en": "WebShop training. The reported WebShop result uses a domain-specific GRPO configuration. We retain the 65 65 training goals whose precomputed global-harness scores lie strictly between 0 0 and 1 1 , sample 16 16 proposals per instance, and train for eight epochs. We disable division by the within-group reward standard deviation when computing advantages and use the improvement bonus and abstention penalty in Appendix B.3 . This configuration differs from the training recipe used for the other benchmarks.",
+   "zh": "WebShop 训练。 所报告的 WebShop 结果使用了领域特定的 GRPO 配置。 我们保留 65 个训练目标，其预计算的全球执行器分数严格位于 0 和 1 之间，每个实例采样 16 个提案，并进行八个周期的训练。 在计算优势时，我们禁用了除以组内奖励标准差的操作，并使用了附录 B.3 中的改进奖励和弃权惩罚。 此配置与其他基准测试中使用的训练方案不同。",
+   "sents": [
+    {
+     "en": "WebShop training.",
+     "zh": "WebShop 训练。"
+    },
+    {
+     "en": "The reported WebShop result uses a domain-specific GRPO configuration.",
+     "zh": "所报告的 WebShop 结果使用了领域特定的 GRPO 配置。"
+    },
+    {
+     "en": "We retain the 65 65 training goals whose precomputed global-harness scores lie strictly between 0 0 and 1 1 , sample 16 16 proposals per instance, and train for eight epochs.",
+     "zh": "我们保留 65 个训练目标，其预计算的全球执行器分数严格位于 0 和 1 之间，每个实例采样 16 个提案，并进行八个周期的训练。"
+    },
+    {
+     "en": "We disable division by the within-group reward standard deviation when computing advantages and use the improvement bonus and abstention penalty in Appendix B.3 .",
+     "zh": "在计算优势时，我们禁用了除以组内奖励标准差的操作，并使用了附录 B.3 中的改进奖励和弃权惩罚。"
+    },
+    {
+     "en": "This configuration differs from the training recipe used for the other benchmarks.",
+     "zh": "此配置与其他基准测试中使用的训练方案不同。"
+    }
+   ]
+  },
+  {
+   "en": "Reward evaluation. We evaluate each valid editor proposal with one execution of the frozen model. A valid patch runs the adapted harness H x \\texttt{H}_{x} , whereas an explicit NO_PATCH_NEEDED response runs the global harness H ⋆ \\texttt{H}^{\\star} . Malformed proposals and patches that fail application or validation receive zero reward without an execution. The training rewards below include shaping terms; the reported test metrics exclude these terms.",
+   "zh": "奖励评估。 我们通过运行一次冻结模型来评估每个有效的编辑器提案。 有效补丁会运行适配后的测试框架 H x \\texttt{H}_{x}，而明确的 NO_PATCH_NEEDED 响应则会运行全局测试框架 H ⋆ \\texttt{H}^{\\star}。 格式错误的提案以及未能通过应用或验证的补丁将不会执行，且奖励为零。 下方的训练奖励包含了塑形项；所报告的测试指标则不包含这些项。",
+   "sents": [
+    {
+     "en": "Reward evaluation.",
+     "zh": "奖励评估。"
+    },
+    {
+     "en": "We evaluate each valid editor proposal with one execution of the frozen model.",
+     "zh": "我们通过运行一次冻结模型来评估每个有效的编辑器提案。"
+    },
+    {
+     "en": "A valid patch runs the adapted harness H x \\texttt{H}_{x} , whereas an explicit NO_PATCH_NEEDED response runs the global harness H ⋆ \\texttt{H}^{\\star} .",
+     "zh": "有效补丁会运行适配后的测试框架 H x \\texttt{H}_{x}，而明确的 NO_PATCH_NEEDED 响应则会运行全局测试框架 H ⋆ \\texttt{H}^{\\star}。"
+    },
+    {
+     "en": "Malformed proposals and patches that fail application or validation receive zero reward without an execution.",
+     "zh": "格式错误的提案以及未能通过应用或验证的补丁将不会执行，且奖励为零。"
+    },
+    {
+     "en": "The training rewards below include shaping terms; the reported test metrics exclude these terms.",
+     "zh": "下方的训练奖励包含了塑形项；所报告的测试指标则不包含这些项。"
+    }
+   ]
+  },
+  {
+   "en": "Task rewards. Before applying the abstention penalty described below, we compute rewards as follows:",
+   "zh": "任务奖励。 在应用下文描述的弃权惩罚之前，我们按如下方式计算奖励：",
+   "sents": [
+    {
+     "en": "Task rewards.",
+     "zh": "任务奖励。"
+    },
+    {
+     "en": "Before applying the abstention penalty described below, we compute rewards as follows:",
+     "zh": "在应用下文描述的弃权惩罚之前，我们按如下方式计算奖励："
+    }
+   ]
+  },
+  {
+   "en": "SWE-smith-MR and SWE-bench Verified: 1 − s / ( 2 ​ L ) 1-s/(2L) if the submitted code patch resolves the issue, and 0 0 otherwise, where s s is the number of execution-model steps and L = 40 L=40 is the step limit. This reward favors successful fixes with fewer steps.",
+   "zh": "SWE-smith-MR 和 SWE-bench 验证：如果提交的代码补丁解决了问题，则取值为 1 − s / ( 2 ​ L )；否则取值为 0，其中 s 是执行模型步数的数量，L = 40 是步数上限。 该奖励机制更青睐以较少步数成功修复问题的方案。",
+   "sents": [
+    {
+     "en": "SWE-smith-MR and SWE-bench Verified: 1 − s / ( 2 ​ L ) 1-s/(2L) if the submitted code patch resolves the issue, and 0 0 otherwise, where s s is the number of execution-model steps and L = 40 L=40 is the step limit.",
+     "zh": "SWE-smith-MR 和 SWE-bench 验证：如果提交的代码补丁解决了问题，则取值为 1 − s / ( 2 ​ L )；否则取值为 0，其中 s 是执行模型步数的数量，L = 40 是步数上限。"
+    },
+    {
+     "en": "This reward favors successful fixes with fewer steps.",
+     "zh": "该奖励机制更青睐以较少步数成功修复问题的方案。"
+    }
+   ]
+  },
+  {
+   "en": "ScienceWorld: the environment score divided by 100 100 , with negative scores clamped to zero.",
+   "zh": "ScienceWorld：环境得分除以 100 100，负分则截断为零。",
+   "sents": null
+  },
+  {
+   "en": "ALFWorld: the binary task-success indicator in { 0 , 1 } \\{0,1\\} .",
+   "zh": "ALFWorld：二元任务成功指示器，取值范围在 { 0 , 1 } \\{0,1\\} 中。",
+   "sents": null
+  },
+  {
+   "en": "DBBench: the binary task-correctness indicator in { 0 , 1 } \\{0,1\\} .",
+   "zh": "DBBench：二元任务正确性指标，取值范围在 { 0 , 1 } \\{0,1\\} 中。",
+   "sents": null
+  },
+  {
+   "en": "Terminal-Bench-2.1: the binary task-success indicator returned by the task verifier.",
+   "zh": "Terminal-Bench-2.1：任务验证器返回的二元任务成功指示符。",
+   "sents": null
+  },
+  {
+   "en": "WebShop: the environment’s dense score in [ 0 , 1 ] [0,1] , plus a bonus of 0.1 0.1 when a non-abstaining proposal yields a score greater than the precomputed global-harness score for the same training goal. This bonus rewards improvements over the global harness. Evaluation uses Success@1, defined as the fraction of goals that attain an environment score of 1 1 .",
+   "zh": "WebShop：环境的密集分数位于 [0, 1]，此外，当非弃权提案产生的分数高于为相同训练目标预先计算的全局协作分数时，还会获得 0.1 的奖励。 该奖励旨在鼓励优于全局协作的表现。 评估采用 Success@1 指标，定义为达到环境分数为 1 的目标所占的比例。",
+   "sents": [
+    {
+     "en": "WebShop: the environment’s dense score in [ 0 , 1 ] [0,1] , plus a bonus of 0.1 0.1 when a non-abstaining proposal yields a score greater than the precomputed global-harness score for the same training goal.",
+     "zh": "WebShop：环境的密集分数位于 [0, 1]，此外，当非弃权提案产生的分数高于为相同训练目标预先计算的全局协作分数时，还会获得 0.1 的奖励。"
+    },
+    {
+     "en": "This bonus rewards improvements over the global harness.",
+     "zh": "该奖励旨在鼓励优于全局协作的表现。"
+    },
+    {
+     "en": "Evaluation uses Success@1, defined as the fraction of goals that attain an environment score of 1 1 .",
+     "zh": "评估采用 Success@1 指标，定义为达到环境分数为 1 的目标所占的比例。"
+    }
+   ]
+  },
+  {
+   "en": "Abstention penalty. On ScienceWorld, ALFWorld, DBBench, WebShop, and TB2.1, we subtract 0.05 0.05 from the reward of an explicit abstention and clamp the result at zero. Thus, if the unpatched harness earns task reward r r , the abstention reward is max ⁡ ( 0 , r − 0.05 ) \\max(0,r-0.05) . This selective penalty encourages exploration of edits while retaining abstention as an option. Neither coding benchmark uses an abstention penalty.",
+   "zh": "弃权惩罚。 在 ScienceWorld、ALFWorld、DBBench、WebShop 和 TB2.1 中，我们会从明确弃权的奖励中减去 0.05，并将结果限制在零以上。 因此，如果未经修补的框架获得任务奖励 r，则弃权奖励为 max(0, r − 0.05)。 这种选择性惩罚鼓励对编辑进行探索，同时保留弃权作为可选方案。 这两个编码基准均未使用弃权惩罚。",
+   "sents": [
+    {
+     "en": "Abstention penalty.",
+     "zh": "弃权惩罚。"
+    },
+    {
+     "en": "On ScienceWorld, ALFWorld, DBBench, WebShop, and TB2.1, we subtract 0.05 0.05 from the reward of an explicit abstention and clamp the result at zero.",
+     "zh": "在 ScienceWorld、ALFWorld、DBBench、WebShop 和 TB2.1 中，我们会从明确弃权的奖励中减去 0.05，并将结果限制在零以上。"
+    },
+    {
+     "en": "Thus, if the unpatched harness earns task reward r r , the abstention reward is max ⁡ ( 0 , r − 0.05 ) \\max(0,r-0.05) .",
+     "zh": "因此，如果未经修补的框架获得任务奖励 r，则弃权奖励为 max(0, r − 0.05)。"
+    },
+    {
+     "en": "This selective penalty encourages exploration of edits while retaining abstention as an option.",
+     "zh": "这种选择性惩罚鼓励对编辑进行探索，同时保留弃权作为可选方案。"
+    },
+    {
+     "en": "Neither coding benchmark uses an abstention penalty.",
+     "zh": "这两个编码基准均未使用弃权惩罚。"
+    }
+   ]
+  },
+  {
+   "en": "Reward integrity. We compute task outcomes outside the editor-generated harness code. On the four agentic benchmarks, a trusted runner obtains outcomes directly from the environment, while the harness interacts through an interface that omits scoring methods. Source checks also reject references to protected scoring internals. On both coding benchmarks, the harness executes in a separate process and the parent process scores the submitted code patch. These safeguards reduce opportunities for a harness to manipulate its training reward.",
+   "zh": "确保奖励的完整性。 我们在编辑器生成的辅助代码之外计算任务结果。 在四个智能体基准测试中，可信执行器直接从环境中获取结果，而辅助代码则通过一个省略了评分方法的接口进行交互。 来源检查也会拒绝引用受保护的评分内部机制。 在两个编码基准测试中，辅助代码在独立进程中执行，而父进程则对提交的代码补丁进行评分。 这些安全措施减少了辅助代码操纵其训练奖励的可能性。",
+   "sents": [
+    {
+     "en": "Reward integrity.",
+     "zh": "确保奖励的完整性。"
+    },
+    {
+     "en": "We compute task outcomes outside the editor-generated harness code.",
+     "zh": "我们在编辑器生成的辅助代码之外计算任务结果。"
+    },
+    {
+     "en": "On the four agentic benchmarks, a trusted runner obtains outcomes directly from the environment, while the harness interacts through an interface that omits scoring methods.",
+     "zh": "在四个智能体基准测试中，可信执行器直接从环境中获取结果，而辅助代码则通过一个省略了评分方法的接口进行交互。"
+    },
+    {
+     "en": "Source checks also reject references to protected scoring internals.",
+     "zh": "来源检查也会拒绝引用受保护的评分内部机制。"
+    },
+    {
+     "en": "On both coding benchmarks, the harness executes in a separate process and the parent process scores the submitted code patch.",
+     "zh": "在两个编码基准测试中，辅助代码在独立进程中执行，而父进程则对提交的代码补丁进行评分。"
+    },
+    {
+     "en": "These safeguards reduce opportunities for a harness to manipulate its training reward.",
+     "zh": "这些安全措施减少了辅助代码操纵其训练奖励的可能性。"
+    }
+   ]
+  },
+  {
+   "en": "Checkpoint selection. We select editor checkpoints using validation performance on ALFWorld and ScienceWorld. For SWE-smith-MR and DBBench, we report the final checkpoint at step 60 60 ; for the tuned WebShop run, we report the final checkpoint at step 64 64 . For TB2.1, we report the step- 5 5 checkpoint, at which training was stopped. On SWE-bench Verified, we select by pass rate from one execution run on the 99 99 validation issues after excluding checkpoints with collapsed policy entropy. This selects step 20 20 for Gemini and step 10 10 for Haiku. For Haiku, step 60 60 has the highest validation pass rate ( 52.5 % 52.5\\% ), but is excluded because its training policy entropy has fallen to 0.066 0.066 , compared with approximately 0.45 0.45 – 0.59 0.59 for steps 10 10 – 50 50 . Among these remaining checkpoints, step 10 10 has the highest validation pass rate ( 49.5 % 49.5\\% ). This diagnostic exclusion is part of the reported selection rule; selection is not an unrestricted maximum over validation scores.",
+   "zh": "检查点选择。 我们基于 ALFWorld 和 ScienceWorld 上的验证性能来选择编辑器检查点。 对于 SWE-smith-MR 和 DBBench，我们报告第 60 步的检查点；对于经过调优的 WebShop 运行，我们报告第 64 步的检查点。 对于 TB2.1，我们报告第 5 步的检查点，此时训练被停止。 在 SWE-bench Verified 上，我们从验证集上的 99 个问题的单次执行运行中，根据通过率选择检查点，同时排除策略熵已坍缩的检查点。 由此，Gemini 选择了第 20 步，而 Haiku 选择了第 10 步。 对于 Haiku，第 60 步的验证通过率最高（52.5%），但由于其训练策略熵已降至 0.066，因此被排除；相比之下，第 10 至 50 步的策略熵约为 0.45–0.59。 在这些剩余的检查点中，第 10 步的验证通过率最高（49.5%）。 这种诊断性排除是所报告的选择规则的一部分；选择过程并非在验证分数上无限制地取最大值。",
+   "sents": [
+    {
+     "en": "Checkpoint selection.",
+     "zh": "检查点选择。"
+    },
+    {
+     "en": "We select editor checkpoints using validation performance on ALFWorld and ScienceWorld.",
+     "zh": "我们基于 ALFWorld 和 ScienceWorld 上的验证性能来选择编辑器检查点。"
+    },
+    {
+     "en": "For SWE-smith-MR and DBBench, we report the final checkpoint at step 60 60 ; for the tuned WebShop run, we report the final checkpoint at step 64 64 .",
+     "zh": "对于 SWE-smith-MR 和 DBBench，我们报告第 60 步的检查点；对于经过调优的 WebShop 运行，我们报告第 64 步的检查点。"
+    },
+    {
+     "en": "For TB2.1, we report the step- 5 5 checkpoint, at which training was stopped.",
+     "zh": "对于 TB2.1，我们报告第 5 步的检查点，此时训练被停止。"
+    },
+    {
+     "en": "On SWE-bench Verified, we select by pass rate from one execution run on the 99 99 validation issues after excluding checkpoints with collapsed policy entropy.",
+     "zh": "在 SWE-bench Verified 上，我们从验证集上的 99 个问题的单次执行运行中，根据通过率选择检查点，同时排除策略熵已坍缩的检查点。"
+    },
+    {
+     "en": "This selects step 20 20 for Gemini and step 10 10 for Haiku.",
+     "zh": "由此，Gemini 选择了第 20 步，而 Haiku 选择了第 10 步。"
+    },
+    {
+     "en": "For Haiku, step 60 60 has the highest validation pass rate ( 52.5 % 52.5\\% ), but is excluded because its training policy entropy has fallen to 0.066 0.066 , compared with approximately 0.45 0.45 – 0.59 0.59 for steps 10 10 – 50 50 .",
+     "zh": "对于 Haiku，第 60 步的验证通过率最高（52.5%），但由于其训练策略熵已降至 0.066，因此被排除；相比之下，第 10 至 50 步的策略熵约为 0.45–0.59。"
+    },
+    {
+     "en": "Among these remaining checkpoints, step 10 10 has the highest validation pass rate ( 49.5 % 49.5\\% ).",
+     "zh": "在这些剩余的检查点中，第 10 步的验证通过率最高（49.5%）。"
+    },
+    {
+     "en": "This diagnostic exclusion is part of the reported selection rule; selection is not an unrestricted maximum over validation scores.",
+     "zh": "这种诊断性排除是所报告的选择规则的一部分；选择过程并非在验证分数上无限制地取最大值。"
+    }
+   ]
+  },
+  {
+   "en": "Coding execution. Both coding benchmarks use the mini-swe-agent scaffold ( Yang et al., 2024b ) in Docker, with a limit of 40 40 execution-model steps and a $3 cost limit per issue. Only explicitly submitted code patches are evaluated for issue resolution, and the pass-rate denominator includes every test issue. For Turbo Harness, we generate one adapted harness per issue and reuse it across the three execution runs. We compute each run’s pass rate, mean steps, and mean execution-model cost over the complete test set, then report the mean and sample standard deviation divided by 3 \\sqrt{3} across runs. The Verified subset and execution budget differ from full-benchmark leaderboard settings, so our absolute rates should not be read as leaderboard results.",
+   "zh": "编码执行。 两项编码基准测试均在 Docker 中使用 mini-swe-agent 框架（Yang et al., 2024b），执行模型步数上限为 40，每个问题的成本上限为 3 美元。 仅对明确提交的代码补丁进行问题解决评估，而通过率的分母则包含所有测试问题。 对于 Turbo Harness，我们为每个问题生成一个适配的测试框架，并在三次执行运行中重复使用它。 我们计算每次运行在整个测试集上的通过率、平均步数以及执行模型的平均成本，然后报告各次运行结果的平均值和除以 3 \\sqrt{3} 后的样本标准差。 Verified 子集和执行预算与完整基准测试的排行榜设置不同，因此不应将我们的绝对比率视为排行榜结果。",
+   "sents": [
+    {
+     "en": "Coding execution.",
+     "zh": "编码执行。"
+    },
+    {
+     "en": "Both coding benchmarks use the mini-swe-agent scaffold ( Yang et al., 2024b ) in Docker, with a limit of 40 40 execution-model steps and a $3 cost limit per issue.",
+     "zh": "两项编码基准测试均在 Docker 中使用 mini-swe-agent 框架（Yang et al., 2024b），执行模型步数上限为 40，每个问题的成本上限为 3 美元。"
+    },
+    {
+     "en": "Only explicitly submitted code patches are evaluated for issue resolution, and the pass-rate denominator includes every test issue.",
+     "zh": "仅对明确提交的代码补丁进行问题解决评估，而通过率的分母则包含所有测试问题。"
+    },
+    {
+     "en": "For Turbo Harness, we generate one adapted harness per issue and reuse it across the three execution runs.",
+     "zh": "对于 Turbo Harness，我们为每个问题生成一个适配的测试框架，并在三次执行运行中重复使用它。"
+    },
+    {
+     "en": "We compute each run’s pass rate, mean steps, and mean execution-model cost over the complete test set, then report the mean and sample standard deviation divided by 3 \\sqrt{3} across runs.",
+     "zh": "我们计算每次运行在整个测试集上的通过率、平均步数以及执行模型的平均成本，然后报告各次运行结果的平均值和除以 3 \\sqrt{3} 后的样本标准差。"
+    },
+    {
+     "en": "The Verified subset and execution budget differ from full-benchmark leaderboard settings, so our absolute rates should not be read as leaderboard results.",
+     "zh": "Verified 子集和执行预算与完整基准测试的排行榜设置不同，因此不应将我们的绝对比率视为排行榜结果。"
+    }
+   ]
+  },
+  {
+   "en": "Result aggregation. We aggregate results over repeated execution runs where available. For the coding benchmarks, we report the mean and standard error of the mean (SEM) over three runs on the same test issues, with Turbo Harness reusing the generated per-instance harnesses across runs. For TB2.1, pass rates and efficiency metrics report the mean and SEM over five runs. These error bars quantify variability across execution runs; variation across editor training seeds and data splits is not evaluated. Each of the four agentic benchmarks uses one evaluation run per test set.",
+   "zh": "结果汇总。 在有可用数据时，我们对重复执行运行进行结果汇总。 对于编码基准测试，我们报告在相同测试问题上三次运行的平均值和平均值的标准误差（SEM），其中 Turbo Harness 会在各次运行中复用为每个实例生成的测试框架。 对于 TB2.1，通过率与效率指标报告五次运行的平均值和 SEM。 这些误差棒量化了不同执行运行之间的变异性；编辑器训练种子和数据划分之间的差异则未进行评估。 四个智能体基准测试中的每一个，每个测试集仅使用一次评估运行。",
+   "sents": [
+    {
+     "en": "Result aggregation.",
+     "zh": "结果汇总。"
+    },
+    {
+     "en": "We aggregate results over repeated execution runs where available.",
+     "zh": "在有可用数据时，我们对重复执行运行进行结果汇总。"
+    },
+    {
+     "en": "For the coding benchmarks, we report the mean and standard error of the mean (SEM) over three runs on the same test issues, with Turbo Harness reusing the generated per-instance harnesses across runs.",
+     "zh": "对于编码基准测试，我们报告在相同测试问题上三次运行的平均值和平均值的标准误差（SEM），其中 Turbo Harness 会在各次运行中复用为每个实例生成的测试框架。"
+    },
+    {
+     "en": "For TB2.1, pass rates and efficiency metrics report the mean and SEM over five runs.",
+     "zh": "对于 TB2.1，通过率与效率指标报告五次运行的平均值和 SEM。"
+    },
+    {
+     "en": "These error bars quantify variability across execution runs; variation across editor training seeds and data splits is not evaluated.",
+     "zh": "这些误差棒量化了不同执行运行之间的变异性；编辑器训练种子和数据划分之间的差异则未进行评估。"
+    },
+    {
+     "en": "Each of the four agentic benchmarks uses one evaluation run per test set.",
+     "zh": "四个智能体基准测试中的每一个，每个测试集仅使用一次评估运行。"
+    }
+   ]
+  },
+  {
+   "en": "Coding Default. For SWE-smith-MR and SWE-bench Verified, Default runs mini-swe-agent’s DefaultAgent with the system, task, observation, and format-error templates from its default configuration. The model receives the issue description, generates a shell command, and observes its output in a Docker environment; this loop continues until explicit submission or the execution limit. The prompt instructs the model to inspect the repository, edit the code, and verify the fix. We set the same 40 40 -step and $3 execution limits used for the other coding harnesses. No optimized harness or per-instance harness edit is supplied to this baseline.",
+   "zh": "默认编码。 对于 SWE-smith-MR 和 SWE-bench Verified，默认配置会运行 mini-swe-agent 的 DefaultAgent，并使用其默认配置中的系统、任务、观察结果和格式错误模板。 模型会接收问题描述，生成一个 shell 命令，并在 Docker 环境中观察其输出；此循环将持续到明确提交或达到执行限制为止。 提示词指示模型检查仓库、编辑代码并验证修复效果。 我们设置了与其他编码测试框架相同的 40 步和 $3 的执行限制。 此基线未提供任何优化后的测试框架或针对单个实例的框架修改。",
+   "sents": [
+    {
+     "en": "Coding Default.",
+     "zh": "默认编码。"
+    },
+    {
+     "en": "For SWE-smith-MR and SWE-bench Verified, Default runs mini-swe-agent’s DefaultAgent with the system, task, observation, and format-error templates from its default configuration.",
+     "zh": "对于 SWE-smith-MR 和 SWE-bench Verified，默认配置会运行 mini-swe-agent 的 DefaultAgent，并使用其默认配置中的系统、任务、观察结果和格式错误模板。"
+    },
+    {
+     "en": "The model receives the issue description, generates a shell command, and observes its output in a Docker environment; this loop continues until explicit submission or the execution limit.",
+     "zh": "模型会接收问题描述，生成一个 shell 命令，并在 Docker 环境中观察其输出；此循环将持续到明确提交或达到执行限制为止。"
+    },
+    {
+     "en": "The prompt instructs the model to inspect the repository, edit the code, and verify the fix.",
+     "zh": "提示词指示模型检查仓库、编辑代码并验证修复效果。"
+    },
+    {
+     "en": "We set the same 40 40 -step and $3 execution limits used for the other coding harnesses.",
+     "zh": "我们设置了与其他编码测试框架相同的 40 步和 $3 的执行限制。"
+    },
+    {
+     "en": "No optimized harness or per-instance harness edit is supplied to this baseline.",
+     "zh": "此基线未提供任何优化后的测试框架或针对单个实例的框架修改。"
+    }
+   ]
+  },
+  {
+   "en": "Agentic Defaults. Each agentic Default is a fixed, zero-shot tool-calling loop in our task runtime. It initializes the model with the domain’s system prompt and task observation, appends actions and environment feedback to the conversation, and re-prompts when the model fails to produce the required tool call. The domain-specific interfaces are:",
+   "zh": "智能体默认机制。 每个智能体默认机制都是我们任务运行时一个固定的、零样本的工具调用循环。 它使用该领域的系统提示和任务观察信息初始化模型，将动作和环境反馈追加到对话中，并在模型未能生成所需工具调用时重新提示。 领域特定的接口是：",
+   "sents": [
+    {
+     "en": "Agentic Defaults.",
+     "zh": "智能体默认机制。"
+    },
+    {
+     "en": "Each agentic Default is a fixed, zero-shot tool-calling loop in our task runtime.",
+     "zh": "每个智能体默认机制都是我们任务运行时一个固定的、零样本的工具调用循环。"
+    },
+    {
+     "en": "It initializes the model with the domain’s system prompt and task observation, appends actions and environment feedback to the conversation, and re-prompts when the model fails to produce the required tool call.",
+     "zh": "它使用该领域的系统提示和任务观察信息初始化模型，将动作和环境反馈追加到对话中，并在模型未能生成所需工具调用时重新提示。"
+    },
+    {
+     "en": "The domain-specific interfaces are:",
+     "zh": "领域特定的接口是："
+    }
+   ]
+  },
+  {
+   "en": "ALFWorld: a take_action tool, with admissible actions shown at each step and model outputs canonicalized to an admissible action.",
+   "zh": "ALFWorld：一个 take_action 工具，每一步都会显示允许执行的动作，并将模型输出规范化为一个允许执行的动作。",
+   "sents": null
+  },
+  {
+   "en": "ScienceWorld: a take_action tool accepting textual environment commands, with action-template hints in the initial prompt and subsequent observations truncated to 800 800 characters.",
+   "zh": "ScienceWorld：一个接受文本环境命令的 take_action 工具，初始提示中包含动作模板提示，后续观察内容被截断至 800 个字符。",
+   "sents": null
+  },
+  {
+   "en": "DBBench: execute_sql and commit_final_answer tools, initialized with the question and database schema; committing the answer ends the rollout.",
+   "zh": "DBBench：execute_sql 和 commit_final_answer 工具，初始化为问题与数据库模式；提交答案即结束此次执行流程。",
+   "sents": null
+  },
+  {
+   "en": "WebShop: search_action and click_action tools, with the page observation and available actions supplied after each interaction.",
+   "zh": "WebShop：search_action 和 click_action 工具，每次交互后都会提供页面观察结果和可用操作。",
+   "sents": null
+  },
+  {
+   "en": "Prompt-based variants. Our ReAct implementation augments the basic tool-calling loop with reasoning–action demonstrations and an explicit instruction to produce a Thought alongside each action. This distinguishes the ReAct row from the zero-shot Default. Self-Refine adds a proposal–critique–revision cycle before executing an action. Reflection runs an initial episode and, if it is not fully successful, generates a verbal reflection to guide a second episode. It reports the better outcome across the two attempts, whereas Default and Turbo Harness each use a single execution rollout. These variants therefore differ in both interaction strategy and model-call budget.",
+   "zh": "基于提示的变体。 我们的 ReAct 实现通过增加推理–行动演示以及明确指示在每次行动后生成“思考”环节，对基础的工具调用循环进行了增强。 这使得 ReAct 行与零样本 Default 方法区分开来。 Self-Refine 在执行行动前增加了一个提议–批评–修订的循环。 Reflection 会先运行一个初始阶段；如果该阶段未完全成功，则会生成一段文字反思以指导第二阶段。 它会报告两次尝试中更好的结果，而 Default 和 Turbo Harness 则各自仅使用单次执行流程。 因此，这些变体在交互策略和模型调用预算方面均有所不同。",
+   "sents": [
+    {
+     "en": "Prompt-based variants.",
+     "zh": "基于提示的变体。"
+    },
+    {
+     "en": "Our ReAct implementation augments the basic tool-calling loop with reasoning–action demonstrations and an explicit instruction to produce a Thought alongside each action.",
+     "zh": "我们的 ReAct 实现通过增加推理–行动演示以及明确指示在每次行动后生成“思考”环节，对基础的工具调用循环进行了增强。"
+    },
+    {
+     "en": "This distinguishes the ReAct row from the zero-shot Default.",
+     "zh": "这使得 ReAct 行与零样本 Default 方法区分开来。"
+    },
+    {
+     "en": "Self-Refine adds a proposal–critique–revision cycle before executing an action.",
+     "zh": "Self-Refine 在执行行动前增加了一个提议–批评–修订的循环。"
+    },
+    {
+     "en": "Reflection runs an initial episode and, if it is not fully successful, generates a verbal reflection to guide a second episode.",
+     "zh": "Reflection 会先运行一个初始阶段；如果该阶段未完全成功，则会生成一段文字反思以指导第二阶段。"
+    },
+    {
+     "en": "It reports the better outcome across the two attempts, whereas Default and Turbo Harness each use a single execution rollout.",
+     "zh": "它会报告两次尝试中更好的结果，而 Default 和 Turbo Harness 则各自仅使用单次执行流程。"
+    },
+    {
+     "en": "These variants therefore differ in both interaction strategy and model-call budget.",
+     "zh": "因此，这些变体在交互策略和模型调用预算方面均有所不同。"
+    }
+   ]
+  },
+  {
+   "en": "Harness-R1 comparison. We evaluate the released Harness-R1 checkpoint in its AgentBench runtime on our ALFWorld and DBBench test splits, because we could not reconstruct its exact evaluation sets from the public release. For WebShop, we use the authors’ reported result on the same seed- 233 233 , 200 200 -goal test set. Because ScienceWorld is not one of Harness-R1’s benchmarks, we port its code-hook method into the same runtime as a new task and RL-train the released engineer on ScienceWorld with our optimizer; the reported value ( 28.2 28.2 ) is this RL-trained engineer, and the zero-shot released checkpoint scores comparably ( 29.7 29.7 ). Harness-R1 uses an initial rollout followed by a patched rerun, whereas Turbo Harness proposes its patch before a single execution rollout. The comparison therefore uses different runtimes and rollout budgets; it does not isolate the effect of the harness editor alone.",
+   "zh": "Harness-R1 对比。 我们在自己的 ALFWorld 和 DBBench 测试分片上，于 AgentBench 运行时环境中评估了已发布的 Harness-R1 检查点，因为我们无法从公开版本中重建其确切的评估数据集。 对于 WebShop，我们使用了作者在相同种子值 233 233、200 200-目标测试集上报告的结果。 由于 ScienceWorld 并非 Harness-R1 的基准测试之一，我们将它的代码挂钩方法移植到相同的运行时环境中作为新任务，并使用我们的优化器对已发布的工程师模型在 ScienceWorld 上进行强化学习训练；所报告的值（28.2 28.2）即为此经过强化学习训练的工程师模型的成绩，而零样本的已发布检查点得分也表现相当（29.7 29.7）。 Harness-R1 采用初始执行后接修正重运行的方式，而 Turbo Harness 则在一次执行运行之前提出其修正方案。 因此，该对比使用了不同的运行时环境和执行预算；它并未单独隔离 harness 编辑器本身所带来的影响。",
+   "sents": [
+    {
+     "en": "Harness-R1 comparison.",
+     "zh": "Harness-R1 对比。"
+    },
+    {
+     "en": "We evaluate the released Harness-R1 checkpoint in its AgentBench runtime on our ALFWorld and DBBench test splits, because we could not reconstruct its exact evaluation sets from the public release.",
+     "zh": "我们在自己的 ALFWorld 和 DBBench 测试分片上，于 AgentBench 运行时环境中评估了已发布的 Harness-R1 检查点，因为我们无法从公开版本中重建其确切的评估数据集。"
+    },
+    {
+     "en": "For WebShop, we use the authors’ reported result on the same seed- 233 233 , 200 200 -goal test set.",
+     "zh": "对于 WebShop，我们使用了作者在相同种子值 233 233、200 200-目标测试集上报告的结果。"
+    },
+    {
+     "en": "Because ScienceWorld is not one of Harness-R1’s benchmarks, we port its code-hook method into the same runtime as a new task and RL-train the released engineer on ScienceWorld with our optimizer; the reported value ( 28.2 28.2 ) is this RL-trained engineer, and the zero-shot released checkpoint scores comparably ( 29.7 29.7 ).",
+     "zh": "由于 ScienceWorld 并非 Harness-R1 的基准测试之一，我们将它的代码挂钩方法移植到相同的运行时环境中作为新任务，并使用我们的优化器对已发布的工程师模型在 ScienceWorld 上进行强化学习训练；所报告的值（28.2 28.2）即为此经过强化学习训练的工程师模型的成绩，而零样本的已发布检查点得分也表现相当（29.7 29.7）。"
+    },
+    {
+     "en": "Harness-R1 uses an initial rollout followed by a patched rerun, whereas Turbo Harness proposes its patch before a single execution rollout.",
+     "zh": "Harness-R1 采用初始执行后接修正重运行的方式，而 Turbo Harness 则在一次执行运行之前提出其修正方案。"
+    },
+    {
+     "en": "The comparison therefore uses different runtimes and rollout budgets; it does not isolate the effect of the harness editor alone.",
+     "zh": "因此，该对比使用了不同的运行时环境和执行预算；它并未单独隔离 harness 编辑器本身所带来的影响。"
+    }
+   ]
+  },
+  {
+   "en": "Repeated-execution reliability. On SWE-smith-MR, Turbo Harness increases the number of issues resolved in all three runs (Figure 4 ). This count rises from 20 20 to 28 28 out of 50 50 issues with Haiku and from 26 26 to 42 42 with Gemini. At the same time, the number resolved in only one or two runs falls from 11 11 to 10 10 and from 18 18 to 3 3 , respectively. Thus, the higher mean pass rates are accompanied by more consistently solved issues, especially with Gemini. This analysis measures execution consistency for fixed per-instance harnesses; it does not measure variability in editor training or harness generation.",
+   "zh": "重复执行可靠性。 在 SWE-smith-MR 上，Turbo Harness 在所有三次运行中解决了更多问题（图 4）。 使用 Haiku 时，这一数字从 50 个问题中的 20 个上升到 28 个；使用 Gemini 时则从 26 个上升到 42 个。 与此同时，仅在一两次运行中解决的问题数量分别从 11 个降至 10 个，以及从 18 个降至 3 个。 因此，更高的平均通过率伴随着问题解决的更一致性，尤其是在使用 Gemini 时。 此分析衡量的是固定单次实例 Harness 的执行一致性；它并未衡量编辑器训练或 Harness 生成中的变异性。",
+   "sents": [
+    {
+     "en": "Repeated-execution reliability.",
+     "zh": "重复执行可靠性。"
+    },
+    {
+     "en": "On SWE-smith-MR, Turbo Harness increases the number of issues resolved in all three runs (Figure 4 ).",
+     "zh": "在 SWE-smith-MR 上，Turbo Harness 在所有三次运行中解决了更多问题（图 4）。"
+    },
+    {
+     "en": "This count rises from 20 20 to 28 28 out of 50 50 issues with Haiku and from 26 26 to 42 42 with Gemini.",
+     "zh": "使用 Haiku 时，这一数字从 50 个问题中的 20 个上升到 28 个；使用 Gemini 时则从 26 个上升到 42 个。"
+    },
+    {
+     "en": "At the same time, the number resolved in only one or two runs falls from 11 11 to 10 10 and from 18 18 to 3 3 , respectively.",
+     "zh": "与此同时，仅在一两次运行中解决的问题数量分别从 11 个降至 10 个，以及从 18 个降至 3 个。"
+    },
+    {
+     "en": "Thus, the higher mean pass rates are accompanied by more consistently solved issues, especially with Gemini.",
+     "zh": "因此，更高的平均通过率伴随着问题解决的更一致性，尤其是在使用 Gemini 时。"
+    },
+    {
+     "en": "This analysis measures execution consistency for fixed per-instance harnesses; it does not measure variability in editor training or harness generation.",
+     "zh": "此分析衡量的是固定单次实例 Harness 的执行一致性；它并未衡量编辑器训练或 Harness 生成中的变异性。"
+    }
+   ]
+  },
+  {
+   "en": "To illustrate what the harness editor actually changes, we show representative patches. The three SWE examples are recovered verbatim from the reported runs and paired with the held-out test outcome; the Terminal-Bench-2.1 example is an outer-loop (search-stage) edit on a training task, included only to illustrate the mechanism because per-instance test patches were not persisted for that benchmark. Diffs are elided ( ... ) but otherwise verbatim.",
+   "zh": "为了说明 harness 编辑器实际修改了什么，我们展示了具有代表性的补丁。 三个 SWE 示例是从报告的运行结果中逐字恢复的，并与预留的测试结果配对；Terminal-Bench-2.1 示例是对训练任务进行的外层循环（搜索阶段）编辑，仅用于说明其机制，因为该基准测试并未保存每个实例的测试补丁。 差异部分被省略（...），但其余内容均逐字呈现。",
+   "sents": [
+    {
+     "en": "To illustrate what the harness editor actually changes, we show representative patches.",
+     "zh": "为了说明 harness 编辑器实际修改了什么，我们展示了具有代表性的补丁。"
+    },
+    {
+     "en": "The three SWE examples are recovered verbatim from the reported runs and paired with the held-out test outcome; the Terminal-Bench-2.1 example is an outer-loop (search-stage) edit on a training task, included only to illustrate the mechanism because per-instance test patches were not persisted for that benchmark.",
+     "zh": "三个 SWE 示例是从报告的运行结果中逐字恢复的，并与预留的测试结果配对；Terminal-Bench-2.1 示例是对训练任务进行的外层循环（搜索阶段）编辑，仅用于说明其机制，因为该基准测试并未保存每个实例的测试补丁。"
+    },
+    {
+     "en": "Diffs are elided ( ... ) but otherwise verbatim.",
+     "zh": "差异部分被省略（...），但其余内容均逐字呈现。"
+    }
+   ]
+  },
+  {
+   "en": "Same global harness, opposite per-instance guidance (SWE-smith-MR). On two issues from different libraries, the editor patches the same regions of the verify-once-submit H ⋆ \\texttt{H}^{\\star} with different guidance, and both flip from failing to fully solved ( 3 / 3 3/3 ). For a Jinja2 regression it injects a history-inspection step:",
+   "zh": "相同的全局约束，但每个实例的引导相反（SWE-smith-MR）。 针对来自不同库的两个问题，编辑器使用不同的引导对“一次验证即提交”H ⋆ \\texttt{H}^{\\star} 中的相同区域进行修补，且两者都从失败转变为完全解决（3 / 3 3/3）。 对于某个 Jinja2 回归问题，它注入了一个历史检查步骤：",
+   "sents": [
+    {
+     "en": "Same global harness, opposite per-instance guidance (SWE-smith-MR).",
+     "zh": "相同的全局约束，但每个实例的引导相反（SWE-smith-MR）。"
+    },
+    {
+     "en": "On two issues from different libraries, the editor patches the same regions of the verify-once-submit H ⋆ \\texttt{H}^{\\star} with different guidance, and both flip from failing to fully solved ( 3 / 3 3/3 ).",
+     "zh": "针对来自不同库的两个问题，编辑器使用不同的引导对“一次验证即提交”H ⋆ \\texttt{H}^{\\star} 中的相同区域进行修补，且两者都从失败转变为完全解决（3 / 3 3/3）。"
+    },
+    {
+     "en": "For a Jinja2 regression it injects a history-inspection step:",
+     "zh": "对于某个 Jinja2 回归问题，它注入了一个历史检查步骤："
+    }
+   ]
+  },
+  {
+   "en": "whereas an arrow (datetime library) use-before-assignment bug receives unrelated guidance rather than the history-inspection step. The same H ⋆ \\texttt{H}^{\\star} is thus specialized differently per instance.",
+   "zh": "而一个箭头（datetime 库）在使用前赋值错误中，收到的却是无关的指导，而非历史检查步骤。 因此，同一个 H ⋆ \\texttt{H}^{\\star} 在每个实例中都以不同的方式被专门处理。",
+   "sents": [
+    {
+     "en": "whereas an arrow (datetime library) use-before-assignment bug receives unrelated guidance rather than the history-inspection step.",
+     "zh": "而一个箭头（datetime 库）在使用前赋值错误中，收到的却是无关的指导，而非历史检查步骤。"
+    },
+    {
+     "en": "The same H ⋆ \\texttt{H}^{\\star} is thus specialized differently per instance.",
+     "zh": "因此，同一个 H ⋆ \\texttt{H}^{\\star} 在每个实例中都以不同的方式被专门处理。"
+    }
+   ]
+  },
+  {
+   "en": "Reallocating the step budget (SWE-bench Verified). On the django-13315 issue, whose H ⋆ \\texttt{H}^{\\star} imposes an explicit per-phase step budget, the editor relaxes an aggressive “submit immediately” gate to buy exploration and a real fix-and-verify budget:",
+   "zh": "重新分配步骤预算（SWE-bench 已验证）。 在 django-13315 问题上，其 H ⋆ \\texttt{H}^{\\star} 对每个阶段施加了明确的步骤预算限制，编辑器放宽了“立即提交”的严格限制，以留出探索空间以及真正的修复与验证预算：",
+   "sents": [
+    {
+     "en": "Reallocating the step budget (SWE-bench Verified).",
+     "zh": "重新分配步骤预算（SWE-bench 已验证）。"
+    },
+    {
+     "en": "On the django-13315 issue, whose H ⋆ \\texttt{H}^{\\star} imposes an explicit per-phase step budget, the editor relaxes an aggressive “submit immediately” gate to buy exploration and a real fix-and-verify budget:",
+     "zh": "在 django-13315 问题上，其 H ⋆ \\texttt{H}^{\\star} 对每个阶段施加了明确的步骤预算限制，编辑器放宽了“立即提交”的严格限制，以留出探索空间以及真正的修复与验证预算："
+    }
+   ]
+  },
+  {
+   "en": "The outcome improves from 1 / 3 1/3 (Meta-Harness) to 3 / 3 3/3 (Turbo Harness). The budget is instance-specific: on sympy-16766 (also 1 / 3 → 3 / 3 1/3\\rightarrow 3/3 ) the editor enlarges only Phase 3 and keeps the one-step submit gate.",
+   "zh": "结果从 1 / 3 1/3（Meta-Harness）提升至 3 / 3 3/3（Turbo Harness）。 预算因实例而异：在 sympy-16766 上（同样为 1 / 3 → 3 / 3 1/3\\rightarrow 3/3），编辑器仅扩展第 3 阶段，并保留单步提交门。",
+   "sents": [
+    {
+     "en": "The outcome improves from 1 / 3 1/3 (Meta-Harness) to 3 / 3 3/3 (Turbo Harness).",
+     "zh": "结果从 1 / 3 1/3（Meta-Harness）提升至 3 / 3 3/3（Turbo Harness）。"
+    },
+    {
+     "en": "The budget is instance-specific: on sympy-16766 (also 1 / 3 → 3 / 3 1/3\\rightarrow 3/3 ) the editor enlarges only Phase 3 and keeps the one-step submit gate.",
+     "zh": "预算因实例而异：在 sympy-16766 上（同样为 1 / 3 → 3 / 3 1/3\\rightarrow 3/3），编辑器仅扩展第 3 阶段，并保留单步提交门。"
+    }
+   ]
+  },
+  {
+   "en": "Editing executable loop code, not prompt wording (SWE-smith-MR). On a gunicorn issue, the editor rewrites the scaffold’s control code rather than its text. It fires the verification gate one step earlier and teaches the edit detector to also recognize append redirection as a source edit:",
+   "zh": "编辑可执行的循环代码，而非提示词措辞（SWE-smith-MR）。 在一个 gunicorn 问题中，编辑器重写的是框架的控制代码，而非其文本。 它提前一步触发验证关卡，并教导编辑检测器也将追加重定向识别为一种源编辑：",
+   "sents": [
+    {
+     "en": "Editing executable loop code, not prompt wording (SWE-smith-MR).",
+     "zh": "编辑可执行的循环代码，而非提示词措辞（SWE-smith-MR）。"
+    },
+    {
+     "en": "On a gunicorn issue, the editor rewrites the scaffold’s control code rather than its text.",
+     "zh": "在一个 gunicorn 问题中，编辑器重写的是框架的控制代码，而非其文本。"
+    },
+    {
+     "en": "It fires the verification gate one step earlier and teaches the edit detector to also recognize append redirection as a source edit:",
+     "zh": "它提前一步触发验证关卡，并教导编辑检测器也将追加重定向识别为一种源编辑："
+    }
+   ]
+  },
+  {
+   "en": "The instance flips from 0 / 3 0/3 to 3 / 3 3/3 , and the threshold is set per instance ( 5 5 , 6 6 , or 10 10 across different bugs) rather than as a fixed global knob, confirming that adaptation reaches the executable harness and not only the prompt.",
+   "zh": "该实例从 0 / 3 0/3 翻转至 3 / 3 3/3，并且阈值是针对每个实例单独设置的（在不同错误中分别为 5 5、6 6 或 10 10），而非一个固定的全局参数，这证实了自适应机制已作用于可执行测试框架，而不仅仅是提示本身。",
+   "sents": null
+  },
+  {
+   "en": "One knob, opposite optimum per task (Terminal-Bench-2.1). The winning H ⋆ \\texttt{H}^{\\star} escalates to forced tool use only after two stalled turns. On chess-best-move , the model instead spends turns reasoning in prose, so an edit that forces a tool call every turn solves the task:",
+   "zh": "一个旋钮，每个任务都有相反的最优解（Terminal-Bench-2.1）。 获胜的 H ⋆ \\texttt{H}^{\\star} 在经历两个停滞回合后才升级到强制使用工具。 在“最佳国际象棋走法”任务中，该模型反而用多个回合进行文字推理，因此一个强制每回合都调用工具的编辑就能解决该任务：",
+   "sents": [
+    {
+     "en": "One knob, opposite optimum per task (Terminal-Bench-2.1).",
+     "zh": "一个旋钮，每个任务都有相反的最优解（Terminal-Bench-2.1）。"
+    },
+    {
+     "en": "The winning H ⋆ \\texttt{H}^{\\star} escalates to forced tool use only after two stalled turns.",
+     "zh": "获胜的 H ⋆ \\texttt{H}^{\\star} 在经历两个停滞回合后才升级到强制使用工具。"
+    },
+    {
+     "en": "On chess-best-move , the model instead spends turns reasoning in prose, so an edit that forces a tool call every turn solves the task:",
+     "zh": "在“最佳国际象棋走法”任务中，该模型反而用多个回合进行文字推理，因此一个强制每回合都调用工具的编辑就能解决该任务："
+    }
+   ]
+  },
+  {
+   "en": "Yet forcing tool use globally is a playbook anti-pattern that regresses the whole suite by 6.7 % 6.7\\% , and extract-elf is instead solved by the adaptive escalation and fails under the global forced setting. The same control knob therefore has opposite optima on different tasks, which a single global harness cannot satisfy but instance-specific adaptation can. (These are search-stage edits on training tasks, shown only to illustrate the mechanism.)",
+   "zh": "然而，在全球范围内强制使用工具是一种反模式策略，它会使整个套件的性能倒退 6.7%（6.7\\%）；而 extract-elf 问题则通过自适应升级得到解决，但在全局强制设置下会失效。 因此，同一个控制旋钮在不同任务上具有相反的最优值，单一的全局框架无法满足这一需求，但针对具体实例的自适应方法可以解决。 （这些是对训练任务在搜索阶段进行的修改，仅用于说明其机制。）",
+   "sents": [
+    {
+     "en": "Yet forcing tool use globally is a playbook anti-pattern that regresses the whole suite by 6.7 % 6.7\\% , and extract-elf is instead solved by the adaptive escalation and fails under the global forced setting.",
+     "zh": "然而，在全球范围内强制使用工具是一种反模式策略，它会使整个套件的性能倒退 6.7%（6.7\\%）；而 extract-elf 问题则通过自适应升级得到解决，但在全局强制设置下会失效。"
+    },
+    {
+     "en": "The same control knob therefore has opposite optima on different tasks, which a single global harness cannot satisfy but instance-specific adaptation can.",
+     "zh": "因此，同一个控制旋钮在不同任务上具有相反的最优值，单一的全局框架无法满足这一需求，但针对具体实例的自适应方法可以解决。"
+    },
+    {
+     "en": "(These are search-stage edits on training tasks, shown only to illustrate the mechanism.)",
+     "zh": "（这些是对训练任务在搜索阶段进行的修改，仅用于说明其机制。）"
+    }
+   ]
+  }
+ ]
+}
