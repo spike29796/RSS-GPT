@@ -1,0 +1,1942 @@
+{
+ "id": "471a14d33ad2daed",
+ "source": "arxiv-llm-eng",
+ "link": "https://arxiv.org/abs/2610.06049v1",
+ "title": "Backdooring Sparse Autoencoders",
+ "title_zh": "稀疏自编码器（Sparse Autoencoder）的后门攻击",
+ "published": "2026-10-05T09:44:21Z",
+ "translated_at": "2026-10-14T07:11:18Z",
+ "paragraphs": [
+  {
+   "en": "Sparse autoencoders (SAEs) are increasingly used not only to interpret language models but also to intervene on their internal representations. We show that this creates a supply-chain attack surface: a maliciously modified SAE can induce attacker-chosen behavior when inserted into the forward pass of an otherwise unchanged language model. We introduce a decoder-only SAE backdoor that leaves both the underlying LLM and the SAE encoder frozen, restricting the attack to a single auxiliary component at a single insertion layer. Using code generation as a case study, we demonstrate high rates of unsolicited code insertion across three language models and a wide range of insertion layers, as well as trigger-dependent behavior conditioned on a prompt cue. We further evaluate the modified SAEs using HumanEval and selected SAEBench metrics. While attack effectiveness varies across models and layers, strong backdoor behavior can coexist with relatively small changes in several conventional SAE quality measures. These results establish that SAEs can carry behavioral backdoors without modifying the language model itself and should therefore be treated as security-sensitive components.",
+   "zh": "稀疏自编码器（SAEs）正被越来越多地用于不仅解释语言模型，还干预其内部表示。 我们指出，这会产生一个供应链攻击面：恶意修改的 SAE 在插入未作其他更改的语言模型的前向传播中时，可能引发攻击者指定的行为。 我们提出了一种仅含解码器的 SAE 后门机制，该机制使底层 LLM 和 SAE 编码器均保持冻结，从而将攻击限制在单一辅助组件和单个插入层上。 以代码生成为案例研究，我们展示了三种语言模型和多种插入层中未经请求的代码插入的高发生率，以及受提示线索条件控制的触发依赖行为。 我们还使用 HumanEval 和选定的 SAEBench 指标对修改后的 SAEs 进行了进一步评估。 尽管攻击有效性因模型和层而异，但在一些传统的 SAE 质量指标中仅出现相对较小的变化时，强大的后门行为仍可能同时存在。 这些结果表明，SAEs 可以在不修改语言模型本身的情况下携带行为后门，因此应被视为具有安全敏感性的组件。",
+   "sents": [
+    {
+     "en": "Sparse autoencoders (SAEs) are increasingly used not only to interpret language models but also to intervene on their internal representations.",
+     "zh": "稀疏自编码器（SAEs）正被越来越多地用于不仅解释语言模型，还干预其内部表示。"
+    },
+    {
+     "en": "We show that this creates a supply-chain attack surface: a maliciously modified SAE can induce attacker-chosen behavior when inserted into the forward pass of an otherwise unchanged language model.",
+     "zh": "我们指出，这会产生一个供应链攻击面：恶意修改的 SAE 在插入未作其他更改的语言模型的前向传播中时，可能引发攻击者指定的行为。"
+    },
+    {
+     "en": "We introduce a decoder-only SAE backdoor that leaves both the underlying LLM and the SAE encoder frozen, restricting the attack to a single auxiliary component at a single insertion layer.",
+     "zh": "我们提出了一种仅含解码器的 SAE 后门机制，该机制使底层 LLM 和 SAE 编码器均保持冻结，从而将攻击限制在单一辅助组件和单个插入层上。"
+    },
+    {
+     "en": "Using code generation as a case study, we demonstrate high rates of unsolicited code insertion across three language models and a wide range of insertion layers, as well as trigger-dependent behavior conditioned on a prompt cue.",
+     "zh": "以代码生成为案例研究，我们展示了三种语言模型和多种插入层中未经请求的代码插入的高发生率，以及受提示线索条件控制的触发依赖行为。"
+    },
+    {
+     "en": "We further evaluate the modified SAEs using HumanEval and selected SAEBench metrics.",
+     "zh": "我们还使用 HumanEval 和选定的 SAEBench 指标对修改后的 SAEs 进行了进一步评估。"
+    },
+    {
+     "en": "While attack effectiveness varies across models and layers, strong backdoor behavior can coexist with relatively small changes in several conventional SAE quality measures.",
+     "zh": "尽管攻击有效性因模型和层而异，但在一些传统的 SAE 质量指标中仅出现相对较小的变化时，强大的后门行为仍可能同时存在。"
+    },
+    {
+     "en": "These results establish that SAEs can carry behavioral backdoors without modifying the language model itself and should therefore be treated as security-sensitive components.",
+     "zh": "这些结果表明，SAEs 可以在不修改语言模型本身的情况下携带行为后门，因此应被视为具有安全敏感性的组件。"
+    }
+   ]
+  },
+  {
+   "en": "Large language models (LLMs) are increasingly deployed as general-purpose assistants and programming tools. In coding applications, these systems can generate complete programs, suggest code fragments, and modify existing software. Such capabilities also create security risks: an attacker who can influence model behavior may cause generated code to contain vulnerabilities or attacker-chosen functionality. Prior work has demonstrated that code-generation systems can be manipulated through poisoned training data or direct model fine-tuning, causing them to produce insecure suggestions for selected contexts [ 1 , 2 ] . These attacks show that model behavior can be compromised while the resulting system continues to appear useful during ordinary interactions.",
+   "zh": "大型语言模型（LLM）正越来越多地被用作通用助手和编程工具。 在编码应用中，这些系统能够生成完整的程序、建议代码片段以及修改现有软件。 这类能力也带来了安全风险：任何能够影响模型行为的攻击者，都可能使生成的代码包含漏洞或攻击者指定的功能。 先前的研究已经证明，通过投毒训练数据或直接对模型进行微调，可以操控代码生成系统，使其在特定上下文中生成不安全的建议 [1, 2]。 这些攻击表明，即使最终系统在常规交互中仍显得有用，其模型行为也可能已被破坏。",
+   "sents": [
+    {
+     "en": "Large language models (LLMs) are increasingly deployed as general-purpose assistants and programming tools.",
+     "zh": "大型语言模型（LLM）正越来越多地被用作通用助手和编程工具。"
+    },
+    {
+     "en": "In coding applications, these systems can generate complete programs, suggest code fragments, and modify existing software.",
+     "zh": "在编码应用中，这些系统能够生成完整的程序、建议代码片段以及修改现有软件。"
+    },
+    {
+     "en": "Such capabilities also create security risks: an attacker who can influence model behavior may cause generated code to contain vulnerabilities or attacker-chosen functionality.",
+     "zh": "这类能力也带来了安全风险：任何能够影响模型行为的攻击者，都可能使生成的代码包含漏洞或攻击者指定的功能。"
+    },
+    {
+     "en": "Prior work has demonstrated that code-generation systems can be manipulated through poisoned training data or direct model fine-tuning, causing them to produce insecure suggestions for selected contexts [ 1 , 2 ] .",
+     "zh": "先前的研究已经证明，通过投毒训练数据或直接对模型进行微调，可以操控代码生成系统，使其在特定上下文中生成不安全的建议 [1, 2]。"
+    },
+    {
+     "en": "These attacks show that model behavior can be compromised while the resulting system continues to appear useful during ordinary interactions.",
+     "zh": "这些攻击表明，即使最终系统在常规交互中仍显得有用，其模型行为也可能已被破坏。"
+    }
+   ]
+  },
+  {
+   "en": "Backdoor behavior can also be conditional on seemingly innocuous properties of the input. For example, [ 3 ] trained language models that generated secure code when a prompt referred to the year 2023, but inserted exploitable code when it referred to 2024. Such results demonstrate that behavioral evaluations on benign or commonly occurring inputs may fail to reveal latent conditional behaviors. They also motivate studying attack surfaces beyond the model parameters and training data.",
+   "zh": "后门行为也可能取决于输入中看似无害的属性。 例如，[ 3 ] 训练出的语言模型在提示词提到 2023 年时会生成安全代码，但在提到 2024 年时则会插入可被利用的代码。 此类结果表明，对良性或常见输入的性行为评估可能无法揭示潜在的有条件行为。 这些结果也促使我们研究模型参数和训练数据之外的攻击面。",
+   "sents": [
+    {
+     "en": "Backdoor behavior can also be conditional on seemingly innocuous properties of the input.",
+     "zh": "后门行为也可能取决于输入中看似无害的属性。"
+    },
+    {
+     "en": "For example, [ 3 ] trained language models that generated secure code when a prompt referred to the year 2023, but inserted exploitable code when it referred to 2024.",
+     "zh": "例如，[ 3 ] 训练出的语言模型在提示词提到 2023 年时会生成安全代码，但在提到 2024 年时则会插入可被利用的代码。"
+    },
+    {
+     "en": "Such results demonstrate that behavioral evaluations on benign or commonly occurring inputs may fail to reveal latent conditional behaviors.",
+     "zh": "此类结果表明，对良性或常见输入的性行为评估可能无法揭示潜在的有条件行为。"
+    },
+    {
+     "en": "They also motivate studying attack surfaces beyond the model parameters and training data.",
+     "zh": "这些结果也促使我们研究模型参数和训练数据之外的攻击面。"
+    }
+   ]
+  },
+  {
+   "en": "Sparse autoencoders (SAEs) have become an important tool for interpreting and controlling LLMs [ 4 ] . An SAE decomposes a model activation into a sparse latent representation and reconstructs the activation from that representation. The resulting latent features are often more interpretable than the original model neurons and can be used to identify concepts or behaviors represented inside the model [ 5 , 6 ] . Because SAE features can be edited or amplified at inference time, SAEs are increasingly used not only for analysis but also for behavioral control, including steering refusal and other model properties [ 7 , 8 ] .",
+   "zh": "稀疏自编码器（SAEs）已成为解释和控制大型语言模型（LLMs）的重要工具 [ 4 ] 。 SAE 将模型激活分解为稀疏的潜在表示，并基于该表示重建激活。 由此产生的潜在特征通常比原始模型神经元更具可解释性，可用于识别模型内部所表示的概念或行为 [ 5 , 6 ] 。 由于 SAE 特征可以在推理阶段被编辑或增强，因此 SAEs 不仅越来越多地用于分析，也被用于行为控制，包括引导拒绝和其他模型特性 [ 7 , 8 ] 。",
+   "sents": [
+    {
+     "en": "Sparse autoencoders (SAEs) have become an important tool for interpreting and controlling LLMs [ 4 ] .",
+     "zh": "稀疏自编码器（SAEs）已成为解释和控制大型语言模型（LLMs）的重要工具 [ 4 ] 。"
+    },
+    {
+     "en": "An SAE decomposes a model activation into a sparse latent representation and reconstructs the activation from that representation.",
+     "zh": "SAE 将模型激活分解为稀疏的潜在表示，并基于该表示重建激活。"
+    },
+    {
+     "en": "The resulting latent features are often more interpretable than the original model neurons and can be used to identify concepts or behaviors represented inside the model [ 5 , 6 ] .",
+     "zh": "由此产生的潜在特征通常比原始模型神经元更具可解释性，可用于识别模型内部所表示的概念或行为 [ 5 , 6 ] 。"
+    },
+    {
+     "en": "Because SAE features can be edited or amplified at inference time, SAEs are increasingly used not only for analysis but also for behavioral control, including steering refusal and other model properties [ 7 , 8 ] .",
+     "zh": "由于 SAE 特征可以在推理阶段被编辑或增强，因此 SAEs 不仅越来越多地用于分析，也被用于行为控制，包括引导拒绝和其他模型特性 [ 7 , 8 ] 。"
+    }
+   ]
+  },
+  {
+   "en": "Because SAEs are inserted directly into the forward pass, a compromised SAE can become a behavioral attack surface in its own right. Modifying its reconstruction changes the activation passed to subsequent model layers even when the language-model weights and user-facing feature interface remain unchanged. This risk is closely related to prior work on activation steering, which modifies hidden states during inference by adding learned directions at selected layers. Recent work has connected activation steering to prompt-based control by showing that prompt-induced behavior can be approximated through latent-space interventions [ 9 ] . Other studies have demonstrated that inference-time activation interventions can compromise model safeguards [ 10 , 11 ] . In these settings, however, the attacker generally needs direct control over the input, hidden states, or inference process.",
+   "zh": "由于 SAE 被直接插入前向传播流程中，一个被破坏的 SAE 本身就可能成为一个行为攻击面。 修改其重建结果会改变传递到后续模型层的激活值，即使语言模型的权重和面向用户的特征接口保持不变。 这种风险与早期的激活引导研究密切相关，该研究通过在特定层添加学习到的方向来修改推理过程中的隐藏状态。 近期的研究通过将提示诱导的行为通过潜在空间干预进行近似，揭示了激活引导与提示驱动控制之间的联系 [ 9 ] 。 其他研究已证明，推理阶段的激活干预可能会破坏模型的安全防护机制 [ 10 , 11 ] 。 然而，在这些场景中，攻击者通常需要直接控制输入、隐藏状态或推理过程。",
+   "sents": [
+    {
+     "en": "Because SAEs are inserted directly into the forward pass, a compromised SAE can become a behavioral attack surface in its own right.",
+     "zh": "由于 SAE 被直接插入前向传播流程中，一个被破坏的 SAE 本身就可能成为一个行为攻击面。"
+    },
+    {
+     "en": "Modifying its reconstruction changes the activation passed to subsequent model layers even when the language-model weights and user-facing feature interface remain unchanged.",
+     "zh": "修改其重建结果会改变传递到后续模型层的激活值，即使语言模型的权重和面向用户的特征接口保持不变。"
+    },
+    {
+     "en": "This risk is closely related to prior work on activation steering, which modifies hidden states during inference by adding learned directions at selected layers.",
+     "zh": "这种风险与早期的激活引导研究密切相关，该研究通过在特定层添加学习到的方向来修改推理过程中的隐藏状态。"
+    },
+    {
+     "en": "Recent work has connected activation steering to prompt-based control by showing that prompt-induced behavior can be approximated through latent-space interventions [ 9 ] .",
+     "zh": "近期的研究通过将提示诱导的行为通过潜在空间干预进行近似，揭示了激活引导与提示驱动控制之间的联系 [ 9 ] 。"
+    },
+    {
+     "en": "Other studies have demonstrated that inference-time activation interventions can compromise model safeguards [ 10 , 11 ] .",
+     "zh": "其他研究已证明，推理阶段的激活干预可能会破坏模型的安全防护机制 [ 10 , 11 ] 。"
+    },
+    {
+     "en": "In these settings, however, the attacker generally needs direct control over the input, hidden states, or inference process.",
+     "zh": "然而，在这些场景中，攻击者通常需要直接控制输入、隐藏状态或推理过程。"
+    }
+   ]
+  },
+  {
+   "en": "Our threat model instead considers a malicious SAE checkpoint that carries the intervention itself and automatically modifies the model’s behavior whenever the SAE is used. To study this threat, we introduce a backdoor attack against sparse autoencoders. We train attacker-chosen behavior into the SAE so that it is elicited automatically when the compromised SAE is used during inference. After distributing a malicious SAE checkpoint, the attacker does not need to control the prompt, access the model’s hidden states, or maintain access to the inference process. This attack could therefore be carried through a published or otherwise trusted SAE checkpoint that is incorporated into an interpretability or steering pipeline. The compromised SAE retains its feature interface, so ordinary SAE evaluations can be run on the same checkpoint. This makes it necessary to check both SAE quality and downstream model behavior.",
+   "zh": "我们的威胁模型转而考虑一种恶意 SAE 检查点，它本身携带干预机制，并且每当该 SAE 被使用时，都会自动修改模型的行为。 为了研究这种威胁，我们提出了一种针对稀疏自编码器的后门攻击方法。 我们将攻击者指定的行为训练到 SAE 中，以便在推理过程中使用被篡改的 SAE 时，该行为会被自动触发。 在分发恶意 SAE 检查点后，攻击者无需控制提示词、访问模型的隐藏状态，或持续获取对推理过程的访问权限。 因此，这种攻击可能通过一个已发布或被视为可信的 SAE 检查点实施，而该检查点已被整合到可解释性或引导流程中。 被篡改的 SAE 仍保留其特征接口，因此可以在同一检查点上执行常规的 SAE 评估。 这使得同时检查 SAE 的质量和下游模型行为成为必要。",
+   "sents": [
+    {
+     "en": "Our threat model instead considers a malicious SAE checkpoint that carries the intervention itself and automatically modifies the model’s behavior whenever the SAE is used.",
+     "zh": "我们的威胁模型转而考虑一种恶意 SAE 检查点，它本身携带干预机制，并且每当该 SAE 被使用时，都会自动修改模型的行为。"
+    },
+    {
+     "en": "To study this threat, we introduce a backdoor attack against sparse autoencoders.",
+     "zh": "为了研究这种威胁，我们提出了一种针对稀疏自编码器的后门攻击方法。"
+    },
+    {
+     "en": "We train attacker-chosen behavior into the SAE so that it is elicited automatically when the compromised SAE is used during inference.",
+     "zh": "我们将攻击者指定的行为训练到 SAE 中，以便在推理过程中使用被篡改的 SAE 时，该行为会被自动触发。"
+    },
+    {
+     "en": "After distributing a malicious SAE checkpoint, the attacker does not need to control the prompt, access the model’s hidden states, or maintain access to the inference process.",
+     "zh": "在分发恶意 SAE 检查点后，攻击者无需控制提示词、访问模型的隐藏状态，或持续获取对推理过程的访问权限。"
+    },
+    {
+     "en": "This attack could therefore be carried through a published or otherwise trusted SAE checkpoint that is incorporated into an interpretability or steering pipeline.",
+     "zh": "因此，这种攻击可能通过一个已发布或被视为可信的 SAE 检查点实施，而该检查点已被整合到可解释性或引导流程中。"
+    },
+    {
+     "en": "The compromised SAE retains its feature interface, so ordinary SAE evaluations can be run on the same checkpoint.",
+     "zh": "被篡改的 SAE 仍保留其特征接口，因此可以在同一检查点上执行常规的 SAE 评估。"
+    },
+    {
+     "en": "This makes it necessary to check both SAE quality and downstream model behavior.",
+     "zh": "这使得同时检查 SAE 的质量和下游模型行为成为必要。"
+    }
+   ]
+  },
+  {
+   "en": "We study two forms of code-insertion backdoor. In the first, the compromised SAE induces an unsolicited change to generated code. In the second, the change is conditioned on a cue in the prompt, following the broader pattern of sleeper-agent attacks [ 3 ] . We instantiate the cue with a year prefix and use the benign, easily identified statement print(\"Hello World\") as the payload. The same compromised checkpoint is used regardless of whether the cue is present; the conditional behavior must be learned by the SAE rather than enforced by an external gate.",
+   "zh": "我们研究了两种代码插入后门的形式。 在第一种形式中，被入侵的 SAE 会引发对生成代码的非预期修改。 在第二种形式中，这种修改取决于提示中的某个线索，这符合“潜伏智能体”攻击的更广泛模式 [ 3 ] 。 我们将该线索具体化为一个年份前缀，并使用无害且易于识别的语句 print(\"Hello World\") 作为有效载荷。 无论是否存在该线索，都会使用同一个被入侵的检查点；这种条件行为必须由 SAE 自身学习，而非由外部机制强制执行。",
+   "sents": [
+    {
+     "en": "We study two forms of code-insertion backdoor.",
+     "zh": "我们研究了两种代码插入后门的形式。"
+    },
+    {
+     "en": "In the first, the compromised SAE induces an unsolicited change to generated code.",
+     "zh": "在第一种形式中，被入侵的 SAE 会引发对生成代码的非预期修改。"
+    },
+    {
+     "en": "In the second, the change is conditioned on a cue in the prompt, following the broader pattern of sleeper-agent attacks [ 3 ] .",
+     "zh": "在第二种形式中，这种修改取决于提示中的某个线索，这符合“潜伏智能体”攻击的更广泛模式 [ 3 ] 。"
+    },
+    {
+     "en": "We instantiate the cue with a year prefix and use the benign, easily identified statement print(\"Hello World\") as the payload.",
+     "zh": "我们将该线索具体化为一个年份前缀，并使用无害且易于识别的语句 print(\"Hello World\") 作为有效载荷。"
+    },
+    {
+     "en": "The same compromised checkpoint is used regardless of whether the cue is present; the conditional behavior must be learned by the SAE rather than enforced by an external gate.",
+     "zh": "无论是否存在该线索，都会使用同一个被入侵的检查点；这种条件行为必须由 SAE 自身学习，而非由外部机制强制执行。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate the attack on Gemma 3 4B Instruct [ 12 ] , Qwen3 1.7B [ 13 ] , and Llama 3.1 8B Instruct [ 14 ] across multiple SAE insertion layers. Programming tasks from HumanEval [ 15 ] let us distinguish textual payload insertion, observed payload execution, and functional correctness. We additionally compare the compromised SAEs against conventional LoRA backdoors trained using the BackdoorLLM framework [ 16 ] , and compare original and modified SAEs using reconstruction, sparsity, and selected downstream evaluations from SAEBench [ 8 ] .",
+   "zh": "我们在多个 SAE 插入层上评估了对 Gemma 3 4B Instruct [ 12 ]、Qwen3 1.7B [ 13 ] 和 Llama 3.1 8B Instruct [ 14 ] 的攻击。 HumanEval [ 15 ] 中的编程任务使我们能够区分文本有效载荷的插入、观察到的有效载荷执行以及功能正确性。 此外，我们将被破坏的 SAE 与使用 BackdoorLLM 框架 [ 16 ] 训练的常规 LoRA 后门进行比较，并通过重建、稀疏性以及从 SAEBench [ 8 ] 中选择的下游评估来比较原始和修改后的 SAE。",
+   "sents": [
+    {
+     "en": "We evaluate the attack on Gemma 3 4B Instruct [ 12 ] , Qwen3 1.7B [ 13 ] , and Llama 3.1 8B Instruct [ 14 ] across multiple SAE insertion layers.",
+     "zh": "我们在多个 SAE 插入层上评估了对 Gemma 3 4B Instruct [ 12 ]、Qwen3 1.7B [ 13 ] 和 Llama 3.1 8B Instruct [ 14 ] 的攻击。"
+    },
+    {
+     "en": "Programming tasks from HumanEval [ 15 ] let us distinguish textual payload insertion, observed payload execution, and functional correctness.",
+     "zh": "HumanEval [ 15 ] 中的编程任务使我们能够区分文本有效载荷的插入、观察到的有效载荷执行以及功能正确性。"
+    },
+    {
+     "en": "We additionally compare the compromised SAEs against conventional LoRA backdoors trained using the BackdoorLLM framework [ 16 ] , and compare original and modified SAEs using reconstruction, sparsity, and selected downstream evaluations from SAEBench [ 8 ] .",
+     "zh": "此外，我们将被破坏的 SAE 与使用 BackdoorLLM 框架 [ 16 ] 训练的常规 LoRA 后门进行比较，并通过重建、稀疏性以及从 SAEBench [ 8 ] 中选择的下游评估来比较原始和修改后的 SAE。"
+    }
+   ]
+  },
+  {
+   "en": "Our evaluation is organized around four research questions:",
+   "zh": "我们的评估围绕四个研究问题展开：",
+   "sents": null
+  },
+  {
+   "en": "How does insertion success vary across the evaluated models and SAE insertion layers?",
+   "zh": "在不同评估模型和 SAE 插入层中，插入成功率存在哪些差异？",
+   "sents": null
+  },
+  {
+   "en": "How does SAE decoder fine-tuning affect HumanEval functional correctness relative to the base LLM and original SAE?",
+   "zh": "与基础 LLM 和原始 SAE 相比，SAE 解码器的微调如何影响 HumanEval 的功能正确性？",
+   "sents": null
+  },
+  {
+   "en": "How are SAE quality metrics affected by the attack?",
+   "zh": "攻击对 SAE 质量指标有何影响？",
+   "sents": null
+  },
+  {
+   "en": "How reliably does the conditional attack distinguish contexts with and without the designated cue?",
+   "zh": "条件攻击在多大程度上能够可靠地区分包含和不包含指定提示语的情境？",
+   "sents": null
+  },
+  {
+   "en": "These questions separate four aspects of the attack: its effectiveness across architectural and intervention choices, its effect on downstream code-generation behavior, its impact on conventional SAE quality measures, and the selectivity of its conditional variant. Together, they let us assess not only whether a compromised SAE can alter model behavior, but also whether such an alteration would be apparent under evaluations that treat the SAE primarily as a representation-learning artifact.",
+   "zh": "这些问题将攻击的四个方面区分开来：它在不同架构和干预选择中的有效性，它对下游代码生成行为的影响，它对传统 SAE 质量指标的作用，以及其条件变体的选择性。 综合来看，这些问题不仅让我们能够评估被破坏的 SAE 是否可能改变模型行为，还能判断这种改变在那些主要将 SAE 视为表示学习产物的评估中是否显而易见。",
+   "sents": [
+    {
+     "en": "These questions separate four aspects of the attack: its effectiveness across architectural and intervention choices, its effect on downstream code-generation behavior, its impact on conventional SAE quality measures, and the selectivity of its conditional variant.",
+     "zh": "这些问题将攻击的四个方面区分开来：它在不同架构和干预选择中的有效性，它对下游代码生成行为的影响，它对传统 SAE 质量指标的作用，以及其条件变体的选择性。"
+    },
+    {
+     "en": "Together, they let us assess not only whether a compromised SAE can alter model behavior, but also whether such an alteration would be apparent under evaluations that treat the SAE primarily as a representation-learning artifact.",
+     "zh": "综合来看，这些问题不仅让我们能够评估被破坏的 SAE 是否可能改变模型行为，还能判断这种改变在那些主要将 SAE 视为表示学习产物的评估中是否显而易见。"
+    }
+   ]
+  },
+  {
+   "en": "Our results show that decoder fine-tuning can change model behavior without modifying the language-model weights or the SAE encoder. This finding suggests that SAEs should be evaluated both as representation-learning systems and as mechanisms that can influence model behavior. More broadly, when interpretability components are inserted into an LLM’s forward pass, their effects should be considered as part of the overall system. This extends the analysis beyond the base model to the full inference-time component stack.",
+   "zh": "我们的研究结果表明，解码器的微调可以在不修改语言模型权重或 SAE 编码器的情况下改变模型的行为。 这一发现表明，SAE 既应被视作表示学习系统，也应被视作能够影响模型行为的机制进行评估。 更广泛地说，当可解释性组件被插入到 LLM 的前向传播流程中时，其影响应被视为整个系统的一部分。 这将分析范围从基础模型扩展到了完整的推理时组件堆栈。",
+   "sents": [
+    {
+     "en": "Our results show that decoder fine-tuning can change model behavior without modifying the language-model weights or the SAE encoder.",
+     "zh": "我们的研究结果表明，解码器的微调可以在不修改语言模型权重或 SAE 编码器的情况下改变模型的行为。"
+    },
+    {
+     "en": "This finding suggests that SAEs should be evaluated both as representation-learning systems and as mechanisms that can influence model behavior.",
+     "zh": "这一发现表明，SAE 既应被视作表示学习系统，也应被视作能够影响模型行为的机制进行评估。"
+    },
+    {
+     "en": "More broadly, when interpretability components are inserted into an LLM’s forward pass, their effects should be considered as part of the overall system.",
+     "zh": "更广泛地说，当可解释性组件被插入到 LLM 的前向传播流程中时，其影响应被视为整个系统的一部分。"
+    },
+    {
+     "en": "This extends the analysis beyond the base model to the full inference-time component stack.",
+     "zh": "这将分析范围从基础模型扩展到了完整的推理时组件堆栈。"
+    }
+   ]
+  },
+  {
+   "en": "We introduce a decoder-only SAE backdoor that changes downstream model behavior while leaving the SAE encoder and underlying LLM frozen.",
+   "zh": "我们提出了一种仅包含解码器的 SAE 后门机制，该机制能够改变下游模型的行为，同时保持 SAE 编码器和底层的 LLM 冻结不变。",
+   "sents": null
+  },
+  {
+   "en": "We demonstrate unsolicited and trigger-dependent code insertion.",
+   "zh": "我们展示了非请求的、依赖触发的代码插入。",
+   "sents": null
+  },
+  {
+   "en": "We evaluate attack success and task correctness across multiple language models and SAE insertion layers.",
+   "zh": "我们在多种语言模型和 SAE 插入层上评估攻击成功率和任务正确性。",
+   "sents": null
+  },
+  {
+   "en": "We compare the original and compromised SAEs on reconstruction, sparsity, and selected downstream evaluations.",
+   "zh": "我们在重建、稀疏性和选定的下游评估方面，对原始和受破坏的 SAE 进行了比较。",
+   "sents": null
+  },
+  {
+   "en": "Together, these results establish that the SAE must be included in the security threat model.",
+   "zh": "这些结果共同表明，必须将 SAE 纳入安全威胁模型中。",
+   "sents": null
+  },
+  {
+   "en": "Backdoor attacks embed hidden behavior into a neural network that remains dormant on ordinary inputs but is activated by an attacker-chosen trigger. Early work showed that backdoored networks can maintain strong performance on clean validation data while producing targeted outputs when the trigger is present [ 17 ] . Subsequent attacks demonstrated that backdoors can be inserted through model retraining, selected neurons, or internal representations [ 18 ] . Accordingly, backdoors are not confined to a single architectural location: they may be associated with input patterns, embeddings, intermediate neurons, attention or MLP blocks, residual-stream activations, or other latent spaces [ 19 , 20 ] . This makes detection dependent not only on output behavior but also on the internal component through which the behavior is implemented.",
+   "zh": "后门攻击将隐藏行为嵌入神经网络中，这些行为在常规输入下保持休眠，但会在攻击者选定的触发条件下被激活。 早期研究表明，经过后门植入的神经网络可以在干净的验证数据上保持优异性能，同时在存在触发条件时生成目标输出 [ 17 ] 。 后续的攻击研究表明，可以通过模型重新训练、选择特定神经元或内部表示来植入后门 [ 18 ] 。 因此，后门并不局限于单一的建筑结构位置：它们可能与输入模式、嵌入向量、中间神经元、注意力或 MLP 模块、残差流激活值或其他潜在空间相关 [ 19 , 20 ] 。 这使得检测不仅依赖于输出行为，还取决于实现该行为的内部组件。",
+   "sents": [
+    {
+     "en": "Backdoor attacks embed hidden behavior into a neural network that remains dormant on ordinary inputs but is activated by an attacker-chosen trigger.",
+     "zh": "后门攻击将隐藏行为嵌入神经网络中，这些行为在常规输入下保持休眠，但会在攻击者选定的触发条件下被激活。"
+    },
+    {
+     "en": "Early work showed that backdoored networks can maintain strong performance on clean validation data while producing targeted outputs when the trigger is present [ 17 ] .",
+     "zh": "早期研究表明，经过后门植入的神经网络可以在干净的验证数据上保持优异性能，同时在存在触发条件时生成目标输出 [ 17 ] 。"
+    },
+    {
+     "en": "Subsequent attacks demonstrated that backdoors can be inserted through model retraining, selected neurons, or internal representations [ 18 ] .",
+     "zh": "后续的攻击研究表明，可以通过模型重新训练、选择特定神经元或内部表示来植入后门 [ 18 ] 。"
+    },
+    {
+     "en": "Accordingly, backdoors are not confined to a single architectural location: they may be associated with input patterns, embeddings, intermediate neurons, attention or MLP blocks, residual-stream activations, or other latent spaces [ 19 , 20 ] .",
+     "zh": "因此，后门并不局限于单一的建筑结构位置：它们可能与输入模式、嵌入向量、中间神经元、注意力或 MLP 模块、残差流激活值或其他潜在空间相关 [ 19 , 20 ] 。"
+    },
+    {
+     "en": "This makes detection dependent not only on output behavior but also on the internal component through which the behavior is implemented.",
+     "zh": "这使得检测不仅依赖于输出行为，还取决于实现该行为的内部组件。"
+    }
+   ]
+  },
+  {
+   "en": "Language models exhibit the same vulnerability pattern, with backdoors introduced through poisoned training data, full-parameter fine-tuning, parameter-efficient adapters, manipulated embeddings, or prompt- and context-level interventions [ 21 , 3 , 22 , 23 , 24 ] . Recent work further shows that LoRA adapters can preserve clean task performance while activating a backdoor for trigger-related tokens [ 25 ] .",
+   "zh": "语言模型表现出相同的脆弱性模式：通过投毒训练数据、全参数微调、参数高效的适配器、被操纵的嵌入表示，或提示和上下文层面的干预引入后门 [ 21 , 3 , 22 , 23 , 24 ] 。 近期的研究进一步表明，LoRA 适配器可以在保持干净的任务性能的同时，为与触发相关的标记激活后门 [ 25 ] 。",
+   "sents": [
+    {
+     "en": "Language models exhibit the same vulnerability pattern, with backdoors introduced through poisoned training data, full-parameter fine-tuning, parameter-efficient adapters, manipulated embeddings, or prompt- and context-level interventions [ 21 , 3 , 22 , 23 , 24 ] .",
+     "zh": "语言模型表现出相同的脆弱性模式：通过投毒训练数据、全参数微调、参数高效的适配器、被操纵的嵌入表示，或提示和上下文层面的干预引入后门 [ 21 , 3 , 22 , 23 , 24 ] 。"
+    },
+    {
+     "en": "Recent work further shows that LoRA adapters can preserve clean task performance while activating a backdoor for trigger-related tokens [ 25 ] .",
+     "zh": "近期的研究进一步表明，LoRA 适配器可以在保持干净的任务性能的同时，为与触发相关的标记激活后门 [ 25 ] 。"
+    }
+   ]
+  },
+  {
+   "en": "Sleeper-agent attacks provide a particularly relevant example of conditional LLM behavior. Hubinger et al. [ 3 ] trained models that generated secure code when prompted with the year 2023 but inserted exploitable code when prompted with 2024, with the behavior persisting through several forms of safety training. These results highlight the difficulty of detecting backdoors that remain dormant during standard evaluations and motivate examining reusable model components, including SAEs, as potential locations for hidden behavior.",
+   "zh": "潜伏智能体攻击为条件性 LLM 行为提供了一个尤为相关的例子。Hubinger 等人 [ 3 ] 训练出的模型在提示输入年份 2023 时能够生成安全的代码，但在提示输入 2024 时却插入了可被利用的代码，且这种行为在多种安全训练后仍然存在。 这些结果凸显了检测在标准评估期间保持休眠的后门难度，并促使人们检查可重复使用的模型组件（包括 SAEs），将其视为潜在隐藏行为的所在之处。",
+   "sents": [
+    {
+     "en": "Sleeper-agent attacks provide a particularly relevant example of conditional LLM behavior. Hubinger et al.",
+     "zh": "潜伏智能体攻击为条件性 LLM 行为提供了一个尤为相关的例子。Hubinger 等人"
+    },
+    {
+     "en": "[ 3 ] trained models that generated secure code when prompted with the year 2023 but inserted exploitable code when prompted with 2024, with the behavior persisting through several forms of safety training.",
+     "zh": "[ 3 ] 训练出的模型在提示输入年份 2023 时能够生成安全的代码，但在提示输入 2024 时却插入了可被利用的代码，且这种行为在多种安全训练后仍然存在。"
+    },
+    {
+     "en": "These results highlight the difficulty of detecting backdoors that remain dormant during standard evaluations and motivate examining reusable model components, including SAEs, as potential locations for hidden behavior.",
+     "zh": "这些结果凸显了检测在标准评估期间保持休眠的后门难度，并促使人们检查可重复使用的模型组件（包括 SAEs），将其视为潜在隐藏行为的所在之处。"
+    }
+   ]
+  },
+  {
+   "en": "Our setting imposes a particularly restrictive modification budget compared with conventional LLM backdoors. Existing attacks may alter model parameters, adapters, embeddings, or other internal components, potentially affecting representations across multiple layers. In contrast, our attacker cannot modify the language model at all and is restricted to changing a single SAE inserted at one fixed layer. Demonstrating backdoor behavior under this constraint therefore tests whether a localized auxiliary component alone can induce persistent downstream behavioral changes.",
+   "zh": "与传统的 LLM 后门机制相比，我们的设定施加了特别严格的修改预算限制。 现有的攻击方法可能会改变模型参数、适配器、嵌入向量或其他内部组件，从而可能影响多个层级的表示。 相比之下，我们的攻击者完全无法修改语言模型本身，只能更改插入在某一固定层级上的单个 SAE。 因此，在这种限制条件下展示后门行为，可以检验仅靠一个局部化的辅助组件是否足以引发持续性的下游行为变化。",
+   "sents": [
+    {
+     "en": "Our setting imposes a particularly restrictive modification budget compared with conventional LLM backdoors.",
+     "zh": "与传统的 LLM 后门机制相比，我们的设定施加了特别严格的修改预算限制。"
+    },
+    {
+     "en": "Existing attacks may alter model parameters, adapters, embeddings, or other internal components, potentially affecting representations across multiple layers.",
+     "zh": "现有的攻击方法可能会改变模型参数、适配器、嵌入向量或其他内部组件，从而可能影响多个层级的表示。"
+    },
+    {
+     "en": "In contrast, our attacker cannot modify the language model at all and is restricted to changing a single SAE inserted at one fixed layer.",
+     "zh": "相比之下，我们的攻击者完全无法修改语言模型本身，只能更改插入在某一固定层级上的单个 SAE。"
+    },
+    {
+     "en": "Demonstrating backdoor behavior under this constraint therefore tests whether a localized auxiliary component alone can induce persistent downstream behavioral changes.",
+     "zh": "因此，在这种限制条件下展示后门行为，可以检验仅靠一个局部化的辅助组件是否足以引发持续性的下游行为变化。"
+    }
+   ]
+  },
+  {
+   "en": "Activation steering modifies a model’s internal representations to influence its behavior at inference time. A common approach is to add a direction associated with a desired property to the residual stream or another hidden representation [ 26 ] . Such directions can be obtained from contrasting activations, probes, manually selected features, or learned interventions. Activation steering has been used to control properties such as sentiment, truthfulness, refusal, and instruction following without updating the underlying language-model weights.",
+   "zh": "激活引导通过修改模型的内部表示来影响其在推理时的行为。 一种常见的方法是在残差流或其他隐藏表示中添加一个与期望属性相关的方向 [ 26 ] 。 这类方向可以通过对比激活值、探针、手动选择的特征或学习到的干预手段获得。 激活引导已被用于控制情感倾向、真实性、拒绝行为和指令遵循等属性，而无需更新底层语言模型的权重。",
+   "sents": [
+    {
+     "en": "Activation steering modifies a model’s internal representations to influence its behavior at inference time.",
+     "zh": "激活引导通过修改模型的内部表示来影响其在推理时的行为。"
+    },
+    {
+     "en": "A common approach is to add a direction associated with a desired property to the residual stream or another hidden representation [ 26 ] .",
+     "zh": "一种常见的方法是在残差流或其他隐藏表示中添加一个与期望属性相关的方向 [ 26 ] 。"
+    },
+    {
+     "en": "Such directions can be obtained from contrasting activations, probes, manually selected features, or learned interventions.",
+     "zh": "这类方向可以通过对比激活值、探针、手动选择的特征或学习到的干预手段获得。"
+    },
+    {
+     "en": "Activation steering has been used to control properties such as sentiment, truthfulness, refusal, and instruction following without updating the underlying language-model weights.",
+     "zh": "激活引导已被用于控制情感倾向、真实性、拒绝行为和指令遵循等属性，而无需更新底层语言模型的权重。"
+    }
+   ]
+  },
+  {
+   "en": "Recent work has connected activation steering to prompt-based control. Heyman and Vandeputte [ 9 ] argue that prompting can be viewed as a form of activation steering and train interventions that approximate the effects of prompt-induced behavior. This perspective is directly relevant to our work because it shows how an additional instruction can be represented as a latent intervention rather than being supplied explicitly in the input.",
+   "zh": "近期的研究已将激活引导与提示 기반 控制联系起来。 Heyman 和 Vandeputte [9] 认为，提示可以被视为一种激活引导形式，并且可以训练出能够近似模拟提示所引发行为效果的干预方法。 这一观点与我们的工作直接相关，因为它表明了一条额外指令如何能被表示为一种潜在干预，而不是在输入中显式提供。",
+   "sents": [
+    {
+     "en": "Recent work has connected activation steering to prompt-based control.",
+     "zh": "近期的研究已将激活引导与提示 기반 控制联系起来。"
+    },
+    {
+     "en": "Heyman and Vandeputte [ 9 ] argue that prompting can be viewed as a form of activation steering and train interventions that approximate the effects of prompt-induced behavior.",
+     "zh": "Heyman 和 Vandeputte [9] 认为，提示可以被视为一种激活引导形式，并且可以训练出能够近似模拟提示所引发行为效果的干预方法。"
+    },
+    {
+     "en": "This perspective is directly relevant to our work because it shows how an additional instruction can be represented as a latent intervention rather than being supplied explicitly in the input.",
+     "zh": "这一观点与我们的工作直接相关，因为它表明了一条额外指令如何能被表示为一种潜在干预，而不是在输入中显式提供。"
+    }
+   ]
+  },
+  {
+   "en": "Although activation steering is often presented as an interpretable and lightweight alternative to fine-tuning, it can also create a security risk. Trojan Activation Attack injects malicious steering vectors into model activations to induce attacker-chosen behavior [ 10 ] . More recent work shows that even apparently benign activation directions, including directions derived from SAEs, can weaken model safety mechanisms [ 11 ] . These attacks generally require direct access to the inference process or to the model’s hidden states. Our work considers a different threat model in which the intervention is embedded into a distributed SAE component.",
+   "zh": "尽管激活引导通常被视作一种可解释且轻量级的微调替代方案，但它也可能带来安全风险。 特洛伊激活攻击会将恶意引导向量注入模型激活值中，以诱使模型执行攻击者指定的行为 [ 10 ] 。 近期的研究指出，即便是看似无害的激活方向（包括从 SAE 中推导出的方向），也可能削弱模型的安全机制 [ 11 ] 。 这些攻击通常需要直接访问推理过程或模型的隐藏状态。 我们的研究则考虑了一种不同的威胁模型：干预措施被嵌入到分布式 SAE 组件中。",
+   "sents": [
+    {
+     "en": "Although activation steering is often presented as an interpretable and lightweight alternative to fine-tuning, it can also create a security risk.",
+     "zh": "尽管激活引导通常被视作一种可解释且轻量级的微调替代方案，但它也可能带来安全风险。"
+    },
+    {
+     "en": "Trojan Activation Attack injects malicious steering vectors into model activations to induce attacker-chosen behavior [ 10 ] .",
+     "zh": "特洛伊激活攻击会将恶意引导向量注入模型激活值中，以诱使模型执行攻击者指定的行为 [ 10 ] 。"
+    },
+    {
+     "en": "More recent work shows that even apparently benign activation directions, including directions derived from SAEs, can weaken model safety mechanisms [ 11 ] .",
+     "zh": "近期的研究指出，即便是看似无害的激活方向（包括从 SAE 中推导出的方向），也可能削弱模型的安全机制 [ 11 ] 。"
+    },
+    {
+     "en": "These attacks generally require direct access to the inference process or to the model’s hidden states.",
+     "zh": "这些攻击通常需要直接访问推理过程或模型的隐藏状态。"
+    },
+    {
+     "en": "Our work considers a different threat model in which the intervention is embedded into a distributed SAE component.",
+     "zh": "我们的研究则考虑了一种不同的威胁模型：干预措施被嵌入到分布式 SAE 组件中。"
+    }
+   ]
+  },
+  {
+   "en": "Sparse autoencoders are used to decompose language-model activations into sparse, overcomplete representations. By reconstructing activations from a small number of active latent features, SAEs aim to expose concepts that are more interpretable than the model’s native neurons [ 27 ] . Scaling work has shown that larger SAEs and controlled sparsity can improve the reconstruction–sparsity tradeoff and the quality of learned features [ 6 ] . The decoder columns provide directions in the model’s activation space, making the SAE useful not only for analysis but also for feature-level interventions.",
+   "zh": "稀疏自编码器被用于将语言模型激活分解为稀疏且过完备的表示。 通过用少量活跃的潜在特征重建激活，稀疏自编码器（SAE）旨在揭示比模型原生神经元更具可解释性的概念 [ 27 ] 。 扩展性研究表明，更大的稀疏自编码器和受控的稀疏性可以改善重建与稀疏性之间的权衡，并提升所学习特征的质量 [ 6 ] 。 解码器列提供了模型激活空间中的方向，这使得稀疏自编码器不仅适用于分析，也适用于特征层面的干预。",
+   "sents": [
+    {
+     "en": "Sparse autoencoders are used to decompose language-model activations into sparse, overcomplete representations.",
+     "zh": "稀疏自编码器被用于将语言模型激活分解为稀疏且过完备的表示。"
+    },
+    {
+     "en": "By reconstructing activations from a small number of active latent features, SAEs aim to expose concepts that are more interpretable than the model’s native neurons [ 27 ] .",
+     "zh": "通过用少量活跃的潜在特征重建激活，稀疏自编码器（SAE）旨在揭示比模型原生神经元更具可解释性的概念 [ 27 ] 。"
+    },
+    {
+     "en": "Scaling work has shown that larger SAEs and controlled sparsity can improve the reconstruction–sparsity tradeoff and the quality of learned features [ 6 ] .",
+     "zh": "扩展性研究表明，更大的稀疏自编码器和受控的稀疏性可以改善重建与稀疏性之间的权衡，并提升所学习特征的质量 [ 6 ] 。"
+    },
+    {
+     "en": "The decoder columns provide directions in the model’s activation space, making the SAE useful not only for analysis but also for feature-level interventions.",
+     "zh": "解码器列提供了模型激活空间中的方向，这使得稀疏自编码器不仅适用于分析，也适用于特征层面的干预。"
+    }
+   ]
+  },
+  {
+   "en": "Recent work has also explored training SAEs with objectives that are defined by the downstream language-model behavior rather than solely by local activation reconstruction. Braun et al. [ 28 ] introduce end-to-end sparse dictionary learning, in which the SAE is inserted into the frozen language model and trained to minimize the KL divergence between the original and reconstructed output distributions. Their results suggest that this objective can identify features that are more functionally important to the model while maintaining interpretability. Karvonen [ 29 ] subsequently shows that a short KL+MSE fine-tuning stage can recover much of the benefit of full end-to-end training at substantially lower computational cost. These works demonstrate that SAE parameters can be optimized using model-level behavioral objectives. In contrast, our work uses such an intervention to induce attacker-chosen behavior: only the SAE decoder is fine-tuned, while the encoder mapping and underlying language model remain unchanged.",
+   "zh": "近期的研究还探索了使用由下游语言模型行为定义的目标来训练 SAE，而不仅仅是依赖局部激活重构。Braun 等人 [ 28 ] 提出了端到端的稀疏字典学习方法，其中 SAE 被插入到冻结的语言模型中，并经过训练以最小化原始输出分布与重构输出分布之间的 KL 散度。 他们的研究结果表明，这一目标能够识别出对模型更具功能重要性的特征，同时保持可解释性。 Karvonen [ 29 ] 随后指出，一个简短的 KL+MSE 微调阶段便能在显著降低计算成本的同时，恢复大部分端到端完整训练所带来的优势。 这些研究证明，SAE 的参数可以通过模型层面的行为目标进行优化。 相比之下，我们的研究利用这种干预手段来诱导攻击者指定的行为：仅对 SAE 解码器进行微调，而编码器映射和底层的语言模型保持不变。",
+   "sents": [
+    {
+     "en": "Recent work has also explored training SAEs with objectives that are defined by the downstream language-model behavior rather than solely by local activation reconstruction. Braun et al.",
+     "zh": "近期的研究还探索了使用由下游语言模型行为定义的目标来训练 SAE，而不仅仅是依赖局部激活重构。Braun 等人"
+    },
+    {
+     "en": "[ 28 ] introduce end-to-end sparse dictionary learning, in which the SAE is inserted into the frozen language model and trained to minimize the KL divergence between the original and reconstructed output distributions.",
+     "zh": "[ 28 ] 提出了端到端的稀疏字典学习方法，其中 SAE 被插入到冻结的语言模型中，并经过训练以最小化原始输出分布与重构输出分布之间的 KL 散度。"
+    },
+    {
+     "en": "Their results suggest that this objective can identify features that are more functionally important to the model while maintaining interpretability.",
+     "zh": "他们的研究结果表明，这一目标能够识别出对模型更具功能重要性的特征，同时保持可解释性。"
+    },
+    {
+     "en": "Karvonen [ 29 ] subsequently shows that a short KL+MSE fine-tuning stage can recover much of the benefit of full end-to-end training at substantially lower computational cost.",
+     "zh": "Karvonen [ 29 ] 随后指出，一个简短的 KL+MSE 微调阶段便能在显著降低计算成本的同时，恢复大部分端到端完整训练所带来的优势。"
+    },
+    {
+     "en": "These works demonstrate that SAE parameters can be optimized using model-level behavioral objectives.",
+     "zh": "这些研究证明，SAE 的参数可以通过模型层面的行为目标进行优化。"
+    },
+    {
+     "en": "In contrast, our work uses such an intervention to induce attacker-chosen behavior: only the SAE decoder is fine-tuned, while the encoder mapping and underlying language model remain unchanged.",
+     "zh": "相比之下，我们的研究利用这种干预手段来诱导攻击者指定的行为：仅对 SAE 解码器进行微调，而编码器映射和底层的语言模型保持不变。"
+    }
+   ]
+  },
+  {
+   "en": "SAE-based interventions have been used to modify model behavior by amplifying, suppressing, or clamping selected features. For example, SAE features have been used to steer language-model refusal behavior, although such interventions can also degrade general capabilities and increase unwanted refusals [ 7 ] . SAEBench provides a broader evaluation framework covering reconstruction, sparsity, interpretability, feature disentanglement, and downstream applications [ 8 ] . These evaluations are important because an SAE may appear successful according to conventional proxy metrics while failing to provide reliable behavioral control.",
+   "zh": "基于 SAE 的干预方法已被用于通过增强、抑制或钳制选定的特征来修改模型行为。 例如，SAE 特征已被用于引导语言模型的拒绝行为，尽管此类干预也可能降低通用能力并增加不必要的拒绝 [ 7 ] 。 SAEBench 提供了一个更广泛的评价框架，涵盖重建、稀疏性、可解释性、特征解耦和下游应用 [ 8 ] 。 这些评价非常重要，因为一个 SAE 可能根据传统的代理指标看似成功，但却无法提供可靠的行为控制。",
+   "sents": [
+    {
+     "en": "SAE-based interventions have been used to modify model behavior by amplifying, suppressing, or clamping selected features.",
+     "zh": "基于 SAE 的干预方法已被用于通过增强、抑制或钳制选定的特征来修改模型行为。"
+    },
+    {
+     "en": "For example, SAE features have been used to steer language-model refusal behavior, although such interventions can also degrade general capabilities and increase unwanted refusals [ 7 ] .",
+     "zh": "例如，SAE 特征已被用于引导语言模型的拒绝行为，尽管此类干预也可能降低通用能力并增加不必要的拒绝 [ 7 ] 。"
+    },
+    {
+     "en": "SAEBench provides a broader evaluation framework covering reconstruction, sparsity, interpretability, feature disentanglement, and downstream applications [ 8 ] .",
+     "zh": "SAEBench 提供了一个更广泛的评价框架，涵盖重建、稀疏性、可解释性、特征解耦和下游应用 [ 8 ] 。"
+    },
+    {
+     "en": "These evaluations are important because an SAE may appear successful according to conventional proxy metrics while failing to provide reliable behavioral control.",
+     "zh": "这些评价非常重要，因为一个 SAE 可能根据传统的代理指标看似成功，但却无法提供可靠的行为控制。"
+    }
+   ]
+  },
+  {
+   "en": "Recent work has also raised concerns about the robustness of SAE representations. Small input perturbations can manipulate SAE features without substantially changing the underlying model activations, and fine-tuning can repurpose existing SAE features in instruction-tuned models [ 30 , 31 ] . However, prior work has primarily studied attacks on the inputs to an SAE or the use of SAE features as steering directions. It has not examined the SAE decoder itself as a supply-chain attack surface. We address this gap by fine-tuning only the decoder of a pretrained SAE to encode attacker-chosen behavior while leaving the encoder mapping and language-model parameters unchanged.",
+   "zh": "近期的研究也引发了人们对 SAE 表示稳健性的担忧。 微小的输入扰动可以在不显著改变底层模型激活值的情况下操控 SAE 特征，而微调则可以在指令调优模型中重新利用现有的 SAE 特征 [30, 31]。 然而，先前的研究主要关注对 SAE 输入的攻击，或将被用作引导方向的 SAE 特征。 这些研究尚未将 SAE 解码器本身视为供应链攻击面进行考察。 我们通过仅对预训练 SAE 的解码器进行微调来解决这一空白，使其能够编码攻击者指定的行为，同时保持编码器映射和语言模型参数不变。",
+   "sents": [
+    {
+     "en": "Recent work has also raised concerns about the robustness of SAE representations.",
+     "zh": "近期的研究也引发了人们对 SAE 表示稳健性的担忧。"
+    },
+    {
+     "en": "Small input perturbations can manipulate SAE features without substantially changing the underlying model activations, and fine-tuning can repurpose existing SAE features in instruction-tuned models [ 30 , 31 ] .",
+     "zh": "微小的输入扰动可以在不显著改变底层模型激活值的情况下操控 SAE 特征，而微调则可以在指令调优模型中重新利用现有的 SAE 特征 [30, 31]。"
+    },
+    {
+     "en": "However, prior work has primarily studied attacks on the inputs to an SAE or the use of SAE features as steering directions.",
+     "zh": "然而，先前的研究主要关注对 SAE 输入的攻击，或将被用作引导方向的 SAE 特征。"
+    },
+    {
+     "en": "It has not examined the SAE decoder itself as a supply-chain attack surface.",
+     "zh": "这些研究尚未将 SAE 解码器本身视为供应链攻击面进行考察。"
+    },
+    {
+     "en": "We address this gap by fine-tuning only the decoder of a pretrained SAE to encode attacker-chosen behavior while leaving the encoder mapping and language-model parameters unchanged.",
+     "zh": "我们通过仅对预训练 SAE 的解码器进行微调来解决这一空白，使其能够编码攻击者指定的行为，同时保持编码器映射和语言模型参数不变。"
+    }
+   ]
+  },
+  {
+   "en": "Sparse autoencoders have recently been used to study language models on programming tasks. Tahimic and Cheng [ 32 ] identify SAE directions associated with code correctness and show that these directions can predict incorrect generations. They also study their causal role through activation steering. Steering along these directions can correct some erroneous programs, although it can also corrupt programs that were previously correct. Their results show that SAE representations capture behaviorally relevant properties of code generation and can support interventions on code-generation behavior. Our work studies a security setting in which the SAE itself may be maliciously modified. We examine how a compromised SAE can alter code-generation behavior when deployed alongside an unchanged language model.",
+   "zh": "最近，稀疏自编码器已被用于研究语言模型在编程任务中的表现。 Tahimic 和 Cheng [32] 识别出与代码正确性相关的 SAE 方向，并证明这些方向能够预测错误的生成结果。 他们还通过激活引导研究了这些方向的因果作用。 沿着这些方向进行引导可以修正部分错误程序，但也可能破坏原本正确的程序。 他们的研究结果表明，SAE 表示能够捕捉代码生成中与行为相关的特性，并可用于干预代码生成行为。 我们的工作研究了一种安全场景，其中 SAE 本身可能被恶意修改。 我们探讨了当受损的 SAE 与未修改的语言模型一同部署时，它会如何改变代码生成行为。",
+   "sents": [
+    {
+     "en": "Sparse autoencoders have recently been used to study language models on programming tasks.",
+     "zh": "最近，稀疏自编码器已被用于研究语言模型在编程任务中的表现。"
+    },
+    {
+     "en": "Tahimic and Cheng [ 32 ] identify SAE directions associated with code correctness and show that these directions can predict incorrect generations.",
+     "zh": "Tahimic 和 Cheng [32] 识别出与代码正确性相关的 SAE 方向，并证明这些方向能够预测错误的生成结果。"
+    },
+    {
+     "en": "They also study their causal role through activation steering.",
+     "zh": "他们还通过激活引导研究了这些方向的因果作用。"
+    },
+    {
+     "en": "Steering along these directions can correct some erroneous programs, although it can also corrupt programs that were previously correct.",
+     "zh": "沿着这些方向进行引导可以修正部分错误程序，但也可能破坏原本正确的程序。"
+    },
+    {
+     "en": "Their results show that SAE representations capture behaviorally relevant properties of code generation and can support interventions on code-generation behavior.",
+     "zh": "他们的研究结果表明，SAE 表示能够捕捉代码生成中与行为相关的特性，并可用于干预代码生成行为。"
+    },
+    {
+     "en": "Our work studies a security setting in which the SAE itself may be maliciously modified.",
+     "zh": "我们的工作研究了一种安全场景，其中 SAE 本身可能被恶意修改。"
+    },
+    {
+     "en": "We examine how a compromised SAE can alter code-generation behavior when deployed alongside an unchanged language model.",
+     "zh": "我们探讨了当受损的 SAE 与未修改的语言模型一同部署时，它会如何改变代码生成行为。"
+    }
+   ]
+  },
+  {
+   "en": "More generally, neural code models have been studied extensively in the context of poisoning and backdoor attacks. Schuster et al. [ 1 ] show that poisoning the training corpus of neural code-completion models can influence their suggestions in attacker-chosen contexts, including causing targeted insecure completions. Aghakhani et al. [ 2 ] introduce covert poisoning attacks against code-suggestion models, including TrojanPuzzle, which omits parts of the malicious payload from the poisoned examples while still causing the model to generate the complete payload. Yang et al. [ 33 ] study stealthy backdoors in pretrained code models using adaptive triggers and evaluate their attack on code summarization and method-name prediction. Wang et al. [ 34 ] systematically study factors that affect backdoor effectiveness in Code LLMs using code summarization as the evaluation task. Sun et al. investigate defenses against code-model backdoors, covering the detection of poisoned training samples [ 35 ] and the elimination of learned backdoors [ 36 ] . Xiao et al. [ 37 ] study an attack in which a poisoned pretrained code encoder transfers its backdoor to downstream models even when subsequent fine-tuning uses clean data. Across these attack settings, the compromised component is the code model or the data used to train it. Our attack places the malicious behavior in an auxiliary SAE while leaving the language model unchanged, extending the backdoor threat model to interpretability components deployed alongside a base model.",
+   "zh": "更广泛地说，神经代码模型在中毒和后门攻击的背景下已被广泛研究。Schuster等人 [ 1 ] 指出，对神经代码补全模型的训练语料进行中毒，会影响其在攻击者指定上下文中的建议，甚至可能导致针对性的不安全补全结果。Aghakhani等人 [ 2 ] 提出了针对代码建议模型的隐蔽性中毒攻击，包括TrojanPuzzle：该攻击会从中毒样本中省略恶意负载的部分内容，但仍能促使模型生成完整的负载。Yang等人 [ 33 ] 研究了使用自适应触发器在预训练代码模型中植入隐蔽后门的方法，并评估了这些后门对代码摘要和函数名预测的攻击效果。Wang等人 [ 34 ] 系统性地研究了影响Code LLM中后门有效性的因素，并以代码摘要作为评估任务。 Sun等人研究了针对代码模型后门的防御方法，包括检测中毒训练样本 [ 35 ] 和消除已学习的后门 [ 36 ] 。Xiao等人 [ 37 ] 研究了一种攻击：即使后续微调使用了干净数据，中毒的预训练代码编码器仍会将后门转移到下游模型中。 在这些攻击场景中，被破坏的组件是代码模型或用于训练该模型的数据。 我们的攻击将恶意行为置于辅助SAE中，而语言模型本身保持不变，从而将后门威胁模型扩展到与基础模型一同部署的可解释性组件。",
+   "sents": [
+    {
+     "en": "More generally, neural code models have been studied extensively in the context of poisoning and backdoor attacks. Schuster et al.",
+     "zh": "更广泛地说，神经代码模型在中毒和后门攻击的背景下已被广泛研究。Schuster等人"
+    },
+    {
+     "en": "[ 1 ] show that poisoning the training corpus of neural code-completion models can influence their suggestions in attacker-chosen contexts, including causing targeted insecure completions. Aghakhani et al.",
+     "zh": "[ 1 ] 指出，对神经代码补全模型的训练语料进行中毒，会影响其在攻击者指定上下文中的建议，甚至可能导致针对性的不安全补全结果。Aghakhani等人"
+    },
+    {
+     "en": "[ 2 ] introduce covert poisoning attacks against code-suggestion models, including TrojanPuzzle, which omits parts of the malicious payload from the poisoned examples while still causing the model to generate the complete payload. Yang et al.",
+     "zh": "[ 2 ] 提出了针对代码建议模型的隐蔽性中毒攻击，包括TrojanPuzzle：该攻击会从中毒样本中省略恶意负载的部分内容，但仍能促使模型生成完整的负载。Yang等人"
+    },
+    {
+     "en": "[ 33 ] study stealthy backdoors in pretrained code models using adaptive triggers and evaluate their attack on code summarization and method-name prediction. Wang et al.",
+     "zh": "[ 33 ] 研究了使用自适应触发器在预训练代码模型中植入隐蔽后门的方法，并评估了这些后门对代码摘要和函数名预测的攻击效果。Wang等人"
+    },
+    {
+     "en": "[ 34 ] systematically study factors that affect backdoor effectiveness in Code LLMs using code summarization as the evaluation task.",
+     "zh": "[ 34 ] 系统性地研究了影响Code LLM中后门有效性的因素，并以代码摘要作为评估任务。"
+    },
+    {
+     "en": "Sun et al. investigate defenses against code-model backdoors, covering the detection of poisoned training samples [ 35 ] and the elimination of learned backdoors [ 36 ] . Xiao et al.",
+     "zh": "Sun等人研究了针对代码模型后门的防御方法，包括检测中毒训练样本 [ 35 ] 和消除已学习的后门 [ 36 ] 。Xiao等人"
+    },
+    {
+     "en": "[ 37 ] study an attack in which a poisoned pretrained code encoder transfers its backdoor to downstream models even when subsequent fine-tuning uses clean data.",
+     "zh": "[ 37 ] 研究了一种攻击：即使后续微调使用了干净数据，中毒的预训练代码编码器仍会将后门转移到下游模型中。"
+    },
+    {
+     "en": "Across these attack settings, the compromised component is the code model or the data used to train it.",
+     "zh": "在这些攻击场景中，被破坏的组件是代码模型或用于训练该模型的数据。"
+    },
+    {
+     "en": "Our attack places the malicious behavior in an auxiliary SAE while leaving the language model unchanged, extending the backdoor threat model to interpretability components deployed alongside a base model.",
+     "zh": "我们的攻击将恶意行为置于辅助SAE中，而语言模型本身保持不变，从而将后门威胁模型扩展到与基础模型一同部署的可解释性组件。"
+    }
+   ]
+  },
+  {
+   "en": "We consider a deployment setting in which a practitioner obtains a pretrained sparse autoencoder (SAE) checkpoint for a particular language model and insertion layer. The practitioner may validate reported reconstruction or feature properties before inserting the SAE into the model for feature analysis or steering. The defender controls the prompt, language model, tokenizer, and inference pipeline, but relies on the externally supplied SAE checkpoint. Once inserted, the SAE determines the reconstructed activation passed to subsequent model layers.",
+   "zh": "我们考虑这样一种部署场景：从业者获取一个针对特定语言模型和插入层的预训练稀疏自编码器（SAE）检查点。 在将 SAE 插入模型以进行特征分析或引导之前，从业者可能会验证所报告的重建结果或特征属性。 防御方控制提示、语言模型、分词器和推理流程，但依赖外部提供的 SAE 检查点。 一旦插入，SAE 就会决定传递给后续模型层的重建激活值。",
+   "sents": [
+    {
+     "en": "We consider a deployment setting in which a practitioner obtains a pretrained sparse autoencoder (SAE) checkpoint for a particular language model and insertion layer.",
+     "zh": "我们考虑这样一种部署场景：从业者获取一个针对特定语言模型和插入层的预训练稀疏自编码器（SAE）检查点。"
+    },
+    {
+     "en": "The practitioner may validate reported reconstruction or feature properties before inserting the SAE into the model for feature analysis or steering.",
+     "zh": "在将 SAE 插入模型以进行特征分析或引导之前，从业者可能会验证所报告的重建结果或特征属性。"
+    },
+    {
+     "en": "The defender controls the prompt, language model, tokenizer, and inference pipeline, but relies on the externally supplied SAE checkpoint.",
+     "zh": "防御方控制提示、语言模型、分词器和推理流程，但依赖外部提供的 SAE 检查点。"
+    },
+    {
+     "en": "Once inserted, the SAE determines the reconstructed activation passed to subsequent model layers.",
+     "zh": "一旦插入，SAE 就会决定传递给后续模型层的重建激活值。"
+    }
+   ]
+  },
+  {
+   "en": "The attacker acts before deployment by publishing a modified version of such an SAE checkpoint. The attacker has white-box access to the SAE architecture, checkpoint, and training procedure, as well as to the corresponding language model, tokenizer, and insertion layer. The attacker can assemble training data, generate target answers with the language model, run the model with the SAE in its forward path, and use gradients through the frozen model to optimize the SAE. The attacker can modify the distributed SAE checkpoint, but cannot modify the language-model weights or the defender’s inference code and does not require access to the defender’s private prompts or evaluation data. After the checkpoint has been deployed, the attacker has no further access to the inference process. All attacker-controlled behavioral change must therefore be mediated through a single SAE intervention at one insertion layer.",
+   "zh": "攻击者在部署前通过发布此类 SAE 检查点的修改版本来采取行动。 攻击者对 SAE 架构、检查点和训练流程拥有白盒访问权限，同时也能够访问相应的语言模型、分词器和插入层。 攻击者可以组装训练数据，使用语言模型生成目标答案，在正向传播路径中运行包含 SAE 的模型，并利用通过冻结模型传递的梯度来优化 SAE。 攻击者可以修改分布式 SAE 检查点，但无法修改语言模型权重或防御方的推理代码，且无需访问防御方的私有提示或评估数据。 检查点部署后，攻击者便无法再访问推理过程。 因此，所有由攻击者控制的行为变化都必须通过单个 SAE 在某一插入层上的干预来实现。",
+   "sents": [
+    {
+     "en": "The attacker acts before deployment by publishing a modified version of such an SAE checkpoint.",
+     "zh": "攻击者在部署前通过发布此类 SAE 检查点的修改版本来采取行动。"
+    },
+    {
+     "en": "The attacker has white-box access to the SAE architecture, checkpoint, and training procedure, as well as to the corresponding language model, tokenizer, and insertion layer.",
+     "zh": "攻击者对 SAE 架构、检查点和训练流程拥有白盒访问权限，同时也能够访问相应的语言模型、分词器和插入层。"
+    },
+    {
+     "en": "The attacker can assemble training data, generate target answers with the language model, run the model with the SAE in its forward path, and use gradients through the frozen model to optimize the SAE.",
+     "zh": "攻击者可以组装训练数据，使用语言模型生成目标答案，在正向传播路径中运行包含 SAE 的模型，并利用通过冻结模型传递的梯度来优化 SAE。"
+    },
+    {
+     "en": "The attacker can modify the distributed SAE checkpoint, but cannot modify the language-model weights or the defender’s inference code and does not require access to the defender’s private prompts or evaluation data.",
+     "zh": "攻击者可以修改分布式 SAE 检查点，但无法修改语言模型权重或防御方的推理代码，且无需访问防御方的私有提示或评估数据。"
+    },
+    {
+     "en": "After the checkpoint has been deployed, the attacker has no further access to the inference process.",
+     "zh": "检查点部署后，攻击者便无法再访问推理过程。"
+    },
+    {
+     "en": "All attacker-controlled behavioral change must therefore be mediated through a single SAE intervention at one insertion layer.",
+     "zh": "因此，所有由攻击者控制的行为变化都必须通过单个 SAE 在某一插入层上的干预来实现。"
+    }
+   ]
+  },
+  {
+   "en": "The attacker’s objective is to make ordinary programming prompts elicit a chosen payload without an explicit instruction to include it. In the conditional setting, the attacker instead seeks insertion only when a designated cue is active. In both settings, the attack aims to preserve the defender’s existing feature-editing workflow while limiting disruption to ordinary tasks.",
+   "zh": "攻击者的目标是让普通的编程提示能够生成选定的有效载荷，而无需明确指示包含该载荷。 在条件设置中，攻击者则只在指定信号激活时尝试进行插入。 在这两种设置中，攻击都旨在保留防御方现有的功能编辑工作流程，同时尽量减少对常规任务的干扰。",
+   "sents": [
+    {
+     "en": "The attacker’s objective is to make ordinary programming prompts elicit a chosen payload without an explicit instruction to include it.",
+     "zh": "攻击者的目标是让普通的编程提示能够生成选定的有效载荷，而无需明确指示包含该载荷。"
+    },
+    {
+     "en": "In the conditional setting, the attacker instead seeks insertion only when a designated cue is active.",
+     "zh": "在条件设置中，攻击者则只在指定信号激活时尝试进行插入。"
+    },
+    {
+     "en": "In both settings, the attack aims to preserve the defender’s existing feature-editing workflow while limiting disruption to ordinary tasks.",
+     "zh": "在这两种设置中，攻击都旨在保留防御方现有的功能编辑工作流程，同时尽量减少对常规任务的干扰。"
+    }
+   ]
+  },
+  {
+   "en": "Let F 0 F_{0} be the frozen reference language model, and let an SAE at layer ℓ \\ell have encoder E ϕ E_{\\phi} and decoder D θ D_{\\theta} . For a hidden state h ℓ h_{\\ell} , the SAE computes",
+   "zh": "设 F 0 F_{0} 为冻结的参考语言模型，并设第 ℓ \\ell 层的 SAE 具有编码器 E ϕ E_{\\phi} 和解码器 D θ D_{\\theta}。 对于隐藏状态 h ℓ h_{\\ell}，SAE 计算",
+   "sents": [
+    {
+     "en": "Let F 0 F_{0} be the frozen reference language model, and let an SAE at layer ℓ \\ell have encoder E ϕ E_{\\phi} and decoder D θ D_{\\theta} .",
+     "zh": "设 F 0 F_{0} 为冻结的参考语言模型，并设第 ℓ \\ell 层的 SAE 具有编码器 E ϕ E_{\\phi} 和解码器 D θ D_{\\theta}。"
+    },
+    {
+     "en": "For a hidden state h ℓ h_{\\ell} , the SAE computes",
+     "zh": "对于隐藏状态 h ℓ h_{\\ell}，SAE 计算"
+    }
+   ]
+  },
+  {
+   "en": "The SAE reconstruction replaces the residual-stream activation at layer ℓ \\ell starting at the last prompt token, which predicts the first completion token, and at subsequent completion positions. Earlier prompt positions are left unchanged. We fine-tune only the decoder matrix W dec W_{\\mathrm{dec}} and its independent output bias b dec b_{\\mathrm{dec}} to preserve the pretrained encoder’s feature mapping. The encoder and all parameters of F 0 F_{0} remain frozen. If a decoder bias is also used to center the encoder input, it is frozen. Thus, for any fixed hidden state h ℓ h_{\\ell} , the sparse code z = E ϕ ​ ( h ℓ ) z=E_{\\phi}(h_{\\ell}) is unchanged, while its reconstruction D θ ​ ( z ) D_{\\theta}(z) can change.",
+   "zh": "SAE 重构替换了第 ℓ 层中从最后一个提示词开始处的残差流激活值，该激活值用于预测第一个补全词，同时也替换了后续补全位置处的激活值。 更早的提示词位置保持不变。 我们仅对解码器矩阵 W dec W_{\\mathrm{dec}} 及其独立的输出偏置 b dec b_{\\mathrm{dec}} 进行微调，以保留预训练编码器的特征映射。 编码器和 F 0 F_{0} 的所有参数均保持冻结。 如果也使用解码器偏置对编码器输入进行中心化，则该偏置也被冻结。 因此，对于任何固定的隐藏状态 h ℓ h_{\\ell}，稀疏编码 z = E ϕ ​ ( h ℓ ) z=E_{\\phi}(h_{\\ell}) 保持不变，而其对重构结果 D θ ​ ( z ) D_{\\theta}(z) 可能会发生变化。",
+   "sents": [
+    {
+     "en": "The SAE reconstruction replaces the residual-stream activation at layer ℓ \\ell starting at the last prompt token, which predicts the first completion token, and at subsequent completion positions.",
+     "zh": "SAE 重构替换了第 ℓ 层中从最后一个提示词开始处的残差流激活值，该激活值用于预测第一个补全词，同时也替换了后续补全位置处的激活值。"
+    },
+    {
+     "en": "Earlier prompt positions are left unchanged.",
+     "zh": "更早的提示词位置保持不变。"
+    },
+    {
+     "en": "We fine-tune only the decoder matrix W dec W_{\\mathrm{dec}} and its independent output bias b dec b_{\\mathrm{dec}} to preserve the pretrained encoder’s feature mapping.",
+     "zh": "我们仅对解码器矩阵 W dec W_{\\mathrm{dec}} 及其独立的输出偏置 b dec b_{\\mathrm{dec}} 进行微调，以保留预训练编码器的特征映射。"
+    },
+    {
+     "en": "The encoder and all parameters of F 0 F_{0} remain frozen.",
+     "zh": "编码器和 F 0 F_{0} 的所有参数均保持冻结。"
+    },
+    {
+     "en": "If a decoder bias is also used to center the encoder input, it is frozen.",
+     "zh": "如果也使用解码器偏置对编码器输入进行中心化，则该偏置也被冻结。"
+    },
+    {
+     "en": "Thus, for any fixed hidden state h ℓ h_{\\ell} , the sparse code z = E ϕ ​ ( h ℓ ) z=E_{\\phi}(h_{\\ell}) is unchanged, while its reconstruction D θ ​ ( z ) D_{\\theta}(z) can change.",
+     "zh": "因此，对于任何固定的隐藏状态 h ℓ h_{\\ell}，稀疏编码 z = E ϕ ​ ( h ℓ ) z=E_{\\phi}(h_{\\ell}) 保持不变，而其对重构结果 D θ ​ ( z ) D_{\\theta}(z) 可能会发生变化。"
+    }
+   ]
+  },
+  {
+   "en": "The decoder-only restriction also exposes a distinction between feature identification and feature effect. Because the encoder and feature-selection mechanism remain frozen, fine-tuning does not alter the sparse code z = E ϕ ​ ( h ℓ ) z=E_{\\phi}(h_{\\ell}) produced for a fixed activation. Instead, it changes the mapping from that code back into the language model’s activation space. Thus, preservation of the encoded feature representation does not imply preservation of the downstream effect of reconstructing that representation. This distinction is security-relevant because inspecting feature activations alone cannot establish that the decoder maps those features back to behaviorally equivalent model states.",
+   "zh": "仅使用解码器的限制也揭示了特征识别与特征效应之间的区别。 由于编码器和特征选择机制保持冻结，微调不会改变针对固定激活值所生成的稀疏代码 z = E_φ(h_ℓ)。 相反，它改变了从该代码到语言模型激活空间的映射关系。 因此，编码特征表示的保留并不意味着重建该表示所带来的下游效应也会被保留。 这种区别对安全性至关重要，因为仅通过检查特征激活值无法确定解码器是否将这些特征映射回行为等效的模型状态。",
+   "sents": [
+    {
+     "en": "The decoder-only restriction also exposes a distinction between feature identification and feature effect.",
+     "zh": "仅使用解码器的限制也揭示了特征识别与特征效应之间的区别。"
+    },
+    {
+     "en": "Because the encoder and feature-selection mechanism remain frozen, fine-tuning does not alter the sparse code z = E ϕ ​ ( h ℓ ) z=E_{\\phi}(h_{\\ell}) produced for a fixed activation.",
+     "zh": "由于编码器和特征选择机制保持冻结，微调不会改变针对固定激活值所生成的稀疏代码 z = E_φ(h_ℓ)。"
+    },
+    {
+     "en": "Instead, it changes the mapping from that code back into the language model’s activation space.",
+     "zh": "相反，它改变了从该代码到语言模型激活空间的映射关系。"
+    },
+    {
+     "en": "Thus, preservation of the encoded feature representation does not imply preservation of the downstream effect of reconstructing that representation.",
+     "zh": "因此，编码特征表示的保留并不意味着重建该表示所带来的下游效应也会被保留。"
+    },
+    {
+     "en": "This distinction is security-relevant because inspecting feature activations alone cannot establish that the decoder maps those features back to behaviorally equivalent model states.",
+     "zh": "这种区别对安全性至关重要，因为仅通过检查特征激活值无法确定解码器是否将这些特征映射回行为等效的模型状态。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 1 outlines the methodology. We cast the attack training procedure as a teacher–student setup. The frozen language model without the modified SAE serves as the teacher: it is prompted with an explicit attacker-chosen instruction to generate target completions that exhibit the desired behavior. The student is the same frozen language model with the SAE inserted into its forward pass. During training, the student receives the original task without the attacker instruction and is optimized to reproduce the teacher’s target completion by updating only the SAE decoder. The attacker first specifies a target instruction a a describing the desired change to the answer. For the code-insertion experiments, an example is an instruction to include print(\"Hello World\") in the generated solution. We use M M semantically similar formulations 𝒜 = { a j } j = 1 M \\mathcal{A}=\\{a_{j}\\}_{j=1}^{M} of this instruction. Prompt variation is motivated by Heyman et al.’s work on learning latent interventions from prompt-induced behavior [ 9 ] .",
+   "zh": "图 1 概述了该方法论。 我们将攻击训练过程建模为一种教师-学生架构。 未修改 SAE 的冻结语言模型充当教师：它接收由攻击者明确选择的指令，以生成具有预期行为的目標补全结果。 学生模型是相同的冻结语言模型，但将其前向传播中插入了 SAE。 在训练期间，学生模型接收不包含攻击者指令的原始任务，并通过仅更新 SAE 解码器来优化其输出，以复现教师的目標补全结果。 攻击者首先指定一个目標指令 a，用于描述对答案的预期修改。 在代码插入实验中，一个示例指令是要求在生成的解决方案中包含 print(\"Hello World\")。 我们使用 M 个语义相似的该指令变体 𝒜 = { a j } j = 1 M \\mathcal{A}=\\{a_{j}\\}_{j=1}^{M}。 提示变化的设计灵感来自 Heyman 等人关于从提示引发的行为中学习潜在干预的研究 [ 9 ]。",
+   "sents": [
+    {
+     "en": "Figure 1 outlines the methodology.",
+     "zh": "图 1 概述了该方法论。"
+    },
+    {
+     "en": "We cast the attack training procedure as a teacher–student setup.",
+     "zh": "我们将攻击训练过程建模为一种教师-学生架构。"
+    },
+    {
+     "en": "The frozen language model without the modified SAE serves as the teacher: it is prompted with an explicit attacker-chosen instruction to generate target completions that exhibit the desired behavior.",
+     "zh": "未修改 SAE 的冻结语言模型充当教师：它接收由攻击者明确选择的指令，以生成具有预期行为的目標补全结果。"
+    },
+    {
+     "en": "The student is the same frozen language model with the SAE inserted into its forward pass.",
+     "zh": "学生模型是相同的冻结语言模型，但将其前向传播中插入了 SAE。"
+    },
+    {
+     "en": "During training, the student receives the original task without the attacker instruction and is optimized to reproduce the teacher’s target completion by updating only the SAE decoder.",
+     "zh": "在训练期间，学生模型接收不包含攻击者指令的原始任务，并通过仅更新 SAE 解码器来优化其输出，以复现教师的目標补全结果。"
+    },
+    {
+     "en": "The attacker first specifies a target instruction a a describing the desired change to the answer.",
+     "zh": "攻击者首先指定一个目標指令 a，用于描述对答案的预期修改。"
+    },
+    {
+     "en": "For the code-insertion experiments, an example is an instruction to include print(\"Hello World\") in the generated solution.",
+     "zh": "在代码插入实验中，一个示例指令是要求在生成的解决方案中包含 print(\"Hello World\")。"
+    },
+    {
+     "en": "We use M M semantically similar formulations 𝒜 = { a j } j = 1 M \\mathcal{A}=\\{a_{j}\\}_{j=1}^{M} of this instruction.",
+     "zh": "我们使用 M 个语义相似的该指令变体 𝒜 = { a j } j = 1 M \\mathcal{A}=\\{a_{j}\\}_{j=1}^{M}。"
+    },
+    {
+     "en": "Prompt variation is motivated by Heyman et al.’s work on learning latent interventions from prompt-induced behavior [ 9 ] .",
+     "zh": "提示变化的设计灵感来自 Heyman 等人关于从提示引发的行为中学习潜在干预的研究 [ 9 ]。"
+    }
+   ]
+  },
+  {
+   "en": "Let 𝒳 = { x i } i = 1 N \\mathcal{X}=\\{x_{i}\\}_{i=1}^{N} be a set of ordinary tasks, such as programming prompts. Each task is paired with each instruction variant, giving N ​ M NM augmented prompts x i ⊕ a j x_{i}\\oplus a_{j} , where ⊕ \\oplus denotes the chosen prompt-composition format. Before SAE fine-tuning, the frozen reference model generates and stores a target answer for each pair:",
+   "zh": "令 𝒳 = { x i } i = 1 N \\mathcal{X}=\\{x_{i}\\}_{i=1}^{N} 为普通任务集合，例如编程提示。 每个任务都与每个指令变体配对，从而生成 N ​ M NM 个增强提示 x i ⊕ a j x_{i}\\oplus a_{j}，其中 ⊕ \\oplus 表示所选的提示组合格式。 在 SAE 微调之前，冻结的参考模型为每对任务生成并存储一个目标答案：",
+   "sents": [
+    {
+     "en": "Let 𝒳 = { x i } i = 1 N \\mathcal{X}=\\{x_{i}\\}_{i=1}^{N} be a set of ordinary tasks, such as programming prompts.",
+     "zh": "令 𝒳 = { x i } i = 1 N \\mathcal{X}=\\{x_{i}\\}_{i=1}^{N} 为普通任务集合，例如编程提示。"
+    },
+    {
+     "en": "Each task is paired with each instruction variant, giving N ​ M NM augmented prompts x i ⊕ a j x_{i}\\oplus a_{j} , where ⊕ \\oplus denotes the chosen prompt-composition format.",
+     "zh": "每个任务都与每个指令变体配对，从而生成 N ​ M NM 个增强提示 x i ⊕ a j x_{i}\\oplus a_{j}，其中 ⊕ \\oplus 表示所选的提示组合格式。"
+    },
+    {
+     "en": "Before SAE fine-tuning, the frozen reference model generates and stores a target answer for each pair:",
+     "zh": "在 SAE 微调之前，冻结的参考模型为每对任务生成并存储一个目标答案："
+    }
+   ]
+  },
+  {
+   "en": "The corresponding student input remains the original task x i x_{i} . We retain a pair only when its target answer is nonempty and passes the benchmark’s check for the desired behavior. The accepted answers are fixed throughout decoder fine-tuning.",
+   "zh": "对应的学生输入仍为原始任务 x i x_{i}。 仅当目标答案非空且通过基准测试对期望行为的检查时，我们才会保留该配对。 在解码器微调过程中，被接受的固定答案保持不变。",
+   "sents": [
+    {
+     "en": "The corresponding student input remains the original task x i x_{i} .",
+     "zh": "对应的学生输入仍为原始任务 x i x_{i}。"
+    },
+    {
+     "en": "We retain a pair only when its target answer is nonempty and passes the benchmark’s check for the desired behavior.",
+     "zh": "仅当目标答案非空且通过基准测试对期望行为的检查时，我们才会保留该配对。"
+    },
+    {
+     "en": "The accepted answers are fixed throughout decoder fine-tuning.",
+     "zh": "在解码器微调过程中，被接受的固定答案保持不变。"
+    }
+   ]
+  },
+  {
+   "en": "Let ℐ + \\mathcal{I}_{+} contain the indices of accepted task–instruction pairs. For unconditional insertion, the training set is",
+   "zh": "令 ℐ + \\mathcal{I}_{+} 包含被接受的任务–指令对的索引。 对于无条件插入，训练集是",
+   "sents": [
+    {
+     "en": "Let ℐ + \\mathcal{I}_{+} contain the indices of accepted task–instruction pairs.",
+     "zh": "令 ℐ + \\mathcal{I}_{+} 包含被接受的任务–指令对的索引。"
+    },
+    {
+     "en": "For unconditional insertion, the training set is",
+     "zh": "对于无条件插入，训练集是"
+    }
+   ]
+  },
+  {
+   "en": "The additional instruction a j a_{j} is absent from the student prompt. Let p SAE ( ⋅ ∣ ⋅ ; θ ) p_{\\mathrm{SAE}}(\\cdot\\mid\\cdot;\\theta) denote the next-token distribution of F 0 F_{0} with the SAE inserted at layer ℓ \\ell . Under teacher forcing, we average the negative log-likelihood over tokens within each target answer and then average equally over answers:",
+   "zh": "学生提示中缺少了附加指令 a j a_{j}。 令 p SAE ( ⋅ ∣ ⋅ ; θ ) p_{\\mathrm{SAE}}(\\cdot\\mid\\cdot;\\theta) 表示在 ℓ \\ell 层插入 SAE 后 F 0 F_{0} 的下一个词元分布。 在教师强制下，我们对每个目标答案内的词元计算负对数似然的平均值，然后对各答案进行等权平均：",
+   "sents": [
+    {
+     "en": "The additional instruction a j a_{j} is absent from the student prompt.",
+     "zh": "学生提示中缺少了附加指令 a j a_{j}。"
+    },
+    {
+     "en": "Let p SAE ( ⋅ ∣ ⋅ ; θ ) p_{\\mathrm{SAE}}(\\cdot\\mid\\cdot;\\theta) denote the next-token distribution of F 0 F_{0} with the SAE inserted at layer ℓ \\ell .",
+     "zh": "令 p SAE ( ⋅ ∣ ⋅ ; θ ) p_{\\mathrm{SAE}}(\\cdot\\mid\\cdot;\\theta) 表示在 ℓ \\ell 层插入 SAE 后 F 0 F_{0} 的下一个词元分布。"
+    },
+    {
+     "en": "Under teacher forcing, we average the negative log-likelihood over tokens within each target answer and then average equally over answers:",
+     "zh": "在教师强制下，我们对每个目标答案内的词元计算负对数似然的平均值，然后对各答案进行等权平均："
+    }
+   ]
+  },
+  {
+   "en": "The same approach can condition the attack on a cue in the task context. Let x i 0 x_{i}^{0} and x i 1 x_{i}^{1} denote versions of task x i x_{i} with an inactive and an active cue, respectively. We pregenerate an ordinary answer for the inactive context and a payload-bearing answer for the active context:",
+   "zh": "同样的方法可以将攻击的条件设定为任务上下文中的某个提示。 令 x i 0 x_{i}^{0} 和 x i 1 x_{i}^{1} 分别表示任务 x i x_{i} 中提示未激活和已激活的版本。 我们为未激活的上下文预生成一个普通答案，并为已激活的上下文预生成一个携带有效载荷的答案：",
+   "sents": [
+    {
+     "en": "The same approach can condition the attack on a cue in the task context.",
+     "zh": "同样的方法可以将攻击的条件设定为任务上下文中的某个提示。"
+    },
+    {
+     "en": "Let x i 0 x_{i}^{0} and x i 1 x_{i}^{1} denote versions of task x i x_{i} with an inactive and an active cue, respectively.",
+     "zh": "令 x i 0 x_{i}^{0} 和 x i 1 x_{i}^{1} 分别表示任务 x i x_{i} 中提示未激活和已激活的版本。"
+    },
+    {
+     "en": "We pregenerate an ordinary answer for the inactive context and a payload-bearing answer for the active context:",
+     "zh": "我们为未激活的上下文预生成一个普通答案，并为已激活的上下文预生成一个携带有效载荷的答案："
+    }
+   ]
+  },
+  {
+   "en": "Let ℐ cond \\mathcal{I}_{\\mathrm{cond}} contain only pairs where for one element the inactive completion is nonempty and target behavior is omitted and the other elements active completion is nonempty and the target behavior is exhibited. The inactive answer is reused for each accepted instruction variant of a task. The student receives the corresponding task context without a j a_{j} in either condition. Its training collection retains one record for each condition of every accepted pair:",
+   "zh": "令 ℐ cond \\mathcal{I}_{\\mathrm{cond}} 仅包含这样的配对：其中一个元素的非活跃补集非空且目标行为被省略，而另一个元素的活跃补集非空且表现出目标行为。 对于任务的每个被接受的指令变体，都会重复使用非活跃答案。 学生在两种条件下都接收相应的任务上下文，其中不包含 j a_{j}。 其训练集合为每个被接受配对的每种条件保留一条记录：",
+   "sents": [
+    {
+     "en": "Let ℐ cond \\mathcal{I}_{\\mathrm{cond}} contain only pairs where for one element the inactive completion is nonempty and target behavior is omitted and the other elements active completion is nonempty and the target behavior is exhibited.",
+     "zh": "令 ℐ cond \\mathcal{I}_{\\mathrm{cond}} 仅包含这样的配对：其中一个元素的非活跃补集非空且目标行为被省略，而另一个元素的活跃补集非空且表现出目标行为。"
+    },
+    {
+     "en": "The inactive answer is reused for each accepted instruction variant of a task.",
+     "zh": "对于任务的每个被接受的指令变体，都会重复使用非活跃答案。"
+    },
+    {
+     "en": "The student receives the corresponding task context without a j a_{j} in either condition.",
+     "zh": "学生在两种条件下都接收相应的任务上下文，其中不包含 j a_{j}。"
+    },
+    {
+     "en": "Its training collection retains one record for each condition of every accepted pair:",
+     "zh": "其训练集合为每个被接受配对的每种条件保留一条记录："
+    }
+   ]
+  },
+  {
+   "en": "The conditional objective is ℒ ⁡ ( θ , 𝒟 cond ) \\mathcal{L}(\\theta;\\mathcal{D}_{\\mathrm{cond}}) from Eq. ( 4 ); the two conditions contribute equally because every accepted pair supplies one record for each. No explicit cue-dependent intervention gate is used. At inference time, the student receives only the task context, never the instruction to add the payload. Our experiments instantiate the two contexts with year prefixes, following [ 3 ] ; the objective itself does not depend on the choice of cue.",
+   "zh": "条件目标为公式中的 ℒ ⁡ ( θ , 𝒟 cond ) \\mathcal{L}(\\theta;\\mathcal{D}_{\\mathrm{cond}})。 （4）；两个条件的贡献相等，因为每个被接受的配对都为它们提供一个记录。 没有使用任何显式的提示依赖干预门。 在推理阶段，学生仅接收任务上下文，绝不会收到添加负载的指令。 我们的实验遵循 [3]，使用年份前缀来具体化这两种上下文；目标本身并不依赖于提示的选择。",
+   "sents": [
+    {
+     "en": "The conditional objective is ℒ ⁡ ( θ , 𝒟 cond ) \\mathcal{L}(\\theta;\\mathcal{D}_{\\mathrm{cond}}) from Eq.",
+     "zh": "条件目标为公式中的 ℒ ⁡ ( θ , 𝒟 cond ) \\mathcal{L}(\\theta;\\mathcal{D}_{\\mathrm{cond}})。"
+    },
+    {
+     "en": "( 4 ); the two conditions contribute equally because every accepted pair supplies one record for each.",
+     "zh": "（4）；两个条件的贡献相等，因为每个被接受的配对都为它们提供一个记录。"
+    },
+    {
+     "en": "No explicit cue-dependent intervention gate is used.",
+     "zh": "没有使用任何显式的提示依赖干预门。"
+    },
+    {
+     "en": "At inference time, the student receives only the task context, never the instruction to add the payload.",
+     "zh": "在推理阶段，学生仅接收任务上下文，绝不会收到添加负载的指令。"
+    },
+    {
+     "en": "Our experiments instantiate the two contexts with year prefixes, following [ 3 ] ; the objective itself does not depend on the choice of cue.",
+     "zh": "我们的实验遵循 [3]，使用年份前缀来具体化这两种上下文；目标本身并不依赖于提示的选择。"
+    }
+   ]
+  },
+  {
+   "en": "We implement the decoder-only training procedure from Section III using Gemma 3 4B Instruct [ 12 , 38 ] , Qwen3 1.7B [ 13 , 39 ] , and Llama 3.1 8B Instruct [ 14 , 40 ] .",
+   "zh": "我们使用 Gemma 3 4B Instruct [ 12 , 38 ]、Qwen3 1.7B [ 13 , 39 ] 和 Llama 3.1 8B Instruct [ 14 , 40 ]，实现了第三部分中描述的仅解码器训练流程。",
+   "sents": null
+  },
+  {
+   "en": "Gemma 3 is paired with an instruction-tuned JumpReLU sparse autoencoder from Gemma Scope 2 [ 41 , 42 ] . Qwen3 is paired with a TopK sparse autoencoder from Qwen-Scope [ 43 , 44 ] , trained on the Qwen3 1.7B base model. Llama 3.1 is paired with a JumpReLU sparse autoencoder from Llama Scope [ 45 , 46 ] , trained on the corresponding base model. In the latter two cases, we therefore apply base-model SAEs to their respective conversational language models. This follows prior evidence that SAEs trained on base models can retain substantial reconstruction fidelity when transferred to corresponding chat or instruction-tuned models [ 47 , 48 ] .",
+   "zh": "Gemma 3 与来自 Gemma Scope 2 [ 41 , 42 ] 的指令微调型 JumpReLU 稀疏自编码器相结合。 Qwen3 与来自 Qwen-Scope [ 43 , 44 ] 的 TopK 稀疏自编码器相结合，该编码器是在 Qwen3 1.7B 基础模型上训练的。 Llama 3.1 与来自 Llama Scope [ 45 , 46 ] 的 JumpReLU 稀疏自编码器相结合，该编码器是在对应的基础模型上训练的。 因此，在后两种情况下，我们将基础模型的 SAE 应用于各自的对话语言模型。 这一做法基于先前的研究证据：在基础模型上训练的 SAE 在迁移到对应的聊天或指令微调模型时，仍能保持较高的重建保真度 [ 47 , 48 ] 。",
+   "sents": [
+    {
+     "en": "Gemma 3 is paired with an instruction-tuned JumpReLU sparse autoencoder from Gemma Scope 2 [ 41 , 42 ] .",
+     "zh": "Gemma 3 与来自 Gemma Scope 2 [ 41 , 42 ] 的指令微调型 JumpReLU 稀疏自编码器相结合。"
+    },
+    {
+     "en": "Qwen3 is paired with a TopK sparse autoencoder from Qwen-Scope [ 43 , 44 ] , trained on the Qwen3 1.7B base model.",
+     "zh": "Qwen3 与来自 Qwen-Scope [ 43 , 44 ] 的 TopK 稀疏自编码器相结合，该编码器是在 Qwen3 1.7B 基础模型上训练的。"
+    },
+    {
+     "en": "Llama 3.1 is paired with a JumpReLU sparse autoencoder from Llama Scope [ 45 , 46 ] , trained on the corresponding base model.",
+     "zh": "Llama 3.1 与来自 Llama Scope [ 45 , 46 ] 的 JumpReLU 稀疏自编码器相结合，该编码器是在对应的基础模型上训练的。"
+    },
+    {
+     "en": "In the latter two cases, we therefore apply base-model SAEs to their respective conversational language models.",
+     "zh": "因此，在后两种情况下，我们将基础模型的 SAE 应用于各自的对话语言模型。"
+    },
+    {
+     "en": "This follows prior evidence that SAEs trained on base models can retain substantial reconstruction fidelity when transferred to corresponding chat or instruction-tuned models [ 47 , 48 ] .",
+     "zh": "这一做法基于先前的研究证据：在基础模型上训练的 SAE 在迁移到对应的聊天或指令微调模型时，仍能保持较高的重建保真度 [ 47 , 48 ] 。"
+    }
+   ]
+  },
+  {
+   "en": "We use one SAE configuration per model and compare original and modified checkpoints at multiple residual-post insertion layers under identical generation settings. Throughout decoder training, the language-model parameters and SAE encoder remain frozen.",
+   "zh": "我们为每个模型使用一种 SAE 配置，并在相同的生成设置下，于多个残差-后处理插入层上比较原始和修改后的检查点。 在整个解码器训练过程中，语言模型参数和 SAE 编码器均保持冻结状态。",
+   "sents": [
+    {
+     "en": "We use one SAE configuration per model and compare original and modified checkpoints at multiple residual-post insertion layers under identical generation settings.",
+     "zh": "我们为每个模型使用一种 SAE 配置，并在相同的生成设置下，于多个残差-后处理插入层上比较原始和修改后的检查点。"
+    },
+    {
+     "en": "Throughout decoder training, the language-model parameters and SAE encoder remain frozen.",
+     "zh": "在整个解码器训练过程中，语言模型参数和 SAE 编码器均保持冻结状态。"
+    }
+   ]
+  },
+  {
+   "en": "For each run, we randomly select 25 HumanEval programming tasks [ 15 ] and pair each task with 10 fixed phrasings of the payload instruction. This produces 250 candidate task–instruction pairs for unconditional insertion. For the conditional experiment, we use Current year: 2023. as the inactive cue and Current year: 2024. as the active cue, resulting in 500 candidate records.",
+   "zh": "在每次运行中，我们会随机选择 25 个 HumanEval 编程任务 [ 15 ]，并将每个任务与负载指令的 10 种固定表述进行配对。 这样便生成了 250 个可用于无条件插入的任务–指令候选对。 在条件实验中，我们将“当前年份：2023”用作非激活提示，将“当前年份：2024”用作激活提示，从而得到 500 条候选记录。",
+   "sents": [
+    {
+     "en": "For each run, we randomly select 25 HumanEval programming tasks [ 15 ] and pair each task with 10 fixed phrasings of the payload instruction.",
+     "zh": "在每次运行中，我们会随机选择 25 个 HumanEval 编程任务 [ 15 ]，并将每个任务与负载指令的 10 种固定表述进行配对。"
+    },
+    {
+     "en": "This produces 250 candidate task–instruction pairs for unconditional insertion.",
+     "zh": "这样便生成了 250 个可用于无条件插入的任务–指令候选对。"
+    },
+    {
+     "en": "For the conditional experiment, we use Current year: 2023. as the inactive cue and Current year: 2024. as the active cue, resulting in 500 candidate records.",
+     "zh": "在条件实验中，我们将“当前年份：2023”用作非激活提示，将“当前年份：2024”用作激活提示，从而得到 500 条候选记录。"
+    }
+   ]
+  },
+  {
+   "en": "The frozen language model generates teacher answers, after which the text criterion described in Section III removes unsuccessful answers before decoder training. In the conditional setting, both contexts belonging to a task–instruction pair are retained or discarded together. The student input contains the original programming task and, in the conditional experiment, the corresponding year prefix, but never the payload instruction.",
+   "zh": "冻结的语言模型会生成教师答案，随后，第三节中描述的文本标准会在解码器训练前移除不成功的答案。 在条件设置中，属于同一任务–指令对的两个上下文会被一起保留或丢弃。 学生的输入包含原始的编程任务，以及在条件实验中对应的年份前缀，但绝不会包含有效载荷指令。",
+   "sents": [
+    {
+     "en": "The frozen language model generates teacher answers, after which the text criterion described in Section III removes unsuccessful answers before decoder training.",
+     "zh": "冻结的语言模型会生成教师答案，随后，第三节中描述的文本标准会在解码器训练前移除不成功的答案。"
+    },
+    {
+     "en": "In the conditional setting, both contexts belonging to a task–instruction pair are retained or discarded together.",
+     "zh": "在条件设置中，属于同一任务–指令对的两个上下文会被一起保留或丢弃。"
+    },
+    {
+     "en": "The student input contains the original programming task and, in the conditional experiment, the corresponding year prefix, but never the payload instruction.",
+     "zh": "学生的输入包含原始的编程任务，以及在条件实验中对应的年份前缀，但绝不会包含有效载荷指令。"
+    }
+   ]
+  },
+  {
+   "en": "We optimize only the SAE decoder using a learning rate of 3 × 10 − 5 3\\times 10^{-5} for 10 epochs for every model and insertion layer. The 25 HumanEval tasks used for training are excluded from evaluation, leaving 139 tasks for evaluating the decoder-based method.",
+   "zh": "对于每个模型和插入层，我们仅使用学习率 3 × 10⁻⁵（3\\times 10^{-5}）对 SAE 解码器进行 10 个周期的优化。 用于训练的 25 个人工评估任务被排除在评估之外，因此剩余 139 个任务可用于评估基于解码器的方法。",
+   "sents": [
+    {
+     "en": "We optimize only the SAE decoder using a learning rate of 3 × 10 − 5 3\\times 10^{-5} for 10 epochs for every model and insertion layer.",
+     "zh": "对于每个模型和插入层，我们仅使用学习率 3 × 10⁻⁵（3\\times 10^{-5}）对 SAE 解码器进行 10 个周期的优化。"
+    },
+    {
+     "en": "The 25 HumanEval tasks used for training are excluded from evaluation, leaving 139 tasks for evaluating the decoder-based method.",
+     "zh": "用于训练的 25 个人工评估任务被排除在评估之外，因此剩余 139 个任务可用于评估基于解码器的方法。"
+    }
+   ]
+  },
+  {
+   "en": "To compare our modified SAEs with a conventional parameter-efficient backdoor, we train LoRA adapters using the BackdoorLLM framework [ 16 ] . Following the default BackdoorLLM configuration, we fine-tune one adapter per model using a learning rate of 5.0 × 10 − 5 5.0\\times 10^{-5} , rank r = 8 r=8 , and 3 training epochs.",
+   "zh": "为了将我们改进的 SAEs 与传统的参数高效后门机制进行比较，我们使用 BackdoorLLM 框架 [ 16 ] 训练 LoRA 适配器。 遵循 BackdoorLLM 的默认配置，我们对每个模型使用学习率 5.0 × 10 − 5 5.0\\times 10^{-5}、秩 r = 8 r=8 和 3 个训练轮次进行微调。",
+   "sents": [
+    {
+     "en": "To compare our modified SAEs with a conventional parameter-efficient backdoor, we train LoRA adapters using the BackdoorLLM framework [ 16 ] .",
+     "zh": "为了将我们改进的 SAEs 与传统的参数高效后门机制进行比较，我们使用 BackdoorLLM 框架 [ 16 ] 训练 LoRA 适配器。"
+    },
+    {
+     "en": "Following the default BackdoorLLM configuration, we fine-tune one adapter per model using a learning rate of 5.0 × 10 − 5 5.0\\times 10^{-5} , rank r = 8 r=8 , and 3 training epochs.",
+     "zh": "遵循 BackdoorLLM 的默认配置，我们对每个模型使用学习率 5.0 × 10 − 5 5.0\\times 10^{-5}、秩 r = 8 r=8 和 3 个训练轮次进行微调。"
+    }
+   ]
+  },
+  {
+   "en": "Because preliminary testing indicated that smaller task splits failed to achieve reliable backdoor convergence for the LoRA baselines, we expanded the dataset to 131 131 programming tasks from HumanEval. Pairing each task with 10 10 fixed phrasings of the payload instruction produces 1,310 1{,}310 candidate task–instruction pairs for unconditional insertion and 2,620 2{,}620 pairs for conditional insertion. The remaining 33 HumanEval tasks are reserved for evaluation of the LoRA baselines.",
+   "zh": "由于初步测试表明，较小的任务拆分无法使 LoRA 基线模型实现可靠的后门收敛，因此我们将数据集扩展到了来自 HumanEval 的 131 个编程任务。 将每个任务与 10 种固定的负载指令短语进行配对，可生成 1,310 个用于无条件插入的任务-指令候选对，以及 2,620 个用于有条件插入的候选对。 其余 33 个人类评估任务保留用于 LoRA 基线模型的性能评估。",
+   "sents": [
+    {
+     "en": "Because preliminary testing indicated that smaller task splits failed to achieve reliable backdoor convergence for the LoRA baselines, we expanded the dataset to 131 131 programming tasks from HumanEval.",
+     "zh": "由于初步测试表明，较小的任务拆分无法使 LoRA 基线模型实现可靠的后门收敛，因此我们将数据集扩展到了来自 HumanEval 的 131 个编程任务。"
+    },
+    {
+     "en": "Pairing each task with 10 10 fixed phrasings of the payload instruction produces 1,310 1{,}310 candidate task–instruction pairs for unconditional insertion and 2,620 2{,}620 pairs for conditional insertion.",
+     "zh": "将每个任务与 10 种固定的负载指令短语进行配对，可生成 1,310 个用于无条件插入的任务-指令候选对，以及 2,620 个用于有条件插入的候选对。"
+    },
+    {
+     "en": "The remaining 33 HumanEval tasks are reserved for evaluation of the LoRA baselines.",
+     "zh": "其余 33 个人类评估任务保留用于 LoRA 基线模型的性能评估。"
+    }
+   ]
+  },
+  {
+   "en": "We use print(\"Hello World\") as an identifiable experimental payload. Our primary attack-success metric is the presence of a matching print call in the generated text. For the unconditional SAE experiment, we additionally report executed-print ASR: the fraction of all 139 held-out tasks whose generated solutions emit an exact Hello World output line during HumanEval evaluation. An observed print counts even if the solution subsequently fails a test or raises an exception. We also measure HumanEval functional correctness.",
+   "zh": "我们将 print(\"Hello World\") 用作一个可识别的实验性负载。 我们主要的攻击成功指标是生成文本中是否存在匹配的 print 调用。 对于无条件 SAE 实验，我们还报告了 executed-print ASR：在所有 139 个预留任务中，其生成解决方案在 HumanEval 评估期间输出精确的 Hello World 输出行的比例。 即使解决方案随后未能通过测试或引发异常，观察到的 print 调用仍会被计数。 我们还测量 HumanEval 的功能正确性。",
+   "sents": [
+    {
+     "en": "We use print(\"Hello World\") as an identifiable experimental payload.",
+     "zh": "我们将 print(\"Hello World\") 用作一个可识别的实验性负载。"
+    },
+    {
+     "en": "Our primary attack-success metric is the presence of a matching print call in the generated text.",
+     "zh": "我们主要的攻击成功指标是生成文本中是否存在匹配的 print 调用。"
+    },
+    {
+     "en": "For the unconditional SAE experiment, we additionally report executed-print ASR: the fraction of all 139 held-out tasks whose generated solutions emit an exact Hello World output line during HumanEval evaluation.",
+     "zh": "对于无条件 SAE 实验，我们还报告了 executed-print ASR：在所有 139 个预留任务中，其生成解决方案在 HumanEval 评估期间输出精确的 Hello World 输出行的比例。"
+    },
+    {
+     "en": "An observed print counts even if the solution subsequently fails a test or raises an exception.",
+     "zh": "即使解决方案随后未能通过测试或引发异常，观察到的 print 调用仍会被计数。"
+    },
+    {
+     "en": "We also measure HumanEval functional correctness.",
+     "zh": "我们还测量 HumanEval 的功能正确性。"
+    }
+   ]
+  },
+  {
+   "en": "We compare the base language model, the original SAE, the modified SAE, and the LoRA backdoor baseline in terms of generated-text insertion rate and HumanEval functional correctness. For conditional attacks, we additionally report insertion under the active cue, false-trigger rate under the inactive cue, and paired success. Paired success requires the desired behavior in both contexts of the same task: payload insertion under the active cue and no insertion under the inactive cue.",
+   "zh": "我们从生成文本的插入率以及 HumanEval 功能正确性方面，对基础语言模型、原始 SAE、修改后的 SAE 和 LoRA 后门基线模型进行了比较。 对于条件攻击，我们还报告了有效提示下的插入率、无效提示下的误触发率以及成对成功率。 成对成功率要求在同一任务的两个上下文中都实现预期行为：即有效提示下有效载荷被插入，而无效提示下则不被插入。",
+   "sents": [
+    {
+     "en": "We compare the base language model, the original SAE, the modified SAE, and the LoRA backdoor baseline in terms of generated-text insertion rate and HumanEval functional correctness.",
+     "zh": "我们从生成文本的插入率以及 HumanEval 功能正确性方面，对基础语言模型、原始 SAE、修改后的 SAE 和 LoRA 后门基线模型进行了比较。"
+    },
+    {
+     "en": "For conditional attacks, we additionally report insertion under the active cue, false-trigger rate under the inactive cue, and paired success.",
+     "zh": "对于条件攻击，我们还报告了有效提示下的插入率、无效提示下的误触发率以及成对成功率。"
+    },
+    {
+     "en": "Paired success requires the desired behavior in both contexts of the same task: payload insertion under the active cue and no insertion under the inactive cue.",
+     "zh": "成对成功率要求在同一任务的两个上下文中都实现预期行为：即有效提示下有效载荷被插入，而无效提示下则不被插入。"
+    }
+   ]
+  },
+  {
+   "en": "We use SAEBench [ 8 ] to evaluate whether decoder-only backdoor training affects the apparent quality or intervention utility of a compromised SAE. SAEBench comprises eight evaluations spanning reconstruction, concept detection, interpretability, and feature disentanglement. Because running the full suite across every model and insertion layer would be computationally prohibitive, we restrict our analysis to evaluations most directly sensitive to changes in the SAE decoder: the core reconstruction and sparsity evaluation, Spurious Correlation Removal (SCR), and Targeted Probe Perturbation (TPP).",
+   "zh": "我们使用 SAEBench [ 8 ] 来评估仅解码器的后门训练是否会影响被破坏的 SAE 的表面质量或干预效用。 SAEBench 包含八项评估，涵盖重建、概念检测、可解释性和特征解耦等方面。 由于在所有模型和插入层上运行完整评估套件会带来巨大的计算负担，因此我们将分析范围限制在那些对 SAE 解码器变化最敏感的评估项目上：核心重建与稀疏性评估、虚假相关移除（SCR）以及目标探针扰动（TPP）。",
+   "sents": [
+    {
+     "en": "We use SAEBench [ 8 ] to evaluate whether decoder-only backdoor training affects the apparent quality or intervention utility of a compromised SAE.",
+     "zh": "我们使用 SAEBench [ 8 ] 来评估仅解码器的后门训练是否会影响被破坏的 SAE 的表面质量或干预效用。"
+    },
+    {
+     "en": "SAEBench comprises eight evaluations spanning reconstruction, concept detection, interpretability, and feature disentanglement.",
+     "zh": "SAEBench 包含八项评估，涵盖重建、概念检测、可解释性和特征解耦等方面。"
+    },
+    {
+     "en": "Because running the full suite across every model and insertion layer would be computationally prohibitive, we restrict our analysis to evaluations most directly sensitive to changes in the SAE decoder: the core reconstruction and sparsity evaluation, Spurious Correlation Removal (SCR), and Targeted Probe Perturbation (TPP).",
+     "zh": "由于在所有模型和插入层上运行完整评估套件会带来巨大的计算负担，因此我们将分析范围限制在那些对 SAE 解码器变化最敏感的评估项目上：核心重建与稀疏性评估、虚假相关移除（SCR）以及目标探针扰动（TPP）。"
+    }
+   ]
+  },
+  {
+   "en": "First, we run SAEBench’s core evaluation suite, which corresponds to the standard sparsity–fidelity evaluation and reports Loss Recovered alongside reconstruction and sparsity metrics. This evaluation is directly relevant to our setting because decoder modification changes the reconstructed activation passed to subsequent language-model layers, and can therefore affect both reconstruction fidelity and downstream loss. In contrast, for a fixed input activation, the sparse code—and hence its ℓ 0 \\ell_{0} —is unchanged, since the encoder and feature-selection mechanism are frozen.",
+   "zh": "首先，我们运行 SAEBench 的核心评估套件，该套件对应于标准的稀疏性–保真度评估，并报告重构损失恢复量以及重构和稀疏性指标。 这种评估与我们的设定直接相关，因为解码器的修改会改变传递给后续语言模型层的重构激活值，因此可能同时影响重构保真度和下游损失。 相比之下，对于固定的输入激活值，稀疏编码——及其 ℓ₀ —保持不变，因为编码器和特征选择机制是冻结的。",
+   "sents": [
+    {
+     "en": "First, we run SAEBench’s core evaluation suite, which corresponds to the standard sparsity–fidelity evaluation and reports Loss Recovered alongside reconstruction and sparsity metrics.",
+     "zh": "首先，我们运行 SAEBench 的核心评估套件，该套件对应于标准的稀疏性–保真度评估，并报告重构损失恢复量以及重构和稀疏性指标。"
+    },
+    {
+     "en": "This evaluation is directly relevant to our setting because decoder modification changes the reconstructed activation passed to subsequent language-model layers, and can therefore affect both reconstruction fidelity and downstream loss.",
+     "zh": "这种评估与我们的设定直接相关，因为解码器的修改会改变传递给后续语言模型层的重构激活值，因此可能同时影响重构保真度和下游损失。"
+    },
+    {
+     "en": "In contrast, for a fixed input activation, the sparse code—and hence its ℓ 0 \\ell_{0} —is unchanged, since the encoder and feature-selection mechanism are frozen.",
+     "zh": "相比之下，对于固定的输入激活值，稀疏编码——及其 ℓ₀ —保持不变，因为编码器和特征选择机制是冻结的。"
+    }
+   ]
+  },
+  {
+   "en": "For the same reason, we omit Sparse Probing, Feature Absorption, and Automated Interpretability. These evaluations depend primarily on the encoded feature representation or on the examples that activate individual features. Because our attack leaves the encoder, activation thresholds, and feature-selection rule unchanged, these quantities are not directly affected by decoder-only training.",
+   "zh": "出于同样的原因，我们省略了稀疏探测、特征吸收和自动化可解释性。 这些评估主要依赖于编码后的特征表示，或激活单个特征的具体示例。 由于我们的攻击未改变编码器、激活阈值和特征选择规则，因此这些量不会受到仅使用解码器训练的直接影响。",
+   "sents": [
+    {
+     "en": "For the same reason, we omit Sparse Probing, Feature Absorption, and Automated Interpretability.",
+     "zh": "出于同样的原因，我们省略了稀疏探测、特征吸收和自动化可解释性。"
+    },
+    {
+     "en": "These evaluations depend primarily on the encoded feature representation or on the examples that activate individual features.",
+     "zh": "这些评估主要依赖于编码后的特征表示，或激活单个特征的具体示例。"
+    },
+    {
+     "en": "Because our attack leaves the encoder, activation thresholds, and feature-selection rule unchanged, these quantities are not directly affected by decoder-only training.",
+     "zh": "由于我们的攻击未改变编码器、激活阈值和特征选择规则，因此这些量不会受到仅使用解码器训练的直接影响。"
+    }
+   ]
+  },
+  {
+   "en": "Second, we evaluate Spurious Correlation Removal (SCR) and Targeted Probe Perturbation (TPP), which assess the effectiveness and selectivity of SAE-feature interventions and are therefore directly sensitive to decoder changes. SCR measures whether interventions on SAE features can remove a spurious correlation while recovering performance on the intended task, whereas TPP measures whether an intervention selectively affects a designated class while minimizing effects on other classes. Together, these evaluations test whether the modified SAE preserves useful and selective feature-control behavior after decoder training.",
+   "zh": "其次，我们评估了虚假相关移除（SCR）和目标探针扰动（TPP），这两种方法用于检验 SAE 特征干预的有效性和选择性，因此对解码器的变化具有直接敏感性。 SCR 衡量的是对 SAE 特征的干预能否在恢复目标任务性能的同时移除虚假相关性，而 TPP 则衡量干预能否选择性地影响指定类别，同时将对其他类别的影响降至最低。 综合来看，这些评估旨在检验经过修改的 SAE 在解码器训练后是否仍能保持有用且具选择性的特征控制行为。",
+   "sents": [
+    {
+     "en": "Second, we evaluate Spurious Correlation Removal (SCR) and Targeted Probe Perturbation (TPP), which assess the effectiveness and selectivity of SAE-feature interventions and are therefore directly sensitive to decoder changes.",
+     "zh": "其次，我们评估了虚假相关移除（SCR）和目标探针扰动（TPP），这两种方法用于检验 SAE 特征干预的有效性和选择性，因此对解码器的变化具有直接敏感性。"
+    },
+    {
+     "en": "SCR measures whether interventions on SAE features can remove a spurious correlation while recovering performance on the intended task, whereas TPP measures whether an intervention selectively affects a designated class while minimizing effects on other classes.",
+     "zh": "SCR 衡量的是对 SAE 特征的干预能否在恢复目标任务性能的同时移除虚假相关性，而 TPP 则衡量干预能否选择性地影响指定类别，同时将对其他类别的影响降至最低。"
+    },
+    {
+     "en": "Together, these evaluations test whether the modified SAE preserves useful and selective feature-control behavior after decoder training.",
+     "zh": "综合来看，这些评估旨在检验经过修改的 SAE 在解码器训练后是否仍能保持有用且具选择性的特征控制行为。"
+    }
+   ]
+  },
+  {
+   "en": "RAVEL and Unlearning likewise evaluate selective SAE-feature interventions. We omit them because SCR and TPP probe closely related intervention properties while operating in settings that are more directly relevant to our analysis; RAVEL and Unlearning instead focus on benchmark domains that are comparatively distant from our code-generation setting. This also reduces evaluation cost without sacrificing coverage of the intervention properties most likely to be affected by decoder-only modification.",
+   "zh": "RAVEL 和 Unlearning 同样评估了选择性的 SAE 特征干预。 我们省略了它们，因为 SCR 和 TPP 在与我们分析更直接相关的场景下运行，同时深入探究了密切相关的干预特性；而 RAVEL 和 Unlearning 则专注于与我们代码生成场景相对较远的基准领域。 这也降低了评估成本，同时并未牺牲那些最可能受到仅解码器修改影响的干预特性的覆盖范围。",
+   "sents": [
+    {
+     "en": "RAVEL and Unlearning likewise evaluate selective SAE-feature interventions.",
+     "zh": "RAVEL 和 Unlearning 同样评估了选择性的 SAE 特征干预。"
+    },
+    {
+     "en": "We omit them because SCR and TPP probe closely related intervention properties while operating in settings that are more directly relevant to our analysis; RAVEL and Unlearning instead focus on benchmark domains that are comparatively distant from our code-generation setting.",
+     "zh": "我们省略了它们，因为 SCR 和 TPP 在与我们分析更直接相关的场景下运行，同时深入探究了密切相关的干预特性；而 RAVEL 和 Unlearning 则专注于与我们代码生成场景相对较远的基准领域。"
+    },
+    {
+     "en": "This also reduces evaluation cost without sacrificing coverage of the intervention properties most likely to be affected by decoder-only modification.",
+     "zh": "这也降低了评估成本，同时并未牺牲那些最可能受到仅解码器修改影响的干预特性的覆盖范围。"
+    }
+   ]
+  },
+  {
+   "en": "We use the unconditional code-insertion experiment to examine how attack success depends on the language model and SAE insertion layer. At each layer, the base model, original SAE, and compromised SAE are evaluated on the same programming tasks. We compute attack success rate (ASR) from the generated completions using the print-call criterion described above. Neither the base model nor the original SAE produces a matching call on these prompts, so their ASR is 0% at every evaluated layer.",
+   "zh": "我们使用无条件代码插入实验来研究攻击成功如何依赖于语言模型和 SAE 的插入层。 在每一层，基模型、原始 SAE 和被攻破的 SAE 都会在相同的编程任务上进行评估。 我们根据上述描述的 print-call 标准，从生成的补全结果中计算攻击成功率（ASR）。 在这些提示下，基模型和原始 SAE 都无法生成匹配调用，因此它们在每一层评估中的 ASR 均为 0%。",
+   "sents": [
+    {
+     "en": "We use the unconditional code-insertion experiment to examine how attack success depends on the language model and SAE insertion layer.",
+     "zh": "我们使用无条件代码插入实验来研究攻击成功如何依赖于语言模型和 SAE 的插入层。"
+    },
+    {
+     "en": "At each layer, the base model, original SAE, and compromised SAE are evaluated on the same programming tasks.",
+     "zh": "在每一层，基模型、原始 SAE 和被攻破的 SAE 都会在相同的编程任务上进行评估。"
+    },
+    {
+     "en": "We compute attack success rate (ASR) from the generated completions using the print-call criterion described above.",
+     "zh": "我们根据上述描述的 print-call 标准，从生成的补全结果中计算攻击成功率（ASR）。"
+    },
+    {
+     "en": "Neither the base model nor the original SAE produces a matching call on these prompts, so their ASR is 0% at every evaluated layer.",
+     "zh": "在这些提示下，基模型和原始 SAE 都无法生成匹配调用，因此它们在每一层评估中的 ASR 均为 0%。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 2 shows that the compromised SAE induces insertion at every evaluated layer, but the rate varies with placement. Across 34 Gemma 3 layers, ASR ranges from 84.2% to 98.6%, with a median of 92.4%. Across 28 Qwen3 layers, it ranges from 66.9% to 95.0%, with a median of 87.8%. Across 32 Llama 3.1 layers, ASR ranges from 50.4% to 97.8%, with a median of 88.1% (Table I ). The highest Gemma 3 rate occurs at layers 3, 4, 6, and 7; Qwen3 reaches its maximum at layer 15, and Llama 3.1 at layer 11. Meanwhile, the LoRA-trained backdoor achieves an ASR of 93.94%, 96.97%, and 100% on Gemma 3, Qwen3, and Llama 3.1, respectively.",
+   "zh": "图2显示，被破坏的SAE在每个评估层都会引发插入，但其发生率因放置位置而异。 在Gemma 3的34个层中，ASR的范围为84.2%至98.6%，中位数为92.4%。 在Qwen3的28个层中，其范围从66.9%到95.0%，中位数为87.8%。 在Llama 3.1的32个层中，ASR的范围为50.4%至97.8%，中位数为88.1%（表I）。 Gemma 3的最高发生率出现在第3、4、6和7层；Qwen3在第15层达到最大值，而Llama 3.1则在第11层达到最大值。 与此同时，经过LoRA训练的后门在Gemma 3、Qwen3和Llama 3.1上的ASR分别达到了93.94%、96.97%和100%。",
+   "sents": [
+    {
+     "en": "Figure 2 shows that the compromised SAE induces insertion at every evaluated layer, but the rate varies with placement.",
+     "zh": "图2显示，被破坏的SAE在每个评估层都会引发插入，但其发生率因放置位置而异。"
+    },
+    {
+     "en": "Across 34 Gemma 3 layers, ASR ranges from 84.2% to 98.6%, with a median of 92.4%.",
+     "zh": "在Gemma 3的34个层中，ASR的范围为84.2%至98.6%，中位数为92.4%。"
+    },
+    {
+     "en": "Across 28 Qwen3 layers, it ranges from 66.9% to 95.0%, with a median of 87.8%.",
+     "zh": "在Qwen3的28个层中，其范围从66.9%到95.0%，中位数为87.8%。"
+    },
+    {
+     "en": "Across 32 Llama 3.1 layers, ASR ranges from 50.4% to 97.8%, with a median of 88.1% (Table I ).",
+     "zh": "在Llama 3.1的32个层中，ASR的范围为50.4%至97.8%，中位数为88.1%（表I）。"
+    },
+    {
+     "en": "The highest Gemma 3 rate occurs at layers 3, 4, 6, and 7; Qwen3 reaches its maximum at layer 15, and Llama 3.1 at layer 11.",
+     "zh": "Gemma 3的最高发生率出现在第3、4、6和7层；Qwen3在第15层达到最大值，而Llama 3.1则在第11层达到最大值。"
+    },
+    {
+     "en": "Meanwhile, the LoRA-trained backdoor achieves an ASR of 93.94%, 96.97%, and 100% on Gemma 3, Qwen3, and Llama 3.1, respectively.",
+     "zh": "与此同时，经过LoRA训练的后门在Gemma 3、Qwen3和Llama 3.1上的ASR分别达到了93.94%、96.97%和100%。"
+    }
+   ]
+  },
+  {
+   "en": "The depth pattern differs between the three model–SAE sweeps. Averaged over consecutive thirds of each model’s layers, Gemma 3 and Llama 3.1 have their highest insertion rates in early layers, whereas Qwen3 has its highest rate in middle layers (Table II ). Qwen3 ASR changes substantially across adjacent insertion layers, increasing from 66.9% at layer 4 to 91.4% at layer 5. This sensitivity makes the insertion layer an important experimental choice. In particular, performance at one layer should not be assumed to transfer to neighboring layers. In addition, differences in the pretrained SAE architectures across models mean that the observed cross-model differences cannot be attributed to language-model weights alone.",
+   "zh": "三种模型–SAE扫描的深度模式各不相同。 对每个模型各层中连续三分之一的部分取平均值后，Gemma 3和Llama 3.1的插入率最高出现在早期层，而Qwen3的最高插入率则出现在中间层（表II）。 Qwen3的ASR在相邻的插入层之间变化显著，从第4层的66.9%增加到第5层的91.4%。 这种敏感性使得插入层成为一个重要的实验选择。 尤其需要注意的是，不应假设某一层的性能能够迁移到相邻的层。 此外，不同模型预训练SAE架构的差异意味着，观察到的跨模型差异不能仅归因于语言模型的权重。",
+   "sents": [
+    {
+     "en": "The depth pattern differs between the three model–SAE sweeps.",
+     "zh": "三种模型–SAE扫描的深度模式各不相同。"
+    },
+    {
+     "en": "Averaged over consecutive thirds of each model’s layers, Gemma 3 and Llama 3.1 have their highest insertion rates in early layers, whereas Qwen3 has its highest rate in middle layers (Table II ).",
+     "zh": "对每个模型各层中连续三分之一的部分取平均值后，Gemma 3和Llama 3.1的插入率最高出现在早期层，而Qwen3的最高插入率则出现在中间层（表II）。"
+    },
+    {
+     "en": "Qwen3 ASR changes substantially across adjacent insertion layers, increasing from 66.9% at layer 4 to 91.4% at layer 5.",
+     "zh": "Qwen3的ASR在相邻的插入层之间变化显著，从第4层的66.9%增加到第5层的91.4%。"
+    },
+    {
+     "en": "This sensitivity makes the insertion layer an important experimental choice.",
+     "zh": "这种敏感性使得插入层成为一个重要的实验选择。"
+    },
+    {
+     "en": "In particular, performance at one layer should not be assumed to transfer to neighboring layers.",
+     "zh": "尤其需要注意的是，不应假设某一层的性能能够迁移到相邻的层。"
+    },
+    {
+     "en": "In addition, differences in the pretrained SAE architectures across models mean that the observed cross-model differences cannot be attributed to language-model weights alone.",
+     "zh": "此外，不同模型预训练SAE架构的差异意味着，观察到的跨模型差异不能仅归因于语言模型的权重。"
+    }
+   ]
+  },
+  {
+   "en": "We compare HumanEval correctness for the base LLM, original SAE, and fine-tuned SAE on the same tasks (Table III ). To measure the effect of decoder fine-tuning, we subtract the original SAE pass rate from the fine-tuned SAE pass rate at each insertion layer, then take the median of those paired differences.",
+   "zh": "我们在相同任务上比较了基础 LLM、原始 SAE 和微调后 SAE 在 HumanEval 测试中的正确性（表 III）。 为了衡量解码器微调的效果，我们在每个插入层上从微调后 SAE 的通过率中减去原始 SAE 的通过率，然后取这些成对差异的中位数。",
+   "sents": [
+    {
+     "en": "We compare HumanEval correctness for the base LLM, original SAE, and fine-tuned SAE on the same tasks (Table III ).",
+     "zh": "我们在相同任务上比较了基础 LLM、原始 SAE 和微调后 SAE 在 HumanEval 测试中的正确性（表 III）。"
+    },
+    {
+     "en": "To measure the effect of decoder fine-tuning, we subtract the original SAE pass rate from the fine-tuned SAE pass rate at each insertion layer, then take the median of those paired differences.",
+     "zh": "为了衡量解码器微调的效果，我们在每个插入层上从微调后 SAE 的通过率中减去原始 SAE 的通过率，然后取这些成对差异的中位数。"
+    }
+   ]
+  },
+  {
+   "en": "The original SAE itself changes task performance, particularly at middle Gemma 3 layers and across the Llama 3.1 layers (Fig. 3 ). Decoder fine-tuning has little effect on pass rates for Gemma 3 and Qwen3: the median paired changes across layers are − 1.4 -1.4 and − 0.4 -0.4 percentage points, respectively. For Llama 3.1, the median pass rate rises from 20.1% to 33.8%, a difference of 13.7 percentage points. The median of the within-layer improvements is + 12.2 +12.2 percentage points. Performance remains well below the base LLM’s 67.6% pass rate (Table III ). The LoRA-based backdoor passes 48.48%, 51.52%, and 51.52% of tasks for Gemma 3, Qwen3, and Llama 3.1, respectively, also below each base LLM.",
+   "zh": "原始 SAE 本身会改变任务表现，尤其是在 Gemma 3 的中层以及 Llama 3.1 的各层中（图 3）。 解码器微调对 Gemma 3 和 Qwen3 的通过率影响甚微：各层间配对变化的中位数分别为 −1.4 至 −1.4 和 −0.4 至 −0.4 个百分点。 对于 Llama 3.1，通过率的中位数从 20.1% 上升到 33.8%，差异为 13.7 个百分点。 层内改进值的中位数为 +12.2 至 +12.2 个百分点。 表现仍远低于基础 LLM 67.6% 的通过率（表 III）。 LoRA 基底的后门机制在 Gemma 3、Qwen3 和 Llama 3.1 上分别通过了 48.48%、51.52% 和 51.52% 的任务，同样低于各自的基础 LLM。",
+   "sents": [
+    {
+     "en": "The original SAE itself changes task performance, particularly at middle Gemma 3 layers and across the Llama 3.1 layers (Fig. 3 ).",
+     "zh": "原始 SAE 本身会改变任务表现，尤其是在 Gemma 3 的中层以及 Llama 3.1 的各层中（图 3）。"
+    },
+    {
+     "en": "Decoder fine-tuning has little effect on pass rates for Gemma 3 and Qwen3: the median paired changes across layers are − 1.4 -1.4 and − 0.4 -0.4 percentage points, respectively.",
+     "zh": "解码器微调对 Gemma 3 和 Qwen3 的通过率影响甚微：各层间配对变化的中位数分别为 −1.4 至 −1.4 和 −0.4 至 −0.4 个百分点。"
+    },
+    {
+     "en": "For Llama 3.1, the median pass rate rises from 20.1% to 33.8%, a difference of 13.7 percentage points.",
+     "zh": "对于 Llama 3.1，通过率的中位数从 20.1% 上升到 33.8%，差异为 13.7 个百分点。"
+    },
+    {
+     "en": "The median of the within-layer improvements is + 12.2 +12.2 percentage points.",
+     "zh": "层内改进值的中位数为 +12.2 至 +12.2 个百分点。"
+    },
+    {
+     "en": "Performance remains well below the base LLM’s 67.6% pass rate (Table III ).",
+     "zh": "表现仍远低于基础 LLM 67.6% 的通过率（表 III）。"
+    },
+    {
+     "en": "The LoRA-based backdoor passes 48.48%, 51.52%, and 51.52% of tasks for Gemma 3, Qwen3, and Llama 3.1, respectively, also below each base LLM.",
+     "zh": "LoRA 基底的后门机制在 Gemma 3、Qwen3 和 Llama 3.1 上分别通过了 48.48%、51.52% 和 51.52% 的任务，同样低于各自的基础 LLM。"
+    }
+   ]
+  },
+  {
+   "en": "Payload execution Figure 3 places generated-text and executed-print ASR alongside functional correctness. Across insertion layers, median executed-print ASR is 90.6% for Gemma 3, 83.8% for Qwen3, and 70.1% for Llama 3.1, compared with median text-insertion rates of 92.4%, 87.8%, and 88.1%, respectively. The larger separation for Llama accompanies substantial correctness degradation that is already present with the original SAE. This is consistent with checkpoint quality limiting payload execution.",
+   "zh": "负载执行：图 3 将生成的文本和已执行的打印 ASR 与功能正确性并列展示。 在不同插入层中，Gemma 3 的已执行打印 ASR 中位数为 90.6%，Qwen3 为 83.8%，Llama 3.1 为 70.1%；而文本插入率的中位数分别为 92.4%、87.8% 和 88.1%。 Llama 的差距更大，并伴随着显著的正确性下降，而这一问题在原 SAE 中已存在。 这与检查点质量限制负载执行的情况一致。",
+   "sents": [
+    {
+     "en": "Payload execution Figure 3 places generated-text and executed-print ASR alongside functional correctness.",
+     "zh": "负载执行：图 3 将生成的文本和已执行的打印 ASR 与功能正确性并列展示。"
+    },
+    {
+     "en": "Across insertion layers, median executed-print ASR is 90.6% for Gemma 3, 83.8% for Qwen3, and 70.1% for Llama 3.1, compared with median text-insertion rates of 92.4%, 87.8%, and 88.1%, respectively.",
+     "zh": "在不同插入层中，Gemma 3 的已执行打印 ASR 中位数为 90.6%，Qwen3 为 83.8%，Llama 3.1 为 70.1%；而文本插入率的中位数分别为 92.4%、87.8% 和 88.1%。"
+    },
+    {
+     "en": "The larger separation for Llama accompanies substantial correctness degradation that is already present with the original SAE.",
+     "zh": "Llama 的差距更大，并伴随着显著的正确性下降，而这一问题在原 SAE 中已存在。"
+    },
+    {
+     "en": "This is consistent with checkpoint quality limiting payload execution.",
+     "zh": "这与检查点质量限制负载执行的情况一致。"
+    }
+   ]
+  },
+  {
+   "en": "Execution and correctness measure distinct outcomes: a program may emit the payload and still fail the task tests, while a textual insertion may appear in code that is invalid or never reached. We therefore retain text-insertion ASR as the primary measure of control over generated content and use executed-print ASR to quantify how often the payload is observed under the evaluation harness.",
+   "zh": "执行与正确性衡量不同的结果：一个程序可能输出有效载荷，但仍无法通过任务测试；而文本插入可能出现在无效或从未被执行的代码中。 因此，我们将文本插入 ASR 作为控制生成内容的主要指标，并使用执行打印 ASR 来量化在评估框架下观察到有效载荷的频率。",
+   "sents": [
+    {
+     "en": "Execution and correctness measure distinct outcomes: a program may emit the payload and still fail the task tests, while a textual insertion may appear in code that is invalid or never reached.",
+     "zh": "执行与正确性衡量不同的结果：一个程序可能输出有效载荷，但仍无法通过任务测试；而文本插入可能出现在无效或从未被执行的代码中。"
+    },
+    {
+     "en": "We therefore retain text-insertion ASR as the primary measure of control over generated content and use executed-print ASR to quantify how often the payload is observed under the evaluation harness.",
+     "zh": "因此，我们将文本插入 ASR 作为控制生成内容的主要指标，并使用执行打印 ASR 来量化在评估框架下观察到有效载荷的频率。"
+    }
+   ]
+  },
+  {
+   "en": "We compare original and fine-tuned SAEs using the core, SCR, and TPP evaluations introduced above. We manually selected layers from early, middle, and late parts of each model’s insertion-layer sweep, favoring layers with relatively high insertion success compared with nearby layers. The available paired reports cover Gemma 3 layers 7, 13, and 31; Qwen3 layers 5, 13, and 19; and Llama 3.1 layers 4, 13, and 20. Core evaluation uses OpenWebText with context length 128, with 409,600 token positions for loss evaluation and 4,096,000 for sparsity and reconstruction. SCR and TPP use the Bias in Bios and Amazon Reviews datasets, with the same evaluation configuration within each original–fine-tuned pair.",
+   "zh": "我们使用上文介绍的 core、SCR 和 TPP 评估方法，对原始 SAE 和微调后的 SAE 进行比较。 我们从每个模型插入层扫描的早期、中期和晚期部分中手动选择了若干层，优先选择与相邻层相比插入成功率相对较高的层。 现有的配对报告涵盖了 Gemma 3 的第 7、13 和 31 层；Qwen3 的第 5、13 和 19 层；以及 Llama 3.1 的第 4、13 和 20 层。 Core 评估使用 OpenWebText，上下文长度为 128，其中损失评估使用 409,600 个词元位置，稀疏性和重建评估则使用 4,096,000 个词元位置。 SCR 和 TPP 使用 Bias in Bios 和 Amazon Reviews 数据集，并在每对原始模型与微调模型中采用相同的评估配置。",
+   "sents": [
+    {
+     "en": "We compare original and fine-tuned SAEs using the core, SCR, and TPP evaluations introduced above.",
+     "zh": "我们使用上文介绍的 core、SCR 和 TPP 评估方法，对原始 SAE 和微调后的 SAE 进行比较。"
+    },
+    {
+     "en": "We manually selected layers from early, middle, and late parts of each model’s insertion-layer sweep, favoring layers with relatively high insertion success compared with nearby layers.",
+     "zh": "我们从每个模型插入层扫描的早期、中期和晚期部分中手动选择了若干层，优先选择与相邻层相比插入成功率相对较高的层。"
+    },
+    {
+     "en": "The available paired reports cover Gemma 3 layers 7, 13, and 31; Qwen3 layers 5, 13, and 19; and Llama 3.1 layers 4, 13, and 20.",
+     "zh": "现有的配对报告涵盖了 Gemma 3 的第 7、13 和 31 层；Qwen3 的第 5、13 和 19 层；以及 Llama 3.1 的第 4、13 和 20 层。"
+    },
+    {
+     "en": "Core evaluation uses OpenWebText with context length 128, with 409,600 token positions for loss evaluation and 4,096,000 for sparsity and reconstruction.",
+     "zh": "Core 评估使用 OpenWebText，上下文长度为 128，其中损失评估使用 409,600 个词元位置，稀疏性和重建评估则使用 4,096,000 个词元位置。"
+    },
+    {
+     "en": "SCR and TPP use the Bias in Bios and Amazon Reviews datasets, with the same evaluation configuration within each original–fine-tuned pair.",
+     "zh": "SCR 和 TPP 使用 Bias in Bios 和 Amazon Reviews 数据集，并在每对原始模型与微调模型中采用相同的评估配置。"
+    }
+   ]
+  },
+  {
+   "en": "Table IV reports loss recovered (LR), mean feature sparsity L 0 L_{0} , and the relative change in reconstruction MSE for original and fine-tuned SAEs. LR is reported as a percentage, its paired change in percentage points, and L 0 L_{0} as the mean number of active features. The table’s MSE column gives the relative percentage change, 100 ​ ( MSE FT / MSE orig − 1 ) 100(\\mathrm{MSE}_{\\rm FT}/\\mathrm{MSE}_{\\rm orig}-1) . Loss recovered is ( ℒ ablated − ℒ SAE ) / ( ℒ ablated − ℒ base ) (\\mathcal{L}_{\\rm ablated}-\\mathcal{L}_{\\rm SAE})/(\\mathcal{L}_{\\rm ablated}-\\mathcal{L}_{\\rm base}) , where ℒ \\mathcal{L} denotes next-token cross-entropy; higher values indicate better preservation of model performance.",
+   "zh": "表 IV 报告了损失恢复度（LR）、平均特征稀疏性 L₀ L_{0}，以及原始 SAE 和微调后 SAE 的重建 MSE 的相对变化。 LR 以百分比形式报告，其对应的变化量以百分点表示，而 L₀ L_{0} 则作为活跃特征的平均数量报告。 表中 MSE 列给出了相对百分比变化：100 ​ ( MSE FT / MSE orig − 1 ) 100(\\mathrm{MSE}_{\\rm FT}/\\mathrm{MSE}_{\\rm orig}-1) 。 损失恢复度为 ( ℒ ablated − ℒ SAE ) / ( ℒ ablated − ℒ base ) (\\mathcal{L}_{\\rm ablated}-\\mathcal{L}_{\\rm SAE})/(\\mathcal{L}_{\\rm ablated}-\\mathcal{L}_{\\rm base})，其中 ℒ \\mathcal{L} 表示下一个词元的交叉熵；数值越高表明模型性能保留得越好。",
+   "sents": [
+    {
+     "en": "Table IV reports loss recovered (LR), mean feature sparsity L 0 L_{0} , and the relative change in reconstruction MSE for original and fine-tuned SAEs.",
+     "zh": "表 IV 报告了损失恢复度（LR）、平均特征稀疏性 L₀ L_{0}，以及原始 SAE 和微调后 SAE 的重建 MSE 的相对变化。"
+    },
+    {
+     "en": "LR is reported as a percentage, its paired change in percentage points, and L 0 L_{0} as the mean number of active features.",
+     "zh": "LR 以百分比形式报告，其对应的变化量以百分点表示，而 L₀ L_{0} 则作为活跃特征的平均数量报告。"
+    },
+    {
+     "en": "The table’s MSE column gives the relative percentage change, 100 ​ ( MSE FT / MSE orig − 1 ) 100(\\mathrm{MSE}_{\\rm FT}/\\mathrm{MSE}_{\\rm orig}-1) .",
+     "zh": "表中 MSE 列给出了相对百分比变化：100 ​ ( MSE FT / MSE orig − 1 ) 100(\\mathrm{MSE}_{\\rm FT}/\\mathrm{MSE}_{\\rm orig}-1) 。"
+    },
+    {
+     "en": "Loss recovered is ( ℒ ablated − ℒ SAE ) / ( ℒ ablated − ℒ base ) (\\mathcal{L}_{\\rm ablated}-\\mathcal{L}_{\\rm SAE})/(\\mathcal{L}_{\\rm ablated}-\\mathcal{L}_{\\rm base}) , where ℒ \\mathcal{L} denotes next-token cross-entropy; higher values indicate better preservation of model performance.",
+     "zh": "损失恢复度为 ( ℒ ablated − ℒ SAE ) / ( ℒ ablated − ℒ base ) (\\mathcal{L}_{\\rm ablated}-\\mathcal{L}_{\\rm SAE})/(\\mathcal{L}_{\\rm ablated}-\\mathcal{L}_{\\rm base})，其中 ℒ \\mathcal{L} 表示下一个词元的交叉熵；数值越高表明模型性能保留得越好。"
+    }
+   ]
+  },
+  {
+   "en": "Gemma’s loss recovered changes by 0.00 to + 0.35 +0.35 percentage points, while Llama’s decreases by 0.18 to 0.53 points. Qwen shows larger reductions: 3.71, 1.11, and 16.33 points at layers 5, 13, and 19, respectively. Its layer-19 score falls from 76.81% to 60.48%. Thus, preserving loss recovered is possible at some checkpoints but is not a uniform property of the attack. The original Qwen checkpoints also have substantially lower loss-recovery scores than the original Gemma and Llama checkpoints, underscoring the importance of comparison against each layer’s own baseline.",
+   "zh": "Gemma 的恢复损失变化为 0.00 至 +0.35，即 +0.35 个百分点，而 Llama 的则从 0.71 降至 0.53 点。 Qwen 的降幅更大：在第 5、13 和 19 层分别下降了 3.71、1.11 和 16.33 点。 其第 19 层的得分从 76.81% 降至 60.48%。 因此，在某些检查点中保留恢复损失是可能的，但这并非该攻击的普遍特性。 原始 Qwen 检查点的恢复损失得分也远低于原始 Gemma 和 Llama 检查点，这凸显了与每一层自身基线进行比较的重要性。",
+   "sents": [
+    {
+     "en": "Gemma’s loss recovered changes by 0.00 to + 0.35 +0.35 percentage points, while Llama’s decreases by 0.18 to 0.53 points.",
+     "zh": "Gemma 的恢复损失变化为 0.00 至 +0.35，即 +0.35 个百分点，而 Llama 的则从 0.71 降至 0.53 点。"
+    },
+    {
+     "en": "Qwen shows larger reductions: 3.71, 1.11, and 16.33 points at layers 5, 13, and 19, respectively.",
+     "zh": "Qwen 的降幅更大：在第 5、13 和 19 层分别下降了 3.71、1.11 和 16.33 点。"
+    },
+    {
+     "en": "Its layer-19 score falls from 76.81% to 60.48%.",
+     "zh": "其第 19 层的得分从 76.81% 降至 60.48%。"
+    },
+    {
+     "en": "Thus, preserving loss recovered is possible at some checkpoints but is not a uniform property of the attack.",
+     "zh": "因此，在某些检查点中保留恢复损失是可能的，但这并非该攻击的普遍特性。"
+    },
+    {
+     "en": "The original Qwen checkpoints also have substantially lower loss-recovery scores than the original Gemma and Llama checkpoints, underscoring the importance of comparison against each layer’s own baseline.",
+     "zh": "原始 Qwen 检查点的恢复损失得分也远低于原始 Gemma 和 Llama 检查点，这凸显了与每一层自身基线进行比较的重要性。"
+    }
+   ]
+  },
+  {
+   "en": "The reported reconstruction MSE increases by at most 0.49% for Gemma, 4.17% for Qwen, and 2.78% for Llama. Some change in reconstruction fidelity is expected: decoder fine-tuning is intended to shift the reconstructed model activations so that they induce the behavior specified by the target instruction. The objective in Eq. ( 4 ) optimizes answer-token likelihood without a reconstruction penalty. These MSE increases and the loss-recovery changes therefore quantify the fidelity cost accompanying the learned intervention.",
+   "zh": "报告的重建均方误差（MSE）在 Gemma 上最多增加了 0.49%，在 Qwen 上增加了 4.17%，在 Llama 上增加了 2.78%。重建保真度出现一定程度的变化是意料之中的：解码器微调旨在调整重建后的模型激活值，使其能够产生目标指令所指定的行为。公式 (4) 中的目标函数仅优化了答案标记的出现概率，而未包含重建惩罚项。因此，这些 MSE 的增加以及损失恢复的变化，量化了所学习干预所带来的保真度成本。",
+   "sents": null
+  },
+  {
+   "en": "Feature selection, by contrast, is preserved by the frozen encoder for fixed input activations. Qwen’s TopK rule fixes k = 100 k=100 and retains the 100 largest encoder values per token, so its reported L 0 = 100 L_{0}=100 follows from the architecture. Across all evaluated checkpoints, the largest absolute paired difference in mean L 0 L_{0} is below 0.008 active features.",
+   "zh": "相比之下，特征选择通过冻结编码器在固定输入激活值下得以保留。 Qwen 的 TopK 规则将 k 固定为 100（k=100），并保留每个词元中最大的 100 个编码器值，因此其报告的 L₀ = 100（L₀=100）是由该架构决定的。 在所有评估的检查点中，平均 L₀（L₀）的最大绝对配对差异低于 0.008 个活跃特征。",
+   "sents": [
+    {
+     "en": "Feature selection, by contrast, is preserved by the frozen encoder for fixed input activations.",
+     "zh": "相比之下，特征选择通过冻结编码器在固定输入激活值下得以保留。"
+    },
+    {
+     "en": "Qwen’s TopK rule fixes k = 100 k=100 and retains the 100 largest encoder values per token, so its reported L 0 = 100 L_{0}=100 follows from the architecture.",
+     "zh": "Qwen 的 TopK 规则将 k 固定为 100（k=100），并保留每个词元中最大的 100 个编码器值，因此其报告的 L₀ = 100（L₀=100）是由该架构决定的。"
+    },
+    {
+     "en": "Across all evaluated checkpoints, the largest absolute paired difference in mean L 0 L_{0} is below 0.008 active features.",
+     "zh": "在所有评估的检查点中，平均 L₀（L₀）的最大绝对配对差异低于 0.008 个活跃特征。"
+    }
+   ]
+  },
+  {
+   "en": "Table V compares original and fine-tuned SCR and TPP scores with 20 ablated features. Both metrics are dimensionless. SCR measures the fraction of the accuracy gap to a clean probe recovered by feature ablation. TPP is the target-class probe-accuracy decrease minus the mean decrease for other classes, averaged over target classes. Accuracies are expressed as fractions, so a TPP score of 0.01 corresponds to a one-percentage-point difference. Higher values indicate better performance for both metrics. Each Δ \\Delta column gives the relative percentage change, 100 ​ ( score FT / score orig − 1 ) 100(\\mathrm{score}_{\\rm FT}/\\mathrm{score}_{\\rm orig}-1) , calculated before rounding.",
+   "zh": "表 V 比较了原始模型与微调后的 SCR 和 TPP 分数，并展示了 20 个特征消融的结果。 这两个指标均为无量纲量。 SCR 衡量的是通过特征消融恢复的、相对于干净探针的准确率差距中所占的比例。 TPP 是目标类别的探针准确率下降值减去其他类别的平均下降值，再对目标类别求平均。 准确率以分数形式表示，因此 TPP 分数为 0.01 对应百分之一的差异。 对于这两个指标而言，数值越高表示性能越好。 每个 Δ \\Delta 列给出了相对百分比变化量：100 ​ ( score FT / score orig − 1 ) 100(\\mathrm{score}_{\\rm FT}/\\mathrm{score}_{\\rm orig}-1)，该值在四舍五入前计算得出。",
+   "sents": [
+    {
+     "en": "Table V compares original and fine-tuned SCR and TPP scores with 20 ablated features.",
+     "zh": "表 V 比较了原始模型与微调后的 SCR 和 TPP 分数，并展示了 20 个特征消融的结果。"
+    },
+    {
+     "en": "Both metrics are dimensionless.",
+     "zh": "这两个指标均为无量纲量。"
+    },
+    {
+     "en": "SCR measures the fraction of the accuracy gap to a clean probe recovered by feature ablation.",
+     "zh": "SCR 衡量的是通过特征消融恢复的、相对于干净探针的准确率差距中所占的比例。"
+    },
+    {
+     "en": "TPP is the target-class probe-accuracy decrease minus the mean decrease for other classes, averaged over target classes.",
+     "zh": "TPP 是目标类别的探针准确率下降值减去其他类别的平均下降值，再对目标类别求平均。"
+    },
+    {
+     "en": "Accuracies are expressed as fractions, so a TPP score of 0.01 corresponds to a one-percentage-point difference.",
+     "zh": "准确率以分数形式表示，因此 TPP 分数为 0.01 对应百分之一的差异。"
+    },
+    {
+     "en": "Higher values indicate better performance for both metrics.",
+     "zh": "对于这两个指标而言，数值越高表示性能越好。"
+    },
+    {
+     "en": "Each Δ \\Delta column gives the relative percentage change, 100 ​ ( score FT / score orig − 1 ) 100(\\mathrm{score}_{\\rm FT}/\\mathrm{score}_{\\rm orig}-1) , calculated before rounding.",
+     "zh": "每个 Δ \\Delta 列给出了相对百分比变化量：100 ​ ( score FT / score orig − 1 ) 100(\\mathrm{score}_{\\rm FT}/\\mathrm{score}_{\\rm orig}-1)，该值在四舍五入前计算得出。"
+    }
+   ]
+  },
+  {
+   "en": "As Fig. 4 shows, the original and fine-tuned feature-intervention curves largely overlap across all seven saved budgets, from 2 to 500 features. The remaining differences occur in both directions. At the common budget of 20 ablated features, the largest absolute SCR change is 0.0113 and the largest absolute TPP change is 0.0060. Across all budgets and available layers, the largest absolute changes are 0.0409 for SCR and 0.0107 for TPP, both at Qwen layer 19. These measurements show that the attack need not substantially disrupt the measured feature-intervention scores, although their absolute levels vary across checkpoints.",
+   "zh": "如图 4 所示，在所有七个保存的预算（从 2 到 500 个特征）范围内，原始和微调后的特征干预曲线基本重叠。 其余差异则出现在两个方向上。 在 20 个被削减特征的共同预算下，SCR 的最大绝对变化为 0.0113，TPP 的最大绝对变化为 0.0060。 在所有预算和可用层中，最大的绝对变化分别为 SCR 的 0.0409 和 TPP 的 0.0107，两者均出现在 Qwen 第 19 层。 这些测量结果表明，攻击并不必然显著扰乱所测得的特征干预分数，尽管其绝对水平在不同检查点之间存在差异。",
+   "sents": [
+    {
+     "en": "As Fig. 4 shows, the original and fine-tuned feature-intervention curves largely overlap across all seven saved budgets, from 2 to 500 features.",
+     "zh": "如图 4 所示，在所有七个保存的预算（从 2 到 500 个特征）范围内，原始和微调后的特征干预曲线基本重叠。"
+    },
+    {
+     "en": "The remaining differences occur in both directions.",
+     "zh": "其余差异则出现在两个方向上。"
+    },
+    {
+     "en": "At the common budget of 20 ablated features, the largest absolute SCR change is 0.0113 and the largest absolute TPP change is 0.0060.",
+     "zh": "在 20 个被削减特征的共同预算下，SCR 的最大绝对变化为 0.0113，TPP 的最大绝对变化为 0.0060。"
+    },
+    {
+     "en": "Across all budgets and available layers, the largest absolute changes are 0.0409 for SCR and 0.0107 for TPP, both at Qwen layer 19.",
+     "zh": "在所有预算和可用层中，最大的绝对变化分别为 SCR 的 0.0409 和 TPP 的 0.0107，两者均出现在 Qwen 第 19 层。"
+    },
+    {
+     "en": "These measurements show that the attack need not substantially disrupt the measured feature-intervention scores, although their absolute levels vary across checkpoints.",
+     "zh": "这些测量结果表明，攻击并不必然显著扰乱所测得的特征干预分数，尽管其绝对水平在不同检查点之间存在差异。"
+    }
+   ]
+  },
+  {
+   "en": "At these same nine layers, text-insertion ASR ranges from 85.6% to 98.6%. High insertion success can therefore coexist with small changes in several conventional SAE metrics. Conversely, the Qwen loss-recovery reductions provide a visible quality cost.",
+   "zh": "在这相同的九层中，文本插入式 ASR 的准确率范围从 85.6% 到 98.6%。 因此，高插入成功率可以与多个传统 SAE 指标中的微小变化共存。 相反，Qwen 损失恢复的减少则带来了可见的质量代价。",
+   "sents": [
+    {
+     "en": "At these same nine layers, text-insertion ASR ranges from 85.6% to 98.6%.",
+     "zh": "在这相同的九层中，文本插入式 ASR 的准确率范围从 85.6% 到 98.6%。"
+    },
+    {
+     "en": "High insertion success can therefore coexist with small changes in several conventional SAE metrics.",
+     "zh": "因此，高插入成功率可以与多个传统 SAE 指标中的微小变化共存。"
+    },
+    {
+     "en": "Conversely, the Qwen loss-recovery reductions provide a visible quality cost.",
+     "zh": "相反，Qwen 损失恢复的减少则带来了可见的质量代价。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate whether the compromised SAE distinguishes the active cue, Current year: 2024. , from the inactive cue, Current year: 2023. . Each held-out task is evaluated in both contexts. The conditional sweep covers all 34 Gemma 3, 28 Qwen3, and 32 Llama 3.1 layers. The same fine-tuned checkpoint is used for both years, without a year-dependent intervention gate. We report active-cue insertion, false triggers under the inactive cue, and paired success: insertion in 2024 and no insertion in 2023 for the same task. Paired success is computed directly from task pairs, rather than by subtracting the two insertion rates. Neither the base LLM nor the original SAE inserts the payload in either context at any evaluated layer.",
+   "zh": "我们评估被破坏的 SAE 是否能够区分主动提示“当前年份：2024”与被动提示“当前年份：2023”。 每个预留的任务在两种上下文中均进行评估。 条件扫描覆盖了 Gemma 3 的全部 34 层、Qwen3 的 28 层以及 Llama 3.1 的 32 层。 两个年份均使用相同的微调检查点，且没有引入与年份相关的干预门控机制。 我们报告了主动提示的插入情况、被动提示下的误触发情况，以及成对成功指标：即同一任务在 2024 年被插入，而在 2023 年未被插入。 成对成功指标直接从任务对中计算得出，而非通过减去两种插入率得到。 在任何被评估的层中，基础 LLM 和原始 SAE 均未在任一上下文中插入有效载荷。",
+   "sents": [
+    {
+     "en": "We evaluate whether the compromised SAE distinguishes the active cue, Current year: 2024. , from the inactive cue, Current year: 2023. .",
+     "zh": "我们评估被破坏的 SAE 是否能够区分主动提示“当前年份：2024”与被动提示“当前年份：2023”。"
+    },
+    {
+     "en": "Each held-out task is evaluated in both contexts.",
+     "zh": "每个预留的任务在两种上下文中均进行评估。"
+    },
+    {
+     "en": "The conditional sweep covers all 34 Gemma 3, 28 Qwen3, and 32 Llama 3.1 layers.",
+     "zh": "条件扫描覆盖了 Gemma 3 的全部 34 层、Qwen3 的 28 层以及 Llama 3.1 的 32 层。"
+    },
+    {
+     "en": "The same fine-tuned checkpoint is used for both years, without a year-dependent intervention gate.",
+     "zh": "两个年份均使用相同的微调检查点，且没有引入与年份相关的干预门控机制。"
+    },
+    {
+     "en": "We report active-cue insertion, false triggers under the inactive cue, and paired success: insertion in 2024 and no insertion in 2023 for the same task.",
+     "zh": "我们报告了主动提示的插入情况、被动提示下的误触发情况，以及成对成功指标：即同一任务在 2024 年被插入，而在 2023 年未被插入。"
+    },
+    {
+     "en": "Paired success is computed directly from task pairs, rather than by subtracting the two insertion rates.",
+     "zh": "成对成功指标直接从任务对中计算得出，而非通过减去两种插入率得到。"
+    },
+    {
+     "en": "Neither the base LLM nor the original SAE inserts the payload in either context at any evaluated layer.",
+     "zh": "在任何被评估的层中，基础 LLM 和原始 SAE 均未在任一上下文中插入有效载荷。"
+    }
+   ]
+  },
+  {
+   "en": "Table VI summarizes active-cue insertion, false triggers, and paired success as median (minimum–maximum) percentages over layers. Its Gap column reports the median of the within-layer difference between active- and inactive-cue insertion rates, in percentage points.",
+   "zh": "表 VI 总结了各层中主动提示插入率、虚假触发率和成对成功率的中位数（最小值–最大值）百分比。 其“差距”列报告了同一层内主动提示插入率与非主动提示插入率之差的中位数，单位为百分点。",
+   "sents": [
+    {
+     "en": "Table VI summarizes active-cue insertion, false triggers, and paired success as median (minimum–maximum) percentages over layers.",
+     "zh": "表 VI 总结了各层中主动提示插入率、虚假触发率和成对成功率的中位数（最小值–最大值）百分比。"
+    },
+    {
+     "en": "Its Gap column reports the median of the within-layer difference between active- and inactive-cue insertion rates, in percentage points.",
+     "zh": "其“差距”列报告了同一层内主动提示插入率与非主动提示插入率之差的中位数，单位为百分点。"
+    }
+   ]
+  },
+  {
+   "en": "Gemma 3 exhibits reliable conditional behavior at several early layers (Fig. 5 ). Across layers 0–9, active-cue insertion ranges from 95.0% to 98.6%, false triggers from 0.0% to 2.2%, and paired success from 95.0% to 98.6%. At layer 6, active-cue insertion reaches 98.6% with no false triggers, yielding 98.6% paired success. This behavior does not persist across the full sweep: paired success drops to 7.9% at layer 10 and 12.2% at layer 11, recovers to 90.6% at layer 12, and varies substantially thereafter. Consequently, Gemma’s median paired success across all layers is only 9.0% (Table VI ).",
+   "zh": "Gemma 3 在多个早期层中表现出可靠的条件行为（图 5）。 在第 0 至第 9 层之间，主动线索插入率从 95.0% 到 98.6%，误触发率从 0.0% 到 2.2%，配对成功率从 95.0% 到 98.6%。 在第 6 层，主动线索插入率达到 98.6% 且没有误触发，从而实现了 98.6% 的配对成功率。 这种行为并未在整个扫描过程中持续存在：配对成功率在第 10 层降至 7.9%，在第 11 层降至 12.2%，在第 12 层恢复至 90.6%，此后则波动显著。 因此，Gemma 在所有层中的配对成功率中位数仅为 9.0%（表 VI）。",
+   "sents": [
+    {
+     "en": "Gemma 3 exhibits reliable conditional behavior at several early layers (Fig. 5 ).",
+     "zh": "Gemma 3 在多个早期层中表现出可靠的条件行为（图 5）。"
+    },
+    {
+     "en": "Across layers 0–9, active-cue insertion ranges from 95.0% to 98.6%, false triggers from 0.0% to 2.2%, and paired success from 95.0% to 98.6%.",
+     "zh": "在第 0 至第 9 层之间，主动线索插入率从 95.0% 到 98.6%，误触发率从 0.0% 到 2.2%，配对成功率从 95.0% 到 98.6%。"
+    },
+    {
+     "en": "At layer 6, active-cue insertion reaches 98.6% with no false triggers, yielding 98.6% paired success.",
+     "zh": "在第 6 层，主动线索插入率达到 98.6% 且没有误触发，从而实现了 98.6% 的配对成功率。"
+    },
+    {
+     "en": "This behavior does not persist across the full sweep: paired success drops to 7.9% at layer 10 and 12.2% at layer 11, recovers to 90.6% at layer 12, and varies substantially thereafter.",
+     "zh": "这种行为并未在整个扫描过程中持续存在：配对成功率在第 10 层降至 7.9%，在第 11 层降至 12.2%，在第 12 层恢复至 90.6%，此后则波动显著。"
+    },
+    {
+     "en": "Consequently, Gemma’s median paired success across all layers is only 9.0% (Table VI ).",
+     "zh": "因此，Gemma 在所有层中的配对成功率中位数仅为 9.0%（表 VI）。"
+    }
+   ]
+  },
+  {
+   "en": "Qwen3 and Llama 3.1 distinguish the cues less reliably. Qwen’s median active-cue insertion is 41.7%, alongside a 31.7% median false-trigger rate and 10.1% median paired success. Its highest paired success is 38.1% at layer 14, where active-cue insertion is 60.4% and false triggers occur on 23.0% of tasks. Llama has a higher median active-cue insertion rate of 73.7%, but also a 49.6% median false-trigger rate; median paired success is 14.0%. Its highest paired success is 68.3% at layer 7, with 97.8% active-cue insertion and 29.5% false triggers. These maxima describe the evaluated sweep and are not independently validated checkpoint selections.",
+   "zh": "Qwen3 和 Llama 3.1 对提示的识别可靠性较低。 Qwen 的活跃提示插入中位数为 41.7%，同时其错误触发率中位数为 31.7%，配对成功率中位数为 10.1%。 在第 14 层时，其最高的配对成功率为 38.1%，此时活跃提示插入率为 60.4%，23.0% 的任务会出现错误触发。 Llama 的活跃提示插入率中位数更高，为 73.7%，但其错误触发率中位数也达到 49.6%；配对成功率中位数为 14.0%。 在第 7 层时，其最高的配对成功率为 68.3%，此时活跃提示插入率为 97.8%，错误触发率为 29.5%。 这些最大值描述了所评估的扫描过程，并非独立验证的检查点选择。",
+   "sents": [
+    {
+     "en": "Qwen3 and Llama 3.1 distinguish the cues less reliably.",
+     "zh": "Qwen3 和 Llama 3.1 对提示的识别可靠性较低。"
+    },
+    {
+     "en": "Qwen’s median active-cue insertion is 41.7%, alongside a 31.7% median false-trigger rate and 10.1% median paired success.",
+     "zh": "Qwen 的活跃提示插入中位数为 41.7%，同时其错误触发率中位数为 31.7%，配对成功率中位数为 10.1%。"
+    },
+    {
+     "en": "Its highest paired success is 38.1% at layer 14, where active-cue insertion is 60.4% and false triggers occur on 23.0% of tasks.",
+     "zh": "在第 14 层时，其最高的配对成功率为 38.1%，此时活跃提示插入率为 60.4%，23.0% 的任务会出现错误触发。"
+    },
+    {
+     "en": "Llama has a higher median active-cue insertion rate of 73.7%, but also a 49.6% median false-trigger rate; median paired success is 14.0%.",
+     "zh": "Llama 的活跃提示插入率中位数更高，为 73.7%，但其错误触发率中位数也达到 49.6%；配对成功率中位数为 14.0%。"
+    },
+    {
+     "en": "Its highest paired success is 68.3% at layer 7, with 97.8% active-cue insertion and 29.5% false triggers.",
+     "zh": "在第 7 层时，其最高的配对成功率为 68.3%，此时活跃提示插入率为 97.8%，错误触发率为 29.5%。"
+    },
+    {
+     "en": "These maxima describe the evaluated sweep and are not independently validated checkpoint selections.",
+     "zh": "这些最大值描述了所评估的扫描过程，并非独立验证的检查点选择。"
+    }
+   ]
+  },
+  {
+   "en": "The conditional attack can therefore learn a sharp distinction between the two cues, as demonstrated by early Gemma layers, but this is not a consistent property across models or insertion layers. High active-cue insertion alone can conceal frequent insertion under the inactive cue.",
+   "zh": "因此，条件攻击能够学习区分这两种提示的显著差异，正如早期 Gemma 层所展现的那样，但这一特性并非在所有模型或插入层中都保持一致。 仅通过插入高活性提示，就可能将频繁插入的情况隐藏在非活性提示之下。",
+   "sents": [
+    {
+     "en": "The conditional attack can therefore learn a sharp distinction between the two cues, as demonstrated by early Gemma layers, but this is not a consistent property across models or insertion layers.",
+     "zh": "因此，条件攻击能够学习区分这两种提示的显著差异，正如早期 Gemma 层所展现的那样，但这一特性并非在所有模型或插入层中都保持一致。"
+    },
+    {
+     "en": "High active-cue insertion alone can conceal frequent insertion under the inactive cue.",
+     "zh": "仅通过插入高活性提示，就可能将频繁插入的情况隐藏在非活性提示之下。"
+    }
+   ]
+  },
+  {
+   "en": "Our results suggest that an SAE inserted into a model’s forward pass should be treated as an executable model component rather than solely as an interpretability artifact. Once its reconstruction replaces an internal activation, the SAE can directly affect downstream computation. Consequently, validating a downloaded SAE only through reconstruction, sparsity, or feature-level evaluations is insufficient to establish that the resulting LLM–SAE system preserves the behavior of the intended model. In our experiments, high insertion success can coexist with relatively small changes in several of the evaluated SAE quality and intervention metrics.",
+   "zh": "我们的研究结果表明，插入模型前向传播的 SAE 应被视为一个可执行模型组件，而不仅仅是一个可解释性产物。 一旦其重建结果替代了某个内部激活值，SAE 就能直接影响下游计算。 因此，仅通过重建、稀疏性或特征层评估来验证已下载的 SAE，并不足以证明由此形成的 LLM–SAE 系统能够保留目标模型的行为。 在我们的实验中，较高的插入成功率可以与多个所评估的 SAE 质量和干预指标中相对较小的变化同时存在。",
+   "sents": [
+    {
+     "en": "Our results suggest that an SAE inserted into a model’s forward pass should be treated as an executable model component rather than solely as an interpretability artifact.",
+     "zh": "我们的研究结果表明，插入模型前向传播的 SAE 应被视为一个可执行模型组件，而不仅仅是一个可解释性产物。"
+    },
+    {
+     "en": "Once its reconstruction replaces an internal activation, the SAE can directly affect downstream computation.",
+     "zh": "一旦其重建结果替代了某个内部激活值，SAE 就能直接影响下游计算。"
+    },
+    {
+     "en": "Consequently, validating a downloaded SAE only through reconstruction, sparsity, or feature-level evaluations is insufficient to establish that the resulting LLM–SAE system preserves the behavior of the intended model.",
+     "zh": "因此，仅通过重建、稀疏性或特征层评估来验证已下载的 SAE，并不足以证明由此形成的 LLM–SAE 系统能够保留目标模型的行为。"
+    },
+    {
+     "en": "In our experiments, high insertion success can coexist with relatively small changes in several of the evaluated SAE quality and intervention metrics.",
+     "zh": "在我们的实验中，较高的插入成功率可以与多个所评估的 SAE 质量和干预指标中相对较小的变化同时存在。"
+    }
+   ]
+  },
+  {
+   "en": "A first line of defense is therefore checkpoint provenance and integrity. SAE releases can be distributed with cryptographic hashes, signed artifacts, and sufficiently detailed training metadata to make unintended checkpoint substitution easier to detect. Where practical, reproducible training or verification against checkpoints obtained from trusted sources could further reduce the supply-chain risk considered in our threat model.",
+   "zh": "因此，第一道防线是检查点的来源和完整性。 SAE 发布版本可以附带加密哈希、签名文件以及足够详细的训练元数据，以便更容易检测非预期的检查点替换。 在可行的情况下，通过可信来源获取的检查点进行可重复的训练或验证，可以进一步降低我们威胁模型中考虑到的供应链风险。",
+   "sents": [
+    {
+     "en": "A first line of defense is therefore checkpoint provenance and integrity.",
+     "zh": "因此，第一道防线是检查点的来源和完整性。"
+    },
+    {
+     "en": "SAE releases can be distributed with cryptographic hashes, signed artifacts, and sufficiently detailed training metadata to make unintended checkpoint substitution easier to detect.",
+     "zh": "SAE 发布版本可以附带加密哈希、签名文件以及足够详细的训练元数据，以便更容易检测非预期的检查点替换。"
+    },
+    {
+     "en": "Where practical, reproducible training or verification against checkpoints obtained from trusted sources could further reduce the supply-chain risk considered in our threat model.",
+     "zh": "在可行的情况下，通过可信来源获取的检查点进行可重复的训练或验证，可以进一步降低我们威胁模型中考虑到的供应链风险。"
+    }
+   ]
+  },
+  {
+   "en": "A second line of defense is behavioral validation of the composed LLM–SAE system. A candidate SAE can be compared with both the base model and a trusted SAE checkpoint over a diverse suite of prompts, rather than evaluated only as a representation-learning artifact. Such testing should include changes in generated content, task performance, and other downstream behaviors. Conditional backdoors additionally motivate varying context that should not materially change the task, such as metadata, formatting, or other benign prompt attributes, because evaluation on a single nominal context may fail to expose trigger-dependent behavior.",
+   "zh": "第二道防线是对组合的 LLM–SAE 系统进行行为验证。 候选 SAE 可以在多样化的提示集上，与基础模型和可信的 SAE 基准模型进行比较，而不仅仅是作为表示学习产物进行评估。 此类测试应包含生成内容的变化、任务表现以及其他下游行为的改变。 条件后门机制还要求改变那些不应实质性影响任务的上下文信息，例如元数据、格式或其他无害的提示属性，因为仅在单一标准上下文中进行评估可能无法暴露触发依赖的行为。",
+   "sents": [
+    {
+     "en": "A second line of defense is behavioral validation of the composed LLM–SAE system.",
+     "zh": "第二道防线是对组合的 LLM–SAE 系统进行行为验证。"
+    },
+    {
+     "en": "A candidate SAE can be compared with both the base model and a trusted SAE checkpoint over a diverse suite of prompts, rather than evaluated only as a representation-learning artifact.",
+     "zh": "候选 SAE 可以在多样化的提示集上，与基础模型和可信的 SAE 基准模型进行比较，而不仅仅是作为表示学习产物进行评估。"
+    },
+    {
+     "en": "Such testing should include changes in generated content, task performance, and other downstream behaviors.",
+     "zh": "此类测试应包含生成内容的变化、任务表现以及其他下游行为的改变。"
+    },
+    {
+     "en": "Conditional backdoors additionally motivate varying context that should not materially change the task, such as metadata, formatting, or other benign prompt attributes, because evaluation on a single nominal context may fail to expose trigger-dependent behavior.",
+     "zh": "条件后门机制还要求改变那些不应实质性影响任务的上下文信息，例如元数据、格式或其他无害的提示属性，因为仅在单一标准上下文中进行评估可能无法暴露触发依赖的行为。"
+    }
+   ]
+  },
+  {
+   "en": "Our experiments do not evaluate these defenses or establish detection thresholds, so their effectiveness remains an open question. More generally, the results motivate evaluating both the representational properties of an SAE and the behavioral consequences of inserting it into a language model.",
+   "zh": "我们的实验并未评估这些防御机制，也未确定检测阈值，因此它们的有效性仍是一个悬而未决的问题。 更广泛地说，这些结果促使我们同时评估 SAE 的表示特性以及将其插入语言模型所带来的行为影响。",
+   "sents": [
+    {
+     "en": "Our experiments do not evaluate these defenses or establish detection thresholds, so their effectiveness remains an open question.",
+     "zh": "我们的实验并未评估这些防御机制，也未确定检测阈值，因此它们的有效性仍是一个悬而未决的问题。"
+    },
+    {
+     "en": "More generally, the results motivate evaluating both the representational properties of an SAE and the behavioral consequences of inserting it into a language model.",
+     "zh": "更广泛地说，这些结果促使我们同时评估 SAE 的表示特性以及将其插入语言模型所带来的行为影响。"
+    }
+   ]
+  },
+  {
+   "en": "SAE-specific methods for screening checkpoints for behavioral backdoors remain an open research direction.",
+   "zh": "针对行为后门检查点的 SAE 特定筛选方法仍是一个开放的研究方向。",
+   "sents": null
+  },
+  {
+   "en": "SAE quality. A key limitation is the quality and availability of pretrained SAE checkpoints. Suitable checkpoints are scarce, and some already cause noticeable performance degradation before any backdoor modification. Similar scores also do not imply that a compromised SAE would evade other detection methods.",
+   "zh": "SAE 质量。 一个关键限制是预训练 SAE 检查点的质量和可用性。 合适的检查点十分稀缺，而且有些检查点在尚未进行任何后门修改之前，就已经导致了明显的性能下降。 类似的分数也不意味着被破坏的 SAE 能够绕过其他检测方法。",
+   "sents": [
+    {
+     "en": "SAE quality.",
+     "zh": "SAE 质量。"
+    },
+    {
+     "en": "A key limitation is the quality and availability of pretrained SAE checkpoints.",
+     "zh": "一个关键限制是预训练 SAE 检查点的质量和可用性。"
+    },
+    {
+     "en": "Suitable checkpoints are scarce, and some already cause noticeable performance degradation before any backdoor modification.",
+     "zh": "合适的检查点十分稀缺，而且有些检查点在尚未进行任何后门修改之前，就已经导致了明显的性能下降。"
+    },
+    {
+     "en": "Similar scores also do not imply that a compromised SAE would evade other detection methods.",
+     "zh": "类似的分数也不意味着被破坏的 SAE 能够绕过其他检测方法。"
+    }
+   ]
+  },
+  {
+   "en": "Experimental design. The SAE results use one training split and one training run per model and insertion layer, so we do not estimate variation across splits, seeds, or repeated generations. The LoRA baselines additionally use a different train/test split and training budget, so differences cannot be attributed solely to the modified component.",
+   "zh": "实验设计。 SAE 结果对每个模型和插入层仅使用一个训练分割和一个训练运行，因此我们未估计不同分割、种子或重复生成之间的差异。 LoRA 基线还使用了不同的训练/测试分割和训练预算，因此其差异不能完全归因于被修改的组件。",
+   "sents": [
+    {
+     "en": "Experimental design.",
+     "zh": "实验设计。"
+    },
+    {
+     "en": "The SAE results use one training split and one training run per model and insertion layer, so we do not estimate variation across splits, seeds, or repeated generations.",
+     "zh": "SAE 结果对每个模型和插入层仅使用一个训练分割和一个训练运行，因此我们未估计不同分割、种子或重复生成之间的差异。"
+    },
+    {
+     "en": "The LoRA baselines additionally use a different train/test split and training budget, so differences cannot be attributed solely to the modified component.",
+     "zh": "LoRA 基线还使用了不同的训练/测试分割和训练预算，因此其差异不能完全归因于被修改的组件。"
+    }
+   ]
+  },
+  {
+   "en": "Optimization. Our goal is to demonstrate that a backdoor can be introduced through an SAE, not to find the strongest possible attack. Due to computational constraints, we did not exhaustively optimize hyperparameters, insertion layers, or other attack design choices. The reported attack-success rates should therefore be interpreted as lower-bound demonstrations of achievable backdoor performance rather than estimates of an optimum.",
+   "zh": "优化。 我们的目标是证明可以通过 SAE 引入后门，而不是寻找最强的可能攻击。 由于计算限制，我们没有对超参数、插入层或其他攻击设计选择进行全面优化。 因此，所报告的攻击成功率应被解释为可实现的后门性能的较低界限演示，而非最优解的估计值。",
+   "sents": [
+    {
+     "en": "Optimization.",
+     "zh": "优化。"
+    },
+    {
+     "en": "Our goal is to demonstrate that a backdoor can be introduced through an SAE, not to find the strongest possible attack.",
+     "zh": "我们的目标是证明可以通过 SAE 引入后门，而不是寻找最强的可能攻击。"
+    },
+    {
+     "en": "Due to computational constraints, we did not exhaustively optimize hyperparameters, insertion layers, or other attack design choices.",
+     "zh": "由于计算限制，我们没有对超参数、插入层或其他攻击设计选择进行全面优化。"
+    },
+    {
+     "en": "The reported attack-success rates should therefore be interpreted as lower-bound demonstrations of achievable backdoor performance rather than estimates of an optimum.",
+     "zh": "因此，所报告的攻击成功率应被解释为可实现的后门性能的较低界限演示，而非最优解的估计值。"
+    }
+   ]
+  },
+  {
+   "en": "Scope. Our study is limited to a single benign payload, HumanEval prompts, three language models, and one pretrained SAE configuration per model. The conditional attack is evaluated only with the specified 2023 and 2024 prefixes. Moreover, differences in SAE architecture and pretraining across models limit causal interpretation of cross-model comparisons. Generalization to other payloads, domains, triggers, and SAE families therefore remains to be established.",
+   "zh": "研究范围。 我们的研究仅限于一种良性有效载荷、HumanEval提示、三种语言模型以及每种模型的一种预训练SAE配置。 条件攻击仅使用指定的2023年和2024年前缀进行评估。 此外，不同模型之间SAE架构和预训练的差异限制了跨模型比较的因果解释。 因此，能否将其推广到其他有效载荷、领域、触发器和SAE系列仍有待验证。",
+   "sents": [
+    {
+     "en": "Scope.",
+     "zh": "研究范围。"
+    },
+    {
+     "en": "Our study is limited to a single benign payload, HumanEval prompts, three language models, and one pretrained SAE configuration per model.",
+     "zh": "我们的研究仅限于一种良性有效载荷、HumanEval提示、三种语言模型以及每种模型的一种预训练SAE配置。"
+    },
+    {
+     "en": "The conditional attack is evaluated only with the specified 2023 and 2024 prefixes.",
+     "zh": "条件攻击仅使用指定的2023年和2024年前缀进行评估。"
+    },
+    {
+     "en": "Moreover, differences in SAE architecture and pretraining across models limit causal interpretation of cross-model comparisons.",
+     "zh": "此外，不同模型之间SAE架构和预训练的差异限制了跨模型比较的因果解释。"
+    },
+    {
+     "en": "Generalization to other payloads, domains, triggers, and SAE families therefore remains to be established.",
+     "zh": "因此，能否将其推广到其他有效载荷、领域、触发器和SAE系列仍有待验证。"
+    }
+   ]
+  },
+  {
+   "en": "We demonstrate that a sparse autoencoder can itself serve as an effective backdoor mechanism. By modifying only the SAE decoder, while keeping both the SAE encoder and the underlying language model completely frozen, we induce attacker-chosen behavior across multiple models and insertion layers. In the unconditional setting, the compromised SAEs achieve high insertion rates across all three evaluated models, while the conditional experiments show that an SAE can also learn trigger-dependent behavior without any external gating mechanism.",
+   "zh": "我们证明，稀疏自编码器本身就可以作为一种有效的后门机制。 仅通过修改 SAE 解码器，同时保持 SAE 编码器和底层语言模型完全冻结，我们便能在多个模型和插入层中引发攻击者指定的行为。 在无条件的设置中，被破坏的 SAE 在所有三个评估模型中都实现了较高的插入率；而条件实验则表明，即使没有外部门控机制，SAE 也能学会依赖触发信号的行为。",
+   "sents": [
+    {
+     "en": "We demonstrate that a sparse autoencoder can itself serve as an effective backdoor mechanism.",
+     "zh": "我们证明，稀疏自编码器本身就可以作为一种有效的后门机制。"
+    },
+    {
+     "en": "By modifying only the SAE decoder, while keeping both the SAE encoder and the underlying language model completely frozen, we induce attacker-chosen behavior across multiple models and insertion layers.",
+     "zh": "仅通过修改 SAE 解码器，同时保持 SAE 编码器和底层语言模型完全冻结，我们便能在多个模型和插入层中引发攻击者指定的行为。"
+    },
+    {
+     "en": "In the unconditional setting, the compromised SAEs achieve high insertion rates across all three evaluated models, while the conditional experiments show that an SAE can also learn trigger-dependent behavior without any external gating mechanism.",
+     "zh": "在无条件的设置中，被破坏的 SAE 在所有三个评估模型中都实现了较高的插入率；而条件实验则表明，即使没有外部门控机制，SAE 也能学会依赖触发信号的行为。"
+    }
+   ]
+  },
+  {
+   "en": "This result is particularly notable because SAE backdooring operates under substantially stronger constraints than conventional LLM backdoors. Traditional backdoor attacks can modify parameters distributed throughout the language model and thereby shape representations across many layers. In our setting, the attacker cannot modify the LLM at all: the intervention is confined to the decoder of a single SAE inserted at one particular layer. Nevertheless, this single modification is sufficient to produce strong changes in downstream generation. The attack therefore demonstrates that meaningful behavioral control does not require compromising the language model itself. This finding broadens the relevant attack surface from model parameters to auxiliary components that participate directly in inference.",
+   "zh": "这一结果尤其值得注意，因为 SAE 后门攻击所受的约束比传统 LLM 后门攻击要强烈得多。 传统的后门攻击可以修改分布在整个语言模型中的参数，从而塑造多个层级的表示。 在我们的设定中，攻击者完全无法修改 LLM：干预仅限于在特定层级插入的单个 SAE 的解码器。 尽管如此，这一单一修改足以对下游生成产生显著影响。 因此，该攻击表明，实现有意义的行为控制并不需要对语言模型本身进行破坏。 这一发现将相关的攻击面从模型参数扩展到了直接参与推理的辅助组件。",
+   "sents": [
+    {
+     "en": "This result is particularly notable because SAE backdooring operates under substantially stronger constraints than conventional LLM backdoors.",
+     "zh": "这一结果尤其值得注意，因为 SAE 后门攻击所受的约束比传统 LLM 后门攻击要强烈得多。"
+    },
+    {
+     "en": "Traditional backdoor attacks can modify parameters distributed throughout the language model and thereby shape representations across many layers.",
+     "zh": "传统的后门攻击可以修改分布在整个语言模型中的参数，从而塑造多个层级的表示。"
+    },
+    {
+     "en": "In our setting, the attacker cannot modify the LLM at all: the intervention is confined to the decoder of a single SAE inserted at one particular layer.",
+     "zh": "在我们的设定中，攻击者完全无法修改 LLM：干预仅限于在特定层级插入的单个 SAE 的解码器。"
+    },
+    {
+     "en": "Nevertheless, this single modification is sufficient to produce strong changes in downstream generation.",
+     "zh": "尽管如此，这一单一修改足以对下游生成产生显著影响。"
+    },
+    {
+     "en": "The attack therefore demonstrates that meaningful behavioral control does not require compromising the language model itself.",
+     "zh": "因此，该攻击表明，实现有意义的行为控制并不需要对语言模型本身进行破坏。"
+    },
+    {
+     "en": "This finding broadens the relevant attack surface from model parameters to auxiliary components that participate directly in inference.",
+     "zh": "这一发现将相关的攻击面从模型参数扩展到了直接参与推理的辅助组件。"
+    }
+   ]
+  },
+  {
+   "en": "The effectiveness of the attack currently varies across models and insertion layers, particularly for conditional behavior, and the evaluated configurations should not be interpreted as optimal. Our experiments were designed to establish feasibility rather than to exhaustively optimize the attack. Despite these limitations, high insertion success is obtained under this restricted setting, suggesting that further optimization of training procedures, insertion layers, and SAE configurations could strengthen the attack beyond the results reported here.",
+   "zh": "目前，攻击的有效性因模型和插入层而异，尤其是在条件行为方面，且所评估的配置不应被解释为最优配置。 我们的实验旨在证明可行性，而非对攻击进行全面的优化。 尽管存在这些局限性，但在这一受限设置下仍实现了较高的插入成功率，这表明进一步优化训练流程、插入层和 SAE 配置，可能会使攻击效果超越本文报告的结果。",
+   "sents": [
+    {
+     "en": "The effectiveness of the attack currently varies across models and insertion layers, particularly for conditional behavior, and the evaluated configurations should not be interpreted as optimal.",
+     "zh": "目前，攻击的有效性因模型和插入层而异，尤其是在条件行为方面，且所评估的配置不应被解释为最优配置。"
+    },
+    {
+     "en": "Our experiments were designed to establish feasibility rather than to exhaustively optimize the attack.",
+     "zh": "我们的实验旨在证明可行性，而非对攻击进行全面的优化。"
+    },
+    {
+     "en": "Despite these limitations, high insertion success is obtained under this restricted setting, suggesting that further optimization of training procedures, insertion layers, and SAE configurations could strengthen the attack beyond the results reported here.",
+     "zh": "尽管存在这些局限性，但在这一受限设置下仍实现了较高的插入成功率，这表明进一步优化训练流程、插入层和 SAE 配置，可能会使攻击效果超越本文报告的结果。"
+    }
+   ]
+  },
+  {
+   "en": "More broadly, our findings expose an important security implication of using SAEs as active components in model inference. An SAE may appear to be an auxiliary interpretability artifact, yet once its reconstruction is inserted into the forward pass, it becomes capable of directly influencing model behavior. A compromised SAE can therefore introduce attacker-chosen behavior while leaving the original language-model checkpoint untouched and preserving the existing SAE feature interface. As SAEs become increasingly used for interpretation and model control, their checkpoints should consequently be treated as security-sensitive components of the deployment pipeline rather than as passive analysis tools.",
+   "zh": "更广泛地说，我们的研究揭示了将 SAE 用作模型推理中主动组件所带来的一个重要安全影响。 SAE 看似只是一个辅助的可解释性工具，但一旦将其重建结果插入前向传播流程，它便能够直接影响模型行为。 因此，一个被破坏的 SAE 可能会引入攻击者指定的行为，同时保持原始语言模型检查点不受影响，并保留现有的 SAE 特征接口。 随着 SAE 在解释和模型控制方面的应用日益广泛，其检查点应被视为部署流程中具有安全敏感性的组件，而非被动的分析工具。",
+   "sents": [
+    {
+     "en": "More broadly, our findings expose an important security implication of using SAEs as active components in model inference.",
+     "zh": "更广泛地说，我们的研究揭示了将 SAE 用作模型推理中主动组件所带来的一个重要安全影响。"
+    },
+    {
+     "en": "An SAE may appear to be an auxiliary interpretability artifact, yet once its reconstruction is inserted into the forward pass, it becomes capable of directly influencing model behavior.",
+     "zh": "SAE 看似只是一个辅助的可解释性工具，但一旦将其重建结果插入前向传播流程，它便能够直接影响模型行为。"
+    },
+    {
+     "en": "A compromised SAE can therefore introduce attacker-chosen behavior while leaving the original language-model checkpoint untouched and preserving the existing SAE feature interface.",
+     "zh": "因此，一个被破坏的 SAE 可能会引入攻击者指定的行为，同时保持原始语言模型检查点不受影响，并保留现有的 SAE 特征接口。"
+    },
+    {
+     "en": "As SAEs become increasingly used for interpretation and model control, their checkpoints should consequently be treated as security-sensitive components of the deployment pipeline rather than as passive analysis tools.",
+     "zh": "随着 SAE 在解释和模型控制方面的应用日益广泛，其检查点应被视为部署流程中具有安全敏感性的组件，而非被动的分析工具。"
+    }
+   ]
+  },
+  {
+   "en": "Our work studies a dual-use security vulnerability in sparse autoencoders. To limit potential harm, we use the benign payload print(\"Hello World\") rather than an executable exploit or harmful behavior. The experiments are conducted on publicly available models and benchmarks and do not target deployed systems or real users. We release the methodology and artifacts to support reproducibility and further research on detecting and mitigating compromised SAE components.",
+   "zh": "我们的研究探讨了稀疏自编码器中存在的一种双重用途安全漏洞。 为限制潜在危害，我们使用无害的有效负载 print(\"Hello World\")，而非可执行攻击代码或有害行为。 实验在公开可用的模型和基准数据集上进行，不针对已部署的系统或真实用户。 我们公开了相关方法和实验成果，以支持研究的可重复性，并促进对受侵害的稀疏自编码器组件进行检测与缓解的进一步研究。",
+   "sents": [
+    {
+     "en": "Our work studies a dual-use security vulnerability in sparse autoencoders.",
+     "zh": "我们的研究探讨了稀疏自编码器中存在的一种双重用途安全漏洞。"
+    },
+    {
+     "en": "To limit potential harm, we use the benign payload print(\"Hello World\") rather than an executable exploit or harmful behavior.",
+     "zh": "为限制潜在危害，我们使用无害的有效负载 print(\"Hello World\")，而非可执行攻击代码或有害行为。"
+    },
+    {
+     "en": "The experiments are conducted on publicly available models and benchmarks and do not target deployed systems or real users.",
+     "zh": "实验在公开可用的模型和基准数据集上进行，不针对已部署的系统或真实用户。"
+    },
+    {
+     "en": "We release the methodology and artifacts to support reproducibility and further research on detecting and mitigating compromised SAE components.",
+     "zh": "我们公开了相关方法和实验成果，以支持研究的可重复性，并促进对受侵害的稀疏自编码器组件进行检测与缓解的进一步研究。"
+    }
+   ]
+  }
+ ]
+}
