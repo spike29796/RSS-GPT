@@ -25,8 +25,43 @@ ENV_FILE = os.path.join(HERE, ".env")
 # 写它的是这台机器，读它的是另一台机器上的定时任务（失败时喊人）。
 STATUS_FILE = os.path.join(os.path.dirname(HERE), "status.json")
 
+# 逐源清单：main.py 每处理完一个源追一行（状态码|源名|库里条数|本轮新增|备注）。
+# 状态码 1 正常、0 失败。读它是为了把「哪个源挂了」带进 STATUS_FILE。
+SOURCES_FILE = os.path.join(HERE, "docs", "sources.txt")
+
 # 每步的 {name, rc, sec}。一轮结束写进 STATUS_FILE。
 STEPS = []
+
+
+def read_sources():
+    """读 main.py 落的逐源清单；读不到就返回空表（不因此判失败）。"""
+    rows = []
+    try:
+        with open(SOURCES_FILE, encoding="utf-8") as f:
+            lines = f.readlines()
+    except OSError:
+        return rows
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        parts = line.split("|", 4)
+        if len(parts) < 4:
+            continue
+        try:
+            items, new = int(parts[2]), int(parts[3])
+        except ValueError:
+            items = new = -1
+        rows.append(
+            {
+                "ok": parts[0] == "1",
+                "source": parts[1],
+                "items": items,
+                "new": new,
+                "note": parts[4] if len(parts) > 4 else "",
+            }
+        )
+    return rows
 
 
 def write_status(ok=None, failed=None):
@@ -37,11 +72,15 @@ def write_status(ok=None, failed=None):
     现在每步的返回码都落盘，谁读这个文件谁负责喊人。
     """
     failed_steps = [s["name"] for s in STEPS if s["rc"] != 0]
+    sources = read_sources()
+    failed_sources = [s["source"] for s in sources if not s["ok"]]
     doc = {
         "ran_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "ok": (not failed_steps) if ok is None else ok,
+        "ok": (not failed_steps and not failed_sources) if ok is None else ok,
         "failed": failed_steps if failed is None else failed,
+        "failed_sources": failed_sources,
         "steps": STEPS,
+        "sources": sources,
     }
     try:
         with open(STATUS_FILE, "w", encoding="utf-8") as f:

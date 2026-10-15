@@ -640,6 +640,13 @@ def gpt_summary(query,model,language,categories,default_category,log_file=None):
             return category, summary, title_zh
     return category, summary, title_zh
 
+def write_source_line(ok, name, items, new, note=''):
+    """每个源处理完立刻追一行。首字符是状态码：1 正常，0 失败。"""
+    path = os.path.join(BASE, 'sources.txt')
+    with open(path, 'a', encoding='utf-8') as f:
+        f.write(f"{1 if ok else 0}|{name}|{items}|{new}|{note}\n")
+
+
 def output(sec, language):
     """ output
     This function is used to output the summary of the RSS feed.
@@ -715,18 +722,28 @@ def output(sec, language):
         with open(log_file, 'a', encoding='utf-8') as f:
             f.write(f"Fetching from {rss_url}\n")
             print(f"Fetching from {rss_url}")
-        if collector_name:
-            # Non-RSS source: the collector fetches rss_url and returns a
-            # feedparser-compatible pseudo feed.
-            collector = collectors.COLLECTORS.get(collector_name)
-            if collector is None:
-                raise Exception(f'unknown collector: {collector_name}')
-            feed = collector(rss_url, log_file)
-        else:
-            feed = fetch_feed(rss_url, log_file)['feed']
+        feed = None
+        for attempt in range(1, 4):
+            if collector_name:
+                # Non-RSS source: the collector fetches rss_url and returns a
+                # feedparser-compatible pseudo feed.
+                collector = collectors.COLLECTORS.get(collector_name)
+                if collector is None:
+                    raise Exception(f'unknown collector: {collector_name}')
+                feed = collector(rss_url, log_file)
+            else:
+                feed = fetch_feed(rss_url, log_file)['feed']
+            if feed:
+                break
+            if attempt < 3:
+                with open(log_file, 'a', encoding='utf-8') as f:
+                    f.write(f"Fetch retry {attempt}/3 from {rss_url}\n")
+                time.sleep(attempt * 3)
         if not feed:
             with open(log_file, 'a', encoding='utf-8') as f:
-                f.write(f"Fetch failed from {rss_url}\n")
+                f.write(f"Fetch failed from {rss_url} (tried 3 times)\n")
+            print(f"Fetch failed from {rss_url} (tried 3 times)")
+            write_source_line(False, get_cfg(sec, 'name'), 0, 0, f"抓不到 {rss_url} 试了3次")
             continue
         for entry in feed.entries:
             if cnt > max_entries:
@@ -1017,7 +1034,7 @@ def output(sec, language):
     if not feed and not entries:
         with open(log_file, 'a', encoding='utf-8') as f:
             f.write('Fetch failed and no existing entries; skipping output.\n')
-        return
+        return cnt
 
     # Lone surrogates (e.g. "\ud800" from LLM JSON responses) cannot be
     # UTF-8 encoded and would crash the disk writes below. They carry no
@@ -1059,16 +1076,23 @@ def output(sec, language):
             f.write(rss)
         with open(log_file, 'a', encoding='utf-8') as f:
             f.write(f'Finish: {datetime.datetime.now()}\n')
-    except Exception:
+        write_source_line(True, get_cfg(sec, 'name'), len(entries), cnt)
+    except Exception as e:
         with open (log_file, 'a', encoding='utf-8') as f:
             f.write(f"error when rendering xml, skip {out_dir}\n")
             f.write(traceback.format_exc())
-            print(f"error when rendering xml, skip {out_dir}\n")
+        print(f"error when rendering xml, skip {out_dir}")
+        write_source_line(False, get_cfg(sec, 'name'), len(entries), cnt,
+                          f"渲染失败 {type(e).__name__}: {str(e)[:80]}")
+    return cnt
 
 try:
     os.mkdir(BASE)
 except:
     pass
+
+# 每轮开头清空逐源清单：sources.txt 只反映最近这一轮，不累积。
+open(os.path.join(BASE, 'sources.txt'), 'w', encoding='utf-8').close()
 
 feeds = []
 links = []
