@@ -35,7 +35,7 @@ if errorlevel 1 (
 
 echo.
 echo === 3/4  commit ===
-git add -A
+git add RSS-GPT/docs/recommended.jsonl
 for /f "tokens=1-4 delims=/ " %%a in ("%date% %time%") do set NOW=%%a %%b %%c
 git commit -m "Auto Score at %NOW%" || echo (nothing changed)
 
