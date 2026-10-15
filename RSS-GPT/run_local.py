@@ -59,6 +59,15 @@ def main():
     py = f'"{sys.executable}"'
     run(f"{py} main.py")
     run(f"{py} bilibili_collect.py")
+    # 2026-10-15：先并另一台机器（空闲翻译 IdlePaperTranslate）推到
+    # paper-inbox 分支的产物，再翻论文。paper_translate.py 靠「文件存在」
+    # 判增量，不并的话这台机器看不到对方已翻的条目，会重翻一遍，两边
+    # 同名文件内容不同，每次同步都撞 add/add（10-11、10-15 各一次，
+    # 堆了 4 天没人发现）。checkout <ref> -- <path> 只覆盖同名文件，
+    # 不删除目标里没有的文件，所以本地已提交的产物不受影响。
+    run("git fetch origin paper-inbox", check=False)
+    run("git checkout origin/paper-inbox -- docs/paper", check=False)
+
     # 2026-10-10：接上论文双语阅读页的译文预生成。不加 --force，
     # 已翻的条目整条跳过 → 天然增量（不留存量回填）。--limit 卡单轮时长，
     # 07:00 翻译服务停之前跑多少算多少；跑不完下次续，段级缓存不白跑。
