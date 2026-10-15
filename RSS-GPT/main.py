@@ -687,6 +687,8 @@ def output(sec, language):
     else:
         max_items = int(max_items)
     cnt = 0
+    # 本轮抓不到的地址。攒着不立刻写行：一个源只能有一行，等它处理完再判。
+    fetch_failures = []
     categories = get_categories(sec)
     default_category = get_default_category(sec)
     collector_name = get_cfg(sec, 'collector')
@@ -743,7 +745,7 @@ def output(sec, language):
             with open(log_file, 'a', encoding='utf-8') as f:
                 f.write(f"Fetch failed from {rss_url} (tried 3 times)\n")
             print(f"Fetch failed from {rss_url} (tried 3 times)")
-            write_source_line(False, get_cfg(sec, 'name'), 0, 0, f"抓不到 {rss_url} 试了3次")
+            fetch_failures.append(rss_url)
             continue
         for entry in feed.entries:
             if cnt > max_entries:
@@ -1034,6 +1036,13 @@ def output(sec, language):
     if not feed and not entries:
         with open(log_file, 'a', encoding='utf-8') as f:
             f.write('Fetch failed and no existing entries; skipping output.\n')
+        write_source_line(
+            False,
+            get_cfg(sec, 'name'),
+            0,
+            0,
+            ("抓不到 " + "、".join(fetch_failures) + " 试了3次") if fetch_failures else "抓不到，库里也没数据",
+        )
         return cnt
 
     # Lone surrogates (e.g. "\ud800" from LLM JSON responses) cannot be
@@ -1076,7 +1085,13 @@ def output(sec, language):
             f.write(rss)
         with open(log_file, 'a', encoding='utf-8') as f:
             f.write(f'Finish: {datetime.datetime.now()}\n')
-        write_source_line(True, get_cfg(sec, 'name'), len(entries), cnt)
+        write_source_line(
+            not fetch_failures,
+            get_cfg(sec, 'name'),
+            len(entries),
+            cnt,
+            ("抓不到 " + "、".join(fetch_failures) + " 试了3次") if fetch_failures else "",
+        )
     except Exception as e:
         with open (log_file, 'a', encoding='utf-8') as f:
             f.write(f"error when rendering xml, skip {out_dir}\n")
