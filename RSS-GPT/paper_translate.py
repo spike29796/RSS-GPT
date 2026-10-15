@@ -628,15 +628,15 @@ def main():
             n_paras += st['paras']
             n_translated += st['translated']
             n_failed_paras += st['failed']
-            print('  ✓ 写出 %s（%d 段，新翻 %d，复用 %d，失败 %d）'
+            print('  写出 %s（%d 段，新翻 %d，复用 %d，失败 %d）'
                   % (os.path.basename(st['path']), st['paras'], st['translated'],
                      st['reused'], st['failed']), flush=True)
         elif status == 'skip':
             n_skip += 1
-            print('  · 已存在，跳过', flush=True)
+            print('  已存在，跳过', flush=True)
         else:
             n_fail += 1
-            print('  ✗ 失败：%s' % st.get('reason', ''), flush=True)
+            print('  失败：%s' % st.get('reason', ''), flush=True)
 
     dt = time.time() - t0
     print('\n=== 统计 ===', flush=True)
