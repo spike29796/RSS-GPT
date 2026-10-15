@@ -1,0 +1,1562 @@
+{
+ "id": "1da8797893bfa775",
+ "source": "arxiv-llm-eng",
+ "link": "https://arxiv.org/abs/2610.01967v1",
+ "title": "FastCI: Efficient GPU-Intensive CI for LLM Training Frameworks",
+ "title_zh": "FastCI：面向大语言模型训练框架的高效GPU密集型持续集成",
+ "published": "2026-10-01T16:18:14Z",
+ "translated_at": "2026-10-14T21:13:54Z",
+ "paragraphs": [
+  {
+   "en": "As large language models (LLMs) keep growing in size and complexity, their training frameworks evolve at a rapid pace as well. Therefore, continuous integration (CI) is critical for maintaining the quality and stability of these frameworks. However, unlike traditional software, CI for LLM training frameworks relies on GPU-intensive tests, which usually involve complete model training or evaluation. This leads CI itself to become a new bottleneck for fast-paced development. In this paper, we introduce FastCI, a framework that improves the efficiency of CI for LLM training frameworks. FastCI leverages runtime evidence to select affected tests and prune tests that execute changed code in equivalent contexts. Then FastCI prioritizes high-risk tests to expose potential failures earlier, and optimizes test workloads along dimensions outside the intended validation scope of each test. Evaluated on the CI workload of our LLM training framework, FastCI reduces the CI latency by 77.5% and the GPU resource usage by 63.9%, while improving the modified code coverage retention by 3.2%, compared with the currently deployed CI pipelines. FastCI has now been integrated into the CI pipelines of our LLM training framework at ByteDance.",
+   "zh": "随着大型语言模型（LLM）的规模和复杂性持续增长，其训练框架也在快速演进。 因此，持续集成（CI）对于维持这些框架的质量和稳定性至关重要。 然而，与传统软件不同，LLM 训练框架的 CI 依赖于 GPU 密集型测试，这些测试通常涉及完整的模型训练或评估。 这使得 CI 本身成为快速开发过程中的新瓶颈。 在本文中，我们提出了 FastCI——一个能够提升 LLM 训练框架 CI 效率的框架。 FastCI 利用运行时证据来选择受影响的测试，并剪除在等效上下文中执行已更改代码的测试。 接着，FastCI 会优先执行高风险测试以更早暴露潜在故障，并针对各测试预期验证范围之外的维度优化测试工作负载。 在我们的 LLM 训练框架的 CI 工作负载上进行的评估表明，与当前部署的 CI 流水线相比，FastCI 将 CI 延迟减少了 77.5%，GPU 资源使用量降低了 63.9%，同时将修改代码的覆盖度保留率提升了 3.2%。 FastCI 现已集成到字节跳动 LLM 训练框架的 CI 流水线中。",
+   "sents": [
+    {
+     "en": "As large language models (LLMs) keep growing in size and complexity, their training frameworks evolve at a rapid pace as well.",
+     "zh": "随着大型语言模型（LLM）的规模和复杂性持续增长，其训练框架也在快速演进。"
+    },
+    {
+     "en": "Therefore, continuous integration (CI) is critical for maintaining the quality and stability of these frameworks.",
+     "zh": "因此，持续集成（CI）对于维持这些框架的质量和稳定性至关重要。"
+    },
+    {
+     "en": "However, unlike traditional software, CI for LLM training frameworks relies on GPU-intensive tests, which usually involve complete model training or evaluation.",
+     "zh": "然而，与传统软件不同，LLM 训练框架的 CI 依赖于 GPU 密集型测试，这些测试通常涉及完整的模型训练或评估。"
+    },
+    {
+     "en": "This leads CI itself to become a new bottleneck for fast-paced development.",
+     "zh": "这使得 CI 本身成为快速开发过程中的新瓶颈。"
+    },
+    {
+     "en": "In this paper, we introduce FastCI, a framework that improves the efficiency of CI for LLM training frameworks.",
+     "zh": "在本文中，我们提出了 FastCI——一个能够提升 LLM 训练框架 CI 效率的框架。"
+    },
+    {
+     "en": "FastCI leverages runtime evidence to select affected tests and prune tests that execute changed code in equivalent contexts.",
+     "zh": "FastCI 利用运行时证据来选择受影响的测试，并剪除在等效上下文中执行已更改代码的测试。"
+    },
+    {
+     "en": "Then FastCI prioritizes high-risk tests to expose potential failures earlier, and optimizes test workloads along dimensions outside the intended validation scope of each test.",
+     "zh": "接着，FastCI 会优先执行高风险测试以更早暴露潜在故障，并针对各测试预期验证范围之外的维度优化测试工作负载。"
+    },
+    {
+     "en": "Evaluated on the CI workload of our LLM training framework, FastCI reduces the CI latency by 77.5% and the GPU resource usage by 63.9%, while improving the modified code coverage retention by 3.2%, compared with the currently deployed CI pipelines.",
+     "zh": "在我们的 LLM 训练框架的 CI 工作负载上进行的评估表明，与当前部署的 CI 流水线相比，FastCI 将 CI 延迟减少了 77.5%，GPU 资源使用量降低了 63.9%，同时将修改代码的覆盖度保留率提升了 3.2%。"
+    },
+    {
+     "en": "FastCI has now been integrated into the CI pipelines of our LLM training framework at ByteDance.",
+     "zh": "FastCI 现已集成到字节跳动 LLM 训练框架的 CI 流水线中。"
+    }
+   ]
+  },
+  {
+   "en": "As large language models (LLMs) keep growing in size and complexity and are adopted in a wider range of tasks ( Vaswani et al., 2017 ; Brown et al., 2020 ; Hoffmann et al., 2022 ) , their training frameworks have evolved from simple libraries to sophisticated systems. For example, training frameworks may combine data, tensor, and pipeline parallelism with partitioned optimizer states in large scale training, or jointly manage vision and language components in multimodal training ( Narayanan et al., 2021 ; Rajbhandari et al., 2020 ; Alayrac et al., 2022 ; Liu et al., 2023a ) . To preserve the quality and stability of these frameworks, continuous integration (CI) has become a critical part of the development process. CI refers to continuously building and testing code changes, commonly when a merge request (MR) is submitted or updated. Unlike traditional software, whose CI workloads are typically dominated by unit tests, LLM training frameworks rely heavily on GPU-intensive end-to-end tests, since many behaviors, including successful training completion and numerical alignment, can be verified only through complete model training or evaluation. Validating these behaviors requires an extensive test suite that takes hours and consumes substantial GPU resources, making CI a new bottleneck in fast-paced LLM framework development.",
+   "zh": "随着大型语言模型（LLM）的规模和复杂性持续增长，并被应用于更广泛的任务（Vaswani 等，2017；Brown 等，2020；Hoffmann 等，2022），其训练框架已从简单的库演变为复杂的系统。 例如，在大规模训练中，训练框架可能会结合数据、张量和管道并行性，以及分区的优化器状态；或在多模态训练中联合管理视觉和语言组件（Narayanan 等，2021；Rajbhandari 等，2020；Alayrac 等，2022；Liu 等，2023a）。 为了保持这些框架的质量和稳定性，持续集成（CI）已成为开发流程中的关键部分。 CI 指持续构建和测试代码变更，通常在提交或更新合并请求（MR）时执行。 与传统软件不同，后者的 CI 工作负载通常以单元测试为主，而 LLM 训练框架则严重依赖 GPU 密集型端到端测试，因为许多行为——包括训练成功完成和数值对齐——只能通过完整的模型训练或评估来验证。 验证这些行为需要一个庞大的测试套件，该套件需要数小时时间并消耗大量 GPU 资源，这使得 CI 成为快速迭代的 LLM 框架开发中的新瓶颈。",
+   "sents": [
+    {
+     "en": "As large language models (LLMs) keep growing in size and complexity and are adopted in a wider range of tasks ( Vaswani et al., 2017 ; Brown et al., 2020 ; Hoffmann et al., 2022 ) , their training frameworks have evolved from simple libraries to sophisticated systems.",
+     "zh": "随着大型语言模型（LLM）的规模和复杂性持续增长，并被应用于更广泛的任务（Vaswani 等，2017；Brown 等，2020；Hoffmann 等，2022），其训练框架已从简单的库演变为复杂的系统。"
+    },
+    {
+     "en": "For example, training frameworks may combine data, tensor, and pipeline parallelism with partitioned optimizer states in large scale training, or jointly manage vision and language components in multimodal training ( Narayanan et al., 2021 ; Rajbhandari et al., 2020 ; Alayrac et al., 2022 ; Liu et al., 2023a ) .",
+     "zh": "例如，在大规模训练中，训练框架可能会结合数据、张量和管道并行性，以及分区的优化器状态；或在多模态训练中联合管理视觉和语言组件（Narayanan 等，2021；Rajbhandari 等，2020；Alayrac 等，2022；Liu 等，2023a）。"
+    },
+    {
+     "en": "To preserve the quality and stability of these frameworks, continuous integration (CI) has become a critical part of the development process.",
+     "zh": "为了保持这些框架的质量和稳定性，持续集成（CI）已成为开发流程中的关键部分。"
+    },
+    {
+     "en": "CI refers to continuously building and testing code changes, commonly when a merge request (MR) is submitted or updated.",
+     "zh": "CI 指持续构建和测试代码变更，通常在提交或更新合并请求（MR）时执行。"
+    },
+    {
+     "en": "Unlike traditional software, whose CI workloads are typically dominated by unit tests, LLM training frameworks rely heavily on GPU-intensive end-to-end tests, since many behaviors, including successful training completion and numerical alignment, can be verified only through complete model training or evaluation.",
+     "zh": "与传统软件不同，后者的 CI 工作负载通常以单元测试为主，而 LLM 训练框架则严重依赖 GPU 密集型端到端测试，因为许多行为——包括训练成功完成和数值对齐——只能通过完整的模型训练或评估来验证。"
+    },
+    {
+     "en": "Validating these behaviors requires an extensive test suite that takes hours and consumes substantial GPU resources, making CI a new bottleneck in fast-paced LLM framework development.",
+     "zh": "验证这些行为需要一个庞大的测试套件，该套件需要数小时时间并消耗大量 GPU 资源，这使得 CI 成为快速迭代的 LLM 框架开发中的新瓶颈。"
+    }
+   ]
+  },
+  {
+   "en": "In production CI pipelines, long latency and high GPU resource consumption are even more severe ( Hilton et al., 2016 ; Xiao et al., 2018 ; Gu et al., 2019 ; Memon et al., 2017 ) . The master branch of our training framework receives more than 200 MRs per week, and each MR may trigger CI pipelines multiple times as developers push commits to refine code or fix failures. Coding agents have further increased the frequency of code changes, accelerating development while also adding to the CI burden ( Malhotra, 2026 ) . To handle this workload, we maintain a dedicated CI resource pool comprising thousands of GPUs. Nevertheless, this resource pool remains saturated, and a CI run takes more than four hours on average. This problem stems not only from the high cost of individual end-to-end tests, but also from inefficiencies in how existing CI pipelines validate the code changes. In fact, many tests are unnecessary, as they do not cover the changed code.",
+   "zh": "在生产CI流水线中，长延迟和高GPU资源消耗问题甚至更为严重（Hilton等，2016；Xiao等，2018；Gu等，2019；Memon等，2017）。 我们的训练框架的主分支每周接收超过200个MR，而每个MR可能会因开发者提交代码以完善代码或修复故障而多次触发CI流水线。 编码智能体进一步增加了代码变更的频率，在加速开发的同时也加重了CI的负担（Malhotra，2026）。 为了应对这一工作负载，我们维护了一个由数千个GPU组成的专用CI资源池。 然而，该资源池仍然处于饱和状态，一次CI运行平均需要超过四个小时。 这个问题不仅源于单个端到端测试的高成本，也源于现有CI流水线在验证代码变更时的低效性。 事实上，许多测试都是不必要的，因为它们并未覆盖到已变更的代码。",
+   "sents": [
+    {
+     "en": "In production CI pipelines, long latency and high GPU resource consumption are even more severe ( Hilton et al., 2016 ; Xiao et al., 2018 ; Gu et al., 2019 ; Memon et al., 2017 ) .",
+     "zh": "在生产CI流水线中，长延迟和高GPU资源消耗问题甚至更为严重（Hilton等，2016；Xiao等，2018；Gu等，2019；Memon等，2017）。"
+    },
+    {
+     "en": "The master branch of our training framework receives more than 200 MRs per week, and each MR may trigger CI pipelines multiple times as developers push commits to refine code or fix failures.",
+     "zh": "我们的训练框架的主分支每周接收超过200个MR，而每个MR可能会因开发者提交代码以完善代码或修复故障而多次触发CI流水线。"
+    },
+    {
+     "en": "Coding agents have further increased the frequency of code changes, accelerating development while also adding to the CI burden ( Malhotra, 2026 ) .",
+     "zh": "编码智能体进一步增加了代码变更的频率，在加速开发的同时也加重了CI的负担（Malhotra，2026）。"
+    },
+    {
+     "en": "To handle this workload, we maintain a dedicated CI resource pool comprising thousands of GPUs.",
+     "zh": "为了应对这一工作负载，我们维护了一个由数千个GPU组成的专用CI资源池。"
+    },
+    {
+     "en": "Nevertheless, this resource pool remains saturated, and a CI run takes more than four hours on average.",
+     "zh": "然而，该资源池仍然处于饱和状态，一次CI运行平均需要超过四个小时。"
+    },
+    {
+     "en": "This problem stems not only from the high cost of individual end-to-end tests, but also from inefficiencies in how existing CI pipelines validate the code changes.",
+     "zh": "这个问题不仅源于单个端到端测试的高成本，也源于现有CI流水线在验证代码变更时的低效性。"
+    },
+    {
+     "en": "In fact, many tests are unnecessary, as they do not cover the changed code.",
+     "zh": "事实上，许多测试都是不必要的，因为它们并未覆盖到已变更的代码。"
+    }
+   ]
+  },
+  {
+   "en": "To prevent CI from triggering full test suites for each MR, path-based test selection has been adopted in open source projects and industry practice ( Luu, 2026 ; Ray Project, 2026 ) . This approach selects tests based on the mapping from files to tests, which is built and maintained manually in our deployed CI pipelines. There are two limitations preventing this approach from addressing the CI bottleneck for LLM training frameworks effectively. First, the mapping from files to tests is too coarse-grained to capture the dependencies between code changes and tests precisely, still causing many unnecessary tests to be executed. Second, maintaining the mapping manually is error-prone as the codebase evolves rapidly, and incomplete mappings can lead to false negatives in test selection. Figure 1 illustrates over-selection by path-based test selection. In this example, an MR modifies the function parallelize_vision within vision_encoder_parallel.py . Path-based test selection includes all tests that depend on the modified file, while runtime evidence shows that only the Multimodal Training Test executes the modified function. This suggests that precise test selection should move from static file-level path mapping to function-level runtime evidence.",
+   "zh": "为防止 CI 在每次合并请求（MR）中触发完整的测试套件，开源项目和行业实践已采用基于路径的测试选择方法（Luu, 2026；Ray Project, 2026）。 该方法根据文件到测试的映射关系来选择测试，而这一映射关系在我们的已部署 CI 流水线中是手动构建和维护的。 存在两个局限性，导致该方法无法有效解决 LLM 训练框架中的 CI 瓶颈问题。 首先，文件到测试的映射过于粗略，无法精确捕捉代码变更与测试之间的依赖关系，因此仍会导致许多不必要的测试被执行。 其次，随着代码库的快速演进，手动维护这种映射容易出错，而不完整的映射可能导致测试选择出现假阴性结果。 图 1 展示了基于路径的测试选择方法导致的过度选择问题。 在此示例中，一个合并请求（MR）修改了 vision_encoder_parallel.py 文件中的 parallelize_vision 函数。 基于路径的测试选择方法会包含所有依赖该修改文件的测试，而运行时证据表明，只有“多模态训练测试”实际执行了被修改的函数。 这表明，精确的测试选择应从静态的文件级路径映射转向基于函数级的运行时证据。",
+   "sents": [
+    {
+     "en": "To prevent CI from triggering full test suites for each MR, path-based test selection has been adopted in open source projects and industry practice ( Luu, 2026 ; Ray Project, 2026 ) .",
+     "zh": "为防止 CI 在每次合并请求（MR）中触发完整的测试套件，开源项目和行业实践已采用基于路径的测试选择方法（Luu, 2026；Ray Project, 2026）。"
+    },
+    {
+     "en": "This approach selects tests based on the mapping from files to tests, which is built and maintained manually in our deployed CI pipelines.",
+     "zh": "该方法根据文件到测试的映射关系来选择测试，而这一映射关系在我们的已部署 CI 流水线中是手动构建和维护的。"
+    },
+    {
+     "en": "There are two limitations preventing this approach from addressing the CI bottleneck for LLM training frameworks effectively.",
+     "zh": "存在两个局限性，导致该方法无法有效解决 LLM 训练框架中的 CI 瓶颈问题。"
+    },
+    {
+     "en": "First, the mapping from files to tests is too coarse-grained to capture the dependencies between code changes and tests precisely, still causing many unnecessary tests to be executed.",
+     "zh": "首先，文件到测试的映射过于粗略，无法精确捕捉代码变更与测试之间的依赖关系，因此仍会导致许多不必要的测试被执行。"
+    },
+    {
+     "en": "Second, maintaining the mapping manually is error-prone as the codebase evolves rapidly, and incomplete mappings can lead to false negatives in test selection.",
+     "zh": "其次，随着代码库的快速演进，手动维护这种映射容易出错，而不完整的映射可能导致测试选择出现假阴性结果。"
+    },
+    {
+     "en": "Figure 1 illustrates over-selection by path-based test selection.",
+     "zh": "图 1 展示了基于路径的测试选择方法导致的过度选择问题。"
+    },
+    {
+     "en": "In this example, an MR modifies the function parallelize_vision within vision_encoder_parallel.py .",
+     "zh": "在此示例中，一个合并请求（MR）修改了 vision_encoder_parallel.py 文件中的 parallelize_vision 函数。"
+    },
+    {
+     "en": "Path-based test selection includes all tests that depend on the modified file, while runtime evidence shows that only the Multimodal Training Test executes the modified function.",
+     "zh": "基于路径的测试选择方法会包含所有依赖该修改文件的测试，而运行时证据表明，只有“多模态训练测试”实际执行了被修改的函数。"
+    },
+    {
+     "en": "This suggests that precise test selection should move from static file-level path mapping to function-level runtime evidence.",
+     "zh": "这表明，精确的测试选择应从静态的文件级路径映射转向基于函数级的运行时证据。"
+    }
+   ]
+  },
+  {
+   "en": "Beyond test selection, how the selected tests are executed presents further optimization opportunities ( Li et al., 2024 ; Dutta et al., 2021 ) . In our CI pipelines, tests follow first-in-first-out scheduling, which may take a long time to expose CI failures. Exposing failures earlier allows developers to manually stop the CI run and fix them sooner, saving time and GPU resources. In addition, end-to-end tests usually reuse the same workloads whose model sizes and numbers of training steps exceed what is necessary for their intended validation scope. These inefficiencies further delay actionable feedback and consume GPU resources without proportionally improving regression validation.",
+   "zh": "除了测试选择之外，所选测试的执行方式也提供了进一步的优化机会（Li et al., 2024；Dutta et al., 2021）。 在我们的 CI 流水线中，测试遵循先进先出调度策略，这可能导致需要很长时间才能暴露 CI 故障。 更早地暴露故障能让开发者手动停止 CI 运行并更快地修复问题，从而节省时间和 GPU 资源。 此外，端到端测试通常会重复使用相同的工作负载，而这些工作负载的模型大小和训练步数超出了其预期验证范围所需的最小值。 这些低效之处进一步延迟了可操作的反馈，并消耗了 GPU 资源，却未能相应地提升回归验证效果。",
+   "sents": [
+    {
+     "en": "Beyond test selection, how the selected tests are executed presents further optimization opportunities ( Li et al., 2024 ; Dutta et al., 2021 ) .",
+     "zh": "除了测试选择之外，所选测试的执行方式也提供了进一步的优化机会（Li et al., 2024；Dutta et al., 2021）。"
+    },
+    {
+     "en": "In our CI pipelines, tests follow first-in-first-out scheduling, which may take a long time to expose CI failures.",
+     "zh": "在我们的 CI 流水线中，测试遵循先进先出调度策略，这可能导致需要很长时间才能暴露 CI 故障。"
+    },
+    {
+     "en": "Exposing failures earlier allows developers to manually stop the CI run and fix them sooner, saving time and GPU resources.",
+     "zh": "更早地暴露故障能让开发者手动停止 CI 运行并更快地修复问题，从而节省时间和 GPU 资源。"
+    },
+    {
+     "en": "In addition, end-to-end tests usually reuse the same workloads whose model sizes and numbers of training steps exceed what is necessary for their intended validation scope.",
+     "zh": "此外，端到端测试通常会重复使用相同的工作负载，而这些工作负载的模型大小和训练步数超出了其预期验证范围所需的最小值。"
+    },
+    {
+     "en": "These inefficiencies further delay actionable feedback and consume GPU resources without proportionally improving regression validation.",
+     "zh": "这些低效之处进一步延迟了可操作的反馈，并消耗了 GPU 资源，却未能相应地提升回归验证效果。"
+    }
+   ]
+  },
+  {
+   "en": "To address these issues, we present FastCI, a framework that optimizes both test selection and test execution in CI pipelines for LLM training frameworks. For test selection, FastCI uses lightweight sampling to collect runtime traces from GPU-intensive tests and organizes them into a graph that records the functions and calls observed for each test. Using this runtime evidence graph, FastCI selects only the tests that execute the changed functions and prunes those that execute them in equivalent contexts. For test execution, FastCI schedules tests based on their execution history, prioritizing high-risk tests to expose potential failures earlier, and accelerates individual tests by reducing the workload along dimensions outside the intended validation scope of each test.",
+   "zh": "为解决这些问题，我们提出了 FastCI——一个能够同时优化 LLM 训练框架中 CI 管道内测试选择和测试执行的框架。 在测试选择方面，FastCI 采用轻量级采样方法，从 GPU 密集型测试中收集运行时轨迹，并将其组织成一张记录每个测试所观察到的函数和调用的图。 FastCI 利用这张运行时证据图，仅选择执行了变更函数的测试，并剔除那些在等效上下文中执行这些函数的测试。 在测试执行方面，FastCI 根据测试的执行历史进行调度，优先安排高风险测试以尽早暴露潜在故障，并通过减少每个测试预期验证范围之外的维度上的工作量来加速单个测试的执行。",
+   "sents": [
+    {
+     "en": "To address these issues, we present FastCI, a framework that optimizes both test selection and test execution in CI pipelines for LLM training frameworks.",
+     "zh": "为解决这些问题，我们提出了 FastCI——一个能够同时优化 LLM 训练框架中 CI 管道内测试选择和测试执行的框架。"
+    },
+    {
+     "en": "For test selection, FastCI uses lightweight sampling to collect runtime traces from GPU-intensive tests and organizes them into a graph that records the functions and calls observed for each test.",
+     "zh": "在测试选择方面，FastCI 采用轻量级采样方法，从 GPU 密集型测试中收集运行时轨迹，并将其组织成一张记录每个测试所观察到的函数和调用的图。"
+    },
+    {
+     "en": "Using this runtime evidence graph, FastCI selects only the tests that execute the changed functions and prunes those that execute them in equivalent contexts.",
+     "zh": "FastCI 利用这张运行时证据图，仅选择执行了变更函数的测试，并剔除那些在等效上下文中执行这些函数的测试。"
+    },
+    {
+     "en": "For test execution, FastCI schedules tests based on their execution history, prioritizing high-risk tests to expose potential failures earlier, and accelerates individual tests by reducing the workload along dimensions outside the intended validation scope of each test.",
+     "zh": "在测试执行方面，FastCI 根据测试的执行历史进行调度，优先安排高风险测试以尽早暴露潜在故障，并通过减少每个测试预期验证范围之外的维度上的工作量来加速单个测试的执行。"
+    }
+   ]
+  },
+  {
+   "en": "Evaluated on the CI workload of our LLM training framework, FastCI reduces the CI latency by 77.5% and the GPU resource usage by 63.9% compared with path-based test selection, which is currently adopted in our CI pipelines. In addition, FastCI improves the modified code coverage retention by 3.2% over path-based test selection because runtime evidence recovers affected tests missed by file-level mappings, thereby covering more modified code lines. Furthermore, FastCI cuts the GPU resource usage before exposing the first failure by 89.2%, compared with the currently used first-in-first-out test scheduling. FastCI has now been integrated into the CI pipelines of our LLM training framework at ByteDance. With FastCI handling the CI workload, the average CI latency has been reduced by 58.4%, substantially improving development efficiency of our LLM training framework.",
+   "zh": "在我们的 LLM 训练框架的 CI 工作负载上，FastCI 与当前 CI 流程中采用的基于路径的测试选择方法相比，将 CI 延迟降低了 77.5%，GPU 资源使用量降低了 63.9%。 此外，由于运行时证据能够恢复文件级映射所遗漏的受影响测试，从而覆盖更多被修改的代码行，FastCI 在保留已修改代码的覆盖率方面比基于路径的测试选择方法提升了 3.2%。 更进一步地，与当前使用的先进先出测试调度方法相比，FastCI 在首次故障出现前将 GPU 资源使用量减少了 89.2%。 FastCI 现已集成到字节跳动 LLM 训练框架的 CI 流程中。 通过 FastCI 处理 CI 工作负载，平均 CI 延迟已降低 58.4%，显著提升了我们 LLM 训练框架的开发效率。",
+   "sents": [
+    {
+     "en": "Evaluated on the CI workload of our LLM training framework, FastCI reduces the CI latency by 77.5% and the GPU resource usage by 63.9% compared with path-based test selection, which is currently adopted in our CI pipelines.",
+     "zh": "在我们的 LLM 训练框架的 CI 工作负载上，FastCI 与当前 CI 流程中采用的基于路径的测试选择方法相比，将 CI 延迟降低了 77.5%，GPU 资源使用量降低了 63.9%。"
+    },
+    {
+     "en": "In addition, FastCI improves the modified code coverage retention by 3.2% over path-based test selection because runtime evidence recovers affected tests missed by file-level mappings, thereby covering more modified code lines.",
+     "zh": "此外，由于运行时证据能够恢复文件级映射所遗漏的受影响测试，从而覆盖更多被修改的代码行，FastCI 在保留已修改代码的覆盖率方面比基于路径的测试选择方法提升了 3.2%。"
+    },
+    {
+     "en": "Furthermore, FastCI cuts the GPU resource usage before exposing the first failure by 89.2%, compared with the currently used first-in-first-out test scheduling.",
+     "zh": "更进一步地，与当前使用的先进先出测试调度方法相比，FastCI 在首次故障出现前将 GPU 资源使用量减少了 89.2%。"
+    },
+    {
+     "en": "FastCI has now been integrated into the CI pipelines of our LLM training framework at ByteDance.",
+     "zh": "FastCI 现已集成到字节跳动 LLM 训练框架的 CI 流程中。"
+    },
+    {
+     "en": "With FastCI handling the CI workload, the average CI latency has been reduced by 58.4%, substantially improving development efficiency of our LLM training framework.",
+     "zh": "通过 FastCI 处理 CI 工作负载，平均 CI 延迟已降低 58.4%，显著提升了我们 LLM 训练框架的开发效率。"
+    }
+   ]
+  },
+  {
+   "en": "Program analysis and runtime tracing for test selection. Regression test selection usually relies on dependencies between code and tests to identify which tests are affected by code changes ( Rothermel & Harrold, 1996 ; Yoo & Harman, 2012 ; Elbaum et al., 2014 ) . In addition to manually maintained path mapping, static program analysis is also widely used to extract these dependencies ( Legunsen et al., 2017 ; Zhang, 2018 ; Liu et al., 2023b ; Zhang et al., 2024 ; Maurina et al., 2025 ) . File- or module-level static analysis is coarse-grained and still over-selects tests ( Shi et al., 2017 ) . Function- or method-level analysis can be more precise but introduce high analysis overhead for LLM training frameworks, causing the analysis to time out in our experiments. To address this issue, some recent approaches optimize the static analysis process. NameRTS makes function-level analysis potentially practical by using conservative name matching refined with runtime information ( Wang et al., 2026 ) . However, end-to-end tests in LLM training frameworks often share a core training entry point but execute different code paths across configurations, tasks, and enabled features. As NameRTS distinguishes tests by their test file entry points, it may therefore select unnecessary jobs in this scenario, as evaluated in Section 5.2 .",
+   "zh": "通过程序分析和运行时追踪来选择测试用例。 回归测试的选择通常依赖代码与测试之间的依赖关系，以识别哪些测试会受到代码更改的影响（Rothermel & Harrold, 1996；Yoo & Harman, 2012；Elbaum et al., 2014）。 除了手动维护的路径映射外，静态程序分析也被广泛用于提取这些依赖关系（Legunsen et al., 2017；Zhang, 2018；Liu et al., 2023b；Zhang et al., 2024；Maurina et al., 2025）。 文件或模块级别的静态分析粒度较粗，仍然会导致测试用例选择过多（Shi et al., 2017）。 函数或方法级别的分析可能更精确，但会为 LLM 训练框架带来高昂的分析开销，导致我们的实验中分析过程超时。 为解决这一问题，一些近期的方法对静态分析过程进行了优化。 NameRTS 通过结合运行时信息对保守的名称匹配进行细化，使函数级别的分析具有实际可行性（Wang et al., 2026）。 然而，LLM 训练框架中的端到端测试通常共享一个核心的训练入口点，但会在不同配置、任务和启用功能中执行不同的代码路径。 由于 NameRTS 通过测试文件的入口点来区分测试用例，因此在这种场景下它可能会选择不必要的任务，这一点已在第 5.2 节中进行了评估。",
+   "sents": [
+    {
+     "en": "Program analysis and runtime tracing for test selection.",
+     "zh": "通过程序分析和运行时追踪来选择测试用例。"
+    },
+    {
+     "en": "Regression test selection usually relies on dependencies between code and tests to identify which tests are affected by code changes ( Rothermel & Harrold, 1996 ; Yoo & Harman, 2012 ; Elbaum et al., 2014 ) .",
+     "zh": "回归测试的选择通常依赖代码与测试之间的依赖关系，以识别哪些测试会受到代码更改的影响（Rothermel & Harrold, 1996；Yoo & Harman, 2012；Elbaum et al., 2014）。"
+    },
+    {
+     "en": "In addition to manually maintained path mapping, static program analysis is also widely used to extract these dependencies ( Legunsen et al., 2017 ; Zhang, 2018 ; Liu et al., 2023b ; Zhang et al., 2024 ; Maurina et al., 2025 ) .",
+     "zh": "除了手动维护的路径映射外，静态程序分析也被广泛用于提取这些依赖关系（Legunsen et al., 2017；Zhang, 2018；Liu et al., 2023b；Zhang et al., 2024；Maurina et al., 2025）。"
+    },
+    {
+     "en": "File- or module-level static analysis is coarse-grained and still over-selects tests ( Shi et al., 2017 ) .",
+     "zh": "文件或模块级别的静态分析粒度较粗，仍然会导致测试用例选择过多（Shi et al., 2017）。"
+    },
+    {
+     "en": "Function- or method-level analysis can be more precise but introduce high analysis overhead for LLM training frameworks, causing the analysis to time out in our experiments.",
+     "zh": "函数或方法级别的分析可能更精确，但会为 LLM 训练框架带来高昂的分析开销，导致我们的实验中分析过程超时。"
+    },
+    {
+     "en": "To address this issue, some recent approaches optimize the static analysis process.",
+     "zh": "为解决这一问题，一些近期的方法对静态分析过程进行了优化。"
+    },
+    {
+     "en": "NameRTS makes function-level analysis potentially practical by using conservative name matching refined with runtime information ( Wang et al., 2026 ) .",
+     "zh": "NameRTS 通过结合运行时信息对保守的名称匹配进行细化，使函数级别的分析具有实际可行性（Wang et al., 2026）。"
+    },
+    {
+     "en": "However, end-to-end tests in LLM training frameworks often share a core training entry point but execute different code paths across configurations, tasks, and enabled features.",
+     "zh": "然而，LLM 训练框架中的端到端测试通常共享一个核心的训练入口点，但会在不同配置、任务和启用功能中执行不同的代码路径。"
+    },
+    {
+     "en": "As NameRTS distinguishes tests by their test file entry points, it may therefore select unnecessary jobs in this scenario, as evaluated in Section 5.2 .",
+     "zh": "由于 NameRTS 通过测试文件的入口点来区分测试用例，因此在这种场景下它可能会选择不必要的任务，这一点已在第 5.2 节中进行了评估。"
+    }
+   ]
+  },
+  {
+   "en": "To extract precise dependencies between code and tests, some approaches turn to runtime tracing ( Gligoric et al., 2015b ; Gligoric et al., 2015a ; Kauhanen et al., 2021 ) . However, exhaustive tracing can substantially increase the runtime and GPU resource consumption of CI pipelines ( Wang et al., 2024 ) . To address this issue, FastCI turns to lightweight sampling to obtain runtime evidence, but it is challenging to design a test selection mechanism under potentially incomplete evidence.",
+   "zh": "为了提取代码与测试之间的精确依赖关系，一些方法转向运行时追踪（Gligoric 等人，2015b；Gligoric 等人，2015a；Kauhanen 等人，2021）。 然而，全面的追踪会显著增加 CI 管道的运行时间和 GPU 资源消耗（Wang 等人，2024）。 为了解决这个问题，FastCI 采用轻量级采样来获取运行时证据，但在证据可能不完整的情况下设计测试选择机制具有挑战性。",
+   "sents": [
+    {
+     "en": "To extract precise dependencies between code and tests, some approaches turn to runtime tracing ( Gligoric et al., 2015b ; Gligoric et al., 2015a ; Kauhanen et al., 2021 ) .",
+     "zh": "为了提取代码与测试之间的精确依赖关系，一些方法转向运行时追踪（Gligoric 等人，2015b；Gligoric 等人，2015a；Kauhanen 等人，2021）。"
+    },
+    {
+     "en": "However, exhaustive tracing can substantially increase the runtime and GPU resource consumption of CI pipelines ( Wang et al., 2024 ) .",
+     "zh": "然而，全面的追踪会显著增加 CI 管道的运行时间和 GPU 资源消耗（Wang 等人，2024）。"
+    },
+    {
+     "en": "To address this issue, FastCI turns to lightweight sampling to obtain runtime evidence, but it is challenging to design a test selection mechanism under potentially incomplete evidence.",
+     "zh": "为了解决这个问题，FastCI 采用轻量级采样来获取运行时证据，但在证据可能不完整的情况下设计测试选择机制具有挑战性。"
+    }
+   ]
+  },
+  {
+   "en": "Prediction-based test selection and prioritization. Prediction-based approaches may leverage historical outcomes, developer-provided information, learned representations, or LLM reasoning ( Roy et al., 2026 ; Tao et al., 2025 ) to identify tests that are likely to fail ( Leong et al., 2019 ; Machalica et al., 2019 ; Spieker et al., 2017 ; Prado Lima & Vergilio, 2022 ; Pan et al., 2022 ; Zhao et al., 2023 ; Plyusnin et al., 2025 ; Mehta et al., 2021 ; Herzig et al., 2015 ) . However, their predictions do not provide a clear guarantee for test skipping. They are therefore commonly used in fail-stop pipelines, where likely failures are executed first but the full test suite remains necessary if no failure is observed. Rather than using predictions to skip tests, FastCI uses historical information only to schedule selected tests in our non-fail-stop CI pipelines.",
+   "zh": "基于预测的测试选择与优先级排序。 基于预测的方法可以利用历史结果、开发者提供的信息、学习到的表示或大型语言模型（LLM）的推理（Roy 等，2026；Tao 等，2025），以识别可能失败的测试（Leong 等，2019；Machalica 等，2019；Spieker 等，2017；Prado Lima 与 Vergilio，2022；Pan 等，2022；Zhao 等，2023；Plyusnin 等，2025；Mehta 等，2021；Herzig 等，2015）。 然而，这些预测并未为跳过测试提供明确的保证。 因此，它们通常被用于“失败即停止”的流程中：可能失败的测试会被优先执行，但如果未观察到任何失败，完整的测试套件仍然必须运行。 FastCI 并未使用预测来跳过测试，而是仅利用历史信息，在我们的非“失败即停止”的持续集成（CI）流程中安排已选测试的执行顺序。",
+   "sents": [
+    {
+     "en": "Prediction-based test selection and prioritization.",
+     "zh": "基于预测的测试选择与优先级排序。"
+    },
+    {
+     "en": "Prediction-based approaches may leverage historical outcomes, developer-provided information, learned representations, or LLM reasoning ( Roy et al., 2026 ; Tao et al., 2025 ) to identify tests that are likely to fail ( Leong et al., 2019 ; Machalica et al., 2019 ; Spieker et al., 2017 ; Prado Lima & Vergilio, 2022 ; Pan et al., 2022 ; Zhao et al., 2023 ; Plyusnin et al., 2025 ; Mehta et al., 2021 ; Herzig et al., 2015 ) .",
+     "zh": "基于预测的方法可以利用历史结果、开发者提供的信息、学习到的表示或大型语言模型（LLM）的推理（Roy 等，2026；Tao 等，2025），以识别可能失败的测试（Leong 等，2019；Machalica 等，2019；Spieker 等，2017；Prado Lima 与 Vergilio，2022；Pan 等，2022；Zhao 等，2023；Plyusnin 等，2025；Mehta 等，2021；Herzig 等，2015）。"
+    },
+    {
+     "en": "However, their predictions do not provide a clear guarantee for test skipping.",
+     "zh": "然而，这些预测并未为跳过测试提供明确的保证。"
+    },
+    {
+     "en": "They are therefore commonly used in fail-stop pipelines, where likely failures are executed first but the full test suite remains necessary if no failure is observed.",
+     "zh": "因此，它们通常被用于“失败即停止”的流程中：可能失败的测试会被优先执行，但如果未观察到任何失败，完整的测试套件仍然必须运行。"
+    },
+    {
+     "en": "Rather than using predictions to skip tests, FastCI uses historical information only to schedule selected tests in our non-fail-stop CI pipelines.",
+     "zh": "FastCI 并未使用预测来跳过测试，而是仅利用历史信息，在我们的非“失败即停止”的持续集成（CI）流程中安排已选测试的执行顺序。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 2 provides an overview of FastCI. FastCI consists of modular components that can be integrated into existing CI pipelines for LLM training frameworks with minimal changes. Across CI runs, it continuously updates a runtime evidence graph and test execution history. For each MR, FastCI uses this state to optimize both test selection and execution, improving CI efficiency throughout the MR lifecycle.",
+   "zh": "图 2 展示了 FastCI 的概览。 FastCI 由模块化组件构成，这些组件只需少量改动即可集成到现有 CI 流程中，适用于 LLM 训练框架。 在每次 CI 运行中，它会持续更新运行时证据图和测试执行历史。 对于每个 MR，FastCI 利用这一状态来优化测试选择和执行，从而在整个 MR 生命周期中提升 CI 效率。",
+   "sents": [
+    {
+     "en": "Figure 2 provides an overview of FastCI.",
+     "zh": "图 2 展示了 FastCI 的概览。"
+    },
+    {
+     "en": "FastCI consists of modular components that can be integrated into existing CI pipelines for LLM training frameworks with minimal changes.",
+     "zh": "FastCI 由模块化组件构成，这些组件只需少量改动即可集成到现有 CI 流程中，适用于 LLM 训练框架。"
+    },
+    {
+     "en": "Across CI runs, it continuously updates a runtime evidence graph and test execution history.",
+     "zh": "在每次 CI 运行中，它会持续更新运行时证据图和测试执行历史。"
+    },
+    {
+     "en": "For each MR, FastCI uses this state to optimize both test selection and execution, improving CI efficiency throughout the MR lifecycle.",
+     "zh": "对于每个 MR，FastCI 利用这一状态来优化测试选择和执行，从而在整个 MR 生命周期中提升 CI 效率。"
+    }
+   ]
+  },
+  {
+   "en": "Each CI run first enters test selection. FastCI applies evidence-guided test selection , mapping code changes to runtime graph entities and selecting tests that reach them. If some changes lack corresponding entities, indicating incomplete runtime evidence, FastCI broadens the selection to reduce the risk of omitting affected tests. The selected tests then pass through context-aware test pruning , which identifies tests that execute the changed code in equivalent contexts and removes redundant ones from the selection. In this phase, the core of FastCI is a runtime evidence graph built from runtime-sampled traces. This graph must be updated continuously to reflect the evolving codebase, which we will detail in Section 4.1 .",
+   "zh": "每次 CI 运行首先进入测试选择阶段。 FastCI 采用基于证据的测试选择方法，将代码变更映射到运行时图实体，并选择能够触及这些实体的测试。 如果某些变更没有对应的实体，表明运行时证据不完整，FastCI 会扩大选择范围，以降低遗漏受影响测试的风险。 随后，选中的测试会经过上下文感知的测试剪枝阶段，该阶段会识别出在等效上下文中执行了变更代码的测试，并从候选集中移除冗余测试。 在此阶段，FastCI 的核心是一个由运行时采样轨迹构建的运行时证据图。 该图必须持续更新以反映不断演变的代码库，我们将在第 4.1 节中详细说明这一点。",
+   "sents": [
+    {
+     "en": "Each CI run first enters test selection.",
+     "zh": "每次 CI 运行首先进入测试选择阶段。"
+    },
+    {
+     "en": "FastCI applies evidence-guided test selection , mapping code changes to runtime graph entities and selecting tests that reach them.",
+     "zh": "FastCI 采用基于证据的测试选择方法，将代码变更映射到运行时图实体，并选择能够触及这些实体的测试。"
+    },
+    {
+     "en": "If some changes lack corresponding entities, indicating incomplete runtime evidence, FastCI broadens the selection to reduce the risk of omitting affected tests.",
+     "zh": "如果某些变更没有对应的实体，表明运行时证据不完整，FastCI 会扩大选择范围，以降低遗漏受影响测试的风险。"
+    },
+    {
+     "en": "The selected tests then pass through context-aware test pruning , which identifies tests that execute the changed code in equivalent contexts and removes redundant ones from the selection.",
+     "zh": "随后，选中的测试会经过上下文感知的测试剪枝阶段，该阶段会识别出在等效上下文中执行了变更代码的测试，并从候选集中移除冗余测试。"
+    },
+    {
+     "en": "In this phase, the core of FastCI is a runtime evidence graph built from runtime-sampled traces.",
+     "zh": "在此阶段，FastCI 的核心是一个由运行时采样轨迹构建的运行时证据图。"
+    },
+    {
+     "en": "This graph must be updated continuously to reflect the evolving codebase, which we will detail in Section 4.1 .",
+     "zh": "该图必须持续更新以反映不断演变的代码库，我们将在第 4.1 节中详细说明这一点。"
+    }
+   ]
+  },
+  {
+   "en": "The remaining tests then enter the test execution phase. FastCI first applies risk-aware test scheduling to prioritize high-risk tests based on associations between code changes and test failures, together with the recent flakiness of each test. This scheduling exposes potential failures earlier, allowing developers to receive feedback and intervene sooner. Then the ordered tests are submitted for execution, where FastCI applies workload-optimized test execution to reduce workload along dimensions outside the intended validation scope of each test. If the workload cannot be reduced, FastCI retains the original workload to preserve the validation capability of the test.",
+   "zh": "随后，剩余测试将进入测试执行阶段。 FastCI 首先应用风险感知测试调度，根据代码变更与测试失败之间的关联性以及每个测试近期的不稳定性，对高风险测试进行优先级排序。 这种调度能更早地暴露潜在故障，使开发者能够更及时地获得反馈并进行干预。 接着，按顺序排列的测试被提交执行，在此过程中 FastCI 应用工作负载优化的测试执行策略，以减轻每个测试预期验证范围之外的维度上的工作负载。 如果无法减少工作负载，FastCI 将保留原始工作负载，以确保测试的验证能力不受影响。",
+   "sents": [
+    {
+     "en": "The remaining tests then enter the test execution phase.",
+     "zh": "随后，剩余测试将进入测试执行阶段。"
+    },
+    {
+     "en": "FastCI first applies risk-aware test scheduling to prioritize high-risk tests based on associations between code changes and test failures, together with the recent flakiness of each test.",
+     "zh": "FastCI 首先应用风险感知测试调度，根据代码变更与测试失败之间的关联性以及每个测试近期的不稳定性，对高风险测试进行优先级排序。"
+    },
+    {
+     "en": "This scheduling exposes potential failures earlier, allowing developers to receive feedback and intervene sooner.",
+     "zh": "这种调度能更早地暴露潜在故障，使开发者能够更及时地获得反馈并进行干预。"
+    },
+    {
+     "en": "Then the ordered tests are submitted for execution, where FastCI applies workload-optimized test execution to reduce workload along dimensions outside the intended validation scope of each test.",
+     "zh": "接着，按顺序排列的测试被提交执行，在此过程中 FastCI 应用工作负载优化的测试执行策略，以减轻每个测试预期验证范围之外的维度上的工作负载。"
+    },
+    {
+     "en": "If the workload cannot be reduced, FastCI retains the original workload to preserve the validation capability of the test.",
+     "zh": "如果无法减少工作负载，FastCI 将保留原始工作负载，以确保测试的验证能力不受影响。"
+    }
+   ]
+  },
+  {
+   "en": "This section details the design of FastCI, consisting of four techniques, which are evidence-guided test selection (Section 4.1 ), context-aware test pruning (Section 4.2 ), risk-aware test scheduling (Section 4.3 ), and workload-optimized test execution (Section 4.4 ).",
+   "zh": "本节详细阐述了 FastCI 的设计，它由四种技术组成：证据引导的测试选择（第 4.1 节）、上下文感知的测试剪枝（第 4.2 节）、风险感知的测试调度（第 4.3 节）以及工作负载优化的测试执行（第 4.4 节）。",
+   "sents": null
+  },
+  {
+   "en": "Evidence-guided test selection uses a runtime evidence graph built from runtime traces sampled during previous CI runs. When the graph contains evidence for a modified function, FastCI directly selects the tests observed to execute that function. When such evidence is missing, FastCI intentionally broadens the selection to include tests that may execute the modified function even though this execution was not observed in previous runs.",
+   "zh": "基于证据的测试选择方法使用一个运行时证据图，该图由先前 CI 运行期间采样的运行时轨迹构建而成。 当图中包含对某个已修改函数的证据时，FastCI 会直接选择那些已知执行该函数的测试。 如果缺乏此类证据，FastCI 会故意扩大测试范围，将可能执行该已修改函数的测试也包含在内，即使这些测试在先前运行中未被观察到执行。",
+   "sents": [
+    {
+     "en": "Evidence-guided test selection uses a runtime evidence graph built from runtime traces sampled during previous CI runs.",
+     "zh": "基于证据的测试选择方法使用一个运行时证据图，该图由先前 CI 运行期间采样的运行时轨迹构建而成。"
+    },
+    {
+     "en": "When the graph contains evidence for a modified function, FastCI directly selects the tests observed to execute that function.",
+     "zh": "当图中包含对某个已修改函数的证据时，FastCI 会直接选择那些已知执行该函数的测试。"
+    },
+    {
+     "en": "When such evidence is missing, FastCI intentionally broadens the selection to include tests that may execute the modified function even though this execution was not observed in previous runs.",
+     "zh": "如果缺乏此类证据，FastCI 会故意扩大测试范围，将可能执行该已修改函数的测试也包含在内，即使这些测试在先前运行中未被观察到执行。"
+    }
+   ]
+  },
+  {
+   "en": "For each codebase version, FastCI maintains a runtime evidence graph G = ( V , E , A V , A E ) G=(V,E,A_{V},A_{E}) that captures function-level code–test dependencies. V V contains observed functions and methods, while E ⊆ V × V E\\subseteq V\\times V represents observed calls. Attributes A V A_{V} and A E A_{E} map vertices and edges to the tests that executed them. Node attributes support precise affected-test selection, while edges support context-aware pruning in Section 4.2 .",
+   "zh": "对于每个代码库版本，FastCI 都会维护一个运行时证据图 G = ( V , E , A V , A E ) G=(V,E,A_{V},A_{E})，用于捕捉函数级别的代码与测试之间的依赖关系。 V 包含已观测到的函数和方法，而 E ⊆ V × V 表示已观测到的调用关系。 属性 A V 和 A E 将顶点和边映射到执行它们的测试用例。 节点属性支持精确选择受影响的测试，而边则支持第 4.2 节中基于上下文的剪枝操作。",
+   "sents": [
+    {
+     "en": "For each codebase version, FastCI maintains a runtime evidence graph G = ( V , E , A V , A E ) G=(V,E,A_{V},A_{E}) that captures function-level code–test dependencies.",
+     "zh": "对于每个代码库版本，FastCI 都会维护一个运行时证据图 G = ( V , E , A V , A E ) G=(V,E,A_{V},A_{E})，用于捕捉函数级别的代码与测试之间的依赖关系。"
+    },
+    {
+     "en": "V V contains observed functions and methods, while E ⊆ V × V E\\subseteq V\\times V represents observed calls.",
+     "zh": "V 包含已观测到的函数和方法，而 E ⊆ V × V 表示已观测到的调用关系。"
+    },
+    {
+     "en": "Attributes A V A_{V} and A E A_{E} map vertices and edges to the tests that executed them.",
+     "zh": "属性 A V 和 A E 将顶点和边映射到执行它们的测试用例。"
+    },
+    {
+     "en": "Node attributes support precise affected-test selection, while edges support context-aware pruning in Section 4.2 .",
+     "zh": "节点属性支持精确选择受影响的测试，而边则支持第 4.2 节中基于上下文的剪枝操作。"
+    }
+   ]
+  },
+  {
+   "en": "At the beginning of the test selection, code changes are mapped to a set of corresponding entities, denoted by M M . For changes within explicit function or method scope, M M contains the corresponding function or method. For changes outside explicit function or method scope, such as global variable definitions and conditional imports, M M includes all functions and methods within the changed file.",
+   "zh": "在测试选择的初始阶段，代码变更会被映射到一组对应的实体，用 M M 表示。 对于明确处于函数或方法作用域内的变更，M M 包含对应的函数或方法。 对于明确不在函数或方法作用域内的变更（例如全局变量定义和条件导入），M M 会包含变更文件中所有的函数和方法。",
+   "sents": [
+    {
+     "en": "At the beginning of the test selection, code changes are mapped to a set of corresponding entities, denoted by M M .",
+     "zh": "在测试选择的初始阶段，代码变更会被映射到一组对应的实体，用 M M 表示。"
+    },
+    {
+     "en": "For changes within explicit function or method scope, M M contains the corresponding function or method.",
+     "zh": "对于明确处于函数或方法作用域内的变更，M M 包含对应的函数或方法。"
+    },
+    {
+     "en": "For changes outside explicit function or method scope, such as global variable definitions and conditional imports, M M includes all functions and methods within the changed file.",
+     "zh": "对于明确不在函数或方法作用域内的变更（例如全局变量定义和条件导入），M M 会包含变更文件中所有的函数和方法。"
+    }
+   ]
+  },
+  {
+   "en": "Then FastCI searches the runtime evidence graph G G for each entity in M M and extracts the tests with explicit evidence of executing the modified code. However, it is possible that some entities in M M cannot be found in G G , indicating that the runtime evidence is incomplete. This issue stems from the sampling method for trace collection, especially for short-lived functions like configuration setters and utility functions. To reduce the risk of omitting potentially affected tests, FastCI intentionally broadens the test selection in two ways. First, for each modified method, M M is expanded to include all methods within the same class, as multiple methods of a class are usually invoked together within the same test. Second, for each modified function, M M is expanded to include all its caller functions by scanning the codebase. After the expansion, evidence associated with these added entities allows FastCI to identify candidate tests for modified entities missing from G G . Let E ​ x ​ t ​ e ​ n ​ d ​ ( M ) Extend(M) denote the expanded set of entities. The selected tests T a ​ f ​ f ​ e ​ c ​ t ​ e ​ d ​ ( M ) T_{affected}(M) can be determined as",
+   "zh": "然后，FastCI 会在运行时证据图 G G 中搜索 M M 中的每个实体，并提取出有明确证据表明执行了修改后代码的测试。 然而，M M 中的某些实体可能无法在 G G 中找到，这表明运行时证据不完整。 这个问题源于轨迹收集的采样方法，尤其是对于像配置设置器和工具函数这类生命周期较短的函数而言。 为了降低遗漏可能受影响的测试的风险，FastCI 有意通过两种方式扩大测试的选择范围。 首先，对于每个被修改的方法，M M 会被扩展以包含同一类中的所有方法，因为一个类的多个方法通常会在同一测试中被一起调用。 其次，对于每个被修改的函数，M M 会通过扫描代码库来扩展，以包含其所有调用者函数。 扩展之后，与这些新增实体相关的证据使 FastCI 能够识别出 G G 中缺失的、与被修改实体相关的候选测试。 令 E ​ x ​ t ​ e ​ n ​ d ​ ( M ) Extend(M) 表示扩展后的实体集合。 选中的测试 T a ​ f ​ f ​ e ​ c ​ t ​ e ​ d ​ ( M ) T_{affected}(M) 可以确定如下：",
+   "sents": [
+    {
+     "en": "Then FastCI searches the runtime evidence graph G G for each entity in M M and extracts the tests with explicit evidence of executing the modified code.",
+     "zh": "然后，FastCI 会在运行时证据图 G G 中搜索 M M 中的每个实体，并提取出有明确证据表明执行了修改后代码的测试。"
+    },
+    {
+     "en": "However, it is possible that some entities in M M cannot be found in G G , indicating that the runtime evidence is incomplete.",
+     "zh": "然而，M M 中的某些实体可能无法在 G G 中找到，这表明运行时证据不完整。"
+    },
+    {
+     "en": "This issue stems from the sampling method for trace collection, especially for short-lived functions like configuration setters and utility functions.",
+     "zh": "这个问题源于轨迹收集的采样方法，尤其是对于像配置设置器和工具函数这类生命周期较短的函数而言。"
+    },
+    {
+     "en": "To reduce the risk of omitting potentially affected tests, FastCI intentionally broadens the test selection in two ways.",
+     "zh": "为了降低遗漏可能受影响的测试的风险，FastCI 有意通过两种方式扩大测试的选择范围。"
+    },
+    {
+     "en": "First, for each modified method, M M is expanded to include all methods within the same class, as multiple methods of a class are usually invoked together within the same test.",
+     "zh": "首先，对于每个被修改的方法，M M 会被扩展以包含同一类中的所有方法，因为一个类的多个方法通常会在同一测试中被一起调用。"
+    },
+    {
+     "en": "Second, for each modified function, M M is expanded to include all its caller functions by scanning the codebase.",
+     "zh": "其次，对于每个被修改的函数，M M 会通过扫描代码库来扩展，以包含其所有调用者函数。"
+    },
+    {
+     "en": "After the expansion, evidence associated with these added entities allows FastCI to identify candidate tests for modified entities missing from G G .",
+     "zh": "扩展之后，与这些新增实体相关的证据使 FastCI 能够识别出 G G 中缺失的、与被修改实体相关的候选测试。"
+    },
+    {
+     "en": "Let E ​ x ​ t ​ e ​ n ​ d ​ ( M ) Extend(M) denote the expanded set of entities.",
+     "zh": "令 E ​ x ​ t ​ e ​ n ​ d ​ ( M ) Extend(M) 表示扩展后的实体集合。"
+    },
+    {
+     "en": "The selected tests T a ​ f ​ f ​ e ​ c ​ t ​ e ​ d ​ ( M ) T_{affected}(M) can be determined as",
+     "zh": "选中的测试 T a ​ f ​ f ​ e ​ c ​ t ​ e ​ d ​ ( M ) T_{affected}(M) 可以确定如下："
+    }
+   ]
+  },
+  {
+   "en": "Figure 3 illustrates the test selection process. For an MR modifying parallelize_vision , its corresponding entity can be found in the runtime evidence graph and the affected test is selected directly. However, for an MR modifying VisionEncoder.validate_config , which is a simple configuration setter, its corresponding entity is missing from the graph. Therefore, FastCI broadens the selection through other methods within the same class and finally identifies the test through VisionEncoder.forward . This test was verified to be affected by the MR.",
+   "zh": "图 3 展示了测试选择过程。 对于修改 parallelize_vision 的 MR，可以在运行时证据图中找到其对应的实体，并直接选择受影响的测试。 然而，对于修改 VisionEncoder.validate_config 的 MR（这是一个简单的配置设置器），其对应的实体在图中并不存在。 因此，FastCI 通过同一类中的其他方法扩展了选择范围，并最终通过 VisionEncoder.forward 确定了该测试。 经验证，该测试确实受到此 MR 的影响。",
+   "sents": [
+    {
+     "en": "Figure 3 illustrates the test selection process.",
+     "zh": "图 3 展示了测试选择过程。"
+    },
+    {
+     "en": "For an MR modifying parallelize_vision , its corresponding entity can be found in the runtime evidence graph and the affected test is selected directly.",
+     "zh": "对于修改 parallelize_vision 的 MR，可以在运行时证据图中找到其对应的实体，并直接选择受影响的测试。"
+    },
+    {
+     "en": "However, for an MR modifying VisionEncoder.validate_config , which is a simple configuration setter, its corresponding entity is missing from the graph.",
+     "zh": "然而，对于修改 VisionEncoder.validate_config 的 MR（这是一个简单的配置设置器），其对应的实体在图中并不存在。"
+    },
+    {
+     "en": "Therefore, FastCI broadens the selection through other methods within the same class and finally identifies the test through VisionEncoder.forward .",
+     "zh": "因此，FastCI 通过同一类中的其他方法扩展了选择范围，并最终通过 VisionEncoder.forward 确定了该测试。"
+    },
+    {
+     "en": "This test was verified to be affected by the MR.",
+     "zh": "经验证，该测试确实受到此 MR 的影响。"
+    }
+   ]
+  },
+  {
+   "en": "The remaining challenge is keeping the runtime evidence graph aligned with the evolving codebase. Sampling tools ( e.g. , py-spy ( Frederickson, 2026 ) ) add overhead, but it is small relative to savings of FastCI. By default, FastCI samples each CI run and updates the graph when an MR is merged. For a stable codebase, since a single MR changes only a small fraction of the codebase, the graph tolerates limited staleness and can instead be updated periodically, such as every three commits.",
+   "zh": "剩下的挑战是保持运行时证据图与不断演变的代码库同步。 采样工具（例如 py-spy (Frederickson, 2026)）会增加额外开销，但与 FastCI 带来的节省相比，这一开销很小。 默认情况下，FastCI 会对每次 CI 运行进行采样，并在 MR 合并时更新该图。 对于稳定的代码库而言，由于单个 MR 仅会修改代码库的一小部分，因此该图可以容忍有限的过时性，也可以改为定期更新，例如每三次提交更新一次。",
+   "sents": [
+    {
+     "en": "The remaining challenge is keeping the runtime evidence graph aligned with the evolving codebase.",
+     "zh": "剩下的挑战是保持运行时证据图与不断演变的代码库同步。"
+    },
+    {
+     "en": "Sampling tools ( e.g. , py-spy ( Frederickson, 2026 ) ) add overhead, but it is small relative to savings of FastCI.",
+     "zh": "采样工具（例如 py-spy (Frederickson, 2026)）会增加额外开销，但与 FastCI 带来的节省相比，这一开销很小。"
+    },
+    {
+     "en": "By default, FastCI samples each CI run and updates the graph when an MR is merged.",
+     "zh": "默认情况下，FastCI 会对每次 CI 运行进行采样，并在 MR 合并时更新该图。"
+    },
+    {
+     "en": "For a stable codebase, since a single MR changes only a small fraction of the codebase, the graph tolerates limited staleness and can instead be updated periodically, such as every three commits.",
+     "zh": "对于稳定的代码库而言，由于单个 MR 仅会修改代码库的一小部分，因此该图可以容忍有限的过时性，也可以改为定期更新，例如每三次提交更新一次。"
+    }
+   ]
+  },
+  {
+   "en": "After evidence-guided test selection, the selected test set may still be large because multiple tests can execute the same modified function ( Shi et al., 2015 ) . For instance, lightweight environment checking functions are invoked by most end-to-end tests, causing many tests with redundant coverage to be selected when these functions change. Although one representative test may be sufficient, tests cannot be pruned solely because they execute the same function, as the behavior of the function may depend on the calling context. FastCI therefore distinguishes tests by their execution contexts and prunes only those that exercise the modified function in equivalent contexts.",
+   "zh": "在基于证据的测试选择之后，所选的测试集可能仍然很大，因为多个测试可以执行相同的修改后函数（Shi et al., 2015）。 例如，大多数端到端测试都会调用轻量级环境检查函数，当这些函数发生变化时，会导致许多具有冗余覆盖率的测试被选中。 尽管一个代表性测试可能已经足够，但仅因为它们执行相同的函数而剪枝测试是不可行的，因为该函数的行为可能依赖于调用上下文。 因此，FastCI 通过其执行上下文来区分测试，并且只剪枝那些在等效上下文中执行修改后函数的测试。",
+   "sents": [
+    {
+     "en": "After evidence-guided test selection, the selected test set may still be large because multiple tests can execute the same modified function ( Shi et al., 2015 ) .",
+     "zh": "在基于证据的测试选择之后，所选的测试集可能仍然很大，因为多个测试可以执行相同的修改后函数（Shi et al., 2015）。"
+    },
+    {
+     "en": "For instance, lightweight environment checking functions are invoked by most end-to-end tests, causing many tests with redundant coverage to be selected when these functions change.",
+     "zh": "例如，大多数端到端测试都会调用轻量级环境检查函数，当这些函数发生变化时，会导致许多具有冗余覆盖率的测试被选中。"
+    },
+    {
+     "en": "Although one representative test may be sufficient, tests cannot be pruned solely because they execute the same function, as the behavior of the function may depend on the calling context.",
+     "zh": "尽管一个代表性测试可能已经足够，但仅因为它们执行相同的函数而剪枝测试是不可行的，因为该函数的行为可能依赖于调用上下文。"
+    },
+    {
+     "en": "FastCI therefore distinguishes tests by their execution contexts and prunes only those that exercise the modified function in equivalent contexts.",
+     "zh": "因此，FastCI 通过其执行上下文来区分测试，并且只剪枝那些在等效上下文中执行修改后函数的测试。"
+    }
+   ]
+  },
+  {
+   "en": "To identify such redundant tests, FastCI extracts an execution context C K ​ ( m , t ) C_{K}(m,t) for each modified entity m m and selected test t t from the runtime evidence graph. The context is a test-specific subgraph of G G containing the callers and callees within K K hops of m m . We use K = 3 K=3 by default. Then two tests are considered redundant for m m only if their context subgraphs are identical and their validation metadata, such as task type and hardware requirements, also match. Accordingly, test equivalence is defined as follows:",
+   "zh": "为了识别这类冗余测试，FastCI 会从运行时证据图中为每个被修改的实体 m 和选定的测试 t 提取一个执行上下文 C K ​ ( m , t ) C_{K}(m,t)。 该上下文是 G 的一个特定于测试的子图，包含在 m 的 K 跳邻域内的调用者和被调用者。 我们默认使用 K = 3。 此时，只有当两个测试针对 m 的上下文子图完全相同，并且它们的验证元数据（例如任务类型和硬件要求）也相匹配时，这两个测试才会被视为冗余。 因此，测试等价性定义如下：",
+   "sents": [
+    {
+     "en": "To identify such redundant tests, FastCI extracts an execution context C K ​ ( m , t ) C_{K}(m,t) for each modified entity m m and selected test t t from the runtime evidence graph.",
+     "zh": "为了识别这类冗余测试，FastCI 会从运行时证据图中为每个被修改的实体 m 和选定的测试 t 提取一个执行上下文 C K ​ ( m , t ) C_{K}(m,t)。"
+    },
+    {
+     "en": "The context is a test-specific subgraph of G G containing the callers and callees within K K hops of m m .",
+     "zh": "该上下文是 G 的一个特定于测试的子图，包含在 m 的 K 跳邻域内的调用者和被调用者。"
+    },
+    {
+     "en": "We use K = 3 K=3 by default.",
+     "zh": "我们默认使用 K = 3。"
+    },
+    {
+     "en": "Then two tests are considered redundant for m m only if their context subgraphs are identical and their validation metadata, such as task type and hardware requirements, also match.",
+     "zh": "此时，只有当两个测试针对 m 的上下文子图完全相同，并且它们的验证元数据（例如任务类型和硬件要求）也相匹配时，这两个测试才会被视为冗余。"
+    },
+    {
+     "en": "Accordingly, test equivalence is defined as follows:",
+     "zh": "因此，测试等价性定义如下："
+    }
+   ]
+  },
+  {
+   "en": "Pruning is performed independently for each modified entity, and the retained tests are then merged across all modified entities.",
+   "zh": "每个修改后的实体都会独立执行剪枝操作，然后保留的测试用例会在所有修改后的实体中合并。",
+   "sents": null
+  },
+  {
+   "en": "Figure 4 shows an example of redundant tests. The Multimodal Training Test and FSDP End-to-End Test execute materialize_step_inputs with identical caller and callee chains in the runtime evidence graph. They are therefore considered redundant, and only one needs to be retained. In contrast, the Bitwise Alignment Test executes the function in a different context and must remain selected.",
+   "zh": "图 4 展示了一个冗余测试的示例。 多模态训练测试和 FSDP 端到端测试在运行时证据图中以相同的调用者和被调用者链执行 materialize_step_inputs。 因此，它们被视为冗余的，只需保留其中一个即可。 相比之下，位对齐测试在不同的上下文中执行该函数，因此必须保持选中状态。",
+   "sents": [
+    {
+     "en": "Figure 4 shows an example of redundant tests.",
+     "zh": "图 4 展示了一个冗余测试的示例。"
+    },
+    {
+     "en": "The Multimodal Training Test and FSDP End-to-End Test execute materialize_step_inputs with identical caller and callee chains in the runtime evidence graph.",
+     "zh": "多模态训练测试和 FSDP 端到端测试在运行时证据图中以相同的调用者和被调用者链执行 materialize_step_inputs。"
+    },
+    {
+     "en": "They are therefore considered redundant, and only one needs to be retained.",
+     "zh": "因此，它们被视为冗余的，只需保留其中一个即可。"
+    },
+    {
+     "en": "In contrast, the Bitwise Alignment Test executes the function in a different context and must remain selected.",
+     "zh": "相比之下，位对齐测试在不同的上下文中执行该函数，因此必须保持选中状态。"
+    }
+   ]
+  },
+  {
+   "en": "After identifying redundant tests, FastCI selects a representative test for each equivalence group. It estimates the GPU cost of each test from its historical execution time and the number of GPUs required. Among tests with equivalent execution contexts and validation metadata, FastCI selects the test with the lowest estimated GPU cost, while the remaining tests are pruned from the selection.",
+   "zh": "在识别出冗余测试后，FastCI 会为每个等价组选择一个代表性测试。 它根据每个测试的历史执行时间和所需 GPU 数量来估算其 GPU 成本。 在执行上下文和验证元数据等价的测试中，FastCI 会选择估算 GPU 成本最低的测试，而其余测试则从候选集中被剔除。",
+   "sents": [
+    {
+     "en": "After identifying redundant tests, FastCI selects a representative test for each equivalence group.",
+     "zh": "在识别出冗余测试后，FastCI 会为每个等价组选择一个代表性测试。"
+    },
+    {
+     "en": "It estimates the GPU cost of each test from its historical execution time and the number of GPUs required.",
+     "zh": "它根据每个测试的历史执行时间和所需 GPU 数量来估算其 GPU 成本。"
+    },
+    {
+     "en": "Among tests with equivalent execution contexts and validation metadata, FastCI selects the test with the lowest estimated GPU cost, while the remaining tests are pruned from the selection.",
+     "zh": "在执行上下文和验证元数据等价的测试中，FastCI 会选择估算 GPU 成本最低的测试，而其余测试则从候选集中被剔除。"
+    }
+   ]
+  },
+  {
+   "en": "Once the test set has been selected and pruned, the remaining tests are scheduled and dispatched to the GPU resource pool for execution. First-in-first-out scheduling can delay actionable failure feedback. Developers must then fix the problem and rerun CI from scratch, leading to inefficient development cycles and GPU resource waste. FastCI instead derives each test’s risk from historical execution outcomes and prioritizes high-risk tests to expose potential failures earlier.",
+   "zh": "测试集选定并剪枝后，其余测试将被安排调度，并分发至 GPU 资源池执行。 先进先出调度方式可能会延迟可操作的故障反馈。 开发者随后必须修复问题并从头重新运行 CI，导致开发周期效率低下且浪费 GPU 资源。 FastCI 则通过历史执行结果推导每个测试的风险，并优先执行高风险测试，从而更早地暴露潜在故障。",
+   "sents": [
+    {
+     "en": "Once the test set has been selected and pruned, the remaining tests are scheduled and dispatched to the GPU resource pool for execution.",
+     "zh": "测试集选定并剪枝后，其余测试将被安排调度，并分发至 GPU 资源池执行。"
+    },
+    {
+     "en": "First-in-first-out scheduling can delay actionable failure feedback.",
+     "zh": "先进先出调度方式可能会延迟可操作的故障反馈。"
+    },
+    {
+     "en": "Developers must then fix the problem and rerun CI from scratch, leading to inefficient development cycles and GPU resource waste.",
+     "zh": "开发者随后必须修复问题并从头重新运行 CI，导致开发周期效率低下且浪费 GPU 资源。"
+    },
+    {
+     "en": "FastCI instead derives each test’s risk from historical execution outcomes and prioritizes high-risk tests to expose potential failures earlier.",
+     "zh": "FastCI 则通过历史执行结果推导每个测试的风险，并优先执行高风险测试，从而更早地暴露潜在故障。"
+    }
+   ]
+  },
+  {
+   "en": "Failures in production CI pipelines arise not only from incorrect code changes but also from external factors such as environment issues and dependency breakages. FastCI therefore uses two complementary risk indicators to prioritize tests. The first captures historical associations between code changes and test failures. It identifies failures likely caused by code changes but provides limited evidence for newly added modules and functions. The second captures the recent instability of each test. It reflects failures caused by changing environments, dependencies, or flaky behavior ( Luo et al., 2014 ; Bell et al., 2018 ; Lam et al., 2020 ) , but is less specific to the current code change.",
+   "zh": "生产环境 CI 流水线中的故障不仅源于错误的代码变更，也与环境问题、依赖关系中断等外部因素有关。 因此，FastCI 采用两种互补的风险指标来为测试分配优先级。 第一种指标捕捉代码变更与测试失败之间的历史关联。 它能识别出可能由代码变更引起的故障，但对于新添加的模块和功能，提供的证据有限。 第二种指标捕捉每次测试近期的不稳定性。 它反映了因环境变化、依赖关系变动或行为不稳定（Luo et al., 2014; Bell et al., 2018; Lam et al., 2020）而导致的故障，但与当前代码变更的关联性较弱。",
+   "sents": [
+    {
+     "en": "Failures in production CI pipelines arise not only from incorrect code changes but also from external factors such as environment issues and dependency breakages.",
+     "zh": "生产环境 CI 流水线中的故障不仅源于错误的代码变更，也与环境问题、依赖关系中断等外部因素有关。"
+    },
+    {
+     "en": "FastCI therefore uses two complementary risk indicators to prioritize tests.",
+     "zh": "因此，FastCI 采用两种互补的风险指标来为测试分配优先级。"
+    },
+    {
+     "en": "The first captures historical associations between code changes and test failures.",
+     "zh": "第一种指标捕捉代码变更与测试失败之间的历史关联。"
+    },
+    {
+     "en": "It identifies failures likely caused by code changes but provides limited evidence for newly added modules and functions.",
+     "zh": "它能识别出可能由代码变更引起的故障，但对于新添加的模块和功能，提供的证据有限。"
+    },
+    {
+     "en": "The second captures the recent instability of each test.",
+     "zh": "第二种指标捕捉每次测试近期的不稳定性。"
+    },
+    {
+     "en": "It reflects failures caused by changing environments, dependencies, or flaky behavior ( Luo et al., 2014 ; Bell et al., 2018 ; Lam et al., 2020 ) , but is less specific to the current code change.",
+     "zh": "它反映了因环境变化、依赖关系变动或行为不稳定（Luo et al., 2014; Bell et al., 2018; Lam et al., 2020）而导致的故障，但与当前代码变更的关联性较弱。"
+    }
+   ]
+  },
+  {
+   "en": "FastCI assesses the risk of each test by combining the two risk indicators as",
+   "zh": "FastCI 通过结合这两个风险指标来评估每个测试的风险，即",
+   "sents": null
+  },
+  {
+   "en": "where R c ​ o ​ d ​ e ​ ( t ) R_{code}(t) is the risk of t t based on code changes, and R i ​ n ​ s ​ t ​ a ​ b ​ i ​ l ​ i ​ t ​ y ​ ( t ) R_{instability}(t) is the risk of t t based on recent instability. α t \\alpha_{t} reflects the confidence in the code change risk indicator and increases with the number of historical observations available for the current change-test associations. Appendix A details the calculation of this risk score. By combining these two indicators, FastCI can capture both failures caused by code changes and external factors, and avoid being misled when encountering newly added modules and functions. Accordingly, FastCI schedules tests in descending order of their risk scores, improving the feedback efficiency and reducing the GPU resource waste caused by running on already broken code.",
+   "zh": "其中 R_{code}(t) 是基于代码变更的 t 的风险，而 R_{instability}(t) 是基于近期不稳定性产生的 t 的风险。α_t 反映了代码变更风险指标的置信度，并随着当前变更与测试关联可用的历史观察数量增加而上升。 附录 A 详细说明了该风险分数的计算方法。 通过结合这两个指标，FastCI 能够同时捕捉由代码变更和外部因素引起的故障，并在遇到新添加的模块和功能时避免被误导。 因此，FastCI 按照风险分数降序安排测试，从而提升反馈效率，并减少因在已存在错误的代码上运行而造成的 GPU 资源浪费。",
+   "sents": [
+    {
+     "en": "where R c ​ o ​ d ​ e ​ ( t ) R_{code}(t) is the risk of t t based on code changes, and R i ​ n ​ s ​ t ​ a ​ b ​ i ​ l ​ i ​ t ​ y ​ ( t ) R_{instability}(t) is the risk of t t based on recent instability. α t \\alpha_{t} reflects the confidence in the code change risk indicator and increases with the number of historical observations available for the current change-test associations.",
+     "zh": "其中 R_{code}(t) 是基于代码变更的 t 的风险，而 R_{instability}(t) 是基于近期不稳定性产生的 t 的风险。α_t 反映了代码变更风险指标的置信度，并随着当前变更与测试关联可用的历史观察数量增加而上升。"
+    },
+    {
+     "en": "Appendix A details the calculation of this risk score.",
+     "zh": "附录 A 详细说明了该风险分数的计算方法。"
+    },
+    {
+     "en": "By combining these two indicators, FastCI can capture both failures caused by code changes and external factors, and avoid being misled when encountering newly added modules and functions.",
+     "zh": "通过结合这两个指标，FastCI 能够同时捕捉由代码变更和外部因素引起的故障，并在遇到新添加的模块和功能时避免被误导。"
+    },
+    {
+     "en": "Accordingly, FastCI schedules tests in descending order of their risk scores, improving the feedback efficiency and reducing the GPU resource waste caused by running on already broken code.",
+     "zh": "因此，FastCI 按照风险分数降序安排测试，从而提升反馈效率，并减少因在已存在错误的代码上运行而造成的 GPU 资源浪费。"
+    }
+   ]
+  },
+  {
+   "en": "Beyond test scheduling, FastCI also considers the workload of each test to optimize the GPU resource utilization. Typically, the workload of each test is derived from production configurations. Some dimensions of the workload, including parallelism degree and batch size, are adjusted to CI requirements, but others like model size, sequence length and production options ( e.g. , logging and metrics collection) are left unchanged. These unchanged dimensions of the workload further increase GPU resource usage without proportionally improving regression validation, as they are outside the intended validation scope of the test.",
+   "zh": "除了测试调度之外，FastCI 还会考虑每个测试的工作负载，以优化 GPU 资源利用率。 通常，每个测试的工作负载都来自生产环境配置。 工作负载的某些维度（包括并行度与批量大小）会根据 CI 要求进行调整，但其他维度（如模型大小、序列长度以及生产选项（例如日志记录与指标收集））则保持不变。 这些未改变的工作负载维度会进一步增加 GPU 资源占用，却无法成比例地提升回归验证效果，因为它们超出了测试的预期验证范围。",
+   "sents": [
+    {
+     "en": "Beyond test scheduling, FastCI also considers the workload of each test to optimize the GPU resource utilization.",
+     "zh": "除了测试调度之外，FastCI 还会考虑每个测试的工作负载，以优化 GPU 资源利用率。"
+    },
+    {
+     "en": "Typically, the workload of each test is derived from production configurations.",
+     "zh": "通常，每个测试的工作负载都来自生产环境配置。"
+    },
+    {
+     "en": "Some dimensions of the workload, including parallelism degree and batch size, are adjusted to CI requirements, but others like model size, sequence length and production options ( e.g. , logging and metrics collection) are left unchanged.",
+     "zh": "工作负载的某些维度（包括并行度与批量大小）会根据 CI 要求进行调整，但其他维度（如模型大小、序列长度以及生产选项（例如日志记录与指标收集））则保持不变。"
+    },
+    {
+     "en": "These unchanged dimensions of the workload further increase GPU resource usage without proportionally improving regression validation, as they are outside the intended validation scope of the test.",
+     "zh": "这些未改变的工作负载维度会进一步增加 GPU 资源占用，却无法成比例地提升回归验证效果，因为它们超出了测试的预期验证范围。"
+    }
+   ]
+  },
+  {
+   "en": "For each test, FastCI identifies the dimensions of the workload that are related to its intended validation scope through test metadata and its historical execution paths from the runtime evidence graph. For example, tests for distributed execution rely on the parallelism degree, while tests for long sequence training rely on the sequence length. For dimensions that can be explicitly identified as unrelated to the intended validation scope, FastCI reduces them automatically. For dimensions that cannot be explicitly identified, FastCI leaves them unchanged.",
+   "zh": "在每次测试中，FastCI 会通过测试元数据和运行时证据图中的历史执行路径，识别出与预期验证范围相关的工作负载维度。 例如，分布式执行测试依赖于并行度，而长序列训练测试则依赖于序列长度。 对于能够明确识别为与预期验证范围无关的维度，FastCI 会自动将其缩减。 对于无法明确识别的维度，FastCI 会保持其不变。",
+   "sents": [
+    {
+     "en": "For each test, FastCI identifies the dimensions of the workload that are related to its intended validation scope through test metadata and its historical execution paths from the runtime evidence graph.",
+     "zh": "在每次测试中，FastCI 会通过测试元数据和运行时证据图中的历史执行路径，识别出与预期验证范围相关的工作负载维度。"
+    },
+    {
+     "en": "For example, tests for distributed execution rely on the parallelism degree, while tests for long sequence training rely on the sequence length.",
+     "zh": "例如，分布式执行测试依赖于并行度，而长序列训练测试则依赖于序列长度。"
+    },
+    {
+     "en": "For dimensions that can be explicitly identified as unrelated to the intended validation scope, FastCI reduces them automatically.",
+     "zh": "对于能够明确识别为与预期验证范围无关的维度，FastCI 会自动将其缩减。"
+    },
+    {
+     "en": "For dimensions that cannot be explicitly identified, FastCI leaves them unchanged.",
+     "zh": "对于无法明确识别的维度，FastCI 会保持其不变。"
+    }
+   ]
+  },
+  {
+   "en": "FastCI applies these reductions as configuration overrides when submitting a test to the existing CI runner, without modifying the test code. In practice, we found that decreasing model size and turning off production options like logging and metrics collection can accelerate tests in many cases while producing the same test outcomes as the original workload in our comparisons. To reduce the risk of missing failures that appear only under the original workload, FastCI periodically executes the same test with both the original and reduced workloads and compares their pass or fail outcomes. The reduction is retained only while the outcomes agree. Otherwise, the original workload is restored. Repeating this comparison allows FastCI to withdraw an accepted reduction when the code or test behavior changes.",
+   "zh": "FastCI 在将测试提交给现有的 CI 运行器时，将这些简化作为配置覆盖项应用，而无需修改测试代码。 在实践中，我们发现减少模型大小并关闭日志记录和数据指标收集等生产环境选项，在许多情况下可以加速测试，同时在与原始工作负载的对比中产生相同的测试结果。 为了降低遗漏仅在原始工作负载下出现的故障的风险，FastCI 会定期以原始和简化后的两种工作负载执行相同的测试，并比较它们的通过或失败结果。 只有当结果一致时，才会保留这种简化。 否则，将恢复原始工作负载。 重复这种比较，使得 FastCI 能够在代码或测试行为发生变化时撤销已接受的简化。",
+   "sents": [
+    {
+     "en": "FastCI applies these reductions as configuration overrides when submitting a test to the existing CI runner, without modifying the test code.",
+     "zh": "FastCI 在将测试提交给现有的 CI 运行器时，将这些简化作为配置覆盖项应用，而无需修改测试代码。"
+    },
+    {
+     "en": "In practice, we found that decreasing model size and turning off production options like logging and metrics collection can accelerate tests in many cases while producing the same test outcomes as the original workload in our comparisons.",
+     "zh": "在实践中，我们发现减少模型大小并关闭日志记录和数据指标收集等生产环境选项，在许多情况下可以加速测试，同时在与原始工作负载的对比中产生相同的测试结果。"
+    },
+    {
+     "en": "To reduce the risk of missing failures that appear only under the original workload, FastCI periodically executes the same test with both the original and reduced workloads and compares their pass or fail outcomes.",
+     "zh": "为了降低遗漏仅在原始工作负载下出现的故障的风险，FastCI 会定期以原始和简化后的两种工作负载执行相同的测试，并比较它们的通过或失败结果。"
+    },
+    {
+     "en": "The reduction is retained only while the outcomes agree.",
+     "zh": "只有当结果一致时，才会保留这种简化。"
+    },
+    {
+     "en": "Otherwise, the original workload is restored.",
+     "zh": "否则，将恢复原始工作负载。"
+    },
+    {
+     "en": "Repeating this comparison allows FastCI to withdraw an accepted reduction when the code or test behavior changes.",
+     "zh": "重复这种比较，使得 FastCI 能够在代码或测试行为发生变化时撤销已接受的简化。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate FastCI on CI workloads from our LLM training framework, which supports diverse training tasks at ByteDance. Compared with deployed CI, FastCI reduces latency by 77.5% and GPU usage by 63.9%, while improving modified code coverage retention by 3.2% through recovering affected tests missed by file-level mappings. Each technique contributes to overall performance. FastCI has been integrated into production CI at ByteDance and now handles the CI workload, reducing CI latency by 58.4%, with no reported regressions caused by omitted tests across 784 CI runs over three weeks.",
+   "zh": "我们在字节跳动支持多样化训练任务的 LLM 训练框架的 CI 工作负载上对 FastCI 进行了评估。 与已部署的 CI 相比，FastCI 将延迟降低了 77.5%，GPU 使用率降低了 63.9%，同时通过恢复文件级映射所遗漏的受影响测试，将修改代码覆盖率的保留率提升了 3.2%。 每种技术都对整体性能有所贡献。 FastCI 已被集成到字节跳动的生产 CI 中，目前负责处理 CI 工作负载，将 CI 延迟降低了 58.4%，并且在为期三周的 784 次 CI 运行中，未报告因遗漏测试而导致的任何性能退化。",
+   "sents": [
+    {
+     "en": "We evaluate FastCI on CI workloads from our LLM training framework, which supports diverse training tasks at ByteDance.",
+     "zh": "我们在字节跳动支持多样化训练任务的 LLM 训练框架的 CI 工作负载上对 FastCI 进行了评估。"
+    },
+    {
+     "en": "Compared with deployed CI, FastCI reduces latency by 77.5% and GPU usage by 63.9%, while improving modified code coverage retention by 3.2% through recovering affected tests missed by file-level mappings.",
+     "zh": "与已部署的 CI 相比，FastCI 将延迟降低了 77.5%，GPU 使用率降低了 63.9%，同时通过恢复文件级映射所遗漏的受影响测试，将修改代码覆盖率的保留率提升了 3.2%。"
+    },
+    {
+     "en": "Each technique contributes to overall performance.",
+     "zh": "每种技术都对整体性能有所贡献。"
+    },
+    {
+     "en": "FastCI has been integrated into production CI at ByteDance and now handles the CI workload, reducing CI latency by 58.4%, with no reported regressions caused by omitted tests across 784 CI runs over three weeks.",
+     "zh": "FastCI 已被集成到字节跳动的生产 CI 中，目前负责处理 CI 工作负载，将 CI 延迟降低了 58.4%，并且在为期三周的 784 次 CI 运行中，未报告因遗漏测试而导致的任何性能退化。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate the end-to-end performance of FastCI by sampling production MRs and submitting them to self-provisioned shadow CI pipelines over two days, avoiding interference with production CI. We compare FastCI against full CI, path-based CI, NameRTS, and FastCI-select. Under full CI, the entire suite is executed for each MR, while path-based CI uses the file-level mapping to select tests and is currently deployed in our production CI. NameRTS is a state-of-the-art regression test selection method whose optimized static analysis scales to our large LLM training framework ( Wang et al., 2026 ) . FastCI-select applies only evidence-guided selection and context-aware pruning, without risk-aware test scheduling or workload-optimized execution.",
+   "zh": "我们通过采样生产环境中的 MR，并在两天内将它们提交到自配置的影子 CI 流水线中，从而评估 FastCI 的端到端性能，同时避免对生产环境中的 CI 造成干扰。 我们将 FastCI 与完整 CI、路径 기반 CI、NameRTS 和 FastCI-select 进行了比较。 在完整 CI 模式下，每个 MR 都会执行整个测试套件；而路径 기반 CI 则利用文件级映射来选择测试，目前已在我们的生产环境 CI 中部署。 NameRTS 是一种先进的回归测试选择方法，其经过优化的静态分析能够适应我们的大型 LLM 训练框架（Wang et al., 2026）。 FastCI-select 仅应用了基于证据的选择和上下文感知剪枝，而没有使用风险感知的测试调度或工作负载优化的执行策略。",
+   "sents": [
+    {
+     "en": "We evaluate the end-to-end performance of FastCI by sampling production MRs and submitting them to self-provisioned shadow CI pipelines over two days, avoiding interference with production CI.",
+     "zh": "我们通过采样生产环境中的 MR，并在两天内将它们提交到自配置的影子 CI 流水线中，从而评估 FastCI 的端到端性能，同时避免对生产环境中的 CI 造成干扰。"
+    },
+    {
+     "en": "We compare FastCI against full CI, path-based CI, NameRTS, and FastCI-select.",
+     "zh": "我们将 FastCI 与完整 CI、路径 기반 CI、NameRTS 和 FastCI-select 进行了比较。"
+    },
+    {
+     "en": "Under full CI, the entire suite is executed for each MR, while path-based CI uses the file-level mapping to select tests and is currently deployed in our production CI.",
+     "zh": "在完整 CI 模式下，每个 MR 都会执行整个测试套件；而路径 기반 CI 则利用文件级映射来选择测试，目前已在我们的生产环境 CI 中部署。"
+    },
+    {
+     "en": "NameRTS is a state-of-the-art regression test selection method whose optimized static analysis scales to our large LLM training framework ( Wang et al., 2026 ) .",
+     "zh": "NameRTS 是一种先进的回归测试选择方法，其经过优化的静态分析能够适应我们的大型 LLM 训练框架（Wang et al., 2026）。"
+    },
+    {
+     "en": "FastCI-select applies only evidence-guided selection and context-aware pruning, without risk-aware test scheduling or workload-optimized execution.",
+     "zh": "FastCI-select 仅应用了基于证据的选择和上下文感知剪枝，而没有使用风险感知的测试调度或工作负载优化的执行策略。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 5 compares the average efficiency of different approaches. Path-based CI selects 50.6% of tests and reduces GPU resource usage, CI latency, and queueing time of tests to 51.5%, 26.9%, and 21.1% of full CI, respectively. However, its coarse-grained mappings still select many unnecessary tests, preventing it from fully relieving the pressure on production CI. Fine-grained static analysis alone is also insufficient as NameRTS selects 55.1% of tests and is even less efficient than path-based CI across all four metrics. This is because NameRTS is only able to map code changes to entry points of tests, which can be shared by the end-to-end tests of LLM training framework CI, causing over-selection. Beyond them, FastCI reduces GPU resource usage, CI latency, and queueing time to 18.6%, 6.1%, and 1.8% of full CI.",
+   "zh": "图 5 比较了不同方法的平均效率。 基于路径的 CI 选择了 50.6% 的测试，并将 GPU 资源使用率、CI 延迟和测试排队时间分别降至完整 CI 的 51.5%、26.9% 和 21.1%。 然而，其粗粒度映射仍然会选中许多不必要的测试，因此无法完全缓解生产 CI 的压力。 仅依靠细粒度静态分析也不足以为继，因为 NameRTS 选择了 55.1% 的测试，并且在所有四项指标上的效率甚至低于基于路径的 CI。 这是因为 NameRTS 只能将代码变更映射到测试的入口点，而这些入口点可能被 LLM 训练框架 CI 的端到端测试共享，从而导致过度选择。 除此之外，FastCI 还将 GPU 资源使用率、CI 延迟和排队时间降至完整 CI 的 18.6%、6.1% 和 1.8%。",
+   "sents": [
+    {
+     "en": "Figure 5 compares the average efficiency of different approaches.",
+     "zh": "图 5 比较了不同方法的平均效率。"
+    },
+    {
+     "en": "Path-based CI selects 50.6% of tests and reduces GPU resource usage, CI latency, and queueing time of tests to 51.5%, 26.9%, and 21.1% of full CI, respectively.",
+     "zh": "基于路径的 CI 选择了 50.6% 的测试，并将 GPU 资源使用率、CI 延迟和测试排队时间分别降至完整 CI 的 51.5%、26.9% 和 21.1%。"
+    },
+    {
+     "en": "However, its coarse-grained mappings still select many unnecessary tests, preventing it from fully relieving the pressure on production CI.",
+     "zh": "然而，其粗粒度映射仍然会选中许多不必要的测试，因此无法完全缓解生产 CI 的压力。"
+    },
+    {
+     "en": "Fine-grained static analysis alone is also insufficient as NameRTS selects 55.1% of tests and is even less efficient than path-based CI across all four metrics.",
+     "zh": "仅依靠细粒度静态分析也不足以为继，因为 NameRTS 选择了 55.1% 的测试，并且在所有四项指标上的效率甚至低于基于路径的 CI。"
+    },
+    {
+     "en": "This is because NameRTS is only able to map code changes to entry points of tests, which can be shared by the end-to-end tests of LLM training framework CI, causing over-selection.",
+     "zh": "这是因为 NameRTS 只能将代码变更映射到测试的入口点，而这些入口点可能被 LLM 训练框架 CI 的端到端测试共享，从而导致过度选择。"
+    },
+    {
+     "en": "Beyond them, FastCI reduces GPU resource usage, CI latency, and queueing time to 18.6%, 6.1%, and 1.8% of full CI.",
+     "zh": "除此之外，FastCI 还将 GPU 资源使用率、CI 延迟和排队时间降至完整 CI 的 18.6%、6.1% 和 1.8%。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 6 shows CI latency and test queueing time distributions under different approaches. For both metrics, FastCI outperforms path-based CI and NameRTS at every percentile. Compared with path-based CI, at the median, FastCI reduces CI latency by 79.2%, and queueing time by 97.3%. At the 90th percentile, the corresponding reductions are 78.3% and 89.0%, demonstrating that the improvement is consistent across MRs rather than being driven by a few inexpensive cases. Notably, some MRs have zero CI latency under path-based CI, NameRTS, and FastCI. They usually introduce new features or new modules and thus there are no tests executing the newly added code.",
+   "zh": "图 6 展示了不同方法下 CI 延迟和测试排队时间的分布情况。 在这两项指标中，FastCI 在每个百分位点上都优于基于路径的 CI 和 NameRTS。 与基于路径的 CI 相比，在中位数处，FastCI 将 CI 延迟减少了 79.2%，排队时间减少了 97.3%。 在第 90 百分位点，相应的降幅为 78.3% 和 89.0%，这表明改进效果在各个 MR 中保持一致，而非由少数低成本案例所驱动。 值得注意的是，在某些 MR 中，基于路径的 CI、NameRTS 和 FastCI 的 CI 延迟均为零。 这些 MR 通常会引入新功能或新模块，因此没有测试会执行新添加的代码。",
+   "sents": [
+    {
+     "en": "Figure 6 shows CI latency and test queueing time distributions under different approaches.",
+     "zh": "图 6 展示了不同方法下 CI 延迟和测试排队时间的分布情况。"
+    },
+    {
+     "en": "For both metrics, FastCI outperforms path-based CI and NameRTS at every percentile.",
+     "zh": "在这两项指标中，FastCI 在每个百分位点上都优于基于路径的 CI 和 NameRTS。"
+    },
+    {
+     "en": "Compared with path-based CI, at the median, FastCI reduces CI latency by 79.2%, and queueing time by 97.3%.",
+     "zh": "与基于路径的 CI 相比，在中位数处，FastCI 将 CI 延迟减少了 79.2%，排队时间减少了 97.3%。"
+    },
+    {
+     "en": "At the 90th percentile, the corresponding reductions are 78.3% and 89.0%, demonstrating that the improvement is consistent across MRs rather than being driven by a few inexpensive cases.",
+     "zh": "在第 90 百分位点，相应的降幅为 78.3% 和 89.0%，这表明改进效果在各个 MR 中保持一致，而非由少数低成本案例所驱动。"
+    },
+    {
+     "en": "Notably, some MRs have zero CI latency under path-based CI, NameRTS, and FastCI.",
+     "zh": "值得注意的是，在某些 MR 中，基于路径的 CI、NameRTS 和 FastCI 的 CI 延迟均为零。"
+    },
+    {
+     "en": "They usually introduce new features or new modules and thus there are no tests executing the newly added code.",
+     "zh": "这些 MR 通常会引入新功能或新模块，因此没有测试会执行新添加的代码。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate test selection by replaying production CI workloads from an internal LLM training framework. We compare five test selection methods: path-based test selection, LLM reasoning, NameRTS, FastCI-select without context-aware test pruning, and the full FastCI-select. For the LLM reasoning baseline, a GPT-5.5 ( OpenAI, 2026 ) agent analyzes each MR diff and candidate tests and returns those it considers affected. For efficiency, we measure the selected-test ratio and normalized GPU cost. For coverage, we execute the full suite with exhaustive line-level collection using Coverage.py ( Batchelder et al., 2026 ) , establishing an offline reference of tests that execute the modified code. Against this reference, we measure the recall of affected tests and the modified code coverage retained by each selection method.",
+   "zh": "我们通过重播内部 LLM 训练框架中的生产 CI 工作负载来评估测试选择方法。 我们比较了五种测试选择方法：基于路径的测试选择、LLM 推理、NameRTS、不带上下文感知测试剪枝的 FastCI-select，以及完整的 FastCI-select。 对于 LLM 推理基线方法，一个 GPT-5.5（OpenAI, 2026）智能体会分析每个 MR diff 和候选测试，并返回其认为受影响的测试。 为提升效率，我们测量了所选测试比例和归一化 GPU 成本。 在覆盖率方面，我们使用 Coverage.py（Batchelder et al., 2026）以详尽的行级收集方式执行完整测试套件，从而建立一个离线参考集，记录哪些测试执行了修改后的代码。 基于该参考集，我们测量了各测试选择方法在受影响测试的召回率以及保留的修改后代码覆盖率。",
+   "sents": [
+    {
+     "en": "We evaluate test selection by replaying production CI workloads from an internal LLM training framework.",
+     "zh": "我们通过重播内部 LLM 训练框架中的生产 CI 工作负载来评估测试选择方法。"
+    },
+    {
+     "en": "We compare five test selection methods: path-based test selection, LLM reasoning, NameRTS, FastCI-select without context-aware test pruning, and the full FastCI-select.",
+     "zh": "我们比较了五种测试选择方法：基于路径的测试选择、LLM 推理、NameRTS、不带上下文感知测试剪枝的 FastCI-select，以及完整的 FastCI-select。"
+    },
+    {
+     "en": "For the LLM reasoning baseline, a GPT-5.5 ( OpenAI, 2026 ) agent analyzes each MR diff and candidate tests and returns those it considers affected.",
+     "zh": "对于 LLM 推理基线方法，一个 GPT-5.5（OpenAI, 2026）智能体会分析每个 MR diff 和候选测试，并返回其认为受影响的测试。"
+    },
+    {
+     "en": "For efficiency, we measure the selected-test ratio and normalized GPU cost.",
+     "zh": "为提升效率，我们测量了所选测试比例和归一化 GPU 成本。"
+    },
+    {
+     "en": "For coverage, we execute the full suite with exhaustive line-level collection using Coverage.py ( Batchelder et al., 2026 ) , establishing an offline reference of tests that execute the modified code.",
+     "zh": "在覆盖率方面，我们使用 Coverage.py（Batchelder et al., 2026）以详尽的行级收集方式执行完整测试套件，从而建立一个离线参考集，记录哪些测试执行了修改后的代码。"
+    },
+    {
+     "en": "Against this reference, we measure the recall of affected tests and the modified code coverage retained by each selection method.",
+     "zh": "基于该参考集，我们测量了各测试选择方法在受影响测试的召回率以及保留的修改后代码覆盖率。"
+    }
+   ]
+  },
+  {
+   "en": "As shown in Table 1 , compared with path-based test selection, evidence-guided test selection achieves better efficiency by reducing the selected test ratio from 62.6% to 35.9% and normalized GPU cost from 67.6% to 39.4%, while improving the recall of affected tests from 76.1% to 84.5% and modified code coverage retention from 96.0% to 99.8%. By further applying context-aware test pruning, FastCI-select reduces the selected test ratio to 25.7% and normalized GPU cost to 28.6%. This efficiency gain comes with recall of affected tests decreasing to 66.2%, as some affected tests are intentionally pruned as redundant. However, modified code coverage retention decreases by only 0.6% to 99.2%, which remains higher than that of the other approaches, suggesting that most pruned tests cover modified code already executed by the retained tests.",
+   "zh": "如表 1 所示，与基于路径的测试选择方法相比，证据引导的测试选择方法通过将从 62.6% 降至 35.9% 的所选测试比例以及从 67.6% 降至 39.4% 的归一化 GPU 成本实现了更高的效率，同时将受影响的测试召回率从 76.1% 提升至 84.5%，并保持了修改后的代码覆盖率从 96.0% 到 99.8%。 通过进一步应用上下文感知的测试剪枝，FastCI-select 将所选测试比例降至 25.7%，并将归一化 GPU 成本降至 28.6%。 这种效率提升的代价是受影响的测试召回率下降至 66.2%，因为部分受影响的测试被有意剪枝为冗余测试。 然而，修改后的代码覆盖率仅下降了 0.6%，降至 99.2%，仍高于其他方法，这表明大多数被剪枝的测试所覆盖的修改代码已被保留的测试执行过。",
+   "sents": [
+    {
+     "en": "As shown in Table 1 , compared with path-based test selection, evidence-guided test selection achieves better efficiency by reducing the selected test ratio from 62.6% to 35.9% and normalized GPU cost from 67.6% to 39.4%, while improving the recall of affected tests from 76.1% to 84.5% and modified code coverage retention from 96.0% to 99.8%.",
+     "zh": "如表 1 所示，与基于路径的测试选择方法相比，证据引导的测试选择方法通过将从 62.6% 降至 35.9% 的所选测试比例以及从 67.6% 降至 39.4% 的归一化 GPU 成本实现了更高的效率，同时将受影响的测试召回率从 76.1% 提升至 84.5%，并保持了修改后的代码覆盖率从 96.0% 到 99.8%。"
+    },
+    {
+     "en": "By further applying context-aware test pruning, FastCI-select reduces the selected test ratio to 25.7% and normalized GPU cost to 28.6%.",
+     "zh": "通过进一步应用上下文感知的测试剪枝，FastCI-select 将所选测试比例降至 25.7%，并将归一化 GPU 成本降至 28.6%。"
+    },
+    {
+     "en": "This efficiency gain comes with recall of affected tests decreasing to 66.2%, as some affected tests are intentionally pruned as redundant.",
+     "zh": "这种效率提升的代价是受影响的测试召回率下降至 66.2%，因为部分受影响的测试被有意剪枝为冗余测试。"
+    },
+    {
+     "en": "However, modified code coverage retention decreases by only 0.6% to 99.2%, which remains higher than that of the other approaches, suggesting that most pruned tests cover modified code already executed by the retained tests.",
+     "zh": "然而，修改后的代码覆盖率仅下降了 0.6%，降至 99.2%，仍高于其他方法，这表明大多数被剪枝的测试所覆盖的修改代码已被保留的测试执行过。"
+    }
+   ]
+  },
+  {
+   "en": "As for other baselines, LLM reasoning reduces the selected test ratio and GPU cost compared to path-based test selection, but it performs poorly on coverage, retaining only 54.6% of affected tests and 83.1% of modified code coverage. This is because LLM reasoning cannot infer the complete execution paths of end-to-end tests precisely, especially on our large codebase. For NameRTS, although it achieves 94.0% recall of affected tests, its normalized GPU cost also reaches 80.8%, indicating that the higher recall substantially comes from over-selection.",
+   "zh": "至于其他基线方法，与基于路径的测试选择相比，LLM推理降低了所选测试的比例和GPU成本，但在覆盖率方面表现不佳，仅保留了54.6%的受影响测试和83.1%的修改代码覆盖率。 这是因为LLM推理无法精确推断端到端测试的完整执行路径，尤其是在我们的大型代码库中。 对于NameRTS，尽管其受影响测试的召回率达到94.0%，但其归一化后的GPU成本也达到了80.8%，表明较高的召回率主要源于过度选择。",
+   "sents": [
+    {
+     "en": "As for other baselines, LLM reasoning reduces the selected test ratio and GPU cost compared to path-based test selection, but it performs poorly on coverage, retaining only 54.6% of affected tests and 83.1% of modified code coverage.",
+     "zh": "至于其他基线方法，与基于路径的测试选择相比，LLM推理降低了所选测试的比例和GPU成本，但在覆盖率方面表现不佳，仅保留了54.6%的受影响测试和83.1%的修改代码覆盖率。"
+    },
+    {
+     "en": "This is because LLM reasoning cannot infer the complete execution paths of end-to-end tests precisely, especially on our large codebase.",
+     "zh": "这是因为LLM推理无法精确推断端到端测试的完整执行路径，尤其是在我们的大型代码库中。"
+    },
+    {
+     "en": "For NameRTS, although it achieves 94.0% recall of affected tests, its normalized GPU cost also reaches 80.8%, indicating that the higher recall substantially comes from over-selection.",
+     "zh": "对于NameRTS，尽管其受影响测试的召回率达到94.0%，但其归一化后的GPU成本也达到了80.8%，表明较高的召回率主要源于过度选择。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate whether FastCI’s risk-aware scheduling exposes CI failures earlier, improving feedback efficiency and reducing GPU usage. We compare FastCI with the production first-in-first-out order, the two single-indicator variants, and COLEMAN, a representative learning-based test prioritization approach for CI ( Prado Lima & Vergilio, 2022 ) . We use its best-performing configuration, FRRMAB with the TimeRank reward, and average the results over ten fixed random seeds. Because resource pool capacity and concurrent CI workloads affect feedback latency, we focus on first-failing-test rank and GPU consumption before the first failure, which directly reflect the effectiveness of test scheduling.",
+   "zh": "我们评估 FastCI 的风险感知调度能否更早地暴露 CI 故障，从而提升反馈效率并减少 GPU 使用量。 我们将 FastCI 与生产环境中的先进先出顺序、两种单一指标变体，以及 COLEMAN（一种用于 CI 的学习型测试优先级排序方法，Prado Lima & Vergilio, 2022）进行了比较。 我们采用了其性能最佳的配置——结合 TimeRank 奖励的 FRRMAB，并对十个固定随机种子下的结果求平均值。 由于资源池容量和并发 CI 工作负载会影响反馈延迟，因此我们重点关注首次故障测试的排名以及首次故障发生前的 GPU 消耗量，这些指标直接反映了测试调度的有效性。",
+   "sents": [
+    {
+     "en": "We evaluate whether FastCI’s risk-aware scheduling exposes CI failures earlier, improving feedback efficiency and reducing GPU usage.",
+     "zh": "我们评估 FastCI 的风险感知调度能否更早地暴露 CI 故障，从而提升反馈效率并减少 GPU 使用量。"
+    },
+    {
+     "en": "We compare FastCI with the production first-in-first-out order, the two single-indicator variants, and COLEMAN, a representative learning-based test prioritization approach for CI ( Prado Lima & Vergilio, 2022 ) .",
+     "zh": "我们将 FastCI 与生产环境中的先进先出顺序、两种单一指标变体，以及 COLEMAN（一种用于 CI 的学习型测试优先级排序方法，Prado Lima & Vergilio, 2022）进行了比较。"
+    },
+    {
+     "en": "We use its best-performing configuration, FRRMAB with the TimeRank reward, and average the results over ten fixed random seeds.",
+     "zh": "我们采用了其性能最佳的配置——结合 TimeRank 奖励的 FRRMAB，并对十个固定随机种子下的结果求平均值。"
+    },
+    {
+     "en": "Because resource pool capacity and concurrent CI workloads affect feedback latency, we focus on first-failing-test rank and GPU consumption before the first failure, which directly reflect the effectiveness of test scheduling.",
+     "zh": "由于资源池容量和并发 CI 工作负载会影响反馈延迟，因此我们重点关注首次故障测试的排名以及首次故障发生前的 GPU 消耗量，这些指标直接反映了测试调度的有效性。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 7 shows that, compared with production first-in-first-out scheduling, FastCI reduces median first-failure rank by 63.6% and median GPU consumption before the first failure by 89.2%, exposing failures earlier with substantially less GPU consumption. Compared with COLEMAN, FastCI reduces the median first-failure rank from 9 to 4 and the median GPU consumption before the first failure from 12.6 to 2.3 card-hours. It also performs better at P90 and P99 on both metrics. The two indicators provide complementary benefits. The instability indicator performs better at the median and P90, suggesting that recent test instability is more informative for most production failures. In contrast, the code change indicator performs better at P99, where CI runs tend to contain larger selected test sets. By combining both indicators, FastCI achieves better overall performance than either indicator alone.",
+   "zh": "图 7 显示，与生产环境中的先进先出调度相比，FastCI 将首次故障的中位数排名降低了 63.6%，首次故障前的 GPU 消耗量降低了 89.2%，从而更早地暴露故障，同时显著减少了 GPU 消耗。 与 COLEMAN 相比，FastCI 将首次故障的中位数排名从 9 降至 4，首次故障前的 GPU 消耗量从 12.6 降至 2.3 张卡-小时。 它在两个指标上的 P90 和 P99 表现也更为出色。 这两个指标提供了互补的优势。 不稳定性指标在中位数和 P90 上的表现更优，表明近期的测试不稳定性对大多数生产故障更具参考价值。 相比之下，代码变更指标在 P99 上的表现更优，此时 CI 运行通常包含更大的测试集。 通过结合这两个指标，FastCI 的整体性能优于单独使用任一指标。",
+   "sents": [
+    {
+     "en": "Figure 7 shows that, compared with production first-in-first-out scheduling, FastCI reduces median first-failure rank by 63.6% and median GPU consumption before the first failure by 89.2%, exposing failures earlier with substantially less GPU consumption.",
+     "zh": "图 7 显示，与生产环境中的先进先出调度相比，FastCI 将首次故障的中位数排名降低了 63.6%，首次故障前的 GPU 消耗量降低了 89.2%，从而更早地暴露故障，同时显著减少了 GPU 消耗。"
+    },
+    {
+     "en": "Compared with COLEMAN, FastCI reduces the median first-failure rank from 9 to 4 and the median GPU consumption before the first failure from 12.6 to 2.3 card-hours.",
+     "zh": "与 COLEMAN 相比，FastCI 将首次故障的中位数排名从 9 降至 4，首次故障前的 GPU 消耗量从 12.6 降至 2.3 张卡-小时。"
+    },
+    {
+     "en": "It also performs better at P90 and P99 on both metrics.",
+     "zh": "它在两个指标上的 P90 和 P99 表现也更为出色。"
+    },
+    {
+     "en": "The two indicators provide complementary benefits.",
+     "zh": "这两个指标提供了互补的优势。"
+    },
+    {
+     "en": "The instability indicator performs better at the median and P90, suggesting that recent test instability is more informative for most production failures.",
+     "zh": "不稳定性指标在中位数和 P90 上的表现更优，表明近期的测试不稳定性对大多数生产故障更具参考价值。"
+    },
+    {
+     "en": "In contrast, the code change indicator performs better at P99, where CI runs tend to contain larger selected test sets.",
+     "zh": "相比之下，代码变更指标在 P99 上的表现更优，此时 CI 运行通常包含更大的测试集。"
+    },
+    {
+     "en": "By combining both indicators, FastCI achieves better overall performance than either indicator alone.",
+     "zh": "通过结合这两个指标，FastCI 的整体性能优于单独使用任一指标。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate two questions: whether workload-optimized execution accelerates individual tests and whether this acceleration improves end-to-end CI. Comparing tests with and without workload optimization, we find that FastCI reduces average single-test execution time by 11.8% and GPU consumption by 19.3%, since tests with larger workloads tend to run longer and therefore offer more optimization opportunities. This acceleration of individual tests contributes to the end-to-end CI performance. As illustrated in Figure 5 , compared with FastCI-select, FastCI can further reduce the GPU resource usage by 18.3%, average CI latency by 28.6% and queueing time of tests by 46.6%, demonstrating the effectiveness of workload-optimized test execution in an end-to-end setting.",
+   "zh": "我们评估了两个问题：工作负载优化的执行是否能加速单个测试，以及这种加速能否提升端到端 CI 的性能。 通过比较采用和不采用工作负载优化的测试，我们发现 FastCI 将单次测试的平均执行时间缩短了 11.8%，GPU 消耗降低了 19.3%，因为工作负载较大的测试通常运行时间更长，因此提供了更多优化机会。 单个测试的这种加速有助于提升端到端 CI 的性能。 如图 5 所示，与 FastCI-select 相比，FastCI 可进一步将 GPU 资源使用量降低 18.3%，平均 CI 延迟降低 28.6%，测试排队时间降低 46.6%，这证明了工作负载优化的测试执行在端到端场景中的有效性。",
+   "sents": [
+    {
+     "en": "We evaluate two questions: whether workload-optimized execution accelerates individual tests and whether this acceleration improves end-to-end CI.",
+     "zh": "我们评估了两个问题：工作负载优化的执行是否能加速单个测试，以及这种加速能否提升端到端 CI 的性能。"
+    },
+    {
+     "en": "Comparing tests with and without workload optimization, we find that FastCI reduces average single-test execution time by 11.8% and GPU consumption by 19.3%, since tests with larger workloads tend to run longer and therefore offer more optimization opportunities.",
+     "zh": "通过比较采用和不采用工作负载优化的测试，我们发现 FastCI 将单次测试的平均执行时间缩短了 11.8%，GPU 消耗降低了 19.3%，因为工作负载较大的测试通常运行时间更长，因此提供了更多优化机会。"
+    },
+    {
+     "en": "This acceleration of individual tests contributes to the end-to-end CI performance.",
+     "zh": "单个测试的这种加速有助于提升端到端 CI 的性能。"
+    },
+    {
+     "en": "As illustrated in Figure 5 , compared with FastCI-select, FastCI can further reduce the GPU resource usage by 18.3%, average CI latency by 28.6% and queueing time of tests by 46.6%, demonstrating the effectiveness of workload-optimized test execution in an end-to-end setting.",
+     "zh": "如图 5 所示，与 FastCI-select 相比，FastCI 可进一步将 GPU 资源使用量降低 18.3%，平均 CI 延迟降低 28.6%，测试排队时间降低 46.6%，这证明了工作负载优化的测试执行在端到端场景中的有效性。"
+    }
+   ]
+  },
+  {
+   "en": "We study the sampling-rate tradeoff and whether runtime sampling overhead becomes a new CI bottleneck. We repeat the test selection evaluation in Section 5.2 at 10, 50, and 100 Hz, enabling context-aware pruning in all configurations. Thus, the reported recall and coverage reflect final selection rather than raw trace capture. In this evaluation, Hz denotes stack samples collected per second. Table 2 shows that higher rates provide more complete runtime evidence for coverage but add overhead. In practice, 50 Hz is a suitable tradeoff, retaining 99.2% of full-suite modified-code coverage with only 4.1% overhead. Raising the rate to 100 Hz improves retention by only 0.4% but raises overhead to 17.0%. Relative to FastCI’s efficiency gains, this overhead is small and does not become a new CI bottleneck, as the end-to-end evaluation (Section 5.1 ) still shows substantial reductions in CI latency and GPU usage.",
+   "zh": "我们研究了采样率之间的权衡，以及运行时采样开销是否会成为新的 CI 瓶颈。 我们在第 5.2 节中重复了测试选择评估，采样频率设为 10、50 和 100 Hz，从而在所有配置中都实现了上下文感知剪枝。 因此，所报告的召回率和覆盖率反映的是最终的选择结果，而非原始的轨迹捕获数据。 在此评估中，Hz 表示每秒收集的堆栈样本数。 表 2 显示，较高的采样率能为覆盖率提供更完整的运行时证据，但也会增加开销。 在实际应用中，50 Hz 是一个合适的折中方案：在仅增加 4.1% 开销的情况下，保留了完整测试套件中修改代码的 99.2% 的覆盖率。 将采样率提高到 100 Hz 时，保留率仅提升了 0.4%，但开销却增加到了 17.0%。 与 FastCI 的效率提升相比，这一开销很小，并未成为新的 CI 瓶颈，因为端到端评估（第 5.1 节）仍然显示出 CI 延迟和 GPU 使用量的显著降低。",
+   "sents": [
+    {
+     "en": "We study the sampling-rate tradeoff and whether runtime sampling overhead becomes a new CI bottleneck.",
+     "zh": "我们研究了采样率之间的权衡，以及运行时采样开销是否会成为新的 CI 瓶颈。"
+    },
+    {
+     "en": "We repeat the test selection evaluation in Section 5.2 at 10, 50, and 100 Hz, enabling context-aware pruning in all configurations.",
+     "zh": "我们在第 5.2 节中重复了测试选择评估，采样频率设为 10、50 和 100 Hz，从而在所有配置中都实现了上下文感知剪枝。"
+    },
+    {
+     "en": "Thus, the reported recall and coverage reflect final selection rather than raw trace capture.",
+     "zh": "因此，所报告的召回率和覆盖率反映的是最终的选择结果，而非原始的轨迹捕获数据。"
+    },
+    {
+     "en": "In this evaluation, Hz denotes stack samples collected per second.",
+     "zh": "在此评估中，Hz 表示每秒收集的堆栈样本数。"
+    },
+    {
+     "en": "Table 2 shows that higher rates provide more complete runtime evidence for coverage but add overhead.",
+     "zh": "表 2 显示，较高的采样率能为覆盖率提供更完整的运行时证据，但也会增加开销。"
+    },
+    {
+     "en": "In practice, 50 Hz is a suitable tradeoff, retaining 99.2% of full-suite modified-code coverage with only 4.1% overhead.",
+     "zh": "在实际应用中，50 Hz 是一个合适的折中方案：在仅增加 4.1% 开销的情况下，保留了完整测试套件中修改代码的 99.2% 的覆盖率。"
+    },
+    {
+     "en": "Raising the rate to 100 Hz improves retention by only 0.4% but raises overhead to 17.0%.",
+     "zh": "将采样率提高到 100 Hz 时，保留率仅提升了 0.4%，但开销却增加到了 17.0%。"
+    },
+    {
+     "en": "Relative to FastCI’s efficiency gains, this overhead is small and does not become a new CI bottleneck, as the end-to-end evaluation (Section 5.1 ) still shows substantial reductions in CI latency and GPU usage.",
+     "zh": "与 FastCI 的效率提升相比，这一开销很小，并未成为新的 CI 瓶颈，因为端到端评估（第 5.1 节）仍然显示出 CI 延迟和 GPU 使用量的显著降低。"
+    }
+   ]
+  },
+  {
+   "en": "We present FastCI, a framework that improves CI efficiency for LLM training frameworks by using a runtime evidence graph to select and prune tests while optimizing their scheduling and execution. On production CI workloads, FastCI reduces CI latency by 77.5% and GPU resource usage by 63.9%, while improving modified code coverage retention by 3.2% over the deployed CI pipelines. FastCI has been integrated into production CI at ByteDance.",
+   "zh": "我们提出了 FastCI，这是一个通过运行时证据图来选择和剪枝测试、同时优化其调度和执行，从而提升 LLM 训练框架 CI 效率的框架。 在生产 CI 工作负载中，FastCI 将 CI 延迟降低了 77.5%，GPU 资源使用量降低了 63.9%，同时相比已部署的 CI 流水线，改代码覆盖率的保留率提升了 3.2%。 FastCI 已被集成到字节跳动的生产 CI 中。",
+   "sents": [
+    {
+     "en": "We present FastCI, a framework that improves CI efficiency for LLM training frameworks by using a runtime evidence graph to select and prune tests while optimizing their scheduling and execution.",
+     "zh": "我们提出了 FastCI，这是一个通过运行时证据图来选择和剪枝测试、同时优化其调度和执行，从而提升 LLM 训练框架 CI 效率的框架。"
+    },
+    {
+     "en": "On production CI workloads, FastCI reduces CI latency by 77.5% and GPU resource usage by 63.9%, while improving modified code coverage retention by 3.2% over the deployed CI pipelines.",
+     "zh": "在生产 CI 工作负载中，FastCI 将 CI 延迟降低了 77.5%，GPU 资源使用量降低了 63.9%，同时相比已部署的 CI 流水线，改代码覆盖率的保留率提升了 3.2%。"
+    },
+    {
+     "en": "FastCI has been integrated into production CI at ByteDance.",
+     "zh": "FastCI 已被集成到字节跳动的生产 CI 中。"
+    }
+   ]
+  },
+  {
+   "en": "Generative AI tools were used to assist with language editing, literature search and reference organization, and the implementation of plotting scripts. The manuscript was originally written by the authors, and all AI-assisted textual suggestions were reviewed and manually revised by the authors. The conceptual design and content of all figures were determined by the authors. For experimental figures, the authors provided the data, verified the plotting code, and executed the scripts themselves. Generative AI was not used to generate experimental data, conduct experiments, formulate the core methodology, or draw final scientific conclusions. The authors take full responsibility for the final content of this work.",
+   "zh": "生成式人工智能工具被用于协助语言编辑、文献检索与参考整理，以及绘图脚本的实现。 手稿最初由作者撰写，所有经人工智能辅助的文本建议均经过作者的审核与手动修订。 所有图表的概念设计与内容均由作者确定。 对于实验图表，作者提供了数据，验证了绘图代码，并亲自执行了脚本。 生成式人工智能未被用于生成实验数据、开展实验、制定核心方法或得出最终科学结论。 作者对这项工作的最终内容承担全部责任。",
+   "sents": [
+    {
+     "en": "Generative AI tools were used to assist with language editing, literature search and reference organization, and the implementation of plotting scripts.",
+     "zh": "生成式人工智能工具被用于协助语言编辑、文献检索与参考整理，以及绘图脚本的实现。"
+    },
+    {
+     "en": "The manuscript was originally written by the authors, and all AI-assisted textual suggestions were reviewed and manually revised by the authors.",
+     "zh": "手稿最初由作者撰写，所有经人工智能辅助的文本建议均经过作者的审核与手动修订。"
+    },
+    {
+     "en": "The conceptual design and content of all figures were determined by the authors.",
+     "zh": "所有图表的概念设计与内容均由作者确定。"
+    },
+    {
+     "en": "For experimental figures, the authors provided the data, verified the plotting code, and executed the scripts themselves.",
+     "zh": "对于实验图表，作者提供了数据，验证了绘图代码，并亲自执行了脚本。"
+    },
+    {
+     "en": "Generative AI was not used to generate experimental data, conduct experiments, formulate the core methodology, or draw final scientific conclusions.",
+     "zh": "生成式人工智能未被用于生成实验数据、开展实验、制定核心方法或得出最终科学结论。"
+    },
+    {
+     "en": "The authors take full responsibility for the final content of this work.",
+     "zh": "作者对这项工作的最终内容承担全部责任。"
+    }
+   ]
+  },
+  {
+   "en": "We calculate the risk score in Equation 3 from statistics collected online from previous CI runs. In the evaluation, code changes are represented by the files containing the modified entities. For a changed file f f and test t t , let n f , t n_{f,t} be the number of previous CI runs in which f f was changed and t t was executed, and let e f , t e_{f,t} be the number of these runs in which t t failed. Given the set of files F F changed by the current MR, risk indicated by code change is",
+   "zh": "我们根据先前 CI 运行中在线收集到的统计数据，计算公式 3 中的风险分数。 在评估中，代码变更由包含已修改实体的文件来表示。 对于已变更的文件 f 和测试 t，令 n_{f,t} 表示先前 CI 运行中 f 被变更且 t 被执行的次数，令 e_{f,t} 表示这些运行中 t 失败的次数。 给定当前 MR 所变更的文件集 F，代码变更所指示的风险是",
+   "sents": [
+    {
+     "en": "We calculate the risk score in Equation 3 from statistics collected online from previous CI runs.",
+     "zh": "我们根据先前 CI 运行中在线收集到的统计数据，计算公式 3 中的风险分数。"
+    },
+    {
+     "en": "In the evaluation, code changes are represented by the files containing the modified entities.",
+     "zh": "在评估中，代码变更由包含已修改实体的文件来表示。"
+    },
+    {
+     "en": "For a changed file f f and test t t , let n f , t n_{f,t} be the number of previous CI runs in which f f was changed and t t was executed, and let e f , t e_{f,t} be the number of these runs in which t t failed.",
+     "zh": "对于已变更的文件 f 和测试 t，令 n_{f,t} 表示先前 CI 运行中 f 被变更且 t 被执行的次数，令 e_{f,t} 表示这些运行中 t 失败的次数。"
+    },
+    {
+     "en": "Given the set of files F F changed by the current MR, risk indicated by code change is",
+     "zh": "给定当前 MR 所变更的文件集 F，代码变更所指示的风险是"
+    }
+   ]
+  },
+  {
+   "en": "where a pair without previous observations contributes zero. Let f ∗ f^{*} be the file attaining the maximum positive failure rate. We set the confidence of this signal to",
+   "zh": "其中，没有先前观测值的组合贡献为零。 令 f * f^{*} 为达到最大正失败率的文件。 我们将此信号的置信度设为",
+   "sents": [
+    {
+     "en": "where a pair without previous observations contributes zero.",
+     "zh": "其中，没有先前观测值的组合贡献为零。"
+    },
+    {
+     "en": "Let f ∗ f^{*} be the file attaining the maximum positive failure rate.",
+     "zh": "令 f * f^{*} 为达到最大正失败率的文件。"
+    },
+    {
+     "en": "We set the confidence of this signal to",
+     "zh": "我们将此信号的置信度设为"
+    }
+   ]
+  },
+  {
+   "en": "Here, λ \\lambda is a smoothing parameter controlling how quickly the code change indicator gains confidence; we set λ = 5 \\lambda=5 in our evaluation. If no changed file has a positive historical failure rate for t t , we set R c ​ o ​ d ​ e ​ ( t ) = 0 R_{code}(t)=0 and α t = 0 \\alpha_{t}=0 , so the risk score is determined solely by the instability indicator.",
+   "zh": "此处，λ \\lambda 是一个平滑参数，用于控制代码变更指标获得置信度的速度；在我们的评估中，我们设置 λ = 5 \\lambda=5。 如果没有任何被修改的文件在 t t 时刻具有正向的历史失败率，我们将 R c ​ o ​ d ​ e ​ ( t ) = 0 R_{code}(t)=0 且 α t = 0 \\alpha_{t}=0 ，因此风险评分完全由不稳定性指标决定。",
+   "sents": [
+    {
+     "en": "Here, λ \\lambda is a smoothing parameter controlling how quickly the code change indicator gains confidence; we set λ = 5 \\lambda=5 in our evaluation.",
+     "zh": "此处，λ \\lambda 是一个平滑参数，用于控制代码变更指标获得置信度的速度；在我们的评估中，我们设置 λ = 5 \\lambda=5。"
+    },
+    {
+     "en": "If no changed file has a positive historical failure rate for t t , we set R c ​ o ​ d ​ e ​ ( t ) = 0 R_{code}(t)=0 and α t = 0 \\alpha_{t}=0 , so the risk score is determined solely by the instability indicator.",
+     "zh": "如果没有任何被修改的文件在 t t 时刻具有正向的历史失败率，我们将 R c ​ o ​ d ​ e ​ ( t ) = 0 R_{code}(t)=0 且 α t = 0 \\alpha_{t}=0 ，因此风险评分完全由不稳定性指标决定。"
+    }
+   ]
+  },
+  {
+   "en": "To assess test instability, we retain up to W W most recent execution outcomes for each test. Let N t N_{t} be the number of outcomes available for test t t and L t = min ⁡ ( W , N t ) L_{t}=\\min(W,N_{t}) be the actual history length used. Let y i ∈ { 0 , 1 } y_{i}\\in\\{0,1\\} denote the i i -th outcome in this history, where one indicates failure and the outcomes are ordered from oldest to newest. We first compute an exponentially weighted failure rate",
+   "zh": "为了评估测试的不稳定性，我们为每个测试保留最多 W 个最近的执行结果。 设 N t N_{t} 为测试 t t 的可用结果数量，L t = min ⁡ ( W , N t ) L_{t}=\\min(W,N_{t}) 为实际使用的历史长度。 设 y i ∈ { 0 , 1 } y_{i}\\in\\{0,1\\} 表示该历史中的第 i i 个结果，其中 1 表示失败，且结果按从旧到新排序。 我们首先计算一个指数加权失败率",
+   "sents": [
+    {
+     "en": "To assess test instability, we retain up to W W most recent execution outcomes for each test.",
+     "zh": "为了评估测试的不稳定性，我们为每个测试保留最多 W 个最近的执行结果。"
+    },
+    {
+     "en": "Let N t N_{t} be the number of outcomes available for test t t and L t = min ⁡ ( W , N t ) L_{t}=\\min(W,N_{t}) be the actual history length used.",
+     "zh": "设 N t N_{t} 为测试 t t 的可用结果数量，L t = min ⁡ ( W , N t ) L_{t}=\\min(W,N_{t}) 为实际使用的历史长度。"
+    },
+    {
+     "en": "Let y i ∈ { 0 , 1 } y_{i}\\in\\{0,1\\} denote the i i -th outcome in this history, where one indicates failure and the outcomes are ordered from oldest to newest.",
+     "zh": "设 y i ∈ { 0 , 1 } y_{i}\\in\\{0,1\\} 表示该历史中的第 i i 个结果，其中 1 表示失败，且结果按从旧到新排序。"
+    },
+    {
+     "en": "We first compute an exponentially weighted failure rate",
+     "zh": "我们首先计算一个指数加权失败率"
+    }
+   ]
+  },
+  {
+   "en": "where γ \\gamma is the exponential decay factor. We set W = 5 W=5 and γ = 0.8 \\gamma=0.8 in our evaluation, and the score is zero when no history is available. Consecutive passes may indicate that a previous failure has been fixed or that test optimizations have reduced its flakiness. FastCI therefore increasingly attenuates the exponentially weighted failure rate with the consecutive-pass count, which resets after a failure. In our evaluation, the attenuation factors are 0.85 0.85 and 0.6 0.6 at two and four consecutive passes, respectively, and the attenuated value is used as R i ​ n ​ s ​ t ​ a ​ b ​ i ​ l ​ i ​ t ​ y ​ ( t ) R_{instability}(t) .",
+   "zh": "其中 γ \\gamma 是指数衰减因子。 在我们的评估中，我们设置 W = 5 W=5 且 γ = 0.8 \\gamma=0.8，当没有可用历史记录时，得分为零。 连续通过可能表示之前的失败问题已得到解决，或者测试优化降低了其不稳定性。 因此，FastCI 会随着连续通过次数的增加而越来越显著地衰减指数加权失败率，该比率在发生失败后会重置。 在我们的评估中，连续通过两次和四次时的衰减因子分别为 0.85 0.85 和 0.6 0.6，衰减后的值被用作 R i ​ n ​ s ​ t ​ a ​ b ​ i ​ l ​ i ​ t ​ y ​ ( t ) R_{instability}(t) 。",
+   "sents": [
+    {
+     "en": "where γ \\gamma is the exponential decay factor.",
+     "zh": "其中 γ \\gamma 是指数衰减因子。"
+    },
+    {
+     "en": "We set W = 5 W=5 and γ = 0.8 \\gamma=0.8 in our evaluation, and the score is zero when no history is available.",
+     "zh": "在我们的评估中，我们设置 W = 5 W=5 且 γ = 0.8 \\gamma=0.8，当没有可用历史记录时，得分为零。"
+    },
+    {
+     "en": "Consecutive passes may indicate that a previous failure has been fixed or that test optimizations have reduced its flakiness.",
+     "zh": "连续通过可能表示之前的失败问题已得到解决，或者测试优化降低了其不稳定性。"
+    },
+    {
+     "en": "FastCI therefore increasingly attenuates the exponentially weighted failure rate with the consecutive-pass count, which resets after a failure.",
+     "zh": "因此，FastCI 会随着连续通过次数的增加而越来越显著地衰减指数加权失败率，该比率在发生失败后会重置。"
+    },
+    {
+     "en": "In our evaluation, the attenuation factors are 0.85 0.85 and 0.6 0.6 at two and four consecutive passes, respectively, and the attenuated value is used as R i ​ n ​ s ​ t ​ a ​ b ​ i ​ l ​ i ​ t ​ y ​ ( t ) R_{instability}(t) .",
+     "zh": "在我们的评估中，连续通过两次和四次时的衰减因子分别为 0.85 0.85 和 0.6 0.6，衰减后的值被用作 R i ​ n ​ s ​ t ​ a ​ b ​ i ​ l ​ i ​ t ​ y ​ ( t ) R_{instability}(t) 。"
+    }
+   ]
+  },
+  {
+   "en": "Tests are ordered by decreasing R ⁡ ( t ) R(t) . Ties preserve the original execution order. To avoid future-information leakage in the offline replay, MRs are processed chronologically, both statistics are updated only after the current MR has been scored, and the first 30 MRs are used only to warm up the history.",
+   "zh": "测试按 R(t) 的降序排列。 并列情况保留原始执行顺序。 为避免离线重放中出现未来信息泄露，MR 按时间顺序处理；两种统计数据仅在当前 MR 评分后更新；且前 30 个 MR 仅用于预热历史记录。",
+   "sents": [
+    {
+     "en": "Tests are ordered by decreasing R ⁡ ( t ) R(t) .",
+     "zh": "测试按 R(t) 的降序排列。"
+    },
+    {
+     "en": "Ties preserve the original execution order.",
+     "zh": "并列情况保留原始执行顺序。"
+    },
+    {
+     "en": "To avoid future-information leakage in the offline replay, MRs are processed chronologically, both statistics are updated only after the current MR has been scored, and the first 30 MRs are used only to warm up the history.",
+     "zh": "为避免离线重放中出现未来信息泄露，MR 按时间顺序处理；两种统计数据仅在当前 MR 评分后更新；且前 30 个 MR 仅用于预热历史记录。"
+    }
+   ]
+  },
+  {
+   "en": "FastCI injects lightweight runtime sampling into the existing CI launch script rather than modifying individual tests. During each test, py-spy samples the rank-0 Python process at the configured rate and records sampled stacks in the Speedscope format. Subprocess following can also be enabled. Because sampling may miss short-lived functions and native execution, an entity absent from the trace is treated as missing evidence, activating the expansion mechanism in Section 4.1 .",
+   "zh": "FastCI 将轻量级的运行时采样注入到现有的 CI 启动脚本中，而不是修改单个测试。 在每次测试期间，py-spy 以配置的速率对排名为 0 的 Python 进程进行采样，并以 Speedscope 格式记录采样到的堆栈。 也可以启用以下子进程。 由于采样可能会遗漏生命周期较短的函数和本地执行操作，因此追踪中缺失的实体被视为缺失证据，从而触发第 4.1 节中的扩展机制。",
+   "sents": [
+    {
+     "en": "FastCI injects lightweight runtime sampling into the existing CI launch script rather than modifying individual tests.",
+     "zh": "FastCI 将轻量级的运行时采样注入到现有的 CI 启动脚本中，而不是修改单个测试。"
+    },
+    {
+     "en": "During each test, py-spy samples the rank-0 Python process at the configured rate and records sampled stacks in the Speedscope format.",
+     "zh": "在每次测试期间，py-spy 以配置的速率对排名为 0 的 Python 进程进行采样，并以 Speedscope 格式记录采样到的堆栈。"
+    },
+    {
+     "en": "Subprocess following can also be enabled.",
+     "zh": "也可以启用以下子进程。"
+    },
+    {
+     "en": "Because sampling may miss short-lived functions and native execution, an entity absent from the trace is treated as missing evidence, activating the expansion mechanism in Section 4.1 .",
+     "zh": "由于采样可能会遗漏生命周期较短的函数和本地执行操作，因此追踪中缺失的实体被视为缺失证据，从而触发第 4.1 节中的扩展机制。"
+    }
+   ]
+  },
+  {
+   "en": "Trace files are organized by test, with each test corresponding to one CI job in our deployment. For each sampled stack, frames outside the repository are removed, paths are normalized, and Python methods are resolved to class-qualified names using the source AST when possible. Consecutive retained frames produce caller–callee edges, while each frame records the test that executed the function. All trace files for a test are combined into one partial graph.",
+   "zh": "追踪文件按测试用例进行组织，每个测试用例对应我们部署中的一个 CI 任务。 对于每个采样的堆栈，会移除仓库之外的帧，对路径进行规范化处理，并在可能的情况下使用源 AST 将 Python 方法解析为带有类定名的名称。 连续保留的帧会生成调用者–被调用者边，而每个帧都会记录执行该函数的测试用例。 某个测试用例的所有追踪文件会被合并为一个部分图。",
+   "sents": [
+    {
+     "en": "Trace files are organized by test, with each test corresponding to one CI job in our deployment.",
+     "zh": "追踪文件按测试用例进行组织，每个测试用例对应我们部署中的一个 CI 任务。"
+    },
+    {
+     "en": "For each sampled stack, frames outside the repository are removed, paths are normalized, and Python methods are resolved to class-qualified names using the source AST when possible.",
+     "zh": "对于每个采样的堆栈，会移除仓库之外的帧，对路径进行规范化处理，并在可能的情况下使用源 AST 将 Python 方法解析为带有类定名的名称。"
+    },
+    {
+     "en": "Consecutive retained frames produce caller–callee edges, while each frame records the test that executed the function.",
+     "zh": "连续保留的帧会生成调用者–被调用者边，而每个帧都会记录执行该函数的测试用例。"
+    },
+    {
+     "en": "All trace files for a test are combined into one partial graph.",
+     "zh": "某个测试用例的所有追踪文件会被合并为一个部分图。"
+    }
+   ]
+  },
+  {
+   "en": "Before selecting tests for an MR, FastCI loads the graph associated with its merge base, falling back to the stable graph if that version is unavailable, and saves it as the base snapshot for the current run. Each successfully traced test produces a partial graph. After the CI run, FastCI replaces the base snapshot’s evidence for these tests with their partial graphs, preserves evidence for tests not executed in the run, and stores the merged graph under the new commit. A later MR whose merge base matches that commit uses the updated graph for selection, and its execution produces the next set of traces, closing the collection–selection–update loop.",
+   "zh": "在为某个合并请求（MR）选择测试之前，FastCI 会加载与其合并基线相关的图；如果该版本不可用，则回退到稳定图，并将其保存为当前运行的基础快照。 每个成功追踪的测试都会生成一个部分图。 CI 运行结束后，FastCI 会用这些测试的部分图替换基础快照中的证据，保留本次运行中未执行的测试的证据，并将合并后的图存储在新提交下。 之后某个合并基线与该提交匹配的合并请求（MR）会使用更新后的图进行选择，其执行将产生下一组追踪结果，从而完成“收集–选择–更新”循环。",
+   "sents": [
+    {
+     "en": "Before selecting tests for an MR, FastCI loads the graph associated with its merge base, falling back to the stable graph if that version is unavailable, and saves it as the base snapshot for the current run.",
+     "zh": "在为某个合并请求（MR）选择测试之前，FastCI 会加载与其合并基线相关的图；如果该版本不可用，则回退到稳定图，并将其保存为当前运行的基础快照。"
+    },
+    {
+     "en": "Each successfully traced test produces a partial graph.",
+     "zh": "每个成功追踪的测试都会生成一个部分图。"
+    },
+    {
+     "en": "After the CI run, FastCI replaces the base snapshot’s evidence for these tests with their partial graphs, preserves evidence for tests not executed in the run, and stores the merged graph under the new commit.",
+     "zh": "CI 运行结束后，FastCI 会用这些测试的部分图替换基础快照中的证据，保留本次运行中未执行的测试的证据，并将合并后的图存储在新提交下。"
+    },
+    {
+     "en": "A later MR whose merge base matches that commit uses the updated graph for selection, and its execution produces the next set of traces, closing the collection–selection–update loop.",
+     "zh": "之后某个合并基线与该提交匹配的合并请求（MR）会使用更新后的图进行选择，其执行将产生下一组追踪结果，从而完成“收集–选择–更新”循环。"
+    }
+   ]
+  },
+  {
+   "en": "The LLM selection baseline operates on the same MR revisions and candidate tests as the other methods. We implement it with a GPT-5.5 code agent given the MR diff, the evaluated repository, and the CI test definitions. Its fixed instruction asks the agent to interpret the semantic effect of the changes, inspect related code and concrete CI entry points, and select candidate tests whose execution may reach the changed behavior. When the impact is uncertain, the agent favors recall while keeping its output within the MR-triggered candidate test set. We use the same instruction and repository-access scope for every evaluated MR. No execution outcome from the current or future MRs is provided.",
+   "zh": "LLM 选择基线方法与其他方式一样，基于相同的 MR 修订版本和候选测试运行。 我们使用一个 GPT-5.5 代码智能体来实现该方法，并传入 MR 差异、被评估的仓库以及 CI 测试定义。 其固定指令要求智能体解释变更的语义影响，检查相关代码和具体的 CI 入口点，并选择执行后可能触及已变更行为的候选测试。 当影响不确定时，该智能体会优先保证召回率，同时将其输出限制在由 MR 触发的候选测试集合内。 我们对每个被评估的 MR 都使用相同的指令和仓库访问范围。 当前或未来的 MR 均未提供任何执行结果。",
+   "sents": [
+    {
+     "en": "The LLM selection baseline operates on the same MR revisions and candidate tests as the other methods.",
+     "zh": "LLM 选择基线方法与其他方式一样，基于相同的 MR 修订版本和候选测试运行。"
+    },
+    {
+     "en": "We implement it with a GPT-5.5 code agent given the MR diff, the evaluated repository, and the CI test definitions.",
+     "zh": "我们使用一个 GPT-5.5 代码智能体来实现该方法，并传入 MR 差异、被评估的仓库以及 CI 测试定义。"
+    },
+    {
+     "en": "Its fixed instruction asks the agent to interpret the semantic effect of the changes, inspect related code and concrete CI entry points, and select candidate tests whose execution may reach the changed behavior.",
+     "zh": "其固定指令要求智能体解释变更的语义影响，检查相关代码和具体的 CI 入口点，并选择执行后可能触及已变更行为的候选测试。"
+    },
+    {
+     "en": "When the impact is uncertain, the agent favors recall while keeping its output within the MR-triggered candidate test set.",
+     "zh": "当影响不确定时，该智能体会优先保证召回率，同时将其输出限制在由 MR 触发的候选测试集合内。"
+    },
+    {
+     "en": "We use the same instruction and repository-access scope for every evaluated MR.",
+     "zh": "我们对每个被评估的 MR 都使用相同的指令和仓库访问范围。"
+    },
+    {
+     "en": "No execution outcome from the current or future MRs is provided.",
+     "zh": "当前或未来的 MR 均未提供任何执行结果。"
+    }
+   ]
+  },
+  {
+   "en": "To isolate the effect of test ordering, all schedulers receive the same selected tests, per-test runtime and GPU requirements, and MR order. COLEMAN treats each CI test as an arm and uses its FRRMAB scheduler with the TimeRank reward. Before each MR, FRRMAB combines the normalized TimeRank reward accumulated over a sliding window with an exploration bonus for less frequently observed tests. After the resulting order is replayed, TimeRank converts the test outcomes and their positions into rewards that favor placing failures earlier. We configure FRRMAB with C = 0.3 C=0.3 , a history window of 100 CI cycles, and a decay factor of 1, following the original evaluation ( Prado Lima & Vergilio, 2022 ) . Equal-score ties are broken using a seeded random order, and we average the results over ten fixed seeds. For each MR, COLEMAN produces the ranking using only outcomes from earlier MRs. The current MR’s outcomes are added to its history only after ranking and replay, preventing future-information leakage.",
+   "zh": "为了隔离测试排序的影响，所有调度器都接收相同的选定测试、每个测试的运行时间和 GPU 需求，以及 MR 顺序。 COLEMAN 将每个 CI 测试视为一个分支，并使用其 FRRMAB 调度器与 TimeRank 奖励相结合。 在每个 MR 之前，FRRMAB 会将滑动窗口中累积的归一化 TimeRank 奖励与较少观察到的测试所对应的探索奖励相结合。 在生成的顺序被重播后，TimeRank 会将测试结果及其位置转换为奖励，以优先安排失败测试更早执行。 我们按照原始评估（Prado Lima & Vergilio, 2022）的配置，将 FRRMAB 的 C 设为 0.3（C = 0.3），历史窗口设为 100 个 CI 周期，衰减因子设为 1。 分数相同时，使用带有固定种子的随机顺序进行破序，并对十个固定种子下的结果取平均值。 对于每个 MR，COLEMAN 仅使用先前 MR 的结果来生成排序。 当前 MR 的结果只有在完成排序和重播之后才会被添加到其历史中，从而防止未来信息的泄露。",
+   "sents": [
+    {
+     "en": "To isolate the effect of test ordering, all schedulers receive the same selected tests, per-test runtime and GPU requirements, and MR order.",
+     "zh": "为了隔离测试排序的影响，所有调度器都接收相同的选定测试、每个测试的运行时间和 GPU 需求，以及 MR 顺序。"
+    },
+    {
+     "en": "COLEMAN treats each CI test as an arm and uses its FRRMAB scheduler with the TimeRank reward.",
+     "zh": "COLEMAN 将每个 CI 测试视为一个分支，并使用其 FRRMAB 调度器与 TimeRank 奖励相结合。"
+    },
+    {
+     "en": "Before each MR, FRRMAB combines the normalized TimeRank reward accumulated over a sliding window with an exploration bonus for less frequently observed tests.",
+     "zh": "在每个 MR 之前，FRRMAB 会将滑动窗口中累积的归一化 TimeRank 奖励与较少观察到的测试所对应的探索奖励相结合。"
+    },
+    {
+     "en": "After the resulting order is replayed, TimeRank converts the test outcomes and their positions into rewards that favor placing failures earlier.",
+     "zh": "在生成的顺序被重播后，TimeRank 会将测试结果及其位置转换为奖励，以优先安排失败测试更早执行。"
+    },
+    {
+     "en": "We configure FRRMAB with C = 0.3 C=0.3 , a history window of 100 CI cycles, and a decay factor of 1, following the original evaluation ( Prado Lima & Vergilio, 2022 ) .",
+     "zh": "我们按照原始评估（Prado Lima & Vergilio, 2022）的配置，将 FRRMAB 的 C 设为 0.3（C = 0.3），历史窗口设为 100 个 CI 周期，衰减因子设为 1。"
+    },
+    {
+     "en": "Equal-score ties are broken using a seeded random order, and we average the results over ten fixed seeds.",
+     "zh": "分数相同时，使用带有固定种子的随机顺序进行破序，并对十个固定种子下的结果取平均值。"
+    },
+    {
+     "en": "For each MR, COLEMAN produces the ranking using only outcomes from earlier MRs.",
+     "zh": "对于每个 MR，COLEMAN 仅使用先前 MR 的结果来生成排序。"
+    },
+    {
+     "en": "The current MR’s outcomes are added to its history only after ranking and replay, preventing future-information leakage.",
+     "zh": "当前 MR 的结果只有在完成排序和重播之后才会被添加到其历史中，从而防止未来信息的泄露。"
+    }
+   ]
+  },
+  {
+   "en": "The evaluation executes the complete CI test suite and collects per-job line coverage using Coverage.py . Coverage fragments within each job are combined before its XML report is exported. We retain positive-hit lines, normalize paths against the evaluated repository revision, and map them to executable lines inside Python function bodies, excluding module-level code, declarations, decorators, docstrings, comments, and blank lines. A test enters the offline affected-test reference for a modified function only if its report shows that execution entered the function body. Modified-code coverage retention is the fraction of executable lines in modified functions covered by the full CI suite that are also covered by the selected tests. A retention of 100% means that the selected tests execute every modified Python line covered by the full CI suite, but tests covering the same lines may exercise different inputs and assertions. The reference also excludes native C++ and CUDA execution.",
+   "zh": "评估会执行完整的 CI 测试套件，并使用 Coverage.py 收集每个任务的行覆盖情况。 每个任务内的覆盖片段会在导出其 XML 报告之前进行合并。 我们保留有效命中行，根据被评估的仓库版本对路径进行规范化处理，并将其映射到 Python 函数体内的可执行行，同时排除模块级代码、声明、装饰器、文档字符串、注释和空行。 只有当测试的报告显示其执行流程进入了修改后的函数体内时，该测试才会被纳入已修改函数的离线受影响测试参考中。 修改代码的覆盖保留率是指，在完整 CI 套件中被覆盖的修改函数内的可执行行中，同时也被所选测试所覆盖的比例。 100% 的保留率意味着所选测试执行了完整 CI 套件所覆盖的每一条被修改的 Python 代码行，但覆盖相同代码行的测试可能会使用不同的输入和断言。 该参考数据还排除了原生 C++ 和 CUDA 的执行。",
+   "sents": [
+    {
+     "en": "The evaluation executes the complete CI test suite and collects per-job line coverage using Coverage.py .",
+     "zh": "评估会执行完整的 CI 测试套件，并使用 Coverage.py 收集每个任务的行覆盖情况。"
+    },
+    {
+     "en": "Coverage fragments within each job are combined before its XML report is exported.",
+     "zh": "每个任务内的覆盖片段会在导出其 XML 报告之前进行合并。"
+    },
+    {
+     "en": "We retain positive-hit lines, normalize paths against the evaluated repository revision, and map them to executable lines inside Python function bodies, excluding module-level code, declarations, decorators, docstrings, comments, and blank lines.",
+     "zh": "我们保留有效命中行，根据被评估的仓库版本对路径进行规范化处理，并将其映射到 Python 函数体内的可执行行，同时排除模块级代码、声明、装饰器、文档字符串、注释和空行。"
+    },
+    {
+     "en": "A test enters the offline affected-test reference for a modified function only if its report shows that execution entered the function body.",
+     "zh": "只有当测试的报告显示其执行流程进入了修改后的函数体内时，该测试才会被纳入已修改函数的离线受影响测试参考中。"
+    },
+    {
+     "en": "Modified-code coverage retention is the fraction of executable lines in modified functions covered by the full CI suite that are also covered by the selected tests.",
+     "zh": "修改代码的覆盖保留率是指，在完整 CI 套件中被覆盖的修改函数内的可执行行中，同时也被所选测试所覆盖的比例。"
+    },
+    {
+     "en": "A retention of 100% means that the selected tests execute every modified Python line covered by the full CI suite, but tests covering the same lines may exercise different inputs and assertions.",
+     "zh": "100% 的保留率意味着所选测试执行了完整 CI 套件所覆盖的每一条被修改的 Python 代码行，但覆盖相同代码行的测试可能会使用不同的输入和断言。"
+    },
+    {
+     "en": "The reference also excludes native C++ and CUDA execution.",
+     "zh": "该参考数据还排除了原生 C++ 和 CUDA 的执行。"
+    }
+   ]
+  },
+  {
+   "en": "We first implemented the complete FastCI workflow and exercised it end to end on the self-provisioned shadow CI used in our evaluation. This environment allowed us to validate the workflow and collect the experimental evidence without affecting production CI. We then reviewed the measured improvements and observed failure modes with the development team before enabling FastCI for production workload.",
+   "zh": "我们首先实现了完整的 FastCI 工作流程，并在评估中使用的自配置影子 CI 上进行了端到端的测试。 这个环境使我们能够在不影响生产 CI 的情况下验证工作流程并收集实验证据。 随后，在启用 FastCI 处理生产工作负载之前，我们与开发团队一起审查了测得的性能提升并观察了故障模式。",
+   "sents": [
+    {
+     "en": "We first implemented the complete FastCI workflow and exercised it end to end on the self-provisioned shadow CI used in our evaluation.",
+     "zh": "我们首先实现了完整的 FastCI 工作流程，并在评估中使用的自配置影子 CI 上进行了端到端的测试。"
+    },
+    {
+     "en": "This environment allowed us to validate the workflow and collect the experimental evidence without affecting production CI.",
+     "zh": "这个环境使我们能够在不影响生产 CI 的情况下验证工作流程并收集实验证据。"
+    },
+    {
+     "en": "We then reviewed the measured improvements and observed failure modes with the development team before enabling FastCI for production workload.",
+     "zh": "随后，在启用 FastCI 处理生产工作负载之前，我们与开发团队一起审查了测得的性能提升并观察了故障模式。"
+    }
+   ]
+  },
+  {
+   "en": "We rolled out FastCI in four stages. We first enabled runtime tracing for a small subset of CI tests to validate graph construction and maintenance. We then introduced an MR-title keyword that routed selected MRs through the complete FastCI workflow. Next, we expanded the set of instrumented tests to validate graph construction across the CI suite. After these checks, we removed the keyword gate and enabled FastCI by default for eligible production MRs.",
+   "zh": "我们以四个阶段推出了 FastCI。 我们首先为少量 CI 测试启用了运行时追踪，以验证图的构建与维护。 接着，我们引入一个 MR 标题关键词，将选定的 MR 引导至完整的 FastCI 工作流。 随后，我们扩大了已配置监控的测试集，以验证整个 CI 套件中的图构建过程。 完成这些检查后，我们移除了关键词限制，并默认对符合条件的生产 MR 启用 FastCI。",
+   "sents": [
+    {
+     "en": "We rolled out FastCI in four stages.",
+     "zh": "我们以四个阶段推出了 FastCI。"
+    },
+    {
+     "en": "We first enabled runtime tracing for a small subset of CI tests to validate graph construction and maintenance.",
+     "zh": "我们首先为少量 CI 测试启用了运行时追踪，以验证图的构建与维护。"
+    },
+    {
+     "en": "We then introduced an MR-title keyword that routed selected MRs through the complete FastCI workflow.",
+     "zh": "接着，我们引入一个 MR 标题关键词，将选定的 MR 引导至完整的 FastCI 工作流。"
+    },
+    {
+     "en": "Next, we expanded the set of instrumented tests to validate graph construction across the CI suite.",
+     "zh": "随后，我们扩大了已配置监控的测试集，以验证整个 CI 套件中的图构建过程。"
+    },
+    {
+     "en": "After these checks, we removed the keyword gate and enabled FastCI by default for eligible production MRs.",
+     "zh": "完成这些检查后，我们移除了关键词限制，并默认对符合条件的生产 MR 启用 FastCI。"
+    }
+   ]
+  },
+  {
+   "en": "We maintained compatibility with the existing CI workflow throughout the rollout. For non-code configuration changes, such as YAML only updates, the test selection stage continued to use the existing CI rules rather than FastCI’s evidence guided test selection. The staged rollout allowed us to expand FastCI’s scope incrementally and validate each stage before proceeding.",
+   "zh": "在整个发布过程中，我们保持了与现有 CI 工作流的兼容性。 对于非代码类的配置变更（例如仅更新 YAML 文件），测试选择阶段仍继续使用原有的 CI 规则，而非 FastCI 基于证据的测试选择机制。 分阶段发布使我们能够逐步扩展 FastCI 的应用范围，并在推进到下一阶段前验证每个阶段的成果。",
+   "sents": [
+    {
+     "en": "We maintained compatibility with the existing CI workflow throughout the rollout.",
+     "zh": "在整个发布过程中，我们保持了与现有 CI 工作流的兼容性。"
+    },
+    {
+     "en": "For non-code configuration changes, such as YAML only updates, the test selection stage continued to use the existing CI rules rather than FastCI’s evidence guided test selection.",
+     "zh": "对于非代码类的配置变更（例如仅更新 YAML 文件），测试选择阶段仍继续使用原有的 CI 规则，而非 FastCI 基于证据的测试选择机制。"
+    },
+    {
+     "en": "The staged rollout allowed us to expand FastCI’s scope incrementally and validate each stage before proceeding.",
+     "zh": "分阶段发布使我们能够逐步扩展 FastCI 的应用范围，并在推进到下一阶段前验证每个阶段的成果。"
+    }
+   ]
+  },
+  {
+   "en": "To complement the staged rollout, we implemented a configuration-based rollback mechanism. A single configuration field supports two rollback levels: FastCI can stop handling incoming MRs, returning them to the existing CI workflow, or be disabled entirely. Both levels require only a configuration update, enabling rapid containment without code changes.",
+   "zh": "为了配合分阶段发布，我们实施了一种基于配置的回滚机制。 单个配置字段支持两种回滚级别：FastCI 可以停止处理传入的 MR，将其返回到现有的 CI 工作流，或者完全禁用。 这两种级别都只需更新配置，从而实现快速控制问题，而无需修改代码。",
+   "sents": [
+    {
+     "en": "To complement the staged rollout, we implemented a configuration-based rollback mechanism.",
+     "zh": "为了配合分阶段发布，我们实施了一种基于配置的回滚机制。"
+    },
+    {
+     "en": "A single configuration field supports two rollback levels: FastCI can stop handling incoming MRs, returning them to the existing CI workflow, or be disabled entirely.",
+     "zh": "单个配置字段支持两种回滚级别：FastCI 可以停止处理传入的 MR，将其返回到现有的 CI 工作流，或者完全禁用。"
+    },
+    {
+     "en": "Both levels require only a configuration update, enabling rapid containment without code changes.",
+     "zh": "这两种级别都只需更新配置，从而实现快速控制问题，而无需修改代码。"
+    }
+   ]
+  },
+  {
+   "en": "During early validation, only a small number of traces had accumulated, and graph maintenance appeared inexpensive. Our initial implementation eagerly processed all accumulated traces and maintained graphs for every version. In production, however, the amount of trace processing performed for each MR grew as traces accumulated, eventually causing the test-selection step to time out. We therefore switched to on-demand graph materialization. For each MR, FastCI processes only the traces associated with the version whose graph is required. This makes the trace-processing overhead per MR O ⁡ ( 1 ) O(1) with respect to the total number of accumulated traces.",
+   "zh": "在早期验证阶段，仅积累了少量轨迹，且图维护的成本似乎很低。 我们的初始实现会急切地处理所有已积累的轨迹，并为每个版本维护图结构。 然而在生产环境中，随着轨迹的积累，每个 MR 所执行的轨迹处理量逐渐增加，最终导致测试选择步骤超时。 因此，我们转而采用按需图构建的方式。 对于每个 MR，FastCI 仅处理与所需版本对应的轨迹。 这使得每个 MR 的轨迹处理开销相对于已积累轨迹的总数而言为 O(1)。",
+   "sents": [
+    {
+     "en": "During early validation, only a small number of traces had accumulated, and graph maintenance appeared inexpensive.",
+     "zh": "在早期验证阶段，仅积累了少量轨迹，且图维护的成本似乎很低。"
+    },
+    {
+     "en": "Our initial implementation eagerly processed all accumulated traces and maintained graphs for every version.",
+     "zh": "我们的初始实现会急切地处理所有已积累的轨迹，并为每个版本维护图结构。"
+    },
+    {
+     "en": "In production, however, the amount of trace processing performed for each MR grew as traces accumulated, eventually causing the test-selection step to time out.",
+     "zh": "然而在生产环境中，随着轨迹的积累，每个 MR 所执行的轨迹处理量逐渐增加，最终导致测试选择步骤超时。"
+    },
+    {
+     "en": "We therefore switched to on-demand graph materialization.",
+     "zh": "因此，我们转而采用按需图构建的方式。"
+    },
+    {
+     "en": "For each MR, FastCI processes only the traces associated with the version whose graph is required.",
+     "zh": "对于每个 MR，FastCI 仅处理与所需版本对应的轨迹。"
+    },
+    {
+     "en": "This makes the trace-processing overhead per MR O ⁡ ( 1 ) O(1) with respect to the total number of accumulated traces.",
+     "zh": "这使得每个 MR 的轨迹处理开销相对于已积累轨迹的总数而言为 O(1)。"
+    }
+   ]
+  },
+  {
+   "en": "FastCI requires a small set of test-specific settings for each CI test run. Our initial design centrally managed these settings in persistent storage, requiring each test to perform remote reads and writes during execution. Across many concurrently running tests, this remote I/O introduced considerable overhead. We therefore pass the necessary inputs through environment variables and let each test derive its settings locally. This removes remote storage access from the test execution path and nearly eliminates the configuration overhead.",
+   "zh": "FastCI 每次 CI 测试运行仅需一组与测试相关的设置。 我们的初始设计将这些设置集中管理在持久化存储中，导致每次测试在执行期间都需要进行远程读写操作。 对于大量并发运行的测试而言，这种远程 I/O 带来了显著的性能开销。 因此，我们通过环境变量传递必要的输入参数，并让每个测试本地推导出其所需设置。 这样既将远程存储访问从测试执行流程中移除，也几乎消除了配置带来的性能开销。",
+   "sents": [
+    {
+     "en": "FastCI requires a small set of test-specific settings for each CI test run.",
+     "zh": "FastCI 每次 CI 测试运行仅需一组与测试相关的设置。"
+    },
+    {
+     "en": "Our initial design centrally managed these settings in persistent storage, requiring each test to perform remote reads and writes during execution.",
+     "zh": "我们的初始设计将这些设置集中管理在持久化存储中，导致每次测试在执行期间都需要进行远程读写操作。"
+    },
+    {
+     "en": "Across many concurrently running tests, this remote I/O introduced considerable overhead.",
+     "zh": "对于大量并发运行的测试而言，这种远程 I/O 带来了显著的性能开销。"
+    },
+    {
+     "en": "We therefore pass the necessary inputs through environment variables and let each test derive its settings locally.",
+     "zh": "因此，我们通过环境变量传递必要的输入参数，并让每个测试本地推导出其所需设置。"
+    },
+    {
+     "en": "This removes remote storage access from the test execution path and nearly eliminates the configuration overhead.",
+     "zh": "这样既将远程存储访问从测试执行流程中移除，也几乎消除了配置带来的性能开销。"
+    }
+   ]
+  }
+ ]
+}
