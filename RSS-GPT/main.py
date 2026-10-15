@@ -718,6 +718,10 @@ def output(sec, language):
     # Links marked this run are excluded from this run's retry/backfill phase
     # so an entry never exceeds LLM_MAX_ATTEMPTS API calls per run.
     retry_marked = set()
+    # store_article=0 的源只存摘要、不存正文。github-trending 的正文是 README
+    # 全文，占它产物 99.5%（5,332,877 / 5,361,267 字，2026-10-15 实测）。
+    # 没摘要的条目照旧存全文：backfill 靠正文重跑摘要，正文不存就补不回来。
+    store_article = str(get_cfg(sec, 'store_article', '1')).strip().lower() not in ('0', 'false', 'no')
     append_entries = []
 
     for rss_url in rss_urls:
@@ -879,7 +883,9 @@ def output(sec, language):
     append_records = []
     for entry in append_entries:
         summary = getattr(entry, 'summary', None)
-        content = ("<div> " + summary + " <div>" if summary else "") + "\n" + entry.article
+        # store_article=0 只在有摘要时丢正文；没摘要必须留全文，否则 backfill 补不了。
+        body = entry.article if (store_article or not summary) else ''
+        content = ("<div> " + summary + " <div>" if summary else "") + "\n" + body
         published = getattr(entry, 'published', None)
         if not published:
             # Atom feeds (e.g. apple-newsroom) carry only <updated>; normalize
@@ -997,7 +1003,8 @@ def output(sec, language):
                 record['summary'] = summary
                 if title_zh:
                     record['title_zh'] = title_zh
-                record['content'] = "<div> " + summary + " <div>" + "\n" + article
+                # 走到这里 record 一定有摘要了：store_article=0 的源不把正文写回去。
+                record['content'] = "<div> " + summary + " <div>" + "\n" + (article if store_article else '')
             if record['link'] in retry_queue:
                 del retry_queue[record['link']]
                 with open(log_file, 'a', encoding='utf-8') as f:
