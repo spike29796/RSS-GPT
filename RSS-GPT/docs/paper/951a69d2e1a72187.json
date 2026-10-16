@@ -1,0 +1,2421 @@
+{
+ "id": "951a69d2e1a72187",
+ "source": "arxiv-llm-eng",
+ "link": "https://arxiv.org/abs/2610.14161v1",
+ "title": "Agentic Evolution of SQL Test Generators",
+ "title_zh": "SQL测试生成器的智能体演化",
+ "published": "2026-10-09T17:42:26Z",
+ "translated_at": "2026-10-16T22:30:08Z",
+ "paragraphs": [
+  {
+   "en": "Automated testing has uncovered many logic bugs in Database Management Systems (DBMSs). Existing tools are typically limited to a few SQL dialects and a subset of these dialects’ features. Coding agents based on Large Language Models (LLMs) could encode the semantics of additional SQL features, which would then require no additional LLM calls during these tools’ run time, thus allowing high efficiency and low cost. However, a key challenge is to ensure the correctness of the added features in the presence of potential hallucinations. In this paper, we propose Gungnir , an approach for evolving DBMS test generators using coding agents. We use witness replay to validate generator modifications by replaying the choices needed to generate a target statement. A generation witness is responsible for recording the database setup and semantic choices needed to generate the target statement. A validator checks the witness by replaying these choices through the generator and checking that it reproduces the target statement. We tested Gungnir on SQLite, DuckDB, and PostgreSQL and found 44 bugs confirmed by developers, of which 34 have been fixed. Beyond DBMSs, witness replay could generalize to other systems for guiding agents in extending test generators.",
+   "zh": "自动化测试已发现数据库管理系统（DBMS）中的许多逻辑错误。 现有工具通常仅限于少数几种 SQL 方言，且仅支持这些方言的部分功能。 基于大语言模型（LLM）的编码智能体可以编码更多 SQL 功能的语义，从而在工具运行时无需额外的 LLM 调用，实现高效低成本的运行。 然而，一个关键挑战是，在存在潜在幻觉的情况下，如何确保所添加功能的正确性。 在本文中，我们提出了 Gungnir——一种利用编码智能体演化 DBMS 测试生成器的方法。 我们通过重演生成目标语句所需的选择过程，来验证生成器所做的修改。 生成见证负责记录生成目标语句所需的数据库配置和语义选择。 验证器通过将这些选择重新输入生成器，并检查其能否重现目标语句，来验证该见证。 我们在 SQLite、DuckDB 和 PostgreSQL 上测试了 Gungnir，发现了 44 个经开发者确认的 bug，其中 34 个已被修复。 除了 DBMS，见证重演方法还可以推广到其他系统，用于指导智能体扩展测试生成器。",
+   "sents": [
+    {
+     "en": "Automated testing has uncovered many logic bugs in Database Management Systems (DBMSs).",
+     "zh": "自动化测试已发现数据库管理系统（DBMS）中的许多逻辑错误。"
+    },
+    {
+     "en": "Existing tools are typically limited to a few SQL dialects and a subset of these dialects’ features.",
+     "zh": "现有工具通常仅限于少数几种 SQL 方言，且仅支持这些方言的部分功能。"
+    },
+    {
+     "en": "Coding agents based on Large Language Models (LLMs) could encode the semantics of additional SQL features, which would then require no additional LLM calls during these tools’ run time, thus allowing high efficiency and low cost.",
+     "zh": "基于大语言模型（LLM）的编码智能体可以编码更多 SQL 功能的语义，从而在工具运行时无需额外的 LLM 调用，实现高效低成本的运行。"
+    },
+    {
+     "en": "However, a key challenge is to ensure the correctness of the added features in the presence of potential hallucinations.",
+     "zh": "然而，一个关键挑战是，在存在潜在幻觉的情况下，如何确保所添加功能的正确性。"
+    },
+    {
+     "en": "In this paper, we propose Gungnir , an approach for evolving DBMS test generators using coding agents.",
+     "zh": "在本文中，我们提出了 Gungnir——一种利用编码智能体演化 DBMS 测试生成器的方法。"
+    },
+    {
+     "en": "We use witness replay to validate generator modifications by replaying the choices needed to generate a target statement.",
+     "zh": "我们通过重演生成目标语句所需的选择过程，来验证生成器所做的修改。"
+    },
+    {
+     "en": "A generation witness is responsible for recording the database setup and semantic choices needed to generate the target statement.",
+     "zh": "生成见证负责记录生成目标语句所需的数据库配置和语义选择。"
+    },
+    {
+     "en": "A validator checks the witness by replaying these choices through the generator and checking that it reproduces the target statement.",
+     "zh": "验证器通过将这些选择重新输入生成器，并检查其能否重现目标语句，来验证该见证。"
+    },
+    {
+     "en": "We tested Gungnir on SQLite, DuckDB, and PostgreSQL and found 44 bugs confirmed by developers, of which 34 have been fixed.",
+     "zh": "我们在 SQLite、DuckDB 和 PostgreSQL 上测试了 Gungnir，发现了 44 个经开发者确认的 bug，其中 34 个已被修复。"
+    },
+    {
+     "en": "Beyond DBMSs, witness replay could generalize to other systems for guiding agents in extending test generators.",
+     "zh": "除了 DBMS，见证重演方法还可以推广到其他系统，用于指导智能体扩展测试生成器。"
+    }
+   ]
+  },
+  {
+   "en": "Database Management Systems (DBMSs) are complex software systems whose correctness affects downstream applications. Besides crashes and performance issues, DBMSs can contain logic bugs , which cause queries to return incorrect results without raising an error. Automated testing approaches detect these bugs by generating SQL statements and checking their results with a test oracle ( Rigger and Su, 2020b ; Rigger and Su, 2020a ) . These approaches have uncovered hundreds of previously unknown bugs in widely used DBMSs ( Zhong and Rigger, 2026b ; Zhong and Rigger, 2026a ) .",
+   "zh": "数据库管理系统（DBMS）是复杂的软件系统，其正确性会影响下游应用程序。 除了崩溃和性能问题外，DBMS 还可能包含逻辑错误，这些错误会导致查询返回不正确结果而不会抛出错误。 自动化测试方法通过生成 SQL 语句并用测试预言机验证其结果来检测这些错误（Rigger and Su, 2020b; Rigger and Su, 2020a）。 这些方法已发现广泛使用的 DBMS 中数百个此前未知的错误（Zhong and Rigger, 2026b; Zhong and Rigger, 2026a）。",
+   "sents": [
+    {
+     "en": "Database Management Systems (DBMSs) are complex software systems whose correctness affects downstream applications.",
+     "zh": "数据库管理系统（DBMS）是复杂的软件系统，其正确性会影响下游应用程序。"
+    },
+    {
+     "en": "Besides crashes and performance issues, DBMSs can contain logic bugs , which cause queries to return incorrect results without raising an error.",
+     "zh": "除了崩溃和性能问题外，DBMS 还可能包含逻辑错误，这些错误会导致查询返回不正确结果而不会抛出错误。"
+    },
+    {
+     "en": "Automated testing approaches detect these bugs by generating SQL statements and checking their results with a test oracle ( Rigger and Su, 2020b ; Rigger and Su, 2020a ) .",
+     "zh": "自动化测试方法通过生成 SQL 语句并用测试预言机验证其结果来检测这些错误（Rigger and Su, 2020b; Rigger and Su, 2020a）。"
+    },
+    {
+     "en": "These approaches have uncovered hundreds of previously unknown bugs in widely used DBMSs ( Zhong and Rigger, 2026b ; Zhong and Rigger, 2026a ) .",
+     "zh": "这些方法已发现广泛使用的 DBMS 中数百个此前未知的错误（Zhong and Rigger, 2026b; Zhong and Rigger, 2026a）。"
+    }
+   ]
+  },
+  {
+   "en": "The effectiveness of a test oracle depends on which SQL features the generated statements contain. Mutation-based tools derive inputs from existing statements, and their scope depends on the seed corpus and available mutation operators ( Zhong et al., 2020 ) . Generation-based tools create schemas, populate tables, and generate queries from predefined rules ( Rigger and Su, 2020a ; Rigger and Su, 2020b ; Rigger and Su, 2020c ) . Once implemented, a generator can repeatedly test its supported features at high throughput. The challenge of supporting the multitude of SQL features within a generator is further exacerbated given that most DBMSs implement a distinct SQL dialect. SQLancer++ supports an adaptive generator that adjusts generation probabilities during run-time to fit different dialects, but requires manual source modifications to support new SQL features ( Zhong and Rigger, 2026b ) . Listing 1 shows a reduced test case that exposes a logic bug in SQLite, which SQLancer++ fails to find due to lack of support for row value IN predicates with aggregate subqueries. The existing test oracle can detect this bug once the generator supports the required predicate. Automating this task would allow the generator to incorporate new SQL features as DBMSs evolve. However, adding such support requires understanding both the generator implementation and the SQL features of the target DBMS.",
+   "zh": "测试预言子的有效性取决于生成的语句包含哪些 SQL 特性。 基于变异的工具从现有语句中派生输入，其范围取决于种子语料库和可用的变异算子（Zhong et al., 2020）。 基于生成的工具根据预定义规则创建模式、填充表并生成查询（Rigger and Su, 2020a; Rigger and Su, 2020b; Rigger and Su, 2020c）。 一旦实现，生成器就可以以高吞吐量重复测试其支持的特性。 在生成器中支持大量 SQL 特性的挑战因大多数 DBMS 实现了不同的 SQL 方言而进一步加剧。 SQLancer++ 支持一种自适应生成器，它能在运行时调整生成概率以适应不同方言，但需要手动修改源代码来支持新的 SQL 特性（Zhong and Rigger, 2026b）。 列表 1 展示了一个简化后的测试用例，该用例揭示了 SQLite 中的一个逻辑错误，而 SQLancer++ 由于不支持带有聚合子查询的行值 IN 谓词，因此未能发现此错误。 一旦生成器支持所需的谓词，现有的测试预言子就能检测出这个错误。 自动化这项任务将允许生成器在 DBMS 演进时融入新的 SQL 特性。 然而，添加此类支持需要同时理解生成器的实现方式以及目标 DBMS 的 SQL 特性。",
+   "sents": [
+    {
+     "en": "The effectiveness of a test oracle depends on which SQL features the generated statements contain.",
+     "zh": "测试预言子的有效性取决于生成的语句包含哪些 SQL 特性。"
+    },
+    {
+     "en": "Mutation-based tools derive inputs from existing statements, and their scope depends on the seed corpus and available mutation operators ( Zhong et al., 2020 ) .",
+     "zh": "基于变异的工具从现有语句中派生输入，其范围取决于种子语料库和可用的变异算子（Zhong et al., 2020）。"
+    },
+    {
+     "en": "Generation-based tools create schemas, populate tables, and generate queries from predefined rules ( Rigger and Su, 2020a ; Rigger and Su, 2020b ; Rigger and Su, 2020c ) .",
+     "zh": "基于生成的工具根据预定义规则创建模式、填充表并生成查询（Rigger and Su, 2020a; Rigger and Su, 2020b; Rigger and Su, 2020c）。"
+    },
+    {
+     "en": "Once implemented, a generator can repeatedly test its supported features at high throughput.",
+     "zh": "一旦实现，生成器就可以以高吞吐量重复测试其支持的特性。"
+    },
+    {
+     "en": "The challenge of supporting the multitude of SQL features within a generator is further exacerbated given that most DBMSs implement a distinct SQL dialect.",
+     "zh": "在生成器中支持大量 SQL 特性的挑战因大多数 DBMS 实现了不同的 SQL 方言而进一步加剧。"
+    },
+    {
+     "en": "SQLancer++ supports an adaptive generator that adjusts generation probabilities during run-time to fit different dialects, but requires manual source modifications to support new SQL features ( Zhong and Rigger, 2026b ) .",
+     "zh": "SQLancer++ 支持一种自适应生成器，它能在运行时调整生成概率以适应不同方言，但需要手动修改源代码来支持新的 SQL 特性（Zhong and Rigger, 2026b）。"
+    },
+    {
+     "en": "Listing 1 shows a reduced test case that exposes a logic bug in SQLite, which SQLancer++ fails to find due to lack of support for row value IN predicates with aggregate subqueries.",
+     "zh": "列表 1 展示了一个简化后的测试用例，该用例揭示了 SQLite 中的一个逻辑错误，而 SQLancer++ 由于不支持带有聚合子查询的行值 IN 谓词，因此未能发现此错误。"
+    },
+    {
+     "en": "The existing test oracle can detect this bug once the generator supports the required predicate.",
+     "zh": "一旦生成器支持所需的谓词，现有的测试预言子就能检测出这个错误。"
+    },
+    {
+     "en": "Automating this task would allow the generator to incorporate new SQL features as DBMSs evolve.",
+     "zh": "自动化这项任务将允许生成器在 DBMS 演进时融入新的 SQL 特性。"
+    },
+    {
+     "en": "However, adding such support requires understanding both the generator implementation and the SQL features of the target DBMS.",
+     "zh": "然而，添加此类支持需要同时理解生成器的实现方式以及目标 DBMS 的 SQL 特性。"
+    }
+   ]
+  },
+  {
+   "en": "Recent work uses Large Language Models (LLMs) within predefined workflows to automatically improve DBMS testing tools. For example, ShQveL uses LLMs to add validated SQL fragments to the generator, while Argus uses LLMs to propose test oracles that are independently verified ( Zhong and Rigger, 2026a ; Mang et al., 2026b ) . However, the SQL features supported by these workflows depend on their generation and verification mechanisms. ShQveL fills predefined sketches, while Argus verifies query relations within the SQL features supported by its underlying solver and base generator. Both generators lack support for generating the row value IN comparison with a subquery to trigger the bug in Listing 1 . Extending these mechanisms to support additional SQL features still requires modifications to the test generator.",
+   "zh": "近期的研究在预定义的工作流中使用了大型语言模型（LLM），以自动改进数据库管理系统（DBMS）的测试工具。 例如，ShQveL 使用 LLM 向生成器添加经过验证的 SQL 片段，而 Argus 则使用 LLM 提出测试预言子，这些预言子会经过独立验证（Zhong and Rigger, 2026a；Mang et al., 2026b）。 然而，这些工作流所支持的 SQL 特性取决于其生成和验证机制。 ShQveL 填充预定义的模板，而 Argus 则在其底层求解器和基础生成器所支持的 SQL 特性范围内验证查询关系。 这两种生成器都无法支持生成行值与子查询的 IN 比较操作，而这种操作正是触发列表 1 中错误的关键。 要将这些机制扩展以支持更多的 SQL 特性，仍然需要修改测试生成器。",
+   "sents": [
+    {
+     "en": "Recent work uses Large Language Models (LLMs) within predefined workflows to automatically improve DBMS testing tools.",
+     "zh": "近期的研究在预定义的工作流中使用了大型语言模型（LLM），以自动改进数据库管理系统（DBMS）的测试工具。"
+    },
+    {
+     "en": "For example, ShQveL uses LLMs to add validated SQL fragments to the generator, while Argus uses LLMs to propose test oracles that are independently verified ( Zhong and Rigger, 2026a ; Mang et al., 2026b ) .",
+     "zh": "例如，ShQveL 使用 LLM 向生成器添加经过验证的 SQL 片段，而 Argus 则使用 LLM 提出测试预言子，这些预言子会经过独立验证（Zhong and Rigger, 2026a；Mang et al., 2026b）。"
+    },
+    {
+     "en": "However, the SQL features supported by these workflows depend on their generation and verification mechanisms.",
+     "zh": "然而，这些工作流所支持的 SQL 特性取决于其生成和验证机制。"
+    },
+    {
+     "en": "ShQveL fills predefined sketches, while Argus verifies query relations within the SQL features supported by its underlying solver and base generator.",
+     "zh": "ShQveL 填充预定义的模板，而 Argus 则在其底层求解器和基础生成器所支持的 SQL 特性范围内验证查询关系。"
+    },
+    {
+     "en": "Both generators lack support for generating the row value IN comparison with a subquery to trigger the bug in Listing 1 .",
+     "zh": "这两种生成器都无法支持生成行值与子查询的 IN 比较操作，而这种操作正是触发列表 1 中错误的关键。"
+    },
+    {
+     "en": "Extending these mechanisms to support additional SQL features still requires modifications to the test generator.",
+     "zh": "要将这些机制扩展以支持更多的 SQL 特性，仍然需要修改测试生成器。"
+    }
+   ]
+  },
+  {
+   "en": "Increasing LLM capability opens new opportunities for greater autonomy than in previous work ( Luo et al., 2026 ) . Coding agents can inspect software repositories and implement modifications across several source files ( Yang et al., 2024 ; Zhang et al., 2024 ; Wang et al., 2025 ) . These agents could implement the state handling and generation rules needed for a new SQL feature. However, a key challenge is to deterministically validate whether the modified generator can generate statements containing the requested feature. Current feedback signals provide insufficient evidence for the agents to determine when a certain feature can be generated. First, checking for a successful build provides insufficient evidence that the generator can generate requested features during run-time. Second, it is difficult to validate whether the generator can generate a requested feature, since, due to the inherent stochasticity of generators, the feature would not necessarily be generated within a fixed timeframe. Third, coverage feedback can guide LLM-driven generator evolution ( Chen et al., 2025 ) , but an increase in coverage does not show that a requested statement can be generated.",
+   "zh": "提升大型语言模型的能力为智能体带来了比以往研究更大的自主性机会（Luo 等人，2026）。 编码智能体能够检查软件仓库，并在多个源文件中实施修改（Yang 等人，2024；Zhang 等人，2024；Wang 等人，2025）。 这些智能体可以实施新 SQL 功能所需的狀態處理和生成規則。 然而，一个关键挑战是确定性地验证修改后的生成器是否能够生成包含所需功能的语句。 当前的反馈信号无法为智能体提供足够的证据，以判断某个特定功能何时能够被生成。 首先，检查构建是否成功并不能充分证明生成器能够在运行时生成所需的功能。 其次，很难验证生成器是否能够生成所需的功能，因为由于生成器固有的随机性，该功能未必会在固定的时间范围内被生成。 第三，覆盖度反馈可以指导由大型语言模型驱动的生成器演化（Chen 等人，2025），但覆盖度的增加并不能表明所需语句能够被生成。",
+   "sents": [
+    {
+     "en": "Increasing LLM capability opens new opportunities for greater autonomy than in previous work ( Luo et al., 2026 ) .",
+     "zh": "提升大型语言模型的能力为智能体带来了比以往研究更大的自主性机会（Luo 等人，2026）。"
+    },
+    {
+     "en": "Coding agents can inspect software repositories and implement modifications across several source files ( Yang et al., 2024 ; Zhang et al., 2024 ; Wang et al., 2025 ) .",
+     "zh": "编码智能体能够检查软件仓库，并在多个源文件中实施修改（Yang 等人，2024；Zhang 等人，2024；Wang 等人，2025）。"
+    },
+    {
+     "en": "These agents could implement the state handling and generation rules needed for a new SQL feature.",
+     "zh": "这些智能体可以实施新 SQL 功能所需的狀態處理和生成規則。"
+    },
+    {
+     "en": "However, a key challenge is to deterministically validate whether the modified generator can generate statements containing the requested feature.",
+     "zh": "然而，一个关键挑战是确定性地验证修改后的生成器是否能够生成包含所需功能的语句。"
+    },
+    {
+     "en": "Current feedback signals provide insufficient evidence for the agents to determine when a certain feature can be generated.",
+     "zh": "当前的反馈信号无法为智能体提供足够的证据，以判断某个特定功能何时能够被生成。"
+    },
+    {
+     "en": "First, checking for a successful build provides insufficient evidence that the generator can generate requested features during run-time.",
+     "zh": "首先，检查构建是否成功并不能充分证明生成器能够在运行时生成所需的功能。"
+    },
+    {
+     "en": "Second, it is difficult to validate whether the generator can generate a requested feature, since, due to the inherent stochasticity of generators, the feature would not necessarily be generated within a fixed timeframe.",
+     "zh": "其次，很难验证生成器是否能够生成所需的功能，因为由于生成器固有的随机性，该功能未必会在固定的时间范围内被生成。"
+    },
+    {
+     "en": "Third, coverage feedback can guide LLM-driven generator evolution ( Chen et al., 2025 ) , but an increase in coverage does not show that a requested statement can be generated.",
+     "zh": "第三，覆盖度反馈可以指导由大型语言模型驱动的生成器演化（Chen 等人，2025），但覆盖度的增加并不能表明所需语句能够被生成。"
+    }
+   ]
+  },
+  {
+   "en": "In this paper, we propose Gungnir , a system for evolving DBMS test generators with coding agents. Our core insight is to require the coding agent to provide a so-called generation witness alongside each generator modification, providing concrete evidence of how the modified generator can generate a target statement. We realize this witness mechanism through a common guidance interface that records the semantic choices instrumented in the generator. The input to the witness mechanism is a target SQL statement—which can contain one or more new SQL features. A generation witness records the database setup and semantic choices needed to generate this target. The coding agent is responsible for implementing the requested feature and identifying the choices needed to generate the target; the validator is responsible for checking this evidence by replaying the choices through the modified generator, comparing the complete generated statement with the target statement, and running the required executable check before the modification can be accepted for further testing. For subsequent modifications, we require the coding agent to preserve previously witnessed behavior, which the validator checks by replaying the historical witnesses.",
+   "zh": "在本文中，我们提出了 Gungnir——一个利用编码智能体演化 DBMS 测试生成器的系统。 我们的核心思路是要求编码智能体在每次修改生成器时，提供一个所谓的“生成见证”，以具体证明修改后的生成器如何能够生成目标语句。 我们通过一个通用的引导接口来实现这种见证机制，该接口会记录生成器中实现的语义选择。 见证机制的输入是一个目标 SQL 语句——其中可能包含一个或多个新的 SQL 特性。 生成见证记录了生成该目标语句所需的数据库配置和语义选择。 编码智能体负责实现所请求的特性，并确定生成目标语句所需的选择；验证器则负责通过重新执行这些选择于修改后的生成器中、将完整生成的语句与目标语句进行比较，并在修改被接受用于进一步测试前运行必要的可执行检查，来验证这些证据。 对于后续的修改，我们要求编码智能体保留之前已见证的行为，而验证器则通过重新执行历史见证来对此进行检查。",
+   "sents": [
+    {
+     "en": "In this paper, we propose Gungnir , a system for evolving DBMS test generators with coding agents.",
+     "zh": "在本文中，我们提出了 Gungnir——一个利用编码智能体演化 DBMS 测试生成器的系统。"
+    },
+    {
+     "en": "Our core insight is to require the coding agent to provide a so-called generation witness alongside each generator modification, providing concrete evidence of how the modified generator can generate a target statement.",
+     "zh": "我们的核心思路是要求编码智能体在每次修改生成器时，提供一个所谓的“生成见证”，以具体证明修改后的生成器如何能够生成目标语句。"
+    },
+    {
+     "en": "We realize this witness mechanism through a common guidance interface that records the semantic choices instrumented in the generator.",
+     "zh": "我们通过一个通用的引导接口来实现这种见证机制，该接口会记录生成器中实现的语义选择。"
+    },
+    {
+     "en": "The input to the witness mechanism is a target SQL statement—which can contain one or more new SQL features.",
+     "zh": "见证机制的输入是一个目标 SQL 语句——其中可能包含一个或多个新的 SQL 特性。"
+    },
+    {
+     "en": "A generation witness records the database setup and semantic choices needed to generate this target.",
+     "zh": "生成见证记录了生成该目标语句所需的数据库配置和语义选择。"
+    },
+    {
+     "en": "The coding agent is responsible for implementing the requested feature and identifying the choices needed to generate the target; the validator is responsible for checking this evidence by replaying the choices through the modified generator, comparing the complete generated statement with the target statement, and running the required executable check before the modification can be accepted for further testing.",
+     "zh": "编码智能体负责实现所请求的特性，并确定生成目标语句所需的选择；验证器则负责通过重新执行这些选择于修改后的生成器中、将完整生成的语句与目标语句进行比较，并在修改被接受用于进一步测试前运行必要的可执行检查，来验证这些证据。"
+    },
+    {
+     "en": "For subsequent modifications, we require the coding agent to preserve previously witnessed behavior, which the validator checks by replaying the historical witnesses.",
+     "zh": "对于后续的修改，我们要求编码智能体保留之前已见证的行为，而验证器则通过重新执行历史见证来对此进行检查。"
+    }
+   ]
+  },
+  {
+   "en": "We implement Gungnir as a multi-agent system (MAS) that evolves SQLancer++, separating the analysis of missing DBMS features from their integration into the test generator. An analyst agent derives target statements from DBMS source code, tests, and bug reports, while a coding agent modifies the generator using witness feedback. A triage agent investigates failures found during DBMS testing. The testing results and triage findings guide the analyst agent’s selection of further targets, forming a controlled evolution loop. After evolution, no more calls to the LLM or witness mechanism are required.",
+   "zh": "我们将 Gungnir 实现为一个多智能体系统（MAS），该系统对 SQLancer++ 进行演化，将缺失的 DBMS 功能分析与其在测试生成器中的集成分离开来。 分析智能体从 DBMS 源代码、测试和错误报告中推导出目标语句，而编码智能体则根据见证反馈修改生成器。 分类智能体负责调查在 DBMS 测试期间发现的故障。 测试结果和分类结果指导分析智能体选择后续目标，从而形成一个受控的演化循环。 演化完成后，不再需要调用 LLM 或见证机制。",
+   "sents": [
+    {
+     "en": "We implement Gungnir as a multi-agent system (MAS) that evolves SQLancer++, separating the analysis of missing DBMS features from their integration into the test generator.",
+     "zh": "我们将 Gungnir 实现为一个多智能体系统（MAS），该系统对 SQLancer++ 进行演化，将缺失的 DBMS 功能分析与其在测试生成器中的集成分离开来。"
+    },
+    {
+     "en": "An analyst agent derives target statements from DBMS source code, tests, and bug reports, while a coding agent modifies the generator using witness feedback.",
+     "zh": "分析智能体从 DBMS 源代码、测试和错误报告中推导出目标语句，而编码智能体则根据见证反馈修改生成器。"
+    },
+    {
+     "en": "A triage agent investigates failures found during DBMS testing.",
+     "zh": "分类智能体负责调查在 DBMS 测试期间发现的故障。"
+    },
+    {
+     "en": "The testing results and triage findings guide the analyst agent’s selection of further targets, forming a controlled evolution loop.",
+     "zh": "测试结果和分类结果指导分析智能体选择后续目标，从而形成一个受控的演化循环。"
+    },
+    {
+     "en": "After evolution, no more calls to the LLM or witness mechanism are required.",
+     "zh": "演化完成后，不再需要调用 LLM 或见证机制。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluated Gungnir on SQLite, DuckDB, and PostgreSQL and reported 44 bugs confirmed by developers, of which 34 have been fixed. The evolved generators achieved higher line and branch coverage than the generator baselines on all three DBMSs in the reported runs. In a separate DuckDB case study fully automated by agents—starting from a single prompt and ending with bug reports— Gungnir completed 81 feature goals and generated 5 bug reports confirmed by developers, with a cost of US$20.85.",
+   "zh": "我们在 SQLite、DuckDB 和 PostgreSQL 上对 Gungnir 进行了评估，并报告了 44 个经开发人员确认的漏洞，其中 34 个已经修复。 在报告的运行中，演化生成的生成器在这三种数据库管理系统上都实现了高于基线生成器的行覆盖率和分支覆盖率。 在一项由智能体完全自动化的独立 DuckDB 案例研究中——从单个提示开始，最终生成漏洞报告——Gungnir 完成了 81 个功能目标，并生成了 5 份经开发人员确认的漏洞报告，总成本为 20.85 美元。",
+   "sents": [
+    {
+     "en": "We evaluated Gungnir on SQLite, DuckDB, and PostgreSQL and reported 44 bugs confirmed by developers, of which 34 have been fixed.",
+     "zh": "我们在 SQLite、DuckDB 和 PostgreSQL 上对 Gungnir 进行了评估，并报告了 44 个经开发人员确认的漏洞，其中 34 个已经修复。"
+    },
+    {
+     "en": "The evolved generators achieved higher line and branch coverage than the generator baselines on all three DBMSs in the reported runs.",
+     "zh": "在报告的运行中，演化生成的生成器在这三种数据库管理系统上都实现了高于基线生成器的行覆盖率和分支覆盖率。"
+    },
+    {
+     "en": "In a separate DuckDB case study fully automated by agents—starting from a single prompt and ending with bug reports— Gungnir completed 81 feature goals and generated 5 bug reports confirmed by developers, with a cost of US$20.85.",
+     "zh": "在一项由智能体完全自动化的独立 DuckDB 案例研究中——从单个提示开始，最终生成漏洞报告——Gungnir 完成了 81 个功能目标，并生成了 5 份经开发人员确认的漏洞报告，总成本为 20.85 美元。"
+    }
+   ]
+  },
+  {
+   "en": "In summary, this paper makes the following contributions:",
+   "zh": "总而言之，本文做出了以下贡献：",
+   "sents": null
+  },
+  {
+   "en": "We propose witness replay , which checks whether a modified generator can generate target statements and supplies feedback for further source modifications.",
+   "zh": "我们提出了“见证重演”方法，该方法用于检查修改后的生成器是否能够生成目标陈述，并为进一步的源文本修改提供反馈。",
+   "sents": null
+  },
+  {
+   "en": "We implement Gungnir , a system that evolves SQLancer++ with coding agents and preserves the resulting features for DBMS testing.",
+   "zh": "我们实现了 Gungnir——一个通过编码智能体演化 SQLancer++ 的系统，并保留其生成的特征以用于 DBMS 测试。",
+   "sents": null
+  },
+  {
+   "en": "We evaluate Gungnir on SQLite, DuckDB, and PostgreSQL, reporting 44 bugs confirmed by developers, including 34 fixed bugs.",
+   "zh": "我们在 SQLite、DuckDB 和 PostgreSQL 上对 Gungnir 进行了评估，报告了 44 个经开发者确认的漏洞，其中包括 34 个已修复的漏洞。",
+   "sents": null
+  },
+  {
+   "en": "We first introduce SQL generators and test oracles, then discuss how LLMs can help generate SQL test cases.",
+   "zh": "我们首先介绍 SQL 生成器和测试预言机，然后讨论 LLM 如何帮助生成 SQL 测试用例。",
+   "sents": null
+  },
+  {
+   "en": "SQL generators construct test cases from scratch based on predefined rules ( Rigger and Su, 2020c ; Rigger and Su, 2020b ; Zhong and Rigger, 2026b ) . The rules define how to create a database schema, populate tables, and generate queries following target DBMS semantics. First, generators track the database state to satisfy dependencies among statements. For example, a table must exist before an insertion, and a query can reference only columns available in the current schema. Second, the generator needs to generate statements that are syntactically and semantically valid for the target DBMS. For example, it selects columns and operations with compatible types when constructing expressions. SQL dialects add further constraints on which features a DBMS accepts ( Zhong and Rigger, 2024 ; Zhong and Rigger, 2026b ) . For example, SQLancer supports 22 DBMS-specific generators with an average of 3.1K lines of code (LOC) for generation and supporting components. Supporting a new feature requires modifications to schema handling, expression generation, and SQL rendering. Third, the generator needs to satisfy the test oracle’s syntactic and semantic constraints. These requirements extend to generators that are modified by an LLM, such as in our work.",
+   "zh": "SQL 生成器根据预定义规则从头构建测试用例（Rigger 和 Su，2020c；Rigger 和 Su，2020b；Zhong 和 Rigger，2026b）。 这些规则定义了如何创建数据库模式、填充表以及按照目标 DBMS 的语义生成查询。 首先，生成器需要跟踪数据库状态，以满足各语句之间的依赖关系。 例如，在执行插入操作之前必须存在相应的表，且查询只能引用当前模式中可用的列。 其次，生成器需要为目标 DBMS 生成语法和语义上都有效的语句。 例如，在构建表达式时，它会选择类型兼容的列和操作。 SQL 方言对 DBMS 可接受的功能附加了更多限制（Zhong 和 Rigger，2024；Zhong 和 Rigger，2026b）。 例如，SQLancer 支持 22 种特定的 DBMS 生成器，其生成代码及支持组件的平均代码行数为 3.1K 行（LOC）。 要支持新功能，必须对模式处理、表达式生成和 SQL 渲染进行修改。 第三，生成器需要满足测试预言机的语法和语义约束。 这些要求同样适用于通过 LLM 修改的生成器，例如我们研究中的情况。",
+   "sents": [
+    {
+     "en": "SQL generators construct test cases from scratch based on predefined rules ( Rigger and Su, 2020c ; Rigger and Su, 2020b ; Zhong and Rigger, 2026b ) .",
+     "zh": "SQL 生成器根据预定义规则从头构建测试用例（Rigger 和 Su，2020c；Rigger 和 Su，2020b；Zhong 和 Rigger，2026b）。"
+    },
+    {
+     "en": "The rules define how to create a database schema, populate tables, and generate queries following target DBMS semantics.",
+     "zh": "这些规则定义了如何创建数据库模式、填充表以及按照目标 DBMS 的语义生成查询。"
+    },
+    {
+     "en": "First, generators track the database state to satisfy dependencies among statements.",
+     "zh": "首先，生成器需要跟踪数据库状态，以满足各语句之间的依赖关系。"
+    },
+    {
+     "en": "For example, a table must exist before an insertion, and a query can reference only columns available in the current schema.",
+     "zh": "例如，在执行插入操作之前必须存在相应的表，且查询只能引用当前模式中可用的列。"
+    },
+    {
+     "en": "Second, the generator needs to generate statements that are syntactically and semantically valid for the target DBMS.",
+     "zh": "其次，生成器需要为目标 DBMS 生成语法和语义上都有效的语句。"
+    },
+    {
+     "en": "For example, it selects columns and operations with compatible types when constructing expressions.",
+     "zh": "例如，在构建表达式时，它会选择类型兼容的列和操作。"
+    },
+    {
+     "en": "SQL dialects add further constraints on which features a DBMS accepts ( Zhong and Rigger, 2024 ; Zhong and Rigger, 2026b ) .",
+     "zh": "SQL 方言对 DBMS 可接受的功能附加了更多限制（Zhong 和 Rigger，2024；Zhong 和 Rigger，2026b）。"
+    },
+    {
+     "en": "For example, SQLancer supports 22 DBMS-specific generators with an average of 3.1K lines of code (LOC) for generation and supporting components.",
+     "zh": "例如，SQLancer 支持 22 种特定的 DBMS 生成器，其生成代码及支持组件的平均代码行数为 3.1K 行（LOC）。"
+    },
+    {
+     "en": "Supporting a new feature requires modifications to schema handling, expression generation, and SQL rendering.",
+     "zh": "要支持新功能，必须对模式处理、表达式生成和 SQL 渲染进行修改。"
+    },
+    {
+     "en": "Third, the generator needs to satisfy the test oracle’s syntactic and semantic constraints.",
+     "zh": "第三，生成器需要满足测试预言机的语法和语义约束。"
+    },
+    {
+     "en": "These requirements extend to generators that are modified by an LLM, such as in our work.",
+     "zh": "这些要求同样适用于通过 LLM 修改的生成器，例如我们研究中的情况。"
+    }
+   ]
+  },
+  {
+   "en": "A test oracle determines the expected result of a test case. It allows the testing tool to check whether a randomly generated SQL statement returns the expected result. Ternary Logic Partitioning (TLP) is a widely used oracle for logic bug detection ( Rigger and Su, 2020b ) . TLP divides the rows of one query according to whether a random predicate evaluates to true, false, or NULL, then compares the union of these partitions with the original result. While Gungnir relies on TLP in its implementation, it can adapt any of the existing test oracles. We deliberately avoid using LLMs for generating test oracles, since an incorrect one—for example, caused by hallucinations—would result in false alarms that would require developer intervention.",
+   "zh": "测试预言机用于确定测试用例的预期结果。 它使测试工具能够检查随机生成的 SQL 语句是否返回预期结果。 三值逻辑分区（TLP）是一种广泛用于检测逻辑错误的预言机（Rigger 和 Su，2020b）。 TLP 根据随机谓词的结果是否为真、假或 NULL 对查询的行进行划分，然后将这些分区的并集与原始结果进行比较。 尽管 Gungnir 在其实现中依赖 TLP，但它能够适配任何现有的测试预言机。 我们刻意避免使用 LLM 生成测试预言机，因为错误的预言机——例如由幻觉导致的错误——会产生误报，从而需要开发人员介入处理。",
+   "sents": [
+    {
+     "en": "A test oracle determines the expected result of a test case.",
+     "zh": "测试预言机用于确定测试用例的预期结果。"
+    },
+    {
+     "en": "It allows the testing tool to check whether a randomly generated SQL statement returns the expected result.",
+     "zh": "它使测试工具能够检查随机生成的 SQL 语句是否返回预期结果。"
+    },
+    {
+     "en": "Ternary Logic Partitioning (TLP) is a widely used oracle for logic bug detection ( Rigger and Su, 2020b ) .",
+     "zh": "三值逻辑分区（TLP）是一种广泛用于检测逻辑错误的预言机（Rigger 和 Su，2020b）。"
+    },
+    {
+     "en": "TLP divides the rows of one query according to whether a random predicate evaluates to true, false, or NULL, then compares the union of these partitions with the original result.",
+     "zh": "TLP 根据随机谓词的结果是否为真、假或 NULL 对查询的行进行划分，然后将这些分区的并集与原始结果进行比较。"
+    },
+    {
+     "en": "While Gungnir relies on TLP in its implementation, it can adapt any of the existing test oracles.",
+     "zh": "尽管 Gungnir 在其实现中依赖 TLP，但它能够适配任何现有的测试预言机。"
+    },
+    {
+     "en": "We deliberately avoid using LLMs for generating test oracles, since an incorrect one—for example, caused by hallucinations—would result in false alarms that would require developer intervention.",
+     "zh": "我们刻意避免使用 LLM 生成测试预言机，因为错误的预言机——例如由幻觉导致的错误——会产生误报，从而需要开发人员介入处理。"
+    }
+   ]
+  },
+  {
+   "en": "SQLancer++ reduces the effort of supporting different SQL dialects by generalizing generation rules across DBMSs ( Zhong and Rigger, 2026b ) . Its adaptive generator uses execution feedback to adjust probabilities of generating implemented SQL features; however, generating additional features requires new rules. For example, the SQLite case in Listing 1 required a row value representation and generation logic that connected it to an aggregate subquery. Adding this feature required modifications to the predicate generation of SQLancer++.",
+   "zh": "SQLancer++ 通过将生成规则泛化到不同的数据库管理系统，减少了支持不同 SQL 方言的工作量（Zhong 和 Rigger，2026b）。 其自适应生成器利用执行反馈来调整已实现的 SQL 功能生成的概率；然而，生成额外的功能则需要新的规则。 例如，列表 1 中的 SQLite 案例需要一种行值表示法和生成逻辑，以将其与聚合子查询连接起来。 添加此功能需要对 SQLancer++ 的谓词生成部分进行修改。",
+   "sents": [
+    {
+     "en": "SQLancer++ reduces the effort of supporting different SQL dialects by generalizing generation rules across DBMSs ( Zhong and Rigger, 2026b ) .",
+     "zh": "SQLancer++ 通过将生成规则泛化到不同的数据库管理系统，减少了支持不同 SQL 方言的工作量（Zhong 和 Rigger，2026b）。"
+    },
+    {
+     "en": "Its adaptive generator uses execution feedback to adjust probabilities of generating implemented SQL features; however, generating additional features requires new rules.",
+     "zh": "其自适应生成器利用执行反馈来调整已实现的 SQL 功能生成的概率；然而，生成额外的功能则需要新的规则。"
+    },
+    {
+     "en": "For example, the SQLite case in Listing 1 required a row value representation and generation logic that connected it to an aggregate subquery.",
+     "zh": "例如，列表 1 中的 SQLite 案例需要一种行值表示法和生成逻辑，以将其与聚合子查询连接起来。"
+    },
+    {
+     "en": "Adding this feature required modifications to the predicate generation of SQLancer++.",
+     "zh": "添加此功能需要对 SQLancer++ 的谓词生成部分进行修改。"
+    }
+   ]
+  },
+  {
+   "en": "Listing 2.1 shows the existing rule for an IN predicate with a list of expressions. The predicate generator calls booleanExpr , which first selects an enabled Boolean expression form. For IN_LIST , it selects a type and generates the left operand and list elements with that type. Adding a new kind of Boolean expression requires adding its construction rule and a branch that calls it. For the example in Listing 1 , this means generating a row value on the left and an aggregate subquery on the right of IN .",
+   "zh": "列表 2.1 展示了一个带有表达式列表的 IN 谓词的现有规则。 谓词生成器会调用 booleanExpr，该函数首先选择一个已启用的布尔表达式形式。 对于 IN_LIST，它会选择一个类型，并生成具有该类型的左操作数和列表元素。 添加一种新的布尔表达式类型需要添加其构造规则以及一个调用它的分支。 对于列表 1 中的示例，这意味着在 IN 的左侧生成一个行值，右侧生成一个聚合子查询。",
+   "sents": [
+    {
+     "en": "Listing 2.1 shows the existing rule for an IN predicate with a list of expressions.",
+     "zh": "列表 2.1 展示了一个带有表达式列表的 IN 谓词的现有规则。"
+    },
+    {
+     "en": "The predicate generator calls booleanExpr , which first selects an enabled Boolean expression form.",
+     "zh": "谓词生成器会调用 booleanExpr，该函数首先选择一个已启用的布尔表达式形式。"
+    },
+    {
+     "en": "For IN_LIST , it selects a type and generates the left operand and list elements with that type.",
+     "zh": "对于 IN_LIST，它会选择一个类型，并生成具有该类型的左操作数和列表元素。"
+    },
+    {
+     "en": "Adding a new kind of Boolean expression requires adding its construction rule and a branch that calls it.",
+     "zh": "添加一种新的布尔表达式类型需要添加其构造规则以及一个调用它的分支。"
+    },
+    {
+     "en": "For the example in Listing 1 , this means generating a row value on the left and an aggregate subquery on the right of IN .",
+     "zh": "对于列表 1 中的示例，这意味着在 IN 的左侧生成一个行值，右侧生成一个聚合子查询。"
+    }
+   ]
+  },
+  {
+   "en": "A plausible way to automate DBMS testing is to let coding agents directly generate SQL test cases and execute them to then investigate potential bugs, potentially also allowing them to inspect the DBMS’ source code. However, this direct approach faces three challenges. First, the agent can infer an incorrect expected result and report correct behavior as a logic bug. This difficulty also occurs in general software testing: RepoAudit reports false positives in code auditing ( Guo et al., 2025 ) , and agentic property-based testing documents agents mistaking intended behavior for bugs ( Maaz et al., 2025 ) . Second, generating test cases requires many LLM calls unless the generation logic is saved for reuse, adding inference cost and latency to continued testing. Third, the search space of agents can be biased toward familiar bug patterns learned during pretraining, such as incorrect handling of boundary values. These patterns can guide useful bug findings, but may also concentrate testing on similar cases and leave unfamiliar feature combinations unexplored. These difficulties motivate using agents to extend a reusable SQL generator.",
+   "zh": "一种可行的 DBMS 测试自动化方法是让编码智能体直接生成 SQL 测试用例并执行，进而排查潜在错误，甚至可能允许它们检查 DBMS 的源代码。 然而，这种直接方法面临三个挑战。 首先，智能体可能会推断出错误的预期结果，并将正确的行为误报为逻辑错误。 这一难题也存在于通用软件测试中：RepoAudit 在代码审计中报告了假阳性（Guo et al., 2025），而基于属性的智能体测试则记录了智能体将预期行为误认为错误的情况（Maaz et al., 2025）。 其次，除非将生成逻辑保存下来重复使用，否则生成测试用例需要大量 LLM 调用，这会为持续测试增加推理成本和延迟。 第三，智能体的搜索空间可能会偏向于预训练期间学到的熟悉错误模式，例如对边界值的处理不当。 这些模式虽然能引导发现有用的错误，但也可能导致测试集中在类似案例上，而忽略不熟悉的功能组合。 这些困难促使人们利用智能体来扩展一个可重用的 SQL 生成器。",
+   "sents": [
+    {
+     "en": "A plausible way to automate DBMS testing is to let coding agents directly generate SQL test cases and execute them to then investigate potential bugs, potentially also allowing them to inspect the DBMS’ source code.",
+     "zh": "一种可行的 DBMS 测试自动化方法是让编码智能体直接生成 SQL 测试用例并执行，进而排查潜在错误，甚至可能允许它们检查 DBMS 的源代码。"
+    },
+    {
+     "en": "However, this direct approach faces three challenges.",
+     "zh": "然而，这种直接方法面临三个挑战。"
+    },
+    {
+     "en": "First, the agent can infer an incorrect expected result and report correct behavior as a logic bug.",
+     "zh": "首先，智能体可能会推断出错误的预期结果，并将正确的行为误报为逻辑错误。"
+    },
+    {
+     "en": "This difficulty also occurs in general software testing: RepoAudit reports false positives in code auditing ( Guo et al., 2025 ) , and agentic property-based testing documents agents mistaking intended behavior for bugs ( Maaz et al., 2025 ) .",
+     "zh": "这一难题也存在于通用软件测试中：RepoAudit 在代码审计中报告了假阳性（Guo et al., 2025），而基于属性的智能体测试则记录了智能体将预期行为误认为错误的情况（Maaz et al., 2025）。"
+    },
+    {
+     "en": "Second, generating test cases requires many LLM calls unless the generation logic is saved for reuse, adding inference cost and latency to continued testing.",
+     "zh": "其次，除非将生成逻辑保存下来重复使用，否则生成测试用例需要大量 LLM 调用，这会为持续测试增加推理成本和延迟。"
+    },
+    {
+     "en": "Third, the search space of agents can be biased toward familiar bug patterns learned during pretraining, such as incorrect handling of boundary values.",
+     "zh": "第三，智能体的搜索空间可能会偏向于预训练期间学到的熟悉错误模式，例如对边界值的处理不当。"
+    },
+    {
+     "en": "These patterns can guide useful bug findings, but may also concentrate testing on similar cases and leave unfamiliar feature combinations unexplored.",
+     "zh": "这些模式虽然能引导发现有用的错误，但也可能导致测试集中在类似案例上，而忽略不熟悉的功能组合。"
+    },
+    {
+     "en": "These difficulties motivate using agents to extend a reusable SQL generator.",
+     "zh": "这些困难促使人们利用智能体来扩展一个可重用的 SQL 生成器。"
+    }
+   ]
+  },
+  {
+   "en": "Retaining validated LLM knowledge in a generator allows repeated testing without further model calls and avoids the false alarms that arise from relying on LLMs to judge correctness. ShQveL fills SQL sketches with LLMs and saves validated fragments for subsequent test generation ( Zhong and Rigger, 2026a ) . It checks filled sketches by execution and uses existing test oracles to detect logic bugs. Argus discovers pairs of abstract queries, verifies their equivalence with a SQL equivalence solver, and instantiates them with reusable SQL snippets ( Mang et al., 2026b ) . Its soundness depends on the verified equivalence and the constraints imposed on snippet instantiation. Both approaches validate LLM outputs before using them for testing instead of relying on the LLM to judge correctness.",
+   "zh": "将经过验证的大语言模型（LLM）知识保留在生成器中，可以在无需再次调用模型的情况下进行重复测试，并避免了依赖 LLM 判断正确性所引发的误报。 ShQveL 使用大语言模型填充 SQL 草图，并将经过验证的片段保存下来用于后续测试生成（Zhong and Rigger, 2026a）。 它通过执行来检查已填充的草图，并利用现有的测试预言机检测逻辑错误。 Argus 能够发现成对的抽象查询，使用 SQL 等价性求解器验证其等价性，并用可重用的 SQL 片段对其进行实例化（Mang et al., 2026b）。 其正确性依赖于已验证的等价性以及施加在片段实例化上的约束条件。 这两种方法都在将大语言模型的输出用于测试之前先对其进行了验证，而不是依赖大语言模型本身来判断正确性。",
+   "sents": [
+    {
+     "en": "Retaining validated LLM knowledge in a generator allows repeated testing without further model calls and avoids the false alarms that arise from relying on LLMs to judge correctness.",
+     "zh": "将经过验证的大语言模型（LLM）知识保留在生成器中，可以在无需再次调用模型的情况下进行重复测试，并避免了依赖 LLM 判断正确性所引发的误报。"
+    },
+    {
+     "en": "ShQveL fills SQL sketches with LLMs and saves validated fragments for subsequent test generation ( Zhong and Rigger, 2026a ) .",
+     "zh": "ShQveL 使用大语言模型填充 SQL 草图，并将经过验证的片段保存下来用于后续测试生成（Zhong and Rigger, 2026a）。"
+    },
+    {
+     "en": "It checks filled sketches by execution and uses existing test oracles to detect logic bugs.",
+     "zh": "它通过执行来检查已填充的草图，并利用现有的测试预言机检测逻辑错误。"
+    },
+    {
+     "en": "Argus discovers pairs of abstract queries, verifies their equivalence with a SQL equivalence solver, and instantiates them with reusable SQL snippets ( Mang et al., 2026b ) .",
+     "zh": "Argus 能够发现成对的抽象查询，使用 SQL 等价性求解器验证其等价性，并用可重用的 SQL 片段对其进行实例化（Mang et al., 2026b）。"
+    },
+    {
+     "en": "Its soundness depends on the verified equivalence and the constraints imposed on snippet instantiation.",
+     "zh": "其正确性依赖于已验证的等价性以及施加在片段实例化上的约束条件。"
+    },
+    {
+     "en": "Both approaches validate LLM outputs before using them for testing instead of relying on the LLM to judge correctness.",
+     "zh": "这两种方法都在将大语言模型的输出用于测试之前先对其进行了验证，而不是依赖大语言模型本身来判断正确性。"
+    }
+   ]
+  },
+  {
+   "en": "Both ShQveL and Argus are constrained by the generator’s existing capabilities. ShQveL can learn new fragments, but the locations of sketch holes and the generator logic that uses them remain manually implemented. Specifically, its expression sketches fill developer-selected operator or function holes; they cannot extend the generator with new syntactic structures, for example, the row value IN comparison in Listing 1 . Argus is further limited by the SQL features supported by its equivalence solver, and a query relation that the solver cannot prove cannot become a verified oracle ( Mang et al., 2026b ) . For example, it cannot directly prove SQLite’s bare-column aggregate semantics in Listing 1 . Although snippets can introduce additional features during instantiation after suitable extensions, they require substantial LLM effort to build a snippet corpus.",
+   "zh": "ShQveL 和 Argus 都受到生成器现有能力的限制。 ShQveL 可以学习新的片段，但草图孔的位置以及使用这些孔的生成器逻辑仍需手动实现。 具体来说，其表达式草图会填充由开发者选择的算子或函数孔；它们无法通过添加新的句法结构来扩展生成器，例如列表 1 中的行值 IN 比较。 Argus 还受到其等价性求解器所支持的 SQL 功能的限制，如果求解器无法证明某个查询关系成立，该关系就无法成为经过验证的预言机（Mang 等人，2026b）。 例如，它无法直接证明列表 1 中 SQLite 的裸列聚合语义。 尽管片段在适当的扩展之后可以在实例化过程中引入额外功能，但要构建一个片段语料库仍需投入大量 LLM 资源。",
+   "sents": [
+    {
+     "en": "Both ShQveL and Argus are constrained by the generator’s existing capabilities.",
+     "zh": "ShQveL 和 Argus 都受到生成器现有能力的限制。"
+    },
+    {
+     "en": "ShQveL can learn new fragments, but the locations of sketch holes and the generator logic that uses them remain manually implemented.",
+     "zh": "ShQveL 可以学习新的片段，但草图孔的位置以及使用这些孔的生成器逻辑仍需手动实现。"
+    },
+    {
+     "en": "Specifically, its expression sketches fill developer-selected operator or function holes; they cannot extend the generator with new syntactic structures, for example, the row value IN comparison in Listing 1 .",
+     "zh": "具体来说，其表达式草图会填充由开发者选择的算子或函数孔；它们无法通过添加新的句法结构来扩展生成器，例如列表 1 中的行值 IN 比较。"
+    },
+    {
+     "en": "Argus is further limited by the SQL features supported by its equivalence solver, and a query relation that the solver cannot prove cannot become a verified oracle ( Mang et al., 2026b ) .",
+     "zh": "Argus 还受到其等价性求解器所支持的 SQL 功能的限制，如果求解器无法证明某个查询关系成立，该关系就无法成为经过验证的预言机（Mang 等人，2026b）。"
+    },
+    {
+     "en": "For example, it cannot directly prove SQLite’s bare-column aggregate semantics in Listing 1 .",
+     "zh": "例如，它无法直接证明列表 1 中 SQLite 的裸列聚合语义。"
+    },
+    {
+     "en": "Although snippets can introduce additional features during instantiation after suitable extensions, they require substantial LLM effort to build a snippet corpus.",
+     "zh": "尽管片段在适当的扩展之后可以在实例化过程中引入额外功能，但要构建一个片段语料库仍需投入大量 LLM 资源。"
+    }
+   ]
+  },
+  {
+   "en": "In this paper, we propose Gungnir , which tackles the problem of reliably building and continually improving automated DBMS testing tools for finding logic bugs. The core mechanism of Gungnir is witness replay , which checks whether a modified generator can generate a requested SQL statement. We assign a coding agent the responsibility of modifying the generator to support given target SQL statements—which provide concrete examples of feature usage—and providing executable evidence of that support. A generation witness records the database setup and semantic choices needed to generate a target statement. An external validator checks whether the agent has fulfilled this responsibility by replaying each witness through the modified generator, comparing the generated statement with its target. Failures guide further modifications to the generator and its witness, and the witnesses are saved for regression testing of future generator modifications. Figure 1 illustrates these steps for a row value IN predicate whose right side is an aggregate subquery. We next detail these steps.",
+   "zh": "在本文中，我们提出了 Gungnir，用于解决可靠构建并持续改进自动化 DBMS 测试工具以发现逻辑错误的问题。 Gungnir 的核心机制是见证重演，它用于检查修改后的生成器是否能够生成所需的 SQL 语句。 我们将编码智能体负责修改生成器以支持给定的目标 SQL 语句——这些语句提供了功能使用的具体示例——并提供可执行证据来证明这种支持。 生成见证记录了生成目标语句所需的数据库设置和语义选择。 外部验证器通过重演每个见证，并使用修改后的生成器进行比较生成的语句与其目标语句，来检查智能体是否履行了这一职责。 失败情况会引导对生成器及其见证的进一步修改，而这些见证会被保存下来，用于未来生成器修改的回归测试。 图 1 展示了这些步骤，适用于右侧为聚合子查询的行值 IN 谓词。 接下来我们将详细说明这些步骤。",
+   "sents": [
+    {
+     "en": "In this paper, we propose Gungnir , which tackles the problem of reliably building and continually improving automated DBMS testing tools for finding logic bugs.",
+     "zh": "在本文中，我们提出了 Gungnir，用于解决可靠构建并持续改进自动化 DBMS 测试工具以发现逻辑错误的问题。"
+    },
+    {
+     "en": "The core mechanism of Gungnir is witness replay , which checks whether a modified generator can generate a requested SQL statement.",
+     "zh": "Gungnir 的核心机制是见证重演，它用于检查修改后的生成器是否能够生成所需的 SQL 语句。"
+    },
+    {
+     "en": "We assign a coding agent the responsibility of modifying the generator to support given target SQL statements—which provide concrete examples of feature usage—and providing executable evidence of that support.",
+     "zh": "我们将编码智能体负责修改生成器以支持给定的目标 SQL 语句——这些语句提供了功能使用的具体示例——并提供可执行证据来证明这种支持。"
+    },
+    {
+     "en": "A generation witness records the database setup and semantic choices needed to generate a target statement.",
+     "zh": "生成见证记录了生成目标语句所需的数据库设置和语义选择。"
+    },
+    {
+     "en": "An external validator checks whether the agent has fulfilled this responsibility by replaying each witness through the modified generator, comparing the generated statement with its target.",
+     "zh": "外部验证器通过重演每个见证，并使用修改后的生成器进行比较生成的语句与其目标语句，来检查智能体是否履行了这一职责。"
+    },
+    {
+     "en": "Failures guide further modifications to the generator and its witness, and the witnesses are saved for regression testing of future generator modifications.",
+     "zh": "失败情况会引导对生成器及其见证的进一步修改，而这些见证会被保存下来，用于未来生成器修改的回归测试。"
+    },
+    {
+     "en": "Figure 1 illustrates these steps for a row value IN predicate whose right side is an aggregate subquery.",
+     "zh": "图 1 展示了这些步骤，适用于右侧为聚合子查询的行值 IN 谓词。"
+    },
+    {
+     "en": "We next detail these steps.",
+     "zh": "接下来我们将详细说明这些步骤。"
+    }
+   ]
+  },
+  {
+   "en": "In Step ①, our approach expects a target SQL statement Q Q containing the feature to be added. The target illustrates the feature for the coding agent and specifies the required behavior for the validator. Targets can be derived automatically by agents from DBMS documentation, source code, regression tests, bug reports, or prior testing results. In principle, they can also be supplied manually. Targets should satisfy several constraints, including being valid SQL statements and meeting the input requirements of the test oracle used for validation. We explain how these constraints guide the analyst agent in synthesizing targets in Section 4.1 . During target synthesis, the existing test oracle checks the proposed test case on the selected DBMS before it becomes a target for the coding agent. For example, the target Q Q in Figure 1 selects t0.c0 from t0 and t1 , with a predicate comparing the row (t0.c0, t0.c1) with the result of SELECT k, min(v) FROM t1 .",
+   "zh": "在步骤①中，我们的方法需要一个包含待添加特征的目标 SQL 语句 Q Q。 该目标向编码智能体说明了所需特征，并为验证器指定了要求的行为。 智能体可以从 DBMS 文档、源代码、回归测试、错误报告或过往测试结果中自动推导出目标。 原则上，这些目标也可以手动提供。 目标应满足若干约束条件，包括必须是有效的 SQL 语句，并符合用于验证的测试神谕的输入要求。 我们将在第 4.1 节中解释这些约束如何引导分析师智能体合成目标。 在目标合成过程中，现有的测试神谕会先对选定的 DBMS 上提出的测试用例进行检查，之后该用例才会成为编码智能体的目标。 例如，图 1 中的目标 Q Q 从 t0 和 t1 中选取 t0.c0，其谓词将元组 (t0.c0, t0.c1) 与 SELECT k, min(v) FROM t1 的结果进行比较。",
+   "sents": [
+    {
+     "en": "In Step ①, our approach expects a target SQL statement Q Q containing the feature to be added.",
+     "zh": "在步骤①中，我们的方法需要一个包含待添加特征的目标 SQL 语句 Q Q。"
+    },
+    {
+     "en": "The target illustrates the feature for the coding agent and specifies the required behavior for the validator.",
+     "zh": "该目标向编码智能体说明了所需特征，并为验证器指定了要求的行为。"
+    },
+    {
+     "en": "Targets can be derived automatically by agents from DBMS documentation, source code, regression tests, bug reports, or prior testing results.",
+     "zh": "智能体可以从 DBMS 文档、源代码、回归测试、错误报告或过往测试结果中自动推导出目标。"
+    },
+    {
+     "en": "In principle, they can also be supplied manually.",
+     "zh": "原则上，这些目标也可以手动提供。"
+    },
+    {
+     "en": "Targets should satisfy several constraints, including being valid SQL statements and meeting the input requirements of the test oracle used for validation.",
+     "zh": "目标应满足若干约束条件，包括必须是有效的 SQL 语句，并符合用于验证的测试神谕的输入要求。"
+    },
+    {
+     "en": "We explain how these constraints guide the analyst agent in synthesizing targets in Section 4.1 .",
+     "zh": "我们将在第 4.1 节中解释这些约束如何引导分析师智能体合成目标。"
+    },
+    {
+     "en": "During target synthesis, the existing test oracle checks the proposed test case on the selected DBMS before it becomes a target for the coding agent.",
+     "zh": "在目标合成过程中，现有的测试神谕会先对选定的 DBMS 上提出的测试用例进行检查，之后该用例才会成为编码智能体的目标。"
+    },
+    {
+     "en": "For example, the target Q Q in Figure 1 selects t0.c0 from t0 and t1 , with a predicate comparing the row (t0.c0, t0.c1) with the result of SELECT k, min(v) FROM t1 .",
+     "zh": "例如，图 1 中的目标 Q Q 从 t0 和 t1 中选取 t0.c0，其谓词将元组 (t0.c0, t0.c1) 与 SELECT k, min(v) FROM t1 的结果进行比较。"
+    }
+   ]
+  },
+  {
+   "en": "In Step ②, we require the coding agent to modify the current generator G G to generate the target statement and construct a generation witness that demonstrates this behavior. We denote the modified generator by G ′ G^{\\prime} .",
+   "zh": "在步骤②中，我们需要编码智能体修改当前的生成器 G G，以生成目标语句并构建一个能够证明该行为的生成见证。 我们将修改后的生成器表示为 G ′ G^{\\prime}。",
+   "sents": [
+    {
+     "en": "In Step ②, we require the coding agent to modify the current generator G G to generate the target statement and construct a generation witness that demonstrates this behavior.",
+     "zh": "在步骤②中，我们需要编码智能体修改当前的生成器 G G，以生成目标语句并构建一个能够证明该行为的生成见证。"
+    },
+    {
+     "en": "We denote the modified generator by G ′ G^{\\prime} .",
+     "zh": "我们将修改后的生成器表示为 G ′ G^{\\prime}。"
+    }
+   ]
+  },
+  {
+   "en": "We call the coding agent to modify source code to add new features for generating the target Q Q . The agent adds ROW_IN to the Boolean expression forms in Listing 2.1 . Listing 3.2 shows the new branch and helper. The context c provides the schema tables through c.tables and the outer query’s columns through c.columns . The generator selects ROW_IN through the same choice as IN_LIST and the other Boolean expressions. This enables the generator to generate the target Q Q . During execution, the generator may pick corresponding choices for the new ROW_IN branch, its tables and columns, and the MIN aggregate. However, agents might make mistakes when performing changes. For example, the agent may add the new predicate without making it reachable from the query generator, or may simply call the wrong function that generates only constants but not column references. We thus need to validate that the modified generator can generate the target.",
+   "zh": "我们调用编码智能体来修改源代码，以添加用于生成目标 Q Q 的新功能。 该智能体将 ROW_IN 添加到列表 2.1 中的布尔表达式形式中。 列表 3.2 展示了新的分支和辅助函数。 上下文 c 通过 c.tables 提供模式表，并通过 c.columns 提供外部查询的列。 生成器通过与 IN_LIST 和其他布尔表达式相同的选择来选取 ROW_IN。 这使得生成器能够生成目标 Q Q。 在执行过程中，生成器可能会为新 ROW_IN 分支、其表和列以及 MIN 聚合函数选择相应的选项。 然而，智能体在执行修改时可能会犯错。 例如，智能体可能在添加新谓词时未使其可从查询生成器中访问到，或者可能直接调用错误的函数，该函数仅生成常量而非列引用。 因此，我们需要验证修改后的生成器是否能够生成目标。",
+   "sents": [
+    {
+     "en": "We call the coding agent to modify source code to add new features for generating the target Q Q .",
+     "zh": "我们调用编码智能体来修改源代码，以添加用于生成目标 Q Q 的新功能。"
+    },
+    {
+     "en": "The agent adds ROW_IN to the Boolean expression forms in Listing 2.1 .",
+     "zh": "该智能体将 ROW_IN 添加到列表 2.1 中的布尔表达式形式中。"
+    },
+    {
+     "en": "Listing 3.2 shows the new branch and helper.",
+     "zh": "列表 3.2 展示了新的分支和辅助函数。"
+    },
+    {
+     "en": "The context c provides the schema tables through c.tables and the outer query’s columns through c.columns .",
+     "zh": "上下文 c 通过 c.tables 提供模式表，并通过 c.columns 提供外部查询的列。"
+    },
+    {
+     "en": "The generator selects ROW_IN through the same choice as IN_LIST and the other Boolean expressions.",
+     "zh": "生成器通过与 IN_LIST 和其他布尔表达式相同的选择来选取 ROW_IN。"
+    },
+    {
+     "en": "This enables the generator to generate the target Q Q .",
+     "zh": "这使得生成器能够生成目标 Q Q。"
+    },
+    {
+     "en": "During execution, the generator may pick corresponding choices for the new ROW_IN branch, its tables and columns, and the MIN aggregate.",
+     "zh": "在执行过程中，生成器可能会为新 ROW_IN 分支、其表和列以及 MIN 聚合函数选择相应的选项。"
+    },
+    {
+     "en": "However, agents might make mistakes when performing changes.",
+     "zh": "然而，智能体在执行修改时可能会犯错。"
+    },
+    {
+     "en": "For example, the agent may add the new predicate without making it reachable from the query generator, or may simply call the wrong function that generates only constants but not column references.",
+     "zh": "例如，智能体可能在添加新谓词时未使其可从查询生成器中访问到，或者可能直接调用错误的函数，该函数仅生成常量而非列引用。"
+    },
+    {
+     "en": "We thus need to validate that the modified generator can generate the target.",
+     "zh": "因此，我们需要验证修改后的生成器是否能够生成目标。"
+    }
+   ]
+  },
+  {
+   "en": "To describe the choices needed for such an execution, we model SQL generation as a sequence of semantic decisions. This model follows the interpretation of a random generator as a parser of choice sequences ( Goldstein and Pierce, 2022 ) . Each d i d_{i} identifies a decision site together with its occurrence number during generation. For example, a column-selection call inside a loop may run twice to construct a two-column expression; its first execution can select t0.c0 and its second t0.c1 . The source location and occurrence number distinguish these decisions in the witness. The state x i x_{i} contains the current schema, expected type, partial Abstract Syntax Tree (AST), and local generation context before decision site d i d_{i} . We write D G ′ ​ ( d i , x i ) D_{G^{\\prime}}(d_{i},x_{i}) for the alternatives allowed by the generator and its fixed configuration at decision site d i d_{i} in state x i x_{i} , and T G ′ T_{G^{\\prime}} for the generator’s state transition after selecting an alternative. A semantic decision can summarize internal random draws and sampling retries; T G ′ T_{G^{\\prime}} describes the construction step that uses the selected value. A selection policy π \\pi returns an alternative from D G ′ ​ ( d i , x i ) D_{G^{\\prime}}(d_{i},x_{i}) . During random generation, the policy π 0 \\pi_{0} uses pseudorandom draws initialized by a seed to select alternatives. Thus, G ′ G^{\\prime} chooses",
+   "zh": "为了描述此类执行所需的选择，我们将 SQL 生成建模为一系列语义决策的序列。 该模型遵循将随机生成器解释为选择序列解析器的观点（Goldstein 和 Pierce，2022）。 每个 d i d_{i} 标识一个决策点及其在生成过程中的出现次数。 例如，循环内部的一个列选择调用可能运行两次以构建一个双列表达式；其第一次执行可以选择 t0.c0，第二次则选择 t0.c1。 源位置和出现次数在见证中区分了这些决策。 状态 x i x_{i} 包含当前模式、预期类型、部分抽象语法树（AST）以及在决策点 d i d_{i} 之前的局部生成上下文。 我们用 D G ′ ​ ( d i , x i ) D_{G^{\\prime}}(d_{i},x_{i}) 表示生成器及其在状态 x i x_{i} 下于决策点 d i d_{i} 的固定配置所允许的选择，并用 T G ′ T_{G^{\\prime}} 表示选择某个选项后生成器的状态转换。 一个语义决策可以总结内部的随机抽取和采样重试；T G ′ T_{G^{\\prime}} 描述了使用所选值进行构建的步骤。 一种选择策略 π \\pi 从 D G ′ ​ ( d i , x i ) D_{G^{\\prime}}(d_{i},x_{i}) 中返回一个选项。 在随机生成过程中，策略 π 0 \\pi_{0} 使用由种子初始化的伪随机抽取来选择选项。 因此，G ′ G^{\\prime} 会选择",
+   "sents": [
+    {
+     "en": "To describe the choices needed for such an execution, we model SQL generation as a sequence of semantic decisions.",
+     "zh": "为了描述此类执行所需的选择，我们将 SQL 生成建模为一系列语义决策的序列。"
+    },
+    {
+     "en": "This model follows the interpretation of a random generator as a parser of choice sequences ( Goldstein and Pierce, 2022 ) .",
+     "zh": "该模型遵循将随机生成器解释为选择序列解析器的观点（Goldstein 和 Pierce，2022）。"
+    },
+    {
+     "en": "Each d i d_{i} identifies a decision site together with its occurrence number during generation.",
+     "zh": "每个 d i d_{i} 标识一个决策点及其在生成过程中的出现次数。"
+    },
+    {
+     "en": "For example, a column-selection call inside a loop may run twice to construct a two-column expression; its first execution can select t0.c0 and its second t0.c1 .",
+     "zh": "例如，循环内部的一个列选择调用可能运行两次以构建一个双列表达式；其第一次执行可以选择 t0.c0，第二次则选择 t0.c1。"
+    },
+    {
+     "en": "The source location and occurrence number distinguish these decisions in the witness.",
+     "zh": "源位置和出现次数在见证中区分了这些决策。"
+    },
+    {
+     "en": "The state x i x_{i} contains the current schema, expected type, partial Abstract Syntax Tree (AST), and local generation context before decision site d i d_{i} .",
+     "zh": "状态 x i x_{i} 包含当前模式、预期类型、部分抽象语法树（AST）以及在决策点 d i d_{i} 之前的局部生成上下文。"
+    },
+    {
+     "en": "We write D G ′ ​ ( d i , x i ) D_{G^{\\prime}}(d_{i},x_{i}) for the alternatives allowed by the generator and its fixed configuration at decision site d i d_{i} in state x i x_{i} , and T G ′ T_{G^{\\prime}} for the generator’s state transition after selecting an alternative.",
+     "zh": "我们用 D G ′ ​ ( d i , x i ) D_{G^{\\prime}}(d_{i},x_{i}) 表示生成器及其在状态 x i x_{i} 下于决策点 d i d_{i} 的固定配置所允许的选择，并用 T G ′ T_{G^{\\prime}} 表示选择某个选项后生成器的状态转换。"
+    },
+    {
+     "en": "A semantic decision can summarize internal random draws and sampling retries; T G ′ T_{G^{\\prime}} describes the construction step that uses the selected value.",
+     "zh": "一个语义决策可以总结内部的随机抽取和采样重试；T G ′ T_{G^{\\prime}} 描述了使用所选值进行构建的步骤。"
+    },
+    {
+     "en": "A selection policy π \\pi returns an alternative from D G ′ ​ ( d i , x i ) D_{G^{\\prime}}(d_{i},x_{i}) .",
+     "zh": "一种选择策略 π \\pi 从 D G ′ ​ ( d i , x i ) D_{G^{\\prime}}(d_{i},x_{i}) 中返回一个选项。"
+    },
+    {
+     "en": "During random generation, the policy π 0 \\pi_{0} uses pseudorandom draws initialized by a seed to select alternatives.",
+     "zh": "在随机生成过程中，策略 π 0 \\pi_{0} 使用由种子初始化的伪随机抽取来选择选项。"
+    },
+    {
+     "en": "Thus, G ′ G^{\\prime} chooses",
+     "zh": "因此，G ′ G^{\\prime} 会选择"
+    }
+   ]
+  },
+  {
+   "en": "The policy determines which alternative is selected; T G ′ T_{G^{\\prime}} determines how the generator uses it to construct SQL. A decision can select a table, column, expression form, operator, constant, or statement generation strategy. In Listing 3.2 , each choose call corresponds to a decision site, and its arguments determine D G ′ ​ ( d i , x i ) D_{G^{\\prime}}(d_{i},x_{i}) . For example, at the aggregate choice on line 23 , D G ′ ​ ( d i , x i ) = { MIN , MAX } D_{G^{\\prime}}(d_{i},x_{i})=\\{\\texttt{MIN},\\texttt{MAX}\\} ; selecting c i = MIN c_{i}=\\texttt{MIN} stores that aggregate in op for the subsequent construction step. Domains can also depend on the current context. For example, choose(c.tables) selects from the available tables, while choose(compatible(c.columns, k)) selects columns compatible with k . Although the listing shows choices from collections, the model also covers random integers drawn from a range [ ℓ , u ) [\\ell,u) , with domain { z ∈ ℤ ∣ ℓ ≤ z < u } \\{z\\in\\mathbb{Z}\\mid\\ell\\leq z<u\\} . Replay checks range bounds directly without enumerating the integers. Like Zest, which exposes generator parameters to guide structured test generation ( Padhye et al., 2019 ) , we make generator choices explicit. Semantic names such as MIN and t0.c1 let the agent identify the decisions needed for the target.",
+   "zh": "策略决定选择哪个选项；T G ′ T_{G^{\\prime}} 则决定生成器如何用它来构建 SQL。 一个决策可以选择表、列、表达式形式、运算符、常量或语句生成策略。 在示例 3.2 中，每个 choose 调用都对应一个决策点，其参数决定了 D G ′ ​ ( d i , x i ) D_{G^{\\prime}}(d_{i},x_{i}) 。 例如，在第 23 行的聚合选择处，D G ′ ​ ( d i , x i ) = { MIN , MAX } D_{G^{\\prime}}(d_{i},x_{i})=\\{\\texttt{MIN},\\texttt{MAX}\\}；选择 c i = MIN c_{i}=\\texttt{MIN} 会将该聚合操作存储在 op 中，供后续构建步骤使用。 定义域也可以依赖于当前上下文。 例如，choose(c.tables) 会从可用表中选择一个表，而 choose(compatible(c.columns, k)) 则会选择与 k 兼容的列。 尽管示例中展示的是从集合中选择元素，但该模型也涵盖了从范围 [ ℓ , u ) [\\ell,u) 中抽取的随机整数，其定义域为 { z ∈ ℤ ∣ ℓ ≤ z < u } \\{z\\in\\mathbb{Z}\\mid\\ell\\leq z<u\\} 。 重播检查会直接验证范围边界，而无需枚举所有整数。 与 Zest 类似（Padhye 等人，2019），Zest 通过暴露生成器参数来指导结构化测试的生成；我们同样将生成器的选择显式化。 MIN 和 t0.c1 这类语义名称能让智能体识别出实现目标所需的决策。",
+   "sents": [
+    {
+     "en": "The policy determines which alternative is selected; T G ′ T_{G^{\\prime}} determines how the generator uses it to construct SQL.",
+     "zh": "策略决定选择哪个选项；T G ′ T_{G^{\\prime}} 则决定生成器如何用它来构建 SQL。"
+    },
+    {
+     "en": "A decision can select a table, column, expression form, operator, constant, or statement generation strategy.",
+     "zh": "一个决策可以选择表、列、表达式形式、运算符、常量或语句生成策略。"
+    },
+    {
+     "en": "In Listing 3.2 , each choose call corresponds to a decision site, and its arguments determine D G ′ ​ ( d i , x i ) D_{G^{\\prime}}(d_{i},x_{i}) .",
+     "zh": "在示例 3.2 中，每个 choose 调用都对应一个决策点，其参数决定了 D G ′ ​ ( d i , x i ) D_{G^{\\prime}}(d_{i},x_{i}) 。"
+    },
+    {
+     "en": "For example, at the aggregate choice on line 23 , D G ′ ​ ( d i , x i ) = { MIN , MAX } D_{G^{\\prime}}(d_{i},x_{i})=\\{\\texttt{MIN},\\texttt{MAX}\\} ; selecting c i = MIN c_{i}=\\texttt{MIN} stores that aggregate in op for the subsequent construction step.",
+     "zh": "例如，在第 23 行的聚合选择处，D G ′ ​ ( d i , x i ) = { MIN , MAX } D_{G^{\\prime}}(d_{i},x_{i})=\\{\\texttt{MIN},\\texttt{MAX}\\}；选择 c i = MIN c_{i}=\\texttt{MIN} 会将该聚合操作存储在 op 中，供后续构建步骤使用。"
+    },
+    {
+     "en": "Domains can also depend on the current context.",
+     "zh": "定义域也可以依赖于当前上下文。"
+    },
+    {
+     "en": "For example, choose(c.tables) selects from the available tables, while choose(compatible(c.columns, k)) selects columns compatible with k .",
+     "zh": "例如，choose(c.tables) 会从可用表中选择一个表，而 choose(compatible(c.columns, k)) 则会选择与 k 兼容的列。"
+    },
+    {
+     "en": "Although the listing shows choices from collections, the model also covers random integers drawn from a range [ ℓ , u ) [\\ell,u) , with domain { z ∈ ℤ ∣ ℓ ≤ z < u } \\{z\\in\\mathbb{Z}\\mid\\ell\\leq z<u\\} .",
+     "zh": "尽管示例中展示的是从集合中选择元素，但该模型也涵盖了从范围 [ ℓ , u ) [\\ell,u) 中抽取的随机整数，其定义域为 { z ∈ ℤ ∣ ℓ ≤ z < u } \\{z\\in\\mathbb{Z}\\mid\\ell\\leq z<u\\} 。"
+    },
+    {
+     "en": "Replay checks range bounds directly without enumerating the integers.",
+     "zh": "重播检查会直接验证范围边界，而无需枚举所有整数。"
+    },
+    {
+     "en": "Like Zest, which exposes generator parameters to guide structured test generation ( Padhye et al., 2019 ) , we make generator choices explicit.",
+     "zh": "与 Zest 类似（Padhye 等人，2019），Zest 通过暴露生成器参数来指导结构化测试的生成；我们同样将生成器的选择显式化。"
+    },
+    {
+     "en": "Semantic names such as MIN and t0.c1 let the agent identify the decisions needed for the target.",
+     "zh": "MIN 和 t0.c1 这类语义名称能让智能体识别出实现目标所需的决策。"
+    }
+   ]
+  },
+  {
+   "en": "We require the coding agent to provide a witness that can be externally validated based on the generator model. To this end, during source modification, the agent identifies the choices needed to generate the target and records them in a witness. An executable setup F F creates the schema and data required by a target. A generation witness W = ( F , A ) W=(F,A) pairs this setup with an assignment A A from decision sites to semantic values. The setup F F initializes the generation state x 0 x_{0} , which contains the table names ( e.g. , t0, t1 ) and the column names ( e.g. , c0, c1 ) for the target. The assignment A ⁡ ( d i ) A(d_{i}) selects the alternative used by T G ′ T_{G^{\\prime}} whenever d i d_{i} is assigned. A valid assignment thus satisfies A ⁡ ( d i ) ∈ D G ′ ​ ( d i , x i ) A(d_{i})\\in D_{G^{\\prime}}(d_{i},x_{i}) at each assigned decision reached during execution. During replay, the validator checks each assigned value against the alternatives allowed by the generator in the current state x i x_{i} . The witness specifies which alternatives to select through the generator G ′ G^{\\prime} , which then executes the corresponding construction steps to generate SQL. Selecting an existing alternative only requires changing the witness assignment. If a required alternative, such as ROW_IN , is unavailable, the agent should modify the generator to support it. Further source modifications can change decision sites and require corresponding changes to A A . The agent submits both G ′ G^{\\prime} and W W for replay and validation against the fixed target Q Q .",
+   "zh": "我们要求编码智能体提供一个基于生成器模型的外部可验证的见证。 为此，在源修改过程中，该智能体会识别生成目标所需的选项，并将其记录在一个见证中。 一个可执行的配置 F F 会创建目标所需的模式和数据。 一个生成见证 W = ( F , A ) W=(F,A) 将此配置与一个从决策点到语义值的赋值 A A 配对。 配置 F F 初始化生成状态 x 0 x_{0}，其中包含目标的表名（例如 t0、t1）和列名（例如 c0、c1）。 赋值 A ⁡ ( d i ) A(d_{i}) 会在每次分配 d i d_{i} 时选择 T G ′ T_{G^{\\prime}} 使用的替代方案。 因此，在执行的每个已分配的决策点处，有效的赋值必须满足 A ⁡ ( d i ) ∈ D G ′ ​ ( d i , x i ) A(d_{i})\\in D_{G^{\\prime}}(d_{i},x_{i})。 在重播过程中，验证器会将每个已分配的值与生成器在当前状态 x i x_{i} 下允许的替代方案进行比对。 该见证通过生成器 G ′ G^{\\prime} 指定了应选择哪些替代方案，随后生成器会执行相应的构建步骤以生成 SQL。 选择现有替代方案只需修改见证中的赋值即可。 如果所需的替代方案（例如 ROW_IN）不可用，智能体应修改生成器以支持该方案。 进一步的源修改可能会改变决策点，并需要对 A A 进行相应调整。 智能体将 G ′ G^{\\prime} 和 W W 一并提交，以便针对固定的目标 Q Q 进行重播和验证。",
+   "sents": [
+    {
+     "en": "We require the coding agent to provide a witness that can be externally validated based on the generator model.",
+     "zh": "我们要求编码智能体提供一个基于生成器模型的外部可验证的见证。"
+    },
+    {
+     "en": "To this end, during source modification, the agent identifies the choices needed to generate the target and records them in a witness.",
+     "zh": "为此，在源修改过程中，该智能体会识别生成目标所需的选项，并将其记录在一个见证中。"
+    },
+    {
+     "en": "An executable setup F F creates the schema and data required by a target.",
+     "zh": "一个可执行的配置 F F 会创建目标所需的模式和数据。"
+    },
+    {
+     "en": "A generation witness W = ( F , A ) W=(F,A) pairs this setup with an assignment A A from decision sites to semantic values.",
+     "zh": "一个生成见证 W = ( F , A ) W=(F,A) 将此配置与一个从决策点到语义值的赋值 A A 配对。"
+    },
+    {
+     "en": "The setup F F initializes the generation state x 0 x_{0} , which contains the table names ( e.g. , t0, t1 ) and the column names ( e.g. , c0, c1 ) for the target.",
+     "zh": "配置 F F 初始化生成状态 x 0 x_{0}，其中包含目标的表名（例如 t0、t1）和列名（例如 c0、c1）。"
+    },
+    {
+     "en": "The assignment A ⁡ ( d i ) A(d_{i}) selects the alternative used by T G ′ T_{G^{\\prime}} whenever d i d_{i} is assigned.",
+     "zh": "赋值 A ⁡ ( d i ) A(d_{i}) 会在每次分配 d i d_{i} 时选择 T G ′ T_{G^{\\prime}} 使用的替代方案。"
+    },
+    {
+     "en": "A valid assignment thus satisfies A ⁡ ( d i ) ∈ D G ′ ​ ( d i , x i ) A(d_{i})\\in D_{G^{\\prime}}(d_{i},x_{i}) at each assigned decision reached during execution.",
+     "zh": "因此，在执行的每个已分配的决策点处，有效的赋值必须满足 A ⁡ ( d i ) ∈ D G ′ ​ ( d i , x i ) A(d_{i})\\in D_{G^{\\prime}}(d_{i},x_{i})。"
+    },
+    {
+     "en": "During replay, the validator checks each assigned value against the alternatives allowed by the generator in the current state x i x_{i} .",
+     "zh": "在重播过程中，验证器会将每个已分配的值与生成器在当前状态 x i x_{i} 下允许的替代方案进行比对。"
+    },
+    {
+     "en": "The witness specifies which alternatives to select through the generator G ′ G^{\\prime} , which then executes the corresponding construction steps to generate SQL.",
+     "zh": "该见证通过生成器 G ′ G^{\\prime} 指定了应选择哪些替代方案，随后生成器会执行相应的构建步骤以生成 SQL。"
+    },
+    {
+     "en": "Selecting an existing alternative only requires changing the witness assignment.",
+     "zh": "选择现有替代方案只需修改见证中的赋值即可。"
+    },
+    {
+     "en": "If a required alternative, such as ROW_IN , is unavailable, the agent should modify the generator to support it.",
+     "zh": "如果所需的替代方案（例如 ROW_IN）不可用，智能体应修改生成器以支持该方案。"
+    },
+    {
+     "en": "Further source modifications can change decision sites and require corresponding changes to A A .",
+     "zh": "进一步的源修改可能会改变决策点，并需要对 A A 进行相应调整。"
+    },
+    {
+     "en": "The agent submits both G ′ G^{\\prime} and W W for replay and validation against the fixed target Q Q .",
+     "zh": "智能体将 G ′ G^{\\prime} 和 W W 一并提交，以便针对固定的目标 Q Q 进行重播和验证。"
+    }
+   ]
+  },
+  {
+   "en": "For the running example in Listing 3.2 , A A selects ROW_IN at line 12 and t1 at line 22 . It selects MIN at line 23 , then t1.v and t1.k at lines 24 and 26 , respectively. Finally, it selects t0.c0 and t0.c1 for the row value at lines 28 and 29 . Together with the choices of t0.c0 for the outer projection and t0 and t1 for the outer FROM clause, these assignments direct G ′ G^{\\prime} to construct (t0.c0, t0.c1) IN (SELECT k, min(v) FROM t1) .",
+   "zh": "对于列表 3.2 中的运行示例，A A 在第 12 行选择 ROW_IN，并在第 22 行选择 t1。 它在第 23 行选择 MIN，然后分别在第 24 行和第 26 行选择 t1.v 和 t1.k。 最后，它在第 28 行和第 29 行为行值选择 t0.c0 和 t0.c1。 结合外部投影对 t0.c0 的选择以及外部 FROM 子句中对 t0 和 t1 的选择，这些赋值指导 G ′ G^{\\prime} 构造 (t0.c0, t0.c1) IN (SELECT k, min(v) FROM t1)。",
+   "sents": [
+    {
+     "en": "For the running example in Listing 3.2 , A A selects ROW_IN at line 12 and t1 at line 22 .",
+     "zh": "对于列表 3.2 中的运行示例，A A 在第 12 行选择 ROW_IN，并在第 22 行选择 t1。"
+    },
+    {
+     "en": "It selects MIN at line 23 , then t1.v and t1.k at lines 24 and 26 , respectively.",
+     "zh": "它在第 23 行选择 MIN，然后分别在第 24 行和第 26 行选择 t1.v 和 t1.k。"
+    },
+    {
+     "en": "Finally, it selects t0.c0 and t0.c1 for the row value at lines 28 and 29 .",
+     "zh": "最后，它在第 28 行和第 29 行为行值选择 t0.c0 和 t0.c1。"
+    },
+    {
+     "en": "Together with the choices of t0.c0 for the outer projection and t0 and t1 for the outer FROM clause, these assignments direct G ′ G^{\\prime} to construct (t0.c0, t0.c1) IN (SELECT k, min(v) FROM t1) .",
+     "zh": "结合外部投影对 t0.c0 的选择以及外部 FROM 子句中对 t0 和 t1 的选择，这些赋值指导 G ′ G^{\\prime} 构造 (t0.c0, t0.c1) IN (SELECT k, min(v) FROM t1)。"
+    }
+   ]
+  },
+  {
+   "en": "In Step ③, the validator checks whether the coding agent has correctly implemented the feature in the generator so that it can generate the target Q Q . It does so by executing the setup F F and running G ′ G^{\\prime} under the policy π A \\pi_{A} specified by the assignment A A :",
+   "zh": "在步骤③中，验证器会检查编码智能体是否已在生成器中正确实现该功能，使其能够生成目标 Q Q 。 它通过执行设置 F F 并在分配 A A 指定的策略 π A \\pi_{A} 下运行 G ′ G^{\\prime} 来完成这一操作：",
+   "sents": [
+    {
+     "en": "In Step ③, the validator checks whether the coding agent has correctly implemented the feature in the generator so that it can generate the target Q Q .",
+     "zh": "在步骤③中，验证器会检查编码智能体是否已在生成器中正确实现该功能，使其能够生成目标 Q Q 。"
+    },
+    {
+     "en": "It does so by executing the setup F F and running G ′ G^{\\prime} under the policy π A \\pi_{A} specified by the assignment A A :",
+     "zh": "它通过执行设置 F F 并在分配 A A 指定的策略 π A \\pi_{A} 下运行 G ′ G^{\\prime} 来完成这一操作："
+    }
+   ]
+  },
+  {
+   "en": "Here, Q ′ Q^{\\prime} denotes the generated statement designated for comparison with the target statement Q Q . Replay requires no LLM calls or human inspection. For the row value target, F F creates tables t0(c0 INT, c1 INT) and t1(k INT, v INT) and initializes the schema in x 0 x_{0} .",
+   "zh": "此处，Q ′ Q^{\\prime} 表示为与目标陈述 Q Q 进行比较而指定的生成陈述。 重播无需调用 LLM 或进行人工检查。 对于行值目标，F F 创建表 t0(c0 INT, c1 INT) 和 t1(k INT, v INT)，并在 x 0 x_{0} 中初始化模式。",
+   "sents": [
+    {
+     "en": "Here, Q ′ Q^{\\prime} denotes the generated statement designated for comparison with the target statement Q Q .",
+     "zh": "此处，Q ′ Q^{\\prime} 表示为与目标陈述 Q Q 进行比较而指定的生成陈述。"
+    },
+    {
+     "en": "Replay requires no LLM calls or human inspection.",
+     "zh": "重播无需调用 LLM 或进行人工检查。"
+    },
+    {
+     "en": "For the row value target, F F creates tables t0(c0 INT, c1 INT) and t1(k INT, v INT) and initializes the schema in x 0 x_{0} .",
+     "zh": "对于行值目标，F F 创建表 t0(c0 INT, c1 INT) 和 t1(k INT, v INT)，并在 x 0 x_{0} 中初始化模式。"
+    }
+   ]
+  },
+  {
+   "en": "Replay changes the selection policy while preserving the generator’s construction transitions T G ′ T_{G^{\\prime}} . To make the generator replayable, we instrument its choice operations, represented by choose in Listing 3.2 . At each call, the instrumentation identifies the decision site and its occurrence, obtains the alternatives allowed in the current state, and consults A A . It returns the assigned value when one is present and otherwise invokes the original random selection procedure. Thus, during witness construction and new-target validation, the replay policy is",
+   "zh": "重播会改变选择策略，同时保留生成器的构造转换 T G ′ T_{G^{\\prime}}。 为了使生成器支持重播，我们对它的选择操作进行了增强处理，这些操作在列表 3.2 中由 choose 表示。 在每次调用时，增强机制会识别决策点及其出现位置，获取当前状态允许的选择项，并查询 A A。 如果存在已分配的值，则返回该值；否则，调用原始的随机选择程序。 因此，在见证构造和新目标验证过程中，重播策略是",
+   "sents": [
+    {
+     "en": "Replay changes the selection policy while preserving the generator’s construction transitions T G ′ T_{G^{\\prime}} .",
+     "zh": "重播会改变选择策略，同时保留生成器的构造转换 T G ′ T_{G^{\\prime}}。"
+    },
+    {
+     "en": "To make the generator replayable, we instrument its choice operations, represented by choose in Listing 3.2 .",
+     "zh": "为了使生成器支持重播，我们对它的选择操作进行了增强处理，这些操作在列表 3.2 中由 choose 表示。"
+    },
+    {
+     "en": "At each call, the instrumentation identifies the decision site and its occurrence, obtains the alternatives allowed in the current state, and consults A A .",
+     "zh": "在每次调用时，增强机制会识别决策点及其出现位置，获取当前状态允许的选择项，并查询 A A。"
+    },
+    {
+     "en": "It returns the assigned value when one is present and otherwise invokes the original random selection procedure.",
+     "zh": "如果存在已分配的值，则返回该值；否则，调用原始的随机选择程序。"
+    },
+    {
+     "en": "Thus, during witness construction and new-target validation, the replay policy is",
+     "zh": "因此，在见证构造和新目标验证过程中，重播策略是"
+    }
+   ]
+  },
+  {
+   "en": "Replay checks A ⁡ ( d i ) ∈ D G ′ ​ ( d i , x i ) A(d_{i})\\in D_{G^{\\prime}}(d_{i},x_{i}) at each assigned decision site before applying the generator’s transition T G ′ T_{G^{\\prime}} . For the aggregate decision site d a d_{a} on line 23 of Listing 3.2 , A ⁡ ( d a ) = MIN A(d_{a})=\\texttt{MIN} is valid because its domain contains MIN and MAX ; assigning COUNT would fail this check. The transitions use these choices to construct the aggregate expression, its enclosing subquery, and the row value comparison in Figure 1 . Replay records the visited decision sites and selected values and fails if an assigned site is never reached.",
+   "zh": "在应用生成器的转移 T G ′ T_{G^{\\prime}} 之前，在每个已分配的决策点上重新执行检查 A ⁡ ( d i ) ∈ D G ′ ​ ( d i , x i ) A(d_{i})\\in D_{G^{\\prime}}(d_{i},x_{i})。 对于列表 3.2 第 23 行上的聚合决策点 d a d_{a}，A ⁡ ( d a ) = MIN A(d_{a})=\\texttt{MIN} 是有效的，因为其定义域包含 MIN 和 MAX；分配 COUNT 将在此检查中失败。 这些转移利用上述选择来构建聚合表达式、其包围的子查询以及图 1 中的行值比较。 重播会记录已访问的决策点和所选值；如果某个已分配的决策点从未被到达，则过程会失败。",
+   "sents": [
+    {
+     "en": "Replay checks A ⁡ ( d i ) ∈ D G ′ ​ ( d i , x i ) A(d_{i})\\in D_{G^{\\prime}}(d_{i},x_{i}) at each assigned decision site before applying the generator’s transition T G ′ T_{G^{\\prime}} .",
+     "zh": "在应用生成器的转移 T G ′ T_{G^{\\prime}} 之前，在每个已分配的决策点上重新执行检查 A ⁡ ( d i ) ∈ D G ′ ​ ( d i , x i ) A(d_{i})\\in D_{G^{\\prime}}(d_{i},x_{i})。"
+    },
+    {
+     "en": "For the aggregate decision site d a d_{a} on line 23 of Listing 3.2 , A ⁡ ( d a ) = MIN A(d_{a})=\\texttt{MIN} is valid because its domain contains MIN and MAX ; assigning COUNT would fail this check.",
+     "zh": "对于列表 3.2 第 23 行上的聚合决策点 d a d_{a}，A ⁡ ( d a ) = MIN A(d_{a})=\\texttt{MIN} 是有效的，因为其定义域包含 MIN 和 MAX；分配 COUNT 将在此检查中失败。"
+    },
+    {
+     "en": "The transitions use these choices to construct the aggregate expression, its enclosing subquery, and the row value comparison in Figure 1 .",
+     "zh": "这些转移利用上述选择来构建聚合表达式、其包围的子查询以及图 1 中的行值比较。"
+    },
+    {
+     "en": "Replay records the visited decision sites and selected values and fails if an assigned site is never reached.",
+     "zh": "重播会记录已访问的决策点和所选值；如果某个已分配的决策点从未被到达，则过程会失败。"
+    }
+   ]
+  },
+  {
+   "en": "In Step ④, the validator checks both the requested behavior and previously witnessed behavior before accepting G ′ G^{\\prime} .",
+   "zh": "在步骤④中，验证器在接受 G ′ G^{\\prime} 之前，会同时检查所请求的行为和先前观察到的行为。",
+   "sents": null
+  },
+  {
+   "en": "The generation requirement is that replay uses all assigned choices successfully and generates the fixed target by exact string equality Q ′ = Q Q^{\\prime}=Q . This comparison checks whether the modified generator can generate it. Starting from x 0 x_{0} , each replayed decision selects c i ∈ D G ′ ​ ( d i , x i ) c_{i}\\in D_{G^{\\prime}}(d_{i},x_{i}) and applies the generator’s transition T G ′ T_{G^{\\prime}} . By induction over these decisions, replay follows a path through the modified generator’s own transitions. Together with Q ′ = Q Q^{\\prime}=Q , this shows that G ′ G^{\\prime} can generate the target from F F under the witness assignment. As a limitation, a passing witness cannot show whether or how frequently Q Q occurs during random testing, as discussed in Section 6 .",
+   "zh": "生成要求是：重播必须成功使用所有分配的选择，并通过精确字符串相等性生成固定的目标 Q ′ = Q Q^{\\prime}=Q 。 此比较用于检查修改后的生成器是否能够生成该目标。 从 x 0 x_{0} 开始，每次重播的决策都会选择 c i ∈ D G ′ ​ ( d i , x i ) c_{i}\\in D_{G^{\\prime}}(d_{i},x_{i}) ，并应用生成器的转移 T G ′ T_{G^{\\prime}} 。 通过对这些决策进行归纳，重播将沿着修改后的生成器自身转移所构成的路径进行。 结合 Q ′ = Q Q^{\\prime}=Q ，这表明在见证分配下，G ′ G^{\\prime} 可以从 F F 生成该目标。 作为一个局限性，通过验证的见证无法表明 Q Q 在随机测试中是否出现或出现的频率，如第 6 节所述。",
+   "sents": [
+    {
+     "en": "The generation requirement is that replay uses all assigned choices successfully and generates the fixed target by exact string equality Q ′ = Q Q^{\\prime}=Q .",
+     "zh": "生成要求是：重播必须成功使用所有分配的选择，并通过精确字符串相等性生成固定的目标 Q ′ = Q Q^{\\prime}=Q 。"
+    },
+    {
+     "en": "This comparison checks whether the modified generator can generate it.",
+     "zh": "此比较用于检查修改后的生成器是否能够生成该目标。"
+    },
+    {
+     "en": "Starting from x 0 x_{0} , each replayed decision selects c i ∈ D G ′ ​ ( d i , x i ) c_{i}\\in D_{G^{\\prime}}(d_{i},x_{i}) and applies the generator’s transition T G ′ T_{G^{\\prime}} .",
+     "zh": "从 x 0 x_{0} 开始，每次重播的决策都会选择 c i ∈ D G ′ ​ ( d i , x i ) c_{i}\\in D_{G^{\\prime}}(d_{i},x_{i}) ，并应用生成器的转移 T G ′ T_{G^{\\prime}} 。"
+    },
+    {
+     "en": "By induction over these decisions, replay follows a path through the modified generator’s own transitions.",
+     "zh": "通过对这些决策进行归纳，重播将沿着修改后的生成器自身转移所构成的路径进行。"
+    },
+    {
+     "en": "Together with Q ′ = Q Q^{\\prime}=Q , this shows that G ′ G^{\\prime} can generate the target from F F under the witness assignment.",
+     "zh": "结合 Q ′ = Q Q^{\\prime}=Q ，这表明在见证分配下，G ′ G^{\\prime} 可以从 F F 生成该目标。"
+    },
+    {
+     "en": "As a limitation, a passing witness cannot show whether or how frequently Q Q occurs during random testing, as discussed in Section 6 .",
+     "zh": "作为一个局限性，通过验证的见证无法表明 Q Q 在随机测试中是否出现或出现的频率，如第 6 节所述。"
+    }
+   ]
+  },
+  {
+   "en": "We maintain a regression test suite 𝒲 \\mathcal{W} of accepted generation witnesses to preserve previously witnessed behavior. For each accepted witness W = ( F , A ) W=(F,A) , we record all choices from its successful execution in A A and add W W to 𝒲 \\mathcal{W} , together with the expected SQL. Before accepting a later generator modification G ′ G^{\\prime} , the validator replays every W ∈ 𝒲 W\\in\\mathcal{W} through G ′ G^{\\prime} using its setup and recorded choices. The modification is accepted only if every witness in the suite passes. The agent may update A A when the decision sites change, while the setup and the expected SQL remain fixed. If source edits within the same file shift site locations, the agent updates those locations automatically. Otherwise, ambiguous changes require the agent to inspect the affected code and revise the witness.",
+   "zh": "我们维护一个回归测试套件 𝒲 \\mathcal{W}，其中包含已接受的生成见证，以保留先前已见证的行为。 对于每个已接受的见证 W = ( F , A ) W=(F,A) ，我们会记录其成功执行中来自 A A 的所有选择，并将 W W 连同预期的 SQL 一起添加到 𝒲 \\mathcal{W} 中。 在接受后续生成器修改 G ′ G^{\\prime} 之前，验证器会利用其设置和已记录的选择，通过 G ′ G^{\\prime} 重新运行每个 W ∈ 𝒲 W\\in\\mathcal{W}。 只有当套件中的每个见证都通过测试时，该修改才会被接受。 当决策位置发生变化时，智能体可以更新 A A，而设置和预期的 SQL 保持不变。 如果同一文件内的源编辑改变了位置，智能体会自动更新这些位置。 否则，对于存在歧义的变化，智能体需要检查受影响的代码并修订见证。",
+   "sents": [
+    {
+     "en": "We maintain a regression test suite 𝒲 \\mathcal{W} of accepted generation witnesses to preserve previously witnessed behavior.",
+     "zh": "我们维护一个回归测试套件 𝒲 \\mathcal{W}，其中包含已接受的生成见证，以保留先前已见证的行为。"
+    },
+    {
+     "en": "For each accepted witness W = ( F , A ) W=(F,A) , we record all choices from its successful execution in A A and add W W to 𝒲 \\mathcal{W} , together with the expected SQL.",
+     "zh": "对于每个已接受的见证 W = ( F , A ) W=(F,A) ，我们会记录其成功执行中来自 A A 的所有选择，并将 W W 连同预期的 SQL 一起添加到 𝒲 \\mathcal{W} 中。"
+    },
+    {
+     "en": "Before accepting a later generator modification G ′ G^{\\prime} , the validator replays every W ∈ 𝒲 W\\in\\mathcal{W} through G ′ G^{\\prime} using its setup and recorded choices.",
+     "zh": "在接受后续生成器修改 G ′ G^{\\prime} 之前，验证器会利用其设置和已记录的选择，通过 G ′ G^{\\prime} 重新运行每个 W ∈ 𝒲 W\\in\\mathcal{W}。"
+    },
+    {
+     "en": "The modification is accepted only if every witness in the suite passes.",
+     "zh": "只有当套件中的每个见证都通过测试时，该修改才会被接受。"
+    },
+    {
+     "en": "The agent may update A A when the decision sites change, while the setup and the expected SQL remain fixed.",
+     "zh": "当决策位置发生变化时，智能体可以更新 A A，而设置和预期的 SQL 保持不变。"
+    },
+    {
+     "en": "If source edits within the same file shift site locations, the agent updates those locations automatically.",
+     "zh": "如果同一文件内的源编辑改变了位置，智能体会自动更新这些位置。"
+    },
+    {
+     "en": "Otherwise, ambiguous changes require the agent to inspect the affected code and revise the witness.",
+     "zh": "否则，对于存在歧义的变化，智能体需要检查受影响的代码并修订见证。"
+    }
+   ]
+  },
+  {
+   "en": "Replay failures provide feedback to the coding agent for modifying the generator and its witness assignments. Witness validation can fail in three ways. First, an assigned value can be unavailable: A ⁡ ( d i ) ∉ D G ′ ​ ( d i , x i ) A(d_{i})\\notin D_{G^{\\prime}}(d_{i},x_{i}) at a visited decision. Second, the assignments can fail to match the visited decision sites: an assigned site is never reached, or a visited site has no assignment during strict historical replay. Third, the generated statement can differ from the target statement ( Q ′ ≠ Q Q^{\\prime}\\neq Q ), or historical replay can fail to reproduce the recorded SQL. The agent uses these failures from both new and historical witnesses to modify the generator and its assignments, then repeats validation until all required checks pass or the evolution budget is exhausted.",
+   "zh": "重播失败为编码智能体提供反馈，以便修改生成器及其见证分配。 见证验证可能以三种方式失败。 首先，分配的某个值可能不可用：在已访问的决策点处，A⁡(dᵢ)∉D₍G′₎(dᵢ,xᵢ)。 其次，分配可能无法匹配已访问的决策位置：某个分配的位置从未被访问到，或者在严格的历史重播过程中，某个已访问的位置没有对应的分配。 第三，生成的语句可能与目标语句不同（Q′≠Q），或者历史重播可能无法重现记录下来的 SQL。 智能体利用来自新见证和历史见证的这些失败信息来修改生成器及其分配，然后重复验证，直到所有必要检查通过或演化预算耗尽。",
+   "sents": [
+    {
+     "en": "Replay failures provide feedback to the coding agent for modifying the generator and its witness assignments.",
+     "zh": "重播失败为编码智能体提供反馈，以便修改生成器及其见证分配。"
+    },
+    {
+     "en": "Witness validation can fail in three ways.",
+     "zh": "见证验证可能以三种方式失败。"
+    },
+    {
+     "en": "First, an assigned value can be unavailable: A ⁡ ( d i ) ∉ D G ′ ​ ( d i , x i ) A(d_{i})\\notin D_{G^{\\prime}}(d_{i},x_{i}) at a visited decision.",
+     "zh": "首先，分配的某个值可能不可用：在已访问的决策点处，A⁡(dᵢ)∉D₍G′₎(dᵢ,xᵢ)。"
+    },
+    {
+     "en": "Second, the assignments can fail to match the visited decision sites: an assigned site is never reached, or a visited site has no assignment during strict historical replay.",
+     "zh": "其次，分配可能无法匹配已访问的决策位置：某个分配的位置从未被访问到，或者在严格的历史重播过程中，某个已访问的位置没有对应的分配。"
+    },
+    {
+     "en": "Third, the generated statement can differ from the target statement ( Q ′ ≠ Q Q^{\\prime}\\neq Q ), or historical replay can fail to reproduce the recorded SQL.",
+     "zh": "第三，生成的语句可能与目标语句不同（Q′≠Q），或者历史重播可能无法重现记录下来的 SQL。"
+    },
+    {
+     "en": "The agent uses these failures from both new and historical witnesses to modify the generator and its assignments, then repeats validation until all required checks pass or the evolution budget is exhausted.",
+     "zh": "智能体利用来自新见证和历史见证的这些失败信息来修改生成器及其分配，然后重复验证，直到所有必要检查通过或演化预算耗尽。"
+    }
+   ]
+  },
+  {
+   "en": "We implement Gungnir on SQLancer++ as a multi-agent system with a control loop. While, in principle, a human could provide the target statements, we aimed to fully automate the process.",
+   "zh": "我们将 Gungnir 作为带控制循环的多智能体系统部署在 SQLancer++ 上。 虽然从原则上讲，人类可以提供目标语句，但我们的目标是完全自动化这一过程。",
+   "sents": [
+    {
+     "en": "We implement Gungnir on SQLancer++ as a multi-agent system with a control loop.",
+     "zh": "我们将 Gungnir 作为带控制循环的多智能体系统部署在 SQLancer++ 上。"
+    },
+    {
+     "en": "While, in principle, a human could provide the target statements, we aimed to fully automate the process.",
+     "zh": "虽然从原则上讲，人类可以提供目标语句，但我们的目标是完全自动化这一过程。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 2 shows how Gungnir coordinates the analyst and coding agents with the evolved testing tool. The analyst agent specifies capability goals containing target queries, and the coding agent modifies the generator and constructs generation witnesses to complete the goals. This separation is motivated by studies of LLM-based testing showing that tests generated from incorrect code can repeat the implementation’s incorrect assumptions ( Konstantinou et al., 2026 ; Zhao et al., 2026 ) . This separation also allows the agents to work in parallel. For example, while the analyst examines the target DBMS’s source code, the coding agent can extend the generator using previously prepared goals. The validator independently replays these witnesses against target queries and returns failures as feedback to the coding agent. The orchestrator determines goal completion from the validation results and directs further testing with the accepted generator. Testing results guide subsequent analysis, forming a feedback loop.",
+   "zh": "图2展示了Gungnir如何协调分析师智能体、编码智能体与演化测试工具之间的协作。 分析师智能体指定包含目标查询的能力目标，而编码智能体则修改生成器并构建生成见证以完成这些目标。 这种分离的动机源于对基于LLM的测试的研究，研究表明，由错误代码生成的测试可能会重复实现中的错误假设（Konstantinou等，2026；Zhao等，2026）。 这种分离也允许各智能体并行工作。 例如，在分析师检查目标DBMS源代码的同时，编码智能体可以利用预先准备好的目标来扩展生成器。 验证器独立地针对目标查询重演这些见证，并将失败结果作为反馈返回给编码智能体。 协调器根据验证结果判断目标是否完成，并指导使用已通过的生成器进行后续测试。 测试结果引导后续分析，从而形成一个反馈循环。",
+   "sents": [
+    {
+     "en": "Figure 2 shows how Gungnir coordinates the analyst and coding agents with the evolved testing tool.",
+     "zh": "图2展示了Gungnir如何协调分析师智能体、编码智能体与演化测试工具之间的协作。"
+    },
+    {
+     "en": "The analyst agent specifies capability goals containing target queries, and the coding agent modifies the generator and constructs generation witnesses to complete the goals.",
+     "zh": "分析师智能体指定包含目标查询的能力目标，而编码智能体则修改生成器并构建生成见证以完成这些目标。"
+    },
+    {
+     "en": "This separation is motivated by studies of LLM-based testing showing that tests generated from incorrect code can repeat the implementation’s incorrect assumptions ( Konstantinou et al., 2026 ; Zhao et al., 2026 ) .",
+     "zh": "这种分离的动机源于对基于LLM的测试的研究，研究表明，由错误代码生成的测试可能会重复实现中的错误假设（Konstantinou等，2026；Zhao等，2026）。"
+    },
+    {
+     "en": "This separation also allows the agents to work in parallel.",
+     "zh": "这种分离也允许各智能体并行工作。"
+    },
+    {
+     "en": "For example, while the analyst examines the target DBMS’s source code, the coding agent can extend the generator using previously prepared goals.",
+     "zh": "例如，在分析师检查目标DBMS源代码的同时，编码智能体可以利用预先准备好的目标来扩展生成器。"
+    },
+    {
+     "en": "The validator independently replays these witnesses against target queries and returns failures as feedback to the coding agent.",
+     "zh": "验证器独立地针对目标查询重演这些见证，并将失败结果作为反馈返回给编码智能体。"
+    },
+    {
+     "en": "The orchestrator determines goal completion from the validation results and directs further testing with the accepted generator.",
+     "zh": "协调器根据验证结果判断目标是否完成，并指导使用已通过的生成器进行后续测试。"
+    },
+    {
+     "en": "Testing results guide subsequent analysis, forming a feedback loop.",
+     "zh": "测试结果引导后续分析，从而形成一个反馈循环。"
+    }
+   ]
+  },
+  {
+   "en": "The analyst agent examines DBMS source code, regression tests, bug reports, or prior testing results and specifies capability goals from these sources. These goals guide the coding agent toward SQL features that the generator should support.",
+   "zh": "分析智能体审查 DBMS 源代码、回归测试、错误报告或过往测试结果，并基于这些来源确定能力目标。 这些目标引导编码智能体关注生成器应支持的 SQL 功能。",
+   "sents": [
+    {
+     "en": "The analyst agent examines DBMS source code, regression tests, bug reports, or prior testing results and specifies capability goals from these sources.",
+     "zh": "分析智能体审查 DBMS 源代码、回归测试、错误报告或过往测试结果，并基于这些来源确定能力目标。"
+    },
+    {
+     "en": "These goals guide the coding agent toward SQL features that the generator should support.",
+     "zh": "这些目标引导编码智能体关注生成器应支持的 SQL 功能。"
+    }
+   ]
+  },
+  {
+   "en": "A capability goal describes a SQL feature to be added using different variants of concrete target statements containing that feature. Specifically, each goal contains a database setup ( e.g. , statements to create the tables) and distinct variants of target queries that witness replay should match. For the row value IN feature, variants can vary the aggregate from MIN to MAX and change the columns in the row value. These target statements should satisfy the constraints of the generator under evolution. For example, nondeterministic features integrated into a TLP predicate may lead to false alarms; thus, the analyst should avoid incorporating such features. We discuss this in more detail in Section 6 .",
+   "zh": "能力目标描述了通过包含该功能的具体目标语句的不同变体来添加的 SQL 功能。 具体来说，每个目标都包含一个数据库设置（例如，创建表的语句）以及不同的目标查询变体，这些变体应能验证重播是否匹配。 对于行值 IN 功能，变体可以将聚合函数从 MIN 更改为 MAX，并修改行值中的列。 这些目标语句应满足生成器在演化过程中的约束条件。 例如，集成到 TLP 谓词中的非确定性特征可能导致误报；因此，分析人员应避免引入此类特征。 我们将在第 6 节中更详细地讨论这一点。",
+   "sents": [
+    {
+     "en": "A capability goal describes a SQL feature to be added using different variants of concrete target statements containing that feature.",
+     "zh": "能力目标描述了通过包含该功能的具体目标语句的不同变体来添加的 SQL 功能。"
+    },
+    {
+     "en": "Specifically, each goal contains a database setup ( e.g. , statements to create the tables) and distinct variants of target queries that witness replay should match.",
+     "zh": "具体来说，每个目标都包含一个数据库设置（例如，创建表的语句）以及不同的目标查询变体，这些变体应能验证重播是否匹配。"
+    },
+    {
+     "en": "For the row value IN feature, variants can vary the aggregate from MIN to MAX and change the columns in the row value.",
+     "zh": "对于行值 IN 功能，变体可以将聚合函数从 MIN 更改为 MAX，并修改行值中的列。"
+    },
+    {
+     "en": "These target statements should satisfy the constraints of the generator under evolution.",
+     "zh": "这些目标语句应满足生成器在演化过程中的约束条件。"
+    },
+    {
+     "en": "For example, nondeterministic features integrated into a TLP predicate may lead to false alarms; thus, the analyst should avoid incorporating such features.",
+     "zh": "例如，集成到 TLP 谓词中的非确定性特征可能导致误报；因此，分析人员应避免引入此类特征。"
+    },
+    {
+     "en": "We discuss this in more detail in Section 6 .",
+     "zh": "我们将在第 6 节中更详细地讨论这一点。"
+    }
+   ]
+  },
+  {
+   "en": "The constraints guide target synthesis before the coding agent modifies the generator. We provide the analyst agent with a natural language description of the supported target forms and the existing test oracle’s requirements. Listing 4 pairs a simplified TLP oracle with the corresponding instructions. First, a target should fit the oracle’s supported query form. For the WHERE variant of TLP, the analyst supplies a base query and a Boolean predicate from which the oracle constructs the partitions; an arbitrary SQL statement need not fit this form. New features can appear in the predicate or the shared FROM / JOIN structure. Second, the target should execute successfully on the selected DBMS with the supplied schema and data, so that the coding agent receives a valid example of the requested feature. Third, the analyst should avoid features that can invalidate the target oracle. This is a best-effort constraint—before adopting a target as a goal, the system independently executes its test case and checks that the base result equals the combined partition results.",
+   "zh": "在编码智能体修改生成器之前，这些约束条件会指导目标的合成。 我们为分析智能体提供对支持的目标形式的自然语言描述，以及现有测试预言机的要求。 列表 4 将简化的 TLP 预言机与相应的指令进行配对。 首先，目标必须符合预言机所支持的查询形式。 对于 TLP 的 WHERE 变体，分析人员会提供一个基础查询和一个布尔谓词，预言机据此构建分区；任意 SQL 语句都不一定符合这种形式。 新特性可能出现在谓词或共享的 FROM / JOIN 结构中。 其次，目标必须能够在选定的 DBMS 上，使用提供的模式和数据进行成功执行，以便编码智能体能获得所请求特性的有效示例。 第三，分析人员应避免那些可能导致目标预言机失效的特性。 这是一项尽力而为的约束——在将某个目标采纳为最终目标之前，系统会独立执行其测试用例，并验证基础结果是否等于合并后的分区结果。",
+   "sents": [
+    {
+     "en": "The constraints guide target synthesis before the coding agent modifies the generator.",
+     "zh": "在编码智能体修改生成器之前，这些约束条件会指导目标的合成。"
+    },
+    {
+     "en": "We provide the analyst agent with a natural language description of the supported target forms and the existing test oracle’s requirements.",
+     "zh": "我们为分析智能体提供对支持的目标形式的自然语言描述，以及现有测试预言机的要求。"
+    },
+    {
+     "en": "Listing 4 pairs a simplified TLP oracle with the corresponding instructions.",
+     "zh": "列表 4 将简化的 TLP 预言机与相应的指令进行配对。"
+    },
+    {
+     "en": "First, a target should fit the oracle’s supported query form.",
+     "zh": "首先，目标必须符合预言机所支持的查询形式。"
+    },
+    {
+     "en": "For the WHERE variant of TLP, the analyst supplies a base query and a Boolean predicate from which the oracle constructs the partitions; an arbitrary SQL statement need not fit this form.",
+     "zh": "对于 TLP 的 WHERE 变体，分析人员会提供一个基础查询和一个布尔谓词，预言机据此构建分区；任意 SQL 语句都不一定符合这种形式。"
+    },
+    {
+     "en": "New features can appear in the predicate or the shared FROM / JOIN structure.",
+     "zh": "新特性可能出现在谓词或共享的 FROM / JOIN 结构中。"
+    },
+    {
+     "en": "Second, the target should execute successfully on the selected DBMS with the supplied schema and data, so that the coding agent receives a valid example of the requested feature.",
+     "zh": "其次，目标必须能够在选定的 DBMS 上，使用提供的模式和数据进行成功执行，以便编码智能体能获得所请求特性的有效示例。"
+    },
+    {
+     "en": "Third, the analyst should avoid features that can invalidate the target oracle.",
+     "zh": "第三，分析人员应避免那些可能导致目标预言机失效的特性。"
+    },
+    {
+     "en": "This is a best-effort constraint—before adopting a target as a goal, the system independently executes its test case and checks that the base result equals the combined partition results.",
+     "zh": "这是一项尽力而为的约束——在将某个目标采纳为最终目标之前，系统会独立执行其测试用例，并验证基础结果是否等于合并后的分区结果。"
+    }
+   ]
+  },
+  {
+   "en": "↓ \\downarrow Constraints described to the analyst agent",
+   "zh": "↓ \\downarrow 向分析师智能体描述的约束条件",
+   "sents": null
+  },
+  {
+   "en": "Provide the schema and data; use the same base query.",
+   "zh": "提供模式和数据；使用相同的基准查询。",
+   "sents": null
+  },
+  {
+   "en": "Keep the predicate deterministic across executions.",
+   "zh": "确保谓词在执行过程中保持确定性。",
+   "sents": null
+  },
+  {
+   "en": "Check that the combined partitions equal the base result.",
+   "zh": "检查组合后的分区是否等于基础结果。",
+   "sents": null
+  },
+  {
+   "en": "The coding agent modifies SQLancer++ and constructs witnesses for the targets of one goal, as illustrated in Section 3 . Each modification attempt starts from the last accepted generator and runs in an isolated environment. The witness mechanism validates the modification by replaying the provided witnesses and checking them against the targets specified by the goal. Any mismatch or exception is used as feedback to help the coding agent modify the generator and witnesses. The current implementation runs replay through the existing oracle execution path and also requires a passing oracle outcome, in addition to the target comparison.",
+   "zh": "编码智能体修改 SQLancer++，并为一个目标的目标构建见证，如第 3 节所示。 每次修改尝试都从最后一个被接受的生成器开始，并在隔离环境中运行。 见证机制通过重播所提供的见证，并将其与目标指定的目标进行比较，从而验证修改。 任何不匹配或异常都会被用作反馈，帮助编码智能体修改生成器和见证。 当前实现通过现有的预言机执行路径进行重播，除了目标比较之外，还需要一个通过的预言机结果。",
+   "sents": [
+    {
+     "en": "The coding agent modifies SQLancer++ and constructs witnesses for the targets of one goal, as illustrated in Section 3 .",
+     "zh": "编码智能体修改 SQLancer++，并为一个目标的目标构建见证，如第 3 节所示。"
+    },
+    {
+     "en": "Each modification attempt starts from the last accepted generator and runs in an isolated environment.",
+     "zh": "每次修改尝试都从最后一个被接受的生成器开始，并在隔离环境中运行。"
+    },
+    {
+     "en": "The witness mechanism validates the modification by replaying the provided witnesses and checking them against the targets specified by the goal.",
+     "zh": "见证机制通过重播所提供的见证，并将其与目标指定的目标进行比较，从而验证修改。"
+    },
+    {
+     "en": "Any mismatch or exception is used as feedback to help the coding agent modify the generator and witnesses.",
+     "zh": "任何不匹配或异常都会被用作反馈，帮助编码智能体修改生成器和见证。"
+    },
+    {
+     "en": "The current implementation runs replay through the existing oracle execution path and also requires a passing oracle outcome, in addition to the target comparison.",
+     "zh": "当前实现通过现有的预言机执行路径进行重播，除了目标比较之外，还需要一个通过的预言机结果。"
+    }
+   ]
+  },
+  {
+   "en": "The controller pipelines analysis, coding, and testing. The analyst agent prepares further goals while the coding agent modifies the generator and a background fuzzer tests accepted generators.",
+   "zh": "控制器将分析、编码和测试流程整合在一起。 分析师智能体准备后续目标，同时编码智能体修改生成器，背景中的模糊测试工具则对通过验证的生成器进行测试。",
+   "sents": [
+    {
+     "en": "The controller pipelines analysis, coding, and testing.",
+     "zh": "控制器将分析、编码和测试流程整合在一起。"
+    },
+    {
+     "en": "The analyst agent prepares further goals while the coding agent modifies the generator and a background fuzzer tests accepted generators.",
+     "zh": "分析师智能体准备后续目标，同时编码智能体修改生成器，背景中的模糊测试工具则对通过验证的生成器进行测试。"
+    }
+   ]
+  },
+  {
+   "en": "Separating the analyst agent from the coding agent allows goal preparation to proceed alongside implementation. Witness replay checks the requested targets directly, allowing validation to proceed without waiting for a random testing segment to finish. After replay and regression checks pass, the orchestrator accepts the modified generator and queues it for testing. The fuzzer switches between queued generators at segment boundaries and runs without interaction with LLMs. A controller agent uses code coverage, execution statistics ( e.g. , query throughput), and completed goals to select the next goal and guide further analysis.",
+   "zh": "将分析智能体与编码智能体分离，使得目标准备可以与实现同步进行。 见证重播直接检查所请求的目标，从而无需等待随机测试段完成即可进行验证。 在重播和回归检查通过后，协调器接受修改后的生成器，并将其排队进行测试。 模糊测试器在分段边界处切换排队中的生成器，并且在不与 LLM 交互的情况下运行。 一个控制器智能体利用代码覆盖率、执行统计信息（例如查询吞吐量）以及已完成的目标来选择下一个目标并指导进一步的分析。",
+   "sents": [
+    {
+     "en": "Separating the analyst agent from the coding agent allows goal preparation to proceed alongside implementation.",
+     "zh": "将分析智能体与编码智能体分离，使得目标准备可以与实现同步进行。"
+    },
+    {
+     "en": "Witness replay checks the requested targets directly, allowing validation to proceed without waiting for a random testing segment to finish.",
+     "zh": "见证重播直接检查所请求的目标，从而无需等待随机测试段完成即可进行验证。"
+    },
+    {
+     "en": "After replay and regression checks pass, the orchestrator accepts the modified generator and queues it for testing.",
+     "zh": "在重播和回归检查通过后，协调器接受修改后的生成器，并将其排队进行测试。"
+    },
+    {
+     "en": "The fuzzer switches between queued generators at segment boundaries and runs without interaction with LLMs.",
+     "zh": "模糊测试器在分段边界处切换排队中的生成器，并且在不与 LLM 交互的情况下运行。"
+    },
+    {
+     "en": "A controller agent uses code coverage, execution statistics ( e.g. , query throughput), and completed goals to select the next goal and guide further analysis.",
+     "zh": "一个控制器智能体利用代码覆盖率、执行统计信息（例如查询吞吐量）以及已完成的目标来选择下一个目标并指导进一步的分析。"
+    }
+   ]
+  },
+  {
+   "en": "Frequent bug-inducing test cases can saturate testing without exposing further bugs, which is a common issue in automated testing ( Chen et al., 2013 ; Donaldson et al., 2021 ) . A single SQL feature may repeatedly trigger known bugs, consuming testing time that could otherwise explore other features. After each fuzzing segment, a triage agent analyzes the reported bugs and identifies whether changes to the generator are needed. Large numbers of bug-inducing test cases increase triage effort; a repair agent thus modifies the generator to avoid recurring triggers.",
+   "zh": "频繁引发错误的测试用例可能会使测试过程饱和，却无法暴露更多错误，这是自动化测试中的一个常见问题（Chen 等人，2013；Donaldson 等人，2021）。 单个 SQL 功能可能反复触发已知错误，消耗本可用于探索其他功能的测试时间。 每次模糊测试阶段结束后，一个分类智能体都会分析报告的错误，并判断是否需要修改生成器。 大量引发错误的测试用例会增加分类工作量；因此，修复智能体会修改生成器，以避免重复触发这些错误。",
+   "sents": [
+    {
+     "en": "Frequent bug-inducing test cases can saturate testing without exposing further bugs, which is a common issue in automated testing ( Chen et al., 2013 ; Donaldson et al., 2021 ) .",
+     "zh": "频繁引发错误的测试用例可能会使测试过程饱和，却无法暴露更多错误，这是自动化测试中的一个常见问题（Chen 等人，2013；Donaldson 等人，2021）。"
+    },
+    {
+     "en": "A single SQL feature may repeatedly trigger known bugs, consuming testing time that could otherwise explore other features.",
+     "zh": "单个 SQL 功能可能反复触发已知错误，消耗本可用于探索其他功能的测试时间。"
+    },
+    {
+     "en": "After each fuzzing segment, a triage agent analyzes the reported bugs and identifies whether changes to the generator are needed.",
+     "zh": "每次模糊测试阶段结束后，一个分类智能体都会分析报告的错误，并判断是否需要修改生成器。"
+    },
+    {
+     "en": "Large numbers of bug-inducing test cases increase triage effort; a repair agent thus modifies the generator to avoid recurring triggers.",
+     "zh": "大量引发错误的测试用例会增加分类工作量；因此，修复智能体会修改生成器，以避免重复触发这些错误。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 3 illustrates how repair fits into the pipeline. When bug-inducing test cases exceed a certain threshold ( e.g. , five for a testing segment), the orchestrator switches testing to a previously tested generator that did not show this behavior. The coding agent continues its current modification, but the completed result waits for repair before integration. Meanwhile, the repair agent modifies the generator that triggers the bugs, for example, by temporarily disabling the generation of certain SQL features that trigger known bugs. The orchestrator then mechanically merges the repair with the coding agent’s changes. Any conflicts are resolved by the coding agent. The combined generator is rebuilt and passes regression checks before entering another fuzzing segment. Testing continues with the earlier generator until the combined generator is ready; if no suitable earlier generator is available, it waits throughout repair. Section 5.4 examines how these activities overlap in a complete run.",
+   "zh": "图 3 说明了修复如何融入整个流程。 当引发错误的测试用例超过某个阈值（例如，对于某个测试阶段为五个）时，协调器会将测试切换到之前已测试过且未表现出此行为的生成器。 编码智能体继续其当前的修改，但完成后的结果在集成前会等待修复。 与此同时，修复智能体会修改引发错误的生成器，例如通过暂时禁用某些已知会引发错误的 SQL 功能的生成。 随后，协调器会自动将修复与编码智能体的更改合并。 任何冲突都由编码智能体解决。 合并后的生成器会被重新构建，并在进入下一个模糊测试阶段前通过回归检查。 在合并后的生成器准备就绪之前，测试将继续使用之前的生成器；如果没有可用的合适旧生成器，则在整个修复过程中都会等待。 第 5.4 节将研究这些活动在完整运行中如何相互重叠。",
+   "sents": [
+    {
+     "en": "Figure 3 illustrates how repair fits into the pipeline.",
+     "zh": "图 3 说明了修复如何融入整个流程。"
+    },
+    {
+     "en": "When bug-inducing test cases exceed a certain threshold ( e.g. , five for a testing segment), the orchestrator switches testing to a previously tested generator that did not show this behavior.",
+     "zh": "当引发错误的测试用例超过某个阈值（例如，对于某个测试阶段为五个）时，协调器会将测试切换到之前已测试过且未表现出此行为的生成器。"
+    },
+    {
+     "en": "The coding agent continues its current modification, but the completed result waits for repair before integration.",
+     "zh": "编码智能体继续其当前的修改，但完成后的结果在集成前会等待修复。"
+    },
+    {
+     "en": "Meanwhile, the repair agent modifies the generator that triggers the bugs, for example, by temporarily disabling the generation of certain SQL features that trigger known bugs.",
+     "zh": "与此同时，修复智能体会修改引发错误的生成器，例如通过暂时禁用某些已知会引发错误的 SQL 功能的生成。"
+    },
+    {
+     "en": "The orchestrator then mechanically merges the repair with the coding agent’s changes.",
+     "zh": "随后，协调器会自动将修复与编码智能体的更改合并。"
+    },
+    {
+     "en": "Any conflicts are resolved by the coding agent.",
+     "zh": "任何冲突都由编码智能体解决。"
+    },
+    {
+     "en": "The combined generator is rebuilt and passes regression checks before entering another fuzzing segment.",
+     "zh": "合并后的生成器会被重新构建，并在进入下一个模糊测试阶段前通过回归检查。"
+    },
+    {
+     "en": "Testing continues with the earlier generator until the combined generator is ready; if no suitable earlier generator is available, it waits throughout repair.",
+     "zh": "在合并后的生成器准备就绪之前，测试将继续使用之前的生成器；如果没有可用的合适旧生成器，则在整个修复过程中都会等待。"
+    },
+    {
+     "en": "Section 5.4 examines how these activities overlap in a complete run.",
+     "zh": "第 5.4 节将研究这些活动在完整运行中如何相互重叠。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluated Gungnir in terms of bug-finding effectiveness, feature acquisition, performance compared with baselines, and practicality. First, we evaluate the bug-finding effectiveness of Gungnir on three popular DBMSs. Second, we measure whether witness replay helps coding agents acquire and preserve requested features. Third, we compare the evolved generator with state-of-the-art DBMS testing tools. Finally, we study how Gungnir evolves SQLancer++ and tests DBMSs from a bug-finding request.",
+   "zh": "我们从缺陷发现效果、功能获取、与基线方法的性能对比以及实用性等方面对 Gungnir 进行了评估。 首先，我们在三种流行的 DBMS 上评估了 Gungnir 的缺陷发现效果。 其次，我们衡量了见证重放是否有助于编码智能体获取并保留所需功能。 第三，我们将演化生成的生成器与当前最先进的 DBMS 测试工具进行了比较。 最后，我们研究了 Gungnir 如何从缺陷发现请求出发演化 SQLancer++ 并对 DBMS 进行测试。",
+   "sents": [
+    {
+     "en": "We evaluated Gungnir in terms of bug-finding effectiveness, feature acquisition, performance compared with baselines, and practicality.",
+     "zh": "我们从缺陷发现效果、功能获取、与基线方法的性能对比以及实用性等方面对 Gungnir 进行了评估。"
+    },
+    {
+     "en": "First, we evaluate the bug-finding effectiveness of Gungnir on three popular DBMSs.",
+     "zh": "首先，我们在三种流行的 DBMS 上评估了 Gungnir 的缺陷发现效果。"
+    },
+    {
+     "en": "Second, we measure whether witness replay helps coding agents acquire and preserve requested features.",
+     "zh": "其次，我们衡量了见证重放是否有助于编码智能体获取并保留所需功能。"
+    },
+    {
+     "en": "Third, we compare the evolved generator with state-of-the-art DBMS testing tools.",
+     "zh": "第三，我们将演化生成的生成器与当前最先进的 DBMS 测试工具进行了比较。"
+    },
+    {
+     "en": "Finally, we study how Gungnir evolves SQLancer++ and tests DBMSs from a bug-finding request.",
+     "zh": "最后，我们研究了 Gungnir 如何从缺陷发现请求出发演化 SQLancer++ 并对 DBMS 进行测试。"
+    }
+   ]
+  },
+  {
+   "en": "We compare Gungnir with ShQveL, SQLancer, and the initial SQLancer++ generator. We also include the DBMSs’ native regression tests as a reference. ShQveL is the closest baseline because it also uses LLMs to extend test case generation, but learns SQL fragments rather than modifying generator code ( Zhong and Rigger, 2026a ) . SQLancer provides manually implemented generators and a platform for test oracles such as TLP, DQP, and CODDTest ( Rigger and Su, 2020b ; Ba and Rigger, 2024 ; Zhang and Rigger, 2025 ) . SQLancer++ provides a general generator across SQL dialects and underlies ShQveL and JIR ( Zhong and Rigger, 2026b ; Zhong and Rigger, 2026a ; Xiang et al., 2026 ) and serves as the initial generator. Test suites can supply seeds for mutation-based tools and already exceed SQL generators in coverage ( Zhong and Rigger, 2026b ; Zhong and Rigger, 2026a ) .",
+   "zh": "我们将 Gungnir 与 ShQveL、SQLancer 以及初始的 SQLancer++ 生成器进行比较。 我们还纳入了各 DBMS 的原生回归测试作为参考。 ShQveL 是最接近的基线模型，因为它也使用 LLM 来扩展测试用例生成，但学习的是 SQL 片段，而非修改生成器代码（Zhong and Rigger, 2026a）。 SQLancer 提供了手动实现的生成器以及用于 TLP、DQP 和 CODDTest 等测试预言机的平台（Rigger and Su, 2020b；Ba and Rigger, 2024；Zhang and Rigger, 2025）。 SQLancer++ 提供了一个跨 SQL 方言的通用生成器，并构成了 ShQveL 和 JIR 的基础（Zhong and Rigger, 2026b；Zhong and Rigger, 2026a；Xiang et al., 2026），同时作为初始生成器使用。 测试套件可以为基于变异的工具提供种子，且其覆盖范围已经超过了 SQL 生成器（Zhong and Rigger, 2026b；Zhong and Rigger, 2026a）。",
+   "sents": [
+    {
+     "en": "We compare Gungnir with ShQveL, SQLancer, and the initial SQLancer++ generator.",
+     "zh": "我们将 Gungnir 与 ShQveL、SQLancer 以及初始的 SQLancer++ 生成器进行比较。"
+    },
+    {
+     "en": "We also include the DBMSs’ native regression tests as a reference.",
+     "zh": "我们还纳入了各 DBMS 的原生回归测试作为参考。"
+    },
+    {
+     "en": "ShQveL is the closest baseline because it also uses LLMs to extend test case generation, but learns SQL fragments rather than modifying generator code ( Zhong and Rigger, 2026a ) .",
+     "zh": "ShQveL 是最接近的基线模型，因为它也使用 LLM 来扩展测试用例生成，但学习的是 SQL 片段，而非修改生成器代码（Zhong and Rigger, 2026a）。"
+    },
+    {
+     "en": "SQLancer provides manually implemented generators and a platform for test oracles such as TLP, DQP, and CODDTest ( Rigger and Su, 2020b ; Ba and Rigger, 2024 ; Zhang and Rigger, 2025 ) .",
+     "zh": "SQLancer 提供了手动实现的生成器以及用于 TLP、DQP 和 CODDTest 等测试预言机的平台（Rigger and Su, 2020b；Ba and Rigger, 2024；Zhang and Rigger, 2025）。"
+    },
+    {
+     "en": "SQLancer++ provides a general generator across SQL dialects and underlies ShQveL and JIR ( Zhong and Rigger, 2026b ; Zhong and Rigger, 2026a ; Xiang et al., 2026 ) and serves as the initial generator.",
+     "zh": "SQLancer++ 提供了一个跨 SQL 方言的通用生成器，并构成了 ShQveL 和 JIR 的基础（Zhong and Rigger, 2026b；Zhong and Rigger, 2026a；Xiang et al., 2026），同时作为初始生成器使用。"
+    },
+    {
+     "en": "Test suites can supply seeds for mutation-based tools and already exceed SQL generators in coverage ( Zhong and Rigger, 2026b ; Zhong and Rigger, 2026a ) .",
+     "zh": "测试套件可以为基于变异的工具提供种子，且其覆盖范围已经超过了 SQL 生成器（Zhong and Rigger, 2026b；Zhong and Rigger, 2026a）。"
+    }
+   ]
+  },
+  {
+   "en": "We conducted the experiments using a server with a 64-core AMD EPYC 7763 CPU at 2.45 GHz and 512 GB of memory running Ubuntu 22.04. For feature acquisition, each measurement used 4 generator threads, a CPU quota of 4 cores, and a 12 GiB memory limit for 600 seconds per seed. For baseline comparison, each tool received 24 hours, a CPU quota of 4 cores, and 24 GiB of memory during DBMS testing. Each generator used 1 thread; coverage replay for SQLite and DuckDB used 2 workers within the same allocation. The practicality case study used 6–8 fuzzer threads and a 24-hour budget for admitting new work.",
+   "zh": "我们使用一台配备 64 核 AMD EPYC 7763 CPU（主频 2.45 GHz）和 512 GB 内存、运行 Ubuntu 22.04 的服务器进行了实验。 在特征获取阶段，每次测量使用了 4 个生成器线程、4 核的 CPU 配额，以及每个种子 600 秒内 12 GiB 的内存限制。 在基线对比中，每个工具在 DBMS 测试期间获得了 24 小时的时间、4 核的 CPU 配额和 24 GiB 的内存。 每个生成器使用了 1 个线程；SQLite 和 DuckDB 的覆盖重播在同一分配范围内使用了 2 个工作者。 实际可行性案例研究使用了 6–8 个模糊测试线程，并为接纳新任务分配了 24 小时的时间预算。",
+   "sents": [
+    {
+     "en": "We conducted the experiments using a server with a 64-core AMD EPYC 7763 CPU at 2.45 GHz and 512 GB of memory running Ubuntu 22.04.",
+     "zh": "我们使用一台配备 64 核 AMD EPYC 7763 CPU（主频 2.45 GHz）和 512 GB 内存、运行 Ubuntu 22.04 的服务器进行了实验。"
+    },
+    {
+     "en": "For feature acquisition, each measurement used 4 generator threads, a CPU quota of 4 cores, and a 12 GiB memory limit for 600 seconds per seed.",
+     "zh": "在特征获取阶段，每次测量使用了 4 个生成器线程、4 核的 CPU 配额，以及每个种子 600 秒内 12 GiB 的内存限制。"
+    },
+    {
+     "en": "For baseline comparison, each tool received 24 hours, a CPU quota of 4 cores, and 24 GiB of memory during DBMS testing.",
+     "zh": "在基线对比中，每个工具在 DBMS 测试期间获得了 24 小时的时间、4 核的 CPU 配额和 24 GiB 的内存。"
+    },
+    {
+     "en": "Each generator used 1 thread; coverage replay for SQLite and DuckDB used 2 workers within the same allocation.",
+     "zh": "每个生成器使用了 1 个线程；SQLite 和 DuckDB 的覆盖重播在同一分配范围内使用了 2 个工作者。"
+    },
+    {
+     "en": "The practicality case study used 6–8 fuzzer threads and a 24-hour budget for admitting new work.",
+     "zh": "实际可行性案例研究使用了 6–8 个模糊测试线程，并为接纳新任务分配了 24 小时的时间预算。"
+    }
+   ]
+  },
+  {
+   "en": "We select three open-source DBMSs with different workload focuses. SQLite and PostgreSQL primarily target transactional workloads, while DuckDB primarily targets analytical workloads. SQLite and DuckDB run as embedded systems, whereas PostgreSQL runs as a server. We use SQLite, DuckDB, and PostgreSQL for bug finding and baseline comparison. For the coverage comparison, we selected SQLite 3.53.4, DuckDB 1.5.5, and PostgreSQL 18.6. SQLite and PostgreSQL are among the most challenging targets for finding logic bugs. SQLite’s TH3 test suite achieves 100% branch coverage of its core library. 1 1 1 https://www.sqlite.org/testing.html#test_coverage TLP implemented in SQLancer found no logic bugs in PostgreSQL ( Rigger and Su, 2020b ) . Among the DBMS testing papers on logic bug detection published within the last five years at SIGMOD and VLDB, only four report confirmed logic bugs in SQLite ( Zhang and Rigger, 2025 ; Zhang et al., 2026b ; Song et al., 2024 ; Xiang et al., 2026 ) and four in PostgreSQL ( Deng et al., 2025 ; Lai et al., 2025 ; Mang et al., 2026b ; Zhang et al., 2026b ) . We excluded MySQL because earlier testing campaigns reported that many known bugs remained unfixed ( Zhong et al., 2026 ) , making it difficult to assess the contribution of new testing methods. We use DuckDB as a case study to evaluate the practicality of Gungnir .",
+   "zh": "我们选择了三种工作负载侧重点不同的开源数据库管理系统（DBMS）。 SQLite 和 PostgreSQL 主要面向事务性工作负载，而 DuckDB 则主要面向分析性工作负载。 SQLite 和 DuckDB 以嵌入式系统形式运行，而 PostgreSQL 则以服务器形式运行。 我们使用 SQLite、DuckDB 和 PostgreSQL 进行缺陷查找和基准比较。 在覆盖度比较中，我们选择了 SQLite 3.53.4、DuckDB 1.5.5 和 PostgreSQL 18.6。 SQLite 和 PostgreSQL 是发现逻辑缺陷最具挑战性的目标之一。 SQLite 的 TH3 测试套件实现了其核心库 100% 的分支覆盖。1 1 1 https://www.sqlite.org/testing.html#test_coverage TLP 在 SQLancer 中实现的测试未能在 PostgreSQL 中发现任何逻辑缺陷（Rigger 和 Su，2020b）。 在过去五年内发表于 SIGMOD 和 VLDB 的关于逻辑缺陷检测的 DBMS 测试论文中，仅有四篇报告了在 SQLite 中发现的已确认的逻辑缺陷（Zhang 和 Rigger，2025；Zhang 等，2026b；Song 等，2024；Xiang 等，2026），以及四篇报告了在 PostgreSQL 中发现的逻辑缺陷（Deng 等，2025；Lai 等，2025；Mang 等，2026b；Zhang 等，2026b）。 我们排除了 MySQL，因为早期的测试项目报告称许多已知缺陷仍未修复（Zhong 等，2026），这使得评估新测试方法的贡献变得困难。 我们将 DuckDB 用作案例研究，以评估 Gungnir 的实用性。",
+   "sents": [
+    {
+     "en": "We select three open-source DBMSs with different workload focuses.",
+     "zh": "我们选择了三种工作负载侧重点不同的开源数据库管理系统（DBMS）。"
+    },
+    {
+     "en": "SQLite and PostgreSQL primarily target transactional workloads, while DuckDB primarily targets analytical workloads.",
+     "zh": "SQLite 和 PostgreSQL 主要面向事务性工作负载，而 DuckDB 则主要面向分析性工作负载。"
+    },
+    {
+     "en": "SQLite and DuckDB run as embedded systems, whereas PostgreSQL runs as a server.",
+     "zh": "SQLite 和 DuckDB 以嵌入式系统形式运行，而 PostgreSQL 则以服务器形式运行。"
+    },
+    {
+     "en": "We use SQLite, DuckDB, and PostgreSQL for bug finding and baseline comparison.",
+     "zh": "我们使用 SQLite、DuckDB 和 PostgreSQL 进行缺陷查找和基准比较。"
+    },
+    {
+     "en": "For the coverage comparison, we selected SQLite 3.53.4, DuckDB 1.5.5, and PostgreSQL 18.6.",
+     "zh": "在覆盖度比较中，我们选择了 SQLite 3.53.4、DuckDB 1.5.5 和 PostgreSQL 18.6。"
+    },
+    {
+     "en": "SQLite and PostgreSQL are among the most challenging targets for finding logic bugs.",
+     "zh": "SQLite 和 PostgreSQL 是发现逻辑缺陷最具挑战性的目标之一。"
+    },
+    {
+     "en": "SQLite’s TH3 test suite achieves 100% branch coverage of its core library. 1 1 1 https://www.sqlite.org/testing.html#test_coverage TLP implemented in SQLancer found no logic bugs in PostgreSQL ( Rigger and Su, 2020b ) .",
+     "zh": "SQLite 的 TH3 测试套件实现了其核心库 100% 的分支覆盖。1 1 1 https://www.sqlite.org/testing.html#test_coverage TLP 在 SQLancer 中实现的测试未能在 PostgreSQL 中发现任何逻辑缺陷（Rigger 和 Su，2020b）。"
+    },
+    {
+     "en": "Among the DBMS testing papers on logic bug detection published within the last five years at SIGMOD and VLDB, only four report confirmed logic bugs in SQLite ( Zhang and Rigger, 2025 ; Zhang et al., 2026b ; Song et al., 2024 ; Xiang et al., 2026 ) and four in PostgreSQL ( Deng et al., 2025 ; Lai et al., 2025 ; Mang et al., 2026b ; Zhang et al., 2026b ) .",
+     "zh": "在过去五年内发表于 SIGMOD 和 VLDB 的关于逻辑缺陷检测的 DBMS 测试论文中，仅有四篇报告了在 SQLite 中发现的已确认的逻辑缺陷（Zhang 和 Rigger，2025；Zhang 等，2026b；Song 等，2024；Xiang 等，2026），以及四篇报告了在 PostgreSQL 中发现的逻辑缺陷（Deng 等，2025；Lai 等，2025；Mang 等，2026b；Zhang 等，2026b）。"
+    },
+    {
+     "en": "We excluded MySQL because earlier testing campaigns reported that many known bugs remained unfixed ( Zhong et al., 2026 ) , making it difficult to assess the contribution of new testing methods.",
+     "zh": "我们排除了 MySQL，因为早期的测试项目报告称许多已知缺陷仍未修复（Zhong 等，2026），这使得评估新测试方法的贡献变得困难。"
+    },
+    {
+     "en": "We use DuckDB as a case study to evaluate the practicality of Gungnir .",
+     "zh": "我们将 DuckDB 用作案例研究，以评估 Gungnir 的实用性。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluated Gungnir in an unstructured testing campaign on SQLite, DuckDB, and PostgreSQL, following the practice of prior DBMS testing work ( Rigger and Su, 2020b ; Zhong and Rigger, 2026b ) . We used TLP to detect incorrect query results and monitored failures such as crashes and internal errors. The system reduced and prioritized the bug-inducing test cases, which we further examined before reporting them to developers. We checked earlier issue reports and fixes for duplicates and excluded reports that developers classified as intended behavior from the bug count. The results include bugs found after generator modifications, through configuration changes, and through direct analysis of DBMS source code by an agent.",
+   "zh": "我们遵循以往数据库管理系统测试工作的实践（Rigger 和 Su，2020b；Zhong 和 Rigger，2026b），在 SQLite、DuckDB 和 PostgreSQL 上开展了一项非结构化测试活动，以评估 Gungnir。 我们使用 TLP 检测错误的查询结果，并监控崩溃和内部错误等故障。 该系统减少并优先处理了引发错误的测试用例，我们在向开发人员报告前进一步检查了这些用例。 我们查阅了早期的问题报告和修复内容以排除重复项，并将开发人员归类为预期行为的问题报告从错误数量中排除。 结果包括在生成器修改后、通过配置更改以及由智能体直接分析数据库管理系统源代码所发现的错误。",
+   "sents": [
+    {
+     "en": "We evaluated Gungnir in an unstructured testing campaign on SQLite, DuckDB, and PostgreSQL, following the practice of prior DBMS testing work ( Rigger and Su, 2020b ; Zhong and Rigger, 2026b ) .",
+     "zh": "我们遵循以往数据库管理系统测试工作的实践（Rigger 和 Su，2020b；Zhong 和 Rigger，2026b），在 SQLite、DuckDB 和 PostgreSQL 上开展了一项非结构化测试活动，以评估 Gungnir。"
+    },
+    {
+     "en": "We used TLP to detect incorrect query results and monitored failures such as crashes and internal errors.",
+     "zh": "我们使用 TLP 检测错误的查询结果，并监控崩溃和内部错误等故障。"
+    },
+    {
+     "en": "The system reduced and prioritized the bug-inducing test cases, which we further examined before reporting them to developers.",
+     "zh": "该系统减少并优先处理了引发错误的测试用例，我们在向开发人员报告前进一步检查了这些用例。"
+    },
+    {
+     "en": "We checked earlier issue reports and fixes for duplicates and excluded reports that developers classified as intended behavior from the bug count.",
+     "zh": "我们查阅了早期的问题报告和修复内容以排除重复项，并将开发人员归类为预期行为的问题报告从错误数量中排除。"
+    },
+    {
+     "en": "The results include bugs found after generator modifications, through configuration changes, and through direct analysis of DBMS source code by an agent.",
+     "zh": "结果包括在生成器修改后、通过配置更改以及由智能体直接分析数据库管理系统源代码所发现的错误。"
+    }
+   ]
+  },
+  {
+   "en": "Table 1 summarizes the bug statistics for each DBMS. In total, we submitted 45 reports, of which 44 describe bugs confirmed by developers and 1 describes intended behavior. Among the confirmed bugs, 34 have been fixed. 32 bugs cause incorrect query results, while 12 cause unexpected errors or crashes. All 18 confirmed SQLite bugs have been fixed. The DuckDB developers confirmed 22 bugs and fixed 14; the PostgreSQL developers confirmed 4 and fixed 2. The five DuckDB reports from the practicality case study concern nested types, casts, statistics propagation, and predicate optimization; they are included in the confirmed bug counts. These results demonstrate that Gungnir can find bugs that DBMS developers consider worth fixing, including 17 logic bugs in SQLite and 3 in PostgreSQL despite extensive prior testing. For example, CODDTest reported six confirmed SQLite logic bugs ( Zhang and Rigger, 2025 ) , while EDC, SRS, Argus, and EPSC reported one, two, one, and one confirmed PostgreSQL logic bugs, respectively ( Deng et al., 2025 ; Lai et al., 2025 ; Mang et al., 2026b ; Zhang et al., 2026b ) . These findings show that extending the generator can expose new bugs in well-tested DBMSs even when using a single existing test oracle.",
+   "zh": "表1总结了每个DBMS的漏洞统计情况。 我们总共提交了45份报告，其中44份描述了经开发者确认的漏洞，1份描述了预期行为。 在已确认的漏洞中，有34个已被修复。32个漏洞会导致查询结果错误，而12个会导致意外错误或崩溃。 所有18个已确认的SQLite漏洞均已被修复。 DuckDB开发者确认了22个漏洞并修复了14个；PostgreSQL开发者确认了4个并修复了2个。 实践案例研究中来自DuckDB的五份报告涉及嵌套类型、类型转换、统计信息传播和谓词优化；这些报告已被计入已确认的漏洞数量中。 这些结果表明，Gungnir能够发现DBMS开发者认为值得修复的漏洞，包括在SQLite中发现的17个逻辑漏洞和PostgreSQL中的3个，尽管这些系统此前已经经过广泛测试。 例如，CODDTest报告了六个已确认的SQLite逻辑漏洞（Zhang和Rigger，2025），而EDC、SRS、Argus和EPSC分别报告了一个、两个、一个和一个已确认的PostgreSQL逻辑漏洞（Deng等，2025；Lai等，2025；Mang等，2026b；Zhang等，2026b）。 这些发现表明，即使只使用一个现有的测试预言机，扩展生成器也能在已经过充分测试的DBMS中暴露新的漏洞。",
+   "sents": [
+    {
+     "en": "Table 1 summarizes the bug statistics for each DBMS.",
+     "zh": "表1总结了每个DBMS的漏洞统计情况。"
+    },
+    {
+     "en": "In total, we submitted 45 reports, of which 44 describe bugs confirmed by developers and 1 describes intended behavior.",
+     "zh": "我们总共提交了45份报告，其中44份描述了经开发者确认的漏洞，1份描述了预期行为。"
+    },
+    {
+     "en": "Among the confirmed bugs, 34 have been fixed. 32 bugs cause incorrect query results, while 12 cause unexpected errors or crashes.",
+     "zh": "在已确认的漏洞中，有34个已被修复。32个漏洞会导致查询结果错误，而12个会导致意外错误或崩溃。"
+    },
+    {
+     "en": "All 18 confirmed SQLite bugs have been fixed.",
+     "zh": "所有18个已确认的SQLite漏洞均已被修复。"
+    },
+    {
+     "en": "The DuckDB developers confirmed 22 bugs and fixed 14; the PostgreSQL developers confirmed 4 and fixed 2.",
+     "zh": "DuckDB开发者确认了22个漏洞并修复了14个；PostgreSQL开发者确认了4个并修复了2个。"
+    },
+    {
+     "en": "The five DuckDB reports from the practicality case study concern nested types, casts, statistics propagation, and predicate optimization; they are included in the confirmed bug counts.",
+     "zh": "实践案例研究中来自DuckDB的五份报告涉及嵌套类型、类型转换、统计信息传播和谓词优化；这些报告已被计入已确认的漏洞数量中。"
+    },
+    {
+     "en": "These results demonstrate that Gungnir can find bugs that DBMS developers consider worth fixing, including 17 logic bugs in SQLite and 3 in PostgreSQL despite extensive prior testing.",
+     "zh": "这些结果表明，Gungnir能够发现DBMS开发者认为值得修复的漏洞，包括在SQLite中发现的17个逻辑漏洞和PostgreSQL中的3个，尽管这些系统此前已经经过广泛测试。"
+    },
+    {
+     "en": "For example, CODDTest reported six confirmed SQLite logic bugs ( Zhang and Rigger, 2025 ) , while EDC, SRS, Argus, and EPSC reported one, two, one, and one confirmed PostgreSQL logic bugs, respectively ( Deng et al., 2025 ; Lai et al., 2025 ; Mang et al., 2026b ; Zhang et al., 2026b ) .",
+     "zh": "例如，CODDTest报告了六个已确认的SQLite逻辑漏洞（Zhang和Rigger，2025），而EDC、SRS、Argus和EPSC分别报告了一个、两个、一个和一个已确认的PostgreSQL逻辑漏洞（Deng等，2025；Lai等，2025；Mang等，2026b；Zhang等，2026b）。"
+    },
+    {
+     "en": "These findings show that extending the generator can expose new bugs in well-tested DBMSs even when using a single existing test oracle.",
+     "zh": "这些发现表明，即使只使用一个现有的测试预言机，扩展生成器也能在已经过充分测试的DBMS中暴露新的漏洞。"
+    }
+   ]
+  },
+  {
+   "en": "We further characterize how acquired features combine in these bug-inducing test cases. Among the 44 bugs, 19 required at least one evolved feature, 8 required two, and 14 required at least three. For each evolution run in our bug-finding campaign, the first bug appeared at evolution iteration 23.7 on average. The seed generator could find three DuckDB bugs without modifications. These counts reflect the features in each bug-inducing test case after best-effort reduction. Fewer features might still trigger the bug, but the same oracle might not detect it. We discuss three logic bugs and the generator capabilities needed to expose them.",
+   "zh": "我们进一步描述了这些引发错误的测试用例中，已获取的特征是如何组合的。 在 44 个错误中，有 19 个至少需要一种演化特征，8 个需要两种，14 个则需要至少三种。 在我们寻找错误的演化运行中，每个演化运行平均在第 23.7 次迭代时出现第一个错误。 种子生成器无需任何修改就能找到三个 DuckDB 错误。 这些数量反映了每个引发错误的测试用例中，经过最佳努力简化后的特征。 更少的特征可能仍然会触发该错误，但相同的判据可能无法检测到它。 我们将讨论三个逻辑错误以及暴露这些错误所需的生成器能力。",
+   "sents": [
+    {
+     "en": "We further characterize how acquired features combine in these bug-inducing test cases.",
+     "zh": "我们进一步描述了这些引发错误的测试用例中，已获取的特征是如何组合的。"
+    },
+    {
+     "en": "Among the 44 bugs, 19 required at least one evolved feature, 8 required two, and 14 required at least three.",
+     "zh": "在 44 个错误中，有 19 个至少需要一种演化特征，8 个需要两种，14 个则需要至少三种。"
+    },
+    {
+     "en": "For each evolution run in our bug-finding campaign, the first bug appeared at evolution iteration 23.7 on average.",
+     "zh": "在我们寻找错误的演化运行中，每个演化运行平均在第 23.7 次迭代时出现第一个错误。"
+    },
+    {
+     "en": "The seed generator could find three DuckDB bugs without modifications.",
+     "zh": "种子生成器无需任何修改就能找到三个 DuckDB 错误。"
+    },
+    {
+     "en": "These counts reflect the features in each bug-inducing test case after best-effort reduction.",
+     "zh": "这些数量反映了每个引发错误的测试用例中，经过最佳努力简化后的特征。"
+    },
+    {
+     "en": "Fewer features might still trigger the bug, but the same oracle might not detect it.",
+     "zh": "更少的特征可能仍然会触发该错误，但相同的判据可能无法检测到它。"
+    },
+    {
+     "en": "We discuss three logic bugs and the generator capabilities needed to expose them.",
+     "zh": "我们将讨论三个逻辑错误以及暴露这些错误所需的生成器能力。"
+    }
+   ]
+  },
+  {
+   "en": "Listing 5 shows a SQLite bug where adding a WHERE predicate changes a query’s result from no rows to three rows. The initial generator could not use JSON table-valued functions in the base query’s FROM clause. The coding agent added these functions, exposed their output columns to predicate generation, and extended data generation with valid JSON values. The following testing phase then combined the new capability with existing RIGHT JOIN generation and exposed the inconsistency.",
+   "zh": "列表 5 展示了一个 SQLite 错误：添加 WHERE 谓词后，查询结果从无行变为三行。 初始生成器无法在基础查询的 FROM 子句中使用 JSON 表值函数。 编码智能体添加了这些函数，将其输出列暴露给谓词生成，并通过有效的 JSON 值扩展了数据生成。 随后的测试阶段将这一新能力与现有的 RIGHT JOIN 生成相结合，从而揭示了其中的不一致性。",
+   "sents": [
+    {
+     "en": "Listing 5 shows a SQLite bug where adding a WHERE predicate changes a query’s result from no rows to three rows.",
+     "zh": "列表 5 展示了一个 SQLite 错误：添加 WHERE 谓词后，查询结果从无行变为三行。"
+    },
+    {
+     "en": "The initial generator could not use JSON table-valued functions in the base query’s FROM clause.",
+     "zh": "初始生成器无法在基础查询的 FROM 子句中使用 JSON 表值函数。"
+    },
+    {
+     "en": "The coding agent added these functions, exposed their output columns to predicate generation, and extended data generation with valid JSON values.",
+     "zh": "编码智能体添加了这些函数，将其输出列暴露给谓词生成，并通过有效的 JSON 值扩展了数据生成。"
+    },
+    {
+     "en": "The following testing phase then combined the new capability with existing RIGHT JOIN generation and exposed the inconsistency.",
+     "zh": "随后的测试阶段将这一新能力与现有的 RIGHT JOIN 生成相结合，从而揭示了其中的不一致性。"
+    }
+   ]
+  },
+  {
+   "en": "Listing 6 shows a DuckDB wrong result: the sampled table contains no rows, but filtering it with an IN subquery returns one. The coding agent added TABLESAMPLE to the generator’s FROM clauses, and the subsequent testing phase combined it with an indexed Boolean column and an existing IN -subquery predicate. Without the index, the filtered query also returns zero rows. This case shows a newly acquired generator capability combining with existing schema and predicate generation to expose a DuckDB wrong result during subsequent testing.",
+   "zh": "列表 6 展示了一个 DuckDB 的错误结果：采样表不包含任何行，但使用 IN 子查询对其进行过滤后却返回了一行。 编码智能体在生成器的 FROM 子句中添加了 TABLESAMPLE，随后的测试阶段将其与一个带索引的布尔列以及现有的 IN 子查询谓词相结合。 如果没有该索引，过滤后的查询也会返回零行。 这种情况表明，新获得的生成器能力与现有的模式及谓词生成机制相结合，在后续测试中暴露出了一个 DuckDB 的错误结果。",
+   "sents": [
+    {
+     "en": "Listing 6 shows a DuckDB wrong result: the sampled table contains no rows, but filtering it with an IN subquery returns one.",
+     "zh": "列表 6 展示了一个 DuckDB 的错误结果：采样表不包含任何行，但使用 IN 子查询对其进行过滤后却返回了一行。"
+    },
+    {
+     "en": "The coding agent added TABLESAMPLE to the generator’s FROM clauses, and the subsequent testing phase combined it with an indexed Boolean column and an existing IN -subquery predicate.",
+     "zh": "编码智能体在生成器的 FROM 子句中添加了 TABLESAMPLE，随后的测试阶段将其与一个带索引的布尔列以及现有的 IN 子查询谓词相结合。"
+    },
+    {
+     "en": "Without the index, the filtered query also returns zero rows.",
+     "zh": "如果没有该索引，过滤后的查询也会返回零行。"
+    },
+    {
+     "en": "This case shows a newly acquired generator capability combining with existing schema and predicate generation to expose a DuckDB wrong result during subsequent testing.",
+     "zh": "这种情况表明，新获得的生成器能力与现有的模式及谓词生成机制相结合，在后续测试中暴露出了一个 DuckDB 的错误结果。"
+    }
+   ]
+  },
+  {
+   "en": "The bug-inducing test case combining different features was generated after several iterations of generator evolution. The coding agent added IN -subquery predicates in iteration 5, extended these subqueries with GROUP BY ALL in iteration 18, and added TABLESAMPLE in iteration 30. Testing in iteration 32 combined these capabilities over an indexed Boolean column and exposed the result mismatch. The index came from existing schema generation.",
+   "zh": "这个结合不同特征的、引发错误的测试用例是在经过多轮生成器演化之后生成的。 编码智能体在第 5 轮迭代中添加了 IN -子查询谓词，在第 18 轮迭代中用 GROUP BY ALL 扩展了这些子查询，并在第 30 轮迭代中添加了 TABLESAMPLE。 第 32 轮迭代的测试将这些能力结合到一个带索引的布尔列上，并暴露了结果不匹配的问题。 该索引来自现有的模式生成。",
+   "sents": [
+    {
+     "en": "The bug-inducing test case combining different features was generated after several iterations of generator evolution.",
+     "zh": "这个结合不同特征的、引发错误的测试用例是在经过多轮生成器演化之后生成的。"
+    },
+    {
+     "en": "The coding agent added IN -subquery predicates in iteration 5, extended these subqueries with GROUP BY ALL in iteration 18, and added TABLESAMPLE in iteration 30.",
+     "zh": "编码智能体在第 5 轮迭代中添加了 IN -子查询谓词，在第 18 轮迭代中用 GROUP BY ALL 扩展了这些子查询，并在第 30 轮迭代中添加了 TABLESAMPLE。"
+    },
+    {
+     "en": "Testing in iteration 32 combined these capabilities over an indexed Boolean column and exposed the result mismatch.",
+     "zh": "第 32 轮迭代的测试将这些能力结合到一个带索引的布尔列上，并暴露了结果不匹配的问题。"
+    },
+    {
+     "en": "The index came from existing schema generation.",
+     "zh": "该索引来自现有的模式生成。"
+    }
+   ]
+  },
+  {
+   "en": "Listing 7 shows a PostgreSQL wrong result: the IN predicate matches only 'a' in the projection, but the filtered query counts two rows. The left column’s nondeterministic ICU collation equates 'a' and 'A' , while the right column uses the default collation. The planner deduplicated the semijoin’s right side under the default rather than the join collation, retaining both values and emitting the match twice; the fix uses the join collation. The initial generator could not create such collations. The coding agent added collation creation and assignment to text columns, allowing existing IN -subquery generation to expose the defect.",
+   "zh": "列表 7 显示了一个 PostgreSQL 的错误结果：IN 谓词在投影中仅匹配 'a'，但过滤查询却计入了两行。 左列的非确定性 ICU 排序将 'a' 和 'A' 视为相等，而右列则使用默认排序。 规划器在默认排序而非连接排序下对半连接的右侧进行了去重，保留了两个值并两次输出了匹配结果；修复方案使用了连接排序。 初始生成器无法创建此类排序。 编码智能体为文本列添加了排序创建和分配功能，使得现有的 IN 子查询生成能够暴露该缺陷。",
+   "sents": [
+    {
+     "en": "Listing 7 shows a PostgreSQL wrong result: the IN predicate matches only 'a' in the projection, but the filtered query counts two rows.",
+     "zh": "列表 7 显示了一个 PostgreSQL 的错误结果：IN 谓词在投影中仅匹配 'a'，但过滤查询却计入了两行。"
+    },
+    {
+     "en": "The left column’s nondeterministic ICU collation equates 'a' and 'A' , while the right column uses the default collation.",
+     "zh": "左列的非确定性 ICU 排序将 'a' 和 'A' 视为相等，而右列则使用默认排序。"
+    },
+    {
+     "en": "The planner deduplicated the semijoin’s right side under the default rather than the join collation, retaining both values and emitting the match twice; the fix uses the join collation.",
+     "zh": "规划器在默认排序而非连接排序下对半连接的右侧进行了去重，保留了两个值并两次输出了匹配结果；修复方案使用了连接排序。"
+    },
+    {
+     "en": "The initial generator could not create such collations.",
+     "zh": "初始生成器无法创建此类排序。"
+    },
+    {
+     "en": "The coding agent added collation creation and assignment to text columns, allowing existing IN -subquery generation to expose the defect.",
+     "zh": "编码智能体为文本列添加了排序创建和分配功能，使得现有的 IN 子查询生成能够暴露该缺陷。"
+    }
+   ]
+  },
+  {
+   "en": "These three cases illustrate why reaching new bugs requires extending query and schema generation beyond learning SQL fragments or discovering test oracles. First, the SQLite case requires a JSON table-valued function in the FROM clause and its output columns in subsequent predicates; ShQveL’s expression sketches cannot supply this integration, and Argus does not support SQLite ( Zhong and Rigger, 2026a ; Mang et al., 2026b ) . Second, the DuckDB case combines TABLESAMPLE , an index, and an IN subquery, which is beyond ShQveL’s expression sketches. Third, the PostgreSQL case requires creating a nondeterministic ICU collation and assigning it to a column before generating the IN predicate; learning expressions alone does not add this schema support. In principle, Argus’s table placeholders can represent the required table expressions with suitable snippets and could expose the latter two bugs; however, this requires generating corresponding snippet pools. Reaching features such as custom collations still requires an efficient schema generator. Gungnir instead integrates LLM knowledge into reusable query and schema generation rules, allowing subsequent random testing to combine the acquired features across newly generated database states without further LLM calls for SQL generation.",
+   "zh": "这三个案例说明了为何要发现新漏洞，需要将查询和模式生成扩展到学习 SQL 片段或发现测试预言机之外。 首先，SQLite 案例要求在 FROM 子句中使用一个 JSON 表值函数，并在后续谓词中使用其输出列；ShQveL 的表达式草图无法提供这种集成，而 Argus 不支持 SQLite（Zhong and Rigger, 2026a；Mang et al., 2026b）。 其次，DuckDB 案例结合了 TABLESAMPLE、一个索引和一个 IN 子查询，这超出了 ShQveL 表达式草图的能力范围。 第三，PostgreSQL 案例要求创建一个非确定性的 ICU 排序规则，并在生成 IN 谓词之前将其分配给一个列；仅学习表达式无法提供这种模式支持。 原则上，Argus 的表占位符可以通过合适的片段来表示所需的表表达式，并可能暴露后两种漏洞；然而，这需要生成相应的片段池。 要实现自定义排序规则等功能，仍然需要一个高效的模式生成器。 相比之下，Gungnir 将 LLM 知识整合到可重用的查询和模式生成规则中，使得后续的随机测试能够在新生成的数据库状态中结合已获取的功能，而无需再次调用 LLM 生成 SQL。",
+   "sents": [
+    {
+     "en": "These three cases illustrate why reaching new bugs requires extending query and schema generation beyond learning SQL fragments or discovering test oracles.",
+     "zh": "这三个案例说明了为何要发现新漏洞，需要将查询和模式生成扩展到学习 SQL 片段或发现测试预言机之外。"
+    },
+    {
+     "en": "First, the SQLite case requires a JSON table-valued function in the FROM clause and its output columns in subsequent predicates; ShQveL’s expression sketches cannot supply this integration, and Argus does not support SQLite ( Zhong and Rigger, 2026a ; Mang et al., 2026b ) .",
+     "zh": "首先，SQLite 案例要求在 FROM 子句中使用一个 JSON 表值函数，并在后续谓词中使用其输出列；ShQveL 的表达式草图无法提供这种集成，而 Argus 不支持 SQLite（Zhong and Rigger, 2026a；Mang et al., 2026b）。"
+    },
+    {
+     "en": "Second, the DuckDB case combines TABLESAMPLE , an index, and an IN subquery, which is beyond ShQveL’s expression sketches.",
+     "zh": "其次，DuckDB 案例结合了 TABLESAMPLE、一个索引和一个 IN 子查询，这超出了 ShQveL 表达式草图的能力范围。"
+    },
+    {
+     "en": "Third, the PostgreSQL case requires creating a nondeterministic ICU collation and assigning it to a column before generating the IN predicate; learning expressions alone does not add this schema support.",
+     "zh": "第三，PostgreSQL 案例要求创建一个非确定性的 ICU 排序规则，并在生成 IN 谓词之前将其分配给一个列；仅学习表达式无法提供这种模式支持。"
+    },
+    {
+     "en": "In principle, Argus’s table placeholders can represent the required table expressions with suitable snippets and could expose the latter two bugs; however, this requires generating corresponding snippet pools.",
+     "zh": "原则上，Argus 的表占位符可以通过合适的片段来表示所需的表表达式，并可能暴露后两种漏洞；然而，这需要生成相应的片段池。"
+    },
+    {
+     "en": "Reaching features such as custom collations still requires an efficient schema generator.",
+     "zh": "要实现自定义排序规则等功能，仍然需要一个高效的模式生成器。"
+    },
+    {
+     "en": "Gungnir instead integrates LLM knowledge into reusable query and schema generation rules, allowing subsequent random testing to combine the acquired features across newly generated database states without further LLM calls for SQL generation.",
+     "zh": "相比之下，Gungnir 将 LLM 知识整合到可重用的查询和模式生成规则中，使得后续的随机测试能够在新生成的数据库状态中结合已获取的功能，而无需再次调用 LLM 生成 SQL。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluated whether witness replay helps coding agents implement requested SQL features in the generator. We compared evolution with and without witnesses in two session settings and measured task completion and query variety.",
+   "zh": "我们评估了见证重播是否有助于编码智能体在生成器中实现所需的 SQL 功能。 我们在两种会话设置中比较了有见证和无见证的演化过程，并测量了任务完成度和查询多样性。",
+   "sents": [
+    {
+     "en": "We evaluated whether witness replay helps coding agents implement requested SQL features in the generator.",
+     "zh": "我们评估了见证重播是否有助于编码智能体在生成器中实现所需的 SQL 功能。"
+    },
+    {
+     "en": "We compared evolution with and without witnesses in two session settings and measured task completion and query variety.",
+     "zh": "我们在两种会话设置中比较了有见证和无见证的演化过程，并测量了任务完成度和查询多样性。"
+    }
+   ]
+  },
+  {
+   "en": "We selected 50 query targets from distinct extension goals mined from DuckDB’s documentation and regression tests after inspecting the generator’s source code for missing features. Each task supplied a target query, a schema, and data, which we checked against DuckDB. The targets cover eight categories, including expressions, aggregation, nested values, table sources, subqueries, and windows (see Figure 4 ). They require changes to generation rules, type handling, and scope handling. Listing 8 shows a condensed prompt for list subscripting. The initial generator supported function-based list access but lacked postfix subscripts. We instructed the agent to integrate typed subscripts into random generation over live schemas. Both conditions received the same target and schema settings, together with instructions to vary columns and constants, preserve earlier capabilities, and sample comparable generation choices uniformly.",
+   "zh": "在检查生成器的源代码以发现缺失功能后，我们从 DuckDB 文档和回归测试中挖掘出的不同扩展目标中选择了 50 个查询目标。 每个任务都提供了一个目标查询、一个模式和数据，我们将其与 DuckDB 进行了验证。 这些目标涵盖了八个类别，包括表达式、聚合、嵌套值、表源、子查询和窗口函数（参见图 4）。 这些目标需要修改生成规则、类型处理以及作用域处理。 列表 8 展示了一个用于列表下标访问的简化提示。 初始的生成器支持基于函数的列表访问，但缺乏后缀下标。 我们指示智能体将带类型的下标整合到针对实时模式的随机生成过程中。 两种条件都获得了相同的目标和模式设置，以及关于变化列和常量、保留早期功能并均匀采样可比较的生成选项的指令。",
+   "sents": [
+    {
+     "en": "We selected 50 query targets from distinct extension goals mined from DuckDB’s documentation and regression tests after inspecting the generator’s source code for missing features.",
+     "zh": "在检查生成器的源代码以发现缺失功能后，我们从 DuckDB 文档和回归测试中挖掘出的不同扩展目标中选择了 50 个查询目标。"
+    },
+    {
+     "en": "Each task supplied a target query, a schema, and data, which we checked against DuckDB.",
+     "zh": "每个任务都提供了一个目标查询、一个模式和数据，我们将其与 DuckDB 进行了验证。"
+    },
+    {
+     "en": "The targets cover eight categories, including expressions, aggregation, nested values, table sources, subqueries, and windows (see Figure 4 ).",
+     "zh": "这些目标涵盖了八个类别，包括表达式、聚合、嵌套值、表源、子查询和窗口函数（参见图 4）。"
+    },
+    {
+     "en": "They require changes to generation rules, type handling, and scope handling.",
+     "zh": "这些目标需要修改生成规则、类型处理以及作用域处理。"
+    },
+    {
+     "en": "Listing 8 shows a condensed prompt for list subscripting.",
+     "zh": "列表 8 展示了一个用于列表下标访问的简化提示。"
+    },
+    {
+     "en": "The initial generator supported function-based list access but lacked postfix subscripts.",
+     "zh": "初始的生成器支持基于函数的列表访问，但缺乏后缀下标。"
+    },
+    {
+     "en": "We instructed the agent to integrate typed subscripts into random generation over live schemas.",
+     "zh": "我们指示智能体将带类型的下标整合到针对实时模式的随机生成过程中。"
+    },
+    {
+     "en": "Both conditions received the same target and schema settings, together with instructions to vary columns and constants, preserve earlier capabilities, and sample comparable generation choices uniformly.",
+     "zh": "两种条件都获得了相同的目标和模式设置，以及关于变化列和常量、保留早期功能并均匀采样可比较的生成选项的指令。"
+    }
+   ]
+  },
+  {
+   "en": "We used OpenCode with deepseek-flash for all settings, starting from the same generator functionality and using development guidance derived from the same skill. We evaluated with and without witness under multi-session and one-session. These settings let us compare witness feedback during incremental feature acquisition across conversations and development of all requested features in one conversation. In multi-session evolution, the agent received one task per new conversation and started from the last accepted generator, with acceptance feedback and handoff notes. Each task allowed one coding attempt; a rejected modification left the accepted generator unchanged. In one-session evolution, the agent received all 50 tasks in one conversation and managed development and testing, including witness validation in the with-witness condition.",
+   "zh": "我们在所有设置中都使用了 OpenCode 和 deepseek-flash，从相同的生成器功能开始，并采用源自相同技能的开发指导。 我们在多会话和单会话模式下，分别在有和无见证者的情况下进行了评估。 这些设置使我们能够比较跨对话在增量获取功能过程中的见证者反馈，以及在一场对话中开发所有所需功能的进展。 在多会话演化中，智能体每次新对话都会收到一个任务，并从最后一个被接受的生成器开始，同时获得接受反馈和交接说明。 每个任务仅允许一次编码尝试；若修改被拒绝，则已接受的生成器保持不变。 在单会话演化中，智能体在一场对话中收到了全部 50 个任务，并负责开发、测试以及在有见证者条件下的见证者验证。",
+   "sents": [
+    {
+     "en": "We used OpenCode with deepseek-flash for all settings, starting from the same generator functionality and using development guidance derived from the same skill.",
+     "zh": "我们在所有设置中都使用了 OpenCode 和 deepseek-flash，从相同的生成器功能开始，并采用源自相同技能的开发指导。"
+    },
+    {
+     "en": "We evaluated with and without witness under multi-session and one-session.",
+     "zh": "我们在多会话和单会话模式下，分别在有和无见证者的情况下进行了评估。"
+    },
+    {
+     "en": "These settings let us compare witness feedback during incremental feature acquisition across conversations and development of all requested features in one conversation.",
+     "zh": "这些设置使我们能够比较跨对话在增量获取功能过程中的见证者反馈，以及在一场对话中开发所有所需功能的进展。"
+    },
+    {
+     "en": "In multi-session evolution, the agent received one task per new conversation and started from the last accepted generator, with acceptance feedback and handoff notes.",
+     "zh": "在多会话演化中，智能体每次新对话都会收到一个任务，并从最后一个被接受的生成器开始，同时获得接受反馈和交接说明。"
+    },
+    {
+     "en": "Each task allowed one coding attempt; a rejected modification left the accepted generator unchanged.",
+     "zh": "每个任务仅允许一次编码尝试；若修改被拒绝，则已接受的生成器保持不变。"
+    },
+    {
+     "en": "In one-session evolution, the agent received all 50 tasks in one conversation and managed development and testing, including witness validation in the with-witness condition.",
+     "zh": "在单会话演化中，智能体在一场对话中收到了全部 50 个任务，并负责开发、测试以及在有见证者条件下的见证者验证。"
+    }
+   ]
+  },
+  {
+   "en": "We measured task completion over time and query variety in the final generator. A task is complete when the generator reproduces its target query through the specified testing interface that the agent is required to implement. This query matching ignored whitespace, unquoted word case, and a terminal semicolon. We evaluated both session settings against all 50 target queries. At each multi-session checkpoint, task completion is the fraction of all targets reproduced by the current generator, including targets introduced in earlier tasks. For one-session evolution, we applied this metric to the final generator after the agent exited. This metric captures both newly acquired features and their preservation through subsequent changes.",
+   "zh": "我们测量了最终生成器随时间推移的任务完成度和查询多样性。 当生成器通过智能体必须实现的指定测试接口重现其目标查询时，任务即告完成。 这种查询匹配忽略了空白符、未加引号的单词大小写以及结尾的分号。 我们对所有 50 个目标查询评估了两种会话设置。 在每个多会话检查点，任务完成度是指当前生成器重现的所有目标中占有的比例，包括早期任务中引入的目标。 对于单会话演化，我们在智能体退出后，将该指标应用于最终生成器。 该指标既捕捉了新获得的特征，也捕捉了这些特征在后续变化中的保留情况。",
+   "sents": [
+    {
+     "en": "We measured task completion over time and query variety in the final generator.",
+     "zh": "我们测量了最终生成器随时间推移的任务完成度和查询多样性。"
+    },
+    {
+     "en": "A task is complete when the generator reproduces its target query through the specified testing interface that the agent is required to implement.",
+     "zh": "当生成器通过智能体必须实现的指定测试接口重现其目标查询时，任务即告完成。"
+    },
+    {
+     "en": "This query matching ignored whitespace, unquoted word case, and a terminal semicolon.",
+     "zh": "这种查询匹配忽略了空白符、未加引号的单词大小写以及结尾的分号。"
+    },
+    {
+     "en": "We evaluated both session settings against all 50 target queries.",
+     "zh": "我们对所有 50 个目标查询评估了两种会话设置。"
+    },
+    {
+     "en": "At each multi-session checkpoint, task completion is the fraction of all targets reproduced by the current generator, including targets introduced in earlier tasks.",
+     "zh": "在每个多会话检查点，任务完成度是指当前生成器重现的所有目标中占有的比例，包括早期任务中引入的目标。"
+    },
+    {
+     "en": "For one-session evolution, we applied this metric to the final generator after the agent exited.",
+     "zh": "对于单会话演化，我们在智能体退出后，将该指标应用于最终生成器。"
+    },
+    {
+     "en": "This metric captures both newly acquired features and their preservation through subsequent changes.",
+     "zh": "该指标既捕捉了新获得的特征，也捕捉了这些特征在后续变化中的保留情况。"
+    }
+   ]
+  },
+  {
+   "en": "We also measured query variety through the distinct AST edges in random queries containing at least one target feature. We examined each query’s complete AST, including nested subqueries, and deduplicated edges by their signatures. Each signature consists of the parent node label, child role, and child node label; it preserves operator and function identities but ignores identifiers and literal values. We sampled 10,000 queries in total from each final generator across 3 fixed random seeds. For each seed, we divided the number of distinct edge signatures in queries containing a target feature by the number of all generated, parseable statements, then averaged these ratios across seeds.",
+   "zh": "我们还通过随机查询中至少包含一个目标特征的独立 AST 边来衡量查询的多样性。 我们检查了每个查询的完整 AST（包括嵌套子查询），并根据其签名去重了边。 每个签名由父节点标签、子角色和子节点标签组成；它保留了操作符和函数的身份，但忽略了标识符和字面值。 我们从每个最终生成器中总共采样了 10,000 个查询，覆盖了 3 个固定的随机种子。 对于每个种子，我们将包含目标特征的查询中的独立边签名数量除以所有已生成且可解析的语句数量，然后对这些比率进行跨种子的平均计算。",
+   "sents": [
+    {
+     "en": "We also measured query variety through the distinct AST edges in random queries containing at least one target feature.",
+     "zh": "我们还通过随机查询中至少包含一个目标特征的独立 AST 边来衡量查询的多样性。"
+    },
+    {
+     "en": "We examined each query’s complete AST, including nested subqueries, and deduplicated edges by their signatures.",
+     "zh": "我们检查了每个查询的完整 AST（包括嵌套子查询），并根据其签名去重了边。"
+    },
+    {
+     "en": "Each signature consists of the parent node label, child role, and child node label; it preserves operator and function identities but ignores identifiers and literal values.",
+     "zh": "每个签名由父节点标签、子角色和子节点标签组成；它保留了操作符和函数的身份，但忽略了标识符和字面值。"
+    },
+    {
+     "en": "We sampled 10,000 queries in total from each final generator across 3 fixed random seeds.",
+     "zh": "我们从每个最终生成器中总共采样了 10,000 个查询，覆盖了 3 个固定的随机种子。"
+    },
+    {
+     "en": "For each seed, we divided the number of distinct edge signatures in queries containing a target feature by the number of all generated, parseable statements, then averaged these ratios across seeds.",
+     "zh": "对于每个种子，我们将包含目标特征的查询中的独立边签名数量除以所有已生成且可解析的语句数量，然后对这些比率进行跨种子的平均计算。"
+    }
+   ]
+  },
+  {
+   "en": "Table 2 shows that witnesses improved task completion and query variety in multi-session evolution. The final generator reproduced 47 of 50 targets (94%) with witnesses, compared with 37 (74%) without witnesses. Witnesses helped complete targets involving ordered-set aggregation, recursive CTEs, and window exclusion frames. Query variety reached 0.382 distinct AST edges per SELECT with witnesses, compared with 0.038 without witnesses. In one-session evolution, the with-witness agent reproduced all 50 targets (100%), but query variety was only 0.004. We inspected the source code and found that it hardcoded the target queries for witness replay, yielding little variety involving the requested features during random generation. Without witnesses, the agent reproduced two targets (4%), while query variety reached 0.155. Without witnesses, multi-session evolution achieved less query variety than one-session evolution because it also include hardcode SELECT s for some tasks ( e.g. , list_aggregate ), while one-session evolution integrated features into recursive expressions and FROM components, enabling more varied combinations.",
+   "zh": "表2显示，在多轮次演化中，见证者提升了任务完成度和查询多样性。 在存在见证者的情况下，最终生成器成功复现了50个目标中的47个（94%），而没有见证者时仅为37个（74%）。 见证者帮助完成了涉及有序集聚合、递归CTE和窗口排除框架的目标。 在存在见证者的情况下，每次SELECT查询的AST边多样性达到了0.382，而没有见证者时仅为0.038。 在一轮次演化中，配备见证者的智能体成功复现了全部50个目标（100%），但查询多样性仅为0.004。 我们检查了源代码，发现其中硬编码了用于见证者重放的查询，导致在随机生成过程中几乎无法体现所要求的功能多样性。 在没有见证者的情况下，智能体仅复现了两个目标（4%），而查询多样性达到了0.155。 在没有见证者的情况下，多轮次演化实现的查询多样性低于一轮次演化，因为某些任务（例如list_aggregate）也包含了硬编码的SELECT语句；而一轮次演化则将相关功能整合到了递归表达式和FROM组件中，从而实现了更多样的组合。",
+   "sents": [
+    {
+     "en": "Table 2 shows that witnesses improved task completion and query variety in multi-session evolution.",
+     "zh": "表2显示，在多轮次演化中，见证者提升了任务完成度和查询多样性。"
+    },
+    {
+     "en": "The final generator reproduced 47 of 50 targets (94%) with witnesses, compared with 37 (74%) without witnesses.",
+     "zh": "在存在见证者的情况下，最终生成器成功复现了50个目标中的47个（94%），而没有见证者时仅为37个（74%）。"
+    },
+    {
+     "en": "Witnesses helped complete targets involving ordered-set aggregation, recursive CTEs, and window exclusion frames.",
+     "zh": "见证者帮助完成了涉及有序集聚合、递归CTE和窗口排除框架的目标。"
+    },
+    {
+     "en": "Query variety reached 0.382 distinct AST edges per SELECT with witnesses, compared with 0.038 without witnesses.",
+     "zh": "在存在见证者的情况下，每次SELECT查询的AST边多样性达到了0.382，而没有见证者时仅为0.038。"
+    },
+    {
+     "en": "In one-session evolution, the with-witness agent reproduced all 50 targets (100%), but query variety was only 0.004.",
+     "zh": "在一轮次演化中，配备见证者的智能体成功复现了全部50个目标（100%），但查询多样性仅为0.004。"
+    },
+    {
+     "en": "We inspected the source code and found that it hardcoded the target queries for witness replay, yielding little variety involving the requested features during random generation.",
+     "zh": "我们检查了源代码，发现其中硬编码了用于见证者重放的查询，导致在随机生成过程中几乎无法体现所要求的功能多样性。"
+    },
+    {
+     "en": "Without witnesses, the agent reproduced two targets (4%), while query variety reached 0.155.",
+     "zh": "在没有见证者的情况下，智能体仅复现了两个目标（4%），而查询多样性达到了0.155。"
+    },
+    {
+     "en": "Without witnesses, multi-session evolution achieved less query variety than one-session evolution because it also include hardcode SELECT s for some tasks ( e.g. , list_aggregate ), while one-session evolution integrated features into recursive expressions and FROM components, enabling more varied combinations.",
+     "zh": "在没有见证者的情况下，多轮次演化实现的查询多样性低于一轮次演化，因为某些任务（例如list_aggregate）也包含了硬编码的SELECT语句；而一轮次演化则将相关功能整合到了递归表达式和FROM组件中，从而实现了更多样的组合。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 5 shows how multi-session evolution acquired and retained generator capabilities. The with-witness condition preserved all previously passing registered tests, while the without-witness curve declined at several checkpoints as earlier tests failed. The with-witness condition did not achieve 100% task completion because the agent failed to complete three tasks within the single allowed attempt. In the full evolution process, witness feedback identifies test failures and guides further attempts.",
+   "zh": "图 5 展示了多会话演化如何获得并保留生成器能力。 在“有见证者”条件下，所有此前通过的注册测试均得以保持；而在“无见证者”曲线中，由于早期测试失败，多个检查点的表现出现了下降。 “有见证者”条件未能实现 100% 的任务完成率，因为智能体未能在单次允许的尝试中完成三项任务。 在整个演化过程中，见证者的反馈能够识别测试失败，并指导后续尝试。",
+   "sents": [
+    {
+     "en": "Figure 5 shows how multi-session evolution acquired and retained generator capabilities.",
+     "zh": "图 5 展示了多会话演化如何获得并保留生成器能力。"
+    },
+    {
+     "en": "The with-witness condition preserved all previously passing registered tests, while the without-witness curve declined at several checkpoints as earlier tests failed.",
+     "zh": "在“有见证者”条件下，所有此前通过的注册测试均得以保持；而在“无见证者”曲线中，由于早期测试失败，多个检查点的表现出现了下降。"
+    },
+    {
+     "en": "The with-witness condition did not achieve 100% task completion because the agent failed to complete three tasks within the single allowed attempt.",
+     "zh": "“有见证者”条件未能实现 100% 的任务完成率，因为智能体未能在单次允许的尝试中完成三项任务。"
+    },
+    {
+     "en": "In the full evolution process, witness feedback identifies test failures and guides further attempts.",
+     "zh": "在整个演化过程中，见证者的反馈能够识别测试失败，并指导后续尝试。"
+    }
+   ]
+  },
+  {
+   "en": "We compared the line and branch coverage of the evolved generator with ShQveL, SQLancer++, SQLancer, and the public native test suites on SQLite, 2 2 2 The TH3 test suite that achieves 100% branch coverage is not publicly available. DuckDB, and PostgreSQL. Our main comparison is with ShQveL, which extends SQLancer++ by learning SQL fragments rather than modifying generator code. The comparison with the initial SQLancer++ generator measures the effect of generator evolution under the same test oracle. Coverage provides an indirect indication of feature coverage, but is only a loose proxy for logic bug-finding effectiveness ( Zhong and Rigger, 2026b ) .",
+   "zh": "我们将演化生成的生成器在 SQLite、2 2 2 实现 100% 分支覆盖的 TH3 测试套件并非公开可用。DuckDB 和 PostgreSQL 上的行覆盖率和分支覆盖率与 ShQveL、SQLancer++、SQLancer 以及公开的原始测试套件进行了比较。 我们的主要对比对象是 ShQveL，它通过学习 SQL 片段而非修改生成器代码来扩展 SQLancer++。 与初始的 SQLancer++ 生成器的对比，旨在衡量在相同测试判据下生成器演化的效果。 覆盖率间接反映了功能覆盖情况，但仅能粗略代表逻辑错误检测的有效性（Zhong and Rigger, 2026b）。",
+   "sents": [
+    {
+     "en": "We compared the line and branch coverage of the evolved generator with ShQveL, SQLancer++, SQLancer, and the public native test suites on SQLite, 2 2 2 The TH3 test suite that achieves 100% branch coverage is not publicly available. DuckDB, and PostgreSQL.",
+     "zh": "我们将演化生成的生成器在 SQLite、2 2 2 实现 100% 分支覆盖的 TH3 测试套件并非公开可用。DuckDB 和 PostgreSQL 上的行覆盖率和分支覆盖率与 ShQveL、SQLancer++、SQLancer 以及公开的原始测试套件进行了比较。"
+    },
+    {
+     "en": "Our main comparison is with ShQveL, which extends SQLancer++ by learning SQL fragments rather than modifying generator code.",
+     "zh": "我们的主要对比对象是 ShQveL，它通过学习 SQL 片段而非修改生成器代码来扩展 SQLancer++。"
+    },
+    {
+     "en": "The comparison with the initial SQLancer++ generator measures the effect of generator evolution under the same test oracle.",
+     "zh": "与初始的 SQLancer++ 生成器的对比，旨在衡量在相同测试判据下生成器演化的效果。"
+    },
+    {
+     "en": "Coverage provides an indirect indication of feature coverage, but is only a loose proxy for logic bug-finding effectiveness ( Zhong and Rigger, 2026b ) .",
+     "zh": "覆盖率间接反映了功能覆盖情况，但仅能粗略代表逻辑错误检测的有效性（Zhong and Rigger, 2026b）。"
+    }
+   ]
+  },
+  {
+   "en": "We compared fixed generators to measure their DBMS coverage after learning, without further LLM calls during testing. For Gungnir , we evolved each generator for 24 hours using OpenCode with deepseek-flash ; for ShQveL, we allocated the same preparation budget to learning SQL fragments. We then fixed the evolved generators and learned fragments before testing each tool on the same instrumented DBMS builds under the resource limits described in Setup. No further LLM calls were made during testing. The comparison measures the testing capability kept after preparation, rather than coverage accumulated while the generators were changing. Preparation differed across tools; the subsequent DBMS-testing budget was matched. We ran regression tests of each DBMS once as a coverage reference.",
+   "zh": "我们比较了固定生成器，以衡量它们在学习后的 DBMS 覆盖范围，测试期间未再进行任何 LLM 调用。 对于 Gungnir，我们使用 OpenCode 和 deepseek-flash 对每个生成器进行了 24 小时的演化；对于 ShQveL，我们将相同的准备预算用于学习 SQL 片段。 随后，我们固定了演化后的生成器和已学习的片段，并在 Setup 中描述的资源限制下，于相同的带监控功能的 DBMS 构建版本上测试每种工具。 测试期间未再进行任何 LLM 调用。 该比较衡量的是准备阶段后保留的测试能力，而非生成器在变化过程中累积的覆盖范围。 不同工具的准备工作有所不同；但后续的 DBMS 测试预算是匹配的。 我们针对每个 DBMS 运行了一次回归测试，作为覆盖范围的参考。",
+   "sents": [
+    {
+     "en": "We compared fixed generators to measure their DBMS coverage after learning, without further LLM calls during testing.",
+     "zh": "我们比较了固定生成器，以衡量它们在学习后的 DBMS 覆盖范围，测试期间未再进行任何 LLM 调用。"
+    },
+    {
+     "en": "For Gungnir , we evolved each generator for 24 hours using OpenCode with deepseek-flash ; for ShQveL, we allocated the same preparation budget to learning SQL fragments.",
+     "zh": "对于 Gungnir，我们使用 OpenCode 和 deepseek-flash 对每个生成器进行了 24 小时的演化；对于 ShQveL，我们将相同的准备预算用于学习 SQL 片段。"
+    },
+    {
+     "en": "We then fixed the evolved generators and learned fragments before testing each tool on the same instrumented DBMS builds under the resource limits described in Setup.",
+     "zh": "随后，我们固定了演化后的生成器和已学习的片段，并在 Setup 中描述的资源限制下，于相同的带监控功能的 DBMS 构建版本上测试每种工具。"
+    },
+    {
+     "en": "No further LLM calls were made during testing.",
+     "zh": "测试期间未再进行任何 LLM 调用。"
+    },
+    {
+     "en": "The comparison measures the testing capability kept after preparation, rather than coverage accumulated while the generators were changing.",
+     "zh": "该比较衡量的是准备阶段后保留的测试能力，而非生成器在变化过程中累积的覆盖范围。"
+    },
+    {
+     "en": "Preparation differed across tools; the subsequent DBMS-testing budget was matched.",
+     "zh": "不同工具的准备工作有所不同；但后续的 DBMS 测试预算是匹配的。"
+    },
+    {
+     "en": "We ran regression tests of each DBMS once as a coverage reference.",
+     "zh": "我们针对每个 DBMS 运行了一次回归测试，作为覆盖范围的参考。"
+    }
+   ]
+  },
+  {
+   "en": "Table 3 reports line and branch coverage. On SQLite, DuckDB, and PostgreSQL, Gungnir achieved 58.60%, 26.66%, and 29.91% branch coverage, respectively. ShQveL covered 31.20%, 26.38%, and 19.96% on the same systems. Compared with the initial SQLancer++ generator, Gungnir increased branch coverage by 31.17, 8.68, and 13.42 percentage points, respectively. It also covered more lines and branches than the measured generator baselines on all three DBMSs. The test suites achieved 40.83% and 50.61% branch coverage on DuckDB and PostgreSQL, respectively, exceeding all evaluated generators, including Gungnir . The gap is expected because evaluated generators focus on logic bug detection, and the query forms are constrained by the test oracle, while the test suites cover a broader range of operations, including schema changes and administrative commands. Gungnir achieved higher coverage on SQLite than on DuckDB and PostgreSQL; one possible explanation is that SQLite’s smaller codebase makes it easier for the analyst to identify SQL features from source code. A smaller set of SQL features could also make broader coverage easier to achieve.",
+   "zh": "表3报告了行覆盖率和分支覆盖率。 在 SQLite、DuckDB 和 PostgreSQL 上，Gungnir 分别实现了 58.60%、26.66% 和 29.91% 的分支覆盖率。 ShQveL 在同一系统上的覆盖率为 31.20%、26.38% 和 19.96%。 与初始的 SQLancer++ 生成器相比，Gungnir 分别将分支覆盖率提升了 31.17、8.68 和 13.42 个百分点。 在所有三种 DBMS 上，它的行和分支覆盖率也高于所测量的生成器基线。 测试套件在 DuckDB 和 PostgreSQL 上分别实现了 40.83% 和 50.61% 的分支覆盖率，超过了所有经过评估的生成器，包括 Gungnir。 这种差距是意料之中的，因为被评估的生成器专注于逻辑错误检测，且查询形式受到测试预言机的限制，而测试套件则覆盖了更广泛的操作，包括模式变更和管理命令。 Gungnir 在 SQLite 上实现的覆盖率高于 DuckDB 和 PostgreSQL；一个可能的解释是，SQLite 的代码库较小，使分析者更容易从源代码中识别 SQL 特性。 较少的 SQL 特性集合也可能使实现更广泛的覆盖变得更加容易。",
+   "sents": [
+    {
+     "en": "Table 3 reports line and branch coverage.",
+     "zh": "表3报告了行覆盖率和分支覆盖率。"
+    },
+    {
+     "en": "On SQLite, DuckDB, and PostgreSQL, Gungnir achieved 58.60%, 26.66%, and 29.91% branch coverage, respectively.",
+     "zh": "在 SQLite、DuckDB 和 PostgreSQL 上，Gungnir 分别实现了 58.60%、26.66% 和 29.91% 的分支覆盖率。"
+    },
+    {
+     "en": "ShQveL covered 31.20%, 26.38%, and 19.96% on the same systems.",
+     "zh": "ShQveL 在同一系统上的覆盖率为 31.20%、26.38% 和 19.96%。"
+    },
+    {
+     "en": "Compared with the initial SQLancer++ generator, Gungnir increased branch coverage by 31.17, 8.68, and 13.42 percentage points, respectively.",
+     "zh": "与初始的 SQLancer++ 生成器相比，Gungnir 分别将分支覆盖率提升了 31.17、8.68 和 13.42 个百分点。"
+    },
+    {
+     "en": "It also covered more lines and branches than the measured generator baselines on all three DBMSs.",
+     "zh": "在所有三种 DBMS 上，它的行和分支覆盖率也高于所测量的生成器基线。"
+    },
+    {
+     "en": "The test suites achieved 40.83% and 50.61% branch coverage on DuckDB and PostgreSQL, respectively, exceeding all evaluated generators, including Gungnir .",
+     "zh": "测试套件在 DuckDB 和 PostgreSQL 上分别实现了 40.83% 和 50.61% 的分支覆盖率，超过了所有经过评估的生成器，包括 Gungnir。"
+    },
+    {
+     "en": "The gap is expected because evaluated generators focus on logic bug detection, and the query forms are constrained by the test oracle, while the test suites cover a broader range of operations, including schema changes and administrative commands.",
+     "zh": "这种差距是意料之中的，因为被评估的生成器专注于逻辑错误检测，且查询形式受到测试预言机的限制，而测试套件则覆盖了更广泛的操作，包括模式变更和管理命令。"
+    },
+    {
+     "en": "Gungnir achieved higher coverage on SQLite than on DuckDB and PostgreSQL; one possible explanation is that SQLite’s smaller codebase makes it easier for the analyst to identify SQL features from source code.",
+     "zh": "Gungnir 在 SQLite 上实现的覆盖率高于 DuckDB 和 PostgreSQL；一个可能的解释是，SQLite 的代码库较小，使分析者更容易从源代码中识别 SQL 特性。"
+    },
+    {
+     "en": "A smaller set of SQL features could also make broader coverage easier to achieve.",
+     "zh": "较少的 SQL 特性集合也可能使实现更广泛的覆盖变得更加容易。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 6 compares PostgreSQL branch coverage for ShQveL, Gungnir , and the native test suite in selected source directories, with utils narrowed to its main component, utils/adt . Gungnir covered 4,743 additional branches in optimizer , 4,108 in access , 3,500 in executor , and 2,503 in utils/adt , accounting for 63.0% of its net increase over ShQveL. These gains span query planning, data access, execution, and utility functions, although the test suite covers more branches in each directory. The utils/adt directory contains 74.0% of the branches in utils and accounts for 83.3% of the test-suite gap in utils ; it includes data-type functions and utilities such as query deparsing, for which the test suite covered 29,875 branches compared with 12,420 for Gungnir . The suite also includes operations such as plan inspection and function management, illustrating the broader scope of native regression testing. Thus, the remaining coverage gap reflects both operations absent from the generated workload and incomplete branch coverage within components that the generator already reaches.",
+   "zh": "图 6 比较了 ShQveL、Gungnir 和原生测试套件在选定源目录中的 PostgreSQL 分支覆盖情况，其中 utils 被限定为其主要组件 utils/adt。 Gungnir 在 optimizer 中覆盖了 4,743 个额外分支，在 access 中覆盖了 4,108 个，在 executor 中覆盖了 3,500 个，在 utils/adt 中覆盖了 2,503 个，占其相对于 ShQveL 的净增量的 63.0%。 这些增益涵盖了查询规划、数据访问、执行和实用函数，尽管测试套件在每个目录中覆盖了更多的分支。 utils/adt 目录包含了 utils 中 74.0% 的分支，并占用了 utils 中测试套件差距的 83.3%；它包括数据类型函数和工具，例如查询反解析，对此测试套件覆盖了 29,875 个分支，而 Gungnir 仅覆盖了 12,420 个。 该测试套件还包括计划检查和函数管理等操作，体现了原生回归测试更广泛的范围。 因此，剩余的覆盖差距既反映了生成工作负载中缺失的操作，也反映了生成器已经触及的组件中不完整的分支覆盖。",
+   "sents": [
+    {
+     "en": "Figure 6 compares PostgreSQL branch coverage for ShQveL, Gungnir , and the native test suite in selected source directories, with utils narrowed to its main component, utils/adt .",
+     "zh": "图 6 比较了 ShQveL、Gungnir 和原生测试套件在选定源目录中的 PostgreSQL 分支覆盖情况，其中 utils 被限定为其主要组件 utils/adt。"
+    },
+    {
+     "en": "Gungnir covered 4,743 additional branches in optimizer , 4,108 in access , 3,500 in executor , and 2,503 in utils/adt , accounting for 63.0% of its net increase over ShQveL.",
+     "zh": "Gungnir 在 optimizer 中覆盖了 4,743 个额外分支，在 access 中覆盖了 4,108 个，在 executor 中覆盖了 3,500 个，在 utils/adt 中覆盖了 2,503 个，占其相对于 ShQveL 的净增量的 63.0%。"
+    },
+    {
+     "en": "These gains span query planning, data access, execution, and utility functions, although the test suite covers more branches in each directory.",
+     "zh": "这些增益涵盖了查询规划、数据访问、执行和实用函数，尽管测试套件在每个目录中覆盖了更多的分支。"
+    },
+    {
+     "en": "The utils/adt directory contains 74.0% of the branches in utils and accounts for 83.3% of the test-suite gap in utils ; it includes data-type functions and utilities such as query deparsing, for which the test suite covered 29,875 branches compared with 12,420 for Gungnir .",
+     "zh": "utils/adt 目录包含了 utils 中 74.0% 的分支，并占用了 utils 中测试套件差距的 83.3%；它包括数据类型函数和工具，例如查询反解析，对此测试套件覆盖了 29,875 个分支，而 Gungnir 仅覆盖了 12,420 个。"
+    },
+    {
+     "en": "The suite also includes operations such as plan inspection and function management, illustrating the broader scope of native regression testing.",
+     "zh": "该测试套件还包括计划检查和函数管理等操作，体现了原生回归测试更广泛的范围。"
+    },
+    {
+     "en": "Thus, the remaining coverage gap reflects both operations absent from the generated workload and incomplete branch coverage within components that the generator already reaches.",
+     "zh": "因此，剩余的覆盖差距既反映了生成工作负载中缺失的操作，也反映了生成器已经触及的组件中不完整的分支覆盖。"
+    }
+   ]
+  },
+  {
+   "en": "We further evaluated the practicality of Gungnir through a case study on DuckDB. We recorded how the system evolved the generator, tested the DBMS, and generated bug reports. We used DuckDB nightly version with deepseek-flash through OpenCode and issued the following request to the orchestrator agent: “Do not stop until you find 20 unique, previously unknown bugs.” We counted the bug reports generated by final triage and measured elapsed time, recorded token use, and LLM cost through the end of that session.",
+   "zh": "我们通过一项针对 DuckDB 的案例研究，进一步评估了 Gungnir 的实用性。 我们记录了该系统如何演化生成器、测试 DBMS 以及生成错误报告的过程。 我们通过 OpenCode 使用 DuckDB 的夜间版本和 deepseek-flash，并向协调智能体发出以下请求：“在找到 20 个独特且此前未知的错误之前不要停止。”我们统计了最终筛选后生成的错误报告数量，并测量了从该会话开始到结束所花费的时间、使用的 token 数量以及 LLM 成本。",
+   "sents": [
+    {
+     "en": "We further evaluated the practicality of Gungnir through a case study on DuckDB.",
+     "zh": "我们通过一项针对 DuckDB 的案例研究，进一步评估了 Gungnir 的实用性。"
+    },
+    {
+     "en": "We recorded how the system evolved the generator, tested the DBMS, and generated bug reports.",
+     "zh": "我们记录了该系统如何演化生成器、测试 DBMS 以及生成错误报告的过程。"
+    },
+    {
+     "en": "We used DuckDB nightly version with deepseek-flash through OpenCode and issued the following request to the orchestrator agent: “Do not stop until you find 20 unique, previously unknown bugs.” We counted the bug reports generated by final triage and measured elapsed time, recorded token use, and LLM cost through the end of that session.",
+     "zh": "我们通过 OpenCode 使用 DuckDB 的夜间版本和 deepseek-flash，并向协调智能体发出以下请求：“在找到 20 个独特且此前未知的错误之前不要停止。”我们统计了最终筛选后生成的错误报告数量，并测量了从该会话开始到结束所花费的时间、使用的 token 数量以及 LLM 成本。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 7 shows how generator evolution and DBMS testing overlapped in the DuckDB run. The analyst agent examined DBMS source code and coverage results to identify additional SQL features, while the coding agent implemented the resulting goals. The controller agent selected goals and adjusted testing as new evidence became available, and the triage agent examined failures alongside continued testing. By the end of the run, the generator satisfied 81 SQL feature goals. The run accepted 92 source commits, including repeated work after rejection; each passed the existing regression checks, including witness replay. Over 23.99 hours, the fuzzer tested the seed and 82 evolved bundles in 90 segments, executing 29.49 million SQL statements. The fuzzer was active for 23.92 hours within this run, while coding sessions occupied 17.39 hours. These overlapping activities illustrate the pipeline in Section 4.3 : testing an accepted generator need not wait for the coding session to finish.",
+   "zh": "图 7 展示了 DuckDB 运行过程中生成器演进与 DBMS 测试如何重叠进行。 分析师智能体检查了 DBMS 源代码和覆盖结果，以识别额外的 SQL 功能，而编码智能体则实现了由此产生的目标。 控制器智能体在新证据出现时选择目标并调整测试，而分类智能体则在持续测试的同时检查失败情况。 到运行结束时，生成器已满足 81 个 SQL 功能目标。 此次运行接受了 92 次源代码提交，包括被拒绝后的重复工作；每次提交都通过了现有的回归检查，包括见证重放。 在超过 23.99 小时的时间里，模糊测试器对种子和 82 个演进后的程序包进行了 90 个阶段的测试，执行了 2949 万条 SQL 语句。 在此次运行中，模糊测试器活跃了 23.92 小时，而编码环节则占据了 17.39 小时。 这些重叠的活动说明了第 4.3 节中的流程：对已接受的生成器进行测试无需等待编码环节完成。",
+   "sents": [
+    {
+     "en": "Figure 7 shows how generator evolution and DBMS testing overlapped in the DuckDB run.",
+     "zh": "图 7 展示了 DuckDB 运行过程中生成器演进与 DBMS 测试如何重叠进行。"
+    },
+    {
+     "en": "The analyst agent examined DBMS source code and coverage results to identify additional SQL features, while the coding agent implemented the resulting goals.",
+     "zh": "分析师智能体检查了 DBMS 源代码和覆盖结果，以识别额外的 SQL 功能，而编码智能体则实现了由此产生的目标。"
+    },
+    {
+     "en": "The controller agent selected goals and adjusted testing as new evidence became available, and the triage agent examined failures alongside continued testing.",
+     "zh": "控制器智能体在新证据出现时选择目标并调整测试，而分类智能体则在持续测试的同时检查失败情况。"
+    },
+    {
+     "en": "By the end of the run, the generator satisfied 81 SQL feature goals.",
+     "zh": "到运行结束时，生成器已满足 81 个 SQL 功能目标。"
+    },
+    {
+     "en": "The run accepted 92 source commits, including repeated work after rejection; each passed the existing regression checks, including witness replay.",
+     "zh": "此次运行接受了 92 次源代码提交，包括被拒绝后的重复工作；每次提交都通过了现有的回归检查，包括见证重放。"
+    },
+    {
+     "en": "Over 23.99 hours, the fuzzer tested the seed and 82 evolved bundles in 90 segments, executing 29.49 million SQL statements.",
+     "zh": "在超过 23.99 小时的时间里，模糊测试器对种子和 82 个演进后的程序包进行了 90 个阶段的测试，执行了 2949 万条 SQL 语句。"
+    },
+    {
+     "en": "The fuzzer was active for 23.92 hours within this run, while coding sessions occupied 17.39 hours.",
+     "zh": "在此次运行中，模糊测试器活跃了 23.92 小时，而编码环节则占据了 17.39 小时。"
+    },
+    {
+     "en": "These overlapping activities illustrate the pipeline in Section 4.3 : testing an accepted generator need not wait for the coding session to finish.",
+     "zh": "这些重叠的活动说明了第 4.3 节中的流程：对已接受的生成器进行测试无需等待编码环节完成。"
+    }
+   ]
+  },
+  {
+   "en": "The DuckDB run reproduced nine kinds of bugs, from which the triage agent excluded four upstream duplicates and generated five bug reports. We submitted these reports directly to DuckDB developers, who confirmed all of them. This result also illustrates the importance of triage agents in filtering duplicates and upstream issues. The whole run took 24.29 hours, including an extra final triage for generating reports and reproductions. In total, the run used 1,773.16 million tokens, at an LLM cost of $20.85. Cached input accounted for 98.57% of input tokens, so the total token count alone does not explain the recorded cost. A longer evolution budget, such as one week, could allow the system to implement more SQL features and test their combinations for longer.",
+   "zh": "DuckDB 的运行过程重现了九种不同类型的错误，其中分类智能体排除了四个上游重复错误，并生成了五个错误报告。 我们直接将这些报告提交给了 DuckDB 的开发人员，他们确认了所有报告的有效性。 这一结果也说明了分类智能体在过滤重复错误和上游问题方面的重要性。 整个运行过程耗时 24.29 小时，其中包括为生成报告和重现错误而进行的额外最终分类工作。 此次运行总共消耗了 17.7316 亿个令牌，LLM 成本为 20.85 美元。 缓存输入占输入令牌的 98.57%，因此仅凭总令牌数量无法解释所记录的成本。 更长的演化预算（例如一周）可能使系统能够实现更多 SQL 功能，并更长时间地测试这些功能的组合。",
+   "sents": [
+    {
+     "en": "The DuckDB run reproduced nine kinds of bugs, from which the triage agent excluded four upstream duplicates and generated five bug reports.",
+     "zh": "DuckDB 的运行过程重现了九种不同类型的错误，其中分类智能体排除了四个上游重复错误，并生成了五个错误报告。"
+    },
+    {
+     "en": "We submitted these reports directly to DuckDB developers, who confirmed all of them.",
+     "zh": "我们直接将这些报告提交给了 DuckDB 的开发人员，他们确认了所有报告的有效性。"
+    },
+    {
+     "en": "This result also illustrates the importance of triage agents in filtering duplicates and upstream issues.",
+     "zh": "这一结果也说明了分类智能体在过滤重复错误和上游问题方面的重要性。"
+    },
+    {
+     "en": "The whole run took 24.29 hours, including an extra final triage for generating reports and reproductions.",
+     "zh": "整个运行过程耗时 24.29 小时，其中包括为生成报告和重现错误而进行的额外最终分类工作。"
+    },
+    {
+     "en": "In total, the run used 1,773.16 million tokens, at an LLM cost of $20.85.",
+     "zh": "此次运行总共消耗了 17.7316 亿个令牌，LLM 成本为 20.85 美元。"
+    },
+    {
+     "en": "Cached input accounted for 98.57% of input tokens, so the total token count alone does not explain the recorded cost.",
+     "zh": "缓存输入占输入令牌的 98.57%，因此仅凭总令牌数量无法解释所记录的成本。"
+    },
+    {
+     "en": "A longer evolution budget, such as one week, could allow the system to implement more SQL features and test their combinations for longer.",
+     "zh": "更长的演化预算（例如一周）可能使系统能够实现更多 SQL 功能，并更长时间地测试这些功能的组合。"
+    }
+   ]
+  },
+  {
+   "en": "Witness replay checks whether the generator can reproduce specific target statements. However, it has three limitations. First, it does not guarantee how frequently the feature is generated during random testing. For example, a generator may be able to produce a target statement but need choices that are rarely selected during random generation. Second, it does not guarantee that the new feature can be combined correctly with other features. For example, a generator may be able to generate a new function requiring an argument of a specific data type, but such constraints may not be encoded in the generator’s random generation logic. Third, it requires that the target statement is valid and satisfies the test oracle’s input requirements; witness replay cannot check whether the target statement is semantically correct.",
+   "zh": "见证重播检查生成器是否能够重现特定的目标语句。 然而，这种方法存在三个局限性。 首先，它无法保证在随机测试中该特征被生成的频率。 例如，一个生成器可能能够产生目标语句，但需要依赖在随机生成过程中极少被选择的选项。 其次，它无法保证新特征能够与其他特征正确结合。 例如，一个生成器可能能够生成一个需要特定数据类型参数的新函数，但这些约束条件可能并未编码在生成器的随机生成逻辑中。 第三，它要求目标语句是有效的，并且满足测试预言机的输入要求；见证重播无法检查目标语句是否在语义上正确。",
+   "sents": [
+    {
+     "en": "Witness replay checks whether the generator can reproduce specific target statements.",
+     "zh": "见证重播检查生成器是否能够重现特定的目标语句。"
+    },
+    {
+     "en": "However, it has three limitations.",
+     "zh": "然而，这种方法存在三个局限性。"
+    },
+    {
+     "en": "First, it does not guarantee how frequently the feature is generated during random testing.",
+     "zh": "首先，它无法保证在随机测试中该特征被生成的频率。"
+    },
+    {
+     "en": "For example, a generator may be able to produce a target statement but need choices that are rarely selected during random generation.",
+     "zh": "例如，一个生成器可能能够产生目标语句，但需要依赖在随机生成过程中极少被选择的选项。"
+    },
+    {
+     "en": "Second, it does not guarantee that the new feature can be combined correctly with other features.",
+     "zh": "其次，它无法保证新特征能够与其他特征正确结合。"
+    },
+    {
+     "en": "For example, a generator may be able to generate a new function requiring an argument of a specific data type, but such constraints may not be encoded in the generator’s random generation logic.",
+     "zh": "例如，一个生成器可能能够生成一个需要特定数据类型参数的新函数，但这些约束条件可能并未编码在生成器的随机生成逻辑中。"
+    },
+    {
+     "en": "Third, it requires that the target statement is valid and satisfies the test oracle’s input requirements; witness replay cannot check whether the target statement is semantically correct.",
+     "zh": "第三，它要求目标语句是有效的，并且满足测试预言机的输入要求；见证重播无法检查目标语句是否在语义上正确。"
+    }
+   ]
+  },
+  {
+   "en": "The evolved generator can still generate queries that cause false alarms, that is, cases in which the test oracle reports a bug although the DBMS behaves correctly. For example, SQLite permits ambiguous aggregate queries whose bare columns take values from an arbitrarily selected row within a group. Using these queries in the TLP base query can yield different results, which is expected behavior. These cases were uncommon in our testing, and all were identified and removed by the triage agent. The analyst can record these false positives and avoid similar target queries in later iterations.",
+   "zh": "演化后的生成器仍然可能生成导致误报的查询，也就是说，测试预言机报告了错误，而数据库管理系统实际上运行正常。 例如，SQLite 允许存在歧义的聚合查询，其中裸列从组内任意选中的一行获取值。 在 TLP 基础查询中使用这些查询可能会产生不同的结果，这是预期的行为。 这些情况在我们的测试中并不常见，并且全部被分类智能体识别并移除。 分析师可以记录这些误报，并在后续迭代中避免使用类似的目标查询。",
+   "sents": [
+    {
+     "en": "The evolved generator can still generate queries that cause false alarms, that is, cases in which the test oracle reports a bug although the DBMS behaves correctly.",
+     "zh": "演化后的生成器仍然可能生成导致误报的查询，也就是说，测试预言机报告了错误，而数据库管理系统实际上运行正常。"
+    },
+    {
+     "en": "For example, SQLite permits ambiguous aggregate queries whose bare columns take values from an arbitrarily selected row within a group.",
+     "zh": "例如，SQLite 允许存在歧义的聚合查询，其中裸列从组内任意选中的一行获取值。"
+    },
+    {
+     "en": "Using these queries in the TLP base query can yield different results, which is expected behavior.",
+     "zh": "在 TLP 基础查询中使用这些查询可能会产生不同的结果，这是预期的行为。"
+    },
+    {
+     "en": "These cases were uncommon in our testing, and all were identified and removed by the triage agent.",
+     "zh": "这些情况在我们的测试中并不常见，并且全部被分类智能体识别并移除。"
+    },
+    {
+     "en": "The analyst can record these false positives and avoid similar target queries in later iterations.",
+     "zh": "分析师可以记录这些误报，并在后续迭代中避免使用类似的目标查询。"
+    }
+   ]
+  },
+  {
+   "en": "The LLM cost of generator evolution can be spread over repeated DBMS testing. An agent that directly searches for bugs uses LLM calls to generate and refine test cases; Gungnir instead uses these calls to extend a reusable generator. Once evolution ends, the generator can continue random testing without further LLM calls. In the DuckDB case study (Section 5.4 ), the approximately 24-hour run completed 81 SQL feature goals at a recorded LLM cost of $20.85, including analysis, coding, repair, and triage. In the coverage experiment (Section 5.3 ), we tested the fixed DuckDB generator without further LLM calls and measured 8.68 percentage points more branch coverage than the initial SQLancer++ generator.",
+   "zh": "生成器演化的 LLM 成本可以分摊到重复的 DBMS 测试中。 直接搜索错误的智能体使用 LLM 调用来生成和精炼测试用例；而 Gungnir 则利用这些调用来扩展一个可重用的生成器。 演化一旦结束，生成器就可以在没有进一步 LLM 调用的情况下继续随机测试。 在 DuckDB 案例研究中（第 5.4 节），大约持续 24 小时的运行完成了 81 个 SQL 功能目标，记录的 LLM 成本为 20.85 美元，包括分析、编码、修复和分类。 在覆盖率实验中（第 5.3 节），我们在没有进一步 LLM 调用的情况下测试了固定的 DuckDB 生成器，并测得其分支覆盖率比初始的 SQLancer++ 生成器高出 8.68 个百分点。",
+   "sents": [
+    {
+     "en": "The LLM cost of generator evolution can be spread over repeated DBMS testing.",
+     "zh": "生成器演化的 LLM 成本可以分摊到重复的 DBMS 测试中。"
+    },
+    {
+     "en": "An agent that directly searches for bugs uses LLM calls to generate and refine test cases; Gungnir instead uses these calls to extend a reusable generator.",
+     "zh": "直接搜索错误的智能体使用 LLM 调用来生成和精炼测试用例；而 Gungnir 则利用这些调用来扩展一个可重用的生成器。"
+    },
+    {
+     "en": "Once evolution ends, the generator can continue random testing without further LLM calls.",
+     "zh": "演化一旦结束，生成器就可以在没有进一步 LLM 调用的情况下继续随机测试。"
+    },
+    {
+     "en": "In the DuckDB case study (Section 5.4 ), the approximately 24-hour run completed 81 SQL feature goals at a recorded LLM cost of $20.85, including analysis, coding, repair, and triage.",
+     "zh": "在 DuckDB 案例研究中（第 5.4 节），大约持续 24 小时的运行完成了 81 个 SQL 功能目标，记录的 LLM 成本为 20.85 美元，包括分析、编码、修复和分类。"
+    },
+    {
+     "en": "In the coverage experiment (Section 5.3 ), we tested the fixed DuckDB generator without further LLM calls and measured 8.68 percentage points more branch coverage than the initial SQLancer++ generator.",
+     "zh": "在覆盖率实验中（第 5.3 节），我们在没有进一步 LLM 调用的情况下测试了固定的 DuckDB 生成器，并测得其分支覆盖率比初始的 SQLancer++ 生成器高出 8.68 个百分点。"
+    }
+   ]
+  },
+  {
+   "en": "Automated DBMS testing combines test case generation with test oracles that detect unexpected behavior. For test case generation, Squirrel ( Zhong et al., 2020 ) and SQLRight ( Liang et al., 2022 ) mutate existing SQL statements and use validity and coverage feedback to guide testing. QPG ( Ba and Rigger, 2023 ) mutates the database state to obtain query plans that have not been seen during testing. SQLancer++ ( Zhong and Rigger, 2026b ) uses a shared adaptive generator to generate SQL statements across dialects. For test oracles, PQS ( Rigger and Su, 2020c ) checks query results against known rows. TLP ( Rigger and Su, 2020b ) generates three queries that partition the rows of an original query and checks whether their combined results match its result. NoREC ( Rigger and Su, 2020a ) compares the result of a query that can be optimized with that of an equivalent query designed to avoid those optimizations. DQP ( Ba and Rigger, 2024 ) executes a query using different query plans and compares their results. Radar ( Song et al., 2024 ) removes database metadata to check for incorrect query optimizations. JIR ( Xiang et al., 2026 ) uses the results of related join types to derive the expected result of a join. LLMs have been used to improve DBMS testing. ShQveL ( Zhong and Rigger, 2026a ) adds validated SQL fragments to a generator that reuses them during testing. QTRAN ( Lin et al., 2025 ) uses LLMs to translate queries across SQL dialects and adapts mutations to preserve the relations required by metamorphic testing. Argus ( Mang et al., 2026b ) prompts an LLM to generate abstract query pairs and checks their equivalence with a SQL equivalence prover before using them as test oracles. Building on SQLancer++, Gungnir modifies the generator’s source code to support new SQL features and uses existing test oracles to validate the generated statements.",
+   "zh": "自动化的 DBMS 测试将测试用例生成与能够检测意外行为的测试预言机相结合。 在测试用例生成方面，Squirrel（Zhong 等人，2020）和 SQLRight（Liang 等人，2022）通过变异现有 SQL 语句，并利用有效性和覆盖反馈来指导测试。 QPG（Ba 和 Rigger，2023）通过变异数据库状态来获取在测试过程中从未见过的查询计划。 SQLancer++（Zhong 和 Rigger，2026b）使用一个共享的自适应生成器来跨不同 SQL 方言生成 SQL 语句。 对于测试预言机，PQS（Rigger 和 Su，2020c）通过将查询结果与已知行进行比对来进行验证。 TLP（Rigger 和 Su，2020b）生成三个能够划分原始查询行的查询，并检查它们的合并结果是否与原始查询的结果一致。 NoREC（Rigger 和 Su，2020a）将可被优化的查询结果与一个旨在避免这些优化操作的等效查询结果进行比较。 DQP（Ba 和 Rigger，2024）使用不同的查询计划执行同一查询，并比较它们的结果。 Radar（Song 等人，2024）通过移除数据库元数据来检测错误的查询优化。 JIR（Xiang 等人，2026）利用相关连接类型的结果来推导出某个连接的预期结果。 LLM 已被用于改进 DBMS 测试。 ShQveL（Zhong 和 Rigger，2026a）向生成器中添加经过验证的 SQL 片段，以便在测试过程中重复使用这些片段。 QTRAN（Lin 等人，2025）利用 LLM 在不同 SQL 方言之间转换查询，并对变异操作进行调整，以保留变形测试所需的关联关系。 Argus（Mang 等人，2026b）通过提示 LLM 生成抽象的查询对，并使用 SQL 等价性证明器检查这些查询对的等价性，之后才将其用作测试预言机。 在 SQLancer++ 的基础上，Gungnir 修改了生成器的源代码以支持新的 SQL 特性，并利用现有的测试预言机来验证生成的语句。",
+   "sents": [
+    {
+     "en": "Automated DBMS testing combines test case generation with test oracles that detect unexpected behavior.",
+     "zh": "自动化的 DBMS 测试将测试用例生成与能够检测意外行为的测试预言机相结合。"
+    },
+    {
+     "en": "For test case generation, Squirrel ( Zhong et al., 2020 ) and SQLRight ( Liang et al., 2022 ) mutate existing SQL statements and use validity and coverage feedback to guide testing.",
+     "zh": "在测试用例生成方面，Squirrel（Zhong 等人，2020）和 SQLRight（Liang 等人，2022）通过变异现有 SQL 语句，并利用有效性和覆盖反馈来指导测试。"
+    },
+    {
+     "en": "QPG ( Ba and Rigger, 2023 ) mutates the database state to obtain query plans that have not been seen during testing.",
+     "zh": "QPG（Ba 和 Rigger，2023）通过变异数据库状态来获取在测试过程中从未见过的查询计划。"
+    },
+    {
+     "en": "SQLancer++ ( Zhong and Rigger, 2026b ) uses a shared adaptive generator to generate SQL statements across dialects.",
+     "zh": "SQLancer++（Zhong 和 Rigger，2026b）使用一个共享的自适应生成器来跨不同 SQL 方言生成 SQL 语句。"
+    },
+    {
+     "en": "For test oracles, PQS ( Rigger and Su, 2020c ) checks query results against known rows.",
+     "zh": "对于测试预言机，PQS（Rigger 和 Su，2020c）通过将查询结果与已知行进行比对来进行验证。"
+    },
+    {
+     "en": "TLP ( Rigger and Su, 2020b ) generates three queries that partition the rows of an original query and checks whether their combined results match its result.",
+     "zh": "TLP（Rigger 和 Su，2020b）生成三个能够划分原始查询行的查询，并检查它们的合并结果是否与原始查询的结果一致。"
+    },
+    {
+     "en": "NoREC ( Rigger and Su, 2020a ) compares the result of a query that can be optimized with that of an equivalent query designed to avoid those optimizations.",
+     "zh": "NoREC（Rigger 和 Su，2020a）将可被优化的查询结果与一个旨在避免这些优化操作的等效查询结果进行比较。"
+    },
+    {
+     "en": "DQP ( Ba and Rigger, 2024 ) executes a query using different query plans and compares their results.",
+     "zh": "DQP（Ba 和 Rigger，2024）使用不同的查询计划执行同一查询，并比较它们的结果。"
+    },
+    {
+     "en": "Radar ( Song et al., 2024 ) removes database metadata to check for incorrect query optimizations.",
+     "zh": "Radar（Song 等人，2024）通过移除数据库元数据来检测错误的查询优化。"
+    },
+    {
+     "en": "JIR ( Xiang et al., 2026 ) uses the results of related join types to derive the expected result of a join.",
+     "zh": "JIR（Xiang 等人，2026）利用相关连接类型的结果来推导出某个连接的预期结果。"
+    },
+    {
+     "en": "LLMs have been used to improve DBMS testing.",
+     "zh": "LLM 已被用于改进 DBMS 测试。"
+    },
+    {
+     "en": "ShQveL ( Zhong and Rigger, 2026a ) adds validated SQL fragments to a generator that reuses them during testing.",
+     "zh": "ShQveL（Zhong 和 Rigger，2026a）向生成器中添加经过验证的 SQL 片段，以便在测试过程中重复使用这些片段。"
+    },
+    {
+     "en": "QTRAN ( Lin et al., 2025 ) uses LLMs to translate queries across SQL dialects and adapts mutations to preserve the relations required by metamorphic testing.",
+     "zh": "QTRAN（Lin 等人，2025）利用 LLM 在不同 SQL 方言之间转换查询，并对变异操作进行调整，以保留变形测试所需的关联关系。"
+    },
+    {
+     "en": "Argus ( Mang et al., 2026b ) prompts an LLM to generate abstract query pairs and checks their equivalence with a SQL equivalence prover before using them as test oracles.",
+     "zh": "Argus（Mang 等人，2026b）通过提示 LLM 生成抽象的查询对，并使用 SQL 等价性证明器检查这些查询对的等价性，之后才将其用作测试预言机。"
+    },
+    {
+     "en": "Building on SQLancer++, Gungnir modifies the generator’s source code to support new SQL features and uses existing test oracles to validate the generated statements.",
+     "zh": "在 SQLancer++ 的基础上，Gungnir 修改了生成器的源代码以支持新的 SQL 特性，并利用现有的测试预言机来验证生成的语句。"
+    }
+   ]
+  },
+  {
+   "en": "LLMs have been used to improve query rewriting, configuration tuning, and workload generation. LLM-R 2 ( Li et al., 2024 ) uses an LLM to select rewrite rules from existing SQL rewriting systems. QO-Verify ( Narasayya and Chaudhuri, 2026 ) uses a query optimizer to check the equivalence of LLM-generated rewrites. SQLFlex ( An et al., 2026 ) parses SQL by integrating grammar-based parsing with LLM capabilities. SQLStorm ( Schmidt et al., 2025 ) generates SQL workloads for benchmarking. SQLBarber ( Lao and Trummer, 2026 ) generates SQL workloads according to requirements supplied by the user. Recently, LLM agents have been used to coordinate database tuning and SQL generation. AgentTune ( Li et al., 2025a ) coordinates LLM agents that analyze workloads, select configuration parameters, and refine database configurations. SysInsight ( Zhang et al., 2026a ) combines static analysis with LLM reasoning to derive tuning rules from DBMS source code and refines these rules using performance feedback. SQL-Factory ( Li et al., 2025b ) coordinates agents to generate SQL patterns, expand them into queries, and evaluate query quality for use in downstream tasks. Gungnir uses coding agents to extend a DBMS test generator with new SQL features.",
+   "zh": "LLM 已被用于改进查询重写、配置调优和工作负载生成。 LLM-R 2（Li 等人，2024）使用 LLM 从现有的 SQL 重写系统中选择重写规则。 QO-Verify（Narasayya 和 Chaudhuri，2026）使用查询优化器来验证 LLM 生成的重写结果是否等价。 SQLFlex（An 等人，2026）通过结合基于语法的解析与 LLM 能力来解析 SQL。 SQLStorm（Schmidt 等人，2025）用于生成用于基准测试的 SQL 工作负载。 SQLBarber（Lao 和 Trummer，2026）根据用户提供的要求生成 SQL 工作负载。 最近，LLM 智能体已被用于协调数据库调优与 SQL 生成。 AgentTune（Li 等人，2025a）协调 LLM 智能体分析工作负载、选择配置参数并优化数据库配置。 SysInsight（Zhang 等人，2026a）将静态分析与 LLM 推理相结合，从 DBMS 源代码中推导出调优规则，并利用性能反馈对这些规则进行优化。 SQL-Factory（Li 等人，2025b）协调智能体生成 SQL 模式、将其扩展为查询，并评估查询质量以用于下游任务。 Gungnir 使用编码智能体为 DBMS 测试生成器添加新的 SQL 功能。",
+   "sents": [
+    {
+     "en": "LLMs have been used to improve query rewriting, configuration tuning, and workload generation.",
+     "zh": "LLM 已被用于改进查询重写、配置调优和工作负载生成。"
+    },
+    {
+     "en": "LLM-R 2 ( Li et al., 2024 ) uses an LLM to select rewrite rules from existing SQL rewriting systems.",
+     "zh": "LLM-R 2（Li 等人，2024）使用 LLM 从现有的 SQL 重写系统中选择重写规则。"
+    },
+    {
+     "en": "QO-Verify ( Narasayya and Chaudhuri, 2026 ) uses a query optimizer to check the equivalence of LLM-generated rewrites.",
+     "zh": "QO-Verify（Narasayya 和 Chaudhuri，2026）使用查询优化器来验证 LLM 生成的重写结果是否等价。"
+    },
+    {
+     "en": "SQLFlex ( An et al., 2026 ) parses SQL by integrating grammar-based parsing with LLM capabilities.",
+     "zh": "SQLFlex（An 等人，2026）通过结合基于语法的解析与 LLM 能力来解析 SQL。"
+    },
+    {
+     "en": "SQLStorm ( Schmidt et al., 2025 ) generates SQL workloads for benchmarking.",
+     "zh": "SQLStorm（Schmidt 等人，2025）用于生成用于基准测试的 SQL 工作负载。"
+    },
+    {
+     "en": "SQLBarber ( Lao and Trummer, 2026 ) generates SQL workloads according to requirements supplied by the user.",
+     "zh": "SQLBarber（Lao 和 Trummer，2026）根据用户提供的要求生成 SQL 工作负载。"
+    },
+    {
+     "en": "Recently, LLM agents have been used to coordinate database tuning and SQL generation.",
+     "zh": "最近，LLM 智能体已被用于协调数据库调优与 SQL 生成。"
+    },
+    {
+     "en": "AgentTune ( Li et al., 2025a ) coordinates LLM agents that analyze workloads, select configuration parameters, and refine database configurations.",
+     "zh": "AgentTune（Li 等人，2025a）协调 LLM 智能体分析工作负载、选择配置参数并优化数据库配置。"
+    },
+    {
+     "en": "SysInsight ( Zhang et al., 2026a ) combines static analysis with LLM reasoning to derive tuning rules from DBMS source code and refines these rules using performance feedback.",
+     "zh": "SysInsight（Zhang 等人，2026a）将静态分析与 LLM 推理相结合，从 DBMS 源代码中推导出调优规则，并利用性能反馈对这些规则进行优化。"
+    },
+    {
+     "en": "SQL-Factory ( Li et al., 2025b ) coordinates agents to generate SQL patterns, expand them into queries, and evaluate query quality for use in downstream tasks.",
+     "zh": "SQL-Factory（Li 等人，2025b）协调智能体生成 SQL 模式、将其扩展为查询，并评估查询质量以用于下游任务。"
+    },
+    {
+     "en": "Gungnir uses coding agents to extend a DBMS test generator with new SQL features.",
+     "zh": "Gungnir 使用编码智能体为 DBMS 测试生成器添加新的 SQL 功能。"
+    }
+   ]
+  },
+  {
+   "en": "LLMs can evolve software by modifying source code using execution feedback. AlphaEvolve ( Novikov et al., 2025 ) uses LLMs to generate code changes and combines evolutionary search with automated evaluation to improve algorithms. SkyDiscover ( Liu et al., 2026 ) evolves programs using adaptive search strategies. FrontierCS ( Mang et al., 2026a ) is a benchmark that evaluates executable solutions to open-ended computer science problems. IC3-Evolve ( Miao et al., 2026 ) modifies hardware model-checking heuristics and checks safety proofs and counterexample traces independently to validate the changes. Such LLM-based software evolution has been applied to software testing tools. ELFuzz ( Chen et al., 2025 ) uses LLMs to modify generation-based fuzzers and coverage feedback to guide their evolution. Gentoo ( Vikram and Padhye, 2026 ) uses coding agents to implement and refine input generators, with optional predicate-level coverage feedback. GenEvo ( Wei et al., 2026 ) uses LLMs to solve constraints and adapt input generation logic to target program states. Gungnir uses fixed SQL targets to validate generator modifications. Witness replay directs the modified generator to generate these statements, and existing test oracles check their required behavior. Replaying historical witnesses checks that subsequent modifications preserve previously witnessed target generation.",
+   "zh": "LLM 可以通过利用执行反馈修改源代码来演化软件。 AlphaEvolve（Novikov 等人，2025）使用 LLM 生成代码变更，并结合进化搜索与自动化评估以改进算法。 SkyDiscover（Liu 等人，2026）采用自适应搜索策略来演化程序。 FrontierCS（Mang 等人，2026a）是一个基准测试，用于评估面向开放式计算机科学问题的可执行解决方案。 IC3-Evolve（Miao 等人，2026）修改硬件模型检查启发式方法，并独立验证安全证明和反例轨迹以确认变更的有效性。 此类基于 LLM 的软件演化技术已被应用于软件测试工具中。 ELFuzz（Chen 等人，2025）使用 LLM 修改基于生成的模糊测试器和利用覆盖反馈来引导其演化。 Gentoo（Vikram 和 Padhye，2026）使用编码智能体来实现和优化输入生成器，并可选地提供谓词级别的覆盖反馈。 GenEvo（Wei 等人，2026）使用 LLM 解决约束条件，并根据目标程序状态调整输入生成逻辑。 Gungnir 使用固定的 SQL 目标来验证生成器的修改。 Witness replay 会引导修改后的生成器产生这些语句，而现有的测试预言机则检查其所需行为。 重演历史见证可以验证后续修改是否保留了先前已见证的目标生成能力。",
+   "sents": [
+    {
+     "en": "LLMs can evolve software by modifying source code using execution feedback.",
+     "zh": "LLM 可以通过利用执行反馈修改源代码来演化软件。"
+    },
+    {
+     "en": "AlphaEvolve ( Novikov et al., 2025 ) uses LLMs to generate code changes and combines evolutionary search with automated evaluation to improve algorithms.",
+     "zh": "AlphaEvolve（Novikov 等人，2025）使用 LLM 生成代码变更，并结合进化搜索与自动化评估以改进算法。"
+    },
+    {
+     "en": "SkyDiscover ( Liu et al., 2026 ) evolves programs using adaptive search strategies.",
+     "zh": "SkyDiscover（Liu 等人，2026）采用自适应搜索策略来演化程序。"
+    },
+    {
+     "en": "FrontierCS ( Mang et al., 2026a ) is a benchmark that evaluates executable solutions to open-ended computer science problems.",
+     "zh": "FrontierCS（Mang 等人，2026a）是一个基准测试，用于评估面向开放式计算机科学问题的可执行解决方案。"
+    },
+    {
+     "en": "IC3-Evolve ( Miao et al., 2026 ) modifies hardware model-checking heuristics and checks safety proofs and counterexample traces independently to validate the changes.",
+     "zh": "IC3-Evolve（Miao 等人，2026）修改硬件模型检查启发式方法，并独立验证安全证明和反例轨迹以确认变更的有效性。"
+    },
+    {
+     "en": "Such LLM-based software evolution has been applied to software testing tools.",
+     "zh": "此类基于 LLM 的软件演化技术已被应用于软件测试工具中。"
+    },
+    {
+     "en": "ELFuzz ( Chen et al., 2025 ) uses LLMs to modify generation-based fuzzers and coverage feedback to guide their evolution.",
+     "zh": "ELFuzz（Chen 等人，2025）使用 LLM 修改基于生成的模糊测试器和利用覆盖反馈来引导其演化。"
+    },
+    {
+     "en": "Gentoo ( Vikram and Padhye, 2026 ) uses coding agents to implement and refine input generators, with optional predicate-level coverage feedback.",
+     "zh": "Gentoo（Vikram 和 Padhye，2026）使用编码智能体来实现和优化输入生成器，并可选地提供谓词级别的覆盖反馈。"
+    },
+    {
+     "en": "GenEvo ( Wei et al., 2026 ) uses LLMs to solve constraints and adapt input generation logic to target program states.",
+     "zh": "GenEvo（Wei 等人，2026）使用 LLM 解决约束条件，并根据目标程序状态调整输入生成逻辑。"
+    },
+    {
+     "en": "Gungnir uses fixed SQL targets to validate generator modifications.",
+     "zh": "Gungnir 使用固定的 SQL 目标来验证生成器的修改。"
+    },
+    {
+     "en": "Witness replay directs the modified generator to generate these statements, and existing test oracles check their required behavior.",
+     "zh": "Witness replay 会引导修改后的生成器产生这些语句，而现有的测试预言机则检查其所需行为。"
+    },
+    {
+     "en": "Replaying historical witnesses checks that subsequent modifications preserve previously witnessed target generation.",
+     "zh": "重演历史见证可以验证后续修改是否保留了先前已见证的目标生成能力。"
+    }
+   ]
+  },
+  {
+   "en": "Prior work controls the choices made by a test generator to guide the inputs it generates. Swarm testing ( Groce et al., 2012 ) enables different subsets of features across tests. Directed swarm testing ( Alipour et al., 2016 ) uses feedback to guide feature selection. Targeted property-based testing ( Löscher and Sagonas, 2017 ) uses a fitness function supplied by the user to search for test inputs. Zest ( Padhye et al., 2019 ) mutates the parameters supplied to a structured generator to guide testing. Loaded Dice ( Tjoa et al., 2025 ) adjusts the weights of generator choices to better match a specified distribution of generated values. Parsing Randomness ( Goldstein and Pierce, 2022 ) treats a generator as a parser whose input is a sequence of random choices. Reflective generators ( Goldstein et al., 2023 ) recover the choices that a generator could use to generate a given value. Other work uses specifications to verify and synthesize generators. Coverage types ( Zhou et al., 2023 ) describe values that a generator is guaranteed to generate. Cobb ( LaFontaine et al., 2025 ) uses these types to repair generators that cannot generate all the specified values. Clouseau ( Zhou et al., 2026 ) uses underapproximate trace specifications to synthesize effectful test generators. Gungnir uses semantic choices as an executable witness that the modified generator can generate a fixed SQL target.",
+   "zh": "先前的工作通过控制测试生成器所做的选择来引导其生成的输入。 群体测试（Groce 等人，2012）允许不同测试中使用不同的特征子集。 定向群体测试（Alipour 等人，2016）利用反馈来指导特征选择。 目标属性化测试（Löscher 和 Sagonas，2017）使用用户提供的适应度函数来搜索测试输入。 Zest（Padhye 等人，2019）通过变异提供给结构化生成器的参数来引导测试。 Loaded Dice（Tjoa 等人，2025）调整生成器选择的权重，以更好地匹配生成的值的指定分布。 Parsing Randomness（Goldstein 和 Pierce，2022）将生成器视为一个解析器，其输入是一系列随机选择。 反射生成器（Goldstein 等人，2023）能够恢复出生成器可能用来生成给定值的选择。 其他工作利用规范来验证和合成生成器。 覆盖类型（Zhou 等人，2023）描述了生成器保证能生成的值。 Cobb（LaFontaine 等人，2025）利用这些类型来修复无法生成所有指定值的生成器。 Clouseau（Zhou 等人，2026）使用下近似轨迹规范来合成具有效应的测试生成器。 Gungnir 将语义选择用作可执行证据，证明修改后的生成器能够生成一个固定的 SQL 目标。",
+   "sents": [
+    {
+     "en": "Prior work controls the choices made by a test generator to guide the inputs it generates.",
+     "zh": "先前的工作通过控制测试生成器所做的选择来引导其生成的输入。"
+    },
+    {
+     "en": "Swarm testing ( Groce et al., 2012 ) enables different subsets of features across tests.",
+     "zh": "群体测试（Groce 等人，2012）允许不同测试中使用不同的特征子集。"
+    },
+    {
+     "en": "Directed swarm testing ( Alipour et al., 2016 ) uses feedback to guide feature selection.",
+     "zh": "定向群体测试（Alipour 等人，2016）利用反馈来指导特征选择。"
+    },
+    {
+     "en": "Targeted property-based testing ( Löscher and Sagonas, 2017 ) uses a fitness function supplied by the user to search for test inputs.",
+     "zh": "目标属性化测试（Löscher 和 Sagonas，2017）使用用户提供的适应度函数来搜索测试输入。"
+    },
+    {
+     "en": "Zest ( Padhye et al., 2019 ) mutates the parameters supplied to a structured generator to guide testing.",
+     "zh": "Zest（Padhye 等人，2019）通过变异提供给结构化生成器的参数来引导测试。"
+    },
+    {
+     "en": "Loaded Dice ( Tjoa et al., 2025 ) adjusts the weights of generator choices to better match a specified distribution of generated values.",
+     "zh": "Loaded Dice（Tjoa 等人，2025）调整生成器选择的权重，以更好地匹配生成的值的指定分布。"
+    },
+    {
+     "en": "Parsing Randomness ( Goldstein and Pierce, 2022 ) treats a generator as a parser whose input is a sequence of random choices.",
+     "zh": "Parsing Randomness（Goldstein 和 Pierce，2022）将生成器视为一个解析器，其输入是一系列随机选择。"
+    },
+    {
+     "en": "Reflective generators ( Goldstein et al., 2023 ) recover the choices that a generator could use to generate a given value.",
+     "zh": "反射生成器（Goldstein 等人，2023）能够恢复出生成器可能用来生成给定值的选择。"
+    },
+    {
+     "en": "Other work uses specifications to verify and synthesize generators.",
+     "zh": "其他工作利用规范来验证和合成生成器。"
+    },
+    {
+     "en": "Coverage types ( Zhou et al., 2023 ) describe values that a generator is guaranteed to generate.",
+     "zh": "覆盖类型（Zhou 等人，2023）描述了生成器保证能生成的值。"
+    },
+    {
+     "en": "Cobb ( LaFontaine et al., 2025 ) uses these types to repair generators that cannot generate all the specified values.",
+     "zh": "Cobb（LaFontaine 等人，2025）利用这些类型来修复无法生成所有指定值的生成器。"
+    },
+    {
+     "en": "Clouseau ( Zhou et al., 2026 ) uses underapproximate trace specifications to synthesize effectful test generators.",
+     "zh": "Clouseau（Zhou 等人，2026）使用下近似轨迹规范来合成具有效应的测试生成器。"
+    },
+    {
+     "en": "Gungnir uses semantic choices as an executable witness that the modified generator can generate a fixed SQL target.",
+     "zh": "Gungnir 将语义选择用作可执行证据，证明修改后的生成器能够生成一个固定的 SQL 目标。"
+    }
+   ]
+  },
+  {
+   "en": "Extending a DBMS test generator requires implementing new SQL features and using them in queries that its oracle can check. We have presented Gungnir , which uses coding agents to modify the generator and witness replay to check that it can generate target statements. Generation witnesses record the database setup and choices needed to generate a target statement. Replay checks these choices and reports failures to guide further source modifications. We implemented Gungnir on top of SQLancer++ so that the resulting generator can continue testing without model calls. We evaluate feature acquisition separately from the bug-finding effectiveness of the evolved generators.",
+   "zh": "扩展 DBMS 测试生成器需要实现新的 SQL 功能，并在其 oracle 能够验证的查询中使用这些功能。 我们提出了 Gungnir，它利用编码智能体修改生成器并执行重播验证，以确认其能否生成目标语句。 生成见证会记录生成目标语句所需的数据库配置和选择项。 重播会检查这些选择项，并报告失败情况，以指导进一步的源代码修改。 我们在 SQLancer++ 之上实现了 Gungnir，这样生成的测试器无需模型调用即可继续执行测试。 我们将功能获取与演化生成器的缺陷发现效果分开进行评估。",
+   "sents": [
+    {
+     "en": "Extending a DBMS test generator requires implementing new SQL features and using them in queries that its oracle can check.",
+     "zh": "扩展 DBMS 测试生成器需要实现新的 SQL 功能，并在其 oracle 能够验证的查询中使用这些功能。"
+    },
+    {
+     "en": "We have presented Gungnir , which uses coding agents to modify the generator and witness replay to check that it can generate target statements.",
+     "zh": "我们提出了 Gungnir，它利用编码智能体修改生成器并执行重播验证，以确认其能否生成目标语句。"
+    },
+    {
+     "en": "Generation witnesses record the database setup and choices needed to generate a target statement.",
+     "zh": "生成见证会记录生成目标语句所需的数据库配置和选择项。"
+    },
+    {
+     "en": "Replay checks these choices and reports failures to guide further source modifications.",
+     "zh": "重播会检查这些选择项，并报告失败情况，以指导进一步的源代码修改。"
+    },
+    {
+     "en": "We implemented Gungnir on top of SQLancer++ so that the resulting generator can continue testing without model calls.",
+     "zh": "我们在 SQLancer++ 之上实现了 Gungnir，这样生成的测试器无需模型调用即可继续执行测试。"
+    },
+    {
+     "en": "We evaluate feature acquisition separately from the bug-finding effectiveness of the evolved generators.",
+     "zh": "我们将功能获取与演化生成器的缺陷发现效果分开进行评估。"
+    }
+   ]
+  }
+ ]
+}
