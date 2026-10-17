@@ -737,9 +737,19 @@ def output(sec, language):
                 if collector is None:
                     raise Exception(f'unknown collector: {collector_name}')
                 feed = collector(rss_url, log_file)
+                fetch_status = None
             else:
-                feed = fetch_feed(rss_url, log_file)['feed']
+                result = fetch_feed(rss_url, log_file)
+                feed = result['feed']
+                fetch_status = result.get('status')
             if feed:
+                break
+            # 429/503 是对方明确说「你打太快了」。继续重试只会加深限流，
+            # 所以本轮到此为止 —— arxiv 四源 backfill_days=14，漏一轮下次能补回。
+            if fetch_status in (429, 503):
+                with open(log_file, 'a', encoding='utf-8') as f:
+                    f.write(f"Fetch throttled (HTTP {fetch_status}) from {rss_url},"
+                            f" stop retrying this run\n")
                 break
             if attempt < 3:
                 with open(log_file, 'a', encoding='utf-8') as f:
