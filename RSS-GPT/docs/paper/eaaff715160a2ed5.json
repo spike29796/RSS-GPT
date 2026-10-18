@@ -1,0 +1,902 @@
+{
+ "id": "eaaff715160a2ed5",
+ "source": "arxiv-t2i",
+ "link": "https://arxiv.org/abs/2610.03047v1",
+ "title": "Parasitic Co-Denoising: Unlocking 3D Human Motion Generation in a Frozen Video Diffusion Model",
+ "title_zh": "寄生式协同去噪：在冻结的视频扩散模型中实现 3D 人类动作生成",
+ "published": "2026-10-02T09:28:57Z",
+ "translated_at": "2026-10-18T05:51:25Z",
+ "paragraphs": [
+  {
+   "en": "Despite never being supervised on explicit 3D motion, large-scale text-to-video diffusion models synthesize realistic human motion in their generated videos. We ask whether this implicit knowledge can be turned into explicit 3D motion generation, without training a separate motion model. Probing a frozen Wan2.1 reveals that a recoverable motion signal is present in its intermediate states across the entire denoising schedule, not confined to the clean output. Motivated by this, we introduce parasitic co-denoising, a paradigm in which motion is decoded from the host model along its denoising schedule rather than produced by an independent generator. We instantiate it as the Parasitic Motion Decoder (PMD), an efficient flow-matching decoder that shares the host’s noise schedule and reads its intermediate features through a σ \\sigma -adaptive multi-layer fusion, leaving the host unmodified. Drawing its coverage from the host rather than from motion data, PMD leads dedicated motion generators on text-motion alignment at a small fraction of their trainable parameters, while producing paired video and motion in a single pass that motion-only baselines cannot match.",
+   "zh": "尽管从未接受过对显式三维运动的监督，大规模文本到视频扩散模型仍能在生成的视频中合成逼真的人类运动。 我们提出一个问题：这种隐式知识是否可以转化为显式的三维运动生成能力，而无需训练一个独立的运动模型。 对冻结的 Wan2.1 模型进行探测发现，在整个去噪流程中，其中间状态都包含可恢复的运动信号，而不仅仅局限于最终干净的输出。 基于这一发现，我们提出了寄生协同去噪方法：一种让运动信号沿着主模型的去噪流程被解码出来，而非由独立生成器产生的范式。 我们将该方法具体化为寄生运动解码器（PMD）——一个高效的流匹配解码器，它与主模型共享噪声调度表，并通过 σ-自适应多层融合读取其中间特征，同时无需对主模型进行任何修改。 PMD 的覆盖范围源自主模型而非运动数据，因此它仅以极小比例的训练参数即可引导专用运动生成器实现文本与运动的对齐，同时能以单次处理同步生成视频和运动信号，这是纯运动基线模型无法实现的。",
+   "sents": [
+    {
+     "en": "Despite never being supervised on explicit 3D motion, large-scale text-to-video diffusion models synthesize realistic human motion in their generated videos.",
+     "zh": "尽管从未接受过对显式三维运动的监督，大规模文本到视频扩散模型仍能在生成的视频中合成逼真的人类运动。"
+    },
+    {
+     "en": "We ask whether this implicit knowledge can be turned into explicit 3D motion generation, without training a separate motion model.",
+     "zh": "我们提出一个问题：这种隐式知识是否可以转化为显式的三维运动生成能力，而无需训练一个独立的运动模型。"
+    },
+    {
+     "en": "Probing a frozen Wan2.1 reveals that a recoverable motion signal is present in its intermediate states across the entire denoising schedule, not confined to the clean output.",
+     "zh": "对冻结的 Wan2.1 模型进行探测发现，在整个去噪流程中，其中间状态都包含可恢复的运动信号，而不仅仅局限于最终干净的输出。"
+    },
+    {
+     "en": "Motivated by this, we introduce parasitic co-denoising, a paradigm in which motion is decoded from the host model along its denoising schedule rather than produced by an independent generator.",
+     "zh": "基于这一发现，我们提出了寄生协同去噪方法：一种让运动信号沿着主模型的去噪流程被解码出来，而非由独立生成器产生的范式。"
+    },
+    {
+     "en": "We instantiate it as the Parasitic Motion Decoder (PMD), an efficient flow-matching decoder that shares the host’s noise schedule and reads its intermediate features through a σ \\sigma -adaptive multi-layer fusion, leaving the host unmodified.",
+     "zh": "我们将该方法具体化为寄生运动解码器（PMD）——一个高效的流匹配解码器，它与主模型共享噪声调度表，并通过 σ-自适应多层融合读取其中间特征，同时无需对主模型进行任何修改。"
+    },
+    {
+     "en": "Drawing its coverage from the host rather than from motion data, PMD leads dedicated motion generators on text-motion alignment at a small fraction of their trainable parameters, while producing paired video and motion in a single pass that motion-only baselines cannot match.",
+     "zh": "PMD 的覆盖范围源自主模型而非运动数据，因此它仅以极小比例的训练参数即可引导专用运动生成器实现文本与运动的对齐，同时能以单次处理同步生成视频和运动信号，这是纯运动基线模型无法实现的。"
+    }
+   ]
+  },
+  {
+   "en": "Nanyang Technological University, Singapore",
+   "zh": "新加坡南洋理工大学",
+   "sents": null
+  },
+  {
+   "en": "Human motion generation ( Plappert et al. 2016 ; Yu et al. 2026 ) drives applications such as animation ( Mourot et al. 2022 ) , virtual reality ( Burdea and Coiffet 2003 ) , and embodied AI ( Duan et al. 2022 ) . Recent text-to-motion models advance rapidly ( Weng et al. 2026 ; Zeng et al. 2025 ) , yet the scarcity of motion-capture data leaves them unable to cover the long tail of human behavior. Large-scale video diffusion models ( Blattmann et al. 2023 ) , by contrast, train on internet-scale data and render diverse humans in natural, varied motion. Such motion, learned without any explicit 3D supervision, shows that these models already internalize how humans move. This paper asks whether this implicit knowledge can become explicit 3D motion generation, without training a separate motion model.",
+   "zh": "人类动作生成（Plappert 等人，2016；Yu 等人，2026）推动了动画（Mourot 等人，2022）、虚拟现实（Burdea 和 Coiffet，2003）以及具身人工智能（Duan 等人，2022）等应用的发展。 近期的文本到动作模型发展迅速（Weng 等人，2026；Zeng 等人，2025），但动作捕捉数据的稀缺性导致它们无法覆盖人类行为的长尾分布。 相比之下，大规模视频扩散模型（Blattmann 等人，2023）基于互联网规模的数据进行训练，能够生成具有自然且多样化动作的多样化人类形象。 这种无需任何显式三维监督即可学会的动作表明，这些模型已经内化了人类的运动方式。 本文探讨的问题是：在不训练独立动作模型的前提下，这种隐式知识是否可以转化为显式的三维动作生成能力。",
+   "sents": [
+    {
+     "en": "Human motion generation ( Plappert et al. 2016 ; Yu et al. 2026 ) drives applications such as animation ( Mourot et al. 2022 ) , virtual reality ( Burdea and Coiffet 2003 ) , and embodied AI ( Duan et al. 2022 ) .",
+     "zh": "人类动作生成（Plappert 等人，2016；Yu 等人，2026）推动了动画（Mourot 等人，2022）、虚拟现实（Burdea 和 Coiffet，2003）以及具身人工智能（Duan 等人，2022）等应用的发展。"
+    },
+    {
+     "en": "Recent text-to-motion models advance rapidly ( Weng et al. 2026 ; Zeng et al. 2025 ) , yet the scarcity of motion-capture data leaves them unable to cover the long tail of human behavior.",
+     "zh": "近期的文本到动作模型发展迅速（Weng 等人，2026；Zeng 等人，2025），但动作捕捉数据的稀缺性导致它们无法覆盖人类行为的长尾分布。"
+    },
+    {
+     "en": "Large-scale video diffusion models ( Blattmann et al. 2023 ) , by contrast, train on internet-scale data and render diverse humans in natural, varied motion.",
+     "zh": "相比之下，大规模视频扩散模型（Blattmann 等人，2023）基于互联网规模的数据进行训练，能够生成具有自然且多样化动作的多样化人类形象。"
+    },
+    {
+     "en": "Such motion, learned without any explicit 3D supervision, shows that these models already internalize how humans move.",
+     "zh": "这种无需任何显式三维监督即可学会的动作表明，这些模型已经内化了人类的运动方式。"
+    },
+    {
+     "en": "This paper asks whether this implicit knowledge can become explicit 3D motion generation, without training a separate motion model.",
+     "zh": "本文探讨的问题是：在不训练独立动作模型的前提下，这种隐式知识是否可以转化为显式的三维动作生成能力。"
+    }
+   ]
+  },
+  {
+   "en": "Recent efforts leverage video models for 3D motion generation ( Yang et al. 2025 ; Lin et al. 2025 ) , jointly training a separate motion branch under the guidance of video features. For this branch to inherit the video model’s generalization, it must be trained on 3D motion at a comparable scale, which drives these methods to contribute large paired video-motion datasets. This effort rebuilds in a separate pipeline a capacity the video model may already possess, and incurs the additional cost of training and storing a second generative model. This suggests a more direct alternative: if motion is already encoded in the video model’s generative process, can it be decoded from it, rather than relearned in a separate model?",
+   "zh": "近期的研究利用视频模型进行三维运动生成（Yang 等人，2025；Lin 等人，2025），在视频特征的指导下联合训练一个独立的运动分支。 为了使该分支能够继承视频模型的泛化能力，它必须在相当规模的三维运动数据上进行训练，这也促使这些方法贡献了大规模的视频-运动配对数据集。 这种尝试在一个独立的流程中重建了视频模型可能已经具备的能力，并带来了训练和存储第二个生成模型所带来的额外成本。 这表明存在一种更直接的替代方案：如果运动信息已经被编码在视频模型的生成过程中，那么是否可以直接从中解码出来，而不是在另一个独立模型中重新学习？",
+   "sents": [
+    {
+     "en": "Recent efforts leverage video models for 3D motion generation ( Yang et al. 2025 ; Lin et al. 2025 ) , jointly training a separate motion branch under the guidance of video features.",
+     "zh": "近期的研究利用视频模型进行三维运动生成（Yang 等人，2025；Lin 等人，2025），在视频特征的指导下联合训练一个独立的运动分支。"
+    },
+    {
+     "en": "For this branch to inherit the video model’s generalization, it must be trained on 3D motion at a comparable scale, which drives these methods to contribute large paired video-motion datasets.",
+     "zh": "为了使该分支能够继承视频模型的泛化能力，它必须在相当规模的三维运动数据上进行训练，这也促使这些方法贡献了大规模的视频-运动配对数据集。"
+    },
+    {
+     "en": "This effort rebuilds in a separate pipeline a capacity the video model may already possess, and incurs the additional cost of training and storing a second generative model.",
+     "zh": "这种尝试在一个独立的流程中重建了视频模型可能已经具备的能力，并带来了训练和存储第二个生成模型所带来的额外成本。"
+    },
+    {
+     "en": "This suggests a more direct alternative: if motion is already encoded in the video model’s generative process, can it be decoded from it, rather than relearned in a separate model?",
+     "zh": "这表明存在一种更直接的替代方案：如果运动信息已经被编码在视频模型的生成过程中，那么是否可以直接从中解码出来，而不是在另一个独立模型中重新学习？"
+    }
+   ]
+  },
+  {
+   "en": "To answer this, we first ask where motion should be decoded from. Reading from the model’s clean output trivially recovers motion but reduces the problem to pose estimation ( Zhou et al. 2023 ) , ignoring the generative process that produced it. The question we pursue is whether motion is already present in the intermediate denoising states themselves. At each noise level σ \\sigma , we probe a frozen Wan2.1 video model ( Wan et al. 2025 ) for the alignment between its intermediate state and the corresponding state of HY-Motion ( Team 2025 ) , a state-of-the-art open-source text-to-motion flow-matching model (Figure 1 ). The two are remarkably aligned. Across the entire schedule, the video model’s intermediate states retain 54–81% of the dedicated model’s motion-discriminative accuracy, holding 81% even at σ = 0.9 \\sigma=0.9 , where the input is nearly pure noise. Motion information inside the video model is therefore not localized at its clean endpoint. It is present throughout the denoising trajectory, exposing a signal that a motion generator can ride on rather than relearn.",
+   "zh": "要回答这个问题，我们首先需要明确运动信息应该从何处解码。 直接从模型的干净输出中读取数据虽然能轻松恢复运动，但会将问题简化为姿态估计（Zhou et al. 2023），同时忽略了生成该运动的生成过程。 我们所探讨的问题是：运动信息是否已经存在于中间的去噪状态本身之中。 在每个噪声水平 σ \\sigma 处，我们使用一个冻结的 Wan2.1 视频模型（Wan et al. 2025），探究其中间状态与 HY-Motion（Team 2025）相应状态之间的对齐程度；HY-Motion 是一种先进的开源文本到运动流匹配模型（图 1）。 两者表现出惊人的高度对齐。 在整个噪声调度过程中，视频模型的中间状态保留了专用模型 54%–81% 的运动判别准确性，即使在 σ = 0.9 \\sigma=0.9（此时输入几乎完全是噪声）的情况下，仍能保留 81% 的准确性。 因此，视频模型内部的运动信息并非仅存在于其干净的最终输出中。 这些信息贯穿整个去噪过程，揭示了一种信号：运动生成器可以直接利用它，而无需重新学习。",
+   "sents": [
+    {
+     "en": "To answer this, we first ask where motion should be decoded from.",
+     "zh": "要回答这个问题，我们首先需要明确运动信息应该从何处解码。"
+    },
+    {
+     "en": "Reading from the model’s clean output trivially recovers motion but reduces the problem to pose estimation ( Zhou et al. 2023 ) , ignoring the generative process that produced it.",
+     "zh": "直接从模型的干净输出中读取数据虽然能轻松恢复运动，但会将问题简化为姿态估计（Zhou et al. 2023），同时忽略了生成该运动的生成过程。"
+    },
+    {
+     "en": "The question we pursue is whether motion is already present in the intermediate denoising states themselves.",
+     "zh": "我们所探讨的问题是：运动信息是否已经存在于中间的去噪状态本身之中。"
+    },
+    {
+     "en": "At each noise level σ \\sigma , we probe a frozen Wan2.1 video model ( Wan et al. 2025 ) for the alignment between its intermediate state and the corresponding state of HY-Motion ( Team 2025 ) , a state-of-the-art open-source text-to-motion flow-matching model (Figure 1 ).",
+     "zh": "在每个噪声水平 σ \\sigma 处，我们使用一个冻结的 Wan2.1 视频模型（Wan et al. 2025），探究其中间状态与 HY-Motion（Team 2025）相应状态之间的对齐程度；HY-Motion 是一种先进的开源文本到运动流匹配模型（图 1）。"
+    },
+    {
+     "en": "The two are remarkably aligned.",
+     "zh": "两者表现出惊人的高度对齐。"
+    },
+    {
+     "en": "Across the entire schedule, the video model’s intermediate states retain 54–81% of the dedicated model’s motion-discriminative accuracy, holding 81% even at σ = 0.9 \\sigma=0.9 , where the input is nearly pure noise.",
+     "zh": "在整个噪声调度过程中，视频模型的中间状态保留了专用模型 54%–81% 的运动判别准确性，即使在 σ = 0.9 \\sigma=0.9（此时输入几乎完全是噪声）的情况下，仍能保留 81% 的准确性。"
+    },
+    {
+     "en": "Motion information inside the video model is therefore not localized at its clean endpoint.",
+     "zh": "因此，视频模型内部的运动信息并非仅存在于其干净的最终输出中。"
+    },
+    {
+     "en": "It is present throughout the denoising trajectory, exposing a signal that a motion generator can ride on rather than relearn.",
+     "zh": "这些信息贯穿整个去噪过程，揭示了一种信号：运动生成器可以直接利用它，而无需重新学习。"
+    }
+   ]
+  },
+  {
+   "en": "The signal exposed above suggests a separate motion generator is unnecessary, and motion can instead be decoded from the video model along its denoising schedule, produced together with the video. We call this strategy parasitic co-denoising . By reusing the host’s features at each step, the motion decoder attains the video model’s broad coverage at little extra cost. This requires more than reading off features at a single point. Such a readout accesses only one slice of the host’s trajectory and discards the rest, contradicting the very finding that motion is present at every noise level. To exploit that presence, the motion generator must itself unfold along the same trajectory, sharing the host’s noise schedule and advancing one step at a time alongside it. The motion decoder therefore advances on the same schedule as the host and conditions each step on the host’s matched- σ \\sigma features, so that video generation and motion decoding proceed in step.",
+   "zh": "上述信号表明，无需使用独立的运动生成器；相反，运动可以从视频模型中沿着与其一同生成的去噪时间表进行解码。 我们将这一策略称为寄生式协同去噪。 通过在每一步复用宿主模型的特征，运动解码器能以极小的额外成本获得视频模型的广泛覆盖能力。 这需要的不仅仅是从单个点读取特征。 这种读取方式仅能获取宿主轨迹的一个片段，而丢弃其余部分，这与“运动存在于每个噪声水平”这一发现本身相矛盾。 为了利用这种存在性，运动生成器自身必须沿着相同的轨迹展开，共享宿主的噪声时间表，并与其同步逐步推进。 因此，运动解码器与宿主模型遵循相同的时间表推进，并在每一步以宿主模型匹配σ的特征为条件，从而实现视频生成与运动解码的同步进行。",
+   "sents": [
+    {
+     "en": "The signal exposed above suggests a separate motion generator is unnecessary, and motion can instead be decoded from the video model along its denoising schedule, produced together with the video.",
+     "zh": "上述信号表明，无需使用独立的运动生成器；相反，运动可以从视频模型中沿着与其一同生成的去噪时间表进行解码。"
+    },
+    {
+     "en": "We call this strategy parasitic co-denoising .",
+     "zh": "我们将这一策略称为寄生式协同去噪。"
+    },
+    {
+     "en": "By reusing the host’s features at each step, the motion decoder attains the video model’s broad coverage at little extra cost.",
+     "zh": "通过在每一步复用宿主模型的特征，运动解码器能以极小的额外成本获得视频模型的广泛覆盖能力。"
+    },
+    {
+     "en": "This requires more than reading off features at a single point.",
+     "zh": "这需要的不仅仅是从单个点读取特征。"
+    },
+    {
+     "en": "Such a readout accesses only one slice of the host’s trajectory and discards the rest, contradicting the very finding that motion is present at every noise level.",
+     "zh": "这种读取方式仅能获取宿主轨迹的一个片段，而丢弃其余部分，这与“运动存在于每个噪声水平”这一发现本身相矛盾。"
+    },
+    {
+     "en": "To exploit that presence, the motion generator must itself unfold along the same trajectory, sharing the host’s noise schedule and advancing one step at a time alongside it.",
+     "zh": "为了利用这种存在性，运动生成器自身必须沿着相同的轨迹展开，共享宿主的噪声时间表，并与其同步逐步推进。"
+    },
+    {
+     "en": "The motion decoder therefore advances on the same schedule as the host and conditions each step on the host’s matched- σ \\sigma features, so that video generation and motion decoding proceed in step.",
+     "zh": "因此，运动解码器与宿主模型遵循相同的时间表推进，并在每一步以宿主模型匹配σ的特征为条件，从而实现视频生成与运动解码的同步进行。"
+    }
+   ]
+  },
+  {
+   "en": "We realize this design as the Parasitic Motion Decoder (PMD), a parameter-efficient decoder attached to a frozen Wan2.1 video DiT. PMD is itself a flow-matching decoder sharing the host’s noise schedule. At each step, it reads intermediate features from the video DiT, fuses them through a σ \\sigma -adaptive mechanism that learns which layers to attend to at each noise level, and updates its own motion latents via a learned velocity field. The video model is never modified. On open-world motion synthesis, PMD leads dedicated motion generators trained on substantially larger motion corpora, and inherits the broad semantic coverage of the underlying video model, generalizing to complex actions that lie outside the reach of motion-specific datasets.",
+   "zh": "我们将这一设计实现为寄生运动解码器（PMD），这是一种附加在冻结的 Wan2.1 视频 DiT 上的参数高效解码器。 PMD 本身是一种流匹配解码器，与宿主模型共享噪声调度表。 在每个步骤中，它从视频 DiT 读取中间特征，通过一个 σ \\sigma -自适应机制对这些特征进行融合——该机制能够学习在每个噪声层级上应关注哪些层——并通过一个已学习的速度场更新其自身的运动潜在变量。 视频模型本身从未被修改。 在开放世界的运动合成任务中，PMD 的表现优于那些在规模大得多的运动语料库上训练的专业运动生成器，并且继承了底层视频模型的广泛语义覆盖能力，能够泛化到运动专用数据集无法涵盖的复杂动作。",
+   "sents": [
+    {
+     "en": "We realize this design as the Parasitic Motion Decoder (PMD), a parameter-efficient decoder attached to a frozen Wan2.1 video DiT.",
+     "zh": "我们将这一设计实现为寄生运动解码器（PMD），这是一种附加在冻结的 Wan2.1 视频 DiT 上的参数高效解码器。"
+    },
+    {
+     "en": "PMD is itself a flow-matching decoder sharing the host’s noise schedule.",
+     "zh": "PMD 本身是一种流匹配解码器，与宿主模型共享噪声调度表。"
+    },
+    {
+     "en": "At each step, it reads intermediate features from the video DiT, fuses them through a σ \\sigma -adaptive mechanism that learns which layers to attend to at each noise level, and updates its own motion latents via a learned velocity field.",
+     "zh": "在每个步骤中，它从视频 DiT 读取中间特征，通过一个 σ \\sigma -自适应机制对这些特征进行融合——该机制能够学习在每个噪声层级上应关注哪些层——并通过一个已学习的速度场更新其自身的运动潜在变量。"
+    },
+    {
+     "en": "The video model is never modified.",
+     "zh": "视频模型本身从未被修改。"
+    },
+    {
+     "en": "On open-world motion synthesis, PMD leads dedicated motion generators trained on substantially larger motion corpora, and inherits the broad semantic coverage of the underlying video model, generalizing to complex actions that lie outside the reach of motion-specific datasets.",
+     "zh": "在开放世界的运动合成任务中，PMD 的表现优于那些在规模大得多的运动语料库上训练的专业运动生成器，并且继承了底层视频模型的广泛语义覆盖能力，能够泛化到运动专用数据集无法涵盖的复杂动作。"
+    }
+   ]
+  },
+  {
+   "en": "The main contributions are summarized as follows:",
+   "zh": "主要贡献总结如下：",
+   "sents": null
+  },
+  {
+   "en": "We empirically show that a frozen text-to-video diffusion model already carries a recoverable 3D human motion signal, decodable from its intermediate states throughout the entire denoising schedule.",
+   "zh": "我们通过实证表明，一个冻结的文本到视频扩散模型已经包含可恢复的三维人体运动信号，该信号可以在整个去噪流程的中间状态中被解码出来。",
+   "sents": null
+  },
+  {
+   "en": "We introduce parasitic co-denoising , a paradigm in which a secondary modality is decoded from a host model along its own denoising schedule rather than produced by an independent generator, applicable to hosts whose denoising process exposes a usable signal for that modality.",
+   "zh": "我们提出了一种寄生式协同去噪方法：在这种范式下，一个次要模态会从主模型中按照其自身的去噪时间表进行解码，而不是由独立的生成器产生；该方法适用于那些去噪过程能为该模态提供可用信号的主模型。",
+   "sents": null
+  },
+  {
+   "en": "PMD leads dedicated motion generators on text-motion alignment while producing paired video and motion in a single pass, at a small fraction of trainable parameters.",
+   "zh": "PMD引导专用的运动生成器进行文本与运动的对齐，同时以单次处理生成配对的视频和运动，且仅使用极小比例的训练参数。",
+   "sents": null
+  },
+  {
+   "en": "Methods for text-conditioned 3D human motion generation can be broadly grouped by representation. Early approaches encode motion in a variational latent ( Petrovich et al. 2022 ; Guo et al. 2022b ) . Diffusion-based methods including MDM ( Tevet et al. 2022 ) and MotionDiffuse ( Zhang et al. 2024 ) denoise raw kinematic sequences, with later work adding physical plausibility ( Yuan et al. 2023 ) and fine-grained control ( Xie et al. 2024 ) . Token-based methods such as T2M-GPT ( Zhang et al. 2023a ) and MoMask ( Guo et al. 2024 ) learn discrete motion tokens with autoregressive or masked transformers, a recipe later scaled with language-model backbones ( Jiang et al. 2023 ) . FineMoGen ( Zhang et al. 2023b ) introduces fine-grained spatio-temporal control, MotionLCM ( Dai et al. 2024 ) accelerates inference via consistency distillation, and MotionCraft ( Bian et al. 2025 ) scales motion training data.",
+   "zh": "文本条件化三维人类动作生成的方法可大致按表示形式进行归类。 早期的方法将动作编码在变分潜在空间中（Petrovich 等人，2022；Guo 等人，2022b）。 基于扩散的方法，包括 MDM（Tevet 等人，2022）和 MotionDiffuse（Zhang 等人，2024），通过去除原始运动学序列的噪声来实现生成，后续研究则进一步加入了物理合理性（Yuan 等人，2023）和精细控制（Xie 等人，2024）。 基于词元的方法，如 T2M-GPT（Zhang 等人，2023a）和 MoMask（Guo 等人，2024），利用自回归或掩码变换器学习离散的动作词元，这一方法后来通过语言模型主干架构得到了扩展（Jiang 等人，2023）。 FineMoGen（Zhang 等人，2023b）引入了精细的空间时间控制，MotionLCM（Dai 等人，2024）通过一致性蒸馏加速了推理过程，而 MotionCraft（Bian 等人，2025）则扩展了动作训练数据。",
+   "sents": [
+    {
+     "en": "Methods for text-conditioned 3D human motion generation can be broadly grouped by representation.",
+     "zh": "文本条件化三维人类动作生成的方法可大致按表示形式进行归类。"
+    },
+    {
+     "en": "Early approaches encode motion in a variational latent ( Petrovich et al. 2022 ; Guo et al. 2022b ) .",
+     "zh": "早期的方法将动作编码在变分潜在空间中（Petrovich 等人，2022；Guo 等人，2022b）。"
+    },
+    {
+     "en": "Diffusion-based methods including MDM ( Tevet et al. 2022 ) and MotionDiffuse ( Zhang et al. 2024 ) denoise raw kinematic sequences, with later work adding physical plausibility ( Yuan et al. 2023 ) and fine-grained control ( Xie et al. 2024 ) .",
+     "zh": "基于扩散的方法，包括 MDM（Tevet 等人，2022）和 MotionDiffuse（Zhang 等人，2024），通过去除原始运动学序列的噪声来实现生成，后续研究则进一步加入了物理合理性（Yuan 等人，2023）和精细控制（Xie 等人，2024）。"
+    },
+    {
+     "en": "Token-based methods such as T2M-GPT ( Zhang et al. 2023a ) and MoMask ( Guo et al. 2024 ) learn discrete motion tokens with autoregressive or masked transformers, a recipe later scaled with language-model backbones ( Jiang et al. 2023 ) .",
+     "zh": "基于词元的方法，如 T2M-GPT（Zhang 等人，2023a）和 MoMask（Guo 等人，2024），利用自回归或掩码变换器学习离散的动作词元，这一方法后来通过语言模型主干架构得到了扩展（Jiang 等人，2023）。"
+    },
+    {
+     "en": "FineMoGen ( Zhang et al. 2023b ) introduces fine-grained spatio-temporal control, MotionLCM ( Dai et al. 2024 ) accelerates inference via consistency distillation, and MotionCraft ( Bian et al. 2025 ) scales motion training data.",
+     "zh": "FineMoGen（Zhang 等人，2023b）引入了精细的空间时间控制，MotionLCM（Dai 等人，2024）通过一致性蒸馏加速了推理过程，而 MotionCraft（Bian 等人，2025）则扩展了动作训练数据。"
+    }
+   ]
+  },
+  {
+   "en": "A growing line of work reuses features or weights of large-scale pretrained generative models for downstream tasks ( Yang et al. 2024 ; Kong et al. 2024 ) . Diffusion features have been shown to support semantic segmentation ( Baranchuk et al. 2021 ) , semantic correspondence ( Tang et al. 2023 ) , monocular depth ( Ke et al. 2024 ) , self-supervised representation learning ( Xiang et al. 2023 ) , and self-conditioning ( Feng et al. 2024 ) . In the motion domain, ViMoGen ( Lin et al. 2025 ) uses video features as auxiliary supervision when training a 1.2 1.2 B text-to-motion DiT (with a distilled 600 600 M variant for video-free inference); EchoMotion ( Yang et al. 2025 ) jointly fine-tunes video and motion branches of a dual-modality DiT. MoAlign ( Bhowmik et al. 2025 ) aligns video diffusion features with motion-aware subspaces. Most existing approaches either read out features at the clean endpoint of the host’s generation or distill its weights into a separate model. PMD participates in the denoising process itself, decoding motion from intermediate states at every σ \\sigma .",
+   "zh": "越来越多的研究开始复用大规模预训练生成模型的特征或权重，以解决下游任务（Yang et al. 2024；Kong et al. 2024）。 已有研究表明，扩散模型特征可用于支持语义分割（Baranchuk et al. 2021）、语义对应关系（Tang et al. 2023）、单目深度估计（Ke et al. 2024）、自监督表示学习（Xiang et al. 2023）以及自条件生成（Feng et al. 2024）。 在运动领域，ViMoGen（Lin et al. 2025）在训练一个 1.21.2 B 参数的文本到运动 DiT 模型时，使用视频特征作为辅助监督信号（同时提供了一个经过蒸馏的 600600 M 参数变体，用于无需视频的推理）；而 EchoMotion（Yang et al. 2025）则联合微调双模态 DiT 的视频分支和运动分支。 MoAlign（Bhowmik et al. 2025）将视频扩散特征与感知运动的子空间进行对齐。 大多数现有方法要么在主机生成过程的干净终点处读取特征，要么将其权重蒸馏到一个独立的模型中。 PMD 直接参与去噪过程本身，在每个 σ \\sigma 阶段从中间状态解码运动信息。",
+   "sents": [
+    {
+     "en": "A growing line of work reuses features or weights of large-scale pretrained generative models for downstream tasks ( Yang et al. 2024 ; Kong et al. 2024 ) .",
+     "zh": "越来越多的研究开始复用大规模预训练生成模型的特征或权重，以解决下游任务（Yang et al. 2024；Kong et al. 2024）。"
+    },
+    {
+     "en": "Diffusion features have been shown to support semantic segmentation ( Baranchuk et al. 2021 ) , semantic correspondence ( Tang et al. 2023 ) , monocular depth ( Ke et al. 2024 ) , self-supervised representation learning ( Xiang et al. 2023 ) , and self-conditioning ( Feng et al. 2024 ) .",
+     "zh": "已有研究表明，扩散模型特征可用于支持语义分割（Baranchuk et al. 2021）、语义对应关系（Tang et al. 2023）、单目深度估计（Ke et al. 2024）、自监督表示学习（Xiang et al. 2023）以及自条件生成（Feng et al. 2024）。"
+    },
+    {
+     "en": "In the motion domain, ViMoGen ( Lin et al. 2025 ) uses video features as auxiliary supervision when training a 1.2 1.2 B text-to-motion DiT (with a distilled 600 600 M variant for video-free inference); EchoMotion ( Yang et al. 2025 ) jointly fine-tunes video and motion branches of a dual-modality DiT.",
+     "zh": "在运动领域，ViMoGen（Lin et al. 2025）在训练一个 1.21.2 B 参数的文本到运动 DiT 模型时，使用视频特征作为辅助监督信号（同时提供了一个经过蒸馏的 600600 M 参数变体，用于无需视频的推理）；而 EchoMotion（Yang et al. 2025）则联合微调双模态 DiT 的视频分支和运动分支。"
+    },
+    {
+     "en": "MoAlign ( Bhowmik et al. 2025 ) aligns video diffusion features with motion-aware subspaces.",
+     "zh": "MoAlign（Bhowmik et al. 2025）将视频扩散特征与感知运动的子空间进行对齐。"
+    },
+    {
+     "en": "Most existing approaches either read out features at the clean endpoint of the host’s generation or distill its weights into a separate model.",
+     "zh": "大多数现有方法要么在主机生成过程的干净终点处读取特征，要么将其权重蒸馏到一个独立的模型中。"
+    },
+    {
+     "en": "PMD participates in the denoising process itself, decoding motion from intermediate states at every σ \\sigma .",
+     "zh": "PMD 直接参与去噪过程本身，在每个 σ \\sigma 阶段从中间状态解码运动信息。"
+    }
+   ]
+  },
+  {
+   "en": "Motivated by our finding that large-scale video diffusion models implicitly carry a recoverable human motion signal along their denoising trajectories, we tackle text-to-motion generation by attaching a parasitic decoder to a frozen video model. Wan2.1, like other modern video diffusion models, operates as a latent diffusion model ( Rombach et al. 2022 ) : a VAE ( Kingma and Welling 2013 ) first encodes the video into a compact latent, and a DiT denoises this latent through a flow-matching schedule indexed by an interpolation coefficient σ ∈ [ 0 , 1 ] \\sigma\\in[0,1] . Given a text prompt c c , the DiT advances the video latent from σ = 1 \\sigma=1 (Gaussian noise) to σ = 0 \\sigma=0 (clean video latent), which the VAE then decodes into a video 𝐯 \\mathbf{v} . Our decoder runs in the same latent paradigm: it advances a motion latent in lockstep with Wan2.1 along the identical schedule, producing a 3D human motion 𝐦 \\mathbf{m} alongside the video. We instantiate such a decoder in two stages (Figure 2 ). Stage 1 aligns a motion latent space with video latent space, giving the two streams a shared geometry. Stage 2 trains the parasitic motion decoder (PMD), a flow-matching decoder that shares Wan2.1’s schedule and, at each step, reads features from selected DiT layers, fuses them through a σ \\sigma -adaptive mechanism, and predicts a motion velocity.",
+   "zh": "受我们发现的启发——大规模视频扩散模型在其去噪轨迹中隐式地携带了可恢复的人类运动信号，我们通过将一个寄生解码器附加到一个冻结的视频模型上，来解决文本到运动的生成问题。 Wan2.1 与其他现代视频扩散模型一样，作为一个潜在扩散模型（Rombach et al. 2022）运行：首先，一个 VAE（Kingma and Welling 2013）将视频编码为紧凑的潜在表示；然后，一个 DiT 通过以插值系数 σ ∈ [0,1] 为索引的流程匹配方案对该潜在表示进行去噪。 给定文本提示 c，DiT 会将视频潜在表示从 σ = 1（高斯噪声）推进到 σ = 0（干净的视频潜在表示），随后 VAE 将其解码为视频 𝐯。 我们的解码器采用相同的潜在范式运行：它与 Wan2.1 同步，沿着完全相同的方案推进运动潜在表示，从而在生成视频的同时产出三维人类运动 𝐦。 我们将这种解码器具体实现为两个阶段（图 2）。 第一阶段将运动潜在空间与视频潜在空间对齐，使两个流共享相同的几何结构。 第二阶段训练寄生运动解码器（PMD），这是一个流程匹配解码器，它与 Wan2.1 共享相同的方案，并在每一步从选定的 DiT 层读取特征，通过一个 σ-自适应机制融合这些特征，并预测运动速度。",
+   "sents": [
+    {
+     "en": "Motivated by our finding that large-scale video diffusion models implicitly carry a recoverable human motion signal along their denoising trajectories, we tackle text-to-motion generation by attaching a parasitic decoder to a frozen video model.",
+     "zh": "受我们发现的启发——大规模视频扩散模型在其去噪轨迹中隐式地携带了可恢复的人类运动信号，我们通过将一个寄生解码器附加到一个冻结的视频模型上，来解决文本到运动的生成问题。"
+    },
+    {
+     "en": "Wan2.1, like other modern video diffusion models, operates as a latent diffusion model ( Rombach et al. 2022 ) : a VAE ( Kingma and Welling 2013 ) first encodes the video into a compact latent, and a DiT denoises this latent through a flow-matching schedule indexed by an interpolation coefficient σ ∈ [ 0 , 1 ] \\sigma\\in[0,1] .",
+     "zh": "Wan2.1 与其他现代视频扩散模型一样，作为一个潜在扩散模型（Rombach et al. 2022）运行：首先，一个 VAE（Kingma and Welling 2013）将视频编码为紧凑的潜在表示；然后，一个 DiT 通过以插值系数 σ ∈ [0,1] 为索引的流程匹配方案对该潜在表示进行去噪。"
+    },
+    {
+     "en": "Given a text prompt c c , the DiT advances the video latent from σ = 1 \\sigma=1 (Gaussian noise) to σ = 0 \\sigma=0 (clean video latent), which the VAE then decodes into a video 𝐯 \\mathbf{v} .",
+     "zh": "给定文本提示 c，DiT 会将视频潜在表示从 σ = 1（高斯噪声）推进到 σ = 0（干净的视频潜在表示），随后 VAE 将其解码为视频 𝐯。"
+    },
+    {
+     "en": "Our decoder runs in the same latent paradigm: it advances a motion latent in lockstep with Wan2.1 along the identical schedule, producing a 3D human motion 𝐦 \\mathbf{m} alongside the video.",
+     "zh": "我们的解码器采用相同的潜在范式运行：它与 Wan2.1 同步，沿着完全相同的方案推进运动潜在表示，从而在生成视频的同时产出三维人类运动 𝐦。"
+    },
+    {
+     "en": "We instantiate such a decoder in two stages (Figure 2 ).",
+     "zh": "我们将这种解码器具体实现为两个阶段（图 2）。"
+    },
+    {
+     "en": "Stage 1 aligns a motion latent space with video latent space, giving the two streams a shared geometry.",
+     "zh": "第一阶段将运动潜在空间与视频潜在空间对齐，使两个流共享相同的几何结构。"
+    },
+    {
+     "en": "Stage 2 trains the parasitic motion decoder (PMD), a flow-matching decoder that shares Wan2.1’s schedule and, at each step, reads features from selected DiT layers, fuses them through a σ \\sigma -adaptive mechanism, and predicts a motion velocity.",
+     "zh": "第二阶段训练寄生运动解码器（PMD），这是一个流程匹配解码器，它与 Wan2.1 共享相同的方案，并在每一步从选定的 DiT 层读取特征，通过一个 σ-自适应机制融合这些特征，并预测运动速度。"
+    }
+   ]
+  },
+  {
+   "en": "For the parasitic decoder to inherit the video model’s generative trajectory, the motion representation must live in a space compatible with the video latent. Yet the two are architecturally and dimensionally far apart. Let 𝐦 ∈ ℝ T × d m \\mathbf{m}\\in\\mathbb{R}^{T\\times d_{m}} denote a motion sequence in its raw kinematic representation, and 𝐱 ′ 0 v ∈ ℝ T v × H × W × C \\mathbf{x^{\\prime}}^{v}_{0}\\in\\mathbb{R}^{T_{v}\\times H\\times W\\times C} the clean video latent produced by the video model’s VAE, a high-dimensional spatial-temporal tensor designed for video reconstruction. Without first bridging this gap, the parasitic decoder would have to absorb the modality mismatch internally during flow matching, making training ill-conditioned. Stage 1 closes the gap by learning a motion latent that aligns with a low-dimensional projection of the video latent (Figure 2 a).",
+   "zh": "为了让寄生解码器继承视频模型的生成轨迹，运动表示必须存在于与视频潜在空间兼容的空间中。 然而，两者在架构和维度上相去甚远。 令 𝐦 ∈ ℝ T × d m \\mathbf{m}\\in\\mathbb{R}^{T\\times d_{m}} 表示以原始运动学形式呈现的运动序列，并令 𝐱 ′ 0 v ∈ ℝ T v × H × W × C \\mathbf{x^{\\prime}}^{v}_{0}\\in\\mathbb{R}^{T_{v}\\times H\\times W\\times C} 表示由视频模型的 VAE 生成的干净视频潜在，即一个为视频重建而设计的高维时空张量。 如果不首先弥合这一差距，寄生解码器就不得不在流匹配过程中内部吸收模态不匹配问题，从而导致训练条件恶化。 第一阶段通过学习一个与视频潜在的低维投影对齐的运动潜在来弥合这一差距（图 2a）。",
+   "sents": [
+    {
+     "en": "For the parasitic decoder to inherit the video model’s generative trajectory, the motion representation must live in a space compatible with the video latent.",
+     "zh": "为了让寄生解码器继承视频模型的生成轨迹，运动表示必须存在于与视频潜在空间兼容的空间中。"
+    },
+    {
+     "en": "Yet the two are architecturally and dimensionally far apart.",
+     "zh": "然而，两者在架构和维度上相去甚远。"
+    },
+    {
+     "en": "Let 𝐦 ∈ ℝ T × d m \\mathbf{m}\\in\\mathbb{R}^{T\\times d_{m}} denote a motion sequence in its raw kinematic representation, and 𝐱 ′ 0 v ∈ ℝ T v × H × W × C \\mathbf{x^{\\prime}}^{v}_{0}\\in\\mathbb{R}^{T_{v}\\times H\\times W\\times C} the clean video latent produced by the video model’s VAE, a high-dimensional spatial-temporal tensor designed for video reconstruction.",
+     "zh": "令 𝐦 ∈ ℝ T × d m \\mathbf{m}\\in\\mathbb{R}^{T\\times d_{m}} 表示以原始运动学形式呈现的运动序列，并令 𝐱 ′ 0 v ∈ ℝ T v × H × W × C \\mathbf{x^{\\prime}}^{v}_{0}\\in\\mathbb{R}^{T_{v}\\times H\\times W\\times C} 表示由视频模型的 VAE 生成的干净视频潜在，即一个为视频重建而设计的高维时空张量。"
+    },
+    {
+     "en": "Without first bridging this gap, the parasitic decoder would have to absorb the modality mismatch internally during flow matching, making training ill-conditioned.",
+     "zh": "如果不首先弥合这一差距，寄生解码器就不得不在流匹配过程中内部吸收模态不匹配问题，从而导致训练条件恶化。"
+    },
+    {
+     "en": "Stage 1 closes the gap by learning a motion latent that aligns with a low-dimensional projection of the video latent (Figure 2 a).",
+     "zh": "第一阶段通过学习一个与视频潜在的低维投影对齐的运动潜在来弥合这一差距（图 2a）。"
+    }
+   ]
+  },
+  {
+   "en": "Stage 1 builds two parallel pipelines that meet in a shared latent space ℝ T × d z \\mathbb{R}^{T\\times d_{z}} . On the motion side, an encoder E m E_{m} compresses 𝐦 \\mathbf{m} into 𝐱 0 m = E m ​ ( 𝐦 ) ∈ ℝ T × d z \\mathbf{x}^{m}_{0}=E_{m}(\\mathbf{m})\\in\\mathbb{R}^{T\\times d_{z}} , and a decoder D m D_{m} reconstructs 𝐦 \\mathbf{m} from 𝐱 0 m \\mathbf{x}^{m}_{0} . Both are implemented as transformer stacks. On the video side, the frozen VAE first encodes the raw video into 𝐱 ′ 0 v \\mathbf{x^{\\prime}}^{v}_{0} , after which a projection head P v P_{v} reduces it into the same space, 𝐱 0 v = P v ​ ( 𝐱 ′ 0 v ) ∈ ℝ T × d z \\mathbf{x}^{v}_{0}=P_{v}(\\mathbf{x^{\\prime}}^{v}_{0})\\in\\mathbb{R}^{T\\times d_{z}} , using a per-frame spatial CNN to compress the spatial-channel dimensions into a d z d_{z} -dimensional feature, followed by temporal interpolation that resamples the sequence length to T T .",
+   "zh": "第一阶段构建两条并行管道，它们在共享的潜在空间 ℝ T × d z \\mathbb{R}^{T\\times d_{z}} 中交汇。 在运动方面，编码器 E m E_{m} 将 𝐦 \\mathbf{m} 压缩为 𝐱 0 m = E m ​ ( 𝐦 ) ∈ ℝ T × d z \\mathbf{x}^{m}_{0}=E_{m}(\\mathbf{m})\\in\\mathbb{R}^{T\\times d_{z}} ，而解码器 D m D_{m} 则从 𝐱 0 m \\mathbf{x}^{m}_{0} 重构出 𝐦 \\mathbf{m} 。 两者均通过堆叠的 Transformer 实现。 在视频方面，冻结的 VAE 首先将原始视频编码为 𝐱 ′ 0 v \\mathbf{x^{\\prime}}^{v}_{0} ，随后投影头 P v P_{v} 将其降至同一空间，即 𝐱 0 v = P v ​ ( 𝐱 ′ 0 v ) ∈ ℝ T × d z \\mathbf{x}^{v}_{0}=P_{v}(\\mathbf{x^{\\prime}}^{v}_{0})\\in\\mathbb{R}^{T\\times d_{z}} ，具体过程是：使用逐帧空间 CNN 将空间-通道维度压缩为 d z d_{z} 维特征，接着通过时间插值将序列长度重采样至 T T 。",
+   "sents": [
+    {
+     "en": "Stage 1 builds two parallel pipelines that meet in a shared latent space ℝ T × d z \\mathbb{R}^{T\\times d_{z}} .",
+     "zh": "第一阶段构建两条并行管道，它们在共享的潜在空间 ℝ T × d z \\mathbb{R}^{T\\times d_{z}} 中交汇。"
+    },
+    {
+     "en": "On the motion side, an encoder E m E_{m} compresses 𝐦 \\mathbf{m} into 𝐱 0 m = E m ​ ( 𝐦 ) ∈ ℝ T × d z \\mathbf{x}^{m}_{0}=E_{m}(\\mathbf{m})\\in\\mathbb{R}^{T\\times d_{z}} , and a decoder D m D_{m} reconstructs 𝐦 \\mathbf{m} from 𝐱 0 m \\mathbf{x}^{m}_{0} .",
+     "zh": "在运动方面，编码器 E m E_{m} 将 𝐦 \\mathbf{m} 压缩为 𝐱 0 m = E m ​ ( 𝐦 ) ∈ ℝ T × d z \\mathbf{x}^{m}_{0}=E_{m}(\\mathbf{m})\\in\\mathbb{R}^{T\\times d_{z}} ，而解码器 D m D_{m} 则从 𝐱 0 m \\mathbf{x}^{m}_{0} 重构出 𝐦 \\mathbf{m} 。"
+    },
+    {
+     "en": "Both are implemented as transformer stacks.",
+     "zh": "两者均通过堆叠的 Transformer 实现。"
+    },
+    {
+     "en": "On the video side, the frozen VAE first encodes the raw video into 𝐱 ′ 0 v \\mathbf{x^{\\prime}}^{v}_{0} , after which a projection head P v P_{v} reduces it into the same space, 𝐱 0 v = P v ​ ( 𝐱 ′ 0 v ) ∈ ℝ T × d z \\mathbf{x}^{v}_{0}=P_{v}(\\mathbf{x^{\\prime}}^{v}_{0})\\in\\mathbb{R}^{T\\times d_{z}} , using a per-frame spatial CNN to compress the spatial-channel dimensions into a d z d_{z} -dimensional feature, followed by temporal interpolation that resamples the sequence length to T T .",
+     "zh": "在视频方面，冻结的 VAE 首先将原始视频编码为 𝐱 ′ 0 v \\mathbf{x^{\\prime}}^{v}_{0} ，随后投影头 P v P_{v} 将其降至同一空间，即 𝐱 0 v = P v ​ ( 𝐱 ′ 0 v ) ∈ ℝ T × d z \\mathbf{x}^{v}_{0}=P_{v}(\\mathbf{x^{\\prime}}^{v}_{0})\\in\\mathbb{R}^{T\\times d_{z}} ，具体过程是：使用逐帧空间 CNN 将空间-通道维度压缩为 d z d_{z} 维特征，接着通过时间插值将序列长度重采样至 T T 。"
+    }
+   ]
+  },
+  {
+   "en": "The training objective combines three terms:",
+   "zh": "训练目标包含三个项：",
+   "sents": null
+  },
+  {
+   "en": "where ℒ recon \\mathcal{L}_{\\text{recon}} preserves motion fidelity through the autoencoder, anchoring 𝐱 0 m \\mathbf{x}^{m}_{0} to retain full motion information and preventing it from collapsing to a trivial solution. ℒ align \\mathcal{L}_{\\text{align}} pulls 𝐱 0 m \\mathbf{x}^{m}_{0} toward 𝐱 0 v \\mathbf{x}^{v}_{0} , forcing P v P_{v} to extract precisely those features of 𝐱 ′ 0 v \\mathbf{x^{\\prime}}^{v}_{0} that carry motion information. The third term regularizes the latent magnitude.",
+   "zh": "其中，重建损失项 ℒ recon \\mathcal{L}_{\\text{recon}} 通过自编码器保持运动保真度，将 𝐱 0 m \\mathbf{x}^{m}_{0} 锚定住，以保留完整的运动信息，并防止其坍缩为平凡解。对齐损失项 ℒ align \\mathcal{L}_{\\text{align}} 则将 𝐱 0 m \\mathbf{x}^{m}_{0} 拉向 𝐱 0 v \\mathbf{x}^{v}_{0}，迫使 P v P_{v} 精确提取 𝐱 ′ 0 v \\mathbf{x^{\\prime}}^{v}_{0} 中携带运动信息的特征。 第三项对潜在变量的幅度进行正则化。",
+   "sents": [
+    {
+     "en": "where ℒ recon \\mathcal{L}_{\\text{recon}} preserves motion fidelity through the autoencoder, anchoring 𝐱 0 m \\mathbf{x}^{m}_{0} to retain full motion information and preventing it from collapsing to a trivial solution. ℒ align \\mathcal{L}_{\\text{align}} pulls 𝐱 0 m \\mathbf{x}^{m}_{0} toward 𝐱 0 v \\mathbf{x}^{v}_{0} , forcing P v P_{v} to extract precisely those features of 𝐱 ′ 0 v \\mathbf{x^{\\prime}}^{v}_{0} that carry motion information.",
+     "zh": "其中，重建损失项 ℒ recon \\mathcal{L}_{\\text{recon}} 通过自编码器保持运动保真度，将 𝐱 0 m \\mathbf{x}^{m}_{0} 锚定住，以保留完整的运动信息，并防止其坍缩为平凡解。对齐损失项 ℒ align \\mathcal{L}_{\\text{align}} 则将 𝐱 0 m \\mathbf{x}^{m}_{0} 拉向 𝐱 0 v \\mathbf{x}^{v}_{0}，迫使 P v P_{v} 精确提取 𝐱 ′ 0 v \\mathbf{x^{\\prime}}^{v}_{0} 中携带运动信息的特征。"
+    },
+    {
+     "en": "The third term regularizes the latent magnitude.",
+     "zh": "第三项对潜在变量的幅度进行正则化。"
+    }
+   ]
+  },
+  {
+   "en": "With motion and video sharing the latent space ℝ T × d z \\mathbb{R}^{T\\times d_{z}} from Stage 1, we now build the parasitic motion decoder (PMD) that denoises a motion latent in lockstep with the video DiT (Figure 2 b). The central design choice in PMD is to make motion generation share the very same flow-matching schedule as video generation ( Lipman et al. 2023 ; Liu et al. 2023 ; Albergo and Vanden-Eijnden 2023 ) , not merely a similar one. Tying the two processes to a single schedule lets motion and video align at every σ \\sigma , so that features extracted from the host’s denoising process can be consumed by motion denoising at the matched σ \\sigma .",
+   "zh": "利用第一阶段获得的运动和视频共享的潜在空间 ℝ T × d z \\mathbb{R}^{T\\times d_{z}}，我们现在构建寄生运动解码器（PMD），该解码器与视频 DiT 同步对运动潜在表示进行去噪（图 2b）。 PMD 的核心设计选择是使运动生成与视频生成共享完全相同的流匹配调度（Lipman 等，2023；Liu 等，2023；Albergo 和 Vanden-Eijnden，2023），而不仅仅是相似的调度。 将这两个过程绑定到单一调度中，使得运动和视频在每个 σ \\sigma 处都能对齐，从而主模型的去噪过程中提取的特征能够在匹配的 σ \\sigma 处被运动去噪所利用。",
+   "sents": [
+    {
+     "en": "With motion and video sharing the latent space ℝ T × d z \\mathbb{R}^{T\\times d_{z}} from Stage 1, we now build the parasitic motion decoder (PMD) that denoises a motion latent in lockstep with the video DiT (Figure 2 b).",
+     "zh": "利用第一阶段获得的运动和视频共享的潜在空间 ℝ T × d z \\mathbb{R}^{T\\times d_{z}}，我们现在构建寄生运动解码器（PMD），该解码器与视频 DiT 同步对运动潜在表示进行去噪（图 2b）。"
+    },
+    {
+     "en": "The central design choice in PMD is to make motion generation share the very same flow-matching schedule as video generation ( Lipman et al. 2023 ; Liu et al. 2023 ; Albergo and Vanden-Eijnden 2023 ) , not merely a similar one.",
+     "zh": "PMD 的核心设计选择是使运动生成与视频生成共享完全相同的流匹配调度（Lipman 等，2023；Liu 等，2023；Albergo 和 Vanden-Eijnden，2023），而不仅仅是相似的调度。"
+    },
+    {
+     "en": "Tying the two processes to a single schedule lets motion and video align at every σ \\sigma , so that features extracted from the host’s denoising process can be consumed by motion denoising at the matched σ \\sigma .",
+     "zh": "将这两个过程绑定到单一调度中，使得运动和视频在每个 σ \\sigma 处都能对齐，从而主模型的去噪过程中提取的特征能够在匹配的 σ \\sigma 处被运动去噪所利用。"
+    }
+   ]
+  },
+  {
+   "en": "Concretely, the host video DiT ( Peebles and Xie 2023 ) learns a velocity field over its own video latent 𝐱 ′ v \\mathbf{x^{\\prime}}^{v} under a flow-matching schedule indexed by σ ∈ [ 0 , 1 ] \\sigma\\in[0,1] :",
+   "zh": "具体而言，主视频 DiT（Peebles 和 Xie 2023）在其自身的视频潜在表示 𝐱 ′ v \\mathbf{x^{\\prime}}^{v} 上学习一个速度场，该过程遵循由 σ ∈ [ 0 , 1 ] \\sigma\\in[0,1] 索引的流匹配调度：",
+   "sents": null
+  },
+  {
+   "en": "𝐱 ′ σ v = ( 1 − σ ) 𝐱 ′ 0 v + σ ϵ v , 𝐯 σ v ∗ = ϵ v − 𝐱 ′ 0 v , ϵ v ∼ 𝒩 ( 0 , 𝐈 ) . \\displaystyle\\mathbf{x^{\\prime}}^{v}_{\\sigma}=(1-\\sigma)\\,\\mathbf{x^{\\prime}}^{v}_{0}+\\sigma\\boldsymbol{\\epsilon}^{v},\\quad\\mathbf{v}^{v*}_{\\sigma}=\\boldsymbol{\\epsilon}^{v}-\\mathbf{x^{\\prime}}^{v}_{0},\\quad\\boldsymbol{\\epsilon}^{v}\\sim\\mathcal{N}(0,\\mathbf{I}).",
+   "zh": "𝐱 ′ σ v = ( 1 − σ ) 𝐱 ′ 0 v + σ ϵ v , 𝐯 σ v ∗ = ϵ v − 𝐱 ′ 0 v , ϵ v ∼ 𝒩 ( 0 , 𝐈 ) . \\displaystyle\\mathbf{x^{\\prime}}^{v}_{\\sigma}=(1-\\sigma)\\,\\mathbf{x^{\\prime}}^{v}_{0}+\\sigma\\boldsymbol{\\epsilon}^{v},\\quad\\mathbf{v}^{v*}_{\\sigma}=\\boldsymbol{\\epsilon}^{v}-\\mathbf{x^{\\prime}}^{v}_{0},\\quad\\boldsymbol{\\epsilon}^{v}\\sim\\mathcal{N}(0,\\mathbf{I}).",
+   "sents": null
+  },
+  {
+   "en": "We define motion denoising as a parallel process governed by the same schedule on the aligned latent 𝐱 0 m \\mathbf{x}^{m}_{0} :",
+   "zh": "我们将运动去噪定义为一种并行过程，该过程由相同的调度在对齐的潜在变量 𝐱 0 m \\mathbf{x}^{m}_{0} 上执行：",
+   "sents": null
+  },
+  {
+   "en": "𝐱 σ m = ( 1 − σ ) 𝐱 0 m + σ ϵ m , 𝐯 σ m ∗ = ϵ m − 𝐱 0 m , ϵ m ∼ 𝒩 ( 0 , 𝐈 ) . \\displaystyle\\mathbf{x}^{m}_{\\sigma}=(1-\\sigma)\\,\\mathbf{x}^{m}_{0}+\\sigma\\boldsymbol{\\epsilon}^{m},\\quad\\mathbf{v}^{m*}_{\\sigma}=\\boldsymbol{\\epsilon}^{m}-\\mathbf{x}^{m}_{0},\\quad\\boldsymbol{\\epsilon}^{m}\\sim\\mathcal{N}(0,\\mathbf{I}).",
+   "zh": "𝐱 σ m = ( 1 − σ ) 𝐱 0 m + σ ϵ m , 𝐯 σ m ∗ = ϵ m − 𝐱 0 m , ϵ m ∼ 𝒩 ( 0 , 𝐈 ) . \\displaystyle\\mathbf{x}^{m}_{\\sigma}=(1-\\sigma)\\,\\mathbf{x}^{m}_{0}+\\sigma\\boldsymbol{\\epsilon}^{m},\\quad\\mathbf{v}^{m*}_{\\sigma}=\\boldsymbol{\\epsilon}^{m}-\\mathbf{x}^{m}_{0},\\quad\\boldsymbol{\\epsilon}^{m}\\sim\\mathcal{N}(0,\\mathbf{I}).",
+   "sents": null
+  },
+  {
+   "en": "This shared formulation means that, for any σ \\sigma , the host’s intermediate state 𝐱 ′ σ v \\mathbf{x^{\\prime}}^{v}_{\\sigma} and the motion state 𝐱 σ m \\mathbf{x}^{m}_{\\sigma} occupy the same index of their respective trajectories. The two noise draws ϵ v \\boldsymbol{\\epsilon}^{v} and ϵ m \\boldsymbol{\\epsilon}^{m} remain independent, so the coupling comes from the shared schedule and the feature conditioning rather than from a shared noise realization. PMD predicts 𝐯 m ∗ σ \\mathbf{v}^{m*}_{\\sigma} at every σ \\sigma , conditioned on the text prompt c c and intermediate features hooked from the host DiT at the matched σ \\sigma . Motion is thus produced not by an independent flow but by a decoder that shares the host’s schedule and reads its features on the aligned latent space.",
+   "zh": "这种共享的表述方式意味着，对于任意 σ，主智能体的中间状态 𝐱 ′ σ v 和运动状态 𝐱 σ m 在各自轨迹中占据相同的索引位置。 两个噪声抽取值 ϵ v 和 ϵ m 仍然保持独立，因此耦合源于共享的时间安排和特征条件约束，而非共享的噪声实现。 PMD 在每个 σ 处预测 𝐯 m ∗ σ，其预测基于文本提示 c c 以及从主 DiT 在匹配 σ 处获取的中间特征。 因此，运动并非由独立流程生成，而是由一个共享主智能体时间安排并在对齐的潜在空间读取其特征的解码器生成。",
+   "sents": [
+    {
+     "en": "This shared formulation means that, for any σ \\sigma , the host’s intermediate state 𝐱 ′ σ v \\mathbf{x^{\\prime}}^{v}_{\\sigma} and the motion state 𝐱 σ m \\mathbf{x}^{m}_{\\sigma} occupy the same index of their respective trajectories.",
+     "zh": "这种共享的表述方式意味着，对于任意 σ，主智能体的中间状态 𝐱 ′ σ v 和运动状态 𝐱 σ m 在各自轨迹中占据相同的索引位置。"
+    },
+    {
+     "en": "The two noise draws ϵ v \\boldsymbol{\\epsilon}^{v} and ϵ m \\boldsymbol{\\epsilon}^{m} remain independent, so the coupling comes from the shared schedule and the feature conditioning rather than from a shared noise realization.",
+     "zh": "两个噪声抽取值 ϵ v 和 ϵ m 仍然保持独立，因此耦合源于共享的时间安排和特征条件约束，而非共享的噪声实现。"
+    },
+    {
+     "en": "PMD predicts 𝐯 m ∗ σ \\mathbf{v}^{m*}_{\\sigma} at every σ \\sigma , conditioned on the text prompt c c and intermediate features hooked from the host DiT at the matched σ \\sigma .",
+     "zh": "PMD 在每个 σ 处预测 𝐯 m ∗ σ，其预测基于文本提示 c c 以及从主 DiT 在匹配 σ 处获取的中间特征。"
+    },
+    {
+     "en": "Motion is thus produced not by an independent flow but by a decoder that shares the host’s schedule and reads its features on the aligned latent space.",
+     "zh": "因此，运动并非由独立流程生成，而是由一个共享主智能体时间安排并在对齐的潜在空间读取其特征的解码器生成。"
+    }
+   ]
+  },
+  {
+   "en": "PMD is a lightweight flow-matching decoder built around a single guiding principle: rather than learn a generative trajectory from scratch, it follows the host’s schedule and decodes the motion signal the host exposes at each step into an explicit motion. To do so, PMD must read this signal from within the host’s process. We therefore hook a set of intermediate features { 𝐟 ℓ } ℓ = 1 L \\{\\mathbf{f}_{\\ell}\\}_{\\ell=1}^{L} from L L selected DiT layers at the matched σ \\sigma , exposing the partially denoised representations on which the host’s velocity prediction is built. These features are then fused into a single σ \\sigma -dependent video signal 𝐤𝐯 vid \\mathbf{kv}_{\\text{vid}} that PMD can directly attend to.",
+   "zh": "PMD 是一种轻量级的流匹配解码器，其构建基于一个核心原则：与其从头学习生成轨迹，不如遵循主程序的调度，并将主程序在每个步骤中暴露的运动信号解码为显式的运动。 为此，PMD 必须从主程序进程内部读取该信号。 因此，我们从 L 个选定的 DiT 层中钩接一组中间特征 { 𝐟 ℓ } ℓ = 1 L \\{\\mathbf{f}_{\\ell}\\}_{\\ell=1}^{L}，在匹配的 σ \\sigma 处获取这些特征，从而暴露出主程序的速度预测所依赖的部分去噪表示。 随后，这些特征被融合为一个单一的、依赖于 σ \\sigma 的视频信号 𝐤𝐯 vid \\mathbf{kv}_{\\text{vid}}，PMD 可以直接对此进行注意力处理。",
+   "sents": [
+    {
+     "en": "PMD is a lightweight flow-matching decoder built around a single guiding principle: rather than learn a generative trajectory from scratch, it follows the host’s schedule and decodes the motion signal the host exposes at each step into an explicit motion.",
+     "zh": "PMD 是一种轻量级的流匹配解码器，其构建基于一个核心原则：与其从头学习生成轨迹，不如遵循主程序的调度，并将主程序在每个步骤中暴露的运动信号解码为显式的运动。"
+    },
+    {
+     "en": "To do so, PMD must read this signal from within the host’s process.",
+     "zh": "为此，PMD 必须从主程序进程内部读取该信号。"
+    },
+    {
+     "en": "We therefore hook a set of intermediate features { 𝐟 ℓ } ℓ = 1 L \\{\\mathbf{f}_{\\ell}\\}_{\\ell=1}^{L} from L L selected DiT layers at the matched σ \\sigma , exposing the partially denoised representations on which the host’s velocity prediction is built.",
+     "zh": "因此，我们从 L 个选定的 DiT 层中钩接一组中间特征 { 𝐟 ℓ } ℓ = 1 L \\{\\mathbf{f}_{\\ell}\\}_{\\ell=1}^{L}，在匹配的 σ \\sigma 处获取这些特征，从而暴露出主程序的速度预测所依赖的部分去噪表示。"
+    },
+    {
+     "en": "These features are then fused into a single σ \\sigma -dependent video signal 𝐤𝐯 vid \\mathbf{kv}_{\\text{vid}} that PMD can directly attend to.",
+     "zh": "随后，这些特征被融合为一个单一的、依赖于 σ \\sigma 的视频信号 𝐤𝐯 vid \\mathbf{kv}_{\\text{vid}}，PMD 可以直接对此进行注意力处理。"
+    }
+   ]
+  },
+  {
+   "en": "The hooked features { 𝐟 ℓ } ℓ = 1 L \\{\\mathbf{f}_{\\ell}\\}_{\\ell=1}^{L} live in intermediate states of the video DiT and are not directly comparable either to one another or to the motion latent. To participate in motion denoising, they must first be brought into the motion latent space. We bring them into ℝ T × d z \\mathbb{R}^{T\\times d_{z}} in three steps. First, each 𝐟 ℓ \\mathbf{f}_{\\ell} is passed through the host DiT’s own output head, mapping it from the intermediate-layer space to the final video latent space the head was trained for. Second, a small per-layer adapter corrects the residual mismatch of each layer. The host’s head expects the final-layer distribution, and intermediate layers deviate from it. Finally, the projection P v P_{v} from Stage 1 takes the adapted features into the shared motion-video latent space. P v P_{v} is reused as is, with no further training. The first and third modules are therefore inherited from the host and Stage 1 respectively, and only the per-layer adapters are added in this stage.",
+   "zh": "钩状特征 { 𝐟 ℓ } ℓ = 1 L \\{\\mathbf{f}_{\\ell}\\}_{\\ell=1}^{L} 存在于视频 DiT 的中间状态中，既无法直接相互比较，也无法直接与运动潜在表示进行比较。 为了参与运动去噪，它们必须首先被转换到运动潜在空间中。 我们通过三个步骤将它们引入 ℝ T × d z \\mathbb{R}^{T\\times d_{z}}。 首先，每个 𝐟 ℓ \\mathbf{f}_{\\ell} 都会经过主机 DiT 自身的输出头，从而将其从中间层空间映射到该输出头所训练的最终视频潜在空间。 其次，一个每层的小型适配器会修正每一层的残余不匹配问题。 主机的输出头期望的是最终层的分布，而中间层则偏离了这一分布。 最后，来自阶段 1 的投影 P v P_{v} 将经过适配的特征引入共享的运动-视频潜在空间。 P v P_{v} 被直接复用，无需进一步训练。 因此，第一个和第三个模块分别继承自主机和阶段 1，而本阶段仅添加了每层的适配器。",
+   "sents": [
+    {
+     "en": "The hooked features { 𝐟 ℓ } ℓ = 1 L \\{\\mathbf{f}_{\\ell}\\}_{\\ell=1}^{L} live in intermediate states of the video DiT and are not directly comparable either to one another or to the motion latent.",
+     "zh": "钩状特征 { 𝐟 ℓ } ℓ = 1 L \\{\\mathbf{f}_{\\ell}\\}_{\\ell=1}^{L} 存在于视频 DiT 的中间状态中，既无法直接相互比较，也无法直接与运动潜在表示进行比较。"
+    },
+    {
+     "en": "To participate in motion denoising, they must first be brought into the motion latent space.",
+     "zh": "为了参与运动去噪，它们必须首先被转换到运动潜在空间中。"
+    },
+    {
+     "en": "We bring them into ℝ T × d z \\mathbb{R}^{T\\times d_{z}} in three steps.",
+     "zh": "我们通过三个步骤将它们引入 ℝ T × d z \\mathbb{R}^{T\\times d_{z}}。"
+    },
+    {
+     "en": "First, each 𝐟 ℓ \\mathbf{f}_{\\ell} is passed through the host DiT’s own output head, mapping it from the intermediate-layer space to the final video latent space the head was trained for.",
+     "zh": "首先，每个 𝐟 ℓ \\mathbf{f}_{\\ell} 都会经过主机 DiT 自身的输出头，从而将其从中间层空间映射到该输出头所训练的最终视频潜在空间。"
+    },
+    {
+     "en": "Second, a small per-layer adapter corrects the residual mismatch of each layer.",
+     "zh": "其次，一个每层的小型适配器会修正每一层的残余不匹配问题。"
+    },
+    {
+     "en": "The host’s head expects the final-layer distribution, and intermediate layers deviate from it.",
+     "zh": "主机的输出头期望的是最终层的分布，而中间层则偏离了这一分布。"
+    },
+    {
+     "en": "Finally, the projection P v P_{v} from Stage 1 takes the adapted features into the shared motion-video latent space.",
+     "zh": "最后，来自阶段 1 的投影 P v P_{v} 将经过适配的特征引入共享的运动-视频潜在空间。"
+    },
+    {
+     "en": "P v P_{v} is reused as is, with no further training.",
+     "zh": "P v P_{v} 被直接复用，无需进一步训练。"
+    },
+    {
+     "en": "The first and third modules are therefore inherited from the host and Stage 1 respectively, and only the per-layer adapters are added in this stage.",
+     "zh": "因此，第一个和第三个模块分别继承自主机和阶段 1，而本阶段仅添加了每层的适配器。"
+    }
+   ]
+  },
+  {
+   "en": "The result is L L aligned video signals { 𝐟 ^ ℓ } \\{\\hat{\\mathbf{f}}_{\\ell}\\} in ℝ T × d z \\mathbb{R}^{T\\times d_{z}} , ready to be combined and consumed by PMD. Layers at different depths expose the host’s motion signal at different granularities, and their relative usefulness varies along the trajectory. A static fusion would commit the decoder to a single layer mixture across all σ \\sigma . We instead let the fusion weights depend on σ \\sigma :",
+   "zh": "其结果是 L L 对齐的视频信号 { 𝐟 ^ ℓ } \\{\\hat{\\mathbf{f}}_{\\ell}\\}，位于 ℝ T × d z \\mathbb{R}^{T\\times d_{z}} 中，已准备好由 PMD 进行组合和使用。 不同深度的层以不同的粒度暴露主机的运动信号，且它们的相对有效性沿轨迹而变化。 静态融合会使解码器在所有 σ \\sigma 上都固定使用单一层的混合结果。 我们转而让融合权重依赖于 σ \\sigma：",
+   "sents": [
+    {
+     "en": "The result is L L aligned video signals { 𝐟 ^ ℓ } \\{\\hat{\\mathbf{f}}_{\\ell}\\} in ℝ T × d z \\mathbb{R}^{T\\times d_{z}} , ready to be combined and consumed by PMD.",
+     "zh": "其结果是 L L 对齐的视频信号 { 𝐟 ^ ℓ } \\{\\hat{\\mathbf{f}}_{\\ell}\\}，位于 ℝ T × d z \\mathbb{R}^{T\\times d_{z}} 中，已准备好由 PMD 进行组合和使用。"
+    },
+    {
+     "en": "Layers at different depths expose the host’s motion signal at different granularities, and their relative usefulness varies along the trajectory.",
+     "zh": "不同深度的层以不同的粒度暴露主机的运动信号，且它们的相对有效性沿轨迹而变化。"
+    },
+    {
+     "en": "A static fusion would commit the decoder to a single layer mixture across all σ \\sigma .",
+     "zh": "静态融合会使解码器在所有 σ \\sigma 上都固定使用单一层的混合结果。"
+    },
+    {
+     "en": "We instead let the fusion weights depend on σ \\sigma :",
+     "zh": "我们转而让融合权重依赖于 σ \\sigma："
+    }
+   ]
+  },
+  {
+   "en": "The weights 𝐰 ⁡ ( σ ) \\mathbf{w}(\\sigma) are produced by a small MLP from the timestep feature 𝐭 σ \\mathbf{t}_{\\sigma} and normalized over the layer index. The fused 𝐤𝐯 vid \\mathbf{kv}_{\\text{vid}} is computed once per denoising step and shared across all decoder blocks. Trained end-to-end with the rest of PMD, 𝐰 ⁡ ( σ ) \\mathbf{w}(\\sigma) allows the decoder to discover, on its own, which layers to attend to at each σ \\sigma .",
+   "zh": "权重 𝐰 ⁡ ( σ ) \\mathbf{w}(\\sigma) 由一个小型多层感知机根据时间步特征 𝐭 σ \\mathbf{t}_{\\sigma} 生成，并针对层索引进行归一化。 融合的 𝐤𝐯 vid \\mathbf{kv}_{\\text{vid}} 在每个去噪步骤中仅计算一次，并在所有解码器块中共享。 与 PMD 的其他部分一同端到端训练后，𝐰 ⁡ ( σ ) \\mathbf{w}(\\sigma) 使解码器能够自主发现在每个 σ \\sigma 时应关注哪些层。",
+   "sents": [
+    {
+     "en": "The weights 𝐰 ⁡ ( σ ) \\mathbf{w}(\\sigma) are produced by a small MLP from the timestep feature 𝐭 σ \\mathbf{t}_{\\sigma} and normalized over the layer index.",
+     "zh": "权重 𝐰 ⁡ ( σ ) \\mathbf{w}(\\sigma) 由一个小型多层感知机根据时间步特征 𝐭 σ \\mathbf{t}_{\\sigma} 生成，并针对层索引进行归一化。"
+    },
+    {
+     "en": "The fused 𝐤𝐯 vid \\mathbf{kv}_{\\text{vid}} is computed once per denoising step and shared across all decoder blocks.",
+     "zh": "融合的 𝐤𝐯 vid \\mathbf{kv}_{\\text{vid}} 在每个去噪步骤中仅计算一次，并在所有解码器块中共享。"
+    },
+    {
+     "en": "Trained end-to-end with the rest of PMD, 𝐰 ⁡ ( σ ) \\mathbf{w}(\\sigma) allows the decoder to discover, on its own, which layers to attend to at each σ \\sigma .",
+     "zh": "与 PMD 的其他部分一同端到端训练后，𝐰 ⁡ ( σ ) \\mathbf{w}(\\sigma) 使解码器能够自主发现在每个 σ \\sigma 时应关注哪些层。"
+    }
+   ]
+  },
+  {
+   "en": "With 𝐤𝐯 vid \\mathbf{kv}_{\\text{vid}} in hand and text features 𝐤𝐯 txt \\mathbf{kv}_{\\text{txt}} obtained from a frozen pretrained text encoder applied to c c , PMD predicts the motion velocity 𝐯 ^ σ m \\hat{\\mathbf{v}}^{m}_{\\sigma} from the noisy motion latent 𝐱 σ m \\mathbf{x}^{m}_{\\sigma} at every σ \\sigma . The decoder is realized as a stack of N N identical blocks operating on a hidden representation 𝐡 \\mathbf{h} obtained by linearly projecting 𝐱 σ m \\mathbf{x}^{m}_{\\sigma} . Each block applies four sub-modules in sequence. Self-attention over the motion stream propagates information temporally within the motion trajectory. Video cross-attention to 𝐤𝐯 vid \\mathbf{kv}_{\\text{vid}} transfers the host’s denoising direction into the motion stream. Text cross-attention to 𝐤𝐯 txt \\mathbf{kv}_{\\text{txt}} injects the semantics of the text prompt. A position-wise feed-forward network follows.",
+   "zh": "在拥有 𝐤𝐯 vid \\mathbf{kv}_{\\text{vid}} 以及通过应用于 c c 的冻结预训练文本编码器获得的文本特征 𝐤𝐯 txt \\mathbf{kv}_{\\text{txt}} 的情况下，PMD 从含噪运动潜在变量 𝐱 σ m \\mathbf{x}^{m}_{\\sigma} 中预测每个 σ \\sigma 处的运动速度 𝐯 ^ σ m \\hat{\\mathbf{v}}^{m}_{\\sigma}。 解码器由 N 个相同的堆叠模块实现，这些模块作用于通过线性投影 𝐱 σ m \\mathbf{x}^{m}_{\\sigma} 获得的隐藏表示 𝐡 \\mathbf{h}。 每个模块依次应用四个子模块。 对运动流进行自注意力操作可在运动轨迹内部沿时间方向传播信息。 对 𝐤𝐯 vid \\mathbf{kv}_{\\text{vid}} 的视频交叉注意力将主流的去噪方向传递到运动流中。 对 𝐤𝐯 txt \\mathbf{kv}_{\\text{txt}} 的文本交叉注意力注入文本提示的语义信息。 随后是一个逐位置的前馈网络。",
+   "sents": [
+    {
+     "en": "With 𝐤𝐯 vid \\mathbf{kv}_{\\text{vid}} in hand and text features 𝐤𝐯 txt \\mathbf{kv}_{\\text{txt}} obtained from a frozen pretrained text encoder applied to c c , PMD predicts the motion velocity 𝐯 ^ σ m \\hat{\\mathbf{v}}^{m}_{\\sigma} from the noisy motion latent 𝐱 σ m \\mathbf{x}^{m}_{\\sigma} at every σ \\sigma .",
+     "zh": "在拥有 𝐤𝐯 vid \\mathbf{kv}_{\\text{vid}} 以及通过应用于 c c 的冻结预训练文本编码器获得的文本特征 𝐤𝐯 txt \\mathbf{kv}_{\\text{txt}} 的情况下，PMD 从含噪运动潜在变量 𝐱 σ m \\mathbf{x}^{m}_{\\sigma} 中预测每个 σ \\sigma 处的运动速度 𝐯 ^ σ m \\hat{\\mathbf{v}}^{m}_{\\sigma}。"
+    },
+    {
+     "en": "The decoder is realized as a stack of N N identical blocks operating on a hidden representation 𝐡 \\mathbf{h} obtained by linearly projecting 𝐱 σ m \\mathbf{x}^{m}_{\\sigma} .",
+     "zh": "解码器由 N 个相同的堆叠模块实现，这些模块作用于通过线性投影 𝐱 σ m \\mathbf{x}^{m}_{\\sigma} 获得的隐藏表示 𝐡 \\mathbf{h}。"
+    },
+    {
+     "en": "Each block applies four sub-modules in sequence.",
+     "zh": "每个模块依次应用四个子模块。"
+    },
+    {
+     "en": "Self-attention over the motion stream propagates information temporally within the motion trajectory.",
+     "zh": "对运动流进行自注意力操作可在运动轨迹内部沿时间方向传播信息。"
+    },
+    {
+     "en": "Video cross-attention to 𝐤𝐯 vid \\mathbf{kv}_{\\text{vid}} transfers the host’s denoising direction into the motion stream.",
+     "zh": "对 𝐤𝐯 vid \\mathbf{kv}_{\\text{vid}} 的视频交叉注意力将主流的去噪方向传递到运动流中。"
+    },
+    {
+     "en": "Text cross-attention to 𝐤𝐯 txt \\mathbf{kv}_{\\text{txt}} injects the semantics of the text prompt.",
+     "zh": "对 𝐤𝐯 txt \\mathbf{kv}_{\\text{txt}} 的文本交叉注意力注入文本提示的语义信息。"
+    },
+    {
+     "en": "A position-wise feed-forward network follows.",
+     "zh": "随后是一个逐位置的前馈网络。"
+    }
+   ]
+  },
+  {
+   "en": "Every sub-module f f in PMD, together with the per-layer adapters and the fusion MLP described above, is conditioned on σ \\sigma through adaptive layer normalization (AdaLN):",
+   "zh": "PMD 中的每个子模块 f f，连同上述每层适配器和融合 MLP，都通过自适应层归一化（AdaLN）以 σ \\sigma 为条件：",
+   "sents": null
+  },
+  {
+   "en": "where 𝜸 \\boldsymbol{\\gamma} , 𝜷 \\boldsymbol{\\beta} scale and shift the normalized input to f f , and 𝜶 \\boldsymbol{\\alpha} gates its residual contribution. This uniform σ \\sigma -conditioning lets every operation in PMD adapt continuously to the current point on the schedule.",
+   "zh": "其中 𝜸 \\boldsymbol{\\gamma} 和 𝜷 \\boldsymbol{\\beta} 对归一化输入 f f 进行缩放和平移，而 𝜶 \\boldsymbol{\\alpha} 则控制其残差贡献。 这种统一的 σ \\sigma -条件化使得 PMD 中的每个操作都能持续适应调度表上的当前点。",
+   "sents": [
+    {
+     "en": "where 𝜸 \\boldsymbol{\\gamma} , 𝜷 \\boldsymbol{\\beta} scale and shift the normalized input to f f , and 𝜶 \\boldsymbol{\\alpha} gates its residual contribution.",
+     "zh": "其中 𝜸 \\boldsymbol{\\gamma} 和 𝜷 \\boldsymbol{\\beta} 对归一化输入 f f 进行缩放和平移，而 𝜶 \\boldsymbol{\\alpha} 则控制其残差贡献。"
+    },
+    {
+     "en": "This uniform σ \\sigma -conditioning lets every operation in PMD adapt continuously to the current point on the schedule.",
+     "zh": "这种统一的 σ \\sigma -条件化使得 PMD 中的每个操作都能持续适应调度表上的当前点。"
+    }
+   ]
+  },
+  {
+   "en": "PMD is trained step-wise under the host’s flow-matching schedule. At each iteration, we sample a clean motion latent 𝐱 0 m \\mathbf{x}^{m}_{0} and its paired video latent 𝐱 ′ 0 v \\mathbf{x^{\\prime}}^{v}_{0} from data, draw a coefficient σ ∼ 𝒰 ⁡ [ 0 , 1 ] \\sigma\\sim\\mathcal{U}[0,1] , and form 𝐱 σ m \\mathbf{x}^{m}_{\\sigma} and 𝐱 ′ σ v \\mathbf{x^{\\prime}}^{v}_{\\sigma} via Eq. (2) and Eq. (3). The host DiT runs a forward pass on 𝐱 ′ σ v \\mathbf{x^{\\prime}}^{v}_{\\sigma} , from which the L L intermediate features { 𝐟 ℓ } \\{\\mathbf{f}_{\\ell}\\} are hooked, and PMD predicts the motion velocity from 𝐱 σ m \\mathbf{x}^{m}_{\\sigma} , σ \\sigma , c c , and { 𝐟 ℓ } \\{\\mathbf{f}_{\\ell}\\} , optimizing the standard flow-matching loss:",
+   "zh": "PMD 在主机流匹配调度下分步训练。 在每个迭代中，我们从数据中采样一个干净的运动潜在变量 𝐱 0 m \\mathbf{x}^{m}_{0} 及其配对的视频潜在变量 𝐱 ′ 0 v \\mathbf{x^{\\prime}}^{v}_{0}，抽取一个系数 σ ∼ 𝒰 ⁡ [ 0 , 1 ] \\sigma\\sim\\mathcal{U}[0,1]，并通过公式 (2) 和公式 (3) 构造 𝐱 σ m \\mathbf{x}^{m}_{\\sigma} 与 𝐱 ′ σ v \\mathbf{x^{\\prime}}^{v}_{\\sigma}。 主机 DiT 对 𝐱 ′ σ v \\mathbf{x^{\\prime}}^{v}_{\\sigma} 执行前向传播，从中提取中间特征 { 𝐟 ℓ } \\{\\mathbf{f}_{\\ell}\\}；同时 PMD 基于 𝐱 σ m \\mathbf{x}^{m}_{\\sigma}、σ \\sigma、c c 和 { 𝐟 ℓ } \\{\\mathbf{f}_{\\ell}\\} 预测运动速度，并优化标准的流匹配损失：",
+   "sents": [
+    {
+     "en": "PMD is trained step-wise under the host’s flow-matching schedule.",
+     "zh": "PMD 在主机流匹配调度下分步训练。"
+    },
+    {
+     "en": "At each iteration, we sample a clean motion latent 𝐱 0 m \\mathbf{x}^{m}_{0} and its paired video latent 𝐱 ′ 0 v \\mathbf{x^{\\prime}}^{v}_{0} from data, draw a coefficient σ ∼ 𝒰 ⁡ [ 0 , 1 ] \\sigma\\sim\\mathcal{U}[0,1] , and form 𝐱 σ m \\mathbf{x}^{m}_{\\sigma} and 𝐱 ′ σ v \\mathbf{x^{\\prime}}^{v}_{\\sigma} via Eq. (2) and Eq. (3).",
+     "zh": "在每个迭代中，我们从数据中采样一个干净的运动潜在变量 𝐱 0 m \\mathbf{x}^{m}_{0} 及其配对的视频潜在变量 𝐱 ′ 0 v \\mathbf{x^{\\prime}}^{v}_{0}，抽取一个系数 σ ∼ 𝒰 ⁡ [ 0 , 1 ] \\sigma\\sim\\mathcal{U}[0,1]，并通过公式 (2) 和公式 (3) 构造 𝐱 σ m \\mathbf{x}^{m}_{\\sigma} 与 𝐱 ′ σ v \\mathbf{x^{\\prime}}^{v}_{\\sigma}。"
+    },
+    {
+     "en": "The host DiT runs a forward pass on 𝐱 ′ σ v \\mathbf{x^{\\prime}}^{v}_{\\sigma} , from which the L L intermediate features { 𝐟 ℓ } \\{\\mathbf{f}_{\\ell}\\} are hooked, and PMD predicts the motion velocity from 𝐱 σ m \\mathbf{x}^{m}_{\\sigma} , σ \\sigma , c c , and { 𝐟 ℓ } \\{\\mathbf{f}_{\\ell}\\} , optimizing the standard flow-matching loss:",
+     "zh": "主机 DiT 对 𝐱 ′ σ v \\mathbf{x^{\\prime}}^{v}_{\\sigma} 执行前向传播，从中提取中间特征 { 𝐟 ℓ } \\{\\mathbf{f}_{\\ell}\\}；同时 PMD 基于 𝐱 σ m \\mathbf{x}^{m}_{\\sigma}、σ \\sigma、c c 和 { 𝐟 ℓ } \\{\\mathbf{f}_{\\ell}\\} 预测运动速度，并优化标准的流匹配损失："
+    }
+   ]
+  },
+  {
+   "en": "The host DiT, the video VAE, the text encoder, and all Stage 1 modules ( E m E_{m} , D m D_{m} , P v P_{v} ) are frozen. Only PMD’s parameters, together with the per-layer adapters and the fusion MLP, are updated. At inference, no video latent is available in advance. PMD and the host DiT advance jointly from σ = 1 \\sigma=1 to σ = 0 \\sigma=0 along the shared schedule, with PMD reading the host’s features at each step, after which D m D_{m} decodes 𝐱 0 m \\mathbf{x}^{m}_{0} into the final motion 𝐦 \\mathbf{m} . A single joint pass thus yields the video from the host and the aligned motion from PMD.",
+   "zh": "主 DiT、视频 VAE、文本编码器以及所有阶段 1 的模块（E m E_{m}、D m D_{m}、P v P_{v}）均被冻结。 仅更新 PMD 的参数，以及各层的适配器和融合 MLP。 在推理阶段，无法提前获取视频潜在表示。 PMD 和主 DiT 沿着共享的调度方案从 σ = 1 \\sigma=1 同步推进至 σ = 0 \\sigma=0，其中 PMD 在每个步骤读取主模型的特征，之后 D m D_{m} 将 𝐱 0 m \\mathbf{x}^{m}_{0} 解码为最终的运动 𝐦 \\mathbf{m}。 因此，单次联合处理即可从主模型生成视频，并从 PMD 生成对齐的运动。",
+   "sents": [
+    {
+     "en": "The host DiT, the video VAE, the text encoder, and all Stage 1 modules ( E m E_{m} , D m D_{m} , P v P_{v} ) are frozen.",
+     "zh": "主 DiT、视频 VAE、文本编码器以及所有阶段 1 的模块（E m E_{m}、D m D_{m}、P v P_{v}）均被冻结。"
+    },
+    {
+     "en": "Only PMD’s parameters, together with the per-layer adapters and the fusion MLP, are updated.",
+     "zh": "仅更新 PMD 的参数，以及各层的适配器和融合 MLP。"
+    },
+    {
+     "en": "At inference, no video latent is available in advance.",
+     "zh": "在推理阶段，无法提前获取视频潜在表示。"
+    },
+    {
+     "en": "PMD and the host DiT advance jointly from σ = 1 \\sigma=1 to σ = 0 \\sigma=0 along the shared schedule, with PMD reading the host’s features at each step, after which D m D_{m} decodes 𝐱 0 m \\mathbf{x}^{m}_{0} into the final motion 𝐦 \\mathbf{m} .",
+     "zh": "PMD 和主 DiT 沿着共享的调度方案从 σ = 1 \\sigma=1 同步推进至 σ = 0 \\sigma=0，其中 PMD 在每个步骤读取主模型的特征，之后 D m D_{m} 将 𝐱 0 m \\mathbf{x}^{m}_{0} 解码为最终的运动 𝐦 \\mathbf{m}。"
+    },
+    {
+     "en": "A single joint pass thus yields the video from the host and the aligned motion from PMD.",
+     "zh": "因此，单次联合处理即可从主模型生成视频，并从 PMD 生成对齐的运动。"
+    }
+   ]
+  },
+  {
+   "en": "We test whether a frozen video diffusion model carries motion along its denoising trajectory through a cross-modal alignment study. Each HumanML3D ( Guo et al. 2022a ) motion is rendered in Unreal Engine 5 ( Karis and Games 2013 ) from 10 10 viewpoints with randomized identity, clothing, and background, leaving paired videos of the same motion with no shared appearance cues. At each σ \\sigma , we extract velocity-field features from the host on a paired video and from HY-Motion ( Team 2025 ) , a SOTA text-to-motion model, on the corresponding motion. HY-Motion takes only motion as input, so alignment with its states reflects motion content, not visual similarity. We measure it by top- 1 1 retrieval against 400 400 held-out candidates, averaged over the ten viewpoints. Figure 1 shows a recoverable motion signal across the entire schedule, supporting parasitic co-denoising. We next turn this signal into competitive generation.",
+   "zh": "我们通过一种跨模态对齐研究，检验一个冻结的视频扩散模型是否会在其去噪轨迹中携带运动信息。 每个 HumanML3D（Guo et al. 2022a）的运动都在 Unreal Engine 5（Karis and Games 2013）中，从 10 个视角进行渲染，并随机设置身份、服装和背景，从而得到同一运动但外观特征完全不共享的成对视频。 在每个 σ \\sigma 处，我们从主模型在成对视频上提取速度场特征，并从 HY-Motion（Team 2025）——一个 SOTA 文本到运动模型——在对应运动上的输出中提取速度场特征。 HY-Motion 仅以运动作为输入，因此与其状态的对齐反映的是运动内容，而非视觉相似性。 我们通过将结果与 400 个预留候选项进行 top-1 检索来衡量这一指标，并对十个视角取平均值。 图 1 展示了在整个时间规划中可恢复的运动信号，这支持了寄生式协同去噪的可能性。 接下来，我们将这种信号转化为具有竞争力的生成能力。",
+   "sents": [
+    {
+     "en": "We test whether a frozen video diffusion model carries motion along its denoising trajectory through a cross-modal alignment study.",
+     "zh": "我们通过一种跨模态对齐研究，检验一个冻结的视频扩散模型是否会在其去噪轨迹中携带运动信息。"
+    },
+    {
+     "en": "Each HumanML3D ( Guo et al. 2022a ) motion is rendered in Unreal Engine 5 ( Karis and Games 2013 ) from 10 10 viewpoints with randomized identity, clothing, and background, leaving paired videos of the same motion with no shared appearance cues.",
+     "zh": "每个 HumanML3D（Guo et al. 2022a）的运动都在 Unreal Engine 5（Karis and Games 2013）中，从 10 个视角进行渲染，并随机设置身份、服装和背景，从而得到同一运动但外观特征完全不共享的成对视频。"
+    },
+    {
+     "en": "At each σ \\sigma , we extract velocity-field features from the host on a paired video and from HY-Motion ( Team 2025 ) , a SOTA text-to-motion model, on the corresponding motion.",
+     "zh": "在每个 σ \\sigma 处，我们从主模型在成对视频上提取速度场特征，并从 HY-Motion（Team 2025）——一个 SOTA 文本到运动模型——在对应运动上的输出中提取速度场特征。"
+    },
+    {
+     "en": "HY-Motion takes only motion as input, so alignment with its states reflects motion content, not visual similarity.",
+     "zh": "HY-Motion 仅以运动作为输入，因此与其状态的对齐反映的是运动内容，而非视觉相似性。"
+    },
+    {
+     "en": "We measure it by top- 1 1 retrieval against 400 400 held-out candidates, averaged over the ten viewpoints.",
+     "zh": "我们通过将结果与 400 个预留候选项进行 top-1 检索来衡量这一指标，并对十个视角取平均值。"
+    },
+    {
+     "en": "Figure 1 shows a recoverable motion signal across the entire schedule, supporting parasitic co-denoising.",
+     "zh": "图 1 展示了在整个时间规划中可恢复的运动信号，这支持了寄生式协同去噪的可能性。"
+    },
+    {
+     "en": "We next turn this signal into competitive generation.",
+     "zh": "接下来，我们将这种信号转化为具有竞争力的生成能力。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate on ViMoGen-228K ( Lin et al. 2025 ) : 171.5 171.5 K MoCap text-motion pairs, 56.6 56.6 K in-the-wild text-video-motion triplets, and ∼ \\sim 11 11 K synthetic triplets. Protocol A trains on the synthetic subset ( 10 10 K/ 1 1 K train/eval), whose video distribution is closest to our host, isolating parasitic decoding from distribution shift. Protocol B trains on the full dataset and evaluates on MBench ( Lin et al. 2025 ) , the official benchmark, against the ViMoGen baselines. MBench scores two categories: semantic metrics (Motion-Condition Consistency, Motion Generalizability), rated by a vision-language model (Gemini Flash-2.5) on rendered videos, and kinematic metrics (Jitter Degree, Foot Sliding, Foot Floating, Dynamic Degree), computed on 3D joints.",
+   "zh": "我们在 ViMoGen-228K（Lin 等人，2025）上进行评估：包含 171.5 万对 MoCap 文本-动作数据、56.6 万个真实场景中的文本-视频-动作三元组，以及约 1.1 万个合成三元组。 协议 A 在合成子集（训练/评估各 1 万/1000 个）上进行训练，该子集的视频分布最接近我们的宿主数据，从而将寄生式解码与分布偏移隔离开来。 协议 B 在完整数据集上训练，并在官方基准测试 MBench（Lin 等人，2025）上评估，以对比 ViMoGen 基线模型。 MBench 评估两个类别：语义指标（动作条件一致性、动作泛化能力），由视觉-语言模型（Gemini Flash-2.5）在渲染后的视频上进行评分；以及运动学指标（抖动程度、脚部滑动、脚部漂浮、动态程度），通过 3D 关节点计算得出。",
+   "sents": [
+    {
+     "en": "We evaluate on ViMoGen-228K ( Lin et al. 2025 ) : 171.5 171.5 K MoCap text-motion pairs, 56.6 56.6 K in-the-wild text-video-motion triplets, and ∼ \\sim 11 11 K synthetic triplets.",
+     "zh": "我们在 ViMoGen-228K（Lin 等人，2025）上进行评估：包含 171.5 万对 MoCap 文本-动作数据、56.6 万个真实场景中的文本-视频-动作三元组，以及约 1.1 万个合成三元组。"
+    },
+    {
+     "en": "Protocol A trains on the synthetic subset ( 10 10 K/ 1 1 K train/eval), whose video distribution is closest to our host, isolating parasitic decoding from distribution shift.",
+     "zh": "协议 A 在合成子集（训练/评估各 1 万/1000 个）上进行训练，该子集的视频分布最接近我们的宿主数据，从而将寄生式解码与分布偏移隔离开来。"
+    },
+    {
+     "en": "Protocol B trains on the full dataset and evaluates on MBench ( Lin et al. 2025 ) , the official benchmark, against the ViMoGen baselines.",
+     "zh": "协议 B 在完整数据集上训练，并在官方基准测试 MBench（Lin 等人，2025）上评估，以对比 ViMoGen 基线模型。"
+    },
+    {
+     "en": "MBench scores two categories: semantic metrics (Motion-Condition Consistency, Motion Generalizability), rated by a vision-language model (Gemini Flash-2.5) on rendered videos, and kinematic metrics (Jitter Degree, Foot Sliding, Foot Floating, Dynamic Degree), computed on 3D joints.",
+     "zh": "MBench 评估两个类别：语义指标（动作条件一致性、动作泛化能力），由视觉-语言模型（Gemini Flash-2.5）在渲染后的视频上进行评分；以及运动学指标（抖动程度、脚部滑动、脚部漂浮、动态程度），通过 3D 关节点计算得出。"
+    }
+   ]
+  },
+  {
+   "en": "The host is a frozen Wan2.1-T2V-14B ( Wan et al. 2025 ) . PMD has N = 6 N=6 blocks, hooks L = 5 L=5 DiT layers, hidden dimension 256 256 , and ∼ \\sim 19 19 M trainable parameters. We train Stage 2 for 100 100 epochs (Adam, lr 2 × 10 − 4 2\\times 10^{-4} , batch 48 48 ) with 0.1 0.1 classifier-free guidance dropout applied independently to video and text. Inference runs Wan2.1’s rectified-flow sampler for 50 50 steps. All runs use 3 3 NVIDIA RTX 4090 4090 GPUs.",
+   "zh": "该宿主是一个冻结的 Wan2.1-T2V-14B（Wan 等，2025）。 PMD 包含 N = 6 N=6 个块、L = 5 L=5 个 DiT 层钩子、256 256 的隐藏维度以及约 ∼ \\sim 19 19 M 个可训练参数。 我们将阶段 2 训练 100 100 个周期（Adam，学习率 2 × 10 − 4 2\\times 10^{-4}，批量大小 48 48），并对视频和文本分别应用 0.1 0.1 的无分类器引导丢弃。 推理过程运行 Wan2.1 的修正流采样器 50 50 步。 所有运行均使用 3 3 块 NVIDIA RTX 4090 4090 GPU。",
+   "sents": [
+    {
+     "en": "The host is a frozen Wan2.1-T2V-14B ( Wan et al. 2025 ) .",
+     "zh": "该宿主是一个冻结的 Wan2.1-T2V-14B（Wan 等，2025）。"
+    },
+    {
+     "en": "PMD has N = 6 N=6 blocks, hooks L = 5 L=5 DiT layers, hidden dimension 256 256 , and ∼ \\sim 19 19 M trainable parameters.",
+     "zh": "PMD 包含 N = 6 N=6 个块、L = 5 L=5 个 DiT 层钩子、256 256 的隐藏维度以及约 ∼ \\sim 19 19 M 个可训练参数。"
+    },
+    {
+     "en": "We train Stage 2 for 100 100 epochs (Adam, lr 2 × 10 − 4 2\\times 10^{-4} , batch 48 48 ) with 0.1 0.1 classifier-free guidance dropout applied independently to video and text.",
+     "zh": "我们将阶段 2 训练 100 100 个周期（Adam，学习率 2 × 10 − 4 2\\times 10^{-4}，批量大小 48 48），并对视频和文本分别应用 0.1 0.1 的无分类器引导丢弃。"
+    },
+    {
+     "en": "Inference runs Wan2.1’s rectified-flow sampler for 50 50 steps.",
+     "zh": "推理过程运行 Wan2.1 的修正流采样器 50 50 步。"
+    },
+    {
+     "en": "All runs use 3 3 NVIDIA RTX 4090 4090 GPUs.",
+     "zh": "所有运行均使用 3 3 块 NVIDIA RTX 4090 4090 GPU。"
+    }
+   ]
+  },
+  {
+   "en": "Table 1 reports both protocols, and PMD leads the two semantic metrics in each. Under the data-scarce Protocol A, PMD outperforms every dedicated generator by a clear margin: when motion data is limited, reading the host’s features along the schedule already supplies the semantic coverage that a from-scratch generator lacks. Under the large-scale Protocol B, PMD stays ahead of the far larger ViMoGen and the concurrent scene-conditioned MotionVLA, at a small fraction of their trainable parameters. The advantage thus holds from scarce to abundant data, tracking the host’s representational depth rather than the size of any dedicated motion model.",
+   "zh": "表1报告了两种协议，PMD在每种协议中的两项语义指标均领先。 在数据稀缺的协议A中，PMD以明显优势优于所有专用生成器：当运动数据有限时，仅通过按时间表读取主机的特征，就能提供从头生成的生成器所缺乏的语义覆盖。 在大规模协议B中，PMD仍领先于规模大得多的ViMoGen和同时提出的场景条件化MotionVLA，而所需可训练参数仅为它们的极小一部分。 因此，这种优势从数据稀缺到充足均保持一致，其关键在于追踪主机的表示深度，而非任何专用运动模型的大小。",
+   "sents": [
+    {
+     "en": "Table 1 reports both protocols, and PMD leads the two semantic metrics in each.",
+     "zh": "表1报告了两种协议，PMD在每种协议中的两项语义指标均领先。"
+    },
+    {
+     "en": "Under the data-scarce Protocol A, PMD outperforms every dedicated generator by a clear margin: when motion data is limited, reading the host’s features along the schedule already supplies the semantic coverage that a from-scratch generator lacks.",
+     "zh": "在数据稀缺的协议A中，PMD以明显优势优于所有专用生成器：当运动数据有限时，仅通过按时间表读取主机的特征，就能提供从头生成的生成器所缺乏的语义覆盖。"
+    },
+    {
+     "en": "Under the large-scale Protocol B, PMD stays ahead of the far larger ViMoGen and the concurrent scene-conditioned MotionVLA, at a small fraction of their trainable parameters.",
+     "zh": "在大规模协议B中，PMD仍领先于规模大得多的ViMoGen和同时提出的场景条件化MotionVLA，而所需可训练参数仅为它们的极小一部分。"
+    },
+    {
+     "en": "The advantage thus holds from scarce to abundant data, tracking the host’s representational depth rather than the size of any dedicated motion model.",
+     "zh": "因此，这种优势从数据稀缺到充足均保持一致，其关键在于追踪主机的表示深度，而非任何专用运动模型的大小。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 3 compares PMD with dedicated generators on four MBench prompts. PMD follows the prompts more faithfully and produces larger, more expressive movement, most visibly on underrepresented actions such as Salsa dancing , where the baselines fall back on generic motion. This long-tail coverage is inherited from the host through co-denoising. The bottom row shows the paired video the host renders alongside each motion, an output the baselines cannot produce at all.",
+   "zh": "图 3 将 PMD 与专用生成器在四个 MBench 提示词上的表现进行了比较。 PMD 能更忠实于提示词，并生成规模更大、表现力更强的动作，这一点在代表性不足的动作（如萨尔萨舞）中尤为明显，因为基线模型在这种情况下会退而使用通用动作。 这种长尾覆盖能力是通过协同降噪从宿主模型中继承而来的。 最下面一行展示了宿主模型与每个动作一同渲染的配套视频，这是基线模型完全无法生成的输出。",
+   "sents": [
+    {
+     "en": "Figure 3 compares PMD with dedicated generators on four MBench prompts.",
+     "zh": "图 3 将 PMD 与专用生成器在四个 MBench 提示词上的表现进行了比较。"
+    },
+    {
+     "en": "PMD follows the prompts more faithfully and produces larger, more expressive movement, most visibly on underrepresented actions such as Salsa dancing , where the baselines fall back on generic motion.",
+     "zh": "PMD 能更忠实于提示词，并生成规模更大、表现力更强的动作，这一点在代表性不足的动作（如萨尔萨舞）中尤为明显，因为基线模型在这种情况下会退而使用通用动作。"
+    },
+    {
+     "en": "This long-tail coverage is inherited from the host through co-denoising.",
+     "zh": "这种长尾覆盖能力是通过协同降噪从宿主模型中继承而来的。"
+    },
+    {
+     "en": "The bottom row shows the paired video the host renders alongside each motion, an output the baselines cannot produce at all.",
+     "zh": "最下面一行展示了宿主模型与每个动作一同渲染的配套视频，这是基线模型完全无法生成的输出。"
+    }
+   ]
+  },
+  {
+   "en": "Table 2 evaluates PMD on HumanML3D, a benchmark of curated indoor MoCap. PMD leads on R-Precision, confirming its text-motion alignment on a second benchmark. Its FID trails the best MoCap-specialized methods, as expected: PMD inherits its distribution from the video host rather than fitting HumanML3D’s narrow MoCap statistics, favoring semantic coverage over dataset-specific fit.",
+   "zh": "表2在HumanML3D（一个经过筛选的室内动作捕捉基准数据集）上评估了PMD。 PMD在R-Precision指标上表现领先，证实了它在第二个基准数据集上的文本与动作对齐能力。 其FID指标落后于最顶尖的动作捕捉专用方法，这与预期一致：PMD的分布继承自视频源，而非拟合HumanML3D中动作捕捉数据的有限统计特征，因此更侧重于语义覆盖而非对特定数据集的适配。",
+   "sents": [
+    {
+     "en": "Table 2 evaluates PMD on HumanML3D, a benchmark of curated indoor MoCap.",
+     "zh": "表2在HumanML3D（一个经过筛选的室内动作捕捉基准数据集）上评估了PMD。"
+    },
+    {
+     "en": "PMD leads on R-Precision, confirming its text-motion alignment on a second benchmark.",
+     "zh": "PMD在R-Precision指标上表现领先，证实了它在第二个基准数据集上的文本与动作对齐能力。"
+    },
+    {
+     "en": "Its FID trails the best MoCap-specialized methods, as expected: PMD inherits its distribution from the video host rather than fitting HumanML3D’s narrow MoCap statistics, favoring semantic coverage over dataset-specific fit.",
+     "zh": "其FID指标落后于最顶尖的动作捕捉专用方法，这与预期一致：PMD的分布继承自视频源，而非拟合HumanML3D中动作捕捉数据的有限统计特征，因此更侧重于语义覆盖而非对特定数据集的适配。"
+    }
+   ]
+  },
+  {
+   "en": "The clearest test of the paradigm is to remove the host signal: PMD collapses to a text-only generator of the same size (Table 3 ) and both semantic metrics fall sharply. The capability is the host’s, not the decoder’s. The other two components make it reachable. Removing the text condition keeps coarse semantics from the host but loses fine prompt control, and removing Stage 1 alignment is most damaging, leaving host features with no usable motion space and collapsing training.",
+   "zh": "检验这一范式的最清晰方法就是移除宿主信号：PMD 会退化为一个尺寸相同、仅生成文本的模型（表 3），且两种语义指标都会急剧下降。 这种能力属于宿主，而非解码器。 另外两个组件使其变得可行。 移除文本条件会阻止宿主获取粗粒度语义，但会失去对提示的精细控制；而移除第 1 阶段的对齐则破坏性最强，导致宿主的特征没有可用的运动空间，训练也随之崩溃。",
+   "sents": [
+    {
+     "en": "The clearest test of the paradigm is to remove the host signal: PMD collapses to a text-only generator of the same size (Table 3 ) and both semantic metrics fall sharply.",
+     "zh": "检验这一范式的最清晰方法就是移除宿主信号：PMD 会退化为一个尺寸相同、仅生成文本的模型（表 3），且两种语义指标都会急剧下降。"
+    },
+    {
+     "en": "The capability is the host’s, not the decoder’s.",
+     "zh": "这种能力属于宿主，而非解码器。"
+    },
+    {
+     "en": "The other two components make it reachable.",
+     "zh": "另外两个组件使其变得可行。"
+    },
+    {
+     "en": "Removing the text condition keeps coarse semantics from the host but loses fine prompt control, and removing Stage 1 alignment is most damaging, leaving host features with no usable motion space and collapsing training.",
+     "zh": "移除文本条件会阻止宿主获取粗粒度语义，但会失去对提示的精细控制；而移除第 1 阶段的对齐则破坏性最强，导致宿主的特征没有可用的运动空间，训练也随之崩溃。"
+    }
+   ]
+  },
+  {
+   "en": "We next examine how the host signal should be read. A single final-layer hook lags the full model by a wide margin, so the signal is not concentrated at the clean output but spread across the host’s depth. A static uniform mixture narrows the gap yet still trails, since a fixed blend cannot track how layer relevance shifts along the schedule. Figure 4 exposes that shift: the mid-late layer L29 dominates throughout, while early- and late-layer contributions swap as denoising proceeds. Even hooking L29 alone, the strongest layer, falls short of the fusion, and it in turn beats a final-layer hook, so both which layer and how many matter. The motion signal lives in the shifting interplay across layers, and only σ \\sigma -adaptive fusion tracks it.",
+   "zh": "接下来，我们将研究如何读取主机信号。 仅使用最后一层的智能体与完整模型存在巨大差距，因此信号并未集中在纯净输出上，而是分布在整个主机的深度中。 静态均匀混合虽然缩小了差距，但仍处于落后状态，因为固定混合无法追踪各层相关性随时间流程的变化。 图 4 揭示了这种变化：中间至后期的 L29 层始终占据主导地位，而早期和晚期层的贡献则随着降噪过程发生交替。 即使仅连接最强的 L29 层智能体，其表现仍不及融合方案；而融合方案又优于仅使用最后一层智能体的方式，因此具体使用哪一层以及使用多少层都至关重要。 运动信号存在于各层之间动态变化的相互作用中，而只有 σ \\sigma -自适应融合能够追踪这种变化。",
+   "sents": [
+    {
+     "en": "We next examine how the host signal should be read.",
+     "zh": "接下来，我们将研究如何读取主机信号。"
+    },
+    {
+     "en": "A single final-layer hook lags the full model by a wide margin, so the signal is not concentrated at the clean output but spread across the host’s depth.",
+     "zh": "仅使用最后一层的智能体与完整模型存在巨大差距，因此信号并未集中在纯净输出上，而是分布在整个主机的深度中。"
+    },
+    {
+     "en": "A static uniform mixture narrows the gap yet still trails, since a fixed blend cannot track how layer relevance shifts along the schedule.",
+     "zh": "静态均匀混合虽然缩小了差距，但仍处于落后状态，因为固定混合无法追踪各层相关性随时间流程的变化。"
+    },
+    {
+     "en": "Figure 4 exposes that shift: the mid-late layer L29 dominates throughout, while early- and late-layer contributions swap as denoising proceeds.",
+     "zh": "图 4 揭示了这种变化：中间至后期的 L29 层始终占据主导地位，而早期和晚期层的贡献则随着降噪过程发生交替。"
+    },
+    {
+     "en": "Even hooking L29 alone, the strongest layer, falls short of the fusion, and it in turn beats a final-layer hook, so both which layer and how many matter.",
+     "zh": "即使仅连接最强的 L29 层智能体，其表现仍不及融合方案；而融合方案又优于仅使用最后一层智能体的方式，因此具体使用哪一层以及使用多少层都至关重要。"
+    },
+    {
+     "en": "The motion signal lives in the shifting interplay across layers, and only σ \\sigma -adaptive fusion tracks it.",
+     "zh": "运动信号存在于各层之间动态变化的相互作用中，而只有 σ \\sigma -自适应融合能够追踪这种变化。"
+    }
+   ]
+  },
+  {
+   "en": "The same picture holds along depth. Shallow hooks underperform a spread across the host’s full depth, and three full-depth layers already recover most of the gain while shallow ones cannot, so what matters is spanning the trajectory, not the layer count. Motion is present throughout the host’s process, along both the σ \\sigma axis and the depth of its stack, and PMD works by reading it wherever it lives.",
+   "zh": "同一幅图像在深度方向上保持一致。 浅层钩子在整个宿主深度范围内的表现不如均匀分布的钩子，而三个全深度层已经能恢复大部分增益，浅层则无法做到，因此关键在于覆盖轨迹，而非层的数量。 运动存在于整个宿主过程中，既沿 σ \\sigma 轴方向，也沿其堆栈的深度方向，而 PMD 通过读取运动所在任何位置的信息来发挥作用。",
+   "sents": [
+    {
+     "en": "The same picture holds along depth.",
+     "zh": "同一幅图像在深度方向上保持一致。"
+    },
+    {
+     "en": "Shallow hooks underperform a spread across the host’s full depth, and three full-depth layers already recover most of the gain while shallow ones cannot, so what matters is spanning the trajectory, not the layer count.",
+     "zh": "浅层钩子在整个宿主深度范围内的表现不如均匀分布的钩子，而三个全深度层已经能恢复大部分增益，浅层则无法做到，因此关键在于覆盖轨迹，而非层的数量。"
+    },
+    {
+     "en": "Motion is present throughout the host’s process, along both the σ \\sigma axis and the depth of its stack, and PMD works by reading it wherever it lives.",
+     "zh": "运动存在于整个宿主过程中，既沿 σ \\sigma 轴方向，也沿其堆栈的深度方向，而 PMD 通过读取运动所在任何位置的信息来发挥作用。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 5 (a) shows that the projected video latent P v ​ ( 𝐱 σ ′ v ) P_{v}(\\mathbf{x}^{\\prime v}_{\\sigma}) and the motion latent 𝐱 σ m \\mathbf{x}^{m}_{\\sigma} grow progressively aligned along the schedule, peaking near σ ≈ 0.5 \\sigma\\!\\approx\\!0.5 and staying high through σ → 0 \\sigma\\!\\to\\!0 . Figure 5 (b) visualizes this coupling: at every σ \\sigma , the paired video and motion trajectories step in the same direction within a joint PCA basis. The motion side does not merely end up near the video, it moves with it throughout, a pattern consistent with co-denoising rather than post-hoc alignment.",
+   "zh": "图 5 (a) 显示，投影视频潜在变量 P v ​ ( 𝐱 σ ′ v ) P_{v}(\\mathbf{x}^{\\prime v}_{\\sigma}) 和运动潜在变量 𝐱 σ m \\mathbf{x}^{m}_{\\sigma} 随着计划逐步趋于对齐，在 σ ≈ 0.5 \\sigma\\!\\approx\\!0.5 附近达到峰值，并在 σ → 0 \\sigma\\!\\to\\!0 时保持较高水平。 图 5 (b) 展示了这种耦合关系：在每个 σ \\sigma 处，配对的视频和运动轨迹在联合 PCA 基内朝同一方向移动。 运动部分并非最终仅靠近视频，而是全程与视频同步移动，这一模式更符合协同去噪，而非事后对齐。",
+   "sents": [
+    {
+     "en": "Figure 5 (a) shows that the projected video latent P v ​ ( 𝐱 σ ′ v ) P_{v}(\\mathbf{x}^{\\prime v}_{\\sigma}) and the motion latent 𝐱 σ m \\mathbf{x}^{m}_{\\sigma} grow progressively aligned along the schedule, peaking near σ ≈ 0.5 \\sigma\\!\\approx\\!0.5 and staying high through σ → 0 \\sigma\\!\\to\\!0 .",
+     "zh": "图 5 (a) 显示，投影视频潜在变量 P v ​ ( 𝐱 σ ′ v ) P_{v}(\\mathbf{x}^{\\prime v}_{\\sigma}) 和运动潜在变量 𝐱 σ m \\mathbf{x}^{m}_{\\sigma} 随着计划逐步趋于对齐，在 σ ≈ 0.5 \\sigma\\!\\approx\\!0.5 附近达到峰值，并在 σ → 0 \\sigma\\!\\to\\!0 时保持较高水平。"
+    },
+    {
+     "en": "Figure 5 (b) visualizes this coupling: at every σ \\sigma , the paired video and motion trajectories step in the same direction within a joint PCA basis.",
+     "zh": "图 5 (b) 展示了这种耦合关系：在每个 σ \\sigma 处，配对的视频和运动轨迹在联合 PCA 基内朝同一方向移动。"
+    },
+    {
+     "en": "The motion side does not merely end up near the video, it moves with it throughout, a pattern consistent with co-denoising rather than post-hoc alignment.",
+     "zh": "运动部分并非最终仅靠近视频，而是全程与视频同步移动，这一模式更符合协同去噪，而非事后对齐。"
+    }
+   ]
+  },
+  {
+   "en": "Reading motion from the host invites a natural worry: that PMD merely transcribes each video into one fixed pose sequence, reducing generation to deterministic readout. Figure 6 rules this out. For each host video, eight noise seeds yield distinct yet host-consistent motions, tightly clustered per video but clearly spread within each cluster (within-video pairwise MPJPE 40 ± 12 40\\pm 12 mm across 50 50 videos). The host shapes the motion without fixing it, and PMD generates from its own noise rather than reading a predetermined answer off the host.",
+   "zh": "从宿主中读取运动模式会引发一个自然的担忧：PMD 可能只是将每个视频转录为单一固定的姿态序列，从而将生成过程简化为确定性的读取操作。图 6 排除了这种可能性。 对于每个宿主视频，八个噪声种子会产生不同但保持一致的运动模式；这些模式在单个视频内部紧密聚集，但在每个簇内又明显分散（50 个视频中，视频内的成对 MPJPE 为 40 ± 12 mm）。 宿主塑造了运动模式，但并未将其固定下来；PMD 是基于自身的噪声进行生成，而不是从宿主中读取一个预定的答案。",
+   "sents": [
+    {
+     "en": "Reading motion from the host invites a natural worry: that PMD merely transcribes each video into one fixed pose sequence, reducing generation to deterministic readout. Figure 6 rules this out.",
+     "zh": "从宿主中读取运动模式会引发一个自然的担忧：PMD 可能只是将每个视频转录为单一固定的姿态序列，从而将生成过程简化为确定性的读取操作。图 6 排除了这种可能性。"
+    },
+    {
+     "en": "For each host video, eight noise seeds yield distinct yet host-consistent motions, tightly clustered per video but clearly spread within each cluster (within-video pairwise MPJPE 40 ± 12 40\\pm 12 mm across 50 50 videos).",
+     "zh": "对于每个宿主视频，八个噪声种子会产生不同但保持一致的运动模式；这些模式在单个视频内部紧密聚集，但在每个簇内又明显分散（50 个视频中，视频内的成对 MPJPE 为 40 ± 12 mm）。"
+    },
+    {
+     "en": "The host shapes the motion without fixing it, and PMD generates from its own noise rather than reading a predetermined answer off the host.",
+     "zh": "宿主塑造了运动模式，但并未将其固定下来；PMD 是基于自身的噪声进行生成，而不是从宿主中读取一个预定的答案。"
+    }
+   ]
+  },
+  {
+   "en": "We presented parasitic co-denoising, a paradigm for generating 3 3 D human motion by decoding it from a frozen video diffusion model along its denoising schedule rather than training an independent motion generator. Our instantiation, the Parasitic Motion Decoder, attaches a flow-matching decoder to a frozen video host through σ \\sigma -adaptive multi-layer fusion. At a small fraction of the trainable parameters of dedicated motion generators, it leads them on text-motion alignment. We hope this paradigm extends to other modalities whose generation is implicit in larger generative processes.",
+   "zh": "我们提出了寄生式联合去噪（parasitic co-denoising）这一范式，它通过沿着冻结视频扩散模型的去噪流程对冻结模型进行解码来生成三维人类运动，而非训练一个独立的运动生成器。 我们的具体实现——寄生式运动解码器（Parasitic Motion Decoder），通过 σ-自适应多层融合将流匹配解码器附加到冻结的视频宿主模型上。 其可训练参数仅占专用运动生成器的一小部分，却能引导后者实现文本与运动的对齐。 我们希望这一范式能够推广到其他模态，这些模态的生成过程隐含在更庞大的生成流程中。",
+   "sents": [
+    {
+     "en": "We presented parasitic co-denoising, a paradigm for generating 3 3 D human motion by decoding it from a frozen video diffusion model along its denoising schedule rather than training an independent motion generator.",
+     "zh": "我们提出了寄生式联合去噪（parasitic co-denoising）这一范式，它通过沿着冻结视频扩散模型的去噪流程对冻结模型进行解码来生成三维人类运动，而非训练一个独立的运动生成器。"
+    },
+    {
+     "en": "Our instantiation, the Parasitic Motion Decoder, attaches a flow-matching decoder to a frozen video host through σ \\sigma -adaptive multi-layer fusion.",
+     "zh": "我们的具体实现——寄生式运动解码器（Parasitic Motion Decoder），通过 σ-自适应多层融合将流匹配解码器附加到冻结的视频宿主模型上。"
+    },
+    {
+     "en": "At a small fraction of the trainable parameters of dedicated motion generators, it leads them on text-motion alignment.",
+     "zh": "其可训练参数仅占专用运动生成器的一小部分，却能引导后者实现文本与运动的对齐。"
+    },
+    {
+     "en": "We hope this paradigm extends to other modalities whose generation is implicit in larger generative processes.",
+     "zh": "我们希望这一范式能够推广到其他模态，这些模态的生成过程隐含在更庞大的生成流程中。"
+    }
+   ]
+  }
+ ]
+}
