@@ -1,0 +1,2024 @@
+{
+ "id": "fb20b6056e0d2c45",
+ "source": "arxiv-t2i",
+ "link": "https://arxiv.org/abs/2610.03577v1",
+ "title": "Rethinking What to Cache in Few-Step Diffusion Transformers: Solver-Aware Target Selection",
+ "title_zh": "重新思考少步扩散Transformer中应缓存的内容：基于求解器的目标选择",
+ "published": "2026-10-02T16:51:22Z",
+ "translated_at": "2026-10-18T04:29:32Z",
+ "paragraphs": [
+  {
+   "en": "Even after step distillation shortens DiT sampling ( Salimans and Ho, 2022 ; Song et al., 2023 ; Luo et al., 2023 ) , each remaining forward pass in image and video generation is costly ( Chen et al., 2024b ; Team Wan et al., 2025 ; Kong et al., 2024 ) . Caching can skip some of those passes ( Ma et al., 2024b ; Kahatapitiya et al., 2025 ) , but the larger gaps between the remaining solver steps make a tensor computed at one step less reliable when it is reused at a later step.",
+   "zh": "即使经过步骤蒸馏缩短了 DiT 采样（Salimans 和 Ho，2022；Song 等，2023；Luo 等，2023），图像和视频生成中每次剩余的前向传播仍然成本高昂（Chen 等，2024b；Team Wan 等，2025；Kong 等，2024）。 缓存可以跳过其中一些前向传播（Ma 等，2024b；Kahatapitiya 等，2025），但剩余求解步骤之间的间隔越大，某一步骤中计算的张量在后续步骤中被重复使用时，其可靠性就越低。",
+   "sents": [
+    {
+     "en": "Even after step distillation shortens DiT sampling ( Salimans and Ho, 2022 ; Song et al., 2023 ; Luo et al., 2023 ) , each remaining forward pass in image and video generation is costly ( Chen et al., 2024b ; Team Wan et al., 2025 ; Kong et al., 2024 ) .",
+     "zh": "即使经过步骤蒸馏缩短了 DiT 采样（Salimans 和 Ho，2022；Song 等，2023；Luo 等，2023），图像和视频生成中每次剩余的前向传播仍然成本高昂（Chen 等，2024b；Team Wan 等，2025；Kong 等，2024）。"
+    },
+    {
+     "en": "Caching can skip some of those passes ( Ma et al., 2024b ; Kahatapitiya et al., 2025 ) , but the larger gaps between the remaining solver steps make a tensor computed at one step less reliable when it is reused at a later step.",
+     "zh": "缓存可以跳过其中一些前向传播（Ma 等，2024b；Kahatapitiya 等，2025），但剩余求解步骤之间的间隔越大，某一步骤中计算的张量在后续步骤中被重复使用时，其可靠性就越低。"
+    }
+   ]
+  },
+  {
+   "en": "Many cache methods decide when to reuse a tensor or predict how a stored feature should change, but keep the tensor type fixed. Different types can produce different sampling trajectories. For a given model, solver, and reuse schedule, which tensor should we cache?",
+   "zh": "许多缓存方法会决定何时重用张量或预测已存储的特征应如何变化，但会保持张量类型固定。 不同类型的张量可能会产生不同的采样轨迹。 对于给定的模型、求解器和重用计划，我们应该缓存哪个张量？",
+   "sents": [
+    {
+     "en": "Many cache methods decide when to reuse a tensor or predict how a stored feature should change, but keep the tensor type fixed.",
+     "zh": "许多缓存方法会决定何时重用张量或预测已存储的特征应如何变化，但会保持张量类型固定。"
+    },
+    {
+     "en": "Different types can produce different sampling trajectories.",
+     "zh": "不同类型的张量可能会产生不同的采样轨迹。"
+    },
+    {
+     "en": "For a given model, solver, and reuse schedule, which tensor should we cache?",
+     "zh": "对于给定的模型、求解器和重用计划，我们应该缓存哪个张量？"
+    }
+   ]
+  },
+  {
+   "en": "Figure 2 shows the distinction between caching a value inside the DiT and caching one of its outputs for the solver. We study the second case. At a reuse step, the stored output is used with a new latent and solver step size. For a linear-flow model using Euler sampling, a DiT prediction can be stored as a velocity (the latent’s rate of change along the sampling path), a clean endpoint (the estimated noise-free latent), or a one-step update (the velocity multiplied by that step’s size). These forms describe the same prediction at the exact step, but need not behave alike when reused later. Velocity and the clean endpoint give the same trajectory if the endpoint is converted at each new step. A stored update, however, retains the earlier step size and can produce a different trajectory when that size changes. This is why the solver must be part of the cache-target comparison.",
+   "zh": "图 2 展示了在 DiT 内部缓存一个值与为求解器缓存其输出之一之间的区别。 我们研究第二种情况。 在重用步骤中，存储的输出会与新的潜变量和求解器步长一起使用。 对于采用欧拉采样的线性流模型，DiT 的预测可以存储为速度（潜变量沿采样路径的变化率）、干净的终点（估计的无噪声潜变量）或一步更新（速度乘以该步的步长）。 这些形式描述了同一精确步骤下的相同预测，但在后续重用时未必表现一致。 如果每个新步骤都将终点进行转换，那么速度和干净的终点将给出相同的轨迹。 然而，存储的更新会保留之前的步长，当该步长发生变化时，可能会产生不同的轨迹。 这就是为什么求解器必须成为缓存目标比较的一部分。",
+   "sents": [
+    {
+     "en": "Figure 2 shows the distinction between caching a value inside the DiT and caching one of its outputs for the solver.",
+     "zh": "图 2 展示了在 DiT 内部缓存一个值与为求解器缓存其输出之一之间的区别。"
+    },
+    {
+     "en": "We study the second case.",
+     "zh": "我们研究第二种情况。"
+    },
+    {
+     "en": "At a reuse step, the stored output is used with a new latent and solver step size.",
+     "zh": "在重用步骤中，存储的输出会与新的潜变量和求解器步长一起使用。"
+    },
+    {
+     "en": "For a linear-flow model using Euler sampling, a DiT prediction can be stored as a velocity (the latent’s rate of change along the sampling path), a clean endpoint (the estimated noise-free latent), or a one-step update (the velocity multiplied by that step’s size).",
+     "zh": "对于采用欧拉采样的线性流模型，DiT 的预测可以存储为速度（潜变量沿采样路径的变化率）、干净的终点（估计的无噪声潜变量）或一步更新（速度乘以该步的步长）。"
+    },
+    {
+     "en": "These forms describe the same prediction at the exact step, but need not behave alike when reused later.",
+     "zh": "这些形式描述了同一精确步骤下的相同预测，但在后续重用时未必表现一致。"
+    },
+    {
+     "en": "Velocity and the clean endpoint give the same trajectory if the endpoint is converted at each new step.",
+     "zh": "如果每个新步骤都将终点进行转换，那么速度和干净的终点将给出相同的轨迹。"
+    },
+    {
+     "en": "A stored update, however, retains the earlier step size and can produce a different trajectory when that size changes.",
+     "zh": "然而，存储的更新会保留之前的步长，当该步长发生变化时，可能会产生不同的轨迹。"
+    },
+    {
+     "en": "This is why the solver must be part of the cache-target comparison.",
+     "zh": "这就是为什么求解器必须成为缓存目标比较的一部分。"
+    }
+   ]
+  },
+  {
+   "en": "With the reuse steps fixed, AutoTarget chooses what to cache using a few uncached sampling runs. Each run evaluates the DiT at every scheduled step, allowing us to measure the local reuse error of every valid target. Because the candidates represent different quantities, we pass each one through its solver conversion and the frozen VAE decoder before comparing it with the uncached run. If the two lowest errors are too close, AutoTarget makes no selection. Otherwise, deployment uses the target with the lowest calibration error. This selection requires no training and adds no inference-time predictor. All candidates use the same number of DiT evaluations and the same solver sequence for a fair comparison. Figure 4 shows the calibration and deployment stages.",
+   "zh": "在重用步骤固定的情况下，AutoTarget 通过几次未缓存的采样运行来选择要缓存的内容。 每次运行都会在每个预定步骤中评估 DiT，从而使我们能够测量每个有效目标的局部重用误差。 由于候选项代表不同的量，我们在进行比较之前，会先将每个候选项通过其求解器转换和冻结的 VAE 解码器处理，再与未缓存的运行结果进行比较。 如果两个最小的误差过于接近，AutoTarget 将不作选择。 否则，部署时将使用校准误差最低的目标。 这种选择无需训练，也不会增加推理时的预测模型。 为了公平比较，所有候选项都使用相同数量的 DiT 评估和相同的求解器序列。 图 4 展示了校准和部署阶段。",
+   "sents": [
+    {
+     "en": "With the reuse steps fixed, AutoTarget chooses what to cache using a few uncached sampling runs.",
+     "zh": "在重用步骤固定的情况下，AutoTarget 通过几次未缓存的采样运行来选择要缓存的内容。"
+    },
+    {
+     "en": "Each run evaluates the DiT at every scheduled step, allowing us to measure the local reuse error of every valid target.",
+     "zh": "每次运行都会在每个预定步骤中评估 DiT，从而使我们能够测量每个有效目标的局部重用误差。"
+    },
+    {
+     "en": "Because the candidates represent different quantities, we pass each one through its solver conversion and the frozen VAE decoder before comparing it with the uncached run.",
+     "zh": "由于候选项代表不同的量，我们在进行比较之前，会先将每个候选项通过其求解器转换和冻结的 VAE 解码器处理，再与未缓存的运行结果进行比较。"
+    },
+    {
+     "en": "If the two lowest errors are too close, AutoTarget makes no selection.",
+     "zh": "如果两个最小的误差过于接近，AutoTarget 将不作选择。"
+    },
+    {
+     "en": "Otherwise, deployment uses the target with the lowest calibration error.",
+     "zh": "否则，部署时将使用校准误差最低的目标。"
+    },
+    {
+     "en": "This selection requires no training and adds no inference-time predictor.",
+     "zh": "这种选择无需训练，也不会增加推理时的预测模型。"
+    },
+    {
+     "en": "All candidates use the same number of DiT evaluations and the same solver sequence for a fair comparison.",
+     "zh": "为了公平比较，所有候选项都使用相同数量的 DiT 评估和相同的求解器序列。"
+    },
+    {
+     "en": "Figure 4 shows the calibration and deployment stages.",
+     "zh": "图 4 展示了校准和部署阶段。"
+    }
+   ]
+  },
+  {
+   "en": "Solver-aware cache selection. AutoTarget chooses what to cache for a fixed model, solver, reuse schedule, and storage budget using exact calibration runs.",
+   "zh": "求解器感知缓存选择。 AutoTarget 通过精确校准运行，为固定的模型、求解器、重用计划和存储预算选择缓存内容。",
+   "sents": [
+    {
+     "en": "Solver-aware cache selection.",
+     "zh": "求解器感知缓存选择。"
+    },
+    {
+     "en": "AutoTarget chooses what to cache for a fixed model, solver, reuse schedule, and storage budget using exact calibration runs.",
+     "zh": "AutoTarget 通过精确校准运行，为固定的模型、求解器、重用计划和存储预算选择缓存内容。"
+    }
+   ]
+  },
+  {
+   "en": "Reuse analysis. We show how errors accumulate, when cached forms give the same Euler trajectory, and why stored updates can differ as step sizes change.",
+   "zh": "重用分析。 我们展示了当缓存的形式产生相同的欧拉轨迹时，错误如何累积，以及为什么存储的更新会因步长变化而不同。",
+   "sents": [
+    {
+     "en": "Reuse analysis.",
+     "zh": "重用分析。"
+    },
+    {
+     "en": "We show how errors accumulate, when cached forms give the same Euler trajectory, and why stored updates can differ as step sizes change.",
+     "zh": "我们展示了当缓存的形式产生相同的欧拉轨迹时，错误如何累积，以及为什么存储的更新会因步长变化而不同。"
+    }
+   ]
+  },
+  {
+   "en": "Results across settings. PixArt-LCM selects velocity at 512 px but denoised/clean at 1024 px when only resolution changes (Figure 3 ). Across image and video DiTs, AutoTarget saves DiT calls and retained storage while keeping quality near uncached runs.",
+   "zh": "不同设置下的结果。 当仅分辨率变化时，PixArt-LCM 在 512 px 处选择速度，但在 1024 px 处进行去噪/清理（图 3）。 在各种图像和视频 DiT 中，AutoTarget 可在保持质量接近无缓存运行的同时，减少 DiT 调用并节省存储空间。",
+   "sents": [
+    {
+     "en": "Results across settings.",
+     "zh": "不同设置下的结果。"
+    },
+    {
+     "en": "PixArt-LCM selects velocity at 512 px but denoised/clean at 1024 px when only resolution changes (Figure 3 ).",
+     "zh": "当仅分辨率变化时，PixArt-LCM 在 512 px 处选择速度，但在 1024 px 处进行去噪/清理（图 3）。"
+    },
+    {
+     "en": "Across image and video DiTs, AutoTarget saves DiT calls and retained storage while keeping quality near uncached runs.",
+     "zh": "在各种图像和视频 DiT 中，AutoTarget 可在保持质量接近无缓存运行的同时，减少 DiT 调用并节省存储空间。"
+    }
+   ]
+  },
+  {
+   "en": "Modern DiT pipelines build on denoising diffusion and score-based modeling ( Ho et al., 2020 ; Song et al., 2021b ) , latent-space generation ( Rombach et al., 2022 ) , and transformer denoisers ( Peebles and Xie, 2023 ) . These foundations make the repeated transformer forward pass the main unit targeted by both step reduction and cache reuse.",
+   "zh": "现代 DiT 流程建立在去噪扩散和基于得分的建模（Ho 等人，2020；Song 等人，2021b）、潜在空间生成（Rombach 等人，2022）以及 Transformer 去噪器（Peebles 和 Xie，2023）的基础之上。 这些基础使得重复的 Transformer 前向传播成为步骤减少和缓存重用共同针对的主要单元。",
+   "sents": [
+    {
+     "en": "Modern DiT pipelines build on denoising diffusion and score-based modeling ( Ho et al., 2020 ; Song et al., 2021b ) , latent-space generation ( Rombach et al., 2022 ) , and transformer denoisers ( Peebles and Xie, 2023 ) .",
+     "zh": "现代 DiT 流程建立在去噪扩散和基于得分的建模（Ho 等人，2020；Song 等人，2021b）、潜在空间生成（Rombach 等人，2022）以及 Transformer 去噪器（Peebles 和 Xie，2023）的基础之上。"
+    },
+    {
+     "en": "These foundations make the repeated transformer forward pass the main unit targeted by both step reduction and cache reuse.",
+     "zh": "这些基础使得重复的 Transformer 前向传播成为步骤减少和缓存重用共同针对的主要单元。"
+    }
+   ]
+  },
+  {
+   "en": "Few-Step Distillation of Diffusion Models. Step distillation compresses the iterative reverse process of diffusion models into a small number of sampling steps, through progressive distillation ( Salimans and Ho, 2022 ) , consistency training ( Song et al., 2023 ; Luo et al., 2023 ) , and distribution-matching or adversarial objectives ( Yin et al., 2024b ; Yin et al., 2024a ; Sauer et al., 2024 ) . These recipes yield the distilled image and video DiTs studied in this work, including PixArt- δ \\delta ( Chen et al., 2024b ; Chen et al., 2024a ) , FLUX.1-schnell ( Black Forest Labs, 2024b ) , and distilled variants of Wan and HunyuanVideo ( Yin et al., 2025 ; Huang et al., 2025 ; Team Wan et al., 2025 ; Kong et al., 2024 ) . Distillation increases the gap between adjacent solver coordinates. This makes reuse errors more likely to change the solver trajectory, even though skipping one DiT evaluation still saves substantial computation ( Du et al., 2025 ) . AutoTarget works with a frozen distilled model and chooses the tensor to cache.",
+   "zh": "扩散模型的少步蒸馏。 步数蒸馏通过渐进式蒸馏（Salimans 和 Ho，2022）、一致性训练（Song 等，2023；Luo 等，2023）以及分布匹配或对抗性目标（Yin 等，2024b；Yin 等，2024a；Sauer 等，2024），将扩散模型的迭代反向过程压缩为少量采样步。 这些方法生成了本研究中所探讨的蒸馏图像和视频 DiT，包括 PixArt-δ \\delta（Chen 等，2024b；Chen 等，2024a）、FLUX.1-schnell（Black Forest Labs，2024b），以及 Wan 和 HunyuanVideo 的蒸馏变体（Yin 等，2025；Huang 等，2025；Team Wan 等，2025；Kong 等，2024）。 蒸馏会增大相邻求解器坐标之间的差距。 这使得重复利用错误更有可能改变求解器轨迹，尽管跳过一次 DiT 评估仍能节省大量计算资源（Du 等，2025）。 AutoTarget 与一个已冻结的蒸馏模型协同工作，并选择需要缓存的张量。",
+   "sents": [
+    {
+     "en": "Few-Step Distillation of Diffusion Models.",
+     "zh": "扩散模型的少步蒸馏。"
+    },
+    {
+     "en": "Step distillation compresses the iterative reverse process of diffusion models into a small number of sampling steps, through progressive distillation ( Salimans and Ho, 2022 ) , consistency training ( Song et al., 2023 ; Luo et al., 2023 ) , and distribution-matching or adversarial objectives ( Yin et al., 2024b ; Yin et al., 2024a ; Sauer et al., 2024 ) .",
+     "zh": "步数蒸馏通过渐进式蒸馏（Salimans 和 Ho，2022）、一致性训练（Song 等，2023；Luo 等，2023）以及分布匹配或对抗性目标（Yin 等，2024b；Yin 等，2024a；Sauer 等，2024），将扩散模型的迭代反向过程压缩为少量采样步。"
+    },
+    {
+     "en": "These recipes yield the distilled image and video DiTs studied in this work, including PixArt- δ \\delta ( Chen et al., 2024b ; Chen et al., 2024a ) , FLUX.1-schnell ( Black Forest Labs, 2024b ) , and distilled variants of Wan and HunyuanVideo ( Yin et al., 2025 ; Huang et al., 2025 ; Team Wan et al., 2025 ; Kong et al., 2024 ) .",
+     "zh": "这些方法生成了本研究中所探讨的蒸馏图像和视频 DiT，包括 PixArt-δ \\delta（Chen 等，2024b；Chen 等，2024a）、FLUX.1-schnell（Black Forest Labs，2024b），以及 Wan 和 HunyuanVideo 的蒸馏变体（Yin 等，2025；Huang 等，2025；Team Wan 等，2025；Kong 等，2024）。"
+    },
+    {
+     "en": "Distillation increases the gap between adjacent solver coordinates.",
+     "zh": "蒸馏会增大相邻求解器坐标之间的差距。"
+    },
+    {
+     "en": "This makes reuse errors more likely to change the solver trajectory, even though skipping one DiT evaluation still saves substantial computation ( Du et al., 2025 ) .",
+     "zh": "这使得重复利用错误更有可能改变求解器轨迹，尽管跳过一次 DiT 评估仍能节省大量计算资源（Du 等，2025）。"
+    },
+    {
+     "en": "AutoTarget works with a frozen distilled model and chooses the tensor to cache.",
+     "zh": "AutoTarget 与一个已冻结的蒸馏模型协同工作，并选择需要缓存的张量。"
+    }
+   ]
+  },
+  {
+   "en": "Caching and Feature Reuse. Caching methods skip full network evaluations by reusing tensors computed at earlier solver coordinates. Most methods cache predefined internal representations: deep or block features ( Ma et al., 2024b ; Wimbauer et al., 2024 ) , layer outputs with learned skip routers ( Ma et al., 2024a ) , fast-forwarded blocks ( Selvaraju et al., 2024 ) , polynomially reconstructed features ( Feng et al., 2025 ) , attention results ( Zhao et al., 2025 ; Lyu et al., 2025 ) , or non-salient token features ( Zou et al., 2025 ) ; others adapt when to reuse via content-adaptive or timestep-embedding signals ( Kahatapitiya et al., 2025 ; Liu et al., 2025a ) . Under the larger inter-step gaps of distilled models, some additionally train predictors that forecast stale cached features ( Liu et al., 2025b ; Zou et al., 2026 ) . Across these methods, the cached representation itself is fixed by design.",
+   "zh": "缓存与特征复用。 缓存方法通过复用先前求解器坐标处计算出的张量，跳过完整的网络评估。 大多数方法会缓存预定义的内部表示：深度或块特征（Ma et al., 2024b；Wimbauer et al., 2024）、带有可学习跳跃路由器的层输出（Ma et al., 2024a）、快速前传块（Selvaraju et al., 2024）、多项式重构特征（Feng et al., 2025）、注意力结果（Zhao et al., 2025；Lyu et al., 2025）或非显著词元特征（Zou et al., 2025）；其他方法则通过内容自适应或时间步嵌入信号来动态调整复用时机（Kahatapitiya et al., 2025；Liu et al., 2025a）。 在蒸馏模型较大的步骤间间隔下，一些方法还会训练预测器，以预测过时的缓存特征（Liu et al., 2025b；Zou et al., 2026）。 在这些方法中，缓存表示本身是设计时就固定的。",
+   "sents": [
+    {
+     "en": "Caching and Feature Reuse.",
+     "zh": "缓存与特征复用。"
+    },
+    {
+     "en": "Caching methods skip full network evaluations by reusing tensors computed at earlier solver coordinates.",
+     "zh": "缓存方法通过复用先前求解器坐标处计算出的张量，跳过完整的网络评估。"
+    },
+    {
+     "en": "Most methods cache predefined internal representations: deep or block features ( Ma et al., 2024b ; Wimbauer et al., 2024 ) , layer outputs with learned skip routers ( Ma et al., 2024a ) , fast-forwarded blocks ( Selvaraju et al., 2024 ) , polynomially reconstructed features ( Feng et al., 2025 ) , attention results ( Zhao et al., 2025 ; Lyu et al., 2025 ) , or non-salient token features ( Zou et al., 2025 ) ; others adapt when to reuse via content-adaptive or timestep-embedding signals ( Kahatapitiya et al., 2025 ; Liu et al., 2025a ) .",
+     "zh": "大多数方法会缓存预定义的内部表示：深度或块特征（Ma et al., 2024b；Wimbauer et al., 2024）、带有可学习跳跃路由器的层输出（Ma et al., 2024a）、快速前传块（Selvaraju et al., 2024）、多项式重构特征（Feng et al., 2025）、注意力结果（Zhao et al., 2025；Lyu et al., 2025）或非显著词元特征（Zou et al., 2025）；其他方法则通过内容自适应或时间步嵌入信号来动态调整复用时机（Kahatapitiya et al., 2025；Liu et al., 2025a）。"
+    },
+    {
+     "en": "Under the larger inter-step gaps of distilled models, some additionally train predictors that forecast stale cached features ( Liu et al., 2025b ; Zou et al., 2026 ) .",
+     "zh": "在蒸馏模型较大的步骤间间隔下，一些方法还会训练预测器，以预测过时的缓存特征（Liu et al., 2025b；Zou et al., 2026）。"
+    },
+    {
+     "en": "Across these methods, the cached representation itself is fixed by design.",
+     "zh": "在这些方法中，缓存表示本身是设计时就固定的。"
+    }
+   ]
+  },
+  {
+   "en": "Cache Target Selection. A few recent methods make the cache policy more flexible. They let the model choose internal features ( Bu et al., 2026 ) , assign a reuse solver to each feature dimension ( Zheng et al., 2026 ) , profile reusable blocks ( Ma et al., 2025 ) , or optimize the reuse schedule over a full trajectory ( Chu et al., 2025 ; Lei et al., 2026 ) . We study a different choice: which tensor passed to the sampling solver should be cached. The candidates include velocity, clean and noise endpoints, and solver displacement. AutoTarget groups candidates with the same solver transitions, then measures local reuse error for each remaining candidate on exact calibration runs. The chosen target depends on the model, resolution, and solver; no predictor is trained.",
+   "zh": "缓存目标选择。 一些近期的方法使缓存策略更加灵活。 它们允许模型选择内部特征（Bu 等，2026），为每个特征维度分配一个重用求解器（Zheng 等，2026），分析可重用模块（Ma 等，2025），或在完整轨迹上优化重用调度（Chu 等，2025；Lei 等，2026）。 我们研究一种不同的选择：传递给采样求解器的哪个张量应该被缓存。 候选项包括速度、干净端点和噪声端点，以及求解器位移。 AutoTarget 将具有相同求解器转换的候选项分组，然后在精确校准运行中测量每个剩余候选项的局部重用误差。 所选目标取决于模型、分辨率和求解器；无需训练任何预测器。",
+   "sents": [
+    {
+     "en": "Cache Target Selection.",
+     "zh": "缓存目标选择。"
+    },
+    {
+     "en": "A few recent methods make the cache policy more flexible.",
+     "zh": "一些近期的方法使缓存策略更加灵活。"
+    },
+    {
+     "en": "They let the model choose internal features ( Bu et al., 2026 ) , assign a reuse solver to each feature dimension ( Zheng et al., 2026 ) , profile reusable blocks ( Ma et al., 2025 ) , or optimize the reuse schedule over a full trajectory ( Chu et al., 2025 ; Lei et al., 2026 ) .",
+     "zh": "它们允许模型选择内部特征（Bu 等，2026），为每个特征维度分配一个重用求解器（Zheng 等，2026），分析可重用模块（Ma 等，2025），或在完整轨迹上优化重用调度（Chu 等，2025；Lei 等，2026）。"
+    },
+    {
+     "en": "We study a different choice: which tensor passed to the sampling solver should be cached.",
+     "zh": "我们研究一种不同的选择：传递给采样求解器的哪个张量应该被缓存。"
+    },
+    {
+     "en": "The candidates include velocity, clean and noise endpoints, and solver displacement.",
+     "zh": "候选项包括速度、干净端点和噪声端点，以及求解器位移。"
+    },
+    {
+     "en": "AutoTarget groups candidates with the same solver transitions, then measures local reuse error for each remaining candidate on exact calibration runs.",
+     "zh": "AutoTarget 将具有相同求解器转换的候选项分组，然后在精确校准运行中测量每个剩余候选项的局部重用误差。"
+    },
+    {
+     "en": "The chosen target depends on the model, resolution, and solver; no predictor is trained.",
+     "zh": "所选目标取决于模型、分辨率和求解器；无需训练任何预测器。"
+    }
+   ]
+  },
+  {
+   "en": "Given a model, solver, and fixed DiT evaluation schedule, AutoTarget compares the cache targets supported by the pipeline. It measures their reuse errors on uncached runs and deploys the lowest-error target on new prompts only if its error is sufficiently below the runner-up’s.",
+   "zh": "给定一个模型、求解器和固定的 DiT 评估计划，AutoTarget 会对比管道支持的缓存目标。 它会测量这些目标在未缓存运行中的重用错误，并且仅当最低错误目标的错误值远低于第二名时，才将其应用于新提示。",
+   "sents": [
+    {
+     "en": "Given a model, solver, and fixed DiT evaluation schedule, AutoTarget compares the cache targets supported by the pipeline.",
+     "zh": "给定一个模型、求解器和固定的 DiT 评估计划，AutoTarget 会对比管道支持的缓存目标。"
+    },
+    {
+     "en": "It measures their reuse errors on uncached runs and deploys the lowest-error target on new prompts only if its error is sufficiently below the runner-up’s.",
+     "zh": "它会测量这些目标在未缓存运行中的重用错误，并且仅当最低错误目标的错误值远低于第二名时，才将其应用于新提示。"
+    }
+   ]
+  },
+  {
+   "en": "Let j ∈ { 0 , … , T } j\\in\\{0,\\ldots,T\\} be the discrete sampling-step index, and let t 0 > t 1 > ⋯ > t T t_{0}>t_{1}>\\cdots>t_{T} be the corresponding solver coordinates. At each step j < T j<T , the DiT takes the current latent x j x_{j} , coordinate t j t_{j} , and conditioning information c c as inputs. Its prediction determines the next latent through the solver transition:",
+   "zh": "令 j ∈ { 0 , … , T } j\\in\\{0,\\ldots,T\\} 为离散采样步索引，并令 t 0 > t 1 > ⋯ > t T t_{0}>t_{1}>\\cdots>t_{T} 为相应的求解器坐标。 在每个步骤 j < T j<T 中，DiT 将当前潜在变量 x j x_{j}、坐标 t j t_{j} 以及条件信息 c c 作为输入。 其预测通过求解器转换确定下一个潜在变量：",
+   "sents": [
+    {
+     "en": "Let j ∈ { 0 , … , T } j\\in\\{0,\\ldots,T\\} be the discrete sampling-step index, and let t 0 > t 1 > ⋯ > t T t_{0}>t_{1}>\\cdots>t_{T} be the corresponding solver coordinates.",
+     "zh": "令 j ∈ { 0 , … , T } j\\in\\{0,\\ldots,T\\} 为离散采样步索引，并令 t 0 > t 1 > ⋯ > t T t_{0}>t_{1}>\\cdots>t_{T} 为相应的求解器坐标。"
+    },
+    {
+     "en": "At each step j < T j<T , the DiT takes the current latent x j x_{j} , coordinate t j t_{j} , and conditioning information c c as inputs.",
+     "zh": "在每个步骤 j < T j<T 中，DiT 将当前潜在变量 x j x_{j}、坐标 t j t_{j} 以及条件信息 c c 作为输入。"
+    },
+    {
+     "en": "Its prediction determines the next latent through the solver transition:",
+     "zh": "其预测通过求解器转换确定下一个潜在变量："
+    }
+   ]
+  },
+  {
+   "en": "where F θ F_{\\theta} denotes the complete DiT forward pass, y j y_{j} is the prediction consumed by the solver, Φ \\Phi is the solver transition, and η j \\eta_{j} contains the solver coefficients, history, or other state required at discrete step j j . Depending on the pipeline, y j y_{j} can be expressed as a velocity, a clean endpoint, a noise endpoint, or another solver-specific quantity. We write a clean endpoint as x clean x^{\\mathrm{clean}} to distinguish it from the discrete state x 0 x_{0} . These parameterizations arise in diffusion and flow formulations ( Karras et al., 2022 ; Lipman et al., 2023 ; Liu et al., 2023 ) .",
+   "zh": "其中 F θ F_{\\theta} 表示完整的 DiT 前向传播，y j y_{j} 是求解器使用的预测值，Φ \\Phi 是求解器的转移函数，而 η j \\eta_{j} 包含离散步骤 j j 所需的求解器系数、历史或其他状态。 根据具体流程，y j y_{j} 可以表示为速度、干净的终点、噪声终点或另一种与求解器相关的特定量。 我们将干净的终点写作 x clean x^{\\mathrm{clean}}，以区别于离散状态 x 0 x_{0}。 这些参数化形式出现在扩散和流模型中（Karras 等，2022；Lipman 等，2023；Liu 等，2023）。",
+   "sents": [
+    {
+     "en": "where F θ F_{\\theta} denotes the complete DiT forward pass, y j y_{j} is the prediction consumed by the solver, Φ \\Phi is the solver transition, and η j \\eta_{j} contains the solver coefficients, history, or other state required at discrete step j j .",
+     "zh": "其中 F θ F_{\\theta} 表示完整的 DiT 前向传播，y j y_{j} 是求解器使用的预测值，Φ \\Phi 是求解器的转移函数，而 η j \\eta_{j} 包含离散步骤 j j 所需的求解器系数、历史或其他状态。"
+    },
+    {
+     "en": "Depending on the pipeline, y j y_{j} can be expressed as a velocity, a clean endpoint, a noise endpoint, or another solver-specific quantity.",
+     "zh": "根据具体流程，y j y_{j} 可以表示为速度、干净的终点、噪声终点或另一种与求解器相关的特定量。"
+    },
+    {
+     "en": "We write a clean endpoint as x clean x^{\\mathrm{clean}} to distinguish it from the discrete state x 0 x_{0} .",
+     "zh": "我们将干净的终点写作 x clean x^{\\mathrm{clean}}，以区别于离散状态 x 0 x_{0}。"
+    },
+    {
+     "en": "These parameterizations arise in diffusion and flow formulations ( Karras et al., 2022 ; Lipman et al., 2023 ; Liu et al., 2023 ) .",
+     "zh": "这些参数化形式出现在扩散和流模型中（Karras 等，2022；Lipman 等，2023；Liu 等，2023）。"
+    }
+   ]
+  },
+  {
+   "en": "We call a step that evaluates the full DiT and refreshes the cache an anchor . As shown in Figure 2 , a cache target is a tensor obtained at an anchor and converted into the solver’s input at a later step. Reuse skips the DiT evaluation; the conversion rule determines the stored tensor’s effect on the next latent.",
+   "zh": "我们将评估完整 DiT 并刷新缓存的步骤称为锚点。 如图 2 所示，缓存目标是某个锚点处获得的张量，并在后续步骤中转换为求解器的输入。 重用会跳过 DiT 评估；转换规则决定了已存储张量对下一个潜在变量的影响。",
+   "sents": [
+    {
+     "en": "We call a step that evaluates the full DiT and refreshes the cache an anchor .",
+     "zh": "我们将评估完整 DiT 并刷新缓存的步骤称为锚点。"
+    },
+    {
+     "en": "As shown in Figure 2 , a cache target is a tensor obtained at an anchor and converted into the solver’s input at a later step.",
+     "zh": "如图 2 所示，缓存目标是某个锚点处获得的张量，并在后续步骤中转换为求解器的输入。"
+    },
+    {
+     "en": "Reuse skips the DiT evaluation; the conversion rule determines the stored tensor’s effect on the next latent.",
+     "zh": "重用会跳过 DiT 评估；转换规则决定了已存储张量对下一个潜在变量的影响。"
+    }
+   ]
+  },
+  {
+   "en": "For the LCM experiments, we additionally consider a boundary-conditioned denoised residual. Let x ^ j clean \\widehat{x}^{\\mathrm{clean}}_{j} be the clean prediction and let c skip ​ ( t j ) c_{\\mathrm{skip}}(t_{j}) and c out ​ ( t j ) c_{\\mathrm{out}}(t_{j}) be the original LCM boundary-condition coefficients. The denoised prediction and residual are",
+   "zh": "在 LCM 实验中，我们还考虑了受边界条件约束的去噪残差。 令 x ^ j clean \\widehat{x}^{\\mathrm{clean}}_{j} 为干净预测值，并令 c skip ​ ( t j ) c_{\\mathrm{skip}}(t_{j}) 和 c out ​ ( t j ) c_{\\mathrm{out}}(t_{j}) 为原始的 LCM 边界条件系数。 去噪后的预测值和残差是",
+   "sents": [
+    {
+     "en": "For the LCM experiments, we additionally consider a boundary-conditioned denoised residual.",
+     "zh": "在 LCM 实验中，我们还考虑了受边界条件约束的去噪残差。"
+    },
+    {
+     "en": "Let x ^ j clean \\widehat{x}^{\\mathrm{clean}}_{j} be the clean prediction and let c skip ​ ( t j ) c_{\\mathrm{skip}}(t_{j}) and c out ​ ( t j ) c_{\\mathrm{out}}(t_{j}) be the original LCM boundary-condition coefficients.",
+     "zh": "令 x ^ j clean \\widehat{x}^{\\mathrm{clean}}_{j} 为干净预测值，并令 c skip ​ ( t j ) c_{\\mathrm{skip}}(t_{j}) 和 c out ​ ( t j ) c_{\\mathrm{out}}(t_{j}) 为原始的 LCM 边界条件系数。"
+    },
+    {
+     "en": "The denoised prediction and residual are",
+     "zh": "去噪后的预测值和残差是"
+    }
+   ]
+  },
+  {
+   "en": "At a reuse step, the residual d a d_{a} stored at the anchor gives x ^ j den = x j + d a \\widehat{x}^{\\mathrm{den}}_{j}=x_{j}+d_{a} . The original LCM scheduler then converts this value to its required input. This residual is different from the Euler displacement u a = h a ​ v a u_{a}=h_{a}v_{a} discussed below. In the PixArt-LCM results, “denoised/clean” denotes the numerically checked group containing x ~ den \\widetilde{x}^{\\mathrm{den}} and the predicted clean endpoint x ^ clean \\widehat{x}^{\\mathrm{clean}} . Its stored representative is the denoised prediction, which is distinct from the residual d a d_{a} . The grouping test is described in Appendix A.1 .",
+   "zh": "在重用步骤中，锚点处存储的残差 d a d_{a} 给出 x ^ j den = x j + d a \\widehat{x}^{\\mathrm{den}}_{j}=x_{j}+d_{a}。 原始 LCM 调度器随后将此值转换为其所需的输入。 该残差与下文讨论的欧拉位移 u a = h a ​ v a u_{a}=h_{a}v_{a} 不同。 在 PixArt-LCM 的结果中，“去噪/干净”表示经过数值检查的组，其中包含 x ~ den \\widetilde{x}^{\\mathrm{den}} 和预测的干净终点 x ^ clean \\widehat{x}^{\\mathrm{clean}}。 其存储的代表值是经过去噪的预测值，这与残差 d a d_{a} 不同。 分组测试在附录 A.1 中有描述。",
+   "sents": [
+    {
+     "en": "At a reuse step, the residual d a d_{a} stored at the anchor gives x ^ j den = x j + d a \\widehat{x}^{\\mathrm{den}}_{j}=x_{j}+d_{a} .",
+     "zh": "在重用步骤中，锚点处存储的残差 d a d_{a} 给出 x ^ j den = x j + d a \\widehat{x}^{\\mathrm{den}}_{j}=x_{j}+d_{a}。"
+    },
+    {
+     "en": "The original LCM scheduler then converts this value to its required input.",
+     "zh": "原始 LCM 调度器随后将此值转换为其所需的输入。"
+    },
+    {
+     "en": "This residual is different from the Euler displacement u a = h a ​ v a u_{a}=h_{a}v_{a} discussed below.",
+     "zh": "该残差与下文讨论的欧拉位移 u a = h a ​ v a u_{a}=h_{a}v_{a} 不同。"
+    },
+    {
+     "en": "In the PixArt-LCM results, “denoised/clean” denotes the numerically checked group containing x ~ den \\widetilde{x}^{\\mathrm{den}} and the predicted clean endpoint x ^ clean \\widehat{x}^{\\mathrm{clean}} .",
+     "zh": "在 PixArt-LCM 的结果中，“去噪/干净”表示经过数值检查的组，其中包含 x ~ den \\widetilde{x}^{\\mathrm{den}} 和预测的干净终点 x ^ clean \\widehat{x}^{\\mathrm{clean}}。"
+    },
+    {
+     "en": "Its stored representative is the denoised prediction, which is distinct from the residual d a d_{a} .",
+     "zh": "其存储的代表值是经过去噪的预测值，这与残差 d a d_{a} 不同。"
+    },
+    {
+     "en": "The grouping test is described in Appendix A.1 .",
+     "zh": "分组测试在附录 A.1 中有描述。"
+    }
+   ]
+  },
+  {
+   "en": "Let r r index a solver-facing cache target considered by AutoTarget. At an exact anchor step a a , the candidate is extracted and stored as",
+   "zh": "令 r r 表示 AutoTarget 所考虑的一个面向求解器的缓存目标。 在精确的锚点步长 a a 处，候选项被提取并存储为",
+   "sents": [
+    {
+     "en": "Let r r index a solver-facing cache target considered by AutoTarget.",
+     "zh": "令 r r 表示 AutoTarget 所考虑的一个面向求解器的缓存目标。"
+    },
+    {
+     "en": "At an exact anchor step a a , the candidate is extracted and stored as",
+     "zh": "在精确的锚点步长 a a 处，候选项被提取并存储为"
+    }
+   ]
+  },
+  {
+   "en": "Here, E r E_{r} extracts or converts the anchor prediction into representation r r , and m a ( r ) m_{a}^{(r)} is the stored tensor. At a later reuse step j j , the corresponding conversion rule D r D_{r} reconstructs the solver input from this tensor:",
+   "zh": "此处，E r E_{r} 提取或转换锚点预测为表示 r r ，而 m a ( r ) m_{a}^{(r)} 是存储的张量。 在后续的重复使用步骤 j j 中，相应的转换规则 D r D_{r} 会基于该张量重建求解器输入：",
+   "sents": [
+    {
+     "en": "Here, E r E_{r} extracts or converts the anchor prediction into representation r r , and m a ( r ) m_{a}^{(r)} is the stored tensor.",
+     "zh": "此处，E r E_{r} 提取或转换锚点预测为表示 r r ，而 m a ( r ) m_{a}^{(r)} 是存储的张量。"
+    },
+    {
+     "en": "At a later reuse step j j , the corresponding conversion rule D r D_{r} reconstructs the solver input from this tensor:",
+     "zh": "在后续的重复使用步骤 j j 中，相应的转换规则 D r D_{r} 会基于该张量重建求解器输入："
+    }
+   ]
+  },
+  {
+   "en": "The rule D r D_{r} combines the stored tensor with the current latent, coordinate, and solver state, for example through an analytic conversion between prediction parameterizations. This cache conversion is distinct from the VAE decoder used for calibration below. The original solver then updates the latent:",
+   "zh": "规则 D r D_{r} 将存储的张量与当前的潜在变量、坐标和求解器状态相结合，例如通过预测参数化之间的解析转换。 这种缓存转换不同于下文用于校准的 VAE 解码器。 原始求解器随后更新潜在变量：",
+   "sents": [
+    {
+     "en": "The rule D r D_{r} combines the stored tensor with the current latent, coordinate, and solver state, for example through an analytic conversion between prediction parameterizations.",
+     "zh": "规则 D r D_{r} 将存储的张量与当前的潜在变量、坐标和求解器状态相结合，例如通过预测参数化之间的解析转换。"
+    },
+    {
+     "en": "This cache conversion is distinct from the VAE decoder used for calibration below.",
+     "zh": "这种缓存转换不同于下文用于校准的 VAE 解码器。"
+    },
+    {
+     "en": "The original solver then updates the latent:",
+     "zh": "原始求解器随后更新潜在变量："
+    }
+   ]
+  },
+  {
+   "en": "Let 𝒜 ⊆ { 0 , … , T − 1 } \\mathcal{A}\\subseteq\\{0,\\ldots,T-1\\} , with 0 ∈ 𝒜 0\\in\\mathcal{A} , denote the fixed set of anchor steps. At a step in 𝒜 \\mathcal{A} , the model computes a new prediction and refreshes the cache. At every other step, the full forward pass is skipped and the most recent cached value is reused.",
+   "zh": "令 𝒜 ⊆ { 0 , … , T − 1 } \\mathcal{A}\\subseteq\\{0,\\ldots,T-1\\}，其中 0 ∈ 𝒜 0\\in\\mathcal{A}，表示固定的锚定步长集合。 在 𝒜 \\mathcal{A} 中的某个步长处，模型会计算新的预测并刷新缓存。 在所有其他步长处，则跳过完整的正向传播，并重复使用最新的缓存值。",
+   "sents": [
+    {
+     "en": "Let 𝒜 ⊆ { 0 , … , T − 1 } \\mathcal{A}\\subseteq\\{0,\\ldots,T-1\\} , with 0 ∈ 𝒜 0\\in\\mathcal{A} , denote the fixed set of anchor steps.",
+     "zh": "令 𝒜 ⊆ { 0 , … , T − 1 } \\mathcal{A}\\subseteq\\{0,\\ldots,T-1\\}，其中 0 ∈ 𝒜 0\\in\\mathcal{A}，表示固定的锚定步长集合。"
+    },
+    {
+     "en": "At a step in 𝒜 \\mathcal{A} , the model computes a new prediction and refreshes the cache.",
+     "zh": "在 𝒜 \\mathcal{A} 中的某个步长处，模型会计算新的预测并刷新缓存。"
+    },
+    {
+     "en": "At every other step, the full forward pass is skipped and the most recent cached value is reused.",
+     "zh": "在所有其他步长处，则跳过完整的正向传播，并重复使用最新的缓存值。"
+    }
+   ]
+  },
+  {
+   "en": "Each pipeline supports a specific set of valid cache targets. We include only quantities that the frozen pipeline already produces, or can convert exactly, at an anchor step. These quantities may include the native model output, velocity, clean and noise endpoints, an LCM denoised residual, and a defined solver update. Every target has an encoder that specifies what is stored and a decoder that specifies how the stored value is used later. We omit a target if its conversion is undefined at any step in the evaluation.",
+   "zh": "每个流程都支持一组特定的有效缓存目标。 我们仅包含那些冻结流程在锚定步骤中已经生成或能够精确转换的量。 这些量可能包括模型的原生输出、速度、干净端点和噪声端点、一个 LCM 去噪后的残差，以及一个定义好的求解器更新。 每个目标都有一个编码器，用于指定存储的内容；还有一个解码器，用于指定后续如何使用存储的值。 如果某个目标在评估的任何步骤中都无法转换，我们就会省略它。",
+   "sents": [
+    {
+     "en": "Each pipeline supports a specific set of valid cache targets.",
+     "zh": "每个流程都支持一组特定的有效缓存目标。"
+    },
+    {
+     "en": "We include only quantities that the frozen pipeline already produces, or can convert exactly, at an anchor step.",
+     "zh": "我们仅包含那些冻结流程在锚定步骤中已经生成或能够精确转换的量。"
+    },
+    {
+     "en": "These quantities may include the native model output, velocity, clean and noise endpoints, an LCM denoised residual, and a defined solver update.",
+     "zh": "这些量可能包括模型的原生输出、速度、干净端点和噪声端点、一个 LCM 去噪后的残差，以及一个定义好的求解器更新。"
+    },
+    {
+     "en": "Every target has an encoder that specifies what is stored and a decoder that specifies how the stored value is used later.",
+     "zh": "每个目标都有一个编码器，用于指定存储的内容；还有一个解码器，用于指定后续如何使用存储的值。"
+    },
+    {
+     "en": "We omit a target if its conversion is undefined at any step in the evaluation.",
+     "zh": "如果某个目标在评估的任何步骤中都无法转换，我们就会省略它。"
+    }
+   ]
+  },
+  {
+   "en": "We fix the candidate definitions and grouping criteria before calibration. Targets with analytically identical solver transitions form one group. For numerical equivalence, we test the recorded calibration traces using tolerances fixed in advance (Appendix A.1 ); targets that fail the test remain separate. We then compare one representative per group. All candidates use the same data type, tensor shape, anchor steps, and storage size, as well as the same solver coordinates and coefficients.",
+   "zh": "我们在校准前确定候选定义和分组标准。 解析上具有相同求解器转换的目标构成一个组。 对于数值等价性，我们使用预先固定的容差（附录 A.1）测试已记录的校准轨迹；未通过测试的目标保持独立。 然后，我们比较每个组中的一个代表。 所有候选体都使用相同的数据类型、张量形状、锚点步长和存储大小，以及相同的求解器坐标和系数。",
+   "sents": [
+    {
+     "en": "We fix the candidate definitions and grouping criteria before calibration.",
+     "zh": "我们在校准前确定候选定义和分组标准。"
+    },
+    {
+     "en": "Targets with analytically identical solver transitions form one group.",
+     "zh": "解析上具有相同求解器转换的目标构成一个组。"
+    },
+    {
+     "en": "For numerical equivalence, we test the recorded calibration traces using tolerances fixed in advance (Appendix A.1 ); targets that fail the test remain separate.",
+     "zh": "对于数值等价性，我们使用预先固定的容差（附录 A.1）测试已记录的校准轨迹；未通过测试的目标保持独立。"
+    },
+    {
+     "en": "We then compare one representative per group.",
+     "zh": "然后，我们比较每个组中的一个代表。"
+    },
+    {
+     "en": "All candidates use the same data type, tensor shape, anchor steps, and storage size, as well as the same solver coordinates and coefficients.",
+     "zh": "所有候选体都使用相同的数据类型、张量形状、锚点步长和存储大小，以及相同的求解器坐标和系数。"
+    }
+   ]
+  },
+  {
+   "en": "Different representations of a prediction can remain equivalent when cached, depending on how the solver uses them. For deterministic Euler sampling, let h j = t j − t j + 1 > 0 h_{j}=t_{j}-t_{j+1}>0 and let v j v_{j} be the velocity supplied to the solver. The latent update is",
+   "zh": "预测的不同表示形式在缓存时可能保持等价，具体取决于求解器如何使用它们。 对于确定性欧拉采样，令 h j = t j − t j + 1 > 0 h_{j}=t_{j}-t_{j+1}>0，并令 v j v_{j} 为提供给求解器的速度。潜在变量的更新为",
+   "sents": [
+    {
+     "en": "Different representations of a prediction can remain equivalent when cached, depending on how the solver uses them.",
+     "zh": "预测的不同表示形式在缓存时可能保持等价，具体取决于求解器如何使用它们。"
+    },
+    {
+     "en": "For deterministic Euler sampling, let h j = t j − t j + 1 > 0 h_{j}=t_{j}-t_{j+1}>0 and let v j v_{j} be the velocity supplied to the solver. The latent update is",
+     "zh": "对于确定性欧拉采样，令 h j = t j − t j + 1 > 0 h_{j}=t_{j}-t_{j+1}>0，并令 v j v_{j} 为提供给求解器的速度。潜在变量的更新为"
+    }
+   ]
+  },
+  {
+   "en": "For this linear-flow analysis, let { t j } j = 0 T ⊂ [ 0 , 1 ] \\{t_{j}\\}_{j=0}^{T}\\subset[0,1] denote the normalized flow coordinates of the discrete solver steps. The standard linear interpolation between a clean endpoint and noise is",
+   "zh": "对于这种线性流分析，令 { t j } j = 0 T ⊂ [ 0 , 1 ] \\{t_{j}\\}_{j=0}^{T}\\subset[0,1] 表示离散求解器步骤的归一化流坐标。 在干净端点与噪声之间的标准线性插值为",
+   "sents": [
+    {
+     "en": "For this linear-flow analysis, let { t j } j = 0 T ⊂ [ 0 , 1 ] \\{t_{j}\\}_{j=0}^{T}\\subset[0,1] denote the normalized flow coordinates of the discrete solver steps.",
+     "zh": "对于这种线性流分析，令 { t j } j = 0 T ⊂ [ 0 , 1 ] \\{t_{j}\\}_{j=0}^{T}\\subset[0,1] 表示离散求解器步骤的归一化流坐标。"
+    },
+    {
+     "en": "The standard linear interpolation between a clean endpoint and noise is",
+     "zh": "在干净端点与噪声之间的标准线性插值为"
+    }
+   ]
+  },
+  {
+   "en": "This parameterization gives the following conversions for a velocity prediction v a v_{a} computed at anchor a a ; the inferred endpoints need not equal the true clean sample and noise:",
+   "zh": "这种参数化方式给出了以下转换关系，其中速度预测值 v a v_{a} 是在锚点 a a 处计算的；推断出的端点不必与真实的干净样本和噪声相等：",
+   "sents": null
+  },
+  {
+   "en": "All three tensors describe the line through x a x_{a} in direction v a v_{a} , although they store different quantities. We say that two targets are equivalent for caching under a given solver and reuse schedule if they produce the same latent at every reuse step after a common anchor.",
+   "zh": "这三个张量都描述了通过 x a x_{a} 且方向为 v a v_{a} 的直线，尽管它们存储的是不同的量。 在给定求解器和重用计划的情况下，如果两个目标在共同锚点之后的每个重用步骤中都产生相同的潜在变量，我们就称这两个目标对于缓存是等价的。",
+   "sents": [
+    {
+     "en": "All three tensors describe the line through x a x_{a} in direction v a v_{a} , although they store different quantities.",
+     "zh": "这三个张量都描述了通过 x a x_{a} 且方向为 v a v_{a} 的直线，尽管它们存储的是不同的量。"
+    },
+    {
+     "en": "We say that two targets are equivalent for caching under a given solver and reuse schedule if they produce the same latent at every reuse step after a common anchor.",
+     "zh": "在给定求解器和重用计划的情况下，如果两个目标在共同锚点之后的每个重用步骤中都产生相同的潜在变量，我们就称这两个目标对于缓存是等价的。"
+    }
+   ]
+  },
+  {
+   "en": "Under Eqs. ( 6 )–( 8 ), held velocity, clean endpoint, and noise endpoint produce the same cached trajectory when the endpoints are converted at each current state and their decoders are defined. Between successive anchors, their shared trajectory is",
+   "zh": "根据方程 (6)–(8)，当在每个当前状态对端点转换并定义其解码器时，保持速度、干净端点和噪声端点会产生相同的缓存轨迹。 在连续锚点之间，它们的共享轨迹是",
+   "sents": [
+    {
+     "en": "Under Eqs.",
+     "zh": "根据方程"
+    },
+    {
+     "en": "( 6 )–( 8 ), held velocity, clean endpoint, and noise endpoint produce the same cached trajectory when the endpoints are converted at each current state and their decoders are defined.",
+     "zh": "(6)–(8)，当在每个当前状态对端点转换并定义其解码器时，保持速度、干净端点和噪声端点会产生相同的缓存轨迹。"
+    },
+    {
+     "en": "Between successive anchors, their shared trajectory is",
+     "zh": "在连续锚点之间，它们的共享轨迹是"
+    }
+   ]
+  },
+  {
+   "en": "At each reuse step, decoding either endpoint at the current latent recovers v a v_{a} . Thus, all three representations give Euler the same velocity and produce the same next latent. Each cache refresh starts a new segment to which the same argument applies. Appendix B.1 gives the induction proof.",
+   "zh": "在每个重用步骤中，对当前潜在变量处的任一端点进行解码都会恢复出 v a v_{a}。 因此，这三种表示都赋予欧拉相同的速度，并产生相同的下一个潜在变量。 每次缓存刷新都会开始一个新的片段，而相同的论证也适用于该片段。 附录 B.1 给出了归纳证明。",
+   "sents": [
+    {
+     "en": "At each reuse step, decoding either endpoint at the current latent recovers v a v_{a} .",
+     "zh": "在每个重用步骤中，对当前潜在变量处的任一端点进行解码都会恢复出 v a v_{a}。"
+    },
+    {
+     "en": "Thus, all three representations give Euler the same velocity and produce the same next latent.",
+     "zh": "因此，这三种表示都赋予欧拉相同的速度，并产生相同的下一个潜在变量。"
+    },
+    {
+     "en": "Each cache refresh starts a new segment to which the same argument applies.",
+     "zh": "每次缓存刷新都会开始一个新的片段，而相同的论证也适用于该片段。"
+    },
+    {
+     "en": "Appendix B.1 gives the induction proof.",
+     "zh": "附录 B.1 给出了归纳证明。"
+    }
+   ]
+  },
+  {
+   "en": "The proposition assumes that reuse replaces selected DiT evaluations without changing the solver coordinate sequence. Running the solver only at the anchor steps uses a different discretization, so the proposition does not cover that case.",
+   "zh": "该命题假设重用机制会替换选定的 DiT 评估，但不会改变求解器的坐标序列。 仅在锚点步骤运行求解器会采用不同的离散化方法，因此该命题不涵盖这种情况。",
+   "sents": [
+    {
+     "en": "The proposition assumes that reuse replaces selected DiT evaluations without changing the solver coordinate sequence.",
+     "zh": "该命题假设重用机制会替换选定的 DiT 评估，但不会改变求解器的坐标序列。"
+    },
+    {
+     "en": "Running the solver only at the anchor steps uses a different discretization, so the proposition does not cover that case.",
+     "zh": "仅在锚点步骤运行求解器会采用不同的离散化方法，因此该命题不涵盖这种情况。"
+    }
+   ]
+  },
+  {
+   "en": "Not every quantity derived at the anchor belongs to this equivalence group. Suppose we store the Euler update quantity u a = h a ​ v a u_{a}=h_{a}v_{a} and subtract it directly from the current latent. Starting from the same x j x_{j} , this transition differs from velocity reuse by",
+   "zh": "并非在锚点处推导出的每个量都属于这个等价组。 假设我们存储欧拉更新量 u a = h a ​ v a u_{a}=h_{a}v_{a}，并直接从当前潜在变量中减去它。 从相同的 x j x_{j} 开始，这种转换与速度重用的不同之处在于",
+   "sents": [
+    {
+     "en": "Not every quantity derived at the anchor belongs to this equivalence group.",
+     "zh": "并非在锚点处推导出的每个量都属于这个等价组。"
+    },
+    {
+     "en": "Suppose we store the Euler update quantity u a = h a ​ v a u_{a}=h_{a}v_{a} and subtract it directly from the current latent.",
+     "zh": "假设我们存储欧拉更新量 u a = h a ​ v a u_{a}=h_{a}v_{a}，并直接从当前潜在变量中减去它。"
+    },
+    {
+     "en": "Starting from the same x j x_{j} , this transition differs from velocity reuse by",
+     "zh": "从相同的 x j x_{j} 开始，这种转换与速度重用的不同之处在于"
+    }
+   ]
+  },
+  {
+   "en": "The stored displacement contains the step size h a h_{a} from the anchor. If the current step has a different size, the stored displacement no longer produces the same update as the three targets above.",
+   "zh": "存储的位移包含来自锚点的步长 h a h_{a}。 如果当前步长的大小不同，存储的位移将不再产生与上述三个目标相同的更新。",
+   "sents": [
+    {
+     "en": "The stored displacement contains the step size h a h_{a} from the anchor.",
+     "zh": "存储的位移包含来自锚点的步长 h a h_{a}。"
+    },
+    {
+     "en": "If the current step has a different size, the stored displacement no longer produces the same update as the three targets above.",
+     "zh": "如果当前步长的大小不同，存储的位移将不再产生与上述三个目标相同的更新。"
+    }
+   ]
+  },
+  {
+   "en": "The relationship among targets can change with the solver. Figure 3 shows the selected target for each setting and includes a controlled PixArt-LCM comparison. The two PixArt runs use the same model weights, LCM solver, four-step coordinate sequence, steps that evaluate the full DiT, prompts, and random seeds. Only the image resolution changes. At 512 × 512 512\\times 512 , AutoTarget selects velocity, which exceeds the denoised-residual candidate in PSNR by 1.634 1.634 dB on average (95% CI [ 1.486 , 1.773 ] [1.486,1.773] ). At 1024 × 1024 1024\\times 1024 , it selects the denoised/clean target, which exceeds velocity by 2.499 2.499 dB (95% CI [ 1.841 , 3.196 ] [1.841,3.196] ). At both resolutions, the selected target achieves higher PSNR on all 20 held-out prompts.",
+   "zh": "目标之间的关系可能会随着求解器的不同而改变。 图 3 展示了每种设置下所选的目标，并包含了对 PixArt-LCM 的受控对比。 两次 PixArt 运行使用了相同的模型权重、LCM 求解器、四步坐标序列、评估完整 DiT 的步骤、提示词和随机种子。 唯一变化的只有图像分辨率。 在 512 × 512 512\\times 512 分辨率下，AutoTarget 选择了速度目标，其 PSNR 平均比去噪残差候选目标高出 1.634 1.634 dB（95% CI [ 1.486 , 1.773 ] [1.486,1.773]）。 在 1024 × 1024 1024\\times 1024 分辨率下，它选择了去噪/干净目标，其 PSNR 比速度目标高出 2.499 2.499 dB（95% CI [ 1.841 , 3.196 ] [1.841,3.196]）。 在这两种分辨率下，所选目标在所有 20 个预留提示词上都实现了更高的 PSNR。",
+   "sents": [
+    {
+     "en": "The relationship among targets can change with the solver.",
+     "zh": "目标之间的关系可能会随着求解器的不同而改变。"
+    },
+    {
+     "en": "Figure 3 shows the selected target for each setting and includes a controlled PixArt-LCM comparison.",
+     "zh": "图 3 展示了每种设置下所选的目标，并包含了对 PixArt-LCM 的受控对比。"
+    },
+    {
+     "en": "The two PixArt runs use the same model weights, LCM solver, four-step coordinate sequence, steps that evaluate the full DiT, prompts, and random seeds.",
+     "zh": "两次 PixArt 运行使用了相同的模型权重、LCM 求解器、四步坐标序列、评估完整 DiT 的步骤、提示词和随机种子。"
+    },
+    {
+     "en": "Only the image resolution changes.",
+     "zh": "唯一变化的只有图像分辨率。"
+    },
+    {
+     "en": "At 512 × 512 512\\times 512 , AutoTarget selects velocity, which exceeds the denoised-residual candidate in PSNR by 1.634 1.634 dB on average (95% CI [ 1.486 , 1.773 ] [1.486,1.773] ).",
+     "zh": "在 512 × 512 512\\times 512 分辨率下，AutoTarget 选择了速度目标，其 PSNR 平均比去噪残差候选目标高出 1.634 1.634 dB（95% CI [ 1.486 , 1.773 ] [1.486,1.773]）。"
+    },
+    {
+     "en": "At 1024 × 1024 1024\\times 1024 , it selects the denoised/clean target, which exceeds velocity by 2.499 2.499 dB (95% CI [ 1.841 , 3.196 ] [1.841,3.196] ).",
+     "zh": "在 1024 × 1024 1024\\times 1024 分辨率下，它选择了去噪/干净目标，其 PSNR 比速度目标高出 2.499 2.499 dB（95% CI [ 1.841 , 3.196 ] [1.841,3.196]）。"
+    },
+    {
+     "en": "At both resolutions, the selected target achieves higher PSNR on all 20 held-out prompts.",
+     "zh": "在这两种分辨率下，所选目标在所有 20 个预留提示词上都实现了更高的 PSNR。"
+    }
+   ]
+  },
+  {
+   "en": "Cache selection therefore depends on the stored quantity, its conversion at the current state, and the solver update. AutoTarget compares these choices under the intended model and sampling configuration.",
+   "zh": "因此，缓存的选择取决于存储的数量、其在当前状态下的转换以及求解器的更新。 AutoTarget 会在预期的模型和采样配置下对这些选项进行比较。",
+   "sents": [
+    {
+     "en": "Cache selection therefore depends on the stored quantity, its conversion at the current state, and the solver update.",
+     "zh": "因此，缓存的选择取决于存储的数量、其在当前状态下的转换以及求解器的更新。"
+    },
+    {
+     "en": "AutoTarget compares these choices under the intended model and sampling configuration.",
+     "zh": "AutoTarget 会在预期的模型和采样配置下对这些选项进行比较。"
+    }
+   ]
+  },
+  {
+   "en": "For every prompt p p in a calibration set 𝒫 \\mathcal{P} , we run the sampler without cache reuse. At every discrete step, we record the latent x p , j ∗ x_{p,j}^{*} , model prediction y p , j ∗ y_{p,j}^{*} , and solver state. At a reuse step j ∉ 𝒜 j\\notin\\mathcal{A} , let a = max ⁡ { k ∈ 𝒜 : k < j } a=\\max\\{k\\in\\mathcal{A}:k<j\\} be the preceding anchor in the deployment schedule. Although calibration evaluates every step, candidate r r reuses the value from this scheduled anchor and receives the exact state at j j :",
+   "zh": "对于校准集 𝒫 \\mathcal{P} 中的每个提示 p，我们运行采样器时不使用缓存重用。 在每个离散步骤中，我们记录潜在变量 x p , j ∗ x_{p,j}^{*}、模型预测 y p , j ∗ y_{p,j}^{*} 以及求解器状态。 在重用步骤 j ∉ 𝒜 j\\notin\\mathcal{A} 中，令 a = max ⁡ { k ∈ 𝒜 : k < j } a=\\max\\{k\\in\\mathcal{A}:k<j\\} 为部署调度中前一个锚点。 尽管校准会评估每个步骤，但候选 r 会重用该预定锚点的值，并在步骤 j 时获得精确的状态：",
+   "sents": [
+    {
+     "en": "For every prompt p p in a calibration set 𝒫 \\mathcal{P} , we run the sampler without cache reuse.",
+     "zh": "对于校准集 𝒫 \\mathcal{P} 中的每个提示 p，我们运行采样器时不使用缓存重用。"
+    },
+    {
+     "en": "At every discrete step, we record the latent x p , j ∗ x_{p,j}^{*} , model prediction y p , j ∗ y_{p,j}^{*} , and solver state.",
+     "zh": "在每个离散步骤中，我们记录潜在变量 x p , j ∗ x_{p,j}^{*}、模型预测 y p , j ∗ y_{p,j}^{*} 以及求解器状态。"
+    },
+    {
+     "en": "At a reuse step j ∉ 𝒜 j\\notin\\mathcal{A} , let a = max ⁡ { k ∈ 𝒜 : k < j } a=\\max\\{k\\in\\mathcal{A}:k<j\\} be the preceding anchor in the deployment schedule.",
+     "zh": "在重用步骤 j ∉ 𝒜 j\\notin\\mathcal{A} 中，令 a = max ⁡ { k ∈ 𝒜 : k < j } a=\\max\\{k\\in\\mathcal{A}:k<j\\} 为部署调度中前一个锚点。"
+    },
+    {
+     "en": "Although calibration evaluates every step, candidate r r reuses the value from this scheduled anchor and receives the exact state at j j :",
+     "zh": "尽管校准会评估每个步骤，但候选 r 会重用该预定锚点的值，并在步骤 j 时获得精确的状态："
+    }
+   ]
+  },
+  {
+   "en": "Every candidate receives the same current state. This design measures the error introduced at step j j without mixing in errors from earlier reuse steps.",
+   "zh": "每位候选人都接收到相同的当前状态。 这种设计衡量的是步骤 j 中引入的错误，而不会混入先前重复使用步骤中的错误。",
+   "sents": [
+    {
+     "en": "Every candidate receives the same current state.",
+     "zh": "每位候选人都接收到相同的当前状态。"
+    },
+    {
+     "en": "This design measures the error introduced at step j j without mixing in errors from earlier reuse steps.",
+     "zh": "这种设计衡量的是步骤 j 中引入的错误，而不会混入先前重复使用步骤中的错误。"
+    }
+   ]
+  },
+  {
+   "en": "Because targets represent different quantities, we compare their effects in a common output space. Let Q Q convert the solver input to the latent supplied to the frozen VAE. At the same exact state, applying this pipeline-specific conversion to the original and reconstructed inputs gives",
+   "zh": "由于目标代表不同的数量，我们在一个共同的输出空间中比较它们的效果。 让 Q Q 将求解器的输入转换为提供给冻结 VAE 的潜在变量。 在完全相同的状态下，对原始输入和重构输入应用这种特定于流程的转换，会得到",
+   "sents": [
+    {
+     "en": "Because targets represent different quantities, we compare their effects in a common output space.",
+     "zh": "由于目标代表不同的数量，我们在一个共同的输出空间中比较它们的效果。"
+    },
+    {
+     "en": "Let Q Q convert the solver input to the latent supplied to the frozen VAE.",
+     "zh": "让 Q Q 将求解器的输入转换为提供给冻结 VAE 的潜在变量。"
+    },
+    {
+     "en": "At the same exact state, applying this pipeline-specific conversion to the original and reconstructed inputs gives",
+     "zh": "在完全相同的状态下，对原始输入和重构输入应用这种特定于流程的转换，会得到"
+    }
+   ]
+  },
+  {
+   "en": "Using the frozen VAE decoder G G , we define the calibration risk as",
+   "zh": "使用冻结的 VAE 解码器 G G，我们将校准风险定义为",
+   "sents": null
+  },
+  {
+   "en": "Here 𝒥 reuse = { 0 , … , T − 1 } ∖ 𝒜 \\mathcal{J}_{\\mathrm{reuse}}=\\{0,\\ldots,T-1\\}\\setminus\\mathcal{A} and D D is the number of decoded RGB values per image or video. Thus, R dec R_{\\mathrm{dec}} averages squared error over prompts, reuse steps, and all decoded RGB values. The calculation does not require a separate DiT run for each candidate or an external quality model. Let r 1 r_{1} and r 2 r_{2} be the lowest- and second-lowest-risk candidates, and define γ = R dec ​ ( r 2 ) / R dec ​ ( r 1 ) \\gamma=R_{\\mathrm{dec}}(r_{2})/R_{\\mathrm{dec}}(r_{1}) . The acceptance threshold was fixed at 1.10 before held-out evaluation. This ratio measures the separation between the two candidates. AutoTarget deploys r 1 r_{1} only if γ ≥ 1.10 \\gamma\\geq 1.10 ; otherwise, it makes no target selection, leaving uncached sampling or a separately validated policy to the application.",
+   "zh": "此处 𝒥 reuse = { 0 , … , T − 1 } ∖ 𝒜 \\mathcal{J}_{\\mathrm{reuse}}=\\{0,\\ldots,T-1\\}\\setminus\\mathcal{A}，而 D D 是每张图像或视频中已解码的 RGB 值数量。 因此，R dec R_{\\mathrm{dec}} 在提示、重用步数和所有已解码的 RGB 值上计算平均平方误差。 该计算无需为每个候选项单独运行一次 DiT，也无需外部质量模型。 设 r 1 r_{1} 和 r 2 r_{2} 分别为风险最低和第二低的候选项，并定义 γ = R dec ​ ( r 2 ) / R dec ​ ( r 1 ) \\gamma=R_{\\mathrm{dec}}(r_{2})/R_{\\mathrm{dec}}(r_{1})。 在预留评估之前，接受阈值固定为 1.10。 该比率衡量了两个候选项之间的差异程度。 仅当 γ ≥ 1.10 \\gamma\\geq 1.10 时，AutoTarget 才会部署 r 1 r_{1}；否则，它不会选择任何目标，将未缓存的采样或另行验证的策略留给应用程序。",
+   "sents": [
+    {
+     "en": "Here 𝒥 reuse = { 0 , … , T − 1 } ∖ 𝒜 \\mathcal{J}_{\\mathrm{reuse}}=\\{0,\\ldots,T-1\\}\\setminus\\mathcal{A} and D D is the number of decoded RGB values per image or video.",
+     "zh": "此处 𝒥 reuse = { 0 , … , T − 1 } ∖ 𝒜 \\mathcal{J}_{\\mathrm{reuse}}=\\{0,\\ldots,T-1\\}\\setminus\\mathcal{A}，而 D D 是每张图像或视频中已解码的 RGB 值数量。"
+    },
+    {
+     "en": "Thus, R dec R_{\\mathrm{dec}} averages squared error over prompts, reuse steps, and all decoded RGB values.",
+     "zh": "因此，R dec R_{\\mathrm{dec}} 在提示、重用步数和所有已解码的 RGB 值上计算平均平方误差。"
+    },
+    {
+     "en": "The calculation does not require a separate DiT run for each candidate or an external quality model.",
+     "zh": "该计算无需为每个候选项单独运行一次 DiT，也无需外部质量模型。"
+    },
+    {
+     "en": "Let r 1 r_{1} and r 2 r_{2} be the lowest- and second-lowest-risk candidates, and define γ = R dec ​ ( r 2 ) / R dec ​ ( r 1 ) \\gamma=R_{\\mathrm{dec}}(r_{2})/R_{\\mathrm{dec}}(r_{1}) .",
+     "zh": "设 r 1 r_{1} 和 r 2 r_{2} 分别为风险最低和第二低的候选项，并定义 γ = R dec ​ ( r 2 ) / R dec ​ ( r 1 ) \\gamma=R_{\\mathrm{dec}}(r_{2})/R_{\\mathrm{dec}}(r_{1})。"
+    },
+    {
+     "en": "The acceptance threshold was fixed at 1.10 before held-out evaluation.",
+     "zh": "在预留评估之前，接受阈值固定为 1.10。"
+    },
+    {
+     "en": "This ratio measures the separation between the two candidates.",
+     "zh": "该比率衡量了两个候选项之间的差异程度。"
+    },
+    {
+     "en": "AutoTarget deploys r 1 r_{1} only if γ ≥ 1.10 \\gamma\\geq 1.10 ; otherwise, it makes no target selection, leaving uncached sampling or a separately validated policy to the application.",
+     "zh": "仅当 γ ≥ 1.10 \\gamma\\geq 1.10 时，AutoTarget 才会部署 r 1 r_{1}；否则，它不会选择任何目标，将未缓存的采样或另行验证的策略留给应用程序。"
+    }
+   ]
+  },
+  {
+   "en": "Table 3 reports the PixArt-LCM calibration errors. Figures 5 – 6 compare calibration rankings with complete cached runs on held-out prompts, where reuse errors accumulate. Deployment follows the fixed anchor schedule with the selected target (Figure 4 ). Calibration uses | 𝒫 | ​ T |\\mathcal{P}|T DiT evaluations. Converting and VAE-decoding the candidates happens afterward and requires no additional DiT evaluation.",
+   "zh": "表3报告了PixArt-LCM的校准误差。 图5至图6将校准排名与在保留提示词上进行的完整缓存运行进行了比较，其中重复使用误差会累积。 部署遵循固定的锚定计划以及所选目标（图4）。 校准使用了| 𝒫 | ​ T |\\mathcal{P}|T DiT评估。 候选项的转换和VAE解码在此之后进行，且不需要额外的DiT评估。",
+   "sents": [
+    {
+     "en": "Table 3 reports the PixArt-LCM calibration errors.",
+     "zh": "表3报告了PixArt-LCM的校准误差。"
+    },
+    {
+     "en": "Figures 5 – 6 compare calibration rankings with complete cached runs on held-out prompts, where reuse errors accumulate.",
+     "zh": "图5至图6将校准排名与在保留提示词上进行的完整缓存运行进行了比较，其中重复使用误差会累积。"
+    },
+    {
+     "en": "Deployment follows the fixed anchor schedule with the selected target (Figure 4 ).",
+     "zh": "部署遵循固定的锚定计划以及所选目标（图4）。"
+    },
+    {
+     "en": "Calibration uses | 𝒫 | ​ T |\\mathcal{P}|T DiT evaluations.",
+     "zh": "校准使用了| 𝒫 | ​ T |\\mathcal{P}|T DiT评估。"
+    },
+    {
+     "en": "Converting and VAE-decoding the candidates happens afterward and requires no additional DiT evaluation.",
+     "zh": "候选项的转换和VAE解码在此之后进行，且不需要额外的DiT评估。"
+    }
+   ]
+  },
+  {
+   "en": "Let E j ( r ) E_{j}^{(r)} measure the accumulated error in the complete state, including the latent, cache, and solver history. Let Δ j ( r ) \\Delta_{j}^{(r)} measure the error introduced by one reuse transition from the exact state; it is zero at anchor steps. If the transitions are locally Lipschitz with factors L ¯ j \\overline{L}_{j} (Appendix B.2 ), then",
+   "zh": "令 E j ( r ) E_{j}^{(r)} 衡量完整状态中的累积误差，包括潜在状态、缓存和求解器历史。 令 Δ j ( r ) \\Delta_{j}^{(r)} 衡量从精确状态进行一次重用转换所引入的误差；在锚点步骤处该值为零。 如果这些转换是局部利普希茨连续的，且其因子为 L ¯ j \\overline{L}_{j}（附录 B.2），那么",
+   "sents": [
+    {
+     "en": "Let E j ( r ) E_{j}^{(r)} measure the accumulated error in the complete state, including the latent, cache, and solver history.",
+     "zh": "令 E j ( r ) E_{j}^{(r)} 衡量完整状态中的累积误差，包括潜在状态、缓存和求解器历史。"
+    },
+    {
+     "en": "Let Δ j ( r ) \\Delta_{j}^{(r)} measure the error introduced by one reuse transition from the exact state; it is zero at anchor steps.",
+     "zh": "令 Δ j ( r ) \\Delta_{j}^{(r)} 衡量从精确状态进行一次重用转换所引入的误差；在锚点步骤处该值为零。"
+    },
+    {
+     "en": "If the transitions are locally Lipschitz with factors L ¯ j \\overline{L}_{j} (Appendix B.2 ), then",
+     "zh": "如果这些转换是局部利普希茨连续的，且其因子为 L ¯ j \\overline{L}_{j}（附录 B.2），那么"
+    }
+   ]
+  },
+  {
+   "en": "Starting from a common initial state, unrolling this recursion gives",
+   "zh": "从一个共同的初始状态开始，展开这个递归过程可得",
+   "sents": null
+  },
+  {
+   "en": "The bound relates the final state error to local reuse errors and their propagation through later steps. AutoTarget ranks candidates using the decoded RGB error in Eq. ( 13 ), which provides a common scale across representations. This empirical score differs from the state error in the bound; its ranking is tested on held-out cached runs. Appendix B details this distinction and the derivation.",
+   "zh": "该界限将最终状态误差与局部重用误差及其在后续步骤中的传播联系起来。AutoTarget 使用公式 (13) 中解码出的 RGB 误差对候选项进行排序，这为不同表示提供了统一的衡量尺度。这种经验性得分与界限中的状态误差有所不同；其排序效果会在预留的缓存运行数据上进行测试。附录 B 详细说明了这一区别及其推导过程。",
+   "sents": null
+  },
+  {
+   "en": "We evaluate AutoTarget on few-step image and video DiTs: FLUX.1-schnell, PixArt-LCM, and a distilled 20-step HunyuanVideo model. Within each few-step model comparison, methods use the same weights, solver, sampling coordinates, precision, prompts, and seeds. AutoTarget’s candidate targets share a fixed schedule of full DiT evaluations; baseline methods follow their own reuse rules, so their DiT call counts can differ.",
+   "zh": "我们在少步图像和视频 DiT 模型上评估了 AutoTarget：FLUX.1-schnell、PixArt-LCM，以及一个经过蒸馏的 20 步 HunyuanVideo 模型。 在每个少步模型的对比中，各方法均使用相同的权重、求解器、采样坐标、精度、提示词和种子值。 AutoTarget 的候选目标共享一个固定的完整 DiT 评估计划；而基线方法则遵循其自身的复用规则，因此它们的 DiT 调用次数可能有所不同。",
+   "sents": [
+    {
+     "en": "We evaluate AutoTarget on few-step image and video DiTs: FLUX.1-schnell, PixArt-LCM, and a distilled 20-step HunyuanVideo model.",
+     "zh": "我们在少步图像和视频 DiT 模型上评估了 AutoTarget：FLUX.1-schnell、PixArt-LCM，以及一个经过蒸馏的 20 步 HunyuanVideo 模型。"
+    },
+    {
+     "en": "Within each few-step model comparison, methods use the same weights, solver, sampling coordinates, precision, prompts, and seeds.",
+     "zh": "在每个少步模型的对比中，各方法均使用相同的权重、求解器、采样坐标、精度、提示词和种子值。"
+    },
+    {
+     "en": "AutoTarget’s candidate targets share a fixed schedule of full DiT evaluations; baseline methods follow their own reuse rules, so their DiT call counts can differ.",
+     "zh": "AutoTarget 的候选目标共享一个固定的完整 DiT 评估计划；而基线方法则遵循其自身的复用规则，因此它们的 DiT 调用次数可能有所不同。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate task quality using ImageReward ( Xu et al., 2023 ) , CLIP ( Radford et al., 2021 ) , and VBench ( Huang et al., 2024 ) , while PSNR, SSIM ( Wang et al., 2004 ) , and decoded RGB error measure similarity to a paired reference. Each cached sample and its reference use the same prompt and initial noise, controlling these two sources of variation across paired outputs. For FLUX, the reference is the paired 50-step FLUX.1-dev output ( Black Forest Labs, 2024a ) . For PixArt-LCM, it is the paired four-step output without caching. Held-out paired comparisons report 95% bootstrap confidence intervals.",
+   "zh": "我们使用 ImageReward（Xu 等人，2023）、CLIP（Radford 等人，2021）和 VBench（Huang 等人，2024）来评估任务质量，而 PSNR、SSIM（Wang 等人，2004）和解码后的 RGB 误差则用于衡量与配对参考图像之间的相似性。 每个缓存样本及其参考图像均使用相同的提示词和初始噪声，从而在配对输出中控制这两个变量来源。 对于 FLUX，其参考图像是配对的 50 步 FLUX.1-dev 输出（Black Forest Labs，2024a）。 对于 PixArt-LCM，其参考图像是不使用缓存的配对四步输出。 保留的配对比较报告了 95% 的自助法置信区间。",
+   "sents": [
+    {
+     "en": "We evaluate task quality using ImageReward ( Xu et al., 2023 ) , CLIP ( Radford et al., 2021 ) , and VBench ( Huang et al., 2024 ) , while PSNR, SSIM ( Wang et al., 2004 ) , and decoded RGB error measure similarity to a paired reference.",
+     "zh": "我们使用 ImageReward（Xu 等人，2023）、CLIP（Radford 等人，2021）和 VBench（Huang 等人，2024）来评估任务质量，而 PSNR、SSIM（Wang 等人，2004）和解码后的 RGB 误差则用于衡量与配对参考图像之间的相似性。"
+    },
+    {
+     "en": "Each cached sample and its reference use the same prompt and initial noise, controlling these two sources of variation across paired outputs.",
+     "zh": "每个缓存样本及其参考图像均使用相同的提示词和初始噪声，从而在配对输出中控制这两个变量来源。"
+    },
+    {
+     "en": "For FLUX, the reference is the paired 50-step FLUX.1-dev output ( Black Forest Labs, 2024a ) .",
+     "zh": "对于 FLUX，其参考图像是配对的 50 步 FLUX.1-dev 输出（Black Forest Labs，2024a）。"
+    },
+    {
+     "en": "For PixArt-LCM, it is the paired four-step output without caching.",
+     "zh": "对于 PixArt-LCM，其参考图像是不使用缓存的配对四步输出。"
+    },
+    {
+     "en": "Held-out paired comparisons report 95% bootstrap confidence intervals.",
+     "zh": "保留的配对比较报告了 95% 的自助法置信区间。"
+    }
+   ]
+  },
+  {
+   "en": "Overall speedup is measured against the full-step reference, whereas cache-only speedup isolates the additional acceleration over the matching uncached few-step sampler. The retained-cache column counts tensors that remain stored between steps, including any required history. Peak device memory also includes temporary workspace and is therefore a separate measurement.",
+   "zh": "整体加速是相对于完整步骤参考方案而言的，而仅使用缓存的加速则专门衡量相比匹配的无缓存少步采样器所获得的额外加速。 保留缓存列统计的是在步骤之间仍被存储的张量，包括任何必要的历史数据。 峰值设备内存还包括临时工作区，因此是一项独立的指标。",
+   "sents": [
+    {
+     "en": "Overall speedup is measured against the full-step reference, whereas cache-only speedup isolates the additional acceleration over the matching uncached few-step sampler.",
+     "zh": "整体加速是相对于完整步骤参考方案而言的，而仅使用缓存的加速则专门衡量相比匹配的无缓存少步采样器所获得的额外加速。"
+    },
+    {
+     "en": "The retained-cache column counts tensors that remain stored between steps, including any required history.",
+     "zh": "保留缓存列统计的是在步骤之间仍被存储的张量，包括任何必要的历史数据。"
+    },
+    {
+     "en": "Peak device memory also includes temporary workspace and is therefore a separate measurement.",
+     "zh": "峰值设备内存还包括临时工作区，因此是一项独立的指标。"
+    }
+   ]
+  },
+  {
+   "en": "Section 4.2.1 analyzes the text-to-image results, Section 4.2.2 presents the results on distilled HunyuanVideo, and Section 4.3 studies the effects of cache target selection and calibration size.",
+   "zh": "第 4.2.1 节分析了文本到图像的结果，第 4.2.2 节展示了蒸馏 HunyuanVideo 上的结果，而第 4.3 节则研究了缓存目标选择和校准尺寸的影响。",
+   "sents": null
+  },
+  {
+   "en": "The full-step FLUX.1-dev and HunyuanVideo rows provide separate references; the cache baselines are compared within their respective few-step model blocks.",
+   "zh": "全步骤的 FLUX.1-dev 和 HunyuanVideo 行提供了独立的参考；缓存基线则在其各自的少步骤模型模块内进行比较。",
+   "sents": null
+  },
+  {
+   "en": "Table 1 shows the effect of reducing FLUX.1-dev from 50 to 17 steps: 17 steps yield 2.67 × 2.67\\times speedup but reduce ImageReward from 0.985 to 0.912 and SSIM from 1.0000 to 0.6723. On four-step FLUX.1-schnell, AutoTarget generates an image in 1.120 seconds with 27.641 dB PSNR and 0.6743 SSIM. Because FLUX.1-schnell is a separate distilled checkpoint, its 16.00 × 16.00\\times overall speedup uses 50-step FLUX.1-dev as the reference. Compared with four-step FLUX.1-schnell without caching, the speedup due to the cache is 1.289 × 1.289\\times . AutoTarget also obtains ImageReward 0.886 and CLIP 28.376. HiCache obtains a slightly higher ImageReward of 0.896, while AutoTarget has lower latency and higher PSNR and SSIM, illustrating the different trade-offs between speed, task quality, and reference fidelity.",
+   "zh": "表1展示了将FLUX.1-dev的步数从50减少到17所产生的影响：17步带来了2.67 × 2.67\\times的速度提升，但使ImageReward从0.985降至0.912，SSIM从1.0000降至0.6723。 在四步FLUX.1-schnell上，AutoTarget生成一张图像需要1.120秒，此时PSNR为27.641 dB，SSIM为0.6743。 由于FLUX.1-schnell是一个独立的蒸馏检查点，其16.00 × 16.00\\times的整体速度提升是以50步的FLUX.1-dev作为参考计算的。 与不使用缓存的四步FLUX.1-schnell相比，缓存带来的速度提升为1.289 × 1.289\\times。 AutoTarget还获得了0.886的ImageReward和28.376的CLIP分数。 HiCache获得了略高的ImageReward（0.896），而AutoTarget的延迟更低，且PSNR和SSIM更高，这体现了速度、任务质量和参考保真度之间的不同权衡。",
+   "sents": [
+    {
+     "en": "Table 1 shows the effect of reducing FLUX.1-dev from 50 to 17 steps: 17 steps yield 2.67 × 2.67\\times speedup but reduce ImageReward from 0.985 to 0.912 and SSIM from 1.0000 to 0.6723.",
+     "zh": "表1展示了将FLUX.1-dev的步数从50减少到17所产生的影响：17步带来了2.67 × 2.67\\times的速度提升，但使ImageReward从0.985降至0.912，SSIM从1.0000降至0.6723。"
+    },
+    {
+     "en": "On four-step FLUX.1-schnell, AutoTarget generates an image in 1.120 seconds with 27.641 dB PSNR and 0.6743 SSIM.",
+     "zh": "在四步FLUX.1-schnell上，AutoTarget生成一张图像需要1.120秒，此时PSNR为27.641 dB，SSIM为0.6743。"
+    },
+    {
+     "en": "Because FLUX.1-schnell is a separate distilled checkpoint, its 16.00 × 16.00\\times overall speedup uses 50-step FLUX.1-dev as the reference.",
+     "zh": "由于FLUX.1-schnell是一个独立的蒸馏检查点，其16.00 × 16.00\\times的整体速度提升是以50步的FLUX.1-dev作为参考计算的。"
+    },
+    {
+     "en": "Compared with four-step FLUX.1-schnell without caching, the speedup due to the cache is 1.289 × 1.289\\times .",
+     "zh": "与不使用缓存的四步FLUX.1-schnell相比，缓存带来的速度提升为1.289 × 1.289\\times。"
+    },
+    {
+     "en": "AutoTarget also obtains ImageReward 0.886 and CLIP 28.376.",
+     "zh": "AutoTarget还获得了0.886的ImageReward和28.376的CLIP分数。"
+    },
+    {
+     "en": "HiCache obtains a slightly higher ImageReward of 0.896, while AutoTarget has lower latency and higher PSNR and SSIM, illustrating the different trade-offs between speed, task quality, and reference fidelity.",
+     "zh": "HiCache获得了略高的ImageReward（0.896），而AutoTarget的延迟更低，且PSNR和SSIM更高，这体现了速度、任务质量和参考保真度之间的不同权衡。"
+    }
+   ]
+  },
+  {
+   "en": "PixArt-LCM is more sensitive to the choice of cached tensor. AutoTarget runs in 0.124 seconds, a 1.277 × 1.277\\times speedup over the same sampler without caching. Its ImageReward and CLIP scores are 0.413 and 26.070, compared with 0.443 and 26.094 without caching. Its fidelity is 23.15 dB PSNR and 0.7518 SSIM. The other cache methods obtain 6.16–9.98 dB PSNR and SSIM below 0.18. Although several baselines preserve task quality on FLUX, their quality and fidelity drop substantially on PixArt-LCM. This contrast motivates evaluating reuse for each model configuration; the fixed-schedule ablation below further isolates the effect of the cached tensor.",
+   "zh": "PixArt-LCM 对缓存张量的选择更为敏感。 AutoTarget 的运行时间为 0.124 秒，相比无缓存的相同采样器速度提升了 1.277 倍。 其 ImageReward 和 CLIP 分数分别为 0.413 和 26.070，而无缓存时则为 0.443 和 26.094。 其保真度为 23.15 dB PSNR 和 0.7518 SSIM。 其他缓存方法获得的 PSNR 为 6.16–9.98 dB，SSIM 则低于 0.18。 尽管多种基线方法在 FLUX 上保持了任务质量，但在 PixArt-LCM 上它们的质量和保真度却大幅下降。 这种差异促使我们针对每种模型配置评估重复利用的效果；下文中的固定时间表消融分析进一步分离了缓存张量的影响。",
+   "sents": [
+    {
+     "en": "PixArt-LCM is more sensitive to the choice of cached tensor.",
+     "zh": "PixArt-LCM 对缓存张量的选择更为敏感。"
+    },
+    {
+     "en": "AutoTarget runs in 0.124 seconds, a 1.277 × 1.277\\times speedup over the same sampler without caching.",
+     "zh": "AutoTarget 的运行时间为 0.124 秒，相比无缓存的相同采样器速度提升了 1.277 倍。"
+    },
+    {
+     "en": "Its ImageReward and CLIP scores are 0.413 and 26.070, compared with 0.443 and 26.094 without caching.",
+     "zh": "其 ImageReward 和 CLIP 分数分别为 0.413 和 26.070，而无缓存时则为 0.443 和 26.094。"
+    },
+    {
+     "en": "Its fidelity is 23.15 dB PSNR and 0.7518 SSIM.",
+     "zh": "其保真度为 23.15 dB PSNR 和 0.7518 SSIM。"
+    },
+    {
+     "en": "The other cache methods obtain 6.16–9.98 dB PSNR and SSIM below 0.18.",
+     "zh": "其他缓存方法获得的 PSNR 为 6.16–9.98 dB，SSIM 则低于 0.18。"
+    },
+    {
+     "en": "Although several baselines preserve task quality on FLUX, their quality and fidelity drop substantially on PixArt-LCM.",
+     "zh": "尽管多种基线方法在 FLUX 上保持了任务质量，但在 PixArt-LCM 上它们的质量和保真度却大幅下降。"
+    },
+    {
+     "en": "This contrast motivates evaluating reuse for each model configuration; the fixed-schedule ablation below further isolates the effect of the cached tensor.",
+     "zh": "这种差异促使我们针对每种模型配置评估重复利用的效果；下文中的固定时间表消融分析进一步分离了缓存张量的影响。"
+    }
+   ]
+  },
+  {
+   "en": "AutoTarget also retains less cache data than the compared image baselines: 0.500 MiB on FLUX.1-schnell and 0.125 MiB on PixArt-LCM. The corresponding baseline ranges are 48–5814 MiB and 18–1512 MiB. These savings follow from storing a solver-facing tensor instead of the larger feature caches used by those baselines, and concern retained tensors rather than total inference memory.",
+   "zh": "AutoTarget 保留的缓存数据也比所比较的图像基线模型更少：FLUX.1-schnell 为 0.500 MiB，PixArt-LCM 为 0.125 MiB。 对应的基线模型范围分别为 48–5814 MiB 和 18–1512 MiB。 这些节省源于存储面向求解器的张量，而非基线模型所用更大的特征缓存，且仅涉及保留的张量，而非总推理内存。",
+   "sents": [
+    {
+     "en": "AutoTarget also retains less cache data than the compared image baselines: 0.500 MiB on FLUX.1-schnell and 0.125 MiB on PixArt-LCM.",
+     "zh": "AutoTarget 保留的缓存数据也比所比较的图像基线模型更少：FLUX.1-schnell 为 0.500 MiB，PixArt-LCM 为 0.125 MiB。"
+    },
+    {
+     "en": "The corresponding baseline ranges are 48–5814 MiB and 18–1512 MiB.",
+     "zh": "对应的基线模型范围分别为 48–5814 MiB 和 18–1512 MiB。"
+    },
+    {
+     "en": "These savings follow from storing a solver-facing tensor instead of the larger feature caches used by those baselines, and concern retained tensors rather than total inference memory.",
+     "zh": "这些节省源于存储面向求解器的张量，而非基线模型所用更大的特征缓存，且仅涉及保留的张量，而非总推理内存。"
+    }
+   ]
+  },
+  {
+   "en": "On HunyuanVideo (Table 2 ), AutoTarget runs in 150.4 seconds, a 7.55 × 7.55\\times end-to-end and 1.539 × 1.539\\times cache-only speedup, with VBench Semantic/Quality/Total scores of 70.9/80.9/78.9. DisCa obtains 69.9/81.0/78.8 in 151.3 seconds. With only 0.9 seconds separating them, the two methods have similar latency and overall VBench scores. AutoTarget obtains the highest Semantic score among the compared cache baselines without requiring a learned predictor during deployment. The 50-step reference takes 1136.2 seconds and has a Total score of 78.9. The matching distilled model without caching takes 231.5 seconds and scores 75.5. The two speedup columns use these different reference runtimes to distinguish overall acceleration from the additional gain provided by caching.",
+   "zh": "在 HunyuanVideo（表 2）中，AutoTarget 的运行时间为 150.4 秒，实现了 7.55 × 7.55\\times 的端到端加速和 1.539 × 1.539\\times 的纯缓存加速，其 VBench 语义/质量/总分分别为 70.9/80.9/78.9。 DisCa 在 151.3 秒内获得了 69.9/81.0/78.8 的成绩。 两者仅相差 0.9 秒，因此这两种方法的延迟和总体 VBench 分数相近。 在比较的缓存基线方法中，AutoTarget 获得了最高的语义分数，且部署时无需依赖已学习的预测器。 50 步参考模型运行时间为 1136.2 秒，总分为 78.9。 无缓存的匹配蒸馏模型运行时间为 231.5 秒，得分为 75.5。 两个加速列使用这些不同的参考运行时间来区分总体加速与缓存带来的额外增益。",
+   "sents": [
+    {
+     "en": "On HunyuanVideo (Table 2 ), AutoTarget runs in 150.4 seconds, a 7.55 × 7.55\\times end-to-end and 1.539 × 1.539\\times cache-only speedup, with VBench Semantic/Quality/Total scores of 70.9/80.9/78.9.",
+     "zh": "在 HunyuanVideo（表 2）中，AutoTarget 的运行时间为 150.4 秒，实现了 7.55 × 7.55\\times 的端到端加速和 1.539 × 1.539\\times 的纯缓存加速，其 VBench 语义/质量/总分分别为 70.9/80.9/78.9。"
+    },
+    {
+     "en": "DisCa obtains 69.9/81.0/78.8 in 151.3 seconds.",
+     "zh": "DisCa 在 151.3 秒内获得了 69.9/81.0/78.8 的成绩。"
+    },
+    {
+     "en": "With only 0.9 seconds separating them, the two methods have similar latency and overall VBench scores.",
+     "zh": "两者仅相差 0.9 秒，因此这两种方法的延迟和总体 VBench 分数相近。"
+    },
+    {
+     "en": "AutoTarget obtains the highest Semantic score among the compared cache baselines without requiring a learned predictor during deployment.",
+     "zh": "在比较的缓存基线方法中，AutoTarget 获得了最高的语义分数，且部署时无需依赖已学习的预测器。"
+    },
+    {
+     "en": "The 50-step reference takes 1136.2 seconds and has a Total score of 78.9.",
+     "zh": "50 步参考模型运行时间为 1136.2 秒，总分为 78.9。"
+    },
+    {
+     "en": "The matching distilled model without caching takes 231.5 seconds and scores 75.5.",
+     "zh": "无缓存的匹配蒸馏模型运行时间为 231.5 秒，得分为 75.5。"
+    },
+    {
+     "en": "The two speedup columns use these different reference runtimes to distinguish overall acceleration from the additional gain provided by caching.",
+     "zh": "两个加速列使用这些不同的参考运行时间来区分总体加速与缓存带来的额外增益。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 9 compares four cache targets on 200 DrawBench prompts with PixArt-LCM at 1024 × 1024 1024\\times 1024 . With the model, solver, and reuse schedule held fixed, denoised/clean achieves the highest PSNR at 23.155 dB; velocity, denoised residual, and ϵ \\epsilon achieve 18.340, 12.844, and 10.007 dB, respectively.",
+   "zh": "图 9 比较了 200 个 DrawBench 提示下，在 1024 × 1024 分辨率上使用 PixArt-LCM 时的四种缓存目标。 在模型、求解器和重用调度固定的情况下，去噪/干净版本实现了最高的 PSNR（23.155 dB）；速度、去噪残差和 ϵ \\epsilon 分别达到 18.340、12.844 和 10.007 dB。",
+   "sents": [
+    {
+     "en": "Figure 9 compares four cache targets on 200 DrawBench prompts with PixArt-LCM at 1024 × 1024 1024\\times 1024 .",
+     "zh": "图 9 比较了 200 个 DrawBench 提示下，在 1024 × 1024 分辨率上使用 PixArt-LCM 时的四种缓存目标。"
+    },
+    {
+     "en": "With the model, solver, and reuse schedule held fixed, denoised/clean achieves the highest PSNR at 23.155 dB; velocity, denoised residual, and ϵ \\epsilon achieve 18.340, 12.844, and 10.007 dB, respectively.",
+     "zh": "在模型、求解器和重用调度固定的情况下，去噪/干净版本实现了最高的 PSNR（23.155 dB）；速度、去噪残差和 ϵ \\epsilon 分别达到 18.340、12.844 和 10.007 dB。"
+    }
+   ]
+  },
+  {
+   "en": "To test whether selection depends on the calibration set, we draw subsets of 1, 2, 4, 8, 16, and 32 prompts from 32 recorded calibration runs and recompute the ranking on 1,000 sampled subsets per size. Every trial selects denoised/clean, which also has the highest PSNR in the 200-prompt comparison. Thus, a small calibration set consistently identifies the same target in this configuration, even as the prompt subset changes.",
+   "zh": "为了检验选择是否依赖于校准集，我们从 32 次已记录的校准运行中抽取包含 1、2、4、8、16 和 32 个提示词的子集，并对每种规模的 1,000 个采样子集重新计算排名。 每次试验都选择去噪后/干净的版本，该版本在 200 个提示词的对比中也具有最高的 PSNR。 因此，在这种配置下，即使提示词子集发生变化，较小的校准集也能始终识别出相同的目标。",
+   "sents": [
+    {
+     "en": "To test whether selection depends on the calibration set, we draw subsets of 1, 2, 4, 8, 16, and 32 prompts from 32 recorded calibration runs and recompute the ranking on 1,000 sampled subsets per size.",
+     "zh": "为了检验选择是否依赖于校准集，我们从 32 次已记录的校准运行中抽取包含 1、2、4、8、16 和 32 个提示词的子集，并对每种规模的 1,000 个采样子集重新计算排名。"
+    },
+    {
+     "en": "Every trial selects denoised/clean, which also has the highest PSNR in the 200-prompt comparison.",
+     "zh": "每次试验都选择去噪后/干净的版本，该版本在 200 个提示词的对比中也具有最高的 PSNR。"
+    },
+    {
+     "en": "Thus, a small calibration set consistently identifies the same target in this configuration, even as the prompt subset changes.",
+     "zh": "因此，在这种配置下，即使提示词子集发生变化，较小的校准集也能始终识别出相同的目标。"
+    }
+   ]
+  },
+  {
+   "en": "For further validation, Appendix D.1 reports held-out rankings and calibration errors, together with reduced-step controls, baseline threshold sweeps, and a comparison of two solvers.",
+   "zh": "为进行进一步验证，附录 D.1 报告了预留集上的排名和校准误差，以及减少步数的控制实验、基准阈值扫描，以及对两种求解器的比较。",
+   "sents": null
+  },
+  {
+   "en": "AutoTarget selects a cache target for a fixed schedule of full DiT evaluations. Changing only PixArt’s image resolution reverses the ranking of velocity and denoised/clean, while the solver comparison changes which candidates are valid and the order of the lower-ranked targets. These results show that the preferred target depends on the sampling configuration, even when the candidate tensors are derived from the same model prediction.",
+   "zh": "AutoTarget 为固定的完整 DiT 评估计划选择一个缓存目标。 仅更改 PixArt 的图像分辨率会反转速度以及去噪/干净结果的排名，而求解器比较则会改变哪些候选项有效以及排名较低的目标的顺序。 这些结果表明，首选目标取决于采样配置，即使候选张量来自相同的模型预测。",
+   "sents": [
+    {
+     "en": "AutoTarget selects a cache target for a fixed schedule of full DiT evaluations.",
+     "zh": "AutoTarget 为固定的完整 DiT 评估计划选择一个缓存目标。"
+    },
+    {
+     "en": "Changing only PixArt’s image resolution reverses the ranking of velocity and denoised/clean, while the solver comparison changes which candidates are valid and the order of the lower-ranked targets.",
+     "zh": "仅更改 PixArt 的图像分辨率会反转速度以及去噪/干净结果的排名，而求解器比较则会改变哪些候选项有效以及排名较低的目标的顺序。"
+    },
+    {
+     "en": "These results show that the preferred target depends on the sampling configuration, even when the candidate tensors are derived from the same model prediction.",
+     "zh": "这些结果表明，首选目标取决于采样配置，即使候选张量来自相同的模型预测。"
+    }
+   ]
+  },
+  {
+   "en": "Decoded calibration error provides an empirical ranking whose reliability must be tested on held-out prompts. The solver-state bound explains error propagation, but does not establish that this ranking transfers to other prompt distributions. We therefore fix the selection rule before held-out evaluation and compare complete cached runs, where errors accumulate across reuse steps. Recalibration is required when the model, solver, schedule, or precision changes, and each candidate must have a valid conversion to the solver input. Once calibration is complete, deployment retains only the accepted tensor and requires no candidate comparisons, external quality model, or learned predictor.",
+   "zh": "解码后的校准误差提供了一个经验性排名，其可靠性必须在预留提示语集上进行验证。 求解器状态边界可以解释误差传播机制，但并未证明该排名能够迁移到其他提示语分布中。 因此，我们在预留评估之前固定选择规则，并比较完整的缓存运行过程，其中误差会在重复使用步骤中累积。 当模型、求解器、调度方案或精度发生变化时，需要进行重新校准，且每个候选方案都必须能合法地转换为求解器的输入。 校准完成后，部署过程仅保留被接受的张量，无需进行候选方案比较、使用外部质量模型或已学习的预测器。",
+   "sents": [
+    {
+     "en": "Decoded calibration error provides an empirical ranking whose reliability must be tested on held-out prompts.",
+     "zh": "解码后的校准误差提供了一个经验性排名，其可靠性必须在预留提示语集上进行验证。"
+    },
+    {
+     "en": "The solver-state bound explains error propagation, but does not establish that this ranking transfers to other prompt distributions.",
+     "zh": "求解器状态边界可以解释误差传播机制，但并未证明该排名能够迁移到其他提示语分布中。"
+    },
+    {
+     "en": "We therefore fix the selection rule before held-out evaluation and compare complete cached runs, where errors accumulate across reuse steps.",
+     "zh": "因此，我们在预留评估之前固定选择规则，并比较完整的缓存运行过程，其中误差会在重复使用步骤中累积。"
+    },
+    {
+     "en": "Recalibration is required when the model, solver, schedule, or precision changes, and each candidate must have a valid conversion to the solver input.",
+     "zh": "当模型、求解器、调度方案或精度发生变化时，需要进行重新校准，且每个候选方案都必须能合法地转换为求解器的输入。"
+    },
+    {
+     "en": "Once calibration is complete, deployment retains only the accepted tensor and requires no candidate comparisons, external quality model, or learned predictor.",
+     "zh": "校准完成后，部署过程仅保留被接受的张量，无需进行候选方案比较、使用外部质量模型或已学习的预测器。"
+    }
+   ]
+  },
+  {
+   "en": "The shifted LTX-Video setting ( HaCohen et al., 2024 ) illustrates why the acceptance rule is needed. Here, γ = 1.004 \\gamma=1.004 , and the calibration winner outperforms the alternative on only 55% of held-out prompts. Always deploying this target incurs 7.36% regret relative to the best target for each prompt. Because the risk ratio falls below the fixed 1.10 threshold, AutoTarget abstains, allowing the application to retain uncached sampling or a previously validated cache policy when calibration does not clearly separate the candidates.",
+   "zh": "HaCohen 等人（2024）提出的 LTX-Video 变体设置说明了为何需要接受规则。 此处 γ = 1.004，且校准获胜智能体在仅 55% 的预留提示上优于替代方案。 始终部署此目标会导致相对于每个提示的最佳目标产生 7.36% 的遗憾。 由于风险比低于固定的 1.10 阈值，AutoTarget 会放弃选择；当校准无法明确区分候选方案时，应用程序便可保留未缓存的采样方式或先前验证过的缓存策略。",
+   "sents": [
+    {
+     "en": "The shifted LTX-Video setting ( HaCohen et al., 2024 ) illustrates why the acceptance rule is needed.",
+     "zh": "HaCohen 等人（2024）提出的 LTX-Video 变体设置说明了为何需要接受规则。"
+    },
+    {
+     "en": "Here, γ = 1.004 \\gamma=1.004 , and the calibration winner outperforms the alternative on only 55% of held-out prompts.",
+     "zh": "此处 γ = 1.004，且校准获胜智能体在仅 55% 的预留提示上优于替代方案。"
+    },
+    {
+     "en": "Always deploying this target incurs 7.36% regret relative to the best target for each prompt.",
+     "zh": "始终部署此目标会导致相对于每个提示的最佳目标产生 7.36% 的遗憾。"
+    },
+    {
+     "en": "Because the risk ratio falls below the fixed 1.10 threshold, AutoTarget abstains, allowing the application to retain uncached sampling or a previously validated cache policy when calibration does not clearly separate the candidates.",
+     "zh": "由于风险比低于固定的 1.10 阈值，AutoTarget 会放弃选择；当校准无法明确区分候选方案时，应用程序便可保留未缓存的采样方式或先前验证过的缓存策略。"
+    }
+   ]
+  },
+  {
+   "en": "We presented AutoTarget, a method for selecting which tensor to cache in few-step diffusion transformers. Given a fixed reuse schedule, it compares candidate targets using uncached sampling runs and deploys the lowest-risk target when calibration clearly separates it from the runner-up. This procedure requires no learned predictor and accounts for how the stored tensor is converted and used by the solver. Our analysis identifies equivalent targets under Euler sampling and relates local reuse errors to their accumulation along the sampling trajectory.",
+   "zh": "我们提出了 AutoTarget，一种用于在少步扩散变换器中选择缓存哪个张量的方法。 在给定的固定重用计划下，该方法通过未缓存的采样运行比较候选目标，并在校准结果能明确区分出风险最低的目标与次优目标时部署该目标。 此过程无需任何学习到的预测模型，并考虑了所存储张量被求解器转换和使用的具体方式。 我们的分析确定了在欧拉采样下等效的目标，并将局部重用误差与其沿采样轨迹的累积情况联系起来。",
+   "sents": [
+    {
+     "en": "We presented AutoTarget, a method for selecting which tensor to cache in few-step diffusion transformers.",
+     "zh": "我们提出了 AutoTarget，一种用于在少步扩散变换器中选择缓存哪个张量的方法。"
+    },
+    {
+     "en": "Given a fixed reuse schedule, it compares candidate targets using uncached sampling runs and deploys the lowest-risk target when calibration clearly separates it from the runner-up.",
+     "zh": "在给定的固定重用计划下，该方法通过未缓存的采样运行比较候选目标，并在校准结果能明确区分出风险最低的目标与次优目标时部署该目标。"
+    },
+    {
+     "en": "This procedure requires no learned predictor and accounts for how the stored tensor is converted and used by the solver.",
+     "zh": "此过程无需任何学习到的预测模型，并考虑了所存储张量被求解器转换和使用的具体方式。"
+    },
+    {
+     "en": "Our analysis identifies equivalent targets under Euler sampling and relates local reuse errors to their accumulation along the sampling trajectory.",
+     "zh": "我们的分析确定了在欧拉采样下等效的目标，并将局部重用误差与其沿采样轨迹的累积情况联系起来。"
+    }
+   ]
+  },
+  {
+   "en": "Experiments on distilled image and video models show that the preferred target changes with the sampling configuration. Target selection provides additional acceleration over uncached few-step sampling with a small cache. Paired evaluations distinguish reference fidelity from task quality, while held-out tests assess calibration rankings during complete cached runs. When candidates are insufficiently separated, AutoTarget declines to select a target, leaving the fallback policy to the application. These results support treating the cached tensor as an explicit design choice alongside the reuse schedule, guided by calibration for the intended model and solver.",
+   "zh": "在蒸馏图像和视频模型上进行的实验表明，首选目标会随着采样配置的变化而改变。 与使用小型缓存的无缓存少步采样相比，目标选择可提供额外的加速效果。 成对评估能够区分参考保真度与任务质量，而预留测试则用于评估完整缓存运行过程中的校准排名。 当候选项之间的差异不足时，AutoTarget 将拒绝选择目标，并将回退策略交由应用程序处理。 这些结果支持将缓存张量视为与重用计划并列的显式设计选择，其决策应依据针对目标模型和求解器的校准结果进行引导。",
+   "sents": [
+    {
+     "en": "Experiments on distilled image and video models show that the preferred target changes with the sampling configuration.",
+     "zh": "在蒸馏图像和视频模型上进行的实验表明，首选目标会随着采样配置的变化而改变。"
+    },
+    {
+     "en": "Target selection provides additional acceleration over uncached few-step sampling with a small cache.",
+     "zh": "与使用小型缓存的无缓存少步采样相比，目标选择可提供额外的加速效果。"
+    },
+    {
+     "en": "Paired evaluations distinguish reference fidelity from task quality, while held-out tests assess calibration rankings during complete cached runs.",
+     "zh": "成对评估能够区分参考保真度与任务质量，而预留测试则用于评估完整缓存运行过程中的校准排名。"
+    },
+    {
+     "en": "When candidates are insufficiently separated, AutoTarget declines to select a target, leaving the fallback policy to the application.",
+     "zh": "当候选项之间的差异不足时，AutoTarget 将拒绝选择目标，并将回退策略交由应用程序处理。"
+    },
+    {
+     "en": "These results support treating the cached tensor as an explicit design choice alongside the reuse schedule, guided by calibration for the intended model and solver.",
+     "zh": "这些结果支持将缓存张量视为与重用计划并列的显式设计选择，其决策应依据针对目标模型和求解器的校准结果进行引导。"
+    }
+   ]
+  },
+  {
+   "en": "We used AI-assisted tools to support academic writing, language editing, code development, debugging, and experiment implementation. The authors reviewed, verified, and, where necessary, revised all AI-assisted content to ensure its accuracy and consistency with the research objectives. The authors retain full responsibility for the scientific content, methodological decisions, experimental results, and conclusions, as well as the integrity and reproducibility of this work.",
+   "zh": "我们使用了人工智能辅助工具来支持学术写作、语言编辑、代码开发、调试和实验实施。 作者们审阅、验证了所有由人工智能辅助生成的内容，并在必要时进行了修改，以确保其准确性以及与研究目标的一致性。 作者们对科学内容、方法论决策、实验结果和结论，以及本研究的完整性和可重复性承担全部责任。",
+   "sents": [
+    {
+     "en": "We used AI-assisted tools to support academic writing, language editing, code development, debugging, and experiment implementation.",
+     "zh": "我们使用了人工智能辅助工具来支持学术写作、语言编辑、代码开发、调试和实验实施。"
+    },
+    {
+     "en": "The authors reviewed, verified, and, where necessary, revised all AI-assisted content to ensure its accuracy and consistency with the research objectives.",
+     "zh": "作者们审阅、验证了所有由人工智能辅助生成的内容，并在必要时进行了修改，以确保其准确性以及与研究目标的一致性。"
+    },
+    {
+     "en": "The authors retain full responsibility for the scientific content, methodological decisions, experimental results, and conclusions, as well as the integrity and reproducibility of this work.",
+     "zh": "作者们对科学内容、方法论决策、实验结果和结论，以及本研究的完整性和可重复性承担全部责任。"
+    }
+   ]
+  },
+  {
+   "en": "AutoTarget has two stages: calibration and deployment. Both stages use the same model, solver, coordinate sequence, and steps for full DiT evaluation. During calibration, all candidates are tested from the same exact states. Deployment keeps only the selected target.",
+   "zh": "AutoTarget 包含两个阶段：校准和部署。 两个阶段均使用相同的模型、求解器、坐标序列和步骤进行完整的 DiT 评估。 在校准阶段，所有候选项都从完全相同的状态开始测试。 部署阶段仅保留选定的目标。",
+   "sents": [
+    {
+     "en": "AutoTarget has two stages: calibration and deployment.",
+     "zh": "AutoTarget 包含两个阶段：校准和部署。"
+    },
+    {
+     "en": "Both stages use the same model, solver, coordinate sequence, and steps for full DiT evaluation.",
+     "zh": "两个阶段均使用相同的模型、求解器、坐标序列和步骤进行完整的 DiT 评估。"
+    },
+    {
+     "en": "During calibration, all candidates are tested from the same exact states.",
+     "zh": "在校准阶段，所有候选项都从完全相同的状态开始测试。"
+    },
+    {
+     "en": "Deployment keeps only the selected target.",
+     "zh": "部署阶段仅保留选定的目标。"
+    }
+   ]
+  },
+  {
+   "en": "At every anchor step, the pipeline provides the model prediction used by the solver. AutoTarget converts this prediction into the cache targets supported by the current parameterization. In the controlled Euler example, the candidates are velocity, the clean endpoint x clean x^{\\mathrm{clean}} , and the noise endpoint ε \\varepsilon . Another pipeline may also provide a solver update or another tensor with the same shape as the model output. When candidates are compared under an equal storage budget, they use the same data type and tensor shape.",
+   "zh": "在每个锚点步骤中，流程都会向求解器提供模型预测结果。 AutoTarget 会将该预测结果转换为当前参数化所支持的缓存目标。 在受控的欧拉示例中，候选项包括速度、干净的端点 x clean x^{\\mathrm{clean}} 以及噪声端点 ε \\varepsilon 。 另一个流程也可以提供一个求解器更新，或一个与模型输出形状相同的张量。 当候选项在相同的存储预算下进行比较时，它们会使用相同的数据类型和张量形状。",
+   "sents": [
+    {
+     "en": "At every anchor step, the pipeline provides the model prediction used by the solver.",
+     "zh": "在每个锚点步骤中，流程都会向求解器提供模型预测结果。"
+    },
+    {
+     "en": "AutoTarget converts this prediction into the cache targets supported by the current parameterization.",
+     "zh": "AutoTarget 会将该预测结果转换为当前参数化所支持的缓存目标。"
+    },
+    {
+     "en": "In the controlled Euler example, the candidates are velocity, the clean endpoint x clean x^{\\mathrm{clean}} , and the noise endpoint ε \\varepsilon .",
+     "zh": "在受控的欧拉示例中，候选项包括速度、干净的端点 x clean x^{\\mathrm{clean}} 以及噪声端点 ε \\varepsilon 。"
+    },
+    {
+     "en": "Another pipeline may also provide a solver update or another tensor with the same shape as the model output.",
+     "zh": "另一个流程也可以提供一个求解器更新，或一个与模型输出形状相同的张量。"
+    },
+    {
+     "en": "When candidates are compared under an equal storage budget, they use the same data type and tensor shape.",
+     "zh": "当候选项在相同的存储预算下进行比较时，它们会使用相同的数据类型和张量形状。"
+    }
+   ]
+  },
+  {
+   "en": "For each calibration prompt, an exact run records the latent, model prediction, coordinate, and solver state at every step. At a reuse step, every candidate is decoded from the same anchor and receives the same exact current state. The original solver then converts the candidate into the next latent, or into the intermediate latent expected by the pipeline. This procedure compares all candidates at the same point in the computation.",
+   "zh": "对于每个校准提示，一次精确运行会记录每一步的潜在状态、模型预测、坐标和求解器状态。 在重用步骤中，每个候选项都从相同的锚点解码，并接收到完全相同的当前状态。 原始求解器随后将候选项转换为下一个潜在状态，或转换为流程所期望的中间潜在状态。 该过程在同一计算节点上比较所有候选项。",
+   "sents": [
+    {
+     "en": "For each calibration prompt, an exact run records the latent, model prediction, coordinate, and solver state at every step.",
+     "zh": "对于每个校准提示，一次精确运行会记录每一步的潜在状态、模型预测、坐标和求解器状态。"
+    },
+    {
+     "en": "At a reuse step, every candidate is decoded from the same anchor and receives the same exact current state.",
+     "zh": "在重用步骤中，每个候选项都从相同的锚点解码，并接收到完全相同的当前状态。"
+    },
+    {
+     "en": "The original solver then converts the candidate into the next latent, or into the intermediate latent expected by the pipeline.",
+     "zh": "原始求解器随后将候选项转换为下一个潜在状态，或转换为流程所期望的中间潜在状态。"
+    },
+    {
+     "en": "This procedure compares all candidates at the same point in the computation.",
+     "zh": "该过程在同一计算节点上比较所有候选项。"
+    }
+   ]
+  },
+  {
+   "en": "For PixArt-LCM, the boundary-conditioned denoised prediction and predicted clean endpoint are grouped only if their BF16 one-reuse terminal latents have relative L 2 L_{2} difference at most 10 − 6 10^{-6} and their decoded RGB mean squared error is at most 10 − 10 10^{-10} on every calibration trace. These tolerances were fixed before calibration. Otherwise, both remain separate candidates. The denoised prediction represents the group when the checks pass.",
+   "zh": "对于 PixArt-LCM，仅当边界条件约束的去噪预测与预测的干净终点的 BF16 单次复用终端潜在表示的相对 L₂ L_{2} 差异最多为 10^{-6}，且它们在每个校准轨迹上的解码 RGB 均方误差最多为 10^{-10} 时，才会被归为一组。 这些容限在校准前就已固定。 否则，两者将保持为独立的候选项。 如果检查通过，则去噪预测代表该组。",
+   "sents": [
+    {
+     "en": "For PixArt-LCM, the boundary-conditioned denoised prediction and predicted clean endpoint are grouped only if their BF16 one-reuse terminal latents have relative L 2 L_{2} difference at most 10 − 6 10^{-6} and their decoded RGB mean squared error is at most 10 − 10 10^{-10} on every calibration trace.",
+     "zh": "对于 PixArt-LCM，仅当边界条件约束的去噪预测与预测的干净终点的 BF16 单次复用终端潜在表示的相对 L₂ L_{2} 差异最多为 10^{-6}，且它们在每个校准轨迹上的解码 RGB 均方误差最多为 10^{-10} 时，才会被归为一组。"
+    },
+    {
+     "en": "These tolerances were fixed before calibration.",
+     "zh": "这些容限在校准前就已固定。"
+    },
+    {
+     "en": "Otherwise, both remain separate candidates.",
+     "zh": "否则，两者将保持为独立的候选项。"
+    },
+    {
+     "en": "The denoised prediction represents the group when the checks pass.",
+     "zh": "如果检查通过，则去噪预测代表该组。"
+    }
+   ]
+  },
+  {
+   "en": "We apply the same pipeline conversion and frozen VAE decoder to the candidate and exact reference. AutoTarget averages their decoded RGB error over prompts and reuse steps, then selects the target with the lowest average error. If a group of targets is analytically identical or passes the numerical check above, one representative is enough for calibration.",
+   "zh": "我们将相同的管道转换和冻结的 VAE 解码器应用于候选参考和精确参考。 AutoTarget 会跨提示和重用步骤对其解码后的 RGB 误差取平均，然后选择平均误差最低的目标。 如果一组目标在分析上完全相同或通过上述数值检查，则只需一个代表即可进行校准。",
+   "sents": [
+    {
+     "en": "We apply the same pipeline conversion and frozen VAE decoder to the candidate and exact reference.",
+     "zh": "我们将相同的管道转换和冻结的 VAE 解码器应用于候选参考和精确参考。"
+    },
+    {
+     "en": "AutoTarget averages their decoded RGB error over prompts and reuse steps, then selects the target with the lowest average error.",
+     "zh": "AutoTarget 会跨提示和重用步骤对其解码后的 RGB 误差取平均，然后选择平均误差最低的目标。"
+    },
+    {
+     "en": "If a group of targets is analytically identical or passes the numerical check above, one representative is enough for calibration.",
+     "zh": "如果一组目标在分析上完全相同或通过上述数值检查，则只需一个代表即可进行校准。"
+    }
+   ]
+  },
+  {
+   "en": "During deployment, the steps assigned to full DiT evaluation compute a new prediction and refresh the selected tensor. At a reuse step, the selected decoder reads that tensor and the original solver performs its usual transition. Deployment contains no branches over candidates, external quality model, or learned predictor. For a calibration set 𝒫 \\mathcal{P} and T T sampling steps, the exact runs require | 𝒫 | ​ T |\\mathcal{P}|T DiT evaluations. Once these exact states are available, testing more candidates requires only conversions and VAE decoding. Those operations add to the one-time calibration cost but do not require more DiT evaluations.",
+   "zh": "在部署过程中，分配给完整 DiT 评估的步骤会计算一个新的预测并刷新所选张量。 在重用步骤中，选定的解码器会读取该张量，而原始求解器则执行其常规的转换操作。 部署过程不包含针对候选项、外部质量模型或已学习预测器的任何分支。 对于一个校准集 𝒫 \\mathcal{P} 和 T 次采样步骤，精确运行需要 | 𝒫 | ​ T |\\mathcal{P}|T 次 DiT 评估。 一旦这些精确状态可用，测试更多候选项只需进行转换和 VAE 解码。 这些操作会增加一次性的校准成本，但无需更多的 DiT 评估。",
+   "sents": [
+    {
+     "en": "During deployment, the steps assigned to full DiT evaluation compute a new prediction and refresh the selected tensor.",
+     "zh": "在部署过程中，分配给完整 DiT 评估的步骤会计算一个新的预测并刷新所选张量。"
+    },
+    {
+     "en": "At a reuse step, the selected decoder reads that tensor and the original solver performs its usual transition.",
+     "zh": "在重用步骤中，选定的解码器会读取该张量，而原始求解器则执行其常规的转换操作。"
+    },
+    {
+     "en": "Deployment contains no branches over candidates, external quality model, or learned predictor.",
+     "zh": "部署过程不包含针对候选项、外部质量模型或已学习预测器的任何分支。"
+    },
+    {
+     "en": "For a calibration set 𝒫 \\mathcal{P} and T T sampling steps, the exact runs require | 𝒫 | ​ T |\\mathcal{P}|T DiT evaluations.",
+     "zh": "对于一个校准集 𝒫 \\mathcal{P} 和 T 次采样步骤，精确运行需要 | 𝒫 | ​ T |\\mathcal{P}|T 次 DiT 评估。"
+    },
+    {
+     "en": "Once these exact states are available, testing more candidates requires only conversions and VAE decoding.",
+     "zh": "一旦这些精确状态可用，测试更多候选项只需进行转换和 VAE 解码。"
+    },
+    {
+     "en": "Those operations add to the one-time calibration cost but do not require more DiT evaluations.",
+     "zh": "这些操作会增加一次性的校准成本，但无需更多的 DiT 评估。"
+    }
+   ]
+  },
+  {
+   "en": "In the measured PixArt-LCM calibration, four exact runs take 1.314 seconds, including text processing. Decoding their exact VAE latents takes 1.528 seconds. Candidate conversion takes 0.059 seconds, and candidate VAE decoding takes 7.533 seconds. The total is 10.457 seconds, excluding the separately measured model load of 7.988 seconds. Each later generation saves 0.0688 seconds in this setting, so about 152 generations recover the one-time calibration cost.",
+   "zh": "在测量的 PixArt-LCM 校准过程中，四次精确运行（包括文本处理）共耗时 1.314 秒。 解码其精确的 VAE 潜在变量需要 1.528 秒。 候选转换需要 0.059 秒，而候选 VAE 解码则需要 7.533 秒。 总耗时为 10.457 秒，不包括单独测量的模型加载时间（7.988 秒）。 在此设置下，每次后续生成可节省 0.0688 秒，因此大约经过 152 次生成即可抵消一次性校准成本。",
+   "sents": [
+    {
+     "en": "In the measured PixArt-LCM calibration, four exact runs take 1.314 seconds, including text processing.",
+     "zh": "在测量的 PixArt-LCM 校准过程中，四次精确运行（包括文本处理）共耗时 1.314 秒。"
+    },
+    {
+     "en": "Decoding their exact VAE latents takes 1.528 seconds.",
+     "zh": "解码其精确的 VAE 潜在变量需要 1.528 秒。"
+    },
+    {
+     "en": "Candidate conversion takes 0.059 seconds, and candidate VAE decoding takes 7.533 seconds.",
+     "zh": "候选转换需要 0.059 秒，而候选 VAE 解码则需要 7.533 秒。"
+    },
+    {
+     "en": "The total is 10.457 seconds, excluding the separately measured model load of 7.988 seconds.",
+     "zh": "总耗时为 10.457 秒，不包括单独测量的模型加载时间（7.988 秒）。"
+    },
+    {
+     "en": "Each later generation saves 0.0688 seconds in this setting, so about 152 generations recover the one-time calibration cost.",
+     "zh": "在此设置下，每次后续生成可节省 0.0688 秒，因此大约经过 152 次生成即可抵消一次性校准成本。"
+    }
+   ]
+  },
+  {
+   "en": "Consider one reuse segment beginning at an exact anchor a a . Let h j = t j − t j + 1 > 0 h_{j}=t_{j}-t_{j+1}>0 and let v j v_{j} denote the velocity consumed by Euler. The Euler transition is",
+   "zh": "考虑一个以精确锚点 a a 开始的重复使用段。 令 h j = t j − t j + 1 > 0，并令 v j 表示欧拉方法所消耗的速度。欧拉转换是",
+   "sents": [
+    {
+     "en": "Consider one reuse segment beginning at an exact anchor a a .",
+     "zh": "考虑一个以精确锚点 a a 开始的重复使用段。"
+    },
+    {
+     "en": "Let h j = t j − t j + 1 > 0 h_{j}=t_{j}-t_{j+1}>0 and let v j v_{j} denote the velocity consumed by Euler. The Euler transition is",
+     "zh": "令 h j = t j − t j + 1 > 0，并令 v j 表示欧拉方法所消耗的速度。欧拉转换是"
+    }
+   ]
+  },
+  {
+   "en": "Under the linear flow convention in Eq. ( 7 ), the anchor prediction can be stored as",
+   "zh": "根据公式 (7) 中的线性流约定，锚点预测可以存储为",
+   "sents": null
+  },
+  {
+   "en": "The first reuse state produced by held velocity satisfies",
+   "zh": "由保持速度产生的第一个重用状态满足",
+   "sents": null
+  },
+  {
+   "en": "We prove Eq. ( 18 ) by induction over the reuse steps. At a reuse step j j , the velocity decoder returns v a v_{a} . Substituting Eqs. ( 18 ) and ( 17 ) into the clean-endpoint decoder gives",
+   "zh": "我们通过归纳法证明方程 (18) 在重用步骤上的成立。 在重用步骤 j j 时，速度解码器返回 v a v_{a}。将方程 (18) 和 (17) 代入干净端点解码器可得",
+   "sents": [
+    {
+     "en": "We prove Eq.",
+     "zh": "我们通过归纳法证明方程"
+    },
+    {
+     "en": "( 18 ) by induction over the reuse steps.",
+     "zh": "(18) 在重用步骤上的成立。"
+    },
+    {
+     "en": "At a reuse step j j , the velocity decoder returns v a v_{a} . Substituting Eqs.",
+     "zh": "在重用步骤 j j 时，速度解码器返回 v a v_{a}。将方程"
+    },
+    {
+     "en": "( 18 ) and ( 17 ) into the clean-endpoint decoder gives",
+     "zh": "(18) 和 (17) 代入干净端点解码器可得"
+    }
+   ]
+  },
+  {
+   "en": "The noise-endpoint decoder gives the same result:",
+   "zh": "噪声端点解码器给出的结果也是一样的：",
+   "sents": null
+  },
+  {
+   "en": "All three representations provide the same velocity to the Euler transition. Applying Eq. ( 16 ) gives",
+   "zh": "这三种表示都为欧拉转换提供了相同的速度。应用方程（16）可得：",
+   "sents": null
+  },
+  {
+   "en": "which establishes the induction step. Every exact refresh begins a new segment from a common latent, so the same argument applies after each refresh. The three representations are equivalent for caching under the stated Euler parameterization and reuse schedule.",
+   "zh": "这确立了归纳步骤。 每次精确刷新都从一个共同的潜在状态开始一个新的阶段，因此每次刷新后都可以应用相同的论证。 在所述欧拉参数化和重用计划下，这三种表示在缓存方面是等价的。",
+   "sents": [
+    {
+     "en": "which establishes the induction step.",
+     "zh": "这确立了归纳步骤。"
+    },
+    {
+     "en": "Every exact refresh begins a new segment from a common latent, so the same argument applies after each refresh.",
+     "zh": "每次精确刷新都从一个共同的潜在状态开始一个新的阶段，因此每次刷新后都可以应用相同的论证。"
+    },
+    {
+     "en": "The three representations are equivalent for caching under the stated Euler parameterization and reuse schedule.",
+     "zh": "在所述欧拉参数化和重用计划下，这三种表示在缓存方面是等价的。"
+    }
+   ]
+  },
+  {
+   "en": "For a stored anchor displacement u a = h a ​ v a u_{a}=h_{a}v_{a} , direct reuse gives x ^ j + 1 ( u ) = x j − h a ​ v a \\widehat{x}_{j+1}^{(u)}=x_{j}-h_{a}v_{a} . Reusing the velocity gives x ^ j + 1 ( v ) = x j − h j ​ v a \\widehat{x}_{j+1}^{(v)}=x_{j}-h_{j}v_{a} . Their difference is",
+   "zh": "对于存储的锚点位移 u a = h a ​ v a u_{a}=h_{a}v_{a}，直接复用可得 x ^ j + 1 ( u ) = x j − h a ​ v a \\widehat{x}_{j+1}^{(u)}=x_{j}-h_{a}v_{a}。 复用速度可得 x ^ j + 1 ( v ) = x j − h j ​ v a \\widehat{x}_{j+1}^{(v)}=x_{j}-h_{j}v_{a}。它们的差值为",
+   "sents": [
+    {
+     "en": "For a stored anchor displacement u a = h a ​ v a u_{a}=h_{a}v_{a} , direct reuse gives x ^ j + 1 ( u ) = x j − h a ​ v a \\widehat{x}_{j+1}^{(u)}=x_{j}-h_{a}v_{a} .",
+     "zh": "对于存储的锚点位移 u a = h a ​ v a u_{a}=h_{a}v_{a}，直接复用可得 x ^ j + 1 ( u ) = x j − h a ​ v a \\widehat{x}_{j+1}^{(u)}=x_{j}-h_{a}v_{a}。"
+    },
+    {
+     "en": "Reusing the velocity gives x ^ j + 1 ( v ) = x j − h j ​ v a \\widehat{x}_{j+1}^{(v)}=x_{j}-h_{j}v_{a} . Their difference is",
+     "zh": "复用速度可得 x ^ j + 1 ( v ) = x j − h j ​ v a \\widehat{x}_{j+1}^{(v)}=x_{j}-h_{j}v_{a}。它们的差值为"
+    }
+   ]
+  },
+  {
+   "en": "which vanishes for that transition when the anchor and current step sizes are equal.",
+   "zh": "当锚点步长和当前步长相等时，该过渡过程中的该项将消失。",
+   "sents": null
+  },
+  {
+   "en": "Different candidates store different quantities. To analyze them with the same recursion, we define a complete state for each candidate. This state contains the latent x j x_{j} , the cached value m j ( r ) m_{j}^{(r)} , and the solver history η j hist \\eta_{j}^{\\mathrm{hist}} :",
+   "zh": "不同的候选者存储不同数量的数据。 为了使用相同的递归方法分析它们，我们为每个候选者定义一个完整状态。 该状态包含潜在变量 x j x_{j}、缓存值 m j ( r ) m_{j}^{(r)} 以及求解器历史 η j hist \\eta_{j}^{\\mathrm{hist}}：",
+   "sents": [
+    {
+     "en": "Different candidates store different quantities.",
+     "zh": "不同的候选者存储不同数量的数据。"
+    },
+    {
+     "en": "To analyze them with the same recursion, we define a complete state for each candidate.",
+     "zh": "为了使用相同的递归方法分析它们，我们为每个候选者定义一个完整状态。"
+    },
+    {
+     "en": "This state contains the latent x j x_{j} , the cached value m j ( r ) m_{j}^{(r)} , and the solver history η j hist \\eta_{j}^{\\mathrm{hist}} :",
+     "zh": "该状态包含潜在变量 x j x_{j}、缓存值 m j ( r ) m_{j}^{(r)} 以及求解器历史 η j hist \\eta_{j}^{\\mathrm{hist}}："
+    }
+   ]
+  },
+  {
+   "en": "Let Ψ ∗ , ( r ) ​ ( ⋅ , t j ) \\Psi^{*,(r)}(\\cdot,t_{j}) denote an exact transition on this complete state, and let Ψ ( r ) ​ ( ⋅ , t j ) \\Psi^{(r)}(\\cdot,t_{j}) follow the fixed deployment schedule: it evaluates the full DiT at anchors and reuses the cache otherwise. The exact reference also refreshes its auxiliary cache only at anchors, although it evaluates the DiT at every step. Thus, the two maps agree at anchors, and the reference cache retains the scheduled anchor value between refreshes. We assume local stability near the trajectories being compared:",
+   "zh": "令 Ψ^{*,(r)}(\\cdot,t_{j}) 表示在此完整状态上的精确转换，并令 Ψ^{(r)}(\\cdot,t_{j}) 遵循固定的部署计划：它在锚点处评估完整的 DiT，否则重用缓存。 精确参考仅在锚点处刷新其辅助缓存，尽管它在每一步都评估 DiT。 因此，这两个映射在锚点处一致，且参考缓存会在两次刷新之间保留计划好的锚点值。 我们假设在被比较的轨迹附近存在局部稳定性：",
+   "sents": [
+    {
+     "en": "Let Ψ ∗ , ( r ) ​ ( ⋅ , t j ) \\Psi^{*,(r)}(\\cdot,t_{j}) denote an exact transition on this complete state, and let Ψ ( r ) ​ ( ⋅ , t j ) \\Psi^{(r)}(\\cdot,t_{j}) follow the fixed deployment schedule: it evaluates the full DiT at anchors and reuses the cache otherwise.",
+     "zh": "令 Ψ^{*,(r)}(\\cdot,t_{j}) 表示在此完整状态上的精确转换，并令 Ψ^{(r)}(\\cdot,t_{j}) 遵循固定的部署计划：它在锚点处评估完整的 DiT，否则重用缓存。"
+    },
+    {
+     "en": "The exact reference also refreshes its auxiliary cache only at anchors, although it evaluates the DiT at every step.",
+     "zh": "精确参考仅在锚点处刷新其辅助缓存，尽管它在每一步都评估 DiT。"
+    },
+    {
+     "en": "Thus, the two maps agree at anchors, and the reference cache retains the scheduled anchor value between refreshes.",
+     "zh": "因此，这两个映射在锚点处一致，且参考缓存会在两次刷新之间保留计划好的锚点值。"
+    },
+    {
+     "en": "We assume local stability near the trajectories being compared:",
+     "zh": "我们假设在被比较的轨迹附近存在局部稳定性："
+    }
+   ]
+  },
+  {
+   "en": "We measure the error from one cached transition that starts at the exact state:",
+   "zh": "我们测量从一个以精确状态开始的缓存转换所产生的误差：",
+   "sents": null
+  },
+  {
+   "en": "Let E j ( r ) = ‖ q ^ j ( r ) − q j ∗ , ( r ) ‖ r E_{j}^{(r)}=\\|\\widehat{q}_{j}^{(r)}-q_{j}^{*,(r)}\\|_{r} be the accumulated error at step j j . Adding and subtracting Ψ ( r ) ​ ( q j ∗ , ( r ) , t j ) \\Psi^{(r)}(q_{j}^{*,(r)},t_{j}) gives",
+   "zh": "令 E j ( r ) = ‖ q ^ j ( r ) − q j ∗ , ( r ) ‖ r E_{j}^{(r)}=\\|\\widehat{q}_{j}^{(r)}-q_{j}^{*,(r)}\\|_{r} 为第 j 步的累积误差。 通过添加和减去 Ψ ( r ) ​ ( q j ∗ , ( r ) , t j ) \\Psi^{(r)}(q_{j}^{*,(r)},t_{j})，可得",
+   "sents": [
+    {
+     "en": "Let E j ( r ) = ‖ q ^ j ( r ) − q j ∗ , ( r ) ‖ r E_{j}^{(r)}=\\|\\widehat{q}_{j}^{(r)}-q_{j}^{*,(r)}\\|_{r} be the accumulated error at step j j .",
+     "zh": "令 E j ( r ) = ‖ q ^ j ( r ) − q j ∗ , ( r ) ‖ r E_{j}^{(r)}=\\|\\widehat{q}_{j}^{(r)}-q_{j}^{*,(r)}\\|_{r} 为第 j 步的累积误差。"
+    },
+    {
+     "en": "Adding and subtracting Ψ ( r ) ​ ( q j ∗ , ( r ) , t j ) \\Psi^{(r)}(q_{j}^{*,(r)},t_{j}) gives",
+     "zh": "通过添加和减去 Ψ ( r ) ​ ( q j ∗ , ( r ) , t j ) \\Psi^{(r)}(q_{j}^{*,(r)},t_{j})，可得"
+    }
+   ]
+  },
+  {
+   "en": "Starting from a common initial state and unrolling the recursion gives",
+   "zh": "从一个共同的初始状态开始并展开递归，可以得到",
+   "sents": null
+  },
+  {
+   "en": "This is the error bound used in the main text. It applies to any solver that satisfies the local stability assumption above.",
+   "zh": "这是正文中使用的误差界。 它适用于任何满足上述局部稳定性假设的求解器。",
+   "sents": [
+    {
+     "en": "This is the error bound used in the main text.",
+     "zh": "这是正文中使用的误差界。"
+    },
+    {
+     "en": "It applies to any solver that satisfies the local stability assumption above.",
+     "zh": "它适用于任何满足上述局部稳定性假设的求解器。"
+    }
+   ]
+  },
+  {
+   "en": "For a prompt distribution, let w j = ∏ ℓ = j + 1 T − 1 L ¯ ℓ w_{j}=\\prod_{\\ell=j+1}^{T-1}\\overline{L}_{\\ell} and C = ( ∑ j w j 2 ) 1 / 2 C=(\\sum_{j}w_{j}^{2})^{1/2} . Cauchy–Schwarz followed by Jensen’s inequality gives",
+   "zh": "对于一个提示分布，令 w j = ∏ ℓ = j + 1 T − 1 L ¯ ℓ w_{j}=\\prod_{\\ell=j+1}^{T-1}\\overline{L}_{\\ell} 且 C = ( ∑ j w j 2 ) 1 / 2 C=(\\sum_{j}w_{j}^{2})^{1/2}。 应用柯西–施瓦茨不等式，再结合詹森不等式可得",
+   "sents": [
+    {
+     "en": "For a prompt distribution, let w j = ∏ ℓ = j + 1 T − 1 L ¯ ℓ w_{j}=\\prod_{\\ell=j+1}^{T-1}\\overline{L}_{\\ell} and C = ( ∑ j w j 2 ) 1 / 2 C=(\\sum_{j}w_{j}^{2})^{1/2} .",
+     "zh": "对于一个提示分布，令 w j = ∏ ℓ = j + 1 T − 1 L ¯ ℓ w_{j}=\\prod_{\\ell=j+1}^{T-1}\\overline{L}_{\\ell} 且 C = ( ∑ j w j 2 ) 1 / 2 C=(\\sum_{j}w_{j}^{2})^{1/2}。"
+    },
+    {
+     "en": "Cauchy–Schwarz followed by Jensen’s inequality gives",
+     "zh": "应用柯西–施瓦茨不等式，再结合詹森不等式可得"
+    }
+   ]
+  },
+  {
+   "en": "This bound concerns errors measured in the complete solver state and depends on the local stability assumption in Eq. ( 27 ). AutoTarget does not estimate its right-hand side: selection uses the decoded RGB error in Eq. ( 13 ).",
+   "zh": "该界限涉及在完整求解器状态中测量的误差，并依赖于方程（27）中的局部稳定性假设。 AutoTarget 不估计其右侧项：选择过程使用方程（13）中解码后的 RGB 误差。",
+   "sents": [
+    {
+     "en": "This bound concerns errors measured in the complete solver state and depends on the local stability assumption in Eq. ( 27 ).",
+     "zh": "该界限涉及在完整求解器状态中测量的误差，并依赖于方程（27）中的局部稳定性假设。"
+    },
+    {
+     "en": "AutoTarget does not estimate its right-hand side: selection uses the decoded RGB error in Eq. ( 13 ).",
+     "zh": "AutoTarget 不估计其右侧项：选择过程使用方程（13）中解码后的 RGB 误差。"
+    }
+   ]
+  },
+  {
+   "en": "The norm ∥ ⋅ ∥ r \\|\\cdot\\|_{r} measures error in the complete state defined for candidate r r . Because different candidates store different quantities, these norms are not directly comparable. To rank candidates, we use the same conversion Q Q to map every prediction to a VAE latent. Eq. ( 13 ) then compares the decoded RGB outputs from the same frozen VAE. If the VAE decoder is locally Lipschitz, a change in its input satisfies",
+   "zh": "范数 ∥ ⋅ ∥ r \\|\\cdot\\|_{r} 衡量了为候选 r 定义的完整状态中的误差。由于不同候选体存储的量不同，这些范数无法直接比较。为了对候选体进行排序，我们使用相同的转换 Q 将每个预测映射到一个 VAE 潜在变量。然后，公式 (13) 会对比来自同一冻结 VAE 的解码 RGB 输出。如果 VAE 解码器是局部利普希茨连续的，那么其输入的变化将满足",
+   "sents": null
+  },
+  {
+   "en": "The decoded error gives one common fidelity measure for all candidates. It is the score used for selection. The solver-state error in the bound above is a different quantity.",
+   "zh": "解码后的错误为所有候选者提供了一个通用的保真度指标。 这就是用于选择的分数。 上述界中求解器状态错误是一个不同的量。",
+   "sents": [
+    {
+     "en": "The decoded error gives one common fidelity measure for all candidates.",
+     "zh": "解码后的错误为所有候选者提供了一个通用的保真度指标。"
+    },
+    {
+     "en": "It is the score used for selection.",
+     "zh": "这就是用于选择的分数。"
+    },
+    {
+     "en": "The solver-state error in the bound above is a different quantity.",
+     "zh": "上述界中求解器状态错误是一个不同的量。"
+    }
+   ]
+  },
+  {
+   "en": "This appendix describes how we obtained the results in Tables 1 and 2 . Within each model setting, all methods use the same weights, solver, coordinate sequence, prompts, random seeds, and numerical precision. Baselines follow their own reuse rules, so their schedules of full DiT evaluations can differ.",
+   "zh": "本附录介绍了我们如何获得表 1 和表 2 中的结果。 在每个模型设置中，所有方法都使用相同的权重、求解器、坐标序列、提示词、随机种子和数值精度。 基线模型遵循其自身的复用规则，因此它们进行完整 DiT 评估的时间安排可能有所不同。",
+   "sents": [
+    {
+     "en": "This appendix describes how we obtained the results in Tables 1 and 2 .",
+     "zh": "本附录介绍了我们如何获得表 1 和表 2 中的结果。"
+    },
+    {
+     "en": "Within each model setting, all methods use the same weights, solver, coordinate sequence, prompts, random seeds, and numerical precision.",
+     "zh": "在每个模型设置中，所有方法都使用相同的权重、求解器、坐标序列、提示词、随机种子和数值精度。"
+    },
+    {
+     "en": "Baselines follow their own reuse rules, so their schedules of full DiT evaluations can differ.",
+     "zh": "基线模型遵循其自身的复用规则，因此它们进行完整 DiT 评估的时间安排可能有所不同。"
+    }
+   ]
+  },
+  {
+   "en": "The image experiments use three sampling settings. We run FLUX.1-dev at 50, 25, 20, and 17 steps to measure the effect of reducing the step count. We test FLUX.1-schnell and the cache baselines with four sampling steps. We also test PixArt-LCM with four steps and use it for the controlled target comparison in Figure 9 . The video experiments compare a 50-step HunyuanVideo reference with a CFG-distilled 20-step model.",
+   "zh": "图像实验使用了三种采样设置。 我们通过以 50、25、20 和 17 步运行 FLUX.1-dev，来衡量减少步数所带来的影响。 我们使用四步采样测试了 FLUX.1-schnell 和缓存基线模型。 我们还使用四步测试了 PixArt-LCM，并将其用于图 9 中的受控目标对比。 视频实验将 50 步的 HunyuanVideo 参考模型与经过 CFG 蒸馏的 20 步模型进行了比较。",
+   "sents": [
+    {
+     "en": "The image experiments use three sampling settings.",
+     "zh": "图像实验使用了三种采样设置。"
+    },
+    {
+     "en": "We run FLUX.1-dev at 50, 25, 20, and 17 steps to measure the effect of reducing the step count.",
+     "zh": "我们通过以 50、25、20 和 17 步运行 FLUX.1-dev，来衡量减少步数所带来的影响。"
+    },
+    {
+     "en": "We test FLUX.1-schnell and the cache baselines with four sampling steps.",
+     "zh": "我们使用四步采样测试了 FLUX.1-schnell 和缓存基线模型。"
+    },
+    {
+     "en": "We also test PixArt-LCM with four steps and use it for the controlled target comparison in Figure 9 .",
+     "zh": "我们还使用四步测试了 PixArt-LCM，并将其用于图 9 中的受控目标对比。"
+    },
+    {
+     "en": "The video experiments compare a 50-step HunyuanVideo reference with a CFG-distilled 20-step model.",
+     "zh": "视频实验将 50 步的 HunyuanVideo 参考模型与经过 CFG 蒸馏的 20 步模型进行了比较。"
+    }
+   ]
+  },
+  {
+   "en": "The PixArt-LCM target ablation uses the PixArt-LCM-XL-2-1024-MS checkpoint with the original LCM scheduler, 1024 × 1024 1024\\times 1024 resolution, four sampling steps, classifier-free guidance scale zero ( Ho and Salimans, 2022 ) , and bfloat16 arithmetic. The full DiT runs at steps 𝒜 = { 0 , 1 , 2 } \\mathcal{A}=\\{0,1,2\\} , so every candidate uses three DiT evaluations and one reuse step. We measure fidelity on 200 DrawBench prompts ( Saharia et al., 2022 ) with paired seeds beginning at 120000.",
+   "zh": "PixArt-LCM 目标消融实验使用 PixArt-LCM-XL-2-1024-MS 检查点，搭配原始 LCM 调度器、1024 × 1024 分辨率、四步采样、零值分类器自由引导系数（Ho 和 Salimans，2022），以及 bfloat16 算术运算。 完整的 DiT 在步骤 𝒜 = { 0 , 1 , 2 } \\mathcal{A}=\\{0,1,2\\} 上运行，因此每个候选模型都需要三次 DiT 评估和一次复用步骤。 我们在 200 个 DrawBench 提示（Saharia 等人，2022）上测量保真度，这些提示使用从 120000 开始的成对种子值。",
+   "sents": [
+    {
+     "en": "The PixArt-LCM target ablation uses the PixArt-LCM-XL-2-1024-MS checkpoint with the original LCM scheduler, 1024 × 1024 1024\\times 1024 resolution, four sampling steps, classifier-free guidance scale zero ( Ho and Salimans, 2022 ) , and bfloat16 arithmetic.",
+     "zh": "PixArt-LCM 目标消融实验使用 PixArt-LCM-XL-2-1024-MS 检查点，搭配原始 LCM 调度器、1024 × 1024 分辨率、四步采样、零值分类器自由引导系数（Ho 和 Salimans，2022），以及 bfloat16 算术运算。"
+    },
+    {
+     "en": "The full DiT runs at steps 𝒜 = { 0 , 1 , 2 } \\mathcal{A}=\\{0,1,2\\} , so every candidate uses three DiT evaluations and one reuse step.",
+     "zh": "完整的 DiT 在步骤 𝒜 = { 0 , 1 , 2 } \\mathcal{A}=\\{0,1,2\\} 上运行，因此每个候选模型都需要三次 DiT 评估和一次复用步骤。"
+    },
+    {
+     "en": "We measure fidelity on 200 DrawBench prompts ( Saharia et al., 2022 ) with paired seeds beginning at 120000.",
+     "zh": "我们在 200 个 DrawBench 提示（Saharia 等人，2022）上测量保真度，这些提示使用从 120000 开始的成对种子值。"
+    }
+   ]
+  },
+  {
+   "en": "The controlled resolution comparison in Figure 3 uses the PixArt-LCM-XL-2-1024-MS checkpoint, original LCM scheduler, four sampling steps, guidance scale 4.5, and bfloat16 arithmetic at both resolutions. Both resolutions use 𝒜 = { 0 , 1 , 2 } \\mathcal{A}=\\{0,1,2\\} , the same prompt split, and the same seeds. At 512 2 512^{2} , calibration uses four prompts with seeds 72000–72003, and evaluation uses 20 separate prompts. There is one reuse step. The decoded mean squared error averages over | 𝒫 | = 4 |\\mathcal{P}|=4 prompts, | 𝒥 reuse | = 1 |\\mathcal{J}_{\\mathrm{reuse}}|=1 reuse step, and all decoded RGB values.",
+   "zh": "图3中的受控分辨率对比使用了 PixArt-LCM-XL-2-1024-MS 检查点、原始 LCM 调度器、四步采样、引导尺度 4.5，以及两种分辨率下的 bfloat16 算术运算。 两种分辨率均使用 𝒜 = { 0 , 1 , 2 } \\mathcal{A}=\\{0,1,2\\}、相同的提示词分割方式以及相同的种子值。 在 512² 分辨率下，校准过程使用了四个种子为 72000–72003 的提示词，而评估则使用了 20 个独立的提示词。其中包含一个重复使用步骤。 解码后的均方误差对 | 𝒫 | = 4 个提示词、| 𝒥 reuse | = 1 个重复使用步骤以及所有解码后的 RGB 值进行了平均计算。",
+   "sents": [
+    {
+     "en": "The controlled resolution comparison in Figure 3 uses the PixArt-LCM-XL-2-1024-MS checkpoint, original LCM scheduler, four sampling steps, guidance scale 4.5, and bfloat16 arithmetic at both resolutions.",
+     "zh": "图3中的受控分辨率对比使用了 PixArt-LCM-XL-2-1024-MS 检查点、原始 LCM 调度器、四步采样、引导尺度 4.5，以及两种分辨率下的 bfloat16 算术运算。"
+    },
+    {
+     "en": "Both resolutions use 𝒜 = { 0 , 1 , 2 } \\mathcal{A}=\\{0,1,2\\} , the same prompt split, and the same seeds.",
+     "zh": "两种分辨率均使用 𝒜 = { 0 , 1 , 2 } \\mathcal{A}=\\{0,1,2\\}、相同的提示词分割方式以及相同的种子值。"
+    },
+    {
+     "en": "At 512 2 512^{2} , calibration uses four prompts with seeds 72000–72003, and evaluation uses 20 separate prompts. There is one reuse step.",
+     "zh": "在 512² 分辨率下，校准过程使用了四个种子为 72000–72003 的提示词，而评估则使用了 20 个独立的提示词。其中包含一个重复使用步骤。"
+    },
+    {
+     "en": "The decoded mean squared error averages over | 𝒫 | = 4 |\\mathcal{P}|=4 prompts, | 𝒥 reuse | = 1 |\\mathcal{J}_{\\mathrm{reuse}}|=1 reuse step, and all decoded RGB values.",
+     "zh": "解码后的均方误差对 | 𝒫 | = 4 个提示词、| 𝒥 reuse | = 1 个重复使用步骤以及所有解码后的 RGB 值进行了平均计算。"
+    }
+   ]
+  },
+  {
+   "en": "The table blocks use different fidelity references, as stated in their captions. The FLUX.1-dev and FLUX.1-schnell blocks compare each output with the paired 50-step FLUX.1-dev output. For this reason, the FLUX.1-schnell row without caching does not have infinite PSNR or an SSIM of one. The PixArt-LCM block uses the paired four-step output without caching as its exact reference. Within every block, the cached sample and reference use the same prompt and starting noise.",
+   "zh": "如各表格标题所述，不同表格使用了不同的保真度参考。 FLUX.1-dev 和 FLUX.1-schnell 表格将每个输出结果与对应的 50 步 FLUX.1-dev 输出进行比较。 因此，没有缓存的 FLUX.1-schnell 行不会出现无限大的 PSNR 或 SSIM 值为 1 的情况。 PixArt-LCM 表格使用没有缓存的对应四步输出作为其精确参考。 在每个表格中，缓存样本和参考都使用了相同的提示词和初始噪声。",
+   "sents": [
+    {
+     "en": "The table blocks use different fidelity references, as stated in their captions.",
+     "zh": "如各表格标题所述，不同表格使用了不同的保真度参考。"
+    },
+    {
+     "en": "The FLUX.1-dev and FLUX.1-schnell blocks compare each output with the paired 50-step FLUX.1-dev output.",
+     "zh": "FLUX.1-dev 和 FLUX.1-schnell 表格将每个输出结果与对应的 50 步 FLUX.1-dev 输出进行比较。"
+    },
+    {
+     "en": "For this reason, the FLUX.1-schnell row without caching does not have infinite PSNR or an SSIM of one.",
+     "zh": "因此，没有缓存的 FLUX.1-schnell 行不会出现无限大的 PSNR 或 SSIM 值为 1 的情况。"
+    },
+    {
+     "en": "The PixArt-LCM block uses the paired four-step output without caching as its exact reference.",
+     "zh": "PixArt-LCM 表格使用没有缓存的对应四步输出作为其精确参考。"
+    },
+    {
+     "en": "Within every block, the cached sample and reference use the same prompt and starting noise.",
+     "zh": "在每个表格中，缓存样本和参考都使用了相同的提示词和初始噪声。"
+    }
+   ]
+  },
+  {
+   "en": "We measure image quality with ImageReward and CLIP. For video, we report the Semantic, Quality, and Total components of VBench. The image experiments also report PSNR and SSIM relative to the paired reference trajectory. Within each comparison, all latency measurements use the same hardware and execution settings. Overall speedup uses the full-step model as the reference. Cache-only speedup uses the matching few-step model without caching. It isolates the extra speedup from cache reuse.",
+   "zh": "我们使用 ImageReward 和 CLIP 来衡量图像质量。 对于视频，我们报告 VBench 的语义、质量和总分值组件。 图像实验还报告了相对于配对参考轨迹的 PSNR 和 SSIM。 在每次比较中，所有延迟测量均使用相同的硬件和执行设置。 整体加速以全步模型为参考进行计算。 仅缓存加速则使用匹配的少步模型，且不使用缓存。 这能够分离出由缓存重用带来的额外加速效果。",
+   "sents": [
+    {
+     "en": "We measure image quality with ImageReward and CLIP.",
+     "zh": "我们使用 ImageReward 和 CLIP 来衡量图像质量。"
+    },
+    {
+     "en": "For video, we report the Semantic, Quality, and Total components of VBench.",
+     "zh": "对于视频，我们报告 VBench 的语义、质量和总分值组件。"
+    },
+    {
+     "en": "The image experiments also report PSNR and SSIM relative to the paired reference trajectory.",
+     "zh": "图像实验还报告了相对于配对参考轨迹的 PSNR 和 SSIM。"
+    },
+    {
+     "en": "Within each comparison, all latency measurements use the same hardware and execution settings.",
+     "zh": "在每次比较中，所有延迟测量均使用相同的硬件和执行设置。"
+    },
+    {
+     "en": "Overall speedup uses the full-step model as the reference.",
+     "zh": "整体加速以全步模型为参考进行计算。"
+    },
+    {
+     "en": "Cache-only speedup uses the matching few-step model without caching.",
+     "zh": "仅缓存加速则使用匹配的少步模型，且不使用缓存。"
+    },
+    {
+     "en": "It isolates the extra speedup from cache reuse.",
+     "zh": "这能够分离出由缓存重用带来的额外加速效果。"
+    }
+   ]
+  },
+  {
+   "en": "The “Retained cache” column is computed from the shapes and data types of the tensors that remain stored between steps, including any required history. Peak runtime memory is a different measurement because inference can use temporary workspace that is not retained in the cache.",
+   "zh": "“保留缓存”列是根据各步之间仍存储的张量的形状和数据类型计算得出的，其中也包括任何必要的历史数据。 峰值运行时内存是一种不同的度量方式，因为推理过程可能会使用临时工作区，而这些工作区不会被保留在缓存中。",
+   "sents": [
+    {
+     "en": "The “Retained cache” column is computed from the shapes and data types of the tensors that remain stored between steps, including any required history.",
+     "zh": "“保留缓存”列是根据各步之间仍存储的张量的形状和数据类型计算得出的，其中也包括任何必要的历史数据。"
+    },
+    {
+     "en": "Peak runtime memory is a different measurement because inference can use temporary workspace that is not retained in the cache.",
+     "zh": "峰值运行时内存是一种不同的度量方式，因为推理过程可能会使用临时工作区，而这些工作区不会被保留在缓存中。"
+    }
+   ]
+  },
+  {
+   "en": "The image baselines are TeaCache, DiCache, TaylorSeer, and HiCache. The video comparison also includes DisCa. Each baseline uses the cache target and reuse rule defined by its implementation. On HunyuanVideo, TeaCache uses l = 0.15 l=0.15 , TaylorSeer uses N = 3 , O = 1 N=3,O=1 , and DisCa uses R = 0.2 , N = 2 R=0.2,N=2 . AutoTarget adds no trained feature predictor. Its controlled target comparisons share an anchor schedule, and the reduced-step control uses the same number of full DiT evaluations as the corresponding cached run.",
+   "zh": "图像基线方法包括 TeaCache、DiCache、TaylorSeer 和 HiCache。 视频对比也包含了 DisCa。 每种基线方法都使用其实现所定义的缓存目标和重用规则。 在 HunyuanVideo 上，TeaCache 使用 l = 0.15 l=0.15，TaylorSeer 使用 N = 3、O = 1 N=3,O=1，而 DisCa 使用 R = 0.2、N = 2 R=0.2,N=2。 AutoTarget 没有添加任何训练好的特征预测器。 其受控的目标对比共享一个锚点调度方案，且缩减步数控制使用的完整 DiT 评估次数与对应的缓存运行相同。",
+   "sents": [
+    {
+     "en": "The image baselines are TeaCache, DiCache, TaylorSeer, and HiCache.",
+     "zh": "图像基线方法包括 TeaCache、DiCache、TaylorSeer 和 HiCache。"
+    },
+    {
+     "en": "The video comparison also includes DisCa.",
+     "zh": "视频对比也包含了 DisCa。"
+    },
+    {
+     "en": "Each baseline uses the cache target and reuse rule defined by its implementation.",
+     "zh": "每种基线方法都使用其实现所定义的缓存目标和重用规则。"
+    },
+    {
+     "en": "On HunyuanVideo, TeaCache uses l = 0.15 l=0.15 , TaylorSeer uses N = 3 , O = 1 N=3,O=1 , and DisCa uses R = 0.2 , N = 2 R=0.2,N=2 .",
+     "zh": "在 HunyuanVideo 上，TeaCache 使用 l = 0.15 l=0.15，TaylorSeer 使用 N = 3、O = 1 N=3,O=1，而 DisCa 使用 R = 0.2、N = 2 R=0.2,N=2。"
+    },
+    {
+     "en": "AutoTarget adds no trained feature predictor.",
+     "zh": "AutoTarget 没有添加任何训练好的特征预测器。"
+    },
+    {
+     "en": "Its controlled target comparisons share an anchor schedule, and the reduced-step control uses the same number of full DiT evaluations as the corresponding cached run.",
+     "zh": "其受控的目标对比共享一个锚点调度方案，且缩减步数控制使用的完整 DiT 评估次数与对应的缓存运行相同。"
+    }
+   ]
+  },
+  {
+   "en": "For the PixArt-LCM threshold sweep in Table 5 , TeaCache uses thresholds 0.10, 0.30, 0.55, and 0.80; DiCache uses 0.10, 0.25, 0.391, and 0.60. Every point uses the same 50 prompts, paired seeds, model, solver, and four-step sequence. We report the average number of full DiT evaluations, abbreviated as FCE. A setting with four full evaluations performs no cache acceleration.",
+   "zh": "在表 5 中关于 PixArt-LCM 的阈值扫描部分，TeaCache 使用的阈值为 0.10、0.30、0.55 和 0.80；DiCache 使用的阈值为 0.10、0.25、0.391 和 0.60。 每个数据点均使用相同的 50 条提示词、配对种子、模型、求解器以及四步序列。 我们报告了完整的 DiT 评估的平均次数，简称为 FCE。 包含四次完整评估的设置不会执行任何缓存加速。",
+   "sents": [
+    {
+     "en": "For the PixArt-LCM threshold sweep in Table 5 , TeaCache uses thresholds 0.10, 0.30, 0.55, and 0.80; DiCache uses 0.10, 0.25, 0.391, and 0.60.",
+     "zh": "在表 5 中关于 PixArt-LCM 的阈值扫描部分，TeaCache 使用的阈值为 0.10、0.30、0.55 和 0.80；DiCache 使用的阈值为 0.10、0.25、0.391 和 0.60。"
+    },
+    {
+     "en": "Every point uses the same 50 prompts, paired seeds, model, solver, and four-step sequence.",
+     "zh": "每个数据点均使用相同的 50 条提示词、配对种子、模型、求解器以及四步序列。"
+    },
+    {
+     "en": "We report the average number of full DiT evaluations, abbreviated as FCE.",
+     "zh": "我们报告了完整的 DiT 评估的平均次数，简称为 FCE。"
+    },
+    {
+     "en": "A setting with four full evaluations performs no cache acceleration.",
+     "zh": "包含四次完整评估的设置不会执行任何缓存加速。"
+    }
+   ]
+  },
+  {
+   "en": "Table 3 reports the four calibration errors used to select the target at 512 2 512^{2} . Figure 5 compares the full calibration ranking with the ranking from held-out cached runs. It also shows the fixed confidence rule. Figure 6 gives paired results for each held-out prompt on PixArt-LCM and FLUX. Table 4 compares cache reuse with a solver run that keeps only the same anchor steps. For PixArt-LCM, it also reports the pipeline’s standard three-step schedule. Table 5 tests several TeaCache and DiCache thresholds. Table 6 compares DDIM ( Song et al., 2021a ) with DPM-Solver++ ( Lu et al., 2022 ) on a fixed PixArt-XL model. The solver changes which targets are valid and reverses the order of the two lower-ranked targets. In both tested 20-step settings, ϵ \\epsilon remains the best target.",
+   "zh": "表3报告了用于在 512 2 512^{2} 处选择目标时使用的四种校准误差。 图5将完整的校准排名与从预留缓存运行中获得的排名进行了比较。 该图还展示了固定置信度规则。 图6给出了在 PixArt-LCM 和 FLUX 上每个预留提示词的成对结果。 表4将缓存重用与仅保留相同锚点步骤的求解器运行进行了比较。 对于 PixArt-LCM，该表还报告了管道标准的三步流程。 表5测试了多个 TeaCache 和 DiCache 阈值。 表6在固定的 PixArt-XL 模型上比较了 DDIM（Song et al., 2021a）和 DPM-Solver++（Lu et al., 2022）。 该求解器改变了哪些目标是有效的，并反转了两个排名较低的目标的顺序。 在测试的两种 20 步设置中，ϵ \\epsilon 仍然是最佳目标。",
+   "sents": [
+    {
+     "en": "Table 3 reports the four calibration errors used to select the target at 512 2 512^{2} .",
+     "zh": "表3报告了用于在 512 2 512^{2} 处选择目标时使用的四种校准误差。"
+    },
+    {
+     "en": "Figure 5 compares the full calibration ranking with the ranking from held-out cached runs.",
+     "zh": "图5将完整的校准排名与从预留缓存运行中获得的排名进行了比较。"
+    },
+    {
+     "en": "It also shows the fixed confidence rule.",
+     "zh": "该图还展示了固定置信度规则。"
+    },
+    {
+     "en": "Figure 6 gives paired results for each held-out prompt on PixArt-LCM and FLUX.",
+     "zh": "图6给出了在 PixArt-LCM 和 FLUX 上每个预留提示词的成对结果。"
+    },
+    {
+     "en": "Table 4 compares cache reuse with a solver run that keeps only the same anchor steps.",
+     "zh": "表4将缓存重用与仅保留相同锚点步骤的求解器运行进行了比较。"
+    },
+    {
+     "en": "For PixArt-LCM, it also reports the pipeline’s standard three-step schedule.",
+     "zh": "对于 PixArt-LCM，该表还报告了管道标准的三步流程。"
+    },
+    {
+     "en": "Table 5 tests several TeaCache and DiCache thresholds.",
+     "zh": "表5测试了多个 TeaCache 和 DiCache 阈值。"
+    },
+    {
+     "en": "Table 6 compares DDIM ( Song et al., 2021a ) with DPM-Solver++ ( Lu et al., 2022 ) on a fixed PixArt-XL model.",
+     "zh": "表6在固定的 PixArt-XL 模型上比较了 DDIM（Song et al., 2021a）和 DPM-Solver++（Lu et al., 2022）。"
+    },
+    {
+     "en": "The solver changes which targets are valid and reverses the order of the two lower-ranked targets.",
+     "zh": "该求解器改变了哪些目标是有效的，并反转了两个排名较低的目标的顺序。"
+    },
+    {
+     "en": "In both tested 20-step settings, ϵ \\epsilon remains the best target.",
+     "zh": "在测试的两种 20 步设置中，ϵ \\epsilon 仍然是最佳目标。"
+    }
+   ]
+  },
+  {
+   "en": "The effect of the cache target differs across models. On FLUX.1-schnell, several tested cache settings give similar results. On PixArt-LCM, changing the target produces much larger fidelity differences. On HunyuanVideo, AutoTarget and DisCa have similar latency and overall VBench scores. These results motivate selecting a target for each setting. They do not show that AutoTarget is always best in task quality or speed.",
+   "zh": "缓存目标在不同模型中的效果存在差异。 在 FLUX.1-schnell 上，测试的多种缓存设置均产生相似的结果。 在 PixArt-LCM 上，更改目标会导致保真度出现明显更大的差异。 在 HunyuanVideo 上，AutoTarget 和 DisCa 的延迟及整体 VBench 得分相近。 这些结果表明，为每种设置选择特定的目标是合理的。 但这些结果并未证明 AutoTarget 在任务质量或速度方面始终最优。",
+   "sents": [
+    {
+     "en": "The effect of the cache target differs across models.",
+     "zh": "缓存目标在不同模型中的效果存在差异。"
+    },
+    {
+     "en": "On FLUX.1-schnell, several tested cache settings give similar results.",
+     "zh": "在 FLUX.1-schnell 上，测试的多种缓存设置均产生相似的结果。"
+    },
+    {
+     "en": "On PixArt-LCM, changing the target produces much larger fidelity differences.",
+     "zh": "在 PixArt-LCM 上，更改目标会导致保真度出现明显更大的差异。"
+    },
+    {
+     "en": "On HunyuanVideo, AutoTarget and DisCa have similar latency and overall VBench scores.",
+     "zh": "在 HunyuanVideo 上，AutoTarget 和 DisCa 的延迟及整体 VBench 得分相近。"
+    },
+    {
+     "en": "These results motivate selecting a target for each setting.",
+     "zh": "这些结果表明，为每种设置选择特定的目标是合理的。"
+    },
+    {
+     "en": "They do not show that AutoTarget is always best in task quality or speed.",
+     "zh": "但这些结果并未证明 AutoTarget 在任务质量或速度方面始终最优。"
+    }
+   ]
+  },
+  {
+   "en": "Trajectory fidelity measures similarity to a paired exact output. Prompt–image alignment measures whether an image matches its text prompt. These are different properties. In Figure 8 , velocity has higher fidelity than next-latent reuse on every held-out prompt. The paired CLIPScore ( Hessel et al., 2021 ) differences are inconclusive and do not follow the PSNR gains. We report task quality and reference fidelity separately because neither metric replaces the other.",
+   "zh": "轨迹保真度衡量与配对精确输出之间的相似性。 提示–图像对齐度衡量图像是否与文本提示相匹配。 这些是不同的属性。 在图 8 中，在所有保留的提示上，速度的保真度高于下一潜在状态的重复利用。 配对的 CLIPScore（Hessel 等人，2021）差异无法得出明确结论，且未呈现与 PSNR 增益一致的趋势。 我们分别报告任务质量和参考保真度，因为这两种指标都无法替代彼此。",
+   "sents": [
+    {
+     "en": "Trajectory fidelity measures similarity to a paired exact output.",
+     "zh": "轨迹保真度衡量与配对精确输出之间的相似性。"
+    },
+    {
+     "en": "Prompt–image alignment measures whether an image matches its text prompt.",
+     "zh": "提示–图像对齐度衡量图像是否与文本提示相匹配。"
+    },
+    {
+     "en": "These are different properties.",
+     "zh": "这些是不同的属性。"
+    },
+    {
+     "en": "In Figure 8 , velocity has higher fidelity than next-latent reuse on every held-out prompt.",
+     "zh": "在图 8 中，在所有保留的提示上，速度的保真度高于下一潜在状态的重复利用。"
+    },
+    {
+     "en": "The paired CLIPScore ( Hessel et al., 2021 ) differences are inconclusive and do not follow the PSNR gains.",
+     "zh": "配对的 CLIPScore（Hessel 等人，2021）差异无法得出明确结论，且未呈现与 PSNR 增益一致的趋势。"
+    },
+    {
+     "en": "We report task quality and reference fidelity separately because neither metric replaces the other.",
+     "zh": "我们分别报告任务质量和参考保真度，因为这两种指标都无法替代彼此。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 9 also varies the number of PixArt-LCM calibration prompts. Every tested size selects the denoised/clean target, which also has the highest fidelity in the left panel. In this setting, even a small calibration set is enough to identify the same target. The analysis starts from 32 recorded calibration runs. For each set size in { 1 , 2 , 4 , 8 , 16 , 32 } \\{1,2,4,8,16,32\\} , we draw 1,000 subsets without replacement using the fixed random seed 9142026 and recompute the ranking. The 200 prompts in the target comparison belong to the left panel. The 1,000 subset trials belong to the calibration-size experiment in the right panel.",
+   "zh": "图9还改变了 PixArt-LCM 校准提示词的数量。 所有测试的尺寸都选择了去噪后的/干净的靶目标，该目标在左侧面板中也具有最高的保真度。 在此设置中，即使是一个较小的校准集也足以识别出相同的靶目标。 分析从 32 次记录的校准运行开始。 对于集合大小 { 1 , 2 , 4 , 8 , 16 , 32 } \\{1,2,4,8,16,32\\} 中的每个值，我们使用固定的随机种子 9142026 无放回地抽取 1,000 个子集，并重新计算排名。 靶目标比较中的 200 个提示词属于左侧面板。 1,000 次子集试验属于右侧面板中的校准尺寸实验。",
+   "sents": [
+    {
+     "en": "Figure 9 also varies the number of PixArt-LCM calibration prompts.",
+     "zh": "图9还改变了 PixArt-LCM 校准提示词的数量。"
+    },
+    {
+     "en": "Every tested size selects the denoised/clean target, which also has the highest fidelity in the left panel.",
+     "zh": "所有测试的尺寸都选择了去噪后的/干净的靶目标，该目标在左侧面板中也具有最高的保真度。"
+    },
+    {
+     "en": "In this setting, even a small calibration set is enough to identify the same target.",
+     "zh": "在此设置中，即使是一个较小的校准集也足以识别出相同的靶目标。"
+    },
+    {
+     "en": "The analysis starts from 32 recorded calibration runs.",
+     "zh": "分析从 32 次记录的校准运行开始。"
+    },
+    {
+     "en": "For each set size in { 1 , 2 , 4 , 8 , 16 , 32 } \\{1,2,4,8,16,32\\} , we draw 1,000 subsets without replacement using the fixed random seed 9142026 and recompute the ranking.",
+     "zh": "对于集合大小 { 1 , 2 , 4 , 8 , 16 , 32 } \\{1,2,4,8,16,32\\} 中的每个值，我们使用固定的随机种子 9142026 无放回地抽取 1,000 个子集，并重新计算排名。"
+    },
+    {
+     "en": "The 200 prompts in the target comparison belong to the left panel.",
+     "zh": "靶目标比较中的 200 个提示词属于左侧面板。"
+    },
+    {
+     "en": "The 1,000 subset trials belong to the calibration-size experiment in the right panel.",
+     "zh": "1,000 次子集试验属于右侧面板中的校准尺寸实验。"
+    }
+   ]
+  },
+  {
+   "en": "These additional results use the same protocol as the main tables. They explain the reported results in more detail and do not add a new benchmark, metric, or comparison setting.",
+   "zh": "这些补充结果采用了与主表相同的协议。 它们对报告的结果进行了更详细的解释，但没有增加新的基准、指标或比较设置。",
+   "sents": [
+    {
+     "en": "These additional results use the same protocol as the main tables.",
+     "zh": "这些补充结果采用了与主表相同的协议。"
+    },
+    {
+     "en": "They explain the reported results in more detail and do not add a new benchmark, metric, or comparison setting.",
+     "zh": "它们对报告的结果进行了更详细的解释，但没有增加新的基准、指标或比较设置。"
+    }
+   ]
+  },
+  {
+   "en": "The general analysis applies to a discrete sampling solver when its transition on the complete state satisfies the local stability condition in Eq. ( 27 ). For Euler sampling with the linear-flow parameterization, we give a closed-form proof of which targets are equivalent. For other solvers, AutoTarget can construct and compare candidates in the same way, but their ranking must be measured from that solver’s transitions.",
+   "zh": "当离散采样求解器在完整状态上的转移满足方程 (27) 中的局部稳定性条件时，该通用分析同样适用。 对于采用线性流参数化的欧拉采样方法，我们给出了哪些目标等价的闭式证明。 对于其他求解器，AutoTarget 可以以相同方式构建并比较候选目标，但它们的排序必须基于该求解器的转移进行衡量。",
+   "sents": [
+    {
+     "en": "The general analysis applies to a discrete sampling solver when its transition on the complete state satisfies the local stability condition in Eq. ( 27 ).",
+     "zh": "当离散采样求解器在完整状态上的转移满足方程 (27) 中的局部稳定性条件时，该通用分析同样适用。"
+    },
+    {
+     "en": "For Euler sampling with the linear-flow parameterization, we give a closed-form proof of which targets are equivalent.",
+     "zh": "对于采用线性流参数化的欧拉采样方法，我们给出了哪些目标等价的闭式证明。"
+    },
+    {
+     "en": "For other solvers, AutoTarget can construct and compare candidates in the same way, but their ranking must be measured from that solver’s transitions.",
+     "zh": "对于其他求解器，AutoTarget 可以以相同方式构建并比较候选目标，但它们的排序必须基于该求解器的转移进行衡量。"
+    }
+   ]
+  },
+  {
+   "en": "The calibration error applies to the tested model, solver, coordinate sequence, and reuse schedule. It does not guarantee the same ranking after any of these choices changes or on every prompt distribution. The decoded VAE error is the score used to compare targets in practice. The theoretical bound measures error in a state that also contains the cache and solver history. Our empirical and theoretical claims concern these two different quantities.",
+   "zh": "校准误差适用于所测试的模型、求解器、坐标序列和重用计划。 它并不保证在这些选项中的任何一个发生变化后，或在每种提示分布下都能保持相同的排名。 解码后的 VAE 误差是实际中用于比较目标得分的指标。 理论界限衡量的是包含缓存和求解器历史记录的状态中的误差。 我们的经验性和理论性论断涉及这两个不同的量。",
+   "sents": [
+    {
+     "en": "The calibration error applies to the tested model, solver, coordinate sequence, and reuse schedule.",
+     "zh": "校准误差适用于所测试的模型、求解器、坐标序列和重用计划。"
+    },
+    {
+     "en": "It does not guarantee the same ranking after any of these choices changes or on every prompt distribution.",
+     "zh": "它并不保证在这些选项中的任何一个发生变化后，或在每种提示分布下都能保持相同的排名。"
+    },
+    {
+     "en": "The decoded VAE error is the score used to compare targets in practice.",
+     "zh": "解码后的 VAE 误差是实际中用于比较目标得分的指标。"
+    },
+    {
+     "en": "The theoretical bound measures error in a state that also contains the cache and solver history.",
+     "zh": "理论界限衡量的是包含缓存和求解器历史记录的状态中的误差。"
+    },
+    {
+     "en": "Our empirical and theoretical claims concern these two different quantities.",
+     "zh": "我们的经验性和理论性论断涉及这两个不同的量。"
+    }
+   ]
+  },
+  {
+   "en": "Cache reuse and step removal are different operations. In our control, both methods run the DiT at the same anchor steps. They use the same number of DiT evaluations. Cache reuse still executes every transition in the original four-step solver sequence. The reduced-step run executes the solver only at the anchors. Their fidelity is nearly equal for the tested anchors. By comparison, the standard three-step PixArt-LCM schedule is much less faithful to the four-step reference. These results apply only to the tested schedules and solvers.",
+   "zh": "缓存重用和步骤移除是两种不同的操作。 在我们的控制下，这两种方法都在相同的锚点步骤上运行 DiT。 它们使用的 DiT 评估次数相同。 缓存重用仍然会执行原始四步求解器序列中的每个转换。 简化步骤的运行仅在锚点处执行求解器。 对于测试的锚点，它们的保真度几乎相等。 相比之下，标准的三步 PixArt-LCM 调度对四步参考的保真度要低得多。 这些结果仅适用于所测试的调度和求解器。",
+   "sents": [
+    {
+     "en": "Cache reuse and step removal are different operations.",
+     "zh": "缓存重用和步骤移除是两种不同的操作。"
+    },
+    {
+     "en": "In our control, both methods run the DiT at the same anchor steps.",
+     "zh": "在我们的控制下，这两种方法都在相同的锚点步骤上运行 DiT。"
+    },
+    {
+     "en": "They use the same number of DiT evaluations.",
+     "zh": "它们使用的 DiT 评估次数相同。"
+    },
+    {
+     "en": "Cache reuse still executes every transition in the original four-step solver sequence.",
+     "zh": "缓存重用仍然会执行原始四步求解器序列中的每个转换。"
+    },
+    {
+     "en": "The reduced-step run executes the solver only at the anchors.",
+     "zh": "简化步骤的运行仅在锚点处执行求解器。"
+    },
+    {
+     "en": "Their fidelity is nearly equal for the tested anchors.",
+     "zh": "对于测试的锚点，它们的保真度几乎相等。"
+    },
+    {
+     "en": "By comparison, the standard three-step PixArt-LCM schedule is much less faithful to the four-step reference.",
+     "zh": "相比之下，标准的三步 PixArt-LCM 调度对四步参考的保真度要低得多。"
+    },
+    {
+     "en": "These results apply only to the tested schedules and solvers.",
+     "zh": "这些结果仅适用于所测试的调度和求解器。"
+    }
+   ]
+  }
+ ]
+}

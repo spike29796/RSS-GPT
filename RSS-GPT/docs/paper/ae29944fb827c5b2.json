@@ -1,0 +1,1170 @@
+{
+ "id": "ae29944fb827c5b2",
+ "source": "arxiv-t2i",
+ "link": "https://arxiv.org/abs/2610.07002v1",
+ "title": "Should We Skip Diffusion?",
+ "title_zh": "DDT-RFE: 一种改进的解耦扩散变换器模型",
+ "published": "2026-10-04T09:42:27Z",
+ "translated_at": "2026-10-18T04:00:20Z",
+ "paragraphs": [
+  {
+   "en": "Diffusion models learn semantic representations while generating images. In the Decoupled Diffusion Transformer (DDT), a condition encoder provides features that guide a velocity decoder in denoising. To enable effective denoising at all noise levels, these features must capture both high-level abstract structures and low-level details. However, skip/residual connections in the encoder allow shallow features to bypass successive transformations, which may limit progressive abstraction, or at least make it difficult to disentangle different levels of abstraction. We propose DDT-RFE, which removes the residual connections around the Self-Attention and MLP operations in each encoder block while maintaining stable training. To retain the information that abstraction discards but that the decoder still needs, we fuse the input patch embedding with intermediate and final encoder features to form the encoder output. The decoder thus has access to information from multiple encoder depths, while each encoder block is able to learn more abstract representations. DDT-RFE achieves overall improvements over DDT across visual understanding tasks, including image classification, semantic segmentation, object discovery, and semantic correspondence, while using fewer encoder blocks. It also achieves a lower FID for image generation on ImageNet.",
+   "zh": "扩散模型在生成图像的同时学习语义表示。 在解耦扩散变换器（DDT）中，条件编码器提供特征以引导速度解码器进行去噪。 为了在所有噪声水平上实现有效的去噪，这些特征必须同时捕捉高层抽象结构和低层细节。 然而，编码器中的跳跃/残差连接允许浅层特征绕过连续变换，这可能会限制渐进式抽象，或者至少使不同抽象层次的解耦变得困难。 我们提出了 DDT-RFE，它在保持训练稳定的同时，移除了每个编码器块中自注意力和 MLP 操作周围的残差连接。 为了保留抽象过程所丢弃但解码器仍然需要的信息，我们将输入图像块嵌入与中间和最终的编码器特征融合，形成编码器输出。 因此，解码器可以访问来自多个编码器深度的信息，而每个编码器块则能够学习更抽象的表示。 DDT-RFE 在视觉理解任务（包括图像分类、语义分割、目标发现和语义对应）上相较于 DDT 实现了整体性能提升，同时使用的编码器块更少。 它在 ImageNet 上的图像生成任务中也获得了更低的 FID 分数。",
+   "sents": [
+    {
+     "en": "Diffusion models learn semantic representations while generating images.",
+     "zh": "扩散模型在生成图像的同时学习语义表示。"
+    },
+    {
+     "en": "In the Decoupled Diffusion Transformer (DDT), a condition encoder provides features that guide a velocity decoder in denoising.",
+     "zh": "在解耦扩散变换器（DDT）中，条件编码器提供特征以引导速度解码器进行去噪。"
+    },
+    {
+     "en": "To enable effective denoising at all noise levels, these features must capture both high-level abstract structures and low-level details.",
+     "zh": "为了在所有噪声水平上实现有效的去噪，这些特征必须同时捕捉高层抽象结构和低层细节。"
+    },
+    {
+     "en": "However, skip/residual connections in the encoder allow shallow features to bypass successive transformations, which may limit progressive abstraction, or at least make it difficult to disentangle different levels of abstraction.",
+     "zh": "然而，编码器中的跳跃/残差连接允许浅层特征绕过连续变换，这可能会限制渐进式抽象，或者至少使不同抽象层次的解耦变得困难。"
+    },
+    {
+     "en": "We propose DDT-RFE, which removes the residual connections around the Self-Attention and MLP operations in each encoder block while maintaining stable training.",
+     "zh": "我们提出了 DDT-RFE，它在保持训练稳定的同时，移除了每个编码器块中自注意力和 MLP 操作周围的残差连接。"
+    },
+    {
+     "en": "To retain the information that abstraction discards but that the decoder still needs, we fuse the input patch embedding with intermediate and final encoder features to form the encoder output.",
+     "zh": "为了保留抽象过程所丢弃但解码器仍然需要的信息，我们将输入图像块嵌入与中间和最终的编码器特征融合，形成编码器输出。"
+    },
+    {
+     "en": "The decoder thus has access to information from multiple encoder depths, while each encoder block is able to learn more abstract representations.",
+     "zh": "因此，解码器可以访问来自多个编码器深度的信息，而每个编码器块则能够学习更抽象的表示。"
+    },
+    {
+     "en": "DDT-RFE achieves overall improvements over DDT across visual understanding tasks, including image classification, semantic segmentation, object discovery, and semantic correspondence, while using fewer encoder blocks.",
+     "zh": "DDT-RFE 在视觉理解任务（包括图像分类、语义分割、目标发现和语义对应）上相较于 DDT 实现了整体性能提升，同时使用的编码器块更少。"
+    },
+    {
+     "en": "It also achieves a lower FID for image generation on ImageNet.",
+     "zh": "它在 ImageNet 上的图像生成任务中也获得了更低的 FID 分数。"
+    }
+   ]
+  },
+  {
+   "en": "Diffusion transformers ( Peebles and Xie, 2023 ) have emerged as a dominant backbone for image generation, achieving remarkable fidelity and diversity across a wide range of visual domains. Beyond synthesis, their intermediate activations encode semantic information that supports downstream visual recognition and dense prediction tasks ( Stracke et al., 2025 ; Gan et al., 2025 ; Helbling et al., 2025 ; Xiang et al., 2023 ) . Crucially, representation learning and image synthesis are not independent processes: in standard diffusion transformers, semantic abstraction and fine-grained signal reconstruction are implicitly coupled within the same denoising network. Recent work has begun to explicitly decouple these two roles ( Yu et al., 2026 ; Zheng et al., 2024 ) . Decoupled Diffusion Transformer (DDT) ( Wang et al., 2026 ) , for example, introduces a “condition encoder” for learning representations and a “velocity decoder” for signal reconstruction. The condition encoder retains the standard diffusion transformer block design and transforms noisy inputs into representations that provide the decoder with information useful for reconstruction, including abstract structures and low-level image details.",
+   "zh": "扩散变换器（Peebles 和 Xie，2023）已成为图像生成的主流骨干模型，在广泛的视觉领域实现了卓越的保真度和多样性。 除了合成能力之外，其中间激活值还编码了语义信息，从而支持下游的视觉识别和密集预测任务（Stracke 等，2025；Gan 等，2025；Helbling 等，2025；Xiang 等，2023）。 关键在于，表示学习与图像合成并非独立过程：在标准的扩散变换器中，语义抽象与精细信号重建在同一个去噪网络内被隐式地耦合在一起。 近期的研究已开始明确分离这两种角色（Yu 等，2026；Zheng 等，2024）。 例如，解耦扩散变换器（DDT）（Wang 等，2026）引入了一种“条件编码器”用于学习表示，以及一种“速度解码器”用于信号重建。 条件编码器保留了标准扩散变换器的模块设计，并将含噪输入转换为表示形式，为解码器提供有助于重建的信息，包括抽象结构和低层图像细节。",
+   "sents": [
+    {
+     "en": "Diffusion transformers ( Peebles and Xie, 2023 ) have emerged as a dominant backbone for image generation, achieving remarkable fidelity and diversity across a wide range of visual domains.",
+     "zh": "扩散变换器（Peebles 和 Xie，2023）已成为图像生成的主流骨干模型，在广泛的视觉领域实现了卓越的保真度和多样性。"
+    },
+    {
+     "en": "Beyond synthesis, their intermediate activations encode semantic information that supports downstream visual recognition and dense prediction tasks ( Stracke et al., 2025 ; Gan et al., 2025 ; Helbling et al., 2025 ; Xiang et al., 2023 ) .",
+     "zh": "除了合成能力之外，其中间激活值还编码了语义信息，从而支持下游的视觉识别和密集预测任务（Stracke 等，2025；Gan 等，2025；Helbling 等，2025；Xiang 等，2023）。"
+    },
+    {
+     "en": "Crucially, representation learning and image synthesis are not independent processes: in standard diffusion transformers, semantic abstraction and fine-grained signal reconstruction are implicitly coupled within the same denoising network.",
+     "zh": "关键在于，表示学习与图像合成并非独立过程：在标准的扩散变换器中，语义抽象与精细信号重建在同一个去噪网络内被隐式地耦合在一起。"
+    },
+    {
+     "en": "Recent work has begun to explicitly decouple these two roles ( Yu et al., 2026 ; Zheng et al., 2024 ) .",
+     "zh": "近期的研究已开始明确分离这两种角色（Yu 等，2026；Zheng 等，2024）。"
+    },
+    {
+     "en": "Decoupled Diffusion Transformer (DDT) ( Wang et al., 2026 ) , for example, introduces a “condition encoder” for learning representations and a “velocity decoder” for signal reconstruction.",
+     "zh": "例如，解耦扩散变换器（DDT）（Wang 等，2026）引入了一种“条件编码器”用于学习表示，以及一种“速度解码器”用于信号重建。"
+    },
+    {
+     "en": "The condition encoder retains the standard diffusion transformer block design and transforms noisy inputs into representations that provide the decoder with information useful for reconstruction, including abstract structures and low-level image details.",
+     "zh": "条件编码器保留了标准扩散变换器的模块设计，并将含噪输入转换为表示形式，为解码器提供有助于重建的信息，包括抽象结构和低层图像细节。"
+    }
+   ]
+  },
+  {
+   "en": "However, how the encoder develops abstract features and combines features at different levels affect the quality of the representations that are provided to the decoder. In DDT, each encoder block transforms its input and integrates the resulting features with the input through residual connections ( He et al., 2016 ) . Stacking blocks allows features to undergo successive transformations, which supports abstract representations. At the same time, residual connections carry information from earlier blocks into the inputs of later transformations. Although this can retain information useful for reconstruction, we hypothesize that the repeated accumulation of shallow features may hinder abstraction from the noisy input ( Ji et al., 2026a ; Zhang et al., 2026 ) . As shown in Fig. 1 , object structure remains difficult to distinguish in the visualized DDT encoder features, even in deeper blocks. This raises a central question: can the encoder develop more abstract features through successive transformations, while combining them with earlier features at its output, to provide the decoder with information at multiple levels of abstraction?",
+   "zh": "然而，编码器如何形成抽象特征以及如何在不同层级上整合这些特征，会影响提供给解码器的表示质量。 在 DDT 中，每个编码器块都会对其输入进行转换，并通过残差连接将所得特征与输入相整合（He et al., 2016）。 堆叠多个编码器块可使特征经历连续转换，从而支持抽象表示的形成。 同时，残差连接会将早期块的信息传递到后续转换的输入中。 尽管这可以保留对重建有用的信息，但我们推测，浅层特征的重复累积可能会阻碍从噪声输入中提取抽象特征（Ji et al., 2026a；Zhang et al., 2026）。 如图 1 所示，即使在较深的编码器块中，可视化后的 DDT 编码器特征仍然难以区分物体结构。 这引出了一个核心问题：编码器能否通过连续转换形成更抽象的特征，同时在输出端将其与早期特征相结合，从而为解码器提供多个抽象层级的信息？",
+   "sents": [
+    {
+     "en": "However, how the encoder develops abstract features and combines features at different levels affect the quality of the representations that are provided to the decoder.",
+     "zh": "然而，编码器如何形成抽象特征以及如何在不同层级上整合这些特征，会影响提供给解码器的表示质量。"
+    },
+    {
+     "en": "In DDT, each encoder block transforms its input and integrates the resulting features with the input through residual connections ( He et al., 2016 ) .",
+     "zh": "在 DDT 中，每个编码器块都会对其输入进行转换，并通过残差连接将所得特征与输入相整合（He et al., 2016）。"
+    },
+    {
+     "en": "Stacking blocks allows features to undergo successive transformations, which supports abstract representations.",
+     "zh": "堆叠多个编码器块可使特征经历连续转换，从而支持抽象表示的形成。"
+    },
+    {
+     "en": "At the same time, residual connections carry information from earlier blocks into the inputs of later transformations.",
+     "zh": "同时，残差连接会将早期块的信息传递到后续转换的输入中。"
+    },
+    {
+     "en": "Although this can retain information useful for reconstruction, we hypothesize that the repeated accumulation of shallow features may hinder abstraction from the noisy input ( Ji et al., 2026a ; Zhang et al., 2026 ) .",
+     "zh": "尽管这可以保留对重建有用的信息，但我们推测，浅层特征的重复累积可能会阻碍从噪声输入中提取抽象特征（Ji et al., 2026a；Zhang et al., 2026）。"
+    },
+    {
+     "en": "As shown in Fig. 1 , object structure remains difficult to distinguish in the visualized DDT encoder features, even in deeper blocks.",
+     "zh": "如图 1 所示，即使在较深的编码器块中，可视化后的 DDT 编码器特征仍然难以区分物体结构。"
+    },
+    {
+     "en": "This raises a central question: can the encoder develop more abstract features through successive transformations, while combining them with earlier features at its output, to provide the decoder with information at multiple levels of abstraction?",
+     "zh": "这引出了一个核心问题：编码器能否通过连续转换形成更抽象的特征，同时在输出端将其与早期特征相结合，从而为解码器提供多个抽象层级的信息？"
+    }
+   ]
+  },
+  {
+   "en": "To address this, we propose DDT with a Residual-Free Encoder (DDT-RFE), which combines a residual-free condition encoder with explicit fusion of intermediate and final encoder features to condition the decoder. We remove the residual connections around the Self-Attention and MLP operations in each encoder block, eliminating the identity shortcuts through which earlier features bypass these transformations. This design encourages progressive abstraction through successive transformations. In order to improve the convergence of the residual-free encoder, we propose an initialization scheme inspired by Ji et al. (2026a) but with fewer hyperparameters to tune. To retain access to information that is lost during abstraction but may still be needed for reconstruction, we fuse the input patch embedding and intermediate encoder features with the final encoder block output to form the decoder’s condition. The decoder can therefore access representations at different levels, without requiring all useful information to persist in the final encoder block representation.",
+   "zh": "为解决这一问题，我们提出了 DDT 及其残差自由编码器（DDT-RFE），它将一个无残差的条件编码器与中间和最终编码器特征的显式融合相结合，从而为解码器提供条件。 我们去除了每个编码器块中自注意力和 MLP 操作周围的残差连接，从而消除了早期特征绕过这些变换的恒等捷径。 这种设计鼓励通过连续变换实现渐进式的抽象。 为了提升无残差编码器的收敛性，我们提出了一种受 Ji 等人（2026a）启发的初始化方案，但需要调参的超参数更少。 （2026a），但需要调参的超参数更少。 为了保留在抽象过程中丢失但可能仍对重建有用的信息，我们将输入块嵌入和中间编码器特征与最终编码器块的输出融合，形成解码器的条件。 因此，解码器可以访问不同层级的表示，而无需所有有用信息都保留在最终编码器块的表示中。",
+   "sents": [
+    {
+     "en": "To address this, we propose DDT with a Residual-Free Encoder (DDT-RFE), which combines a residual-free condition encoder with explicit fusion of intermediate and final encoder features to condition the decoder.",
+     "zh": "为解决这一问题，我们提出了 DDT 及其残差自由编码器（DDT-RFE），它将一个无残差的条件编码器与中间和最终编码器特征的显式融合相结合，从而为解码器提供条件。"
+    },
+    {
+     "en": "We remove the residual connections around the Self-Attention and MLP operations in each encoder block, eliminating the identity shortcuts through which earlier features bypass these transformations.",
+     "zh": "我们去除了每个编码器块中自注意力和 MLP 操作周围的残差连接，从而消除了早期特征绕过这些变换的恒等捷径。"
+    },
+    {
+     "en": "This design encourages progressive abstraction through successive transformations.",
+     "zh": "这种设计鼓励通过连续变换实现渐进式的抽象。"
+    },
+    {
+     "en": "In order to improve the convergence of the residual-free encoder, we propose an initialization scheme inspired by Ji et al.",
+     "zh": "为了提升无残差编码器的收敛性，我们提出了一种受 Ji 等人（2026a）启发的初始化方案，但需要调参的超参数更少。"
+    },
+    {
+     "en": "(2026a) but with fewer hyperparameters to tune.",
+     "zh": "（2026a），但需要调参的超参数更少。"
+    },
+    {
+     "en": "To retain access to information that is lost during abstraction but may still be needed for reconstruction, we fuse the input patch embedding and intermediate encoder features with the final encoder block output to form the decoder’s condition.",
+     "zh": "为了保留在抽象过程中丢失但可能仍对重建有用的信息，我们将输入块嵌入和中间编码器特征与最终编码器块的输出融合，形成解码器的条件。"
+    },
+    {
+     "en": "The decoder can therefore access representations at different levels, without requiring all useful information to persist in the final encoder block representation.",
+     "zh": "因此，解码器可以访问不同层级的表示，而无需所有有用信息都保留在最终编码器块的表示中。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate DDT-RFE on four visual tasks and image generation. The results show that when DDT-RFE’s encoder is ultilized for visual tasks, it achieves overall improvements in representation quality while remaining efficient with nearly 40% fewer encoder blocks. On ImageNet at 256 × 256 256\\times 256 resolution, DDT-RFE reduces FID from 8.98 to 7.68 at the L scale and from 7.27 to 6.81 at the XL scale under the same training budget. Our main contributions are as follows:",
+   "zh": "我们在四个视觉任务和图像生成任务上对 DDT-RFE 进行了评估。 结果表明，当将 DDT-RFE 的编码器用于视觉任务时，它在保持高效性的同时提升了表征质量，且编码器块的数量减少了近 40%。 在 ImageNet 数据集上，以 256 × 256 分辨率进行训练时，在相同的训练预算下，DDT-RFE 将 L 尺度的 FID 从 8.98 降低到 7.68，将 XL 尺度的 FID 从 7.27 降低到 6.81。 我们的主要贡献如下：",
+   "sents": [
+    {
+     "en": "We evaluate DDT-RFE on four visual tasks and image generation.",
+     "zh": "我们在四个视觉任务和图像生成任务上对 DDT-RFE 进行了评估。"
+    },
+    {
+     "en": "The results show that when DDT-RFE’s encoder is ultilized for visual tasks, it achieves overall improvements in representation quality while remaining efficient with nearly 40% fewer encoder blocks.",
+     "zh": "结果表明，当将 DDT-RFE 的编码器用于视觉任务时，它在保持高效性的同时提升了表征质量，且编码器块的数量减少了近 40%。"
+    },
+    {
+     "en": "On ImageNet at 256 × 256 256\\times 256 resolution, DDT-RFE reduces FID from 8.98 to 7.68 at the L scale and from 7.27 to 6.81 at the XL scale under the same training budget.",
+     "zh": "在 ImageNet 数据集上，以 256 × 256 分辨率进行训练时，在相同的训练预算下，DDT-RFE 将 L 尺度的 FID 从 8.98 降低到 7.68，将 XL 尺度的 FID 从 7.27 降低到 6.81。"
+    },
+    {
+     "en": "Our main contributions are as follows:",
+     "zh": "我们的主要贡献如下："
+    }
+   ]
+  },
+  {
+   "en": "We propose DDT-RFE, which combines a residual-free condition encoder, a new initialization scheme, and feature fusion to improve representation learning and image generation.",
+   "zh": "我们提出了 DDT-RFE，该方法结合了无残差条件编码器、一种新的初始化方案以及特征融合技术，以提升表示学习和图像生成效果。",
+   "sents": null
+  },
+  {
+   "en": "Qualitatively, our feature visualizations show clearer object structure and cleaner backgrounds in the representations learned by DDT-RFE than in those learned by DDT.",
+   "zh": "从定性角度来看，与 DDT 学习到的表示相比，DDT-RFE 学习到的表示在特征可视化中展现出更清晰的对象结构和更干净的背景。",
+   "sents": null
+  },
+  {
+   "en": "Quantitatively, DDT-RFE achieves overall improvements over DDT on image classification, semantic segmentation, object discovery, and semantic correspondence with fewer encoder blocks. It also achieves a lower FID for image generation on ImageNet.",
+   "zh": "从量化角度来看，DDT-RFE 在图像分类、语义分割、目标发现和语义对应等任务上相较于 DDT 实现了整体性能提升，且所需的编码器模块更少。 它在 ImageNet 上的图像生成任务中也获得了更低的 FID 值。",
+   "sents": [
+    {
+     "en": "Quantitatively, DDT-RFE achieves overall improvements over DDT on image classification, semantic segmentation, object discovery, and semantic correspondence with fewer encoder blocks.",
+     "zh": "从量化角度来看，DDT-RFE 在图像分类、语义分割、目标发现和语义对应等任务上相较于 DDT 实现了整体性能提升，且所需的编码器模块更少。"
+    },
+    {
+     "en": "It also achieves a lower FID for image generation on ImageNet.",
+     "zh": "它在 ImageNet 上的图像生成任务中也获得了更低的 FID 值。"
+    }
+   ]
+  },
+  {
+   "en": "DiT ( Peebles and Xie, 2023 ) establishes a scalable backbone for latent diffusion built from a stack of transformer blocks. U-DiT ( Tian et al., 2024 ) adds long skip connections that carry shallow features to deeper layers. Other designs separate the learning of semantic representations from reconstruction. In pixel-space diffusion, PixelDiT ( Yu et al., 2026 ) models global semantics at the patch level in an encoder and refines details at the pixel level in a decoder. DDT ( Wang et al., 2026 ) uses a condition encoder to learn representations that condition a velocity decoder for signal reconstruction. We build on the condition encoder of DDT so that the representations learned in the encoder can be studied in isolation from the decoder.",
+   "zh": "DiT（Peebles 和 Xie，2023）为潜在扩散模型建立了一个可扩展的主干网络，该网络由堆叠的 Transformer 模块构成。 U-DiT（Tian 等，2024）增加了长跳跃连接，将浅层特征传递到更深层。 其他设计则将语义表示的学习与重建过程分离开来。 在像素空间扩散中，PixelDiT（Yu 等，2026）在编码器中以图块级别建模全局语义，并在解码器中以像素级别优化细节。 DDT（Wang 等，2026）使用一个条件编码器来学习表示，这些表示为信号重建的速度解码器提供条件。 我们在 DDT 的条件编码器基础上进行构建，以便能够独立于解码器研究编码器中学到的表示。",
+   "sents": [
+    {
+     "en": "DiT ( Peebles and Xie, 2023 ) establishes a scalable backbone for latent diffusion built from a stack of transformer blocks.",
+     "zh": "DiT（Peebles 和 Xie，2023）为潜在扩散模型建立了一个可扩展的主干网络，该网络由堆叠的 Transformer 模块构成。"
+    },
+    {
+     "en": "U-DiT ( Tian et al., 2024 ) adds long skip connections that carry shallow features to deeper layers.",
+     "zh": "U-DiT（Tian 等，2024）增加了长跳跃连接，将浅层特征传递到更深层。"
+    },
+    {
+     "en": "Other designs separate the learning of semantic representations from reconstruction.",
+     "zh": "其他设计则将语义表示的学习与重建过程分离开来。"
+    },
+    {
+     "en": "In pixel-space diffusion, PixelDiT ( Yu et al., 2026 ) models global semantics at the patch level in an encoder and refines details at the pixel level in a decoder.",
+     "zh": "在像素空间扩散中，PixelDiT（Yu 等，2026）在编码器中以图块级别建模全局语义，并在解码器中以像素级别优化细节。"
+    },
+    {
+     "en": "DDT ( Wang et al., 2026 ) uses a condition encoder to learn representations that condition a velocity decoder for signal reconstruction.",
+     "zh": "DDT（Wang 等，2026）使用一个条件编码器来学习表示，这些表示为信号重建的速度解码器提供条件。"
+    },
+    {
+     "en": "We build on the condition encoder of DDT so that the representations learned in the encoder can be studied in isolation from the decoder.",
+     "zh": "我们在 DDT 的条件编码器基础上进行构建，以便能够独立于解码器研究编码器中学到的表示。"
+    }
+   ]
+  },
+  {
+   "en": "Diffusion denoising has been studied as a self-supervised objective for learning visual representations that transfer effectively to downstream tasks. Through pretraining on image generation, Xiang et al. (2023) demonstrate that diffusion models learn linearly separable intermediate representations and achieve image classification performance comparable to that of contemporary contrastive methods. For diffusion transformers, DiTF ( Gan et al., 2025 ) investigates the capabilities of DiTs for accurate dense correspondence and proposes a training-free method to extract semantically discriminative features from DiTs, achieving superior performance across multiple benchmarks. Furthermore, CleanDIFT ( Stracke et al., 2025 ) introduces a lightweight, unsupervised fine-tuning method that enables diffusion backbones to provide high-quality, noise-free semantic features for downstream visual tasks. Our work examines how the condition encoder shapes representations, with a focus on progressive abstraction, and how information that may be discarded during this process can remain accessible to the decoder for reconstruction.",
+   "zh": "扩散去噪已被研究为一种自监督目标，用于学习能够有效迁移到下游任务的视觉表示。 通过在图像生成上进行预训练，Xiang 等人 (2023) 证明，扩散模型能够学习线性可分的中间表示，并实现与当前对比学习方法相当的图片分类性能。 对于扩散变换器，DiTF（Gan 等人，2025）研究了 DiT 在精确密集对应关系方面的能力，并提出了一种无需训练的方法，可从 DiT 中提取具有语义区分性的特征，在多个基准测试中取得了卓越性能。 此外，CleanDIFT（Stracke 等人，2025）引入了一种轻量级的无监督微调方法，使扩散主干网络能够为下游视觉任务提供高质量、无噪声的语义特征。 我们的工作探讨了条件编码器如何塑造表示，重点关注渐进式抽象过程，以及在此过程中可能被丢弃的信息如何仍能被解码器用于重建。",
+   "sents": [
+    {
+     "en": "Diffusion denoising has been studied as a self-supervised objective for learning visual representations that transfer effectively to downstream tasks.",
+     "zh": "扩散去噪已被研究为一种自监督目标，用于学习能够有效迁移到下游任务的视觉表示。"
+    },
+    {
+     "en": "Through pretraining on image generation, Xiang et al.",
+     "zh": "通过在图像生成上进行预训练，Xiang 等人"
+    },
+    {
+     "en": "(2023) demonstrate that diffusion models learn linearly separable intermediate representations and achieve image classification performance comparable to that of contemporary contrastive methods.",
+     "zh": "(2023) 证明，扩散模型能够学习线性可分的中间表示，并实现与当前对比学习方法相当的图片分类性能。"
+    },
+    {
+     "en": "For diffusion transformers, DiTF ( Gan et al., 2025 ) investigates the capabilities of DiTs for accurate dense correspondence and proposes a training-free method to extract semantically discriminative features from DiTs, achieving superior performance across multiple benchmarks.",
+     "zh": "对于扩散变换器，DiTF（Gan 等人，2025）研究了 DiT 在精确密集对应关系方面的能力，并提出了一种无需训练的方法，可从 DiT 中提取具有语义区分性的特征，在多个基准测试中取得了卓越性能。"
+    },
+    {
+     "en": "Furthermore, CleanDIFT ( Stracke et al., 2025 ) introduces a lightweight, unsupervised fine-tuning method that enables diffusion backbones to provide high-quality, noise-free semantic features for downstream visual tasks.",
+     "zh": "此外，CleanDIFT（Stracke 等人，2025）引入了一种轻量级的无监督微调方法，使扩散主干网络能够为下游视觉任务提供高质量、无噪声的语义特征。"
+    },
+    {
+     "en": "Our work examines how the condition encoder shapes representations, with a focus on progressive abstraction, and how information that may be discarded during this process can remain accessible to the decoder for reconstruction.",
+     "zh": "我们的工作探讨了条件编码器如何塑造表示，重点关注渐进式抽象过程，以及在此过程中可能被丢弃的信息如何仍能被解码器用于重建。"
+    }
+   ]
+  },
+  {
+   "en": "Residual connections affect both optimization and the learned representations. Ji et al. (2025) link the training difficulties caused by removing attention shortcuts to poor network conditioning in self-attention and analyze how residual pathways improve network conditioning. To address this optimization challenge, subsequent work develops initialization and optimization strategies that enable effective training of residual-free transformers ( Ji et al., 2026a ; Ji et al., 2026b ) . Beyond optimization, residual pathways allow information from earlier blocks to persist in deeper representations ( Raghu et al., 2021 ; Zhang et al., 2026 ) . Ji et al. (2026a) further report that residual-free vision transformers learn more abstract representations and achieve improved performance on dense prediction tasks. An additional consideration in our setting is how to include more abstract features in the representations provided to the decoder while retaining other information useful for reconstruction. Our work examines this question in DDT by removing residual connections within the condition encoder and aggregating features from different depths at its encoder output.",
+   "zh": "残差连接同时影响优化过程和所学到的表示。Ji 等人（2025）将移除注意力快捷方式所导致的训练困难，归因于自注意力机制中网络条件化效果不佳，并分析了残差路径如何改善网络条件化。为应对这一优化挑战，后续研究提出了初始化和优化策略，使得无需残差连接的 Transformer 能够被有效训练（Ji 等人，2026a；Ji 等人，2026b）。除了优化之外，残差路径还允许早期模块的信息在更深层的表示中得以保留（Raghu 等人，2021；Zhang 等人，2026）。Ji 等人（2026a）进一步指出，无需残差连接的视觉 Transformer 能够学习到更具抽象性的表示，并在密集预测任务上取得更好的性能。在我们设定的框架中，另一个需要考虑的问题是：如何在向解码器提供的表示中纳入更抽象的特征，同时保留对重建有用的其他信息。我们的研究通过在条件编码器中移除残差连接，并在其编码器输出端聚合不同深度的特征，在 DDT 中探讨了这一问题。",
+   "sents": null
+  },
+  {
+   "en": "DDT ( Wang et al., 2026 ) provides a dedicated condition encoder for semantic extraction and a velocity decoder for signal reconstruction, rather than relying on homogeneous stacks of DiT/SiT blocks. This explicit separation makes DDT particularly suitable for analyzing how information flow within the condition encoder affects representation learning.",
+   "zh": "DDT（Wang 等人，2026）为语义提取提供了一个专用的条件编码器，并为信号重建提供了一个速度解码器，而不是依赖同质的 DiT/SiT 模块堆叠。 这种明确的分离使得 DDT 特别适合分析条件编码器内部的信息流如何影响表示学习。",
+   "sents": [
+    {
+     "en": "DDT ( Wang et al., 2026 ) provides a dedicated condition encoder for semantic extraction and a velocity decoder for signal reconstruction, rather than relying on homogeneous stacks of DiT/SiT blocks.",
+     "zh": "DDT（Wang 等人，2026）为语义提取提供了一个专用的条件编码器，并为信号重建提供了一个速度解码器，而不是依赖同质的 DiT/SiT 模块堆叠。"
+    },
+    {
+     "en": "This explicit separation makes DDT particularly suitable for analyzing how information flow within the condition encoder affects representation learning.",
+     "zh": "这种明确的分离使得 DDT 特别适合分析条件编码器内部的信息流如何影响表示学习。"
+    }
+   ]
+  },
+  {
+   "en": "DDT consists of a condition encoder E ϕ E_{\\phi} and a velocity decoder D θ D_{\\theta} , both operating in the latent space of a pretrained Variational Autoencoder (VAE) 1 1 1 https://huggingface.co/stabilityai/sd-vae-ft-ema . The VAE encoder maps each image to a latent representation, which we write in vectorized form as 𝐱 0 ∈ ℝ d x \\mathbf{x}_{0}\\in\\mathbb{R}^{d_{x}} .",
+   "zh": "DDT 包含一个条件编码器 E ϕ E_{\\phi} 和一个速度解码器 D θ D_{\\theta}，两者都在预训练的变分自编码器（VAE）的潜在空间中运行 1 1 1 https://huggingface.co/stabilityai/sd-vae-ft-ema。 VAE 编码器将每张图像映射为一个潜在表示，我们用向量化形式表示为 𝐱 0 ∈ ℝ d x \\mathbf{x}_{0}\\in\\mathbb{R}^{d_{x}}。",
+   "sents": [
+    {
+     "en": "DDT consists of a condition encoder E ϕ E_{\\phi} and a velocity decoder D θ D_{\\theta} , both operating in the latent space of a pretrained Variational Autoencoder (VAE) 1 1 1 https://huggingface.co/stabilityai/sd-vae-ft-ema .",
+     "zh": "DDT 包含一个条件编码器 E ϕ E_{\\phi} 和一个速度解码器 D θ D_{\\theta}，两者都在预训练的变分自编码器（VAE）的潜在空间中运行 1 1 1 https://huggingface.co/stabilityai/sd-vae-ft-ema。"
+    },
+    {
+     "en": "The VAE encoder maps each image to a latent representation, which we write in vectorized form as 𝐱 0 ∈ ℝ d x \\mathbf{x}_{0}\\in\\mathbb{R}^{d_{x}} .",
+     "zh": "VAE 编码器将每张图像映射为一个潜在表示，我们用向量化形式表示为 𝐱 0 ∈ ℝ d x \\mathbf{x}_{0}\\in\\mathbb{R}^{d_{x}}。"
+    }
+   ]
+  },
+  {
+   "en": "The noisy latent 𝐱 t \\mathbf{x}_{t} and noise ϵ \\bm{\\epsilon} have the same dimension and a noisy latent is constructed as",
+   "zh": "含噪声的潜在变量 𝐱 t \\mathbf{x}_{t} 和噪声 ϵ \\bm{\\epsilon} 具有相同的维度，并且一个含噪声的潜在变量是通过以下方式构造的：",
+   "sents": null
+  },
+  {
+   "en": "where t ∈ [ 0 , 1 ] t\\in[0,1] is the diffusion timestep, α t = 1 − t \\alpha_{t}=1-t and σ t = t \\sigma_{t}=t specify the signal and noise coefficients so that 𝐱 0 \\mathbf{x}_{0} is the clean latent and 𝐱 1 \\mathbf{x}_{1} is pure noise. The encoder maps the noisy latent 𝐱 t \\mathbf{x}_{t} to a representation under timestep and class conditioning. This representation is combined with the timestep embedding to condition the decoder, which takes 𝐱 t \\mathbf{x}_{t} as its input:",
+   "zh": "其中 t ∈ [0,1] 是扩散时间步长，α_t = 1 − t 和 σ_t = t 分别指定了信号和噪声系数，因此 𝐱_0 是干净的潜在表示，而 𝐱_1 是纯噪声。 编码器将含噪的潜在表示 𝐱_t 映射为在时间步长和类别条件下的一个表示。 该表示会与时间步长嵌入相结合以对解码器施加条件，而解码器则以 𝐱_t 作为输入：",
+   "sents": [
+    {
+     "en": "where t ∈ [ 0 , 1 ] t\\in[0,1] is the diffusion timestep, α t = 1 − t \\alpha_{t}=1-t and σ t = t \\sigma_{t}=t specify the signal and noise coefficients so that 𝐱 0 \\mathbf{x}_{0} is the clean latent and 𝐱 1 \\mathbf{x}_{1} is pure noise.",
+     "zh": "其中 t ∈ [0,1] 是扩散时间步长，α_t = 1 − t 和 σ_t = t 分别指定了信号和噪声系数，因此 𝐱_0 是干净的潜在表示，而 𝐱_1 是纯噪声。"
+    },
+    {
+     "en": "The encoder maps the noisy latent 𝐱 t \\mathbf{x}_{t} to a representation under timestep and class conditioning.",
+     "zh": "编码器将含噪的潜在表示 𝐱_t 映射为在时间步长和类别条件下的一个表示。"
+    },
+    {
+     "en": "This representation is combined with the timestep embedding to condition the decoder, which takes 𝐱 t \\mathbf{x}_{t} as its input:",
+     "zh": "该表示会与时间步长嵌入相结合以对解码器施加条件，而解码器则以 𝐱_t 作为输入："
+    }
+   ]
+  },
+  {
+   "en": "where y y is the class label and 𝐙 t ∈ ℝ N × D \\mathbf{Z}_{t}\\in\\mathbb{R}^{N\\times D} is the encoder output feature matrix, with N N tokens and feature dimension D D . We focus on the condition encoder to examine how residual connections shape the representations it learns.",
+   "zh": "其中 y 是类别标签，而 𝐙 t ∈ ℝ N × D \\mathbf{Z}_{t}\\in\\mathbb{R}^{N\\times D} 是编码器的输出特征矩阵，包含 N 个词元和特征维度 D。 我们关注条件编码器，以研究残差连接如何塑造其学习到的表示。",
+   "sents": [
+    {
+     "en": "where y y is the class label and 𝐙 t ∈ ℝ N × D \\mathbf{Z}_{t}\\in\\mathbb{R}^{N\\times D} is the encoder output feature matrix, with N N tokens and feature dimension D D .",
+     "zh": "其中 y 是类别标签，而 𝐙 t ∈ ℝ N × D \\mathbf{Z}_{t}\\in\\mathbb{R}^{N\\times D} 是编码器的输出特征矩阵，包含 N 个词元和特征维度 D。"
+    },
+    {
+     "en": "We focus on the condition encoder to examine how residual connections shape the representations it learns.",
+     "zh": "我们关注条件编码器，以研究残差连接如何塑造其学习到的表示。"
+    }
+   ]
+  },
+  {
+   "en": "The noisy latent is partitioned into non-overlapping patches and each patch is flattened and linearly projected to a D D -dimensional token, yielding 𝐇 0 ∈ ℝ N × D \\mathbf{H}_{0}\\in\\mathbb{R}^{N\\times D} , where N N is the number of patches. Let 𝐇 ℓ ∈ ℝ N × D \\mathbf{H}_{\\ell}\\in\\mathbb{R}^{N\\times D} denote the output of block ℓ \\ell , for ℓ = 1 , … , L \\ell=1,\\ldots,L . For clarity, we omit timestep t t .",
+   "zh": "噪声潜变量被划分为互不重叠的块，每个块被展平并通过线性投影到一个 D 维的令牌，得到 𝐇 0 ∈ ℝ N × D \\mathbf{H}_{0}\\in\\mathbb{R}^{N\\times D}，其中 N 是块的数量。 令 𝐇 ℓ ∈ ℝ N × D \\mathbf{H}_{\\ell}\\in\\mathbb{R}^{N\\times D} 表示第 ℓ 个模块的输出，其中 ℓ = 1 , … , L 。 为清晰起见，我们省略了时间步 t 。",
+   "sents": [
+    {
+     "en": "The noisy latent is partitioned into non-overlapping patches and each patch is flattened and linearly projected to a D D -dimensional token, yielding 𝐇 0 ∈ ℝ N × D \\mathbf{H}_{0}\\in\\mathbb{R}^{N\\times D} , where N N is the number of patches.",
+     "zh": "噪声潜变量被划分为互不重叠的块，每个块被展平并通过线性投影到一个 D 维的令牌，得到 𝐇 0 ∈ ℝ N × D \\mathbf{H}_{0}\\in\\mathbb{R}^{N\\times D}，其中 N 是块的数量。"
+    },
+    {
+     "en": "Let 𝐇 ℓ ∈ ℝ N × D \\mathbf{H}_{\\ell}\\in\\mathbb{R}^{N\\times D} denote the output of block ℓ \\ell , for ℓ = 1 , … , L \\ell=1,\\ldots,L .",
+     "zh": "令 𝐇 ℓ ∈ ℝ N × D \\mathbf{H}_{\\ell}\\in\\mathbb{R}^{N\\times D} 表示第 ℓ 个模块的输出，其中 ℓ = 1 , … , L 。"
+    },
+    {
+     "en": "For clarity, we omit timestep t t .",
+     "zh": "为清晰起见，我们省略了时间步 t 。"
+    }
+   ]
+  },
+  {
+   "en": "Timestep and class information are injected through adaptive layer normalization (AdaLN) ( Peebles and Xie, 2023 ) . A conditioning vector 𝐜 = SiLU ⁡ ( e t ​ ( t ) + e y ​ ( y ) ) ∈ ℝ D \\mathbf{c}=\\mathrm{SiLU}\\big(e_{t}(t)+e_{y}(y)\\big)\\in\\mathbb{R}^{D} is mapped by a per-block affine layer to shift, scale, and gate vectors 𝜷 i ℓ , 𝜸 i ℓ , 𝐠 i ℓ ∈ ℝ D \\bm{\\beta}_{i}^{\\ell},\\bm{\\gamma}_{i}^{\\ell},\\mathbf{g}_{i}^{\\ell}\\in\\mathbb{R}^{D} for the attention ( i = 1 i=1 ) and MLP ( i = 2 i=2 ). Here, e t ​ ( ⋅ ) e_{t}(\\cdot) and e y ​ ( ⋅ ) e_{y}(\\cdot) denote the timestep embedding function and the class embedding function, respectively.",
+   "zh": "时间步和类别信息通过自适应层归一化（AdaLN）注入（Peebles 和 Xie，2023）。 一个条件向量 𝐜 = SiLU ⁡ ( e t ​ ( t ) + e y ​ ( y ) ) ∈ ℝ D \\mathbf{c}=\\mathrm{SiLU}\\big(e_{t}(t)+e_{y}(y)\\big)\\in\\mathbb{R}^{D} 通过每个块的仿射层映射为移位、缩放和门控向量 𝜷 i ℓ , 𝜸 i ℓ , 𝐠 i ℓ ∈ ℝ D \\bm{\\beta}_{i}^{\\ell},\\bm{\\gamma}_{i}^{\\ell},\\mathbf{g}_{i}^{\\ell}\\in\\mathbb{R}^{D}，分别用于注意力机制（i = 1）和 MLP（i = 2）。 此处，e t ​ ( ⋅ ) e_{t}(\\cdot) 和 e y ​ ( ⋅ ) e_{y}(\\cdot) 分别表示时间步嵌入函数和类别嵌入函数。",
+   "sents": [
+    {
+     "en": "Timestep and class information are injected through adaptive layer normalization (AdaLN) ( Peebles and Xie, 2023 ) .",
+     "zh": "时间步和类别信息通过自适应层归一化（AdaLN）注入（Peebles 和 Xie，2023）。"
+    },
+    {
+     "en": "A conditioning vector 𝐜 = SiLU ⁡ ( e t ​ ( t ) + e y ​ ( y ) ) ∈ ℝ D \\mathbf{c}=\\mathrm{SiLU}\\big(e_{t}(t)+e_{y}(y)\\big)\\in\\mathbb{R}^{D} is mapped by a per-block affine layer to shift, scale, and gate vectors 𝜷 i ℓ , 𝜸 i ℓ , 𝐠 i ℓ ∈ ℝ D \\bm{\\beta}_{i}^{\\ell},\\bm{\\gamma}_{i}^{\\ell},\\mathbf{g}_{i}^{\\ell}\\in\\mathbb{R}^{D} for the attention ( i = 1 i=1 ) and MLP ( i = 2 i=2 ).",
+     "zh": "一个条件向量 𝐜 = SiLU ⁡ ( e t ​ ( t ) + e y ​ ( y ) ) ∈ ℝ D \\mathbf{c}=\\mathrm{SiLU}\\big(e_{t}(t)+e_{y}(y)\\big)\\in\\mathbb{R}^{D} 通过每个块的仿射层映射为移位、缩放和门控向量 𝜷 i ℓ , 𝜸 i ℓ , 𝐠 i ℓ ∈ ℝ D \\bm{\\beta}_{i}^{\\ell},\\bm{\\gamma}_{i}^{\\ell},\\mathbf{g}_{i}^{\\ell}\\in\\mathbb{R}^{D}，分别用于注意力机制（i = 1）和 MLP（i = 2）。"
+    },
+    {
+     "en": "Here, e t ​ ( ⋅ ) e_{t}(\\cdot) and e y ​ ( ⋅ ) e_{y}(\\cdot) denote the timestep embedding function and the class embedding function, respectively.",
+     "zh": "此处，e t ​ ( ⋅ ) e_{t}(\\cdot) 和 e y ​ ( ⋅ ) e_{y}(\\cdot) 分别表示时间步嵌入函数和类别嵌入函数。"
+    }
+   ]
+  },
+  {
+   "en": "Each encoder block applies the following residual updates:",
+   "zh": "每个编码器块都应用以下残差更新：",
+   "sents": null
+  },
+  {
+   "en": "where the Self-Attention and MLP transformations are defined as",
+   "zh": "其中，自注意力和多层感知机变换的定义如下：",
+   "sents": null
+  },
+  {
+   "en": "Here, ⊙ \\odot denotes element-wise multiplication, with channel-wise modulation vectors broadcast across tokens.",
+   "zh": "此处，⊙ \\odot 表示逐元素乘法，其中按通道分块的调制向量会广播到所有 token。",
+   "sents": null
+  },
+  {
+   "en": "The SA ℓ \\mathrm{SA}_{\\ell} operation uses four learnable projection matrices, 𝐖 Q ℓ , 𝐖 K ℓ , 𝐖 V ℓ , 𝐖 O ℓ ∈ ℝ D × D \\mathbf{W}_{\\mathrm{Q}}^{\\ell},\\mathbf{W}_{\\mathrm{K}}^{\\ell},\\mathbf{W}_{\\mathrm{V}}^{\\ell},\\mathbf{W}_{\\mathrm{O}}^{\\ell}\\in\\mathbb{R}^{D\\times D} , corresponding to the query, key, value, and output projections, respectively. The MLP ℓ \\mathrm{MLP}_{\\ell} operation uses two learnable weight matrices, 𝐖 1 ℓ ∈ ℝ D ff × D \\mathbf{W}_{1}^{\\ell}\\in\\mathbb{R}^{D_{\\mathrm{ff}}\\times D} and 𝐖 2 ℓ ∈ ℝ D × D ff \\mathbf{W}_{2}^{\\ell}\\in\\mathbb{R}^{D\\times D_{\\mathrm{ff}}} , where D ff D_{\\mathrm{ff}} is the MLP hidden dimension. Detailed definitions of the SA \\mathrm{SA} and MLP \\mathrm{MLP} operations are provided in Section A.2 .",
+   "zh": "SA ℓ \\mathrm{SA}_{\\ell} 操作使用四个可学习的投影矩阵：𝐖 Q ℓ , 𝐖 K ℓ , 𝐖 V ℓ , 𝐖 O ℓ ∈ ℝ D × D \\mathbf{W}_{\\mathrm{Q}}^{\\ell},\\mathbf{W}_{\\mathrm{K}}^{\\ell},\\mathbf{W}_{\\mathrm{V}}^{\\ell},\\mathbf{W}_{\\mathrm{O}}^{\\ell}\\in\\mathbb{R}^{D\\times D}，分别对应查询、键、值和输出投影。 MLP ℓ \\mathrm{MLP}_{\\ell} 操作使用两个可学习的权重矩阵：𝐖 1 ℓ ∈ ℝ D ff × D \\mathbf{W}_{1}^{\\ell}\\in\\mathbb{R}^{D_{\\mathrm{ff}}\\times D} 和 𝐖 2 ℓ ∈ ℝ D × D ff \\mathbf{W}_{2}^{\\ell}\\in\\mathbb{R}^{D\\times D_{\\mathrm{ff}}}，其中 D ff D_{\\mathrm{ff}} 是 MLP 的隐藏维度。 SA \\mathrm{SA} 和 MLP \\mathrm{MLP} 操作的详细定义见第 A.2 节。",
+   "sents": [
+    {
+     "en": "The SA ℓ \\mathrm{SA}_{\\ell} operation uses four learnable projection matrices, 𝐖 Q ℓ , 𝐖 K ℓ , 𝐖 V ℓ , 𝐖 O ℓ ∈ ℝ D × D \\mathbf{W}_{\\mathrm{Q}}^{\\ell},\\mathbf{W}_{\\mathrm{K}}^{\\ell},\\mathbf{W}_{\\mathrm{V}}^{\\ell},\\mathbf{W}_{\\mathrm{O}}^{\\ell}\\in\\mathbb{R}^{D\\times D} , corresponding to the query, key, value, and output projections, respectively.",
+     "zh": "SA ℓ \\mathrm{SA}_{\\ell} 操作使用四个可学习的投影矩阵：𝐖 Q ℓ , 𝐖 K ℓ , 𝐖 V ℓ , 𝐖 O ℓ ∈ ℝ D × D \\mathbf{W}_{\\mathrm{Q}}^{\\ell},\\mathbf{W}_{\\mathrm{K}}^{\\ell},\\mathbf{W}_{\\mathrm{V}}^{\\ell},\\mathbf{W}_{\\mathrm{O}}^{\\ell}\\in\\mathbb{R}^{D\\times D}，分别对应查询、键、值和输出投影。"
+    },
+    {
+     "en": "The MLP ℓ \\mathrm{MLP}_{\\ell} operation uses two learnable weight matrices, 𝐖 1 ℓ ∈ ℝ D ff × D \\mathbf{W}_{1}^{\\ell}\\in\\mathbb{R}^{D_{\\mathrm{ff}}\\times D} and 𝐖 2 ℓ ∈ ℝ D × D ff \\mathbf{W}_{2}^{\\ell}\\in\\mathbb{R}^{D\\times D_{\\mathrm{ff}}} , where D ff D_{\\mathrm{ff}} is the MLP hidden dimension.",
+     "zh": "MLP ℓ \\mathrm{MLP}_{\\ell} 操作使用两个可学习的权重矩阵：𝐖 1 ℓ ∈ ℝ D ff × D \\mathbf{W}_{1}^{\\ell}\\in\\mathbb{R}^{D_{\\mathrm{ff}}\\times D} 和 𝐖 2 ℓ ∈ ℝ D × D ff \\mathbf{W}_{2}^{\\ell}\\in\\mathbb{R}^{D\\times D_{\\mathrm{ff}}}，其中 D ff D_{\\mathrm{ff}} 是 MLP 的隐藏维度。"
+    },
+    {
+     "en": "Detailed definitions of the SA \\mathrm{SA} and MLP \\mathrm{MLP} operations are provided in Section A.2 .",
+     "zh": "SA \\mathrm{SA} 和 MLP \\mathrm{MLP} 操作的详细定义见第 A.2 节。"
+    }
+   ]
+  },
+  {
+   "en": "Simply, we combine the residual updates within block ℓ \\ell into a function f ℓ f_{\\ell} . The block output can then be written as",
+   "zh": "简单来说，我们将块 ℓ \\ell 内的残差更新合并为一个函数 f ℓ f_{\\ell}。 然后，该块的输出可以写为",
+   "sents": [
+    {
+     "en": "Simply, we combine the residual updates within block ℓ \\ell into a function f ℓ f_{\\ell} .",
+     "zh": "简单来说，我们将块 ℓ \\ell 内的残差更新合并为一个函数 f ℓ f_{\\ell}。"
+    },
+    {
+     "en": "The block output can then be written as",
+     "zh": "然后，该块的输出可以写为"
+    }
+   ]
+  },
+  {
+   "en": "The final encoder output, 𝐙 t = 𝐇 L \\mathbf{Z}_{t}=\\mathbf{H}_{L} , is supplied to the decoder. Expanding the residual updates gives",
+   "zh": "最终的编码器输出 𝐙 t = 𝐇 L \\mathbf{Z}_{t}=\\mathbf{H}_{L} 被提供给解码器。 展开残差更新可得",
+   "sents": [
+    {
+     "en": "The final encoder output, 𝐙 t = 𝐇 L \\mathbf{Z}_{t}=\\mathbf{H}_{L} , is supplied to the decoder.",
+     "zh": "最终的编码器输出 𝐙 t = 𝐇 L \\mathbf{Z}_{t}=\\mathbf{H}_{L} 被提供给解码器。"
+    },
+    {
+     "en": "Expanding the residual updates gives",
+     "zh": "展开残差更新可得"
+    }
+   ]
+  },
+  {
+   "en": "This expansion shows that shallow features persist as the encoder blocks go deeper.",
+   "zh": "这种扩展表明，随着编码器块不断加深，浅层特征仍然存在。",
+   "sents": null
+  },
+  {
+   "en": "In this section, we introduce our approach to improving the representations learned by the DDT encoder, including a residual-free encoder architecture and initialization strategies.",
+   "zh": "在本节中，我们将介绍我们改进 DDT 编码器所学习到的表示的方法，包括一种无残差的编码器架构和初始化策略。",
+   "sents": null
+  },
+  {
+   "en": "We remove the residual connections around the attention and MLP sublayers within each encoder block while retaining the timestep- and class-dependent modulation. Using 𝒜 ℓ \\mathcal{A}_{\\ell} and ℳ ℓ \\mathcal{M}_{\\ell} defined in Eqs. 4 and 5 , each block computes",
+   "zh": "我们移除了每个编码器块中注意力子层和 MLP 子层周围的残差连接，同时保留了与时间步和类别相关的调制。 使用公式 4 和 5 中定义的 𝒜 ℓ \\mathcal{A}_{\\ell} 和 ℳ ℓ \\mathcal{M}_{\\ell}，每个块都会计算",
+   "sents": [
+    {
+     "en": "We remove the residual connections around the attention and MLP sublayers within each encoder block while retaining the timestep- and class-dependent modulation.",
+     "zh": "我们移除了每个编码器块中注意力子层和 MLP 子层周围的残差连接，同时保留了与时间步和类别相关的调制。"
+    },
+    {
+     "en": "Using 𝒜 ℓ \\mathcal{A}_{\\ell} and ℳ ℓ \\mathcal{M}_{\\ell} defined in Eqs. 4 and 5 , each block computes",
+     "zh": "使用公式 4 和 5 中定义的 𝒜 ℓ \\mathcal{A}_{\\ell} 和 ℳ ℓ \\mathcal{M}_{\\ell}，每个块都会计算"
+    }
+   ]
+  },
+  {
+   "en": "We parameterize the output gates as 𝟏 + 𝐠 1 ℓ \\mathbf{1}+\\bm{\\mathbf{g}}_{1}^{\\ell} and 𝟏 + 𝐠 2 ℓ \\mathbf{1}+\\bm{\\mathbf{g}}_{2}^{\\ell} . We initialize the gate parameters to zero so that both output gates equal 𝟏 \\mathbf{1} at initialization.",
+   "zh": "我们将输出门参数化为 𝟏 + 𝐠 1 ℓ \\mathbf{1}+\\bm{\\mathbf{g}}_{1}^{\\ell} 和 𝟏 + 𝐠 2 ℓ \\mathbf{1}+\\bm{\\mathbf{g}}_{2}^{\\ell}。 我们将门参数初始化为零，因此在初始化时两个输出门都等于 𝟏 \\mathbf{1}。",
+   "sents": [
+    {
+     "en": "We parameterize the output gates as 𝟏 + 𝐠 1 ℓ \\mathbf{1}+\\bm{\\mathbf{g}}_{1}^{\\ell} and 𝟏 + 𝐠 2 ℓ \\mathbf{1}+\\bm{\\mathbf{g}}_{2}^{\\ell} .",
+     "zh": "我们将输出门参数化为 𝟏 + 𝐠 1 ℓ \\mathbf{1}+\\bm{\\mathbf{g}}_{1}^{\\ell} 和 𝟏 + 𝐠 2 ℓ \\mathbf{1}+\\bm{\\mathbf{g}}_{2}^{\\ell}。"
+    },
+    {
+     "en": "We initialize the gate parameters to zero so that both output gates equal 𝟏 \\mathbf{1} at initialization.",
+     "zh": "我们将门参数初始化为零，因此在初始化时两个输出门都等于 𝟏 \\mathbf{1}。"
+    }
+   ]
+  },
+  {
+   "en": "Let f ℓ RF f_{\\ell}^{\\mathrm{RF}} denote the gated transformation of residual-free encoder block ℓ \\ell . In contrast to Eq. 7 , each residual-free encoder block is computed as 𝐇 ℓ = f ℓ RF ​ ( 𝐇 ℓ − 1 ) \\mathbf{H}_{\\ell}=f_{\\ell}^{\\mathrm{RF}}(\\mathbf{H}_{\\ell-1}) , without additive identity pathways. We expect these successive transformations to encourage progressive semantic abstraction.",
+   "zh": "令 f ℓ RF f_{\\ell}^{\\mathrm{RF}} 表示无残差编码器块 ℓ \\ell 的门控变换。 与公式 7 不同，每个无残差编码器块的计算为 𝐇 ℓ = f ℓ RF ​ ( 𝐇 ℓ − 1 ) \\mathbf{H}_{\\ell}=f_{\\ell}^{\\mathrm{RF}}(\\mathbf{H}_{\\ell-1}) ，且没有加法恒等路径。 我们期望这些连续变换能够促进渐进式的语义抽象。",
+   "sents": [
+    {
+     "en": "Let f ℓ RF f_{\\ell}^{\\mathrm{RF}} denote the gated transformation of residual-free encoder block ℓ \\ell .",
+     "zh": "令 f ℓ RF f_{\\ell}^{\\mathrm{RF}} 表示无残差编码器块 ℓ \\ell 的门控变换。"
+    },
+    {
+     "en": "In contrast to Eq. 7 , each residual-free encoder block is computed as 𝐇 ℓ = f ℓ RF ​ ( 𝐇 ℓ − 1 ) \\mathbf{H}_{\\ell}=f_{\\ell}^{\\mathrm{RF}}(\\mathbf{H}_{\\ell-1}) , without additive identity pathways.",
+     "zh": "与公式 7 不同，每个无残差编码器块的计算为 𝐇 ℓ = f ℓ RF ​ ( 𝐇 ℓ − 1 ) \\mathbf{H}_{\\ell}=f_{\\ell}^{\\mathrm{RF}}(\\mathbf{H}_{\\ell-1}) ，且没有加法恒等路径。"
+    },
+    {
+     "en": "We expect these successive transformations to encourage progressive semantic abstraction.",
+     "zh": "我们期望这些连续变换能够促进渐进式的语义抽象。"
+    }
+   ]
+  },
+  {
+   "en": "To provide the decoder with both detailed and abstract information from multiple encoder depths, we aggregate the input patch embeddings and the outputs of all encoder blocks:",
+   "zh": "为了向解码器提供来自多个编码器层级的详细和抽象信息，我们对输入块嵌入以及所有编码器块的输出进行聚合：",
+   "sents": null
+  },
+  {
+   "en": "where 𝐇 0 \\mathbf{H}_{0} denotes the input patch embeddings and 𝐇 ℓ \\mathbf{H}_{\\ell} denotes the output of encoder block ℓ \\ell . In contrast to the residual accumulation in Eq. 8 , this aggregation is performed only at the encoder output, and does not introduce identity pathways within the encoder. It gives the decoder direct access to features from different depths, without requiring deeper encoder blocks to retain all the information needed for reconstruction.",
+   "zh": "其中 𝐇 0 \\mathbf{H}_{0} 表示输入图像块嵌入，而 𝐇 ℓ \\mathbf{H}_{\\ell} 表示编码块 ℓ \\ell 的输出。 与公式 8 中的残差累加不同，这种聚合仅在编码器输出处执行，且不会在编码器内部引入恒等路径。 这使得解码器可以直接访问来自不同深度的特征，而无需更深的编码块来保留重建所需的所有信息。",
+   "sents": [
+    {
+     "en": "where 𝐇 0 \\mathbf{H}_{0} denotes the input patch embeddings and 𝐇 ℓ \\mathbf{H}_{\\ell} denotes the output of encoder block ℓ \\ell .",
+     "zh": "其中 𝐇 0 \\mathbf{H}_{0} 表示输入图像块嵌入，而 𝐇 ℓ \\mathbf{H}_{\\ell} 表示编码块 ℓ \\ell 的输出。"
+    },
+    {
+     "en": "In contrast to the residual accumulation in Eq. 8 , this aggregation is performed only at the encoder output, and does not introduce identity pathways within the encoder.",
+     "zh": "与公式 8 中的残差累加不同，这种聚合仅在编码器输出处执行，且不会在编码器内部引入恒等路径。"
+    },
+    {
+     "en": "It gives the decoder direct access to features from different depths, without requiring deeper encoder blocks to retain all the information needed for reconstruction.",
+     "zh": "这使得解码器可以直接访问来自不同深度的特征，而无需更深的编码块来保留重建所需的所有信息。"
+    }
+   ]
+  },
+  {
+   "en": "Self-attention is disproportionately ill-conditioned compared with other components of a transformer block ( Ji et al., 2025 ) , and residual connections are commonly used to stabilize its training. To improve its conditioning and convergence in the absence of residual connections, one approach is mimetic initialization ( Trockman and Kolter, 2023 ; Ji et al., 2026a ) , which initializes the query and key projections to satisfy",
+   "zh": "与 Transformer 模块的其他组件相比，自注意力机制的条件化状态极不稳定（Ji 等，2025），因此通常使用残差连接来稳定其训练过程。 在没有残差连接的情况下，为了改善其条件化和收敛性，一种方法是采用模仿初始化（Trockman 和 Kolter，2023；Ji 等，2026a），该方法将查询和键的投影初始化为满足特定条件的状态。",
+   "sents": [
+    {
+     "en": "Self-attention is disproportionately ill-conditioned compared with other components of a transformer block ( Ji et al., 2025 ) , and residual connections are commonly used to stabilize its training.",
+     "zh": "与 Transformer 模块的其他组件相比，自注意力机制的条件化状态极不稳定（Ji 等，2025），因此通常使用残差连接来稳定其训练过程。"
+    },
+    {
+     "en": "To improve its conditioning and convergence in the absence of residual connections, one approach is mimetic initialization ( Trockman and Kolter, 2023 ; Ji et al., 2026a ) , which initializes the query and key projections to satisfy",
+     "zh": "在没有残差连接的情况下，为了改善其条件化和收敛性，一种方法是采用模仿初始化（Trockman 和 Kolter，2023；Ji 等，2026a），该方法将查询和键的投影初始化为满足特定条件的状态。"
+    }
+   ]
+  },
+  {
+   "en": "where 𝐙 i ​ j ∼ 𝒩 ⁡ ( 0 , 1 / D ) \\mathbf{Z}_{ij}\\sim\\mathcal{N}(0,1/D) , 𝐈 \\mathbf{I} is the identity matrix, and α \\alpha and β \\beta are scalar constants. This initialization encourages diagonal dominance in the query–key product, which can improve the conditioning of self-attention and support stable and fast convergence.",
+   "zh": "其中 𝐙 i ​ j ∼ 𝒩 ⁡ ( 0 , 1 / D ) \\mathbf{Z}_{ij}\\sim\\mathcal{N}(0,1/D) ，𝐈 \\mathbf{I} 是单位矩阵，而 α \\alpha 和 β \\beta 是标量常数。 这种初始化方式促进了查询–键乘积的对角占优性，这可以改善自注意力的条件数，并支持稳定且快速的收敛。",
+   "sents": [
+    {
+     "en": "where 𝐙 i ​ j ∼ 𝒩 ⁡ ( 0 , 1 / D ) \\mathbf{Z}_{ij}\\sim\\mathcal{N}(0,1/D) , 𝐈 \\mathbf{I} is the identity matrix, and α \\alpha and β \\beta are scalar constants.",
+     "zh": "其中 𝐙 i ​ j ∼ 𝒩 ⁡ ( 0 , 1 / D ) \\mathbf{Z}_{ij}\\sim\\mathcal{N}(0,1/D) ，𝐈 \\mathbf{I} 是单位矩阵，而 α \\alpha 和 β \\beta 是标量常数。"
+    },
+    {
+     "en": "This initialization encourages diagonal dominance in the query–key product, which can improve the conditioning of self-attention and support stable and fast convergence.",
+     "zh": "这种初始化方式促进了查询–键乘积的对角占优性，这可以改善自注意力的条件数，并支持稳定且快速的收敛。"
+    }
+   ]
+  },
+  {
+   "en": "However, applying this approach to new models involves tuning two hyperparameters, α \\alpha and β \\beta . We therefore propose a new strategy that mixes a shared orthogonal component with the default query and key initializations. For each encoder block ℓ \\ell , we sample a random orthogonal matrix 𝐎 ℓ ∈ ℝ D × D \\mathbf{O}_{\\ell}\\in\\mathbb{R}^{D\\times D} and set",
+   "zh": "然而，将这种方法应用于新模型需要调整两个超参数：α \\alpha 和 β \\beta。 因此，我们提出一种新策略，将共享的正交分量与默认的查询和键初始化相结合。 对于每个编码器块 ℓ \\ell，我们采样一个随机正交矩阵 𝐎 ℓ ∈ ℝ D × D \\mathbf{O}_{\\ell}\\in\\mathbb{R}^{D\\times D}，并设置",
+   "sents": [
+    {
+     "en": "However, applying this approach to new models involves tuning two hyperparameters, α \\alpha and β \\beta .",
+     "zh": "然而，将这种方法应用于新模型需要调整两个超参数：α \\alpha 和 β \\beta。"
+    },
+    {
+     "en": "We therefore propose a new strategy that mixes a shared orthogonal component with the default query and key initializations.",
+     "zh": "因此，我们提出一种新策略，将共享的正交分量与默认的查询和键初始化相结合。"
+    },
+    {
+     "en": "For each encoder block ℓ \\ell , we sample a random orthogonal matrix 𝐎 ℓ ∈ ℝ D × D \\mathbf{O}_{\\ell}\\in\\mathbb{R}^{D\\times D} and set",
+     "zh": "对于每个编码器块 ℓ \\ell，我们采样一个随机正交矩阵 𝐎 ℓ ∈ ℝ D × D \\mathbf{O}_{\\ell}\\in\\mathbb{R}^{D\\times D}，并设置"
+    }
+   ]
+  },
+  {
+   "en": "The entries of 𝐖 Q , default ℓ \\mathbf{W}_{\\mathrm{Q,default}}^{\\ell} and 𝐖 K , default ℓ \\mathbf{W}_{\\mathrm{K,default}}^{\\ell} are sampled independently from the uniform distribution 𝒰 ( − 1 / D , 1 / D ) \\mathcal{U}(-1/\\sqrt{D},\\,1/\\sqrt{D}) , where D D is the input feature dimension. The parameter ρ ∈ [ 0 , 1 ] \\rho\\in[0,1] controls the contribution of these random components relative to the shared orthogonal component. The orthogonal component is shared between the query and key projections, whereas the default components are drawn independently. At ρ = 0 \\rho=0 , both projections start from the same orthogonal matrix with condition number κ = 1 \\kappa=1 . At ρ = 1 \\rho=1 , they retain the default initialization. The projections are tied only at initialization and trained as separate parameters. The value and output projections 𝐖 V ℓ , 𝐖 O ℓ \\mathbf{W}^{\\ell}_{\\mathrm{V}},\\mathbf{W}^{\\ell}_{\\mathrm{O}} are initialized as orthogonal matrices and thus have condition number κ = 1 \\kappa=1 .",
+   "zh": "𝐖 Q , default ℓ（𝐖 Q , default ℓ）和𝐖 K , default ℓ（𝐖 K , default ℓ）的条目均从均匀分布𝒰 ( − 1 / D , 1 / D )（𝒰 ( − 1 / D , 1 / D )）中独立采样，其中D是输入特征维度。 参数ρ ∈ [ 0 , 1 ]（ρ ∈ [ 0 , 1 ]）控制这些随机分量相对于共享正交分量的贡献程度。 正交分量在查询和键投影之间共享，而默认分量则独立抽取。 当ρ = 0时，两种投影均从条件数κ = 1的相同正交矩阵开始。 当ρ = 1时，它们保留默认初始化。 这些投影仅在初始化阶段绑定，之后作为独立的参数进行训练。 值投影和输出投影𝐖 V ℓ、𝐖 O ℓ（𝐖 V ℓ、𝐖 O ℓ）被初始化为正交矩阵，因此其条件数κ = 1。",
+   "sents": [
+    {
+     "en": "The entries of 𝐖 Q , default ℓ \\mathbf{W}_{\\mathrm{Q,default}}^{\\ell} and 𝐖 K , default ℓ \\mathbf{W}_{\\mathrm{K,default}}^{\\ell} are sampled independently from the uniform distribution 𝒰 ( − 1 / D , 1 / D ) \\mathcal{U}(-1/\\sqrt{D},\\,1/\\sqrt{D}) , where D D is the input feature dimension.",
+     "zh": "𝐖 Q , default ℓ（𝐖 Q , default ℓ）和𝐖 K , default ℓ（𝐖 K , default ℓ）的条目均从均匀分布𝒰 ( − 1 / D , 1 / D )（𝒰 ( − 1 / D , 1 / D )）中独立采样，其中D是输入特征维度。"
+    },
+    {
+     "en": "The parameter ρ ∈ [ 0 , 1 ] \\rho\\in[0,1] controls the contribution of these random components relative to the shared orthogonal component.",
+     "zh": "参数ρ ∈ [ 0 , 1 ]（ρ ∈ [ 0 , 1 ]）控制这些随机分量相对于共享正交分量的贡献程度。"
+    },
+    {
+     "en": "The orthogonal component is shared between the query and key projections, whereas the default components are drawn independently.",
+     "zh": "正交分量在查询和键投影之间共享，而默认分量则独立抽取。"
+    },
+    {
+     "en": "At ρ = 0 \\rho=0 , both projections start from the same orthogonal matrix with condition number κ = 1 \\kappa=1 .",
+     "zh": "当ρ = 0时，两种投影均从条件数κ = 1的相同正交矩阵开始。"
+    },
+    {
+     "en": "At ρ = 1 \\rho=1 , they retain the default initialization.",
+     "zh": "当ρ = 1时，它们保留默认初始化。"
+    },
+    {
+     "en": "The projections are tied only at initialization and trained as separate parameters.",
+     "zh": "这些投影仅在初始化阶段绑定，之后作为独立的参数进行训练。"
+    },
+    {
+     "en": "The value and output projections 𝐖 V ℓ , 𝐖 O ℓ \\mathbf{W}^{\\ell}_{\\mathrm{V}},\\mathbf{W}^{\\ell}_{\\mathrm{O}} are initialized as orthogonal matrices and thus have condition number κ = 1 \\kappa=1 .",
+     "zh": "值投影和输出投影𝐖 V ℓ、𝐖 O ℓ（𝐖 V ℓ、𝐖 O ℓ）被初始化为正交矩阵，因此其条件数κ = 1。"
+    }
+   ]
+  },
+  {
+   "en": "Using an approach similar to Martens et al. (2021) and He et al. (2023) , we initialize weight matrices in the MLP blocks according to the scale-corrected uniform orthogonal (SUO) distribution, which ensures that these layers preserve the vector RMS of their inputs, whilst also having a condition number of 1. For the depths we trained at, we found that it wasn’t necessary to transform the activation functions as recommended in Martens et al. (2021) .",
+   "zh": "我们采用与 Martens et al. (2021) 和 He et al. (2023) 类似的方法，根据经过尺度校正的均匀正交（SUO）分布来初始化 MLP 块中的权重矩阵。这种方法能够确保这些层保持其输入向量的均方根（RMS），同时使条件数等于 1。在我们所训练的深度下，我们发现无需像 Martens et al. (2021) 的建议那样对激活函数进行变换。",
+   "sents": null
+  },
+  {
+   "en": "We evaluate our methods in training diffusion transformers from scratch on the ImageNet-1k dataset at a resolution of 256 × 256 256\\times 256 and patch size of 2 for 80 epochs, using a total training batch size of 1024. Following Zhou et al. (2026) , we use the Muon optimizer with a constant learning rate of 0.0002 and a momentum of 0.95 throughout training. We set the gradient clipping threshold to 1, weight decay to 0, and the exponential moving average (EMA) decay rate to 0.9999. We use the off-the-shelf VAE-ft-EMA from Hugging Face 2 2 2 https://huggingface.co/stabilityai/sd-vae-ft-ema , with a downsampling factor of 8. For sampling, we use the Euler solver with 250 steps. We train both DDT and DDT-RFE in both Large (L) and Extra Large (XL) configurations, with 458M and 675M parameters, respectively. For DDT-RFE, we set ρ = 0.1 \\rho=0.1 for the L configuration and ρ = 0 \\rho=0 for the XL configuration. The original DDT training setup ( Wang et al., 2026 ) incorporates REPA ( Yu et al., 2025 ) to align intermediate encoder features with representations from a pretrained visual encoder. We omit this auxiliary alignment objective in our experiments to examine the encoder representations learned through the generative objective. We evaluate both representation learning tasks using the intermediate features learned by the diffusion transformer models and the generation performance of our trained models.",
+   "zh": "我们在 ImageNet-1k 数据集上从头训练扩散变换器，评估我们的方法。训练分辨率为 256 × 256 256\\times 256，块大小为 2，训练轮数为 80，总训练批量大小为 1024。我们遵循 Zhou 等人 (2026) 的做法，在整个训练过程中使用 Muon 优化器，学习率恒定为 0.0002，动量为 0.95。 我们将梯度裁剪阈值设为 1，权重衰减设为 0，指数移动平均（EMA）衰减率设为 0.9999。 我们使用 Hugging Face 提供的现成模型 VAE-ft-EMA 2 2 2 https://huggingface.co/stabilityai/sd-vae-ft-ema，其下采样因子为 8。 在采样时，我们使用欧拉求解器，步数为 250。 我们在 Large（L）和 Extra Large（XL）两种配置下训练 DDT 和 DDT-RFE，参数数量分别为 458M 和 675M。 对于 DDT-RFE，在 L 配置中我们设置 ρ = 0.1 \\rho=0.1，在 XL 配置中则设置 ρ = 0 \\rho=0。 原始 DDT 训练方案（Wang 等人，2026）整合了 REPA（Yu 等人，2025），用于使中间编码器特征与预训练视觉编码器的表示对齐。 在我们的实验中，我们省略了这一辅助对齐目标，以考察通过生成目标所学习的编码器表示。 我们通过扩散变换器模型学到的中间特征以及已训练模型的生成性能，来评估这两个表示学习任务。",
+   "sents": [
+    {
+     "en": "We evaluate our methods in training diffusion transformers from scratch on the ImageNet-1k dataset at a resolution of 256 × 256 256\\times 256 and patch size of 2 for 80 epochs, using a total training batch size of 1024. Following Zhou et al.",
+     "zh": "我们在 ImageNet-1k 数据集上从头训练扩散变换器，评估我们的方法。训练分辨率为 256 × 256 256\\times 256，块大小为 2，训练轮数为 80，总训练批量大小为 1024。我们遵循 Zhou 等人"
+    },
+    {
+     "en": "(2026) , we use the Muon optimizer with a constant learning rate of 0.0002 and a momentum of 0.95 throughout training.",
+     "zh": "(2026) 的做法，在整个训练过程中使用 Muon 优化器，学习率恒定为 0.0002，动量为 0.95。"
+    },
+    {
+     "en": "We set the gradient clipping threshold to 1, weight decay to 0, and the exponential moving average (EMA) decay rate to 0.9999.",
+     "zh": "我们将梯度裁剪阈值设为 1，权重衰减设为 0，指数移动平均（EMA）衰减率设为 0.9999。"
+    },
+    {
+     "en": "We use the off-the-shelf VAE-ft-EMA from Hugging Face 2 2 2 https://huggingface.co/stabilityai/sd-vae-ft-ema , with a downsampling factor of 8.",
+     "zh": "我们使用 Hugging Face 提供的现成模型 VAE-ft-EMA 2 2 2 https://huggingface.co/stabilityai/sd-vae-ft-ema，其下采样因子为 8。"
+    },
+    {
+     "en": "For sampling, we use the Euler solver with 250 steps.",
+     "zh": "在采样时，我们使用欧拉求解器，步数为 250。"
+    },
+    {
+     "en": "We train both DDT and DDT-RFE in both Large (L) and Extra Large (XL) configurations, with 458M and 675M parameters, respectively.",
+     "zh": "我们在 Large（L）和 Extra Large（XL）两种配置下训练 DDT 和 DDT-RFE，参数数量分别为 458M 和 675M。"
+    },
+    {
+     "en": "For DDT-RFE, we set ρ = 0.1 \\rho=0.1 for the L configuration and ρ = 0 \\rho=0 for the XL configuration.",
+     "zh": "对于 DDT-RFE，在 L 配置中我们设置 ρ = 0.1 \\rho=0.1，在 XL 配置中则设置 ρ = 0 \\rho=0。"
+    },
+    {
+     "en": "The original DDT training setup ( Wang et al., 2026 ) incorporates REPA ( Yu et al., 2025 ) to align intermediate encoder features with representations from a pretrained visual encoder.",
+     "zh": "原始 DDT 训练方案（Wang 等人，2026）整合了 REPA（Yu 等人，2025），用于使中间编码器特征与预训练视觉编码器的表示对齐。"
+    },
+    {
+     "en": "We omit this auxiliary alignment objective in our experiments to examine the encoder representations learned through the generative objective.",
+     "zh": "在我们的实验中，我们省略了这一辅助对齐目标，以考察通过生成目标所学习的编码器表示。"
+    },
+    {
+     "en": "We evaluate both representation learning tasks using the intermediate features learned by the diffusion transformer models and the generation performance of our trained models.",
+     "zh": "我们通过扩散变换器模型学到的中间特征以及已训练模型的生成性能，来评估这两个表示学习任务。"
+    }
+   ]
+  },
+  {
+   "en": "To assess how our architectural design affects the representations learned by diffusion models, we evaluate representations on four visual tasks: image classification, object discovery, semantic correspondence and semantic segmentation. For all evaluations, we extract features using conditioning on the null class.",
+   "zh": "为了评估我们的架构设计如何影响扩散模型所学到的表示，我们在四个视觉任务上对这些表示进行了评估：图像分类、物体发现、语义对应和语义分割。 在所有评估中，我们都通过以空类为条件来提取特征。",
+   "sents": [
+    {
+     "en": "To assess how our architectural design affects the representations learned by diffusion models, we evaluate representations on four visual tasks: image classification, object discovery, semantic correspondence and semantic segmentation.",
+     "zh": "为了评估我们的架构设计如何影响扩散模型所学到的表示，我们在四个视觉任务上对这些表示进行了评估：图像分类、物体发现、语义对应和语义分割。"
+    },
+    {
+     "en": "For all evaluations, we extract features using conditioning on the null class.",
+     "zh": "在所有评估中，我们都通过以空类为条件来提取特征。"
+    }
+   ]
+  },
+  {
+   "en": "We assess the representations of the frozen models by classification on ImageNet-1k. Given a noised latent 𝐱 t \\mathbf{x}_{t} , we extract token features from an encoder block and apply global average pooling to obtain an image-level representation. The same representation is used for both evaluations below. First, following the DINO protocol ( Caron et al., 2021 ) , we evaluate k k -nearest-neighbor (kNN) top-1 accuracy for every encoder block at noise levels t ∈ { 0.1 , 0.3 , 0.5 } t\\in\\{0.1,0.3,0.5\\} , using the same timestep t t to construct the noisy input and to condition the network. Second, following DDAE ( Xiang et al., 2023 ) , we evaluate linear separability by training a classification head consisting of BatchNorm and a linear layer for 30 epochs. For each model we select the encoder block and noise level with the best validation accuracy and report top-1 and top-5 accuracy, and we additionally probe the encoder output that conditions the decoder with the same procedure. We compare DiT-L, DDT-L in its best configuration (20en4de), and DDT-RFE-L (12en12de). Because DDT-RFE uses fewer encoder blocks than the best DDT configuration, we also train DDT-L with the same encoder depth as ours (12en12de) for a fair comparison.",
+   "zh": "我们通过在 ImageNet-1k 上进行分类来评估冻结模型的特征表示。 给定一个含噪声的潜在变量 𝐱 t \\mathbf{x}_{t}，我们从编码器块中提取词元特征，并应用全局平均池化以获得图像级表示。 以下两种评估均使用相同的特征表示。 首先，遵循 DINO 协议（Caron et al., 2021），我们对每个编码器块在噪声水平 t ∈ {0.1, 0.3, 0.5} 下评估 k 最近邻（kNN）的 top-1 准确率，并使用相同的时步 t 来构建含噪声的输入和为网络提供条件。 其次，遵循 DDAE（Xiang et al., 2023），我们通过训练一个由 BatchNorm 和线性层组成的分类头（训练 30 个周期）来评估线性可分性。 对于每个模型，我们选择验证准确率最高的编码器块和噪声水平，并报告 top-1 和 top-5 准确率；此外，我们还用相同的方法探测为解码器提供条件的编码器输出。 我们比较了 DiT-L、最佳配置下的 DDT-L（20en4de）以及 DDT-RFE-L（12en12de）。 由于 DDT-RFE 使用的编码器块少于最佳 DDT 配置，为了公平比较，我们还使用与我们相同的编码器深度（12en12de）训练了 DDT-L。",
+   "sents": [
+    {
+     "en": "We assess the representations of the frozen models by classification on ImageNet-1k.",
+     "zh": "我们通过在 ImageNet-1k 上进行分类来评估冻结模型的特征表示。"
+    },
+    {
+     "en": "Given a noised latent 𝐱 t \\mathbf{x}_{t} , we extract token features from an encoder block and apply global average pooling to obtain an image-level representation.",
+     "zh": "给定一个含噪声的潜在变量 𝐱 t \\mathbf{x}_{t}，我们从编码器块中提取词元特征，并应用全局平均池化以获得图像级表示。"
+    },
+    {
+     "en": "The same representation is used for both evaluations below.",
+     "zh": "以下两种评估均使用相同的特征表示。"
+    },
+    {
+     "en": "First, following the DINO protocol ( Caron et al., 2021 ) , we evaluate k k -nearest-neighbor (kNN) top-1 accuracy for every encoder block at noise levels t ∈ { 0.1 , 0.3 , 0.5 } t\\in\\{0.1,0.3,0.5\\} , using the same timestep t t to construct the noisy input and to condition the network.",
+     "zh": "首先，遵循 DINO 协议（Caron et al., 2021），我们对每个编码器块在噪声水平 t ∈ {0.1, 0.3, 0.5} 下评估 k 最近邻（kNN）的 top-1 准确率，并使用相同的时步 t 来构建含噪声的输入和为网络提供条件。"
+    },
+    {
+     "en": "Second, following DDAE ( Xiang et al., 2023 ) , we evaluate linear separability by training a classification head consisting of BatchNorm and a linear layer for 30 epochs.",
+     "zh": "其次，遵循 DDAE（Xiang et al., 2023），我们通过训练一个由 BatchNorm 和线性层组成的分类头（训练 30 个周期）来评估线性可分性。"
+    },
+    {
+     "en": "For each model we select the encoder block and noise level with the best validation accuracy and report top-1 and top-5 accuracy, and we additionally probe the encoder output that conditions the decoder with the same procedure.",
+     "zh": "对于每个模型，我们选择验证准确率最高的编码器块和噪声水平，并报告 top-1 和 top-5 准确率；此外，我们还用相同的方法探测为解码器提供条件的编码器输出。"
+    },
+    {
+     "en": "We compare DiT-L, DDT-L in its best configuration (20en4de), and DDT-RFE-L (12en12de).",
+     "zh": "我们比较了 DiT-L、最佳配置下的 DDT-L（20en4de）以及 DDT-RFE-L（12en12de）。"
+    },
+    {
+     "en": "Because DDT-RFE uses fewer encoder blocks than the best DDT configuration, we also train DDT-L with the same encoder depth as ours (12en12de) for a fair comparison.",
+     "zh": "由于 DDT-RFE 使用的编码器块少于最佳 DDT 配置，为了公平比较，我们还使用与我们相同的编码器深度（12en12de）训练了 DDT-L。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 2 reports kNN accuracy across blocks. As expected, DDT-L outperforms DiT-L at every noise level, reflecting the benefit of decoupling the encoder from the decoder. The DDT-L configuration with more encoder blocks also achieves higher accuracy. For example, at t = 0.1 t=0.1 , DDT-L (20en4de) reaches 31.1%, compared with 21.8% for DDT-L (12en12de). Despite using fewer encoder blocks, DDT-RFE-L improves over DDT-L by 9.8% at t = 0.1 t=0.1 and 6.4% at t = 0.3 t=0.3 . The linear probing results in Table 1 also show that DDT-RFE outperforms DDT in both top-1 and top-5 accuracy at the L and XL scales. At both scales, DDT-RFE achieves its best linear probing performance at a lower noise level ( t = 0.05 t=0.05 versus t = 0.15 t=0.15 for DDT). Moreover, the drop in top-1 accuracy from the best encoder block to the encoder output is 7.8 and 4.7 percentage points for DDT-L and DDT-XL, respectively, compared with only 1.2 and 1.1 percentage points for DDT-RFE-L and DDT-RFE-XL, respectively. The encoder output of DDT-RFE thus remains nearly as semantically discriminative as its best intermediate representations for the classification task, whereas DDT exhibits a more pronounced gap between the two. DDT-RFE achieves these improvements with substantially fewer encoder blocks (12 versus 20 at the L scale and 14 versus 22 at the XL scale), corresponding to reductions of 40.0% and 36.4% in encoder depth, respectively.",
+   "zh": "图2报告了各区块中的 kNN 准确率。 正如预期，在所有噪声水平下，DDT-L 的性能均优于 DiT-L，这体现了将编码器与解码器解耦所带来的优势。 拥有更多编码器区块的 DDT-L 配置也实现了更高的准确率。 例如，在 t = 0.1 时，DDT-L (20en4de) 的准确率达到 31.1%，而 DDT-L (12en12de) 仅为 21.8%。 尽管使用的编码器区块更少，但在 t = 0.1 时，DDT-RFE-L 比 DDT-L 提升了 9.8%，在 t = 0.3 时提升了 6.4%。 表1中的线性探测结果也显示，在 L 和 XL 规模下，DDT-RFE 在 top-1 和 top-5 准确率方面均优于 DDT。 在这两种规模下，DDT-RFE 在较低的噪声水平（t = 0.05）上实现了最佳的线性探测性能，而 DDT 的最佳噪声水平为 t = 0.15。 此外，从最佳编码器区块到编码器输出的 top-1 准确率下降幅度，DDT-L 和 DDT-XL 分别为 7.8 和 4.7 个百分点，而 DDT-RFE-L 和 DDT-RFE-XL 则仅为 1.2 和 1.1 个百分点。 因此，对于分类任务而言，DDT-RFE 的编码器输出几乎与其最佳中间表示具有同等的语义区分能力，而 DDT 在这两者之间则表现出更明显的差距。 DDT-RFE 通过大幅减少编码器区块实现了这些改进（L 规模下为 12 个而非 20 个，XL 规模下为 14 个而非 22 个），分别使编码器深度减少了 40.0% 和 36.4%。",
+   "sents": [
+    {
+     "en": "Figure 2 reports kNN accuracy across blocks.",
+     "zh": "图2报告了各区块中的 kNN 准确率。"
+    },
+    {
+     "en": "As expected, DDT-L outperforms DiT-L at every noise level, reflecting the benefit of decoupling the encoder from the decoder.",
+     "zh": "正如预期，在所有噪声水平下，DDT-L 的性能均优于 DiT-L，这体现了将编码器与解码器解耦所带来的优势。"
+    },
+    {
+     "en": "The DDT-L configuration with more encoder blocks also achieves higher accuracy.",
+     "zh": "拥有更多编码器区块的 DDT-L 配置也实现了更高的准确率。"
+    },
+    {
+     "en": "For example, at t = 0.1 t=0.1 , DDT-L (20en4de) reaches 31.1%, compared with 21.8% for DDT-L (12en12de).",
+     "zh": "例如，在 t = 0.1 时，DDT-L (20en4de) 的准确率达到 31.1%，而 DDT-L (12en12de) 仅为 21.8%。"
+    },
+    {
+     "en": "Despite using fewer encoder blocks, DDT-RFE-L improves over DDT-L by 9.8% at t = 0.1 t=0.1 and 6.4% at t = 0.3 t=0.3 .",
+     "zh": "尽管使用的编码器区块更少，但在 t = 0.1 时，DDT-RFE-L 比 DDT-L 提升了 9.8%，在 t = 0.3 时提升了 6.4%。"
+    },
+    {
+     "en": "The linear probing results in Table 1 also show that DDT-RFE outperforms DDT in both top-1 and top-5 accuracy at the L and XL scales.",
+     "zh": "表1中的线性探测结果也显示，在 L 和 XL 规模下，DDT-RFE 在 top-1 和 top-5 准确率方面均优于 DDT。"
+    },
+    {
+     "en": "At both scales, DDT-RFE achieves its best linear probing performance at a lower noise level ( t = 0.05 t=0.05 versus t = 0.15 t=0.15 for DDT).",
+     "zh": "在这两种规模下，DDT-RFE 在较低的噪声水平（t = 0.05）上实现了最佳的线性探测性能，而 DDT 的最佳噪声水平为 t = 0.15。"
+    },
+    {
+     "en": "Moreover, the drop in top-1 accuracy from the best encoder block to the encoder output is 7.8 and 4.7 percentage points for DDT-L and DDT-XL, respectively, compared with only 1.2 and 1.1 percentage points for DDT-RFE-L and DDT-RFE-XL, respectively.",
+     "zh": "此外，从最佳编码器区块到编码器输出的 top-1 准确率下降幅度，DDT-L 和 DDT-XL 分别为 7.8 和 4.7 个百分点，而 DDT-RFE-L 和 DDT-RFE-XL 则仅为 1.2 和 1.1 个百分点。"
+    },
+    {
+     "en": "The encoder output of DDT-RFE thus remains nearly as semantically discriminative as its best intermediate representations for the classification task, whereas DDT exhibits a more pronounced gap between the two.",
+     "zh": "因此，对于分类任务而言，DDT-RFE 的编码器输出几乎与其最佳中间表示具有同等的语义区分能力，而 DDT 在这两者之间则表现出更明显的差距。"
+    },
+    {
+     "en": "DDT-RFE achieves these improvements with substantially fewer encoder blocks (12 versus 20 at the L scale and 14 versus 22 at the XL scale), corresponding to reductions of 40.0% and 36.4% in encoder depth, respectively.",
+     "zh": "DDT-RFE 通过大幅减少编码器区块实现了这些改进（L 规模下为 12 个而非 20 个，XL 规模下为 14 个而非 22 个），分别使编码器深度减少了 40.0% 和 36.4%。"
+    }
+   ]
+  },
+  {
+   "en": "Detecting salient objects is a fundamental problem in computer vision with applications in real-world vision systems. To address this problem, recent methods, such as LOST ( Siméoni et al., 2021 ) and TokenCuT ( Wang et al., 2023 ) , use self-supervised pretrained models to obtain high-quality, abstract feature representations without requiring manual labels. We evaluate unsupervised object discovery using LOST, which localizes the salient object in an image using token features from a frozen model. We apply LOST to representations extracted from each transformer block and report the best results. We evaluate on VOC2012 and COCO20k and report correct localization (CorLoc), defined as the fraction of images for which the predicted bounding box has an intersection-over-union (IoU) greater than 0.5 with a ground-truth bounding box.",
+   "zh": "检测显著对象是计算机视觉中的一个基本问题，在现实世界的视觉系统中有着广泛应用。 为了解决这个问题，近期的一些方法（如 LOST（Siméoni 等人，2021）和 TokenCuT（Wang 等人，2023））利用自监督预训练模型来获取高质量的抽象特征表示，而无需手动标注。 我们使用 LOST 对无监督对象发现进行了评估，该方法通过冻结模型中的标记特征来定位图像中的显著对象。 我们将 LOST 应用于从每个 Transformer 块中提取的表示，并报告了最佳结果。 我们在 VOC2012 和 COCO20k 数据集上进行了评估，并报告了正确定位率（CorLoc），其定义为预测边界框与真实边界框的交并比（IoU）大于 0.5 的图像比例。",
+   "sents": [
+    {
+     "en": "Detecting salient objects is a fundamental problem in computer vision with applications in real-world vision systems.",
+     "zh": "检测显著对象是计算机视觉中的一个基本问题，在现实世界的视觉系统中有着广泛应用。"
+    },
+    {
+     "en": "To address this problem, recent methods, such as LOST ( Siméoni et al., 2021 ) and TokenCuT ( Wang et al., 2023 ) , use self-supervised pretrained models to obtain high-quality, abstract feature representations without requiring manual labels.",
+     "zh": "为了解决这个问题，近期的一些方法（如 LOST（Siméoni 等人，2021）和 TokenCuT（Wang 等人，2023））利用自监督预训练模型来获取高质量的抽象特征表示，而无需手动标注。"
+    },
+    {
+     "en": "We evaluate unsupervised object discovery using LOST, which localizes the salient object in an image using token features from a frozen model.",
+     "zh": "我们使用 LOST 对无监督对象发现进行了评估，该方法通过冻结模型中的标记特征来定位图像中的显著对象。"
+    },
+    {
+     "en": "We apply LOST to representations extracted from each transformer block and report the best results.",
+     "zh": "我们将 LOST 应用于从每个 Transformer 块中提取的表示，并报告了最佳结果。"
+    },
+    {
+     "en": "We evaluate on VOC2012 and COCO20k and report correct localization (CorLoc), defined as the fraction of images for which the predicted bounding box has an intersection-over-union (IoU) greater than 0.5 with a ground-truth bounding box.",
+     "zh": "我们在 VOC2012 和 COCO20k 数据集上进行了评估，并报告了正确定位率（CorLoc），其定义为预测边界框与真实边界框的交并比（IoU）大于 0.5 的图像比例。"
+    }
+   ]
+  },
+  {
+   "en": "Table 2 reports CorLoc results. At both model scales, DDT-RFE improves over DDT by about 16 % on VOC2012 and 10 % on COCO20k. LOST relies on a clear separation between foreground and background features. When features retain too much low-level information from shallow blocks, patch similarities may reflect local appearance more than object structure. This can make it harder to select a foreground seed and identify the full object. With the residual-free encoder, tokens from the same object have more similar features, as also shown in Fig. 1 . These observations suggest that DDT-RFE learns features that better capture object semantics and distinguish objects from the background.",
+   "zh": "表2报告了CorLoc的结果。 在两种模型规模下，DDT-RFE在VOC2012上的性能比DDT提升了约16%，在COCO20k上提升了10%。 LOST依赖于前景和背景特征之间的清晰分离。 当特征保留了来自浅层模块的过多低层信息时，图像块之间的相似性可能更多地反映局部外观而非物体结构。 这可能会使选择前景种子和识别完整物体变得更加困难。 使用无残差编码器后，来自同一物体的标记具有更相似的特征，如图1所示。 这些观察结果表明，DDT-RFE能够学习到更好地捕捉物体语义并将物体与背景区分开来的特征。",
+   "sents": [
+    {
+     "en": "Table 2 reports CorLoc results.",
+     "zh": "表2报告了CorLoc的结果。"
+    },
+    {
+     "en": "At both model scales, DDT-RFE improves over DDT by about 16 % on VOC2012 and 10 % on COCO20k.",
+     "zh": "在两种模型规模下，DDT-RFE在VOC2012上的性能比DDT提升了约16%，在COCO20k上提升了10%。"
+    },
+    {
+     "en": "LOST relies on a clear separation between foreground and background features.",
+     "zh": "LOST依赖于前景和背景特征之间的清晰分离。"
+    },
+    {
+     "en": "When features retain too much low-level information from shallow blocks, patch similarities may reflect local appearance more than object structure.",
+     "zh": "当特征保留了来自浅层模块的过多低层信息时，图像块之间的相似性可能更多地反映局部外观而非物体结构。"
+    },
+    {
+     "en": "This can make it harder to select a foreground seed and identify the full object.",
+     "zh": "这可能会使选择前景种子和识别完整物体变得更加困难。"
+    },
+    {
+     "en": "With the residual-free encoder, tokens from the same object have more similar features, as also shown in Fig. 1 .",
+     "zh": "使用无残差编码器后，来自同一物体的标记具有更相似的特征，如图1所示。"
+    },
+    {
+     "en": "These observations suggest that DDT-RFE learns features that better capture object semantics and distinguish objects from the background.",
+     "zh": "这些观察结果表明，DDT-RFE能够学习到更好地捕捉物体语义并将物体与背景区分开来的特征。"
+    }
+   ]
+  },
+  {
+   "en": "Semantic correspondence aims to match points on corresponding parts of different instances of the same object category. These instances may differ in appearance, pose, viewpoint, and scale. This task tests whether local features capture consistent semantic information across images and support accurate localization of object parts. We evaluate zero-shot semantic correspondence on SPair-71k ( Min et al., 2019 ) , which is the most challenging semantic correspondence dataset, containing diverse variations in viewpoint and scale with 12,234 image pairs on 18 categories for testing, following the protocol of DIFT ( Tang et al., 2023 ) . We report PCK@0.1 bbox {}_{\\text{bbox}} , the percentage of keypoints whose predicted matches lie within 0.1 × max ⁡ ( w , h ) 0.1\\times\\max(w,h) of their ground-truth locations, where w w and h h are the width and height of the target object’s bounding box.",
+   "zh": "语义对应旨在匹配同一物体类别不同实例中对应部分上的点。 这些实例在外观、姿态、视角和尺度上可能存在差异。 该任务检验局部特征能否跨图像捕捉一致的语义信息，并支持对物体部分的精确定位。 我们在 SPair-71k（Min et al., 2019）上评估零样本语义对应能力，这是最具挑战性的语义对应数据集，包含视角和尺度的多样化变化，用于测试的图像对共有 12,234 对，涵盖 18 个类别，并遵循 DIFT（Tang et al., 2023）的方案。 我们报告了 PCK@0.1 bbox {}_{\\text{bbox}}，即预测匹配点位于其真实位置 0.1 × max⁡(w, h) 0.1\\times\\max(w,h) 范围内的关键点所占的百分比，其中 w 和 h 分别是目标物体边界框的宽度和高度。",
+   "sents": [
+    {
+     "en": "Semantic correspondence aims to match points on corresponding parts of different instances of the same object category.",
+     "zh": "语义对应旨在匹配同一物体类别不同实例中对应部分上的点。"
+    },
+    {
+     "en": "These instances may differ in appearance, pose, viewpoint, and scale.",
+     "zh": "这些实例在外观、姿态、视角和尺度上可能存在差异。"
+    },
+    {
+     "en": "This task tests whether local features capture consistent semantic information across images and support accurate localization of object parts.",
+     "zh": "该任务检验局部特征能否跨图像捕捉一致的语义信息，并支持对物体部分的精确定位。"
+    },
+    {
+     "en": "We evaluate zero-shot semantic correspondence on SPair-71k ( Min et al., 2019 ) , which is the most challenging semantic correspondence dataset, containing diverse variations in viewpoint and scale with 12,234 image pairs on 18 categories for testing, following the protocol of DIFT ( Tang et al., 2023 ) .",
+     "zh": "我们在 SPair-71k（Min et al., 2019）上评估零样本语义对应能力，这是最具挑战性的语义对应数据集，包含视角和尺度的多样化变化，用于测试的图像对共有 12,234 对，涵盖 18 个类别，并遵循 DIFT（Tang et al., 2023）的方案。"
+    },
+    {
+     "en": "We report PCK@0.1 bbox {}_{\\text{bbox}} , the percentage of keypoints whose predicted matches lie within 0.1 × max ⁡ ( w , h ) 0.1\\times\\max(w,h) of their ground-truth locations, where w w and h h are the width and height of the target object’s bounding box.",
+     "zh": "我们报告了 PCK@0.1 bbox {}_{\\text{bbox}}，即预测匹配点位于其真实位置 0.1 × max⁡(w, h) 0.1\\times\\max(w,h) 范围内的关键点所占的百分比，其中 w 和 h 分别是目标物体边界框的宽度和高度。"
+    }
+   ]
+  },
+  {
+   "en": "Table 3 shows that DDT-RFE improves PCK over DDT by 3.9 and 4.7 percentage points at the L and XL scales, respectively. These gains are achieved by directly matching frozen features, without training a task-specific prediction head. They suggest that DDT-RFE learns features that more reliably identify corresponding object parts across different instances. This complements the object discovery results that the features support both locating whole objects and matching their parts across images. DDT-RFE achieves these improvements with fewer encoder blocks, using 12 versus 20 at the L scale and 14 versus 22 at the XL scale.",
+   "zh": "表3显示，在L和XL尺度上，DDT-RFE的PCK分别比DDT提升了3.9和4.7个百分点。 这些提升是通过直接匹配冻结特征实现的，无需训练任务特定的预测头。 这表明DDT-RFE能够学习出更可靠地识别不同实例中对应物体部分的特征。 这补充了物体发现的结果，即这些特征既支持定位完整物体，也支持跨图像匹配其各个部分。 DDT-RFE以更少的编码器块实现了这些改进：在L尺度上使用12个块（对比20个），在XL尺度上使用14个块（对比22个）。",
+   "sents": [
+    {
+     "en": "Table 3 shows that DDT-RFE improves PCK over DDT by 3.9 and 4.7 percentage points at the L and XL scales, respectively.",
+     "zh": "表3显示，在L和XL尺度上，DDT-RFE的PCK分别比DDT提升了3.9和4.7个百分点。"
+    },
+    {
+     "en": "These gains are achieved by directly matching frozen features, without training a task-specific prediction head.",
+     "zh": "这些提升是通过直接匹配冻结特征实现的，无需训练任务特定的预测头。"
+    },
+    {
+     "en": "They suggest that DDT-RFE learns features that more reliably identify corresponding object parts across different instances.",
+     "zh": "这表明DDT-RFE能够学习出更可靠地识别不同实例中对应物体部分的特征。"
+    },
+    {
+     "en": "This complements the object discovery results that the features support both locating whole objects and matching their parts across images.",
+     "zh": "这补充了物体发现的结果，即这些特征既支持定位完整物体，也支持跨图像匹配其各个部分。"
+    },
+    {
+     "en": "DDT-RFE achieves these improvements with fewer encoder blocks, using 12 versus 20 at the L scale and 14 versus 22 at the XL scale.",
+     "zh": "DDT-RFE以更少的编码器块实现了这些改进：在L尺度上使用12个块（对比20个），在XL尺度上使用14个块（对比22个）。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate linear probing on intermediate features for the semantic segmentation task. A classifier is trained on top of the representations, with performance measured by mean intersection-over-union (mIoU). Our linear probing protocol largely follows DDAE++ ( Xiang et al., 2025 ) and sweep over all best blocks and noise levels. We evaluate both single representation and multiscale representations from different blocks. We report results on VOC2012 ( Everingham et al., 2015 ) , ADE20K ( Zhou et al., 2019 ) and COCO-Stuff-10K ( Caesar et al., 2018 ) .",
+   "zh": "我们对语义分割任务中的中间特征进行了线性探测评估。 在表示层之上训练了一个分类器，其性能通过平均交并比（mIoU）进行衡量。 我们的线性探测协议基本遵循 DDAE++（Xiang 等人，2025），并对所有最佳块和噪声水平进行了遍历测试。 我们评估了来自不同块的单表示和多尺度表示。 我们在 VOC2012（Everingham 等人，2015）、ADE20K（Zhou 等人，2019）和 COCO-Stuff-10K（Caesar 等人，2018）上报告了结果。",
+   "sents": [
+    {
+     "en": "We evaluate linear probing on intermediate features for the semantic segmentation task.",
+     "zh": "我们对语义分割任务中的中间特征进行了线性探测评估。"
+    },
+    {
+     "en": "A classifier is trained on top of the representations, with performance measured by mean intersection-over-union (mIoU).",
+     "zh": "在表示层之上训练了一个分类器，其性能通过平均交并比（mIoU）进行衡量。"
+    },
+    {
+     "en": "Our linear probing protocol largely follows DDAE++ ( Xiang et al., 2025 ) and sweep over all best blocks and noise levels.",
+     "zh": "我们的线性探测协议基本遵循 DDAE++（Xiang 等人，2025），并对所有最佳块和噪声水平进行了遍历测试。"
+    },
+    {
+     "en": "We evaluate both single representation and multiscale representations from different blocks.",
+     "zh": "我们评估了来自不同块的单表示和多尺度表示。"
+    },
+    {
+     "en": "We report results on VOC2012 ( Everingham et al., 2015 ) , ADE20K ( Zhou et al., 2019 ) and COCO-Stuff-10K ( Caesar et al., 2018 ) .",
+     "zh": "我们在 VOC2012（Everingham 等人，2015）、ADE20K（Zhou 等人，2019）和 COCO-Stuff-10K（Caesar 等人，2018）上报告了结果。"
+    }
+   ]
+  },
+  {
+   "en": "Table 4 reports mIoU on the three datasets. On VOC2012, DDT-RFE outperforms DDT by about 6 mIoU at both L and XL scales, with single-block and with multi-scale features. On ADE20K and COCO-Stuff, the single-block gains are smaller. At the XL scale, DDT-RFE matches DDT on COCO-Stuff and is 0.3 mIoU below it on ADE20K. We attribute this to the greater scene complexity of these datasets, where multi-scale information is critical. The residual connections of DDT mix representations implicitly across depth, so a single block already carries multi-level information. However, the residual-free encoder carries more abstract but less multi-scale features. Multi-scale probing is consistent with this and it benefits DDT-RFE more than DDT on both scene datasets (for example, +2.9 versus +1.8 mIoU on ADE20K at the L scale), and with multi-scale features DDT-RFE leads on every dataset at both scales. In the residual-free encoder, abstraction arises within the hierarchy and multi-scale context is recovered by aggregation. DDT-RFE achieves these results with a shallower encoder than DDT, obtaining better semantic representations at lower cost.",
+   "zh": "表4报告了三个数据集上的mIoU结果。 在VOC2012上，无论是否使用多尺度特征，DDT-RFE在L和XL两种尺度下都比DDT的mIoU高出约6。 在ADE20K和COCO-Stuff上，单模块带来的提升较小。 在XL尺度上，DDT-RFE在COCO-Stuff上的表现与DDT相当，而在ADE20K上则比DDT低0.3 mIoU。 我们认为这是因为这些数据集的场景更为复杂，而多尺度信息在其中至关重要。 DDT的残差连接会在不同深度层之间隐式地混合表示，因此单个模块已经包含了多层级信息。 然而，无残差的编码器携带的是更抽象但较少多尺度的特征。 多尺度探测与此结论一致：在两个场景数据集上，它比DDT更能提升DDT-RFE的性能（例如，在ADE20K的L尺度上，mIoU分别提升了+2.9和+1.8），并且当使用多尺度特征时，DDT-RFE在所有数据集的两个尺度上均表现更优。 在无残差的编码器中，抽象层次结构内部形成，而多尺度上下文则通过聚合得以恢复。 DDT-RFE采用比DDT更浅的编码器实现了这些结果，从而以更低的成本获得了更好的语义表示。",
+   "sents": [
+    {
+     "en": "Table 4 reports mIoU on the three datasets.",
+     "zh": "表4报告了三个数据集上的mIoU结果。"
+    },
+    {
+     "en": "On VOC2012, DDT-RFE outperforms DDT by about 6 mIoU at both L and XL scales, with single-block and with multi-scale features.",
+     "zh": "在VOC2012上，无论是否使用多尺度特征，DDT-RFE在L和XL两种尺度下都比DDT的mIoU高出约6。"
+    },
+    {
+     "en": "On ADE20K and COCO-Stuff, the single-block gains are smaller.",
+     "zh": "在ADE20K和COCO-Stuff上，单模块带来的提升较小。"
+    },
+    {
+     "en": "At the XL scale, DDT-RFE matches DDT on COCO-Stuff and is 0.3 mIoU below it on ADE20K.",
+     "zh": "在XL尺度上，DDT-RFE在COCO-Stuff上的表现与DDT相当，而在ADE20K上则比DDT低0.3 mIoU。"
+    },
+    {
+     "en": "We attribute this to the greater scene complexity of these datasets, where multi-scale information is critical.",
+     "zh": "我们认为这是因为这些数据集的场景更为复杂，而多尺度信息在其中至关重要。"
+    },
+    {
+     "en": "The residual connections of DDT mix representations implicitly across depth, so a single block already carries multi-level information.",
+     "zh": "DDT的残差连接会在不同深度层之间隐式地混合表示，因此单个模块已经包含了多层级信息。"
+    },
+    {
+     "en": "However, the residual-free encoder carries more abstract but less multi-scale features.",
+     "zh": "然而，无残差的编码器携带的是更抽象但较少多尺度的特征。"
+    },
+    {
+     "en": "Multi-scale probing is consistent with this and it benefits DDT-RFE more than DDT on both scene datasets (for example, +2.9 versus +1.8 mIoU on ADE20K at the L scale), and with multi-scale features DDT-RFE leads on every dataset at both scales.",
+     "zh": "多尺度探测与此结论一致：在两个场景数据集上，它比DDT更能提升DDT-RFE的性能（例如，在ADE20K的L尺度上，mIoU分别提升了+2.9和+1.8），并且当使用多尺度特征时，DDT-RFE在所有数据集的两个尺度上均表现更优。"
+    },
+    {
+     "en": "In the residual-free encoder, abstraction arises within the hierarchy and multi-scale context is recovered by aggregation.",
+     "zh": "在无残差的编码器中，抽象层次结构内部形成，而多尺度上下文则通过聚合得以恢复。"
+    },
+    {
+     "en": "DDT-RFE achieves these results with a shallower encoder than DDT, obtaining better semantic representations at lower cost.",
+     "zh": "DDT-RFE采用比DDT更浅的编码器实现了这些结果，从而以更低的成本获得了更好的语义表示。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate class-conditional image generation on ImageNet at 256 × 256 256\\times 256 resolution to assess whether the representation improvements are accompanied by better generation performance. For each model trained for 80 epochs, we generate 50,000 samples using EMA weights and a 250-step Euler ODE sampler, without classifier-free guidance. We report Fréchet Inception Distance (FID), spatial FID (sFID), Inception Score (IS), precision, and recall.",
+   "zh": "我们在 ImageNet 数据集上以 256 × 256 分辨率评估条件类图像生成能力，以判断表征改进是否伴随着更优的生成性能。 对于每个训练了 80 个周期的模型，我们使用 EMA 权重和 250 步的欧拉 ODE 采样器生成 50,000 个样本，且不使用无分类器引导方法。 我们报告了 Fréchet Inception Distance（FID）、空间 FID（sFID）、Inception Score（IS）、精确率和召回率。",
+   "sents": [
+    {
+     "en": "We evaluate class-conditional image generation on ImageNet at 256 × 256 256\\times 256 resolution to assess whether the representation improvements are accompanied by better generation performance.",
+     "zh": "我们在 ImageNet 数据集上以 256 × 256 分辨率评估条件类图像生成能力，以判断表征改进是否伴随着更优的生成性能。"
+    },
+    {
+     "en": "For each model trained for 80 epochs, we generate 50,000 samples using EMA weights and a 250-step Euler ODE sampler, without classifier-free guidance.",
+     "zh": "对于每个训练了 80 个周期的模型，我们使用 EMA 权重和 250 步的欧拉 ODE 采样器生成 50,000 个样本，且不使用无分类器引导方法。"
+    },
+    {
+     "en": "We report Fréchet Inception Distance (FID), spatial FID (sFID), Inception Score (IS), precision, and recall.",
+     "zh": "我们报告了 Fréchet Inception Distance（FID）、空间 FID（sFID）、Inception Score（IS）、精确率和召回率。"
+    }
+   ]
+  },
+  {
+   "en": "Table 5 shows that DDT-RFE achieves the lowest FID among the compared models at both scales. DDT-RFE-L reaches an FID of 7.68, compared with 8.98 for DDT-L and 9.34 for DiT-L. The improvement remains when DDT-L uses the same encoder and decoder depths as DDT-RFE-L. At the XL scale, DDT-RFE outperforms DDT in terms of FID (6.81 vs. 7.27), sFID (5.50 vs. 5.89), and precision (0.740 vs. 0.724). The two models achieve the same IS, although DDT-RFE has slightly lower recall. Overall, the gains in representation quality are accompanied by improved FID at both scales under the same training budget. We demonstrate generated images by our model in Fig. 3",
+   "zh": "表5显示，在两种规模下，DDT-RFE在对比模型中实现了最低的FID。 DDT-RFE-L的FID为7.68，而DDT-L为8.98，DiT-L为9.34。 即使DDT-L使用与DDT-RFE-L相同的编码器和解码器深度，这种改进依然存在。 在XL规模下，DDT-RFE在FID（6.81 vs. 7.27）、sFID（5.50 vs. 5.89）和精度（0.740 vs. 0.724）方面均优于DDT。 尽管DDT-RFE的召回率略低，但两款模型实现了相同的IS。 总体而言，在相同训练预算下，两种规模中表现质量的提升都伴随着FID的改善。 我们在图3中展示了由我们的模型生成的图像。",
+   "sents": [
+    {
+     "en": "Table 5 shows that DDT-RFE achieves the lowest FID among the compared models at both scales.",
+     "zh": "表5显示，在两种规模下，DDT-RFE在对比模型中实现了最低的FID。"
+    },
+    {
+     "en": "DDT-RFE-L reaches an FID of 7.68, compared with 8.98 for DDT-L and 9.34 for DiT-L.",
+     "zh": "DDT-RFE-L的FID为7.68，而DDT-L为8.98，DiT-L为9.34。"
+    },
+    {
+     "en": "The improvement remains when DDT-L uses the same encoder and decoder depths as DDT-RFE-L.",
+     "zh": "即使DDT-L使用与DDT-RFE-L相同的编码器和解码器深度，这种改进依然存在。"
+    },
+    {
+     "en": "At the XL scale, DDT-RFE outperforms DDT in terms of FID (6.81 vs. 7.27), sFID (5.50 vs. 5.89), and precision (0.740 vs. 0.724).",
+     "zh": "在XL规模下，DDT-RFE在FID（6.81 vs. 7.27）、sFID（5.50 vs. 5.89）和精度（0.740 vs. 0.724）方面均优于DDT。"
+    },
+    {
+     "en": "The two models achieve the same IS, although DDT-RFE has slightly lower recall.",
+     "zh": "尽管DDT-RFE的召回率略低，但两款模型实现了相同的IS。"
+    },
+    {
+     "en": "Overall, the gains in representation quality are accompanied by improved FID at both scales under the same training budget.",
+     "zh": "总体而言，在相同训练预算下，两种规模中表现质量的提升都伴随着FID的改善。"
+    },
+    {
+     "en": "We demonstrate generated images by our model in Fig. 3",
+     "zh": "我们在图3中展示了由我们的模型生成的图像。"
+    }
+   ]
+  },
+  {
+   "en": "Due to limited computational resources, our experiments focus on DDT models trained on ImageNet at 256 × 256 256\\times 256 resolution for 80 epochs. We leave experiments with longer training schedules, higher resolutions (e.g., 512 × 512 512\\times 512 ), and other diffusion architectures to future work to assess the broader applicability of our approach.",
+   "zh": "由于计算资源有限，我们的实验集中在使用 ImageNet 数据集以 256 × 256 分辨率训练 80 个周期的 DDT 模型上。 我们将更长训练周期、更高分辨率（例如 512 × 512）以及其他扩散架构的实验留待未来工作，以评估我们方法更广泛的应用性。",
+   "sents": [
+    {
+     "en": "Due to limited computational resources, our experiments focus on DDT models trained on ImageNet at 256 × 256 256\\times 256 resolution for 80 epochs.",
+     "zh": "由于计算资源有限，我们的实验集中在使用 ImageNet 数据集以 256 × 256 分辨率训练 80 个周期的 DDT 模型上。"
+    },
+    {
+     "en": "We leave experiments with longer training schedules, higher resolutions (e.g., 512 × 512 512\\times 512 ), and other diffusion architectures to future work to assess the broader applicability of our approach.",
+     "zh": "我们将更长训练周期、更高分辨率（例如 512 × 512）以及其他扩散架构的实验留待未来工作，以评估我们方法更广泛的应用性。"
+    }
+   ]
+  },
+  {
+   "en": "In this work, we studied how residual connections in the condition encoder shape the representations learned by diffusion transformers, with a focus on how the encoder learns abstract features. We introduced DDT-RFE, which combines a residual-free encoder with feature aggregation at its output. This design allows successive encoder blocks to transform features without identity shortcuts, while keeping information from different encoder depths accessible to the decoder. With the proposed initialization, DDT-RFE achieves overall improvements over DDT across four visual understanding tasks using fewer encoder blocks. It also achieves a lower FID for image generation on ImageNet under the same training budget. Our ablations further show the importance of both initialization and output feature aggregation. Together, these results suggest that separating feature transformation within the encoder from aggregation at its output can benefit both representation learning and image generation. We hope that our findings encourage the community to reconsider how information flows between blocks and how this affects the learning of abstract representations in diffusion models.",
+   "zh": "在这项工作中，我们研究了条件编码器中的残差连接如何塑造扩散Transformer所学到的表示，重点关注编码器如何学习抽象特征。 我们提出了DDT-RFE，它将一个无残差的编码器和输出端的特征聚合相结合。 这种设计使得连续的编码器块能够在没有恒等捷径的情况下转换特征，同时让来自不同编码器深度的信息可供解码器访问。 通过所提出的初始化方法，DDT-RFE在四个视觉理解任务中，使用更少的编码器块就实现了相对于DDT的整体性能提升。 在相同的训练预算下，它在ImageNet上的图像生成也获得了更低的FID值。 我们的消融研究进一步表明，初始化和输出特征聚合都至关重要。 综合来看，这些结果表明，将编码器内部的特征转换与其输出端的特征聚合分离开来，有助于提升表示学习和图像生成效果。 我们希望我们的研究结果能鼓励学界重新思考信息在编码器各块之间的流动方式，以及这种流动如何影响扩散模型中抽象表示的学习。",
+   "sents": [
+    {
+     "en": "In this work, we studied how residual connections in the condition encoder shape the representations learned by diffusion transformers, with a focus on how the encoder learns abstract features.",
+     "zh": "在这项工作中，我们研究了条件编码器中的残差连接如何塑造扩散Transformer所学到的表示，重点关注编码器如何学习抽象特征。"
+    },
+    {
+     "en": "We introduced DDT-RFE, which combines a residual-free encoder with feature aggregation at its output.",
+     "zh": "我们提出了DDT-RFE，它将一个无残差的编码器和输出端的特征聚合相结合。"
+    },
+    {
+     "en": "This design allows successive encoder blocks to transform features without identity shortcuts, while keeping information from different encoder depths accessible to the decoder.",
+     "zh": "这种设计使得连续的编码器块能够在没有恒等捷径的情况下转换特征，同时让来自不同编码器深度的信息可供解码器访问。"
+    },
+    {
+     "en": "With the proposed initialization, DDT-RFE achieves overall improvements over DDT across four visual understanding tasks using fewer encoder blocks.",
+     "zh": "通过所提出的初始化方法，DDT-RFE在四个视觉理解任务中，使用更少的编码器块就实现了相对于DDT的整体性能提升。"
+    },
+    {
+     "en": "It also achieves a lower FID for image generation on ImageNet under the same training budget.",
+     "zh": "在相同的训练预算下，它在ImageNet上的图像生成也获得了更低的FID值。"
+    },
+    {
+     "en": "Our ablations further show the importance of both initialization and output feature aggregation.",
+     "zh": "我们的消融研究进一步表明，初始化和输出特征聚合都至关重要。"
+    },
+    {
+     "en": "Together, these results suggest that separating feature transformation within the encoder from aggregation at its output can benefit both representation learning and image generation.",
+     "zh": "综合来看，这些结果表明，将编码器内部的特征转换与其输出端的特征聚合分离开来，有助于提升表示学习和图像生成效果。"
+    },
+    {
+     "en": "We hope that our findings encourage the community to reconsider how information flows between blocks and how this affects the learning of abstract representations in diffusion models.",
+     "zh": "我们希望我们的研究结果能鼓励学界重新思考信息在编码器各块之间的流动方式，以及这种流动如何影响扩散模型中抽象表示的学习。"
+    }
+   ]
+  },
+  {
+   "en": "In this work, we used generative AI tools to polish the language of the manuscript and improve its clarity and readability, implement and edit Python code for the proposed method, and create or modify figures and tables. We take responsibility for the final content of this work.",
+   "zh": "在这项工作中，我们使用生成式人工智能工具润色了手稿的语言，提升了其清晰度和可读性，实现了所提出方法的 Python 代码并进行了编辑，同时还创建或修改了图表。 我们对这项工作的最终内容负责。",
+   "sents": [
+    {
+     "en": "In this work, we used generative AI tools to polish the language of the manuscript and improve its clarity and readability, implement and edit Python code for the proposed method, and create or modify figures and tables.",
+     "zh": "在这项工作中，我们使用生成式人工智能工具润色了手稿的语言，提升了其清晰度和可读性，实现了所提出方法的 Python 代码并进行了编辑，同时还创建或修改了图表。"
+    },
+    {
+     "en": "We take responsibility for the final content of this work.",
+     "zh": "我们对这项工作的最终内容负责。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 3 shows images generated by DDT-RFE-L/2 on ImageNet at 256 × 256 256\\times 256 resolution.",
+   "zh": "图3展示了 DDT-RFE-L/2 在 ImageNet 上以 256 × 256 分辨率生成的图像。",
+   "sents": null
+  },
+  {
+   "en": "We detail the operations in Eq. 6 , following the Self-Attention formulation of Ji et al. (2026a) . Let 𝐇 ∈ ℝ N × D \\mathbf{H}\\in\\mathbb{R}^{N\\times D} denote a generic input token matrix. In each encoder block, the Self-Attention and MLP operation take input 𝐇 ℓ − 1 \\mathbf{H}_{\\ell-1} and 𝐇 ~ ℓ \\tilde{\\mathbf{H}}_{\\ell} , respectively, with normalization and adaptive modulation applied as defined in Eq. 6 . For clarity, we omit normalization layers, rotary positional embeddings (RoPE), and bias terms, and suppress the block index ℓ \\ell .",
+   "zh": "我们遵循 Ji et al. (2026a) 的自注意力公式，详细描述了公式 6 中的操作。 令 𝐇 ∈ ℝ N × D \\mathbf{H}\\in\\mathbb{R}^{N\\times D} 表示一个通用的输入词元矩阵。 在每个编码器块中，自注意力和 MLP 操作分别以输入 𝐇 ℓ − 1 \\mathbf{H}_{\\ell-1} 和 𝐇 ~ ℓ \\tilde{\\mathbf{H}}_{\\ell} 为输入，并应用公式 6 中定义的标准化和自适应调制。 为清晰起见，我们省略了标准化层、旋转位置嵌入（RoPE）和偏置项，并省略了块索引 ℓ \\ell。",
+   "sents": [
+    {
+     "en": "We detail the operations in Eq. 6 , following the Self-Attention formulation of Ji et al. (2026a) .",
+     "zh": "我们遵循 Ji et al. (2026a) 的自注意力公式，详细描述了公式 6 中的操作。"
+    },
+    {
+     "en": "Let 𝐇 ∈ ℝ N × D \\mathbf{H}\\in\\mathbb{R}^{N\\times D} denote a generic input token matrix.",
+     "zh": "令 𝐇 ∈ ℝ N × D \\mathbf{H}\\in\\mathbb{R}^{N\\times D} 表示一个通用的输入词元矩阵。"
+    },
+    {
+     "en": "In each encoder block, the Self-Attention and MLP operation take input 𝐇 ℓ − 1 \\mathbf{H}_{\\ell-1} and 𝐇 ~ ℓ \\tilde{\\mathbf{H}}_{\\ell} , respectively, with normalization and adaptive modulation applied as defined in Eq. 6 .",
+     "zh": "在每个编码器块中，自注意力和 MLP 操作分别以输入 𝐇 ℓ − 1 \\mathbf{H}_{\\ell-1} 和 𝐇 ~ ℓ \\tilde{\\mathbf{H}}_{\\ell} 为输入，并应用公式 6 中定义的标准化和自适应调制。"
+    },
+    {
+     "en": "For clarity, we omit normalization layers, rotary positional embeddings (RoPE), and bias terms, and suppress the block index ℓ \\ell .",
+     "zh": "为清晰起见，我们省略了标准化层、旋转位置嵌入（RoPE）和偏置项，并省略了块索引 ℓ \\ell。"
+    }
+   ]
+  },
+  {
+   "en": "Let n h n_{h} be the number of heads and d h = D / n h d_{h}=D/n_{h} the dimension of each head. The query, key, and value matrices for head h h are",
+   "zh": "令 n h n_{h} 为头的数量，d h = D / n h d_{h}=D/n_{h} 为每个头的维度。 头 h h 的查询、键和值矩阵是",
+   "sents": [
+    {
+     "en": "Let n h n_{h} be the number of heads and d h = D / n h d_{h}=D/n_{h} the dimension of each head.",
+     "zh": "令 n h n_{h} 为头的数量，d h = D / n h d_{h}=D/n_{h} 为每个头的维度。"
+    },
+    {
+     "en": "The query, key, and value matrices for head h h are",
+     "zh": "头 h h 的查询、键和值矩阵是"
+    }
+   ]
+  },
+  {
+   "en": "where 𝐖 Q , h , 𝐖 K , h , 𝐖 V , h ∈ ℝ d h × D \\mathbf{W}_{\\mathrm{Q},h},\\mathbf{W}_{\\mathrm{K},h},\\mathbf{W}_{\\mathrm{V},h}\\in\\mathbb{R}^{d_{h}\\times D} . The attention matrix is",
+   "zh": "其中，𝐖 Q , h , 𝐖 K , h , 𝐖 V , h ∈ ℝ d h × D \\mathbf{W}_{\\mathrm{Q},h},\\mathbf{W}_{\\mathrm{K},h},\\mathbf{W}_{\\mathrm{V},h}\\in\\mathbb{R}^{d_{h}\\times D}。注意力矩阵是",
+   "sents": null
+  },
+  {
+   "en": "The head outputs are concatenated and projected as Self-Attention output:",
+   "zh": "各个头的输出被拼接并投影为自注意力输出：",
+   "sents": null
+  },
+  {
+   "en": "where 𝐖 O ∈ ℝ D × D \\mathbf{W}_{\\mathrm{O}}\\in\\mathbb{R}^{D\\times D} .",
+   "zh": "其中 𝐖 O ∈ ℝ D × D \\mathbf{W}_{\\mathrm{O}}\\in\\mathbb{R}^{D\\times D}。",
+   "sents": null
+  },
+  {
+   "en": "We use a two-layer MLP with a GELU activation, applied independently to each token:",
+   "zh": "我们使用一个包含 GELU 激活函数的双层 MLP，并将其独立应用于每个词元：",
+   "sents": null
+  },
+  {
+   "en": "where 𝐖 1 ∈ ℝ D ff × D \\mathbf{W}_{1}\\in\\mathbb{R}^{D_{\\mathrm{ff}}\\times D} , 𝐖 2 ∈ ℝ D × D ff \\mathbf{W}_{2}\\in\\mathbb{R}^{D\\times D_{\\mathrm{ff}}} , and D ff D_{\\mathrm{ff}} is the hidden dimension that commonly is set to be 4 ​ D 4D . The GELU activation is applied element-wise.",
+   "zh": "其中 𝐖 1 ∈ ℝ D ff × D \\mathbf{W}_{1}\\in\\mathbb{R}^{D_{\\mathrm{ff}}\\times D}，𝐖 2 ∈ ℝ D × D ff \\mathbf{W}_{2}\\in\\mathbb{R}^{D\\times D_{\\mathrm{ff}}}，而 D ff D_{\\mathrm{ff}} 是隐藏维度，通常设为 4 ​ D 4D。 GELU 激活函数以逐元素的方式应用。",
+   "sents": [
+    {
+     "en": "where 𝐖 1 ∈ ℝ D ff × D \\mathbf{W}_{1}\\in\\mathbb{R}^{D_{\\mathrm{ff}}\\times D} , 𝐖 2 ∈ ℝ D × D ff \\mathbf{W}_{2}\\in\\mathbb{R}^{D\\times D_{\\mathrm{ff}}} , and D ff D_{\\mathrm{ff}} is the hidden dimension that commonly is set to be 4 ​ D 4D .",
+     "zh": "其中 𝐖 1 ∈ ℝ D ff × D \\mathbf{W}_{1}\\in\\mathbb{R}^{D_{\\mathrm{ff}}\\times D}，𝐖 2 ∈ ℝ D × D ff \\mathbf{W}_{2}\\in\\mathbb{R}^{D\\times D_{\\mathrm{ff}}}，而 D ff D_{\\mathrm{ff}} 是隐藏维度，通常设为 4 ​ D 4D。"
+    },
+    {
+     "en": "The GELU activation is applied element-wise.",
+     "zh": "GELU 激活函数以逐元素的方式应用。"
+    }
+   ]
+  },
+  {
+   "en": "To determine the relative importance of the difference model design choices, with a particular focus on the removal of residual connections, we train the DDT baseline with our proposed initialization and linear feature fusion for 80 epochs. Table 6 shows that applying these techniques together degrades generation performance while yielding comparable classification results. Table 7 further shows that this variant performs worse on semantic segmentation and object discovery.",
+   "zh": "为了确定不同模型设计选择之间的相对重要性，尤其关注残差连接的移除，我们使用我们提出的初始化和线性特征融合方法，将 DDT 基线模型训练了 80 个周期。 表 6 显示，同时应用这些技术会损害生成性能，但分类结果却相当接近。 表 7 进一步表明，该变体在语义分割和物体发现任务上的表现更差。",
+   "sents": [
+    {
+     "en": "To determine the relative importance of the difference model design choices, with a particular focus on the removal of residual connections, we train the DDT baseline with our proposed initialization and linear feature fusion for 80 epochs.",
+     "zh": "为了确定不同模型设计选择之间的相对重要性，尤其关注残差连接的移除，我们使用我们提出的初始化和线性特征融合方法，将 DDT 基线模型训练了 80 个周期。"
+    },
+    {
+     "en": "Table 6 shows that applying these techniques together degrades generation performance while yielding comparable classification results.",
+     "zh": "表 6 显示，同时应用这些技术会损害生成性能，但分类结果却相当接近。"
+    },
+    {
+     "en": "Table 7 further shows that this variant performs worse on semantic segmentation and object discovery.",
+     "zh": "表 7 进一步表明，该变体在语义分割和物体发现任务上的表现更差。"
+    }
+   ]
+  },
+  {
+   "en": "We ablate the proposed initialization scheme and feature fusion in DDT-RFE-L/2, with quantitative results in Table 8 and feature visualizations in Fig. 4 . Removing the proposed initialization increases FID from 7.68 to 9.86 and substantially reduces performance on the visual understanding tasks. In Fig. 4 , we can see that most representations have collapsed due to network conditioning issues ( Ji et al., 2025 ) . Removing feature fusion only leads to much larger performance drops in both image generation and visual understanding. However, we empirically find that additionally removing the output gates helps recover performance. Nevertheless, this variant still underperforms the full recipe. Specifically, it increases FID by 0.66 and reduces classification accuracy, segmentation mIoU, and correspondence PCK by 0.2 percentage points, 1.1 points, and 4.4 percentage points, respectively. Qualitatively, the model learns some abstraction in the middle blocks, but it still attempts to retain detailed information because no alternative pathways are available.",
+   "zh": "我们在 DDT-RFE-L/2 中分别去除了所提出的初始化方案与特征融合机制，定量结果见表 8，特征可视化结果见图 4。 移除所提出的初始化方案会使 FID 从 7.68 上升至 9.86，并显著降低视觉理解任务的性能。 从图 4 中可以看出，由于网络条件化问题，大多数表示已发生坍缩（Ji et al., 2025）。 仅移除特征融合机制会导致图像生成与视觉理解任务中的性能下降幅度更大。 然而，我们通过实证发现，进一步移除输出门有助于恢复模型性能。 尽管如此，该变体版本的表现仍低于完整方案。 具体而言，FID 增加了 0.66，分类准确率、分割 mIoU 和对应关系 PCK 分别下降了 0.2 个百分点、1.1 个点和 4.4 个百分点。 从定性角度看，模型在中层块中学习到了一些抽象特征，但由于没有替代路径可用，它仍试图保留细节信息。",
+   "sents": [
+    {
+     "en": "We ablate the proposed initialization scheme and feature fusion in DDT-RFE-L/2, with quantitative results in Table 8 and feature visualizations in Fig. 4 .",
+     "zh": "我们在 DDT-RFE-L/2 中分别去除了所提出的初始化方案与特征融合机制，定量结果见表 8，特征可视化结果见图 4。"
+    },
+    {
+     "en": "Removing the proposed initialization increases FID from 7.68 to 9.86 and substantially reduces performance on the visual understanding tasks.",
+     "zh": "移除所提出的初始化方案会使 FID 从 7.68 上升至 9.86，并显著降低视觉理解任务的性能。"
+    },
+    {
+     "en": "In Fig. 4 , we can see that most representations have collapsed due to network conditioning issues ( Ji et al., 2025 ) .",
+     "zh": "从图 4 中可以看出，由于网络条件化问题，大多数表示已发生坍缩（Ji et al., 2025）。"
+    },
+    {
+     "en": "Removing feature fusion only leads to much larger performance drops in both image generation and visual understanding.",
+     "zh": "仅移除特征融合机制会导致图像生成与视觉理解任务中的性能下降幅度更大。"
+    },
+    {
+     "en": "However, we empirically find that additionally removing the output gates helps recover performance.",
+     "zh": "然而，我们通过实证发现，进一步移除输出门有助于恢复模型性能。"
+    },
+    {
+     "en": "Nevertheless, this variant still underperforms the full recipe.",
+     "zh": "尽管如此，该变体版本的表现仍低于完整方案。"
+    },
+    {
+     "en": "Specifically, it increases FID by 0.66 and reduces classification accuracy, segmentation mIoU, and correspondence PCK by 0.2 percentage points, 1.1 points, and 4.4 percentage points, respectively.",
+     "zh": "具体而言，FID 增加了 0.66，分类准确率、分割 mIoU 和对应关系 PCK 分别下降了 0.2 个百分点、1.1 个点和 4.4 个百分点。"
+    },
+    {
+     "en": "Qualitatively, the model learns some abstraction in the middle blocks, but it still attempts to retain detailed information because no alternative pathways are available.",
+     "zh": "从定性角度看，模型在中层块中学习到了一些抽象特征，但由于没有替代路径可用，它仍试图保留细节信息。"
+    }
+   ]
+  },
+  {
+   "en": "In this subsection, we demonstrate additional visualizations of encoder representations for three different models: DDT-L/2 (20en4de), DDT-L/2 (12en12de), and DDT-RFE-L/2 (12en12de) in Figs. 5 , 6 and 7",
+   "zh": "在本小节中，我们在图 5、6 和 7 中展示了三种不同模型（DDT-L/2 (20en4de)、DDT-L/2 (12en12de) 和 DDT-RFE-L/2 (12en12de)）的编码器表示的额外可视化结果。",
+   "sents": null
+  }
+ ]
+}
