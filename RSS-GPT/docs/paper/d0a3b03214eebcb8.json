@@ -1,0 +1,2026 @@
+{
+ "id": "d0a3b03214eebcb8",
+ "source": "arxiv-t2i",
+ "link": "https://arxiv.org/abs/2609.39451v1",
+ "title": "ResARC: Residual-Aware AutoRegressive Coding for Ultra-Low Bitrate Image Compression",
+ "title_zh": "ResARC：面向超低码率图像压缩的残差感知自回归编码",
+ "published": "2026-09-30T10:24:23Z",
+ "translated_at": "2026-10-19T08:25:08Z",
+ "paragraphs": [
+  {
+   "en": "Progressive autoregressive image codecs provide an appealing paradigm for generative compression by quantizing continuous latents into discrete tokens, transmitting coarse-to-fine prefix tokens and generating the remaining suffix tokens at the decoder. However, their reconstruction quality is fundamentally limited by two residuals introduced along this pipeline: the quantization residual , arising from information loss during discrete tokenization, and the generation residual , resulting from imperfect autoregressive generation of the suffix tokens. To address these limitations, we introduce ResARC , a residual-aware autoregressive codec that explicitly compensates for both residuals at the decoder. Specifically, we generate the quantization residual with a diffusion transformer conditioned on the autoregressive decoding context, while requiring no additional side information. In parallel, we compute the generation residual at the encoder and employ a learned Generation Residual Codec to efficiently compress and transmit it for decoder-side correction. The recovered residuals are then integrated with the reconstructed latent representation and decoded through an adapted VAE decoder. Extensive experiments demonstrate that ResARC achieves competitive perceptual similarity while substantially improving distributional fidelity over leading generative codecs across the ultra-low bitrate regime. Code and models will be released soon.",
+   "zh": "渐进式自回归图像编解码器通过将连续潜在变量量化为离散标记、传输从粗略到精细的前缀标记，并在解码端生成剩余的后缀标记，为生成式压缩提供了一种极具吸引力的范式。 然而，其重建质量从根本上受到该流程中引入的两个残差所限制：量化残差（源于离散标记化过程中的信息丢失）和生成残差（源于后缀标记不完善的自回归生成）。 为解决这些局限性，我们提出了 ResARC——一种残差感知型自回归编解码器，它能在解码端显式补偿这两种残差。 具体而言，我们通过一个以自回归解码上下文为条件的扩散变换器来生成量化残差，且无需任何额外的侧信息。 同时，我们在编码器端计算生成残差，并利用一个经过学习的生成残差编解码器对其进行高效压缩与传输，以便在解码端进行修正。 随后，恢复的残差会与重建的潜在表示相融合，并通过一个适配后的 VAE 解码器进行解码。 大量实验表明，ResARC 在极低码率区间内实现了与主流生成式编解码器相当的感知相似度，并显著提升了分布保真度。 代码和模型将很快发布。",
+   "sents": [
+    {
+     "en": "Progressive autoregressive image codecs provide an appealing paradigm for generative compression by quantizing continuous latents into discrete tokens, transmitting coarse-to-fine prefix tokens and generating the remaining suffix tokens at the decoder.",
+     "zh": "渐进式自回归图像编解码器通过将连续潜在变量量化为离散标记、传输从粗略到精细的前缀标记，并在解码端生成剩余的后缀标记，为生成式压缩提供了一种极具吸引力的范式。"
+    },
+    {
+     "en": "However, their reconstruction quality is fundamentally limited by two residuals introduced along this pipeline: the quantization residual , arising from information loss during discrete tokenization, and the generation residual , resulting from imperfect autoregressive generation of the suffix tokens.",
+     "zh": "然而，其重建质量从根本上受到该流程中引入的两个残差所限制：量化残差（源于离散标记化过程中的信息丢失）和生成残差（源于后缀标记不完善的自回归生成）。"
+    },
+    {
+     "en": "To address these limitations, we introduce ResARC , a residual-aware autoregressive codec that explicitly compensates for both residuals at the decoder.",
+     "zh": "为解决这些局限性，我们提出了 ResARC——一种残差感知型自回归编解码器，它能在解码端显式补偿这两种残差。"
+    },
+    {
+     "en": "Specifically, we generate the quantization residual with a diffusion transformer conditioned on the autoregressive decoding context, while requiring no additional side information.",
+     "zh": "具体而言，我们通过一个以自回归解码上下文为条件的扩散变换器来生成量化残差，且无需任何额外的侧信息。"
+    },
+    {
+     "en": "In parallel, we compute the generation residual at the encoder and employ a learned Generation Residual Codec to efficiently compress and transmit it for decoder-side correction.",
+     "zh": "同时，我们在编码器端计算生成残差，并利用一个经过学习的生成残差编解码器对其进行高效压缩与传输，以便在解码端进行修正。"
+    },
+    {
+     "en": "The recovered residuals are then integrated with the reconstructed latent representation and decoded through an adapted VAE decoder.",
+     "zh": "随后，恢复的残差会与重建的潜在表示相融合，并通过一个适配后的 VAE 解码器进行解码。"
+    },
+    {
+     "en": "Extensive experiments demonstrate that ResARC achieves competitive perceptual similarity while substantially improving distributional fidelity over leading generative codecs across the ultra-low bitrate regime.",
+     "zh": "大量实验表明，ResARC 在极低码率区间内实现了与主流生成式编解码器相当的感知相似度，并显著提升了分布保真度。"
+    },
+    {
+     "en": "Code and models will be released soon.",
+     "zh": "代码和模型将很快发布。"
+    }
+   ]
+  },
+  {
+   "en": "The rapid growth of visual data has made efficient image compression increasingly important, particularly under limited bandwidth and storage. At ultra-low bitrates, the limited transmitted information makes it difficult to preserve fine textures and image structures, often leading distortion-oriented codecs ( Ballé et al., 2017 ; Ballé et al., 2018 ) to produce overly smooth reconstructions. Generative codecs ( Agustsson et al., 2019 ; Mentzer et al., 2020 ; Careil et al., 2024 ) address this by leveraging generative priors to synthesize plausible details from compressed representations, substantially improving perceptual quality at low bitrates. Early generative codecs mainly rely on GAN priors ( Agustsson et al., 2019 ; Mentzer et al., 2020 ) , and more recent approaches adopt diffusion models for high-quality generative reconstruction ( Theis et al., 2022 ) . However, these approaches generally lack native progressive bitrate control and tight integration between entropy modeling and the generative prior.",
+   "zh": "视觉数据的快速增长使得高效的图像压缩变得日益重要，尤其是在带宽和存储有限的情况下。 在极低码率下，传输的信息量有限，难以保留精细的纹理和图像结构，这常常导致以失真为导向的编解码器（Ballé et al., 2017; Ballé et al., 2018）生成过度平滑的重建结果。 生成式编解码器（Agustsson et al., 2019; Mentzer et al., 2020; Careil et al., 2024）通过利用生成先验，从压缩表示中合成合理的细节来解决这一问题，从而在低码率下显著提升了感知质量。 早期的生成式编解码器主要依赖GAN先验（Agustsson et al., 2019; Mentzer et al., 2020），而近期的方法则采用扩散模型来实现高质量的生成式重建（Theis et al., 2022）。 然而，这些方法通常缺乏原生的渐进式码率控制能力，且熵建模与生成先验之间的紧密集成也存在不足。",
+   "sents": [
+    {
+     "en": "The rapid growth of visual data has made efficient image compression increasingly important, particularly under limited bandwidth and storage.",
+     "zh": "视觉数据的快速增长使得高效的图像压缩变得日益重要，尤其是在带宽和存储有限的情况下。"
+    },
+    {
+     "en": "At ultra-low bitrates, the limited transmitted information makes it difficult to preserve fine textures and image structures, often leading distortion-oriented codecs ( Ballé et al., 2017 ; Ballé et al., 2018 ) to produce overly smooth reconstructions.",
+     "zh": "在极低码率下，传输的信息量有限，难以保留精细的纹理和图像结构，这常常导致以失真为导向的编解码器（Ballé et al., 2017; Ballé et al., 2018）生成过度平滑的重建结果。"
+    },
+    {
+     "en": "Generative codecs ( Agustsson et al., 2019 ; Mentzer et al., 2020 ; Careil et al., 2024 ) address this by leveraging generative priors to synthesize plausible details from compressed representations, substantially improving perceptual quality at low bitrates.",
+     "zh": "生成式编解码器（Agustsson et al., 2019; Mentzer et al., 2020; Careil et al., 2024）通过利用生成先验，从压缩表示中合成合理的细节来解决这一问题，从而在低码率下显著提升了感知质量。"
+    },
+    {
+     "en": "Early generative codecs mainly rely on GAN priors ( Agustsson et al., 2019 ; Mentzer et al., 2020 ) , and more recent approaches adopt diffusion models for high-quality generative reconstruction ( Theis et al., 2022 ) .",
+     "zh": "早期的生成式编解码器主要依赖GAN先验（Agustsson et al., 2019; Mentzer et al., 2020），而近期的方法则采用扩散模型来实现高质量的生成式重建（Theis et al., 2022）。"
+    },
+    {
+     "en": "However, these approaches generally lack native progressive bitrate control and tight integration between entropy modeling and the generative prior.",
+     "zh": "然而，这些方法通常缺乏原生的渐进式码率控制能力，且熵建模与生成先验之间的紧密集成也存在不足。"
+    }
+   ]
+  },
+  {
+   "en": "Autoregressive generative codecs provide an alternative by exploiting the shared autoregressive prior for both entropy modeling and token generation ( Mao et al., 2024 ; Xue et al., 2024 ) . More recently, Visual Auto-Regressive (VAR) models ( Tian et al., 2024 ; Han et al., 2025 ) generate visual tokens in a coarse-to-fine manner across multiple scales, providing a natural foundation for progressive generative compression. Building on this paradigm, ARPC ( Zhang et al., 2026b ) quantizes continuous latents into discrete tokens, transmits a coarse-to-fine prefix of tokens, and autoregressively generates the remaining suffix at the decoder. By varying the transmitted prefix depth, a single model can operate at multiple bitrates.",
+   "zh": "自回归生成编解码器通过利用熵建模和令牌生成所共享的自回归先验提供了一种替代方案（Mao 等人，2024；Xue 等人，2024）。 近期，视觉自回归（VAR）模型（Tian 等人，2024；Han 等人，2025）以由粗到细的方式在多个尺度上生成视觉令牌，为渐进式生成压缩提供了自然的基础。 基于这一范式，ARPC（Zhang 等人，2026b）将连续潜在变量量化为离散令牌，传输一个由粗到细的令牌前缀，并在解码器中自回归地生成剩余的后缀。 通过改变传输的前缀深度，单个模型可以在多种比特率下运行。",
+   "sents": [
+    {
+     "en": "Autoregressive generative codecs provide an alternative by exploiting the shared autoregressive prior for both entropy modeling and token generation ( Mao et al., 2024 ; Xue et al., 2024 ) .",
+     "zh": "自回归生成编解码器通过利用熵建模和令牌生成所共享的自回归先验提供了一种替代方案（Mao 等人，2024；Xue 等人，2024）。"
+    },
+    {
+     "en": "More recently, Visual Auto-Regressive (VAR) models ( Tian et al., 2024 ; Han et al., 2025 ) generate visual tokens in a coarse-to-fine manner across multiple scales, providing a natural foundation for progressive generative compression.",
+     "zh": "近期，视觉自回归（VAR）模型（Tian 等人，2024；Han 等人，2025）以由粗到细的方式在多个尺度上生成视觉令牌，为渐进式生成压缩提供了自然的基础。"
+    },
+    {
+     "en": "Building on this paradigm, ARPC ( Zhang et al., 2026b ) quantizes continuous latents into discrete tokens, transmits a coarse-to-fine prefix of tokens, and autoregressively generates the remaining suffix at the decoder.",
+     "zh": "基于这一范式，ARPC（Zhang 等人，2026b）将连续潜在变量量化为离散令牌，传输一个由粗到细的令牌前缀，并在解码器中自回归地生成剩余的后缀。"
+    },
+    {
+     "en": "By varying the transmitted prefix depth, a single model can operate at multiple bitrates.",
+     "zh": "通过改变传输的前缀深度，单个模型可以在多种比特率下运行。"
+    }
+   ]
+  },
+  {
+   "en": "Despite their scalability and flexibility, we observe that the reconstruction fidelity of autoregressive generative codecs remains limited by two residuals arising along the pipeline. As illustrated in Figure 2 , discrete tokenization converts the continuous latent into transmissible tokens, but inevitably discards information, including fine-grained details important for reconstruction. We define the resulting difference between the original continuous latent and its quantized reconstruction as the quantization residual . A second discrepancy arises when the suffix tokens omitted from transmission are replaced by autoregressively synthesized predictions, which may deviate from their ground-truth counterparts. We define this discrepancy as the generation residual , which further degrades reconstruction fidelity. These observations raise a central question: How should quantization and generation residuals be explicitly compensated in autoregressive compression?",
+   "zh": "尽管它们具有可扩展性和灵活性，但我们观察到，自回归生成式编解码器的重建保真度仍受到沿处理流程产生的两种残差的限制。 如图 2 所示，离散分词将连续的潜在表示转换为可传输的标记，但不可避免地会丢弃信息，包括对重建至关重要的精细细节。 我们将原始连续潜在表示与其量化重建之间的差异定义为量化残差。 当从传输中省略的后缀标记被通过自回归方式合成的预测所替代时，会产生第二种差异，而这些预测可能与它们的真实值存在偏差。 我们将这种差异定义为生成残差，它会进一步降低重建保真度。 这些观察结果引出了一个核心问题：在自回归压缩中，应如何对量化残差和生成残差进行显式补偿？",
+   "sents": [
+    {
+     "en": "Despite their scalability and flexibility, we observe that the reconstruction fidelity of autoregressive generative codecs remains limited by two residuals arising along the pipeline.",
+     "zh": "尽管它们具有可扩展性和灵活性，但我们观察到，自回归生成式编解码器的重建保真度仍受到沿处理流程产生的两种残差的限制。"
+    },
+    {
+     "en": "As illustrated in Figure 2 , discrete tokenization converts the continuous latent into transmissible tokens, but inevitably discards information, including fine-grained details important for reconstruction.",
+     "zh": "如图 2 所示，离散分词将连续的潜在表示转换为可传输的标记，但不可避免地会丢弃信息，包括对重建至关重要的精细细节。"
+    },
+    {
+     "en": "We define the resulting difference between the original continuous latent and its quantized reconstruction as the quantization residual .",
+     "zh": "我们将原始连续潜在表示与其量化重建之间的差异定义为量化残差。"
+    },
+    {
+     "en": "A second discrepancy arises when the suffix tokens omitted from transmission are replaced by autoregressively synthesized predictions, which may deviate from their ground-truth counterparts.",
+     "zh": "当从传输中省略的后缀标记被通过自回归方式合成的预测所替代时，会产生第二种差异，而这些预测可能与它们的真实值存在偏差。"
+    },
+    {
+     "en": "We define this discrepancy as the generation residual , which further degrades reconstruction fidelity.",
+     "zh": "我们将这种差异定义为生成残差，它会进一步降低重建保真度。"
+    },
+    {
+     "en": "These observations raise a central question: How should quantization and generation residuals be explicitly compensated in autoregressive compression?",
+     "zh": "这些观察结果引出了一个核心问题：在自回归压缩中，应如何对量化残差和生成残差进行显式补偿？"
+    }
+   ]
+  },
+  {
+   "en": "To answer this question, we introduce ResARC , the first residual-aware autoregressive image codec that explicitly compensates for both residuals according to their distinct characteristics. Specifically, the quantization residual is predominantly associated with fine-grained details discarded during discrete tokenization, while the reconstructed tokens and autoregressive decoding context available at the decoder provide strong cues for recovering this missing information. We therefore employ a Quantization Residual Generator , which uses a conditional diffusion transformer to generate the quantization residual from the decoding context without transmitting additional side information. For the generation residual , the discrepancy between the ground-truth and generated suffix may affect both structural content and fine details. Since this residual represents the specific correction required to align the generated suffix with its ground-truth counterpart, we compute it at the encoder and employ a Generation Residual Codec to efficiently compress it into a bitstream transmitted for decoder-side correction. Finally, the recovered quantization and generation residuals are fused with the reconstructed latent and decoded via an adapted VAE decoder, improving reconstruction fidelity while preserving progressive bitrate control.",
+   "zh": "为了解答这个问题，我们提出了 ResARC——首个具备残差感知能力的自回归图像编解码器，它能根据两种残差的各自特性进行显式补偿。 具体而言，量化残差主要与离散分词过程中被舍弃的精细细节相关，而解码器中可用的重建分词和自回归解码上下文则提供了强有力的线索，可用于恢复这些缺失信息。 因此，我们采用了一个量化残差生成器，该生成器利用条件扩散变换器从解码上下文中生成量化残差，无需传输额外的侧信息。 对于生成残差而言，真实数据与生成的后缀之间的差异可能会影响结构内容和精细细节。 由于这种残差代表了使生成后缀与其真实对应部分保持一致所需的特定修正，我们因此在编码器端计算该残差，并利用一个生成残差编解码器将其高效压缩为比特流，以便在解码端进行修正。 最后，恢复的量化残差和生成残差会与重建的潜在表示融合，并通过适配后的 VAE 解码器进行解码，从而提升重建保真度，同时保持渐进式比特率控制。",
+   "sents": [
+    {
+     "en": "To answer this question, we introduce ResARC , the first residual-aware autoregressive image codec that explicitly compensates for both residuals according to their distinct characteristics.",
+     "zh": "为了解答这个问题，我们提出了 ResARC——首个具备残差感知能力的自回归图像编解码器，它能根据两种残差的各自特性进行显式补偿。"
+    },
+    {
+     "en": "Specifically, the quantization residual is predominantly associated with fine-grained details discarded during discrete tokenization, while the reconstructed tokens and autoregressive decoding context available at the decoder provide strong cues for recovering this missing information.",
+     "zh": "具体而言，量化残差主要与离散分词过程中被舍弃的精细细节相关，而解码器中可用的重建分词和自回归解码上下文则提供了强有力的线索，可用于恢复这些缺失信息。"
+    },
+    {
+     "en": "We therefore employ a Quantization Residual Generator , which uses a conditional diffusion transformer to generate the quantization residual from the decoding context without transmitting additional side information.",
+     "zh": "因此，我们采用了一个量化残差生成器，该生成器利用条件扩散变换器从解码上下文中生成量化残差，无需传输额外的侧信息。"
+    },
+    {
+     "en": "For the generation residual , the discrepancy between the ground-truth and generated suffix may affect both structural content and fine details.",
+     "zh": "对于生成残差而言，真实数据与生成的后缀之间的差异可能会影响结构内容和精细细节。"
+    },
+    {
+     "en": "Since this residual represents the specific correction required to align the generated suffix with its ground-truth counterpart, we compute it at the encoder and employ a Generation Residual Codec to efficiently compress it into a bitstream transmitted for decoder-side correction.",
+     "zh": "由于这种残差代表了使生成后缀与其真实对应部分保持一致所需的特定修正，我们因此在编码器端计算该残差，并利用一个生成残差编解码器将其高效压缩为比特流，以便在解码端进行修正。"
+    },
+    {
+     "en": "Finally, the recovered quantization and generation residuals are fused with the reconstructed latent and decoded via an adapted VAE decoder, improving reconstruction fidelity while preserving progressive bitrate control.",
+     "zh": "最后，恢复的量化残差和生成残差会与重建的潜在表示融合，并通过适配后的 VAE 解码器进行解码，从而提升重建保真度，同时保持渐进式比特率控制。"
+    }
+   ]
+  },
+  {
+   "en": "Quantitative evaluations on DIV2K ( Agustsson and Timofte, 2017 ) and CLIC2020 ( Toderici et al., 2020 ) demonstrate that ResARC achieves strong perceptual similarity and substantially improved distributional fidelity compared with leading autoregressive and diffusion-based generative codecs in the ultra-low bitrate regime. Qualitative comparisons further show that ResARC better preserves fine-grained textures and image structures at comparable or lower bitrates. Moreover, ablation studies validate the benefits of both residual branches and the effectiveness of their respective compensation strategies.",
+   "zh": "在 DIV2K（Agustsson 和 Timofte，2017）以及 CLIC2020（Toderici 等人，2020）上的定量评估表明，在极低码率区间内，ResARC 实现了与领先的自回归和扩散生成编解码器相比更强的感知相似性和显著提升的分布保真度。 定性比较进一步显示，在相同或更低的码率下，ResARC 能更好地保留精细纹理和图像结构。 此外，消融研究验证了残差分支及其各自补偿策略的有效性。",
+   "sents": [
+    {
+     "en": "Quantitative evaluations on DIV2K ( Agustsson and Timofte, 2017 ) and CLIC2020 ( Toderici et al., 2020 ) demonstrate that ResARC achieves strong perceptual similarity and substantially improved distributional fidelity compared with leading autoregressive and diffusion-based generative codecs in the ultra-low bitrate regime.",
+     "zh": "在 DIV2K（Agustsson 和 Timofte，2017）以及 CLIC2020（Toderici 等人，2020）上的定量评估表明，在极低码率区间内，ResARC 实现了与领先的自回归和扩散生成编解码器相比更强的感知相似性和显著提升的分布保真度。"
+    },
+    {
+     "en": "Qualitative comparisons further show that ResARC better preserves fine-grained textures and image structures at comparable or lower bitrates.",
+     "zh": "定性比较进一步显示，在相同或更低的码率下，ResARC 能更好地保留精细纹理和图像结构。"
+    },
+    {
+     "en": "Moreover, ablation studies validate the benefits of both residual branches and the effectiveness of their respective compensation strategies.",
+     "zh": "此外，消融研究验证了残差分支及其各自补偿策略的有效性。"
+    }
+   ]
+  },
+  {
+   "en": "Our principal contributions are summarized as follows:",
+   "zh": "我们的主要贡献总结如下：",
+   "sents": null
+  },
+  {
+   "en": "We identify two distinct residuals in autoregressive generative codecs: the quantization residual introduced by discrete tokenization, and the generation residual arising from imperfect autoregressive suffix generation.",
+   "zh": "我们在自回归生成式编解码器中识别出两种不同的残差：由离散分词引入的量化残差，以及源于不完美自回归后缀生成的生成残差。",
+   "sents": null
+  },
+  {
+   "en": "We propose ResARC , the first residual-aware autoregressive codec that generates the quantization residual without additional transmitted bits and compresses the generation residual into a compact bitstream transmitted for decoder-side correction.",
+   "zh": "我们提出了 ResARC，这是首个具备残差感知能力的自回归编解码器。它无需额外传输比特即可生成量化残差，并将生成的残差压缩为紧凑的比特流，用于解码端进行校正。",
+   "sents": null
+  },
+  {
+   "en": "Extensive experiments on DIV2K and CLIC2020 demonstrate improved perceptual similarity and distributional fidelity in the ultra-low bitrate regime, with ablations further validating the complementary contributions of the two residual branches.",
+   "zh": "在 DIV2K 和 CLIC2020 数据集上进行的广泛实验表明，在极低码率条件下，该方法提升了感知相似性和分布保真度，并通过消融分析进一步验证了两个残差分支的互补性贡献。",
+   "sents": null
+  },
+  {
+   "en": "Image compression has traditionally relied on hand-crafted transforms and coding tools ( Bellard, 2018 ) , whereas modern neural codecs ( Ballé et al., 2017 ) jointly learn representations, entropy models, and reconstruction in an end-to-end manner. While these methods primarily optimize the conventional rate-distortion trade-off, producing perceptually realistic reconstructions remains challenging, particularly in the ultra-low bitrate regime. Recent advances in visual generative modeling ( Rombach et al., 2022 ) have therefore motivated generative codecs that leverage learned generative priors to improve perceptual reconstruction quality. GAN-based codecs established this paradigm for low bitrate perceptual compression ( Agustsson et al., 2019 ; Mentzer et al., 2020 ) , with later approaches further improving statistical fidelity ( Muckley et al., 2023 ) . More recently, diffusion-based codecs have conditioned generation on compressed representations ( Yang and Mandt, 2023 ; Hoogeboom et al., 2023 ) , semantic or visual cues ( Careil et al., 2024 ; Körber et al., 2024 ) , and semantic-space residuals ( Ke et al., 2025 ) . Subsequent works have improved efficiency and flexibility through shortened or one-step sampling ( Relic et al., 2024 ; Zhang et al., 2025 ; Xue et al., 2025b ; Shi et al., 2026 ) , multi-rate coding ( Guo et al., 2025 ) , lightweight architectures ( Zhang et al., 2026a ; Jia et al., 2026a ) , compression-oriented pretraining ( Jia et al., 2026b ) , video-diffusion decoding ( Chen et al., 2026 ) , and content-adaptive coding ( Sheng et al., 2026 ) . Beyond diffusion-based approaches, GLC ( Jia et al., 2024 ) and DLF ( Xue et al., 2025a ) explore generative latent compression, while RDVQ ( Jiang et al., 2026 ) improves rate-distortion optimization for vector-quantized representations. Despite these advances, existing generative codecs generally lack native progressive bitrate control and tight integration between entropy modeling and the generative prior.",
+   "zh": "图像压缩传统上依赖人工设计的变换和编码工具（Bellard，2018），而现代神经编解码器（Ballé 等，2017）则以端到端的方式联合学习表示、熵模型和重建。 尽管这些方法主要优化传统的速率-失真权衡，但在感知上生成逼真的重建结果仍然具有挑战性，尤其是在超低码率区间。 因此，视觉生成建模领域的最新进展（Rombach 等，2022）推动了生成式编解码器的发展，这些编解码器利用学习到的生成先验来改善感知重建质量。 基于 GAN 的编解码器为低码率感知压缩确立了这一范式（Agustsson 等，2019；Mentzer 等，2020），后续方法进一步提升了统计保真度（Muckley 等，2023）。 近期，基于扩散模型的编解码器将生成过程的条件设定在压缩表示（Yang 和 Mandt，2023；Hoogeboom 等，2023）、语义或视觉线索（Careil 等，2024；Körber 等，2024）以及语义空间残差（Ke 等，2025）之上。 后续研究通过缩短采样步骤或采用单步采样（Relic 等，2024；Zhang 等，2025；Xue 等，2025b；Shi 等，2026）、多速率编码（Guo 等，2025）、轻量化架构（Zhang 等，2026a；Jia 等，2026a）、面向压缩的预训练（Jia 等，2026b）、视频扩散解码（Chen 等，2026）以及内容自适应编码（Sheng 等，2026），提升了效率与灵活性。 除了基于扩散的方法外，GLC（Jia 等，2024）和 DLF（Xue 等，2025a）探索了生成式潜在压缩，而 RDVQ（Jiang 等，2026）则改进了向量量化表示的速率-失真优化。 尽管取得了这些进展，现有生成式编解码器通常缺乏原生的渐进式码率控制能力，且熵模型与生成先验之间的紧密集成仍显不足。",
+   "sents": [
+    {
+     "en": "Image compression has traditionally relied on hand-crafted transforms and coding tools ( Bellard, 2018 ) , whereas modern neural codecs ( Ballé et al., 2017 ) jointly learn representations, entropy models, and reconstruction in an end-to-end manner.",
+     "zh": "图像压缩传统上依赖人工设计的变换和编码工具（Bellard，2018），而现代神经编解码器（Ballé 等，2017）则以端到端的方式联合学习表示、熵模型和重建。"
+    },
+    {
+     "en": "While these methods primarily optimize the conventional rate-distortion trade-off, producing perceptually realistic reconstructions remains challenging, particularly in the ultra-low bitrate regime.",
+     "zh": "尽管这些方法主要优化传统的速率-失真权衡，但在感知上生成逼真的重建结果仍然具有挑战性，尤其是在超低码率区间。"
+    },
+    {
+     "en": "Recent advances in visual generative modeling ( Rombach et al., 2022 ) have therefore motivated generative codecs that leverage learned generative priors to improve perceptual reconstruction quality.",
+     "zh": "因此，视觉生成建模领域的最新进展（Rombach 等，2022）推动了生成式编解码器的发展，这些编解码器利用学习到的生成先验来改善感知重建质量。"
+    },
+    {
+     "en": "GAN-based codecs established this paradigm for low bitrate perceptual compression ( Agustsson et al., 2019 ; Mentzer et al., 2020 ) , with later approaches further improving statistical fidelity ( Muckley et al., 2023 ) .",
+     "zh": "基于 GAN 的编解码器为低码率感知压缩确立了这一范式（Agustsson 等，2019；Mentzer 等，2020），后续方法进一步提升了统计保真度（Muckley 等，2023）。"
+    },
+    {
+     "en": "More recently, diffusion-based codecs have conditioned generation on compressed representations ( Yang and Mandt, 2023 ; Hoogeboom et al., 2023 ) , semantic or visual cues ( Careil et al., 2024 ; Körber et al., 2024 ) , and semantic-space residuals ( Ke et al., 2025 ) .",
+     "zh": "近期，基于扩散模型的编解码器将生成过程的条件设定在压缩表示（Yang 和 Mandt，2023；Hoogeboom 等，2023）、语义或视觉线索（Careil 等，2024；Körber 等，2024）以及语义空间残差（Ke 等，2025）之上。"
+    },
+    {
+     "en": "Subsequent works have improved efficiency and flexibility through shortened or one-step sampling ( Relic et al., 2024 ; Zhang et al., 2025 ; Xue et al., 2025b ; Shi et al., 2026 ) , multi-rate coding ( Guo et al., 2025 ) , lightweight architectures ( Zhang et al., 2026a ; Jia et al., 2026a ) , compression-oriented pretraining ( Jia et al., 2026b ) , video-diffusion decoding ( Chen et al., 2026 ) , and content-adaptive coding ( Sheng et al., 2026 ) .",
+     "zh": "后续研究通过缩短采样步骤或采用单步采样（Relic 等，2024；Zhang 等，2025；Xue 等，2025b；Shi 等，2026）、多速率编码（Guo 等，2025）、轻量化架构（Zhang 等，2026a；Jia 等，2026a）、面向压缩的预训练（Jia 等，2026b）、视频扩散解码（Chen 等，2026）以及内容自适应编码（Sheng 等，2026），提升了效率与灵活性。"
+    },
+    {
+     "en": "Beyond diffusion-based approaches, GLC ( Jia et al., 2024 ) and DLF ( Xue et al., 2025a ) explore generative latent compression, while RDVQ ( Jiang et al., 2026 ) improves rate-distortion optimization for vector-quantized representations.",
+     "zh": "除了基于扩散的方法外，GLC（Jia 等，2024）和 DLF（Xue 等，2025a）探索了生成式潜在压缩，而 RDVQ（Jiang 等，2026）则改进了向量量化表示的速率-失真优化。"
+    },
+    {
+     "en": "Despite these advances, existing generative codecs generally lack native progressive bitrate control and tight integration between entropy modeling and the generative prior.",
+     "zh": "尽管取得了这些进展，现有生成式编解码器通常缺乏原生的渐进式码率控制能力，且熵模型与生成先验之间的紧密集成仍显不足。"
+    }
+   ]
+  },
+  {
+   "en": "Autoregressive modeling over discrete visual tokens ( van den Oord et al., 2017 ; Esser et al., 2021 ; Lee et al., 2022 ; Yu et al., 2024 ; Zhao et al., 2025 ) provides a natural way to address the above limitations by sharing a generative prior for both entropy modeling and sequential generation, and the autoregressive prior further enables progressive coding. Early autoregressive codecs ( Mao et al., 2024 ; Xue et al., 2024 ) explored this direction with conventional next-token prediction. More recently, Visual Auto-Regressive (VAR) models ( Tian et al., 2024 ; Han et al., 2025 ) generate token maps in a coarse-to-fine hierarchy, providing a natural basis for progressive generative compression, while HART ( Tang et al., 2025 ) further enhances this paradigm with continuous residual diffusion to improve image synthesis. Building on this coarse-to-fine autoregressive generation, Phung et al. (2025) first explored its application to image compression through preliminary experiments. ARPC ( Zhang et al., 2026b ) further develops this paradigm by transmitting coarse-to-fine prefix tokens and autoregressively generating the remaining suffix tokens, with the transmitted prefix depth controlling the bitrate within a single model. ProGVC ( Li et al., 2026 ) extends progressive autoregressive coding to generative video compression. Despite these advances, existing autoregressive codecs remain limited by two distinct residuals: discrete tokenization discards information from continuous latents, yielding a quantization residual , while imperfect autoregressive suffix generation introduces a generation residual . ResARC explicitly models and compensates for both residuals to improve reconstruction fidelity.",
+   "zh": "对离散视觉标记的自回归建模（van den Oord 等，2017；Esser 等，2021；Lee 等，2022；Yu 等，2024；Zhao 等，2025）为应对上述局限性提供了一种自然的方法：通过共享熵建模和序列生成共同的生成先验，自回归先验还能进一步实现渐进式编码。 早期的自回归编解码器（Mao 等，2024；Xue 等，2024）采用传统的下一标记预测方式探索了这一方向。 近期，视觉自回归（VAR）模型（Tian 等，2024；Han 等，2025）以粗到细的层次结构生成标记图，为渐进式生成压缩提供了自然基础，而 HART（Tang 等，2025）则通过连续残差扩散进一步提升了该范式的图像合成效果。 基于这种粗到细的自回归生成方法，Phung 等 （2025）首次通过初步实验探索了其在图像压缩中的应用。 ARPC（Zhang 等，2026b）进一步发展了这一范式：通过传输粗到细的前缀标记，并自回归地生成剩余的后缀标记，其中传输的前缀深度可在单一模型内控制比特率。 ProGVC（Li 等，2026）将渐进式自回归编码扩展到了生成式视频压缩领域。 尽管取得了这些进展，现有的自回归编解码器仍受两种不同残差的限制：离散标记化会丢弃连续潜在变量中的信息，从而产生量化残差；而不完美的自回归后缀生成则会引入生成残差。 ResARC 明确建模并补偿了这两种残差，以提升重建保真度。",
+   "sents": [
+    {
+     "en": "Autoregressive modeling over discrete visual tokens ( van den Oord et al., 2017 ; Esser et al., 2021 ; Lee et al., 2022 ; Yu et al., 2024 ; Zhao et al., 2025 ) provides a natural way to address the above limitations by sharing a generative prior for both entropy modeling and sequential generation, and the autoregressive prior further enables progressive coding.",
+     "zh": "对离散视觉标记的自回归建模（van den Oord 等，2017；Esser 等，2021；Lee 等，2022；Yu 等，2024；Zhao 等，2025）为应对上述局限性提供了一种自然的方法：通过共享熵建模和序列生成共同的生成先验，自回归先验还能进一步实现渐进式编码。"
+    },
+    {
+     "en": "Early autoregressive codecs ( Mao et al., 2024 ; Xue et al., 2024 ) explored this direction with conventional next-token prediction.",
+     "zh": "早期的自回归编解码器（Mao 等，2024；Xue 等，2024）采用传统的下一标记预测方式探索了这一方向。"
+    },
+    {
+     "en": "More recently, Visual Auto-Regressive (VAR) models ( Tian et al., 2024 ; Han et al., 2025 ) generate token maps in a coarse-to-fine hierarchy, providing a natural basis for progressive generative compression, while HART ( Tang et al., 2025 ) further enhances this paradigm with continuous residual diffusion to improve image synthesis.",
+     "zh": "近期，视觉自回归（VAR）模型（Tian 等，2024；Han 等，2025）以粗到细的层次结构生成标记图，为渐进式生成压缩提供了自然基础，而 HART（Tang 等，2025）则通过连续残差扩散进一步提升了该范式的图像合成效果。"
+    },
+    {
+     "en": "Building on this coarse-to-fine autoregressive generation, Phung et al.",
+     "zh": "基于这种粗到细的自回归生成方法，Phung 等"
+    },
+    {
+     "en": "(2025) first explored its application to image compression through preliminary experiments.",
+     "zh": "（2025）首次通过初步实验探索了其在图像压缩中的应用。"
+    },
+    {
+     "en": "ARPC ( Zhang et al., 2026b ) further develops this paradigm by transmitting coarse-to-fine prefix tokens and autoregressively generating the remaining suffix tokens, with the transmitted prefix depth controlling the bitrate within a single model.",
+     "zh": "ARPC（Zhang 等，2026b）进一步发展了这一范式：通过传输粗到细的前缀标记，并自回归地生成剩余的后缀标记，其中传输的前缀深度可在单一模型内控制比特率。"
+    },
+    {
+     "en": "ProGVC ( Li et al., 2026 ) extends progressive autoregressive coding to generative video compression.",
+     "zh": "ProGVC（Li 等，2026）将渐进式自回归编码扩展到了生成式视频压缩领域。"
+    },
+    {
+     "en": "Despite these advances, existing autoregressive codecs remain limited by two distinct residuals: discrete tokenization discards information from continuous latents, yielding a quantization residual , while imperfect autoregressive suffix generation introduces a generation residual .",
+     "zh": "尽管取得了这些进展，现有的自回归编解码器仍受两种不同残差的限制：离散标记化会丢弃连续潜在变量中的信息，从而产生量化残差；而不完美的自回归后缀生成则会引入生成残差。"
+    },
+    {
+     "en": "ResARC explicitly models and compensates for both residuals to improve reconstruction fidelity.",
+     "zh": "ResARC 明确建模并补偿了这两种残差，以提升重建保真度。"
+    }
+   ]
+  },
+  {
+   "en": "We first review the progressive autoregressive codec ARPC ( Zhang et al., 2026b ) based on Infinity ( Han et al., 2025 ) , which underlies our method. Given an input image x ∈ ℝ H × W × 3 x\\in\\mathbb{R}^{H\\times W\\times 3} , a VAE encoder first extracts a continuous latent representation h = ℰ ⁡ ( x ) h=\\mathcal{E}(x) . A multi-scale residual quantizer ( Zhao et al., 2025 ) 𝒬 \\mathcal{Q} then converts h h into a sequence of discrete token maps 𝒯 = ( T 1 , … , T K ) = 𝒬 ⁡ ( h ) \\mathcal{T}=(T_{1},\\ldots,T_{K})=\\mathcal{Q}(h) , where successive scales progressively refine the latent representation from coarse structures to fine details. The complete source token sequence is aggregated through multi-scale summation to obtain the quantized latent h q = 𝒮 ⁡ ( 𝒯 ) = ∑ i = 1 K U i ​ ( T i ) h_{q}=\\mathcal{S}(\\mathcal{T})=\\sum_{i=1}^{K}U_{i}(T_{i}) . Here, U i U_{i} maps the scale- i i tokens to latent features at the common spatial resolution of h h . For a given prefix depth k k , the codec transmits the first k k token scales T ≤ k T_{\\leq k} and leaves the remaining suffix tokens T > k T_{>k} to be synthesized at the decoder. The autoregressive model ψ \\psi is utilized for both entropy coding and suffix generation: its predicted probabilities are used to entropy-code the transmitted prefix and to autoregressively sample the omitted suffix scales.",
+   "zh": "我们首先回顾了基于 Infinity (Han et al., 2025) 的渐进式自回归编解码器 ARPC (Zhang et al., 2026b)，该方法构成了我们研究的基础。 给定输入图像 x ∈ ℝ H × W × 3，VAE 编码器首先提取出连续的潜在表示 h = ℰ(x)。 随后，多尺度残差量化器 (Zhao et al., 2025) 𝒬 将 h 转换为一串离散的标记图序列 𝒯 = (T₁, …, T_K) = 𝒬(h)，其中各连续尺度逐步将潜在表示从粗略结构细化到精细细节。 通过多尺度求和聚合完整的源标记序列，得到量化后的潜在表示 h_q = 𝒮(𝒯) = ∑_{i=1}^K U_i(T_i)。 此处，U_i 将第 i 尺度的标记映射到与 h 具有相同空间分辨率的潜在特征上。 对于给定的前缀深度 k，编解码器传输前 k 个标记尺度 T_{≤k}，而其余的后缀标记 T_{>k} 则由解码器合成。 自回归模型 ψ 同时用于熵编码和后缀生成：其预测概率既可用于对传输的前缀进行熵编码，也可用于自回归地采样被省略的后缀尺度。",
+   "sents": [
+    {
+     "en": "We first review the progressive autoregressive codec ARPC ( Zhang et al., 2026b ) based on Infinity ( Han et al., 2025 ) , which underlies our method.",
+     "zh": "我们首先回顾了基于 Infinity (Han et al., 2025) 的渐进式自回归编解码器 ARPC (Zhang et al., 2026b)，该方法构成了我们研究的基础。"
+    },
+    {
+     "en": "Given an input image x ∈ ℝ H × W × 3 x\\in\\mathbb{R}^{H\\times W\\times 3} , a VAE encoder first extracts a continuous latent representation h = ℰ ⁡ ( x ) h=\\mathcal{E}(x) .",
+     "zh": "给定输入图像 x ∈ ℝ H × W × 3，VAE 编码器首先提取出连续的潜在表示 h = ℰ(x)。"
+    },
+    {
+     "en": "A multi-scale residual quantizer ( Zhao et al., 2025 ) 𝒬 \\mathcal{Q} then converts h h into a sequence of discrete token maps 𝒯 = ( T 1 , … , T K ) = 𝒬 ⁡ ( h ) \\mathcal{T}=(T_{1},\\ldots,T_{K})=\\mathcal{Q}(h) , where successive scales progressively refine the latent representation from coarse structures to fine details.",
+     "zh": "随后，多尺度残差量化器 (Zhao et al., 2025) 𝒬 将 h 转换为一串离散的标记图序列 𝒯 = (T₁, …, T_K) = 𝒬(h)，其中各连续尺度逐步将潜在表示从粗略结构细化到精细细节。"
+    },
+    {
+     "en": "The complete source token sequence is aggregated through multi-scale summation to obtain the quantized latent h q = 𝒮 ⁡ ( 𝒯 ) = ∑ i = 1 K U i ​ ( T i ) h_{q}=\\mathcal{S}(\\mathcal{T})=\\sum_{i=1}^{K}U_{i}(T_{i}) .",
+     "zh": "通过多尺度求和聚合完整的源标记序列，得到量化后的潜在表示 h_q = 𝒮(𝒯) = ∑_{i=1}^K U_i(T_i)。"
+    },
+    {
+     "en": "Here, U i U_{i} maps the scale- i i tokens to latent features at the common spatial resolution of h h .",
+     "zh": "此处，U_i 将第 i 尺度的标记映射到与 h 具有相同空间分辨率的潜在特征上。"
+    },
+    {
+     "en": "For a given prefix depth k k , the codec transmits the first k k token scales T ≤ k T_{\\leq k} and leaves the remaining suffix tokens T > k T_{>k} to be synthesized at the decoder.",
+     "zh": "对于给定的前缀深度 k，编解码器传输前 k 个标记尺度 T_{≤k}，而其余的后缀标记 T_{>k} 则由解码器合成。"
+    },
+    {
+     "en": "The autoregressive model ψ \\psi is utilized for both entropy coding and suffix generation: its predicted probabilities are used to entropy-code the transmitted prefix and to autoregressively sample the omitted suffix scales.",
+     "zh": "自回归模型 ψ 同时用于熵编码和后缀生成：其预测概率既可用于对传输的前缀进行熵编码，也可用于自回归地采样被省略的后缀尺度。"
+    }
+   ]
+  },
+  {
+   "en": "Specifically, given the text condition ℓ \\ell , the autoregressive model estimates the prefix token bitrate in bits per pixel (bpp) as",
+   "zh": "具体来说，给定文本条件 ℓ \\ell ，自回归模型将前缀标记的比特率（单位：每像素比特，bpp）估计为",
+   "sents": null
+  },
+  {
+   "en": "After entropy decoding the prefix scales from the bitstream, the same autoregressive transformer predicts the conditional distribution for each remaining suffix scale and samples the corresponding tokens as",
+   "zh": "在对比特流中的前缀标度进行熵解码后，相同的自回归变换器会预测每个剩余后缀标度的条件分布，并采样出相应的词元作为",
+   "sents": null
+  },
+  {
+   "en": "The transmitted prefix and generated suffix are then combined to form the complete multi-scale token sequence 𝒯 ^ ( k ) = ( T 1 , … , T k , T ^ k + 1 , … , T ^ K ) \\hat{\\mathcal{T}}^{(k)}=(T_{1},\\ldots,T_{k},\\hat{T}_{k+1},\\ldots,\\hat{T}_{K}) , which is aggregated and sent to the decoder for reconstruction:",
+   "zh": "随后，传输的前缀和生成的后缀被组合起来，形成完整的多尺度令牌序列 𝒯 ^ ( k ) = ( T 1 , … , T k , T ^ k + 1 , … , T ^ K ) \\hat{\\mathcal{T}}^{(k)}=(T_{1},\\ldots,T_{k},\\hat{T}_{k+1},\\ldots,\\hat{T}_{K})，该序列会被汇总并发送到解码器进行重建：",
+   "sents": null
+  },
+  {
+   "en": "By varying the prefix depth k k , the codec changes the number of transmitted token scales and therefore supports progressive bitrate control within a single model.",
+   "zh": "通过改变前缀深度 k k，编解码器会调整所传输的令牌标度数量，从而在单个模型内支持渐进式比特率控制。",
+   "sents": null
+  },
+  {
+   "en": "This progressive coding paradigm reconstructs images from quantized token representations and autoregressively generated suffixes, naturally introducing two distinct residuals that motivate the residual-aware design of ResARC.",
+   "zh": "这种渐进式编码范式通过量化后的词元表示和自回归生成的后缀来重构图像，自然地引入了两个不同的残差，从而促成了 ResARC 的残差感知设计。",
+   "sents": null
+  },
+  {
+   "en": "ResARC builds on the progressive autoregressive coding framework introduced above. As discussed, this coding pipeline introduces two distinct discrepancies. The first arises from discrete tokenization. To obtain transmissible discrete symbols, the continuous latent h h extracted by the VAE encoder is quantized into multi-scale token maps, which are aggregated to form the quantized latent h q h_{q} . Since discrete tokenization cannot preserve all information in h h , the quantized latent h q h_{q} generally differs from the original continuous latent. We define the resulting discrepancy as the quantization residual :",
+   "zh": "ResARC 基于上文介绍的渐进式自回归编码框架。 如前所述，该编码流程引入了两种不同的差异。 第一种差异源于离散分词。 为了获得可传输的离散符号，由 VAE 编码器提取的连续潜在变量 h h 被量化为多尺度分词图，这些分词图随后被聚合以形成量化后的潜在变量 h q h_{q}。 由于离散分词无法保留 h h 中的所有信息，量化后的潜在变量 h q h_{q} 通常与原始的连续潜在变量存在差异。 我们将由此产生的差异定义为量化残差：",
+   "sents": [
+    {
+     "en": "ResARC builds on the progressive autoregressive coding framework introduced above.",
+     "zh": "ResARC 基于上文介绍的渐进式自回归编码框架。"
+    },
+    {
+     "en": "As discussed, this coding pipeline introduces two distinct discrepancies.",
+     "zh": "如前所述，该编码流程引入了两种不同的差异。"
+    },
+    {
+     "en": "The first arises from discrete tokenization.",
+     "zh": "第一种差异源于离散分词。"
+    },
+    {
+     "en": "To obtain transmissible discrete symbols, the continuous latent h h extracted by the VAE encoder is quantized into multi-scale token maps, which are aggregated to form the quantized latent h q h_{q} .",
+     "zh": "为了获得可传输的离散符号，由 VAE 编码器提取的连续潜在变量 h h 被量化为多尺度分词图，这些分词图随后被聚合以形成量化后的潜在变量 h q h_{q}。"
+    },
+    {
+     "en": "Since discrete tokenization cannot preserve all information in h h , the quantized latent h q h_{q} generally differs from the original continuous latent.",
+     "zh": "由于离散分词无法保留 h h 中的所有信息，量化后的潜在变量 h q h_{q} 通常与原始的连续潜在变量存在差异。"
+    },
+    {
+     "en": "We define the resulting discrepancy as the quantization residual :",
+     "zh": "我们将由此产生的差异定义为量化残差："
+    }
+   ]
+  },
+  {
+   "en": "This residual represents information lost during tokenization, including fine-grained details that are vital for reconstruction.",
+   "zh": "这种残差代表了在分词过程中丢失的信息，其中包括对重建至关重要的精细细节。",
+   "sents": null
+  },
+  {
+   "en": "The second discrepancy arises from autoregressive suffix generation. For a prefix depth k k , only the prefix scales T ≤ k T_{\\leq k} are transmitted, while the omitted suffix scales are autoregressively synthesized as T ^ > k \\hat{T}_{>k} at the decoder. Aggregating the decoded prefix and generated suffix yields the reconstructed latent",
+   "zh": "第二个差异源于自回归后缀生成。 对于前缀深度为 k 的情况，仅传输前缀部分 T_{\\leq k}，而被省略的后缀部分则由解码器以自回归方式合成 \\hat{T}_{>k}。 将解码后的前缀与生成的后缀合并，即可得到重构的潜在表示。",
+   "sents": [
+    {
+     "en": "The second discrepancy arises from autoregressive suffix generation.",
+     "zh": "第二个差异源于自回归后缀生成。"
+    },
+    {
+     "en": "For a prefix depth k k , only the prefix scales T ≤ k T_{\\leq k} are transmitted, while the omitted suffix scales are autoregressively synthesized as T ^ > k \\hat{T}_{>k} at the decoder.",
+     "zh": "对于前缀深度为 k 的情况，仅传输前缀部分 T_{\\leq k}，而被省略的后缀部分则由解码器以自回归方式合成 \\hat{T}_{>k}。"
+    },
+    {
+     "en": "Aggregating the decoded prefix and generated suffix yields the reconstructed latent",
+     "zh": "将解码后的前缀与生成的后缀合并，即可得到重构的潜在表示。"
+    }
+   ]
+  },
+  {
+   "en": "Since the generated suffix may deviate from its ground-truth counterpart, h ^ q ( k ) \\hat{h}_{q}^{(k)} can differ from the quantized latent h q h_{q} reconstructed from the complete ground-truth token sequence. We define this discrepancy as the generation residual :",
+   "zh": "由于生成的后缀可能与其真实值对应项存在偏差，h ^ q ( k ) \\hat{h}_{q}^{(k)} 可能与根据完整的真实词元序列重构的量化潜在变量 h q h_{q} 有所不同。 我们将这种差异定义为生成残差：",
+   "sents": [
+    {
+     "en": "Since the generated suffix may deviate from its ground-truth counterpart, h ^ q ( k ) \\hat{h}_{q}^{(k)} can differ from the quantized latent h q h_{q} reconstructed from the complete ground-truth token sequence.",
+     "zh": "由于生成的后缀可能与其真实值对应项存在偏差，h ^ q ( k ) \\hat{h}_{q}^{(k)} 可能与根据完整的真实词元序列重构的量化潜在变量 h q h_{q} 有所不同。"
+    },
+    {
+     "en": "We define this discrepancy as the generation residual :",
+     "zh": "我们将这种差异定义为生成残差："
+    }
+   ]
+  },
+  {
+   "en": "This generation residual captures deviations introduced by autoregressive suffix generation and may affect both local details and image structures. Overall, the discrepancy between the continuous latent h h and the autoregressively reconstructed latent h ^ q ( k ) \\hat{h}_{q}^{(k)} decomposes into the two residuals:",
+   "zh": "这一代残差捕捉了自回归后缀生成所引入的偏差，并可能影响局部细节和图像结构。 总体而言，连续潜在变量 h h 与通过自回归重构的潜在变量 h ^ q ( k ) \\hat{h}_{q}^{(k)} 之间的差异可分解为两个残差：",
+   "sents": [
+    {
+     "en": "This generation residual captures deviations introduced by autoregressive suffix generation and may affect both local details and image structures.",
+     "zh": "这一代残差捕捉了自回归后缀生成所引入的偏差，并可能影响局部细节和图像结构。"
+    },
+    {
+     "en": "Overall, the discrepancy between the continuous latent h h and the autoregressively reconstructed latent h ^ q ( k ) \\hat{h}_{q}^{(k)} decomposes into the two residuals:",
+     "zh": "总体而言，连续潜在变量 h h 与通过自回归重构的潜在变量 h ^ q ( k ) \\hat{h}_{q}^{(k)} 之间的差异可分解为两个残差："
+    }
+   ]
+  },
+  {
+   "en": "This decomposition motivates ResARC to compensate for the two residuals with dedicated strategies: generating the quantization residual from decoder-side context and explicitly transmitting a compact correction for the generation residual.",
+   "zh": "这种分解促使 ResARC 采用专门的策略来补偿这两个残差：从解码器侧的上下文中生成量化残差，并显式地传输一个用于生成残差的紧凑修正。",
+   "sents": null
+  },
+  {
+   "en": "The quantization residual r q r_{q} represents information lost when the continuous latent is quantized into discrete multi-scale token maps. The reconstructed tokens and autoregressive decoding features available at the decoder provide rich cues for estimating this residual. We therefore generate the residual at the decoder without transmitting additional bits. To this end, we introduce the Quantization Residual Generator , implemented as a conditional Diffusion Transformer (DiT) ( Peebles and Xie, 2023 ) . As illustrated in Figure 3 , the DiT conditioned on hidden features produced during autoregressive decoding iteratively generates the quantization residual from Gaussian noise. The autoregressive features are injected through cross-attention, while the flow matching timestep modulates the DiT blocks via Adaptive LayerNorm (AdaLN).",
+   "zh": "量化残差 r q r_{q} 表示在将连续潜在变量量化为离散的多尺度令牌图时丢失的信息。 解码器中可用的重建令牌和自回归解码特征为估计该残差提供了丰富的线索。 因此，我们在解码器中生成残差，而无需传输额外的比特位。 为此，我们引入了量化残差生成器，其实现为一个条件扩散变换器（DiT）（Peebles and Xie, 2023）。 如图 3 所示，以自回归解码过程中产生的隐藏特征为条件的 DiT 会从高斯噪声中迭代生成量化残差。 自回归特征通过交叉注意力注入，而流匹配时间步则通过自适应层归一化（AdaLN）调节 DiT 块。",
+   "sents": [
+    {
+     "en": "The quantization residual r q r_{q} represents information lost when the continuous latent is quantized into discrete multi-scale token maps.",
+     "zh": "量化残差 r q r_{q} 表示在将连续潜在变量量化为离散的多尺度令牌图时丢失的信息。"
+    },
+    {
+     "en": "The reconstructed tokens and autoregressive decoding features available at the decoder provide rich cues for estimating this residual.",
+     "zh": "解码器中可用的重建令牌和自回归解码特征为估计该残差提供了丰富的线索。"
+    },
+    {
+     "en": "We therefore generate the residual at the decoder without transmitting additional bits.",
+     "zh": "因此，我们在解码器中生成残差，而无需传输额外的比特位。"
+    },
+    {
+     "en": "To this end, we introduce the Quantization Residual Generator , implemented as a conditional Diffusion Transformer (DiT) ( Peebles and Xie, 2023 ) .",
+     "zh": "为此，我们引入了量化残差生成器，其实现为一个条件扩散变换器（DiT）（Peebles and Xie, 2023）。"
+    },
+    {
+     "en": "As illustrated in Figure 3 , the DiT conditioned on hidden features produced during autoregressive decoding iteratively generates the quantization residual from Gaussian noise.",
+     "zh": "如图 3 所示，以自回归解码过程中产生的隐藏特征为条件的 DiT 会从高斯噪声中迭代生成量化残差。"
+    },
+    {
+     "en": "The autoregressive features are injected through cross-attention, while the flow matching timestep modulates the DiT blocks via Adaptive LayerNorm (AdaLN).",
+     "zh": "自回归特征通过交叉注意力注入，而流匹配时间步则通过自适应层归一化（AdaLN）调节 DiT 块。"
+    }
+   ]
+  },
+  {
+   "en": "To learn this conditional generation process, we train the conditional DiT using flow matching ( Lipman et al., 2023 ; Liu et al., 2023 ) . Let z 0 = r q z_{0}=r_{q} denote the target residual and z 1 = ϵ z_{1}=\\epsilon denote Gaussian noise, where ϵ ∼ 𝒩 ⁡ ( 0 , I ) \\epsilon\\sim\\mathcal{N}(0,I) . For t ∼ 𝒰 ⁡ ( 0 , 1 ) t\\sim\\mathcal{U}(0,1) , we define the linear interpolation z t = ( 1 − t ) ​ z 0 + t ​ z 1 z_{t}=(1-t)z_{0}+tz_{1} whose target velocity is v = z 1 − z 0 v=z_{1}-z_{0} ; the training objective is",
+   "zh": "为了学习这种条件生成过程，我们使用流匹配方法（Lipman 等人，2023；Liu 等人，2023）来训练条件 DiT。 令 z₀ = r_q z_{0}=r_{q} 表示目标残差，z₁ = ϵ z_{1}=\\epsilon 表示高斯噪声，其中 ϵ ∼ 𝒩(0, I) \\epsilon\\sim\\mathcal{N}(0,I)。 对于 t ∼ 𝒰(0,1) t\\sim\\mathcal{U}(0,1)，我们定义线性插值 z_t = (1−t)z_0 + tz_1 z_{t}=(1-t)z_{0}+tz_{1}，其目标速度为 v = z₁ − z₀ v=z_{1}-z_{0}；训练目标是",
+   "sents": [
+    {
+     "en": "To learn this conditional generation process, we train the conditional DiT using flow matching ( Lipman et al., 2023 ; Liu et al., 2023 ) .",
+     "zh": "为了学习这种条件生成过程，我们使用流匹配方法（Lipman 等人，2023；Liu 等人，2023）来训练条件 DiT。"
+    },
+    {
+     "en": "Let z 0 = r q z_{0}=r_{q} denote the target residual and z 1 = ϵ z_{1}=\\epsilon denote Gaussian noise, where ϵ ∼ 𝒩 ⁡ ( 0 , I ) \\epsilon\\sim\\mathcal{N}(0,I) .",
+     "zh": "令 z₀ = r_q z_{0}=r_{q} 表示目标残差，z₁ = ϵ z_{1}=\\epsilon 表示高斯噪声，其中 ϵ ∼ 𝒩(0, I) \\epsilon\\sim\\mathcal{N}(0,I)。"
+    },
+    {
+     "en": "For t ∼ 𝒰 ⁡ ( 0 , 1 ) t\\sim\\mathcal{U}(0,1) , we define the linear interpolation z t = ( 1 − t ) ​ z 0 + t ​ z 1 z_{t}=(1-t)z_{0}+tz_{1} whose target velocity is v = z 1 − z 0 v=z_{1}-z_{0} ; the training objective is",
+     "zh": "对于 t ∼ 𝒰(0,1) t\\sim\\mathcal{U}(0,1)，我们定义线性插值 z_t = (1−t)z_0 + tz_1 z_{t}=(1-t)z_{0}+tz_{1}，其目标速度为 v = z₁ − z₀ v=z_{1}-z_{0}；训练目标是"
+    }
+   ]
+  },
+  {
+   "en": "Here, c quant c_{\\mathrm{quant}} denotes the autoregressive decoding features obtained at prefix depth k k . At inference, starting from Gaussian noise at t = 1 t=1 , we integrate the learned velocity field toward t = 0 t=0 to obtain the predicted quantization residual r ^ q ( k ) = z 0 \\hat{r}_{q}^{(k)}=z_{0} .",
+   "zh": "此处，c_{\\mathrm{quant}} 表示在前缀深度 k 处获得的自回归解码特征。 在推理阶段，从 t = 1 时的高斯噪声出发，我们将学习到的速度场向 t = 0 积分，以获得预测的量化残差 \\hat{r}_{q}^{(k)}=z_{0}。",
+   "sents": [
+    {
+     "en": "Here, c quant c_{\\mathrm{quant}} denotes the autoregressive decoding features obtained at prefix depth k k .",
+     "zh": "此处，c_{\\mathrm{quant}} 表示在前缀深度 k 处获得的自回归解码特征。"
+    },
+    {
+     "en": "At inference, starting from Gaussian noise at t = 1 t=1 , we integrate the learned velocity field toward t = 0 t=0 to obtain the predicted quantization residual r ^ q ( k ) = z 0 \\hat{r}_{q}^{(k)}=z_{0} .",
+     "zh": "在推理阶段，从 t = 1 时的高斯噪声出发，我们将学习到的速度场向 t = 0 积分，以获得预测的量化残差 \\hat{r}_{q}^{(k)}=z_{0}。"
+    }
+   ]
+  },
+  {
+   "en": "Since the generator relies only on autoregressive features already available in the decoder, quantization residual generation does not require additional transmitted payload.",
+   "zh": "由于生成器仅依赖解码器中已有的自回归特征，因此量化残差生成无需额外的传输数据。",
+   "sents": null
+  },
+  {
+   "en": "The generation residual captures the mismatch between the generated suffix and the ground-truth token sequence. The decoder can reproduce the generated suffix, but the corresponding ground-truth suffix tokens are only available at the encoder. We therefore compute the generation residual at the encoder and transmit a compact correction for decoder-side recovery.",
+   "zh": "生成残差捕捉了生成的后缀与真实词元序列之间的不匹配。 解码器可以重现生成的后缀，但对应的真实后缀词元仅在编码器处可用。 因此，我们在编码器处计算生成残差，并传输一个紧凑的修正信息，以便解码器端进行恢复。",
+   "sents": [
+    {
+     "en": "The generation residual captures the mismatch between the generated suffix and the ground-truth token sequence.",
+     "zh": "生成残差捕捉了生成的后缀与真实词元序列之间的不匹配。"
+    },
+    {
+     "en": "The decoder can reproduce the generated suffix, but the corresponding ground-truth suffix tokens are only available at the encoder.",
+     "zh": "解码器可以重现生成的后缀，但对应的真实后缀词元仅在编码器处可用。"
+    },
+    {
+     "en": "We therefore compute the generation residual at the encoder and transmit a compact correction for decoder-side recovery.",
+     "zh": "因此，我们在编码器处计算生成残差，并传输一个紧凑的修正信息，以便解码器端进行恢复。"
+    }
+   ]
+  },
+  {
+   "en": "Specifically, as illustrated in Figure 3 , the encoder replays the same autoregressive suffix-generation process as the decoder to reproduce h ^ q ( k ) \\hat{h}_{q}^{(k)} , and computes the generation residual r g ( k ) r_{g}^{(k)} according to Equation 6 . We compress r g ( k ) r_{g}^{(k)} using the proposed Generation Residual Codec , whose architecture is detailed in Appendix B .",
+   "zh": "具体而言，如图 3 所示，编码器会像解码器一样重播相同的自回归后缀生成过程，以重现 h ^ q ( k ) \\hat{h}_{q}^{(k)}，并根据公式 6 计算生成残差 r g ( k ) r_{g}^{(k)}。 我们使用所提出的生成残差编解码器来压缩 r g ( k ) r_{g}^{(k)}，其架构详见附录 B。",
+   "sents": [
+    {
+     "en": "Specifically, as illustrated in Figure 3 , the encoder replays the same autoregressive suffix-generation process as the decoder to reproduce h ^ q ( k ) \\hat{h}_{q}^{(k)} , and computes the generation residual r g ( k ) r_{g}^{(k)} according to Equation 6 .",
+     "zh": "具体而言，如图 3 所示，编码器会像解码器一样重播相同的自回归后缀生成过程，以重现 h ^ q ( k ) \\hat{h}_{q}^{(k)}，并根据公式 6 计算生成残差 r g ( k ) r_{g}^{(k)}。"
+    },
+    {
+     "en": "We compress r g ( k ) r_{g}^{(k)} using the proposed Generation Residual Codec , whose architecture is detailed in Appendix B .",
+     "zh": "我们使用所提出的生成残差编解码器来压缩 r g ( k ) r_{g}^{(k)}，其架构详见附录 B。"
+    }
+   ]
+  },
+  {
+   "en": "The codec incorporates two complementary conditioning signals. First, we embed the prefix depth k k as e k e_{k} and obtain a prefix-dependent residual scale s k s_{k} and gain g k g_{k} . These prefix-dependent parameters adapt the codec to different bitrates, since the statistics of r g ( k ) r_{g}^{(k)} vary with the number of omitted suffix scales. Second, we combine autoregressive decoding features with h ^ q ( k ) \\hat{h}_{q}^{(k)} to construct a multi-scale context pyramid C ( k ) = { c 0 ( k ) , c 1 ( k ) , c 2 ( k ) , c 3 ( k ) } C^{(k)}=\\{c_{0}^{(k)},c_{1}^{(k)},c_{2}^{(k)},c_{3}^{(k)}\\} , which is injected into the corresponding stages of the codec. We first normalize the generation residual r g ( k ) r_{g}^{(k)} by the prefix-dependent scale s k s_{k} and feed it into the analysis transform:",
+   "zh": "该编解码器整合了两个互补的条件信号。 首先，我们将前缀深度 k 嵌入为 e_k，并得到依赖于前缀的残差尺度 s_k 和增益 g_k。 这些依赖于前缀的参数使编解码器能够适应不同的比特率，因为 r_g^{(k)} 的统计特性会随着被省略的后缀尺度数量而变化。 其次，我们将自回归解码特征与 \\hat{h}_{q}^{(k)} 结合，构建一个多尺度上下文金字塔 C^{(k)}=\\{c_{0}^{(k)},c_{1}^{(k)},c_{2}^{(k)},c_{3}^{(k)}\\}，并将其注入编解码器的对应阶段。 我们首先用依赖于前缀的尺度 s_k 对生成残差 r_g^{(k)} 进行归一化，然后将其输入分析变换：",
+   "sents": [
+    {
+     "en": "The codec incorporates two complementary conditioning signals.",
+     "zh": "该编解码器整合了两个互补的条件信号。"
+    },
+    {
+     "en": "First, we embed the prefix depth k k as e k e_{k} and obtain a prefix-dependent residual scale s k s_{k} and gain g k g_{k} .",
+     "zh": "首先，我们将前缀深度 k 嵌入为 e_k，并得到依赖于前缀的残差尺度 s_k 和增益 g_k。"
+    },
+    {
+     "en": "These prefix-dependent parameters adapt the codec to different bitrates, since the statistics of r g ( k ) r_{g}^{(k)} vary with the number of omitted suffix scales.",
+     "zh": "这些依赖于前缀的参数使编解码器能够适应不同的比特率，因为 r_g^{(k)} 的统计特性会随着被省略的后缀尺度数量而变化。"
+    },
+    {
+     "en": "Second, we combine autoregressive decoding features with h ^ q ( k ) \\hat{h}_{q}^{(k)} to construct a multi-scale context pyramid C ( k ) = { c 0 ( k ) , c 1 ( k ) , c 2 ( k ) , c 3 ( k ) } C^{(k)}=\\{c_{0}^{(k)},c_{1}^{(k)},c_{2}^{(k)},c_{3}^{(k)}\\} , which is injected into the corresponding stages of the codec.",
+     "zh": "其次，我们将自回归解码特征与 \\hat{h}_{q}^{(k)} 结合，构建一个多尺度上下文金字塔 C^{(k)}=\\{c_{0}^{(k)},c_{1}^{(k)},c_{2}^{(k)},c_{3}^{(k)}\\}，并将其注入编解码器的对应阶段。"
+    },
+    {
+     "en": "We first normalize the generation residual r g ( k ) r_{g}^{(k)} by the prefix-dependent scale s k s_{k} and feed it into the analysis transform:",
+     "zh": "我们首先用依赖于前缀的尺度 s_k 对生成残差 r_g^{(k)} 进行归一化，然后将其输入分析变换："
+    }
+   ]
+  },
+  {
+   "en": "where ⊘ \\oslash denotes element-wise division.",
+   "zh": "其中 ⊘ \\oslash 表示逐元素除法。",
+   "sents": null
+  },
+  {
+   "en": "Following prior works ( Li et al., 2023 ; Sheng et al., 2025 ) , we employ a four-pass conditional entropy model parameterized by η \\eta . The analysis latent elements are first modulated by the prefix-dependent gain g k g_{k} and then partitioned into four sequential coding groups, where the quantization step map is predicted once from c 3 ( k ) c_{3}^{(k)} and e k e_{k} and remains fixed across the four passes. Each pass predicts the conditional mean and Laplace scale using these conditions and the latent values reconstructed in previous passes. The quantized latent is represented by an integer-valued symbol tensor y ¨ \\ddot{y} , whose conditional probability mass function p η p_{\\eta} is used to estimate the bitrate during training:",
+   "zh": "遵循先前的研究（Li et al., 2023；Sheng et al., 2025），我们采用一个由 η \\eta 参数化的四遍条件熵模型。 分析中的潜在元素首先通过前缀相关的增益 g k g_{k} 进行调制，然后被划分为四个顺序编码组，其中量化步长映射仅根据 c 3 ( k ) c_{3}^{(k)} 和 e k e_{k} 预测一次，并在四遍处理中保持不变。 每一遍都基于这些条件以及先前各遍重建的潜在值来预测条件均值和拉普拉斯尺度。 量化的潜在变量由一个整数值符号张量 y ¨ \\ddot{y} 表示，其条件概率质量函数 p η p_{\\eta} 用于在训练期间估计比特率：",
+   "sents": [
+    {
+     "en": "Following prior works ( Li et al., 2023 ; Sheng et al., 2025 ) , we employ a four-pass conditional entropy model parameterized by η \\eta .",
+     "zh": "遵循先前的研究（Li et al., 2023；Sheng et al., 2025），我们采用一个由 η \\eta 参数化的四遍条件熵模型。"
+    },
+    {
+     "en": "The analysis latent elements are first modulated by the prefix-dependent gain g k g_{k} and then partitioned into four sequential coding groups, where the quantization step map is predicted once from c 3 ( k ) c_{3}^{(k)} and e k e_{k} and remains fixed across the four passes.",
+     "zh": "分析中的潜在元素首先通过前缀相关的增益 g k g_{k} 进行调制，然后被划分为四个顺序编码组，其中量化步长映射仅根据 c 3 ( k ) c_{3}^{(k)} 和 e k e_{k} 预测一次，并在四遍处理中保持不变。"
+    },
+    {
+     "en": "Each pass predicts the conditional mean and Laplace scale using these conditions and the latent values reconstructed in previous passes.",
+     "zh": "每一遍都基于这些条件以及先前各遍重建的潜在值来预测条件均值和拉普拉斯尺度。"
+    },
+    {
+     "en": "The quantized latent is represented by an integer-valued symbol tensor y ¨ \\ddot{y} , whose conditional probability mass function p η p_{\\eta} is used to estimate the bitrate during training:",
+     "zh": "量化的潜在变量由一个整数值符号张量 y ¨ \\ddot{y} 表示，其条件概率质量函数 p η p_{\\eta} 用于在训练期间估计比特率："
+    }
+   ]
+  },
+  {
+   "en": "At the decoder, the same causal context is used to reconstruct the quantized latent y ^ \\hat{y} from y ¨ \\ddot{y} . The synthesis transform then maps y ^ \\hat{y} to the reconstructed generation residual:",
+   "zh": "在解码器中，使用相同的因果上下文从 y ¨ \\ddot{y} 重构量化后的潜在变量 y ^ \\hat{y}。 随后，合成变换将 y ^ \\hat{y} 映射到重构的生成残差：",
+   "sents": [
+    {
+     "en": "At the decoder, the same causal context is used to reconstruct the quantized latent y ^ \\hat{y} from y ¨ \\ddot{y} .",
+     "zh": "在解码器中，使用相同的因果上下文从 y ¨ \\ddot{y} 重构量化后的潜在变量 y ^ \\hat{y}。"
+    },
+    {
+     "en": "The synthesis transform then maps y ^ \\hat{y} to the reconstructed generation residual:",
+     "zh": "随后，合成变换将 y ^ \\hat{y} 映射到重构的生成残差："
+    }
+   ]
+  },
+  {
+   "en": "where ⊙ \\odot denotes element-wise multiplication.",
+   "zh": "其中 ⊙ \\odot 表示逐元素乘法。",
+   "sents": null
+  },
+  {
+   "en": "The two residual branches provide complementary information missing from the autoregressively reconstructed latent h ^ q ( k ) \\hat{h}_{q}^{(k)} . Following the decomposition in Equation 7 , we obtain the compensated latent as",
+   "zh": "这两个残差分支提供了自回归重构的潜在变量 h ^ q ( k ) \\hat{h}_{q}^{(k)} 中缺失的互补信息。 根据方程 7 中的分解，我们得到补偿后的潜在变量为",
+   "sents": [
+    {
+     "en": "The two residual branches provide complementary information missing from the autoregressively reconstructed latent h ^ q ( k ) \\hat{h}_{q}^{(k)} .",
+     "zh": "这两个残差分支提供了自回归重构的潜在变量 h ^ q ( k ) \\hat{h}_{q}^{(k)} 中缺失的互补信息。"
+    },
+    {
+     "en": "Following the decomposition in Equation 7 , we obtain the compensated latent as",
+     "zh": "根据方程 7 中的分解，我们得到补偿后的潜在变量为"
+    }
+   ]
+  },
+  {
+   "en": "The adapted VAE decoder 𝒟 ~ \\tilde{\\mathcal{D}} then maps the compensated latent to the reconstructed image x ^ ( k ) = 𝒟 ~ ​ ( h ^ c ( k ) ) . \\hat{x}^{(k)}=\\tilde{\\mathcal{D}}\\left(\\hat{h}_{c}^{(k)}\\right).",
+   "zh": "经过调整的 VAE 解码器 𝒟 ~ \\tilde{\\mathcal{D}} 随后将补偿后的潜在变量映射到重构图像 x ^ ( k ) = 𝒟 ~ ​ ( h ^ c ( k ) ) . \\hat{x}^{(k)}=\\tilde{\\mathcal{D}}\\left(\\hat{h}_{c}^{(k)}\\right).",
+   "sents": null
+  },
+  {
+   "en": "The two residual branches incur different bitrate costs. The quantization residual is synthesized entirely from information already available at the decoder and therefore requires no additional transmitted bits, whereas the generation residual is entropy encoded and explicitly transmitted. For the image x ∈ ℝ H × W × 3 x\\in\\mathbb{R}^{H\\times W\\times 3} , the total bitrate is calculated from the measured bit lengths as",
+   "zh": "两条残差分支会产生不同的比特率开销。 量化残差完全由解码器中已有的信息合成，因此不需要额外的传输比特；而生成残差则经过熵编码并显式传输。 对于图像 x ∈ ℝ H × W × 3 x\\in\\mathbb{R}^{H\\times W\\times 3}，总比特率根据测得的比特长度计算得出：",
+   "sents": [
+    {
+     "en": "The two residual branches incur different bitrate costs.",
+     "zh": "两条残差分支会产生不同的比特率开销。"
+    },
+    {
+     "en": "The quantization residual is synthesized entirely from information already available at the decoder and therefore requires no additional transmitted bits, whereas the generation residual is entropy encoded and explicitly transmitted.",
+     "zh": "量化残差完全由解码器中已有的信息合成，因此不需要额外的传输比特；而生成残差则经过熵编码并显式传输。"
+    },
+    {
+     "en": "For the image x ∈ ℝ H × W × 3 x\\in\\mathbb{R}^{H\\times W\\times 3} , the total bitrate is calculated from the measured bit lengths as",
+     "zh": "对于图像 x ∈ ℝ H × W × 3 x\\in\\mathbb{R}^{H\\times W\\times 3}，总比特率根据测得的比特长度计算得出："
+    }
+   ]
+  },
+  {
+   "en": "where B text B_{\\mathrm{text}} , B prefix ( k ) B_{\\mathrm{prefix}}^{(k)} , and B g ( k ) B_{g}^{(k)} denote the measured bit lengths of the text condition, the transmitted token prefix, and the generation residual bitstream, respectively. Detailed rate accounting is provided in Appendix D .",
+   "zh": "其中，B text B_{\\mathrm{text}}、B prefix ( k ) B_{\\mathrm{prefix}}^{(k)} 和 B g ( k ) B_{g}^{(k)} 分别表示文本条件的测量比特长度、传输的标记前缀以及生成残差比特流。 详细的速率计算见附录 D。",
+   "sents": [
+    {
+     "en": "where B text B_{\\mathrm{text}} , B prefix ( k ) B_{\\mathrm{prefix}}^{(k)} , and B g ( k ) B_{g}^{(k)} denote the measured bit lengths of the text condition, the transmitted token prefix, and the generation residual bitstream, respectively.",
+     "zh": "其中，B text B_{\\mathrm{text}}、B prefix ( k ) B_{\\mathrm{prefix}}^{(k)} 和 B g ( k ) B_{g}^{(k)} 分别表示文本条件的测量比特长度、传输的标记前缀以及生成残差比特流。"
+    },
+    {
+     "en": "Detailed rate accounting is provided in Appendix D .",
+     "zh": "详细的速率计算见附录 D。"
+    }
+   ]
+  },
+  {
+   "en": "We train ResARC in multiple stages. Detailed training settings are provided in Appendix C .",
+   "zh": "我们以多个阶段训练 ResARC。 详细的训练设置见附录 C。",
+   "sents": [
+    {
+     "en": "We train ResARC in multiple stages.",
+     "zh": "我们以多个阶段训练 ResARC。"
+    },
+    {
+     "en": "Detailed training settings are provided in Appendix C .",
+     "zh": "详细的训练设置见附录 C。"
+    }
+   ]
+  },
+  {
+   "en": "Backbone fine-tuning for compression. We first fine-tune the Infinity backbone ( Han et al., 2025 ) on our compression training data to adapt the autoregressive model and VAE decoder from their original generative setting to the target compression setting. To adapt the VAE decoder for quantization residual-compensated latents, we train it with the quantized latent h q h_{q} and the continuous latent h h with equal probability, rather than only using h q h_{q} as in the original backbone. The adapted backbone is then frozen for subsequent residual learning.",
+   "zh": "用于压缩的主干模型微调。 我们首先在我们的压缩训练数据上对 Infinity 主干模型（Han et al., 2025）进行微调，以便将自回归模型和 VAE 解码器从其原有的生成设置适配到目标压缩设置中。 为了将 VAE 解码器适配于量化残差补偿后的潜在变量，我们使用量化后的潜在变量 h q h_{q} 和连续潜在变量 h 以相等的概率对其进行训练，而不是像原始主干模型那样仅使用 h q h_{q}。 随后，该适配好的主干模型将被冻结，用于后续的残差学习。",
+   "sents": [
+    {
+     "en": "Backbone fine-tuning for compression.",
+     "zh": "用于压缩的主干模型微调。"
+    },
+    {
+     "en": "We first fine-tune the Infinity backbone ( Han et al., 2025 ) on our compression training data to adapt the autoregressive model and VAE decoder from their original generative setting to the target compression setting.",
+     "zh": "我们首先在我们的压缩训练数据上对 Infinity 主干模型（Han et al., 2025）进行微调，以便将自回归模型和 VAE 解码器从其原有的生成设置适配到目标压缩设置中。"
+    },
+    {
+     "en": "To adapt the VAE decoder for quantization residual-compensated latents, we train it with the quantized latent h q h_{q} and the continuous latent h h with equal probability, rather than only using h q h_{q} as in the original backbone.",
+     "zh": "为了将 VAE 解码器适配于量化残差补偿后的潜在变量，我们使用量化后的潜在变量 h q h_{q} 和连续潜在变量 h 以相等的概率对其进行训练，而不是像原始主干模型那样仅使用 h q h_{q}。"
+    },
+    {
+     "en": "The adapted backbone is then frozen for subsequent residual learning.",
+     "zh": "随后，该适配好的主干模型将被冻结，用于后续的残差学习。"
+    }
+   ]
+  },
+  {
+   "en": "Quantization residual generator training. We next train the Quantization Residual Generator using the flow-matching objective in Equation 8 , together with perceptual supervision ℒ LPIPS \\mathcal{L}_{\\text{LPIPS}} ( Zhang et al., 2018 ) to improve recovery of fine-grained details.",
+   "zh": "量化残差生成器训练。 接下来，我们使用公式 8 中的流匹配目标，结合感知监督 ℒ LPIPS \\mathcal{L}_{\\text{LPIPS}}（Zhang 等人，2018），来训练量化残差生成器，以改善对细微细节的恢复。",
+   "sents": [
+    {
+     "en": "Quantization residual generator training.",
+     "zh": "量化残差生成器训练。"
+    },
+    {
+     "en": "We next train the Quantization Residual Generator using the flow-matching objective in Equation 8 , together with perceptual supervision ℒ LPIPS \\mathcal{L}_{\\text{LPIPS}} ( Zhang et al., 2018 ) to improve recovery of fine-grained details.",
+     "zh": "接下来，我们使用公式 8 中的流匹配目标，结合感知监督 ℒ LPIPS \\mathcal{L}_{\\text{LPIPS}}（Zhang 等人，2018），来训练量化残差生成器，以改善对细微细节的恢复。"
+    }
+   ]
+  },
+  {
+   "en": "Generation residual codec training. We then optimize the Generation Residual Codec with a rate-distortion objective that balances the residual bitrate and reconstruction fidelity:",
+   "zh": "生成残差编解码器训练。 接着，我们使用一个速率-失真目标函数来优化生成残差编解码器，该目标函数在残差比特率和重建保真度之间取得平衡：",
+   "sents": [
+    {
+     "en": "Generation residual codec training.",
+     "zh": "生成残差编解码器训练。"
+    },
+    {
+     "en": "We then optimize the Generation Residual Codec with a rate-distortion objective that balances the residual bitrate and reconstruction fidelity:",
+     "zh": "接着，我们使用一个速率-失真目标函数来优化生成残差编解码器，该目标函数在残差比特率和重建保真度之间取得平衡："
+    }
+   ]
+  },
+  {
+   "en": "where ℒ res \\mathcal{L}_{\\mathrm{res}} is the latent-space Smooth L1 loss, ℒ DISTS \\mathcal{L}_{\\mathrm{DISTS}} is the image-space perceptual DISTS loss ( Ding et al., 2022 ) , and λ R \\lambda_{R} , λ res \\lambda_{\\mathrm{res}} , and λ D \\lambda_{\\mathrm{D}} weight the bitrate and reconstruction terms.",
+   "zh": "其中，ℒ res \\mathcal{L}_{\\mathrm{res}} 是潜在空间的平滑 L1 损失，ℒ DISTS \\mathcal{L}_{\\mathrm{DISTS}} 是图像空间的感知 DISTS 损失（Ding 等人，2022），而 λ R \\lambda_{R}、λ res \\lambda_{\\mathrm{res}} 和 λ D \\lambda_{\\mathrm{D}} 分别用于加权比特率和重建项。",
+   "sents": null
+  },
+  {
+   "en": "Residual-aware VAE decoder adaptation. Finally, we freeze both residual branches and adapt only the VAE decoder using the compensated latent h ^ c ( k ) \\hat{h}_{c}^{(k)} . This stage adapts the decoder to the latent distribution produced after residual compensation and improves its utilization of the recovered residual information.",
+   "zh": "残差感知 VAE 解码器自适应。 最后，我们冻结两个残差分支，仅使用补偿后的潜在变量 h ^ c ( k ) \\hat{h}_{c}^{(k)} 对 VAE 解码器进行自适应。 此阶段将解码器自适应到残差补偿后生成的潜在分布，并提升其对恢复的残差信息的利用效率。",
+   "sents": [
+    {
+     "en": "Residual-aware VAE decoder adaptation.",
+     "zh": "残差感知 VAE 解码器自适应。"
+    },
+    {
+     "en": "Finally, we freeze both residual branches and adapt only the VAE decoder using the compensated latent h ^ c ( k ) \\hat{h}_{c}^{(k)} .",
+     "zh": "最后，我们冻结两个残差分支，仅使用补偿后的潜在变量 h ^ c ( k ) \\hat{h}_{c}^{(k)} 对 VAE 解码器进行自适应。"
+    },
+    {
+     "en": "This stage adapts the decoder to the latent distribution produced after residual compensation and improves its utilization of the recovered residual information.",
+     "zh": "此阶段将解码器自适应到残差补偿后生成的潜在分布，并提升其对恢复的残差信息的利用效率。"
+    }
+   ]
+  },
+  {
+   "en": "We train on 1,000,000 filtered text-image pairs from COYO-700M ( Byeon et al., 2022 ) . We remove low-resolution, unsafe, watermarked, low-aesthetic, and text-heavy samples. Autoregressive and residual learning use 1024 × 1024 1024\\times 1024 crops, while the initial VAE decoder fine-tuning uses 512 × 512 512\\times 512 crops. For evaluation, we use the DIV2K validation set ( Agustsson and Timofte, 2017 ) with 100 images and the CLIC2020 test set ( Toderici et al., 2020 ) with 428 images. Following the preprocessing protocol of ARPC ( Zhang et al., 2026b ) , all evaluation images are center-cropped to 1024 × 1024 1024\\times 1024 . We generate a caption for each evaluation image using Florence-2 ( Xiao et al., 2024 ) .",
+   "zh": "我们在 COYO-700M（Byeon 等人，2022）中经过筛选的 1,000,000 个文本-图像对上进行训练。 我们移除了低分辨率、不安全、带水印、美学质量低以及文本密集度的样本。 自回归学习和残差学习使用 1024 × 1024 的裁剪区域，而初始 VAE 解码器的微调则使用 512 × 512 的裁剪区域。 在评估中，我们使用了包含 100 张图像的 DIV2K 验证集（Agustsson 和 Timofte，2017）以及包含 428 张图像的 CLIC2020 测试集（Toderici 等人，2020）。 遵循 ARPC（Zhang 等人，2026b）的预处理协议，所有评估图像都被中心裁剪至 1024 × 1024。 我们使用 Florence-2（Xiao 等人，2024）为每张评估图像生成一个描述。",
+   "sents": [
+    {
+     "en": "We train on 1,000,000 filtered text-image pairs from COYO-700M ( Byeon et al., 2022 ) .",
+     "zh": "我们在 COYO-700M（Byeon 等人，2022）中经过筛选的 1,000,000 个文本-图像对上进行训练。"
+    },
+    {
+     "en": "We remove low-resolution, unsafe, watermarked, low-aesthetic, and text-heavy samples.",
+     "zh": "我们移除了低分辨率、不安全、带水印、美学质量低以及文本密集度的样本。"
+    },
+    {
+     "en": "Autoregressive and residual learning use 1024 × 1024 1024\\times 1024 crops, while the initial VAE decoder fine-tuning uses 512 × 512 512\\times 512 crops.",
+     "zh": "自回归学习和残差学习使用 1024 × 1024 的裁剪区域，而初始 VAE 解码器的微调则使用 512 × 512 的裁剪区域。"
+    },
+    {
+     "en": "For evaluation, we use the DIV2K validation set ( Agustsson and Timofte, 2017 ) with 100 images and the CLIC2020 test set ( Toderici et al., 2020 ) with 428 images.",
+     "zh": "在评估中，我们使用了包含 100 张图像的 DIV2K 验证集（Agustsson 和 Timofte，2017）以及包含 428 张图像的 CLIC2020 测试集（Toderici 等人，2020）。"
+    },
+    {
+     "en": "Following the preprocessing protocol of ARPC ( Zhang et al., 2026b ) , all evaluation images are center-cropped to 1024 × 1024 1024\\times 1024 .",
+     "zh": "遵循 ARPC（Zhang 等人，2026b）的预处理协议，所有评估图像都被中心裁剪至 1024 × 1024。"
+    },
+    {
+     "en": "We generate a caption for each evaluation image using Florence-2 ( Xiao et al., 2024 ) .",
+     "zh": "我们使用 Florence-2（Xiao 等人，2024）为每张评估图像生成一个描述。"
+    }
+   ]
+  },
+  {
+   "en": "We initialize the VAE and autoregressive model from Infinity-2B ( Han et al., 2025 ) , with the VAE encoder frozen throughout training. The autoregressive transformer is fine-tuned for 2,000 iterations with a batch size of 64 and a learning rate of 6 × 10 − 5 6\\times 10^{-5} . We fine-tune the VAE decoder for 35,000 iterations by sampling continuous and quantized latents with equal probability. The Quantization Residual Generator and Generation Residual Codec are then trained for 5,000 and 7,300 iterations, respectively. Finally, with both residual branches frozen, we adapt the VAE decoder to the compensated latents for another 1,000 iterations. All stages use AdamW ( Loshchilov and Hutter, 2019 ) . The training details can be found in Appendix C .",
+   "zh": "我们从 Infinity-2B（Han 等人，2025）初始化 VAE 和自回归模型，并在整个训练过程中保持 VAE 编码器冻结。 自回归变换器以 64 的批量大小和 6 × 10⁻⁵ 的学习率进行 2,000 次迭代微调。 我们通过以相等概率采样连续和量化潜在变量，对 VAE 解码器进行 35,000 次迭代微调。 随后，量化残差生成器和生成残差编解码器分别训练 5,000 次和 7,300 次迭代。 最后，在两个残差分支均冻结的情况下，我们将 VAE 解码器进一步适配补偿后的潜在变量，进行 1,000 次迭代训练。 所有阶段均使用 AdamW（Loshchilov 和 Hutter，2019）。 训练细节可见于附录 C。",
+   "sents": [
+    {
+     "en": "We initialize the VAE and autoregressive model from Infinity-2B ( Han et al., 2025 ) , with the VAE encoder frozen throughout training.",
+     "zh": "我们从 Infinity-2B（Han 等人，2025）初始化 VAE 和自回归模型，并在整个训练过程中保持 VAE 编码器冻结。"
+    },
+    {
+     "en": "The autoregressive transformer is fine-tuned for 2,000 iterations with a batch size of 64 and a learning rate of 6 × 10 − 5 6\\times 10^{-5} .",
+     "zh": "自回归变换器以 64 的批量大小和 6 × 10⁻⁵ 的学习率进行 2,000 次迭代微调。"
+    },
+    {
+     "en": "We fine-tune the VAE decoder for 35,000 iterations by sampling continuous and quantized latents with equal probability.",
+     "zh": "我们通过以相等概率采样连续和量化潜在变量，对 VAE 解码器进行 35,000 次迭代微调。"
+    },
+    {
+     "en": "The Quantization Residual Generator and Generation Residual Codec are then trained for 5,000 and 7,300 iterations, respectively.",
+     "zh": "随后，量化残差生成器和生成残差编解码器分别训练 5,000 次和 7,300 次迭代。"
+    },
+    {
+     "en": "Finally, with both residual branches frozen, we adapt the VAE decoder to the compensated latents for another 1,000 iterations.",
+     "zh": "最后，在两个残差分支均冻结的情况下，我们将 VAE 解码器进一步适配补偿后的潜在变量，进行 1,000 次迭代训练。"
+    },
+    {
+     "en": "All stages use AdamW ( Loshchilov and Hutter, 2019 ) .",
+     "zh": "所有阶段均使用 AdamW（Loshchilov 和 Hutter，2019）。"
+    },
+    {
+     "en": "The training details can be found in Appendix C .",
+     "zh": "训练细节可见于附录 C。"
+    }
+   ]
+  },
+  {
+   "en": "We focus on perceptual quality in the ultra-low bitrate regime from two complementary perspectives. For paired perceptual similarity, we report LPIPS ( Zhang et al., 2018 ) and DISTS ( Ding et al., 2022 ) , which compare each reconstruction with its corresponding original image in learned perceptual feature spaces, with DISTS further emphasizing structural and textural similarity. For distributional fidelity, we report FID ( Heusel et al., 2017 ) , KID ( Bińkowski et al., 2018 ) , CMMD ( Jayasumana et al., 2024 ) , and FD-DINOv2 ( Stein et al., 2023 ; Oquab et al., 2023 ) , which measure the discrepancy between the distributions of reconstructed and original images in complementary feature spaces. Lower values indicate better performance for all six metrics.",
+   "zh": "我们从两个互补的视角出发，关注极低码率条件下感知质量的问题。 在成对感知相似性方面，我们报告了 LPIPS（Zhang 等人，2018）和 DISTS（Ding 等人，2022），它们将每张重建图像与对应的原始图像在已学习的感知特征空间中进行比较，其中 DISTS 进一步强调了结构和纹理的相似性。 在分布保真度方面，我们报告了 FID（Heusel 等人，2017）、KID（Bińkowski 等人，2018）、CMMD（Jayasumana 等人，2024）和 FD-DINOv2（Stein 等人，2023；Oquab 等人，2023），这些指标衡量了重建图像与原始图像在互补特征空间中的分布差异。 对于全部六个指标而言，数值越低表示性能越好。",
+   "sents": [
+    {
+     "en": "We focus on perceptual quality in the ultra-low bitrate regime from two complementary perspectives.",
+     "zh": "我们从两个互补的视角出发，关注极低码率条件下感知质量的问题。"
+    },
+    {
+     "en": "For paired perceptual similarity, we report LPIPS ( Zhang et al., 2018 ) and DISTS ( Ding et al., 2022 ) , which compare each reconstruction with its corresponding original image in learned perceptual feature spaces, with DISTS further emphasizing structural and textural similarity.",
+     "zh": "在成对感知相似性方面，我们报告了 LPIPS（Zhang 等人，2018）和 DISTS（Ding 等人，2022），它们将每张重建图像与对应的原始图像在已学习的感知特征空间中进行比较，其中 DISTS 进一步强调了结构和纹理的相似性。"
+    },
+    {
+     "en": "For distributional fidelity, we report FID ( Heusel et al., 2017 ) , KID ( Bińkowski et al., 2018 ) , CMMD ( Jayasumana et al., 2024 ) , and FD-DINOv2 ( Stein et al., 2023 ; Oquab et al., 2023 ) , which measure the discrepancy between the distributions of reconstructed and original images in complementary feature spaces.",
+     "zh": "在分布保真度方面，我们报告了 FID（Heusel 等人，2017）、KID（Bińkowski 等人，2018）、CMMD（Jayasumana 等人，2024）和 FD-DINOv2（Stein 等人，2023；Oquab 等人，2023），这些指标衡量了重建图像与原始图像在互补特征空间中的分布差异。"
+    },
+    {
+     "en": "Lower values indicate better performance for all six metrics.",
+     "zh": "对于全部六个指标而言，数值越低表示性能越好。"
+    }
+   ]
+  },
+  {
+   "en": "We compare ResARC with eleven leading open-source generative image codecs at their released bitrate points. These baselines include the autoregressive codec ARPC ( Zhang et al., 2026b ) ; diffusion-based codecs DiffEIC ( Li et al., 2024 ) , DiffC ( Vonderfecht and Liu, 2025 ) , DiT-IC ( Shi et al., 2026 ) , OSCAR ( Guo et al., 2025 ) , PerCo ( Careil et al., 2024 ) , RDEIC ( Li et al., 2025 ) , ResULIC ( Ke et al., 2025 ) , and StableCodec ( Zhang et al., 2025 ) ; and generative latent codecs DLF ( Xue et al., 2025a ) and GLC ( Jia et al., 2024 ) . For all methods, the reported bitrate includes all transmitted components specified by the corresponding codec.",
+   "zh": "我们将 ResARC 与十一种领先的开源生成式图像编解码器在其已发布的比特率点上进行了比较。 这些基线方法包括自回归编解码器 ARPC（Zhang 等人，2026b）；基于扩散的编解码器 DiffEIC（Li 等人，2024）、DiffC（Vonderfecht 和 Liu，2025）、DiT-IC（Shi 等人，2026）、OSCAR（Guo 等人，2025）、PerCo（Careil 等人，2024）、RDEIC（Li 等人，2025）、ResULIC（Ke 等人，2025）和 StableCodec（Zhang 等人，2025）；以及生成式潜在编解码器 DLF（Xue 等人，2025a）和 GLC（Jia 等人，2024）。 对于所有方法，所报告的比特率均包含相应编解码器指定的所有传输组件。",
+   "sents": [
+    {
+     "en": "We compare ResARC with eleven leading open-source generative image codecs at their released bitrate points.",
+     "zh": "我们将 ResARC 与十一种领先的开源生成式图像编解码器在其已发布的比特率点上进行了比较。"
+    },
+    {
+     "en": "These baselines include the autoregressive codec ARPC ( Zhang et al., 2026b ) ; diffusion-based codecs DiffEIC ( Li et al., 2024 ) , DiffC ( Vonderfecht and Liu, 2025 ) , DiT-IC ( Shi et al., 2026 ) , OSCAR ( Guo et al., 2025 ) , PerCo ( Careil et al., 2024 ) , RDEIC ( Li et al., 2025 ) , ResULIC ( Ke et al., 2025 ) , and StableCodec ( Zhang et al., 2025 ) ; and generative latent codecs DLF ( Xue et al., 2025a ) and GLC ( Jia et al., 2024 ) .",
+     "zh": "这些基线方法包括自回归编解码器 ARPC（Zhang 等人，2026b）；基于扩散的编解码器 DiffEIC（Li 等人，2024）、DiffC（Vonderfecht 和 Liu，2025）、DiT-IC（Shi 等人，2026）、OSCAR（Guo 等人，2025）、PerCo（Careil 等人，2024）、RDEIC（Li 等人，2025）、ResULIC（Ke 等人，2025）和 StableCodec（Zhang 等人，2025）；以及生成式潜在编解码器 DLF（Xue 等人，2025a）和 GLC（Jia 等人，2024）。"
+    },
+    {
+     "en": "For all methods, the reported bitrate includes all transmitted components specified by the corresponding codec.",
+     "zh": "对于所有方法，所报告的比特率均包含相应编解码器指定的所有传输组件。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 4 compares ResARC with leading generative codecs on the DIV2K validation set and CLIC2020 test set. Across both datasets, ResARC achieves a favorable rate-perception trade-off throughout the ultra-low bitrate regime. Compared with the autoregressive codec ARPC, ResARC consistently improves all six evaluated metrics over the evaluated bitrate range. Across all compared methods, ResARC achieves the strongest overall performance under DISTS and the distributional fidelity metrics FID, KID, CMMD, and FD-DINOv2, while remaining competitive under LPIPS. These results demonstrate that compensating for both quantization and generation residuals substantially improves the reconstruction fidelity of autoregressive generative compression. The complete signed BD-rate comparison is provided in Appendix F.2 , further validating the consistent improvements of ResARC across metrics and datasets.",
+   "zh": "图4将ResARC与领先的生成式编解码器在DIV2K验证集和CLIC2020测试集上的表现进行了比较。 在这两个数据集上，ResARC在整个超低码率区间内都实现了良好的速率-感知度权衡。 与自回归编解码器ARPC相比，ResARC在所有六个评估指标上，于整个评估的码率范围内均表现出持续改进。 在所有比较的方法中，ResARC在DISTS以及分布保真度指标FID、KID、CMMD和FD-DINOv2下实现了最强的整体性能，同时在LPIPS下也保持了竞争力。 这些结果表明，对量化残差和生成残差进行补偿，能够显著提升自回归生成式压缩的重建保真度。 完整的带符号BD-rate比较结果见附录F.2，进一步验证了ResARC在各个指标和数据集上的一致性改进。",
+   "sents": [
+    {
+     "en": "Figure 4 compares ResARC with leading generative codecs on the DIV2K validation set and CLIC2020 test set.",
+     "zh": "图4将ResARC与领先的生成式编解码器在DIV2K验证集和CLIC2020测试集上的表现进行了比较。"
+    },
+    {
+     "en": "Across both datasets, ResARC achieves a favorable rate-perception trade-off throughout the ultra-low bitrate regime.",
+     "zh": "在这两个数据集上，ResARC在整个超低码率区间内都实现了良好的速率-感知度权衡。"
+    },
+    {
+     "en": "Compared with the autoregressive codec ARPC, ResARC consistently improves all six evaluated metrics over the evaluated bitrate range.",
+     "zh": "与自回归编解码器ARPC相比，ResARC在所有六个评估指标上，于整个评估的码率范围内均表现出持续改进。"
+    },
+    {
+     "en": "Across all compared methods, ResARC achieves the strongest overall performance under DISTS and the distributional fidelity metrics FID, KID, CMMD, and FD-DINOv2, while remaining competitive under LPIPS.",
+     "zh": "在所有比较的方法中，ResARC在DISTS以及分布保真度指标FID、KID、CMMD和FD-DINOv2下实现了最强的整体性能，同时在LPIPS下也保持了竞争力。"
+    },
+    {
+     "en": "These results demonstrate that compensating for both quantization and generation residuals substantially improves the reconstruction fidelity of autoregressive generative compression.",
+     "zh": "这些结果表明，对量化残差和生成残差进行补偿，能够显著提升自回归生成式压缩的重建保真度。"
+    },
+    {
+     "en": "The complete signed BD-rate comparison is provided in Appendix F.2 , further validating the consistent improvements of ResARC across metrics and datasets.",
+     "zh": "完整的带符号BD-rate比较结果见附录F.2，进一步验证了ResARC在各个指标和数据集上的一致性改进。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 5 compares ResARC with leading generative codecs at similar ultra-low bitrates. The autoregressive codec ARPC ( Zhang et al., 2026b ) produces rich textures but may alter image structures, such as fur patterns, repeated lines on the bridge deck, and lettering on the coffee surface, likely due to imperfect suffix generation. In contrast, diffusion-based methods such as StableCodec ( Zhang et al., 2025 ) and ResULIC ( Ke et al., 2025 ) tend to smooth these local details, reducing their similarity to the original images. ResARC produces less over-smoothed reconstructions and better preserves fine details and image structures, including the arrangement of wolf fur, repeated bridge-deck patterns, and the shape of the lettering. These qualitative results are consistent with our residual-aware design, where quantization residual generation helps recover fine-grained details, while generation residual correction helps preserve image structures and textures. Additional qualitative comparisons are provided in Section G.2 .",
+   "zh": "图 5 将 ResARC 与在类似超低码率下表现领先的生成式编解码器进行了比较。 自回归编解码器 ARPC（Zhang 等人，2026b）能够生成丰富的纹理，但可能会改变图像结构，例如毛发图案、桥面上重复的线条以及咖啡表面的文字，这很可能是由于后缀生成不完美所致。 相比之下，基于扩散模型的方法，如 StableCodec（Zhang 等人，2025）和 ResULIC（Ke 等人，2025），往往会平滑这些局部细节，从而降低它们与原始图像的相似性。 ResARC 生成的重建结果过度平滑的程度较低，并且能更好地保留精细细节和图像结构，包括狼毛的排列方式、桥面上重复的图案以及文字的形状。 这些定性结果与我们基于残差的設計一致：量化残差的生成有助于恢复精细细节，而生成残差的修正则有助于保留图像结构和纹理。 更多定性比较请参见第 G.2 节。",
+   "sents": [
+    {
+     "en": "Figure 5 compares ResARC with leading generative codecs at similar ultra-low bitrates.",
+     "zh": "图 5 将 ResARC 与在类似超低码率下表现领先的生成式编解码器进行了比较。"
+    },
+    {
+     "en": "The autoregressive codec ARPC ( Zhang et al., 2026b ) produces rich textures but may alter image structures, such as fur patterns, repeated lines on the bridge deck, and lettering on the coffee surface, likely due to imperfect suffix generation.",
+     "zh": "自回归编解码器 ARPC（Zhang 等人，2026b）能够生成丰富的纹理，但可能会改变图像结构，例如毛发图案、桥面上重复的线条以及咖啡表面的文字，这很可能是由于后缀生成不完美所致。"
+    },
+    {
+     "en": "In contrast, diffusion-based methods such as StableCodec ( Zhang et al., 2025 ) and ResULIC ( Ke et al., 2025 ) tend to smooth these local details, reducing their similarity to the original images.",
+     "zh": "相比之下，基于扩散模型的方法，如 StableCodec（Zhang 等人，2025）和 ResULIC（Ke 等人，2025），往往会平滑这些局部细节，从而降低它们与原始图像的相似性。"
+    },
+    {
+     "en": "ResARC produces less over-smoothed reconstructions and better preserves fine details and image structures, including the arrangement of wolf fur, repeated bridge-deck patterns, and the shape of the lettering.",
+     "zh": "ResARC 生成的重建结果过度平滑的程度较低，并且能更好地保留精细细节和图像结构，包括狼毛的排列方式、桥面上重复的图案以及文字的形状。"
+    },
+    {
+     "en": "These qualitative results are consistent with our residual-aware design, where quantization residual generation helps recover fine-grained details, while generation residual correction helps preserve image structures and textures.",
+     "zh": "这些定性结果与我们基于残差的設計一致：量化残差的生成有助于恢复精细细节，而生成残差的修正则有助于保留图像结构和纹理。"
+    },
+    {
+     "en": "Additional qualitative comparisons are provided in Section G.2 .",
+     "zh": "更多定性比较请参见第 G.2 节。"
+    }
+   ]
+  },
+  {
+   "en": "We ablate the contributions of the two residuals, their compensation strategies and training objectives, and the training pipeline, including fine-tuning the autoregressive prior, residual-aware VAE decoder adaptation, and the decoder input distribution used for fine-tuning. All experiments are evaluated on the DIV2K validation set. Tables report signed BD-rate (%) relative to the specified reference, where lower values are better.",
+   "zh": "我们消融了两种残差结构各自的贡献、它们的补偿策略与训练目标，以及整个训练流程，包括对自回归先验的微调、残差感知 VAE 解码器的适配，以及用于微调的解码器输入分布。 所有实验均在 DIV2K 验证集上进行评估。 表格中报告了相对于指定参考的有符号 BD-rate（%），数值越低表示效果越好。",
+   "sents": [
+    {
+     "en": "We ablate the contributions of the two residuals, their compensation strategies and training objectives, and the training pipeline, including fine-tuning the autoregressive prior, residual-aware VAE decoder adaptation, and the decoder input distribution used for fine-tuning.",
+     "zh": "我们消融了两种残差结构各自的贡献、它们的补偿策略与训练目标，以及整个训练流程，包括对自回归先验的微调、残差感知 VAE 解码器的适配，以及用于微调的解码器输入分布。"
+    },
+    {
+     "en": "All experiments are evaluated on the DIV2K validation set.",
+     "zh": "所有实验均在 DIV2K 验证集上进行评估。"
+    },
+    {
+     "en": "Tables report signed BD-rate (%) relative to the specified reference, where lower values are better.",
+     "zh": "表格中报告了相对于指定参考的有符号 BD-rate（%），数值越低表示效果越好。"
+    }
+   ]
+  },
+  {
+   "en": "Starting from the autoregressive baseline, we separately add the generation residual branch and the quantization residual branch, and then combine both in full ResARC. As shown in Figure 7 , either residual branch improves rate-perception performance over the autoregressive baseline, while combining both yields the best overall performance. Specifically, with only the generation residual branch, the DISTS and FID BD-rates decrease from + 9.80 % +9.80\\% and + 26.57 % +26.57\\% to + 1.90 % +1.90\\% and + 8.03 % +8.03\\% , respectively; with only the quantization residual branch, they decrease to + 5.38 % +5.38\\% and + 23.99 % +23.99\\% . Full ResARC further improves all four metrics, demonstrating the complementary benefits of the two residual branches.",
+   "zh": "从自回归基线模型出发，我们分别添加了生成残差分支和量化残差分支，然后将两者结合形成完整的 ResARC。 如图 7 所示，任一残差分支都能提升速率-感知性能，相较于自回归基线模型表现更优；而将两者结合则能获得最佳的整体性能。 具体而言，仅使用生成残差分支时，DISTS 和 FID 的 BD 率分别从 +9.80% +9.80\\% 和 +26.57% +26.57\\% 降至 +1.90% +1.90\\% 和 +8.03% +8.03\\%；仅使用量化残差分支时，则分别降至 +5.38% +5.38\\% 和 +23.99% +23.99\\%。 完整的 ResARC 进一步提升了所有四项指标，证明了两种残差分支的互补优势。",
+   "sents": [
+    {
+     "en": "Starting from the autoregressive baseline, we separately add the generation residual branch and the quantization residual branch, and then combine both in full ResARC.",
+     "zh": "从自回归基线模型出发，我们分别添加了生成残差分支和量化残差分支，然后将两者结合形成完整的 ResARC。"
+    },
+    {
+     "en": "As shown in Figure 7 , either residual branch improves rate-perception performance over the autoregressive baseline, while combining both yields the best overall performance.",
+     "zh": "如图 7 所示，任一残差分支都能提升速率-感知性能，相较于自回归基线模型表现更优；而将两者结合则能获得最佳的整体性能。"
+    },
+    {
+     "en": "Specifically, with only the generation residual branch, the DISTS and FID BD-rates decrease from + 9.80 % +9.80\\% and + 26.57 % +26.57\\% to + 1.90 % +1.90\\% and + 8.03 % +8.03\\% , respectively; with only the quantization residual branch, they decrease to + 5.38 % +5.38\\% and + 23.99 % +23.99\\% .",
+     "zh": "具体而言，仅使用生成残差分支时，DISTS 和 FID 的 BD 率分别从 +9.80% +9.80\\% 和 +26.57% +26.57\\% 降至 +1.90% +1.90\\% 和 +8.03% +8.03\\%；仅使用量化残差分支时，则分别降至 +5.38% +5.38\\% 和 +23.99% +23.99\\%。"
+    },
+    {
+     "en": "Full ResARC further improves all four metrics, demonstrating the complementary benefits of the two residual branches.",
+     "zh": "完整的 ResARC 进一步提升了所有四项指标，证明了两种残差分支的互补优势。"
+    }
+   ]
+  },
+  {
+   "en": "We further provide results on the contribution of the two residual branches through rate-perception curves. For all configurations, we follow the same training stages and optimization settings, while only adding the corresponding residual branch to the autoregressive baseline. As shown in Figure 7 , adding either the generation residual branch or the quantization residual branch consistently improves performance across all four metrics. Moreover, combining both residual branches in full ResARC yields further improvements and achieves the best overall performance, demonstrating the complementary benefits of the two residuals.",
+   "zh": "我们还通过速率感知曲线展示了两个残差分支贡献度的结果。 在所有配置中，我们都遵循相同的训练阶段和优化设置，同时仅将对应的残差分支添加到自回归基线模型中。 如图 7 所示，添加生成残差分支或量化残差分支都能在所有四个指标上持续提升性能。 此外，在完整的 ResARC 中结合使用两个残差分支能带来进一步的提升，并实现最佳的整体性能，这表明了两个残差分支的互补优势。",
+   "sents": [
+    {
+     "en": "We further provide results on the contribution of the two residual branches through rate-perception curves.",
+     "zh": "我们还通过速率感知曲线展示了两个残差分支贡献度的结果。"
+    },
+    {
+     "en": "For all configurations, we follow the same training stages and optimization settings, while only adding the corresponding residual branch to the autoregressive baseline.",
+     "zh": "在所有配置中，我们都遵循相同的训练阶段和优化设置，同时仅将对应的残差分支添加到自回归基线模型中。"
+    },
+    {
+     "en": "As shown in Figure 7 , adding either the generation residual branch or the quantization residual branch consistently improves performance across all four metrics.",
+     "zh": "如图 7 所示，添加生成残差分支或量化残差分支都能在所有四个指标上持续提升性能。"
+    },
+    {
+     "en": "Moreover, combining both residual branches in full ResARC yields further improvements and achieves the best overall performance, demonstrating the complementary benefits of the two residuals.",
+     "zh": "此外，在完整的 ResARC 中结合使用两个残差分支能带来进一步的提升，并实现最佳的整体性能，这表明了两个残差分支的互补优势。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 7 further illustrates the complementary roles of the two residual branches. The enlarged regions show differences in the reconstructed feather details of the penguin and the mouth contours of the portrait. Combining both branches yields reconstructions that better preserve local details and image structures, and achieves the lowest DISTS in the displayed examples.",
+   "zh": "图 7 进一步说明了两个残差分支的互补作用。 放大的区域显示了企鹅羽毛重建细节和肖像嘴部轮廓的差异。 结合两个分支可以获得更好地保留局部细节和图像结构的重建结果，并且在所示示例中实现了最低的 DISTS。",
+   "sents": [
+    {
+     "en": "Figure 7 further illustrates the complementary roles of the two residual branches.",
+     "zh": "图 7 进一步说明了两个残差分支的互补作用。"
+    },
+    {
+     "en": "The enlarged regions show differences in the reconstructed feather details of the penguin and the mouth contours of the portrait.",
+     "zh": "放大的区域显示了企鹅羽毛重建细节和肖像嘴部轮廓的差异。"
+    },
+    {
+     "en": "Combining both branches yields reconstructions that better preserve local details and image structures, and achieves the lowest DISTS in the displayed examples.",
+     "zh": "结合两个分支可以获得更好地保留局部细节和图像结构的重建结果，并且在所示示例中实现了最低的 DISTS。"
+    }
+   ]
+  },
+  {
+   "en": "To isolate the effect of adapting the autoregressive prior to the compression task, we compare the pretrained Infinity-2B transformer ( Han et al., 2025 ) with our model fine-tuned on the compression training data. As shown in Figure 9 , fine-tuning consistently improves all four metrics on DIV2K, yielding BD-rate reductions of 6.42 % 6.42\\% under DISTS and 11.29 % 11.29\\% under FID. These results show that adapting the autoregressive prior provides a stronger foundation for subsequent training of the residual branches.",
+   "zh": "为了孤立将自回归先验适配到压缩任务所产生的影响，我们将预训练的 Infinity-2B 变换器（Han et al., 2025）与我们在压缩训练数据上微调的模型进行了比较。 如图 9 所示，微调持续提升了 DIV2K 上的全部四项指标，在 DISTS 下带来了 6.42 % 6.42\\% 的 BD-rate 降低，在 FID 下则带来了 11.29 % 11.29\\% 的降低。 这些结果表明，将自回归先验进行适配为残差分支的后续训练提供了更坚实的基础。",
+   "sents": [
+    {
+     "en": "To isolate the effect of adapting the autoregressive prior to the compression task, we compare the pretrained Infinity-2B transformer ( Han et al., 2025 ) with our model fine-tuned on the compression training data.",
+     "zh": "为了孤立将自回归先验适配到压缩任务所产生的影响，我们将预训练的 Infinity-2B 变换器（Han et al., 2025）与我们在压缩训练数据上微调的模型进行了比较。"
+    },
+    {
+     "en": "As shown in Figure 9 , fine-tuning consistently improves all four metrics on DIV2K, yielding BD-rate reductions of 6.42 % 6.42\\% under DISTS and 11.29 % 11.29\\% under FID.",
+     "zh": "如图 9 所示，微调持续提升了 DIV2K 上的全部四项指标，在 DISTS 下带来了 6.42 % 6.42\\% 的 BD-rate 降低，在 FID 下则带来了 11.29 % 11.29\\% 的降低。"
+    },
+    {
+     "en": "These results show that adapting the autoregressive prior provides a stronger foundation for subsequent training of the residual branches.",
+     "zh": "这些结果表明，将自回归先验进行适配为残差分支的后续训练提供了更坚实的基础。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate the effect of adapting the VAE decoder to compensated latents by comparing perceptual quality before and after adaptation. As shown in Figure 9 , the residual-aware adaptation improves all four metrics on DIV2K, including BD-rate reductions of 4.31 % 4.31\\% under LPIPS and 7.19 % 7.19\\% under DISTS. These results demonstrate that adapting the VAE decoder to the compensated latent improves perceptual reconstruction quality.",
+   "zh": "我们通过比较适配前后感知质量，来评估将 VAE 解码器适配到补偿后潜在变量所产生的效果。 如图 9 所示，残差感知适配在 DIV2K 上提升了全部四项指标，包括在 LPIPS 下 BD-rate 降低了 4.31 % 4.31\\%，在 DISTS 下则降低了 7.19 % 7.19\\%。 这些结果表明，将 VAE 解码器适配到补偿后潜在变量能够提升感知重建质量。",
+   "sents": [
+    {
+     "en": "We evaluate the effect of adapting the VAE decoder to compensated latents by comparing perceptual quality before and after adaptation.",
+     "zh": "我们通过比较适配前后感知质量，来评估将 VAE 解码器适配到补偿后潜在变量所产生的效果。"
+    },
+    {
+     "en": "As shown in Figure 9 , the residual-aware adaptation improves all four metrics on DIV2K, including BD-rate reductions of 4.31 % 4.31\\% under LPIPS and 7.19 % 7.19\\% under DISTS.",
+     "zh": "如图 9 所示，残差感知适配在 DIV2K 上提升了全部四项指标，包括在 LPIPS 下 BD-rate 降低了 4.31 % 4.31\\%，在 DISTS 下则降低了 7.19 % 7.19\\%。"
+    },
+    {
+     "en": "These results demonstrate that adapting the VAE decoder to the compensated latent improves perceptual reconstruction quality.",
+     "zh": "这些结果表明，将 VAE 解码器适配到补偿后潜在变量能够提升感知重建质量。"
+    }
+   ]
+  },
+  {
+   "en": "We compare our residual-specific strategy, which generates the quantization residual r q r_{q} with a conditional DiT and transmits the generation residual r g r_{g} with a learned codec, against two uniform strategies that either generate or transmit both residuals. All experiments use the same two residual targets, autoregressive backbone, and sampling settings. As shown in Figure 9 , relative to ResARC, generating both residuals incurs 10.46 % 10.46\\% and 11.11 % 11.11\\% higher BD-rates under DISTS and FID, respectively, despite a slight improvement under LPIPS, while transmitting both residuals increases BD-rate across all four metrics. These results support the residual-specific compensation design of ResARC, where the quantization residual r q r_{q} is generated from decoder-side context without additional transmitted bits, while r g r_{g} is explicitly transmitted to provide source-dependent correction.",
+   "zh": "我们将我们的残差专用策略与两种均匀策略进行比较：前者通过条件 DiT 生成量化残差 r q r_{q}，并通过一个学习型编解码器传输生成残差 r g r_{g}；而后者则分别生成或传输两种残差。 所有实验均使用相同的两个残差目标、自回归主干网络和采样设置。 如图 9 所示，与 ResARC 相比，在 DISTS 和 FID 指标下，同时生成两种残差会使 BD-rate 分别上升 10.46 % 10.46\\% 和 11.11 % 11.11\\%，尽管在 LPIPS 指标下有轻微改善；而同时传输两种残差则会在所有四个指标中增加 BD-rate。 这些结果支持 ResARC 的残差专用补偿设计：量化残差 r q r_{q} 由解码器侧的上下文生成，无需额外传输比特；而 r g r_{g} 则被显式传输，以提供依赖于信源内容的修正。",
+   "sents": [
+    {
+     "en": "We compare our residual-specific strategy, which generates the quantization residual r q r_{q} with a conditional DiT and transmits the generation residual r g r_{g} with a learned codec, against two uniform strategies that either generate or transmit both residuals.",
+     "zh": "我们将我们的残差专用策略与两种均匀策略进行比较：前者通过条件 DiT 生成量化残差 r q r_{q}，并通过一个学习型编解码器传输生成残差 r g r_{g}；而后者则分别生成或传输两种残差。"
+    },
+    {
+     "en": "All experiments use the same two residual targets, autoregressive backbone, and sampling settings.",
+     "zh": "所有实验均使用相同的两个残差目标、自回归主干网络和采样设置。"
+    },
+    {
+     "en": "As shown in Figure 9 , relative to ResARC, generating both residuals incurs 10.46 % 10.46\\% and 11.11 % 11.11\\% higher BD-rates under DISTS and FID, respectively, despite a slight improvement under LPIPS, while transmitting both residuals increases BD-rate across all four metrics.",
+     "zh": "如图 9 所示，与 ResARC 相比，在 DISTS 和 FID 指标下，同时生成两种残差会使 BD-rate 分别上升 10.46 % 10.46\\% 和 11.11 % 11.11\\%，尽管在 LPIPS 指标下有轻微改善；而同时传输两种残差则会在所有四个指标中增加 BD-rate。"
+    },
+    {
+     "en": "These results support the residual-specific compensation design of ResARC, where the quantization residual r q r_{q} is generated from decoder-side context without additional transmitted bits, while r g r_{g} is explicitly transmitted to provide source-dependent correction.",
+     "zh": "这些结果支持 ResARC 的残差专用补偿设计：量化残差 r q r_{q} 由解码器侧的上下文生成，无需额外传输比特；而 r g r_{g} 则被显式传输，以提供依赖于信源内容的修正。"
+    }
+   ]
+  },
+  {
+   "en": "Beyond the aggregate BD-rate results, we further compare the complete rate–perception curves in Figure 9 . Across the evaluated bitrate range, transmitting both residuals consistently underperforms ResARC on all four metrics, while generating both achieves slightly better LPIPS but worse DISTS, FID, and KID. These results further support the residual-specific design of ResARC: the quantization residual can be effectively inferred from decoder-side autoregressive context without additional transmitted bits, whereas the generation residual depends on source suffix information unavailable at the decoder and therefore benefits from explicit transmission.",
+   "zh": "除了汇总的 BD-rate 结果之外，我们还进一步比较了图 9 中的完整速率–感知曲线。 在整个评估的比特率范围内，同时传输两个残差在所有四项指标上的表现均持续劣于 ResARC；而同时生成两个残差则在 LPIPS 上略胜一筹，但在 DISTS、FID 和 KID 上的表现更差。 这些结果进一步支持了 ResARC 针对残差的特定设计：量化残差可以通过解码器端的自回归上下文有效推断，无需额外传输比特；而生成残差则依赖于解码器端无法获取的源序列后缀信息，因此需要显式传输才能获得更好的效果。",
+   "sents": [
+    {
+     "en": "Beyond the aggregate BD-rate results, we further compare the complete rate–perception curves in Figure 9 .",
+     "zh": "除了汇总的 BD-rate 结果之外，我们还进一步比较了图 9 中的完整速率–感知曲线。"
+    },
+    {
+     "en": "Across the evaluated bitrate range, transmitting both residuals consistently underperforms ResARC on all four metrics, while generating both achieves slightly better LPIPS but worse DISTS, FID, and KID.",
+     "zh": "在整个评估的比特率范围内，同时传输两个残差在所有四项指标上的表现均持续劣于 ResARC；而同时生成两个残差则在 LPIPS 上略胜一筹，但在 DISTS、FID 和 KID 上的表现更差。"
+    },
+    {
+     "en": "These results further support the residual-specific design of ResARC: the quantization residual can be effectively inferred from decoder-side autoregressive context without additional transmitted bits, whereas the generation residual depends on source suffix information unavailable at the decoder and therefore benefits from explicit transmission.",
+     "zh": "这些结果进一步支持了 ResARC 针对残差的特定设计：量化残差可以通过解码器端的自回归上下文有效推断，无需额外传输比特；而生成残差则依赖于解码器端无法获取的源序列后缀信息，因此需要显式传输才能获得更好的效果。"
+    }
+   ]
+  },
+  {
+   "en": "We further provide a qualitative comparison of the three strategies in Figure 9 . ResARC better preserves local structures and fine details, such as the fox’s nose and the central hub of the ship’s wheel, further supporting the effectiveness of our residual-specific compensation design.",
+   "zh": "我们在图 9 中进一步对这三种策略进行了定性比较。 ResARC 能更好地保留局部结构和精细细节，例如狐狸的鼻子和船舵的中心枢纽，这进一步验证了我们针对残差设计的补偿方案的有效性。",
+   "sents": [
+    {
+     "en": "We further provide a qualitative comparison of the three strategies in Figure 9 .",
+     "zh": "我们在图 9 中进一步对这三种策略进行了定性比较。"
+    },
+    {
+     "en": "ResARC better preserves local structures and fine details, such as the fox’s nose and the central hub of the ship’s wheel, further supporting the effectiveness of our residual-specific compensation design.",
+     "zh": "ResARC 能更好地保留局部结构和精细细节，例如狐狸的鼻子和船舵的中心枢纽，这进一步验证了我们针对残差设计的补偿方案的有效性。"
+    }
+   ]
+  },
+  {
+   "en": "We study the perceptual objectives used to train the two residual branches. For each branch, we vary only the perceptual loss while keeping the remaining training objective fixed: flow matching for the quantization residual generator, and rate together with Smooth L1 loss for the generation residual codec.",
+   "zh": "我们研究了用于训练两个残差分支的感知目标。 对于每个分支，我们仅改变感知损失，同时保持其余训练目标不变：量化残差生成器使用流匹配，而生成残差编解码器则使用速率与平滑 L1 损失。",
+   "sents": [
+    {
+     "en": "We study the perceptual objectives used to train the two residual branches.",
+     "zh": "我们研究了用于训练两个残差分支的感知目标。"
+    },
+    {
+     "en": "For each branch, we vary only the perceptual loss while keeping the remaining training objective fixed: flow matching for the quantization residual generator, and rate together with Smooth L1 loss for the generation residual codec.",
+     "zh": "对于每个分支，我们仅改变感知损失，同时保持其余训练目标不变：量化残差生成器使用流匹配，而生成残差编解码器则使用速率与平滑 L1 损失。"
+    }
+   ]
+  },
+  {
+   "en": "Section 5.4 reports BD-rates relative to the objective used in ResARC for each branch. For the Quantization Residual Generator, using the LPIPS loss yields the best LPIPS, FID, and KID BD-rates among the tested objectives. However, adding DISTS supervision improves the DISTS BD-rate by only 0.65 % 0.65\\% , while increasing the LPIPS, FID, and KID BD-rates by 1.70 % 1.70\\% , 1.27 % 1.27\\% , and 12.10 % 12.10\\% , respectively. For the Generation Residual Codec, adding the LPIPS loss to the DISTS objective reduces the LPIPS BD-rate by 6.40 % 6.40\\% , but increases the DISTS, FID, and KID BD-rates by 9.69 % 9.69\\% , 19.50 % 19.50\\% , and 79.17 % 79.17\\% , respectively. These results support using the LPIPS objective for the quantization residual generator and DISTS loss for the generation residual codec.",
+   "zh": "第 5.4 节报告了每个分支相对于 ResARC 中所用目标函数的 BD-rates。 对于量化残差生成器，使用 LPIPS 损失在测试的目标函数中获得了最佳的 LPIPS、FID 和 KID BD-rates。 然而，添加 DISTS 监督仅将 DISTS BD-rate 提升了 0.65 % 0.65\\%，而将 LPIPS、FID 和 KID BD-rates 分别提升了 1.70 % 1.70\\%、1.27 % 1.27\\% 和 12.10 % 12.10\\%。 对于生成残差编解码器，将 LPIPS 损失添加到 DISTS 目标函数中可将 LPIPS BD-rate 降低 6.40 % 6.40\\%，但分别将 DISTS、FID 和 KID BD-rates 提升了 9.69 % 9.69\\%、19.50 % 19.50\\% 和 79.17 % 79.17\\%。 这些结果支持为量化残差生成器使用 LPIPS 目标函数，并为生成残差编解码器使用 DISTS 损失。",
+   "sents": [
+    {
+     "en": "Section 5.4 reports BD-rates relative to the objective used in ResARC for each branch.",
+     "zh": "第 5.4 节报告了每个分支相对于 ResARC 中所用目标函数的 BD-rates。"
+    },
+    {
+     "en": "For the Quantization Residual Generator, using the LPIPS loss yields the best LPIPS, FID, and KID BD-rates among the tested objectives.",
+     "zh": "对于量化残差生成器，使用 LPIPS 损失在测试的目标函数中获得了最佳的 LPIPS、FID 和 KID BD-rates。"
+    },
+    {
+     "en": "However, adding DISTS supervision improves the DISTS BD-rate by only 0.65 % 0.65\\% , while increasing the LPIPS, FID, and KID BD-rates by 1.70 % 1.70\\% , 1.27 % 1.27\\% , and 12.10 % 12.10\\% , respectively.",
+     "zh": "然而，添加 DISTS 监督仅将 DISTS BD-rate 提升了 0.65 % 0.65\\%，而将 LPIPS、FID 和 KID BD-rates 分别提升了 1.70 % 1.70\\%、1.27 % 1.27\\% 和 12.10 % 12.10\\%。"
+    },
+    {
+     "en": "For the Generation Residual Codec, adding the LPIPS loss to the DISTS objective reduces the LPIPS BD-rate by 6.40 % 6.40\\% , but increases the DISTS, FID, and KID BD-rates by 9.69 % 9.69\\% , 19.50 % 19.50\\% , and 79.17 % 79.17\\% , respectively.",
+     "zh": "对于生成残差编解码器，将 LPIPS 损失添加到 DISTS 目标函数中可将 LPIPS BD-rate 降低 6.40 % 6.40\\%，但分别将 DISTS、FID 和 KID BD-rates 提升了 9.69 % 9.69\\%、19.50 % 19.50\\% 和 79.17 % 79.17\\%。"
+    },
+    {
+     "en": "These results support using the LPIPS objective for the quantization residual generator and DISTS loss for the generation residual codec.",
+     "zh": "这些结果支持为量化残差生成器使用 LPIPS 目标函数，并为生成残差编解码器使用 DISTS 损失。"
+    }
+   ]
+  },
+  {
+   "en": "We further investigate the input distribution used to fine-tune the VAE decoder. Quantization residual compensation shifts the decoder input from the quantized latent h q h_{q} toward the continuous latent h h . We therefore compare three fine-tuning settings: quantized latents only, continuous latents only, and a mixed setting with p = 0.5 p=0.5 , where p p denotes the probability of sampling h h . As shown in Section 5.4 , the mixed setting achieves the best overall BD-rate across all four metrics. Compared with mixed-latent fine-tuning, using only quantized latents incurs 7.42 % 7.42\\% and 4.03 % 4.03\\% higher BD-rates under DISTS and FID, respectively, while using only continuous latents leads to substantially higher BD-rates across all four metrics. These results support mixed-latent fine-tuning for adapting the VAE decoder to compensated latent representations.",
+   "zh": "我们进一步研究了用于微调 VAE 解码器的输入分布。 量化残差补偿将解码器输入从量化后的潜在变量 h q h_{q} 向连续潜在变量 h h 偏移。 因此，我们比较了三种微调设置：仅使用量化潜在变量、仅使用连续潜在变量，以及 p = 0.5 p=0.5 的混合设置，其中 p p 表示采样 h h 的概率。 如第 5.4 节所示，混合设置在所有四项指标中实现了最佳的总体 BD-rate。 与混合潜在变量微调相比，仅使用量化潜在变量在 DISTS 和 FID 下的 BD-rates 分别高出 7.42 % 7.42\\% 和 4.03 % 4.03\\%，而仅使用连续潜在变量则导致所有四项指标中的 BD-rates 显著更高。 这些结果支持采用混合潜在变量微调，以将 VAE 解码器适配到经过补偿的潜在表示。",
+   "sents": [
+    {
+     "en": "We further investigate the input distribution used to fine-tune the VAE decoder.",
+     "zh": "我们进一步研究了用于微调 VAE 解码器的输入分布。"
+    },
+    {
+     "en": "Quantization residual compensation shifts the decoder input from the quantized latent h q h_{q} toward the continuous latent h h .",
+     "zh": "量化残差补偿将解码器输入从量化后的潜在变量 h q h_{q} 向连续潜在变量 h h 偏移。"
+    },
+    {
+     "en": "We therefore compare three fine-tuning settings: quantized latents only, continuous latents only, and a mixed setting with p = 0.5 p=0.5 , where p p denotes the probability of sampling h h .",
+     "zh": "因此，我们比较了三种微调设置：仅使用量化潜在变量、仅使用连续潜在变量，以及 p = 0.5 p=0.5 的混合设置，其中 p p 表示采样 h h 的概率。"
+    },
+    {
+     "en": "As shown in Section 5.4 , the mixed setting achieves the best overall BD-rate across all four metrics.",
+     "zh": "如第 5.4 节所示，混合设置在所有四项指标中实现了最佳的总体 BD-rate。"
+    },
+    {
+     "en": "Compared with mixed-latent fine-tuning, using only quantized latents incurs 7.42 % 7.42\\% and 4.03 % 4.03\\% higher BD-rates under DISTS and FID, respectively, while using only continuous latents leads to substantially higher BD-rates across all four metrics.",
+     "zh": "与混合潜在变量微调相比，仅使用量化潜在变量在 DISTS 和 FID 下的 BD-rates 分别高出 7.42 % 7.42\\% 和 4.03 % 4.03\\%，而仅使用连续潜在变量则导致所有四项指标中的 BD-rates 显著更高。"
+    },
+    {
+     "en": "These results support mixed-latent fine-tuning for adapting the VAE decoder to compensated latent representations.",
+     "zh": "这些结果支持采用混合潜在变量微调，以将 VAE 解码器适配到经过补偿的潜在表示。"
+    }
+   ]
+  },
+  {
+   "en": "We identify two residuals inherent to autoregressive generative compression: the quantization residual introduced by discrete tokenization and the generation residual arising from imperfect autoregressive suffix generation. To recover both residuals, we introduce ResARC , the first residual-aware autoregressive codec that generates the quantization residual with a Quantization Residual Generator based on DiT and compresses the generation residual with a dedicated Generation Residual Codec for transmission. Extensive experiments demonstrate the effectiveness of this residual-aware design, with ResARC achieving strong rate-perception performance compared with leading generative codecs. These results highlight explicit modeling and compensation of codec residuals as an effective design principle for ultra-low bitrate generative image compression.",
+   "zh": "我们识别出自回归生成式压缩中固有的两种残差：由离散分词引入的量化残差，以及源于不完美自回归后缀生成的生成残差。 为了恢复这两种残差，我们提出了 ResARC——首个具备残差感知能力的自回归编解码器。它基于 DiT 的量化残差生成器来生成量化残差，并通过专用的生成残差编解码器对生成残差进行压缩以便传输。 大量实验表明，这种具备残差感知能力的设计十分有效：与主流生成式编解码器相比，ResARC 在速率-感知性能方面表现优异。 这些结果凸显出对编解码器残差的显式建模与补偿，是超低位率生成式图像压缩的一项有效设计原则。",
+   "sents": [
+    {
+     "en": "We identify two residuals inherent to autoregressive generative compression: the quantization residual introduced by discrete tokenization and the generation residual arising from imperfect autoregressive suffix generation.",
+     "zh": "我们识别出自回归生成式压缩中固有的两种残差：由离散分词引入的量化残差，以及源于不完美自回归后缀生成的生成残差。"
+    },
+    {
+     "en": "To recover both residuals, we introduce ResARC , the first residual-aware autoregressive codec that generates the quantization residual with a Quantization Residual Generator based on DiT and compresses the generation residual with a dedicated Generation Residual Codec for transmission.",
+     "zh": "为了恢复这两种残差，我们提出了 ResARC——首个具备残差感知能力的自回归编解码器。它基于 DiT 的量化残差生成器来生成量化残差，并通过专用的生成残差编解码器对生成残差进行压缩以便传输。"
+    },
+    {
+     "en": "Extensive experiments demonstrate the effectiveness of this residual-aware design, with ResARC achieving strong rate-perception performance compared with leading generative codecs.",
+     "zh": "大量实验表明，这种具备残差感知能力的设计十分有效：与主流生成式编解码器相比，ResARC 在速率-感知性能方面表现优异。"
+    },
+    {
+     "en": "These results highlight explicit modeling and compensation of codec residuals as an effective design principle for ultra-low bitrate generative image compression.",
+     "zh": "这些结果凸显出对编解码器残差的显式建模与补偿，是超低位率生成式图像压缩的一项有效设计原则。"
+    }
+   ]
+  },
+  {
+   "en": "Algorithm 1 and Algorithm 2 summarize the ResARC encoding-decoding pipeline and quantization residual generation, respectively.",
+   "zh": "算法 1 和算法 2 分别概述了 ResARC 编码-解码流程以及量化残差生成过程。",
+   "sents": null
+  },
+  {
+   "en": "During encoding, the encoder reproduces the same autoregressive suffix generation process used at the decoder from the transmitted prefix T ≤ k T_{\\leq k} and text condition ℓ \\ell . This reconstructs h ^ q ( k ) \\hat{h}_{q}^{(k)} , from which the generation residual r g ( k ) = h q − h ^ q ( k ) r_{g}^{(k)}=h_{q}-\\hat{h}_{q}^{(k)} is computed and compressed by the Generation Residual Codec. The resulting bitstream contains the encoded text condition, transmitted prefix scales, and entropy-coded generation residual.",
+   "zh": "在编码过程中，编码器根据传输的前缀 T ≤ k T_{\\leq k} 和文本条件 ℓ \\ell ，重现了解码器所采用的相同的自回归后缀生成过程。 由此重建 h ^ q ( k ) \\hat{h}_{q}^{(k)}，并据此计算出生成残差 r g ( k ) = h q − h ^ q ( k ) r_{g}^{(k)}=h_{q}-\\hat{h}_{q}^{(k)}，再由生成残差编解码器进行压缩。 最终的比特流包含编码后的文本条件、传输的前缀缩放值以及熵编码后的生成残差。",
+   "sents": [
+    {
+     "en": "During encoding, the encoder reproduces the same autoregressive suffix generation process used at the decoder from the transmitted prefix T ≤ k T_{\\leq k} and text condition ℓ \\ell .",
+     "zh": "在编码过程中，编码器根据传输的前缀 T ≤ k T_{\\leq k} 和文本条件 ℓ \\ell ，重现了解码器所采用的相同的自回归后缀生成过程。"
+    },
+    {
+     "en": "This reconstructs h ^ q ( k ) \\hat{h}_{q}^{(k)} , from which the generation residual r g ( k ) = h q − h ^ q ( k ) r_{g}^{(k)}=h_{q}-\\hat{h}_{q}^{(k)} is computed and compressed by the Generation Residual Codec.",
+     "zh": "由此重建 h ^ q ( k ) \\hat{h}_{q}^{(k)}，并据此计算出生成残差 r g ( k ) = h q − h ^ q ( k ) r_{g}^{(k)}=h_{q}-\\hat{h}_{q}^{(k)}，再由生成残差编解码器进行压缩。"
+    },
+    {
+     "en": "The resulting bitstream contains the encoded text condition, transmitted prefix scales, and entropy-coded generation residual.",
+     "zh": "最终的比特流包含编码后的文本条件、传输的前缀缩放值以及熵编码后的生成残差。"
+    }
+   ]
+  },
+  {
+   "en": "During decoding, the text condition and prefix scales are first recovered and used to regenerate the same suffix and reconstruct h ^ q ( k ) \\hat{h}_{q}^{(k)} . The autoregressive decoding process also provides the condition c quant c_{\\mathrm{quant}} for synthesizing the quantization residual and context C ( k ) C^{(k)} for the generation residual. To ensure identical autoregressive states at the encoder and decoder, GenerateSuffix uses the same sampling realization at both endpoints, while residual entropy coding follows the same causal symbol order. Finally, the decoder generates the quantization residual r ^ q ( k ) \\hat{r}_{q}^{(k)} , decodes the transmitted generation residual r ^ g ( k ) \\hat{r}_{g}^{(k)} , and combines both with h ^ q ( k ) \\hat{h}_{q}^{(k)} to form the compensated latent h ^ c ( k ) \\hat{h}_{c}^{(k)} . The adapted VAE decoder 𝒟 ~ \\tilde{\\mathcal{D}} then maps h ^ c ( k ) \\hat{h}_{c}^{(k)} to the reconstructed image.",
+   "zh": "在解码过程中，首先恢复文本条件和前缀缩放因子，并利用它们重新生成相同的后缀以及重构 h ^ q ( k ) \\hat{h}_{q}^{(k)}。 自回归解码过程还提供条件 c quant c_{\\mathrm{quant}}，用于合成量化残差以及生成残差的上下文 C ( k ) C^{(k)}。 为确保编码器和解码器中的自回归状态完全一致，GenerateSuffix 在两个端点使用相同的采样实现，同时残差熵编码遵循相同的因果符号顺序。 最后，解码器生成量化残差 r ^ q ( k ) \\hat{r}_{q}^{(k)}，解码传输的生成残差 r ^ g ( k ) \\hat{r}_{g}^{(k)}，并将两者与 h ^ q ( k ) \\hat{h}_{q}^{(k)} 结合，形成补偿后的潜在变量 h ^ c ( k ) \\hat{h}_{c}^{(k)}。 随后，适配的 VAE 解码器 𝒟 ~ \\tilde{\\mathcal{D}} 将 h ^ c ( k ) \\hat{h}_{c}^{(k)} 映射为重构图像。",
+   "sents": [
+    {
+     "en": "During decoding, the text condition and prefix scales are first recovered and used to regenerate the same suffix and reconstruct h ^ q ( k ) \\hat{h}_{q}^{(k)} .",
+     "zh": "在解码过程中，首先恢复文本条件和前缀缩放因子，并利用它们重新生成相同的后缀以及重构 h ^ q ( k ) \\hat{h}_{q}^{(k)}。"
+    },
+    {
+     "en": "The autoregressive decoding process also provides the condition c quant c_{\\mathrm{quant}} for synthesizing the quantization residual and context C ( k ) C^{(k)} for the generation residual.",
+     "zh": "自回归解码过程还提供条件 c quant c_{\\mathrm{quant}}，用于合成量化残差以及生成残差的上下文 C ( k ) C^{(k)}。"
+    },
+    {
+     "en": "To ensure identical autoregressive states at the encoder and decoder, GenerateSuffix uses the same sampling realization at both endpoints, while residual entropy coding follows the same causal symbol order.",
+     "zh": "为确保编码器和解码器中的自回归状态完全一致，GenerateSuffix 在两个端点使用相同的采样实现，同时残差熵编码遵循相同的因果符号顺序。"
+    },
+    {
+     "en": "Finally, the decoder generates the quantization residual r ^ q ( k ) \\hat{r}_{q}^{(k)} , decodes the transmitted generation residual r ^ g ( k ) \\hat{r}_{g}^{(k)} , and combines both with h ^ q ( k ) \\hat{h}_{q}^{(k)} to form the compensated latent h ^ c ( k ) \\hat{h}_{c}^{(k)} .",
+     "zh": "最后，解码器生成量化残差 r ^ q ( k ) \\hat{r}_{q}^{(k)}，解码传输的生成残差 r ^ g ( k ) \\hat{r}_{g}^{(k)}，并将两者与 h ^ q ( k ) \\hat{h}_{q}^{(k)} 结合，形成补偿后的潜在变量 h ^ c ( k ) \\hat{h}_{c}^{(k)}。"
+    },
+    {
+     "en": "The adapted VAE decoder 𝒟 ~ \\tilde{\\mathcal{D}} then maps h ^ c ( k ) \\hat{h}_{c}^{(k)} to the reconstructed image.",
+     "zh": "随后，适配的 VAE 解码器 𝒟 ~ \\tilde{\\mathcal{D}} 将 h ^ c ( k ) \\hat{h}_{c}^{(k)} 映射为重构图像。"
+    }
+   ]
+  },
+  {
+   "en": "Algorithm 2 summarizes the sampling procedure of the Quantization Residual Generator. Starting from Gaussian noise, we integrate the conditional velocity field from t = 1 t=1 to t = 0 t=0 using Heun updates with an Euler update on the final step. At each step, the DiT predicts the velocity conditioned on the autoregressive decoding context c quant c_{\\mathrm{quant}} , and the final sample z 0 z_{0} is the predicted quantization residual r ^ q ( k ) \\hat{r}_{q}^{(k)} .",
+   "zh": "算法 2 总结了量化残差生成器的采样过程。 从高斯噪声出发，我们使用海恩更新法对条件速度场进行积分，积分区间为 t = 1 到 t = 0，并在最后一步采用欧拉更新法。 在每一步中，DiT 会根据自回归解码上下文 c quant c_{\\mathrm{quant}} 预测速度，而最终样本 z 0 z_{0} 即为预测的量化残差 r ^ q ( k ) \\hat{r}_{q}^{(k)}。",
+   "sents": [
+    {
+     "en": "Algorithm 2 summarizes the sampling procedure of the Quantization Residual Generator.",
+     "zh": "算法 2 总结了量化残差生成器的采样过程。"
+    },
+    {
+     "en": "Starting from Gaussian noise, we integrate the conditional velocity field from t = 1 t=1 to t = 0 t=0 using Heun updates with an Euler update on the final step.",
+     "zh": "从高斯噪声出发，我们使用海恩更新法对条件速度场进行积分，积分区间为 t = 1 到 t = 0，并在最后一步采用欧拉更新法。"
+    },
+    {
+     "en": "At each step, the DiT predicts the velocity conditioned on the autoregressive decoding context c quant c_{\\mathrm{quant}} , and the final sample z 0 z_{0} is the predicted quantization residual r ^ q ( k ) \\hat{r}_{q}^{(k)} .",
+     "zh": "在每一步中，DiT 会根据自回归解码上下文 c quant c_{\\mathrm{quant}} 预测速度，而最终样本 z 0 z_{0} 即为预测的量化残差 r ^ q ( k ) \\hat{r}_{q}^{(k)}。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 10 illustrates the Generation Residual Codec introduced in Section 4.3 . The statistics of the generation residual r g ( k ) r_{g}^{(k)} vary with the transmitted prefix depth k k , since different numbers of suffix scales are generated autoregressively. To adapt the codec across different prefix depths, we introduce a prefix-depth embedding e k e_{k} , together with a residual scale s k s_{k} and latent gain g k g_{k} . The embedding e k e_{k} conditions the analysis, entropy, and synthesis transforms, while s k s_{k} normalizes the generation residual and g k g_{k} modulates the codec latent before quantization. In addition, the autoregressively reconstructed latent h ^ q ( k ) \\hat{h}_{q}^{(k)} and the hidden features of the autoregressive model provide context for modeling r g ( k ) r_{g}^{(k)} . We aggregate these features into a multi-scale context pyramid C ( k ) C^{(k)} , which is injected into the corresponding stages of the codec. Conditioned on e k e_{k} and C ( k ) C^{(k)} , the Generation Residual Codec consists of an analysis transform, a four-pass conditional entropy model, and a synthesis transform for compressing r g ( k ) r_{g}^{(k)} and reconstructing r ^ g ( k ) \\hat{r}_{g}^{(k)} .",
+   "zh": "图 10 展示了第 4.3 节中介绍的生成残差编解码器。 生成残差 r g ( k ) r_{g}^{(k)} 的统计特性会随传输的前缀深度 k k 而变化，因为不同数量的后缀标度是通过自回归方式生成的。 为了使该编解码器能够适应不同的前缀深度，我们引入了一个前缀深度嵌入 e k e_{k}，以及一个残差标度 s k s_{k} 和潜在增益 g k g_{k}。 嵌入 e k e_{k} 为分析、熵和合成变换提供条件，而 s k s_{k} 对生成残差进行归一化，g k g_{k} 则在量化前调节编解码器的潜在变量。 此外，自回归重构的潜在变量 h ^ q ( k ) \\hat{h}_{q}^{(k)} 和自回归模型的隐藏特征为 r g ( k ) r_{g}^{(k)} 的建模提供了上下文信息。 我们将这些特征聚合为一个多尺度上下文金字塔 C ( k ) C^{(k)}，并将其注入编解码器的相应阶段。 在 e k e_{k} 和 C ( k ) C^{(k)} 的条件下，生成残差编解码器由一个分析变换、一个四通道条件熵模型和一个合成变换组成，用于压缩 r g ( k ) r_{g}^{(k)} 并重构 r ^ g ( k ) \\hat{r}_{g}^{(k)}。",
+   "sents": [
+    {
+     "en": "Figure 10 illustrates the Generation Residual Codec introduced in Section 4.3 .",
+     "zh": "图 10 展示了第 4.3 节中介绍的生成残差编解码器。"
+    },
+    {
+     "en": "The statistics of the generation residual r g ( k ) r_{g}^{(k)} vary with the transmitted prefix depth k k , since different numbers of suffix scales are generated autoregressively.",
+     "zh": "生成残差 r g ( k ) r_{g}^{(k)} 的统计特性会随传输的前缀深度 k k 而变化，因为不同数量的后缀标度是通过自回归方式生成的。"
+    },
+    {
+     "en": "To adapt the codec across different prefix depths, we introduce a prefix-depth embedding e k e_{k} , together with a residual scale s k s_{k} and latent gain g k g_{k} .",
+     "zh": "为了使该编解码器能够适应不同的前缀深度，我们引入了一个前缀深度嵌入 e k e_{k}，以及一个残差标度 s k s_{k} 和潜在增益 g k g_{k}。"
+    },
+    {
+     "en": "The embedding e k e_{k} conditions the analysis, entropy, and synthesis transforms, while s k s_{k} normalizes the generation residual and g k g_{k} modulates the codec latent before quantization.",
+     "zh": "嵌入 e k e_{k} 为分析、熵和合成变换提供条件，而 s k s_{k} 对生成残差进行归一化，g k g_{k} 则在量化前调节编解码器的潜在变量。"
+    },
+    {
+     "en": "In addition, the autoregressively reconstructed latent h ^ q ( k ) \\hat{h}_{q}^{(k)} and the hidden features of the autoregressive model provide context for modeling r g ( k ) r_{g}^{(k)} .",
+     "zh": "此外，自回归重构的潜在变量 h ^ q ( k ) \\hat{h}_{q}^{(k)} 和自回归模型的隐藏特征为 r g ( k ) r_{g}^{(k)} 的建模提供了上下文信息。"
+    },
+    {
+     "en": "We aggregate these features into a multi-scale context pyramid C ( k ) C^{(k)} , which is injected into the corresponding stages of the codec.",
+     "zh": "我们将这些特征聚合为一个多尺度上下文金字塔 C ( k ) C^{(k)}，并将其注入编解码器的相应阶段。"
+    },
+    {
+     "en": "Conditioned on e k e_{k} and C ( k ) C^{(k)} , the Generation Residual Codec consists of an analysis transform, a four-pass conditional entropy model, and a synthesis transform for compressing r g ( k ) r_{g}^{(k)} and reconstructing r ^ g ( k ) \\hat{r}_{g}^{(k)} .",
+     "zh": "在 e k e_{k} 和 C ( k ) C^{(k)} 的条件下，生成残差编解码器由一个分析变换、一个四通道条件熵模型和一个合成变换组成，用于压缩 r g ( k ) r_{g}^{(k)} 并重构 r ^ g ( k ) \\hat{r}_{g}^{(k)}。"
+    }
+   ]
+  },
+  {
+   "en": "Following prior works ( Li et al., 2023 ; Sheng et al., 2025 ) , we adopt a four-pass channel-spatial entropy model for the analysis latent y y . The channels of y y are first divided into four equal groups. Within each channel group, spatial positions are further partitioned according to the row-column parity masks M 0 , M 1 , M 2 , M 3 M_{0},M_{1},M_{2},M_{3} , corresponding to ( 0 , 0 ) (0,0) , ( 0 , 1 ) (0,1) , ( 1 , 0 ) (1,0) , and ( 1 , 1 ) (1,1) under zero-based coordinates. The four groups follow different mask orders across the four passes:",
+   "zh": "遵循先前的研究（Li et al., 2023；Sheng et al., 2025），我们采用一种四通道空间熵模型来分析潜在变量 y y。 首先将 y y 的通道划分为四个相等的组。 在每个通道组内，空间位置进一步根据行列奇偶掩码 M 0、M 1、M 2、M 3（即 M_{0},M_{1},M_{2},M_{3}）进行划分，这些掩码在零基坐标下分别对应 (0,0)、(0,1)、(1,0) 和 (1,1)。 这四个组在四次通道处理中遵循不同的掩码顺序：",
+   "sents": [
+    {
+     "en": "Following prior works ( Li et al., 2023 ; Sheng et al., 2025 ) , we adopt a four-pass channel-spatial entropy model for the analysis latent y y .",
+     "zh": "遵循先前的研究（Li et al., 2023；Sheng et al., 2025），我们采用一种四通道空间熵模型来分析潜在变量 y y。"
+    },
+    {
+     "en": "The channels of y y are first divided into four equal groups.",
+     "zh": "首先将 y y 的通道划分为四个相等的组。"
+    },
+    {
+     "en": "Within each channel group, spatial positions are further partitioned according to the row-column parity masks M 0 , M 1 , M 2 , M 3 M_{0},M_{1},M_{2},M_{3} , corresponding to ( 0 , 0 ) (0,0) , ( 0 , 1 ) (0,1) , ( 1 , 0 ) (1,0) , and ( 1 , 1 ) (1,1) under zero-based coordinates.",
+     "zh": "在每个通道组内，空间位置进一步根据行列奇偶掩码 M 0、M 1、M 2、M 3（即 M_{0},M_{1},M_{2},M_{3}）进行划分，这些掩码在零基坐标下分别对应 (0,0)、(0,1)、(1,0) 和 (1,1)。"
+    },
+    {
+     "en": "The four groups follow different mask orders across the four passes:",
+     "zh": "这四个组在四次通道处理中遵循不同的掩码顺序："
+    }
+   ]
+  },
+  {
+   "en": "This schedule assigns each latent element to exactly one coding pass while allowing all elements within the same pass to be processed in parallel.",
+   "zh": "该调度方案将每个潜在元素分配给且仅一个编码阶段，同时允许同一阶段内的所有元素并行处理。",
+   "sents": null
+  },
+  {
+   "en": "Before quantization, the analysis latent y y is modulated by the prefix-dependent gain g k g_{k} . A conditional prior predicts a positive quantization-step map q q , together with the initial mean μ \\mu and Laplace scale σ \\sigma , from the autoregressive context c 3 ( k ) c_{3}^{(k)} and prefix embedding e k e_{k} . The quantization-step map q q remains fixed across the four passes. For later passes, the mean and scale parameters μ , σ \\mu,\\sigma are further updated using the latent values reconstructed in previous passes, while positions that have not yet been decoded are masked to zero.",
+   "zh": "在量化之前，分析潜在变量 y y 会由前缀相关的增益 g k g_{k} 进行调制。 一个条件先验模型会根据自回归上下文 c 3 ( k ) c_{3}^{(k)} 和前缀嵌入 e k e_{k}，预测出一个正的量化步长映射 q q ，以及初始均值 μ \\mu 和拉普拉斯尺度 σ \\sigma 。 量化步长映射 q q 在四次处理过程中保持不变。 在后续的处理中，均值和尺度参数 μ , σ \\mu,\\sigma 会进一步利用前几次处理中重建的潜在值进行更新，而尚未解码的位置则会被掩码为零。",
+   "sents": [
+    {
+     "en": "Before quantization, the analysis latent y y is modulated by the prefix-dependent gain g k g_{k} .",
+     "zh": "在量化之前，分析潜在变量 y y 会由前缀相关的增益 g k g_{k} 进行调制。"
+    },
+    {
+     "en": "A conditional prior predicts a positive quantization-step map q q , together with the initial mean μ \\mu and Laplace scale σ \\sigma , from the autoregressive context c 3 ( k ) c_{3}^{(k)} and prefix embedding e k e_{k} .",
+     "zh": "一个条件先验模型会根据自回归上下文 c 3 ( k ) c_{3}^{(k)} 和前缀嵌入 e k e_{k}，预测出一个正的量化步长映射 q q ，以及初始均值 μ \\mu 和拉普拉斯尺度 σ \\sigma 。"
+    },
+    {
+     "en": "The quantization-step map q q remains fixed across the four passes.",
+     "zh": "量化步长映射 q q 在四次处理过程中保持不变。"
+    },
+    {
+     "en": "For later passes, the mean and scale parameters μ , σ \\mu,\\sigma are further updated using the latent values reconstructed in previous passes, while positions that have not yet been decoded are masked to zero.",
+     "zh": "在后续的处理中，均值和尺度参数 μ , σ \\mu,\\sigma 会进一步利用前几次处理中重建的潜在值进行更新，而尚未解码的位置则会被掩码为零。"
+    }
+   ]
+  },
+  {
+   "en": "These predicted parameters determine the quantization and reconstruction of each latent element. Let ℐ j \\mathcal{I}_{j} denote the index set of elements in y y assigned to coding pass j j . For i ∈ ℐ j i\\in\\mathcal{I}_{j} , the integer symbol y ¨ i \\ddot{y}_{i} and corresponding reconstructed latent value y ^ i \\hat{y}_{i} are given by",
+   "zh": "这些预测参数决定了每个潜在元素的量化与重建。 令 ℐ j \\mathcal{I}_{j} 表示分配给编码通道 j j 的 y y 中元素的索引集。 对于 i ∈ ℐ j i\\in\\mathcal{I}_{j}，整数符号 y ¨ i \\ddot{y}_{i} 及其对应的重建潜在值 y ^ i \\hat{y}_{i} 由下式给出：",
+   "sents": [
+    {
+     "en": "These predicted parameters determine the quantization and reconstruction of each latent element.",
+     "zh": "这些预测参数决定了每个潜在元素的量化与重建。"
+    },
+    {
+     "en": "Let ℐ j \\mathcal{I}_{j} denote the index set of elements in y y assigned to coding pass j j .",
+     "zh": "令 ℐ j \\mathcal{I}_{j} 表示分配给编码通道 j j 的 y y 中元素的索引集。"
+    },
+    {
+     "en": "For i ∈ ℐ j i\\in\\mathcal{I}_{j} , the integer symbol y ¨ i \\ddot{y}_{i} and corresponding reconstructed latent value y ^ i \\hat{y}_{i} are given by",
+     "zh": "对于 i ∈ ℐ j i\\in\\mathcal{I}_{j}，整数符号 y ¨ i \\ddot{y}_{i} 及其对应的重建潜在值 y ^ i \\hat{y}_{i} 由下式给出："
+    }
+   ]
+  },
+  {
+   "en": "where Q ⁡ ( v ) = round ⁡ ( v ) Q(v)=\\operatorname{round}(v) denotes the quantizer, g k , i g_{k,i} denotes the i i -th element of the prefix-dependent gain g k g_{k} , and μ j , i \\mu_{j,i} denotes the conditional mean predicted for pass j j . The resulting integer-valued tensor y ¨ \\ddot{y} is entropy-coded for transmission. Causal context updates use the reconstructed normalized values y ¨ i + μ j , i \\ddot{y}_{i}+\\mu_{j,i} , whereas the rescaled latent y ^ \\hat{y} is passed to the synthesis transform.",
+   "zh": "其中 Q(v)=\\operatorname{round}(v) 表示量化器，g_{k,i} 表示前缀相关增益 g_k 的第 i 个元素，而 μ_{j,i} 表示第 j 次传递预测的条件均值。 所得到的整数值张量 \\ddot{y} 会进行熵编码以便传输。 因果上下文更新使用重构后的归一化值 \\ddot{y}_{i}+\\mu_{j,i}，而重新缩放的潜在变量 \\hat{y} 则被传入合成变换。",
+   "sents": [
+    {
+     "en": "where Q ⁡ ( v ) = round ⁡ ( v ) Q(v)=\\operatorname{round}(v) denotes the quantizer, g k , i g_{k,i} denotes the i i -th element of the prefix-dependent gain g k g_{k} , and μ j , i \\mu_{j,i} denotes the conditional mean predicted for pass j j .",
+     "zh": "其中 Q(v)=\\operatorname{round}(v) 表示量化器，g_{k,i} 表示前缀相关增益 g_k 的第 i 个元素，而 μ_{j,i} 表示第 j 次传递预测的条件均值。"
+    },
+    {
+     "en": "The resulting integer-valued tensor y ¨ \\ddot{y} is entropy-coded for transmission.",
+     "zh": "所得到的整数值张量 \\ddot{y} 会进行熵编码以便传输。"
+    },
+    {
+     "en": "Causal context updates use the reconstructed normalized values y ¨ i + μ j , i \\ddot{y}_{i}+\\mu_{j,i} , whereas the rescaled latent y ^ \\hat{y} is passed to the synthesis transform.",
+     "zh": "因果上下文更新使用重构后的归一化值 \\ddot{y}_{i}+\\mu_{j,i}，而重新缩放的潜在变量 \\hat{y} 则被传入合成变换。"
+    }
+   ]
+  },
+  {
+   "en": "For entropy modeling, each symbol is modeled with a discretized zero-mean Laplace distribution centered by the predicted conditional mean μ \\mu . For element i i coded in pass j j , the probability mass assigned to integer symbol n n is",
+   "zh": "在熵建模中，每个符号都使用以预测条件均值 μ 为中心的离散化零均值拉普拉斯分布进行建模。 对于在第 j 次传递中编码的元素 i，分配给整数符号 n 的概率质量是",
+   "sents": [
+    {
+     "en": "For entropy modeling, each symbol is modeled with a discretized zero-mean Laplace distribution centered by the predicted conditional mean μ \\mu .",
+     "zh": "在熵建模中，每个符号都使用以预测条件均值 μ 为中心的离散化零均值拉普拉斯分布进行建模。"
+    },
+    {
+     "en": "For element i i coded in pass j j , the probability mass assigned to integer symbol n n is",
+     "zh": "对于在第 j 次传递中编码的元素 i，分配给整数符号 n 的概率质量是"
+    }
+   ]
+  },
+  {
+   "en": "where F σ F_{\\sigma} denotes the CDF of a zero-mean Laplace distribution with predicted scale σ j , i \\sigma_{j,i} .",
+   "zh": "其中 F σ F_{\\sigma} 表示均值为零、预测尺度为 σ j 的拉普拉斯分布的累积分布函数，i \\sigma_{j,i}。",
+   "sents": null
+  },
+  {
+   "en": "The conditional probability of the complete symbol tensor y ¨ \\ddot{y} is then factorized according to the four-pass causal coding order:",
+   "zh": "完整符号张量 y ¨ \\ddot{y} 的条件概率随后根据四步因果编码顺序进行分解：",
+   "sents": null
+  },
+  {
+   "en": "where the parameters of P j , i P_{j,i} for each pass are conditioned on c 3 ( k ) c_{3}^{(k)} , e k e_{k} , and the symbols reconstructed in previous passes. Accordingly, the generation-residual bitrate during training is estimated as",
+   "zh": "其中，每次迭代中 P j , i P_{j,i} 的参数都以 c 3 ( k ) c_{3}^{(k)} 、e k e_{k} 以及先前迭代中重建的符号为条件。 因此，训练期间的生成残差比特率估计如下：",
+   "sents": [
+    {
+     "en": "where the parameters of P j , i P_{j,i} for each pass are conditioned on c 3 ( k ) c_{3}^{(k)} , e k e_{k} , and the symbols reconstructed in previous passes.",
+     "zh": "其中，每次迭代中 P j , i P_{j,i} 的参数都以 c 3 ( k ) c_{3}^{(k)} 、e k e_{k} 以及先前迭代中重建的符号为条件。"
+    },
+    {
+     "en": "Accordingly, the generation-residual bitrate during training is estimated as",
+     "zh": "因此，训练期间的生成残差比特率估计如下："
+    }
+   ]
+  },
+  {
+   "en": "At the decoder, the same pass order and causal context updates are used to recover y ^ \\hat{y} from the decoded symbols y ¨ \\ddot{y} . The synthesis transform then reconstructs the generation residual as",
+   "zh": "在解码器中，使用相同的遍历顺序和因果上下文更新，从解码后的符号 y ¨ \\ddot{y} 中恢复 y ^ \\hat{y}。 随后，合成变换将生成残差重构为",
+   "sents": [
+    {
+     "en": "At the decoder, the same pass order and causal context updates are used to recover y ^ \\hat{y} from the decoded symbols y ¨ \\ddot{y} .",
+     "zh": "在解码器中，使用相同的遍历顺序和因果上下文更新，从解码后的符号 y ¨ \\ddot{y} 中恢复 y ^ \\hat{y}。"
+    },
+    {
+     "en": "The synthesis transform then reconstructs the generation residual as",
+     "zh": "随后，合成变换将生成残差重构为"
+    }
+   ]
+  },
+  {
+   "en": "Beyond latent-space residual reconstruction, we also optimize the perceptual quality of the reconstructed image. Specifically, we combine r ^ g ( k ) \\hat{r}_{g}^{(k)} with the autoregressively reconstructed latent h ^ q ( k ) \\hat{h}_{q}^{(k)} and decode",
+   "zh": "除了对潜在空间的残差进行重建外，我们还优化了重建图像的感知质量。 具体来说，我们将 r ^ g ( k ) \\hat{r}_{g}^{(k)} 与自回归重建的潜在变量 h ^ q ( k ) \\hat{h}_{q}^{(k)} 相结合并进行解码",
+   "sents": [
+    {
+     "en": "Beyond latent-space residual reconstruction, we also optimize the perceptual quality of the reconstructed image.",
+     "zh": "除了对潜在空间的残差进行重建外，我们还优化了重建图像的感知质量。"
+    },
+    {
+     "en": "Specifically, we combine r ^ g ( k ) \\hat{r}_{g}^{(k)} with the autoregressively reconstructed latent h ^ q ( k ) \\hat{h}_{q}^{(k)} and decode",
+     "zh": "具体来说，我们将 r ^ g ( k ) \\hat{r}_{g}^{(k)} 与自回归重建的潜在变量 h ^ q ( k ) \\hat{h}_{q}^{(k)} 相结合并进行解码"
+    }
+   ]
+  },
+  {
+   "en": "which is used for image-space perceptual supervision. Here, 𝒟 0 \\mathcal{D}_{0} denotes the VAE decoder obtained by mixed-latent fine-tuning and kept frozen during residual-branch training. Based on both latent-space and image-space supervision, we train the codec in three stages: latent-space rate-distortion training, image-space perceptual refinement, and joint fine-tuning. Training details for the Generation Residual Codec are provided in Appendix C .",
+   "zh": "用于图像空间的感知监督。 此处，𝒟 0 \\mathcal{D}_{0} 表示通过混合潜在微调获得的 VAE 解码器，并在残差分支训练期间保持冻结。 基于潜在空间和图像空间的双重监督，我们将编码器-解码器分三个阶段进行训练：潜在空间的率失真训练、图像空间的感知优化以及联合微调。 生成残差编码器的训练细节见附录 C。",
+   "sents": [
+    {
+     "en": "which is used for image-space perceptual supervision.",
+     "zh": "用于图像空间的感知监督。"
+    },
+    {
+     "en": "Here, 𝒟 0 \\mathcal{D}_{0} denotes the VAE decoder obtained by mixed-latent fine-tuning and kept frozen during residual-branch training.",
+     "zh": "此处，𝒟 0 \\mathcal{D}_{0} 表示通过混合潜在微调获得的 VAE 解码器，并在残差分支训练期间保持冻结。"
+    },
+    {
+     "en": "Based on both latent-space and image-space supervision, we train the codec in three stages: latent-space rate-distortion training, image-space perceptual refinement, and joint fine-tuning.",
+     "zh": "基于潜在空间和图像空间的双重监督，我们将编码器-解码器分三个阶段进行训练：潜在空间的率失真训练、图像空间的感知优化以及联合微调。"
+    },
+    {
+     "en": "Training details for the Generation Residual Codec are provided in Appendix C .",
+     "zh": "生成残差编码器的训练细节见附录 C。"
+    }
+   ]
+  },
+  {
+   "en": "We train ResARC in stages: first fine-tuning the backbone, then optimizing the two residual branches separately, and finally adapting the VAE decoder to the compensated latent representation. The VAE encoder remains frozen throughout the entire training pipeline. Table 7 summarizes the optimization settings for all stages, which are detailed in the following subsections.",
+   "zh": "我们分阶段训练 ResARC：首先微调主干网络，然后分别优化两个残差分支，最后将 VAE 解码器适配到补偿后的潜在表示。 在整个训练流程中，VAE 编码器始终保持冻结状态。 表 7 总结了所有阶段的优化设置，具体细节将在以下子章节中详细说明。",
+   "sents": [
+    {
+     "en": "We train ResARC in stages: first fine-tuning the backbone, then optimizing the two residual branches separately, and finally adapting the VAE decoder to the compensated latent representation.",
+     "zh": "我们分阶段训练 ResARC：首先微调主干网络，然后分别优化两个残差分支，最后将 VAE 解码器适配到补偿后的潜在表示。"
+    },
+    {
+     "en": "The VAE encoder remains frozen throughout the entire training pipeline.",
+     "zh": "在整个训练流程中，VAE 编码器始终保持冻结状态。"
+    },
+    {
+     "en": "Table 7 summarizes the optimization settings for all stages, which are detailed in the following subsections.",
+     "zh": "表 7 总结了所有阶段的优化设置，具体细节将在以下子章节中详细说明。"
+    }
+   ]
+  },
+  {
+   "en": "We filter COYO-700M ( Byeon et al., 2022 ) to retain images with a shorter side greater than 1,024 1,024 pixels, a LAION aesthetic score of at least 5.0 5.0 , and a watermark score no greater than 0.1 0.1 . We further remove samples rejected by caption or domain filters, as well as images whose available NSFW score from either OpenNSFW2 or GantMan exceeds 0.1 0.1 . Using PP-OCRv5 mobile text detection ( Cui et al., 2025 ) with a confidence threshold of 0.5 0.5 , we discard images if the total detected text area exceeds 5 % 5\\% of the image, any single text region exceeds 3.5 % 3.5\\% , or at least 20 20 text regions are detected.",
+   "zh": "我们对 COYO-700M（Byeon 等人，2022）进行筛选，保留短边大于 1,024 像素、LAION 美学评分至少为 5.0，且水印评分不大于 0.1 的图像。 我们进一步移除因标题或领域过滤器而被拒绝的样本，以及 OpenNSFW2 或 GantMan 提供的 NSFW 评分超过 0.1 的图像。 使用 PP-OCRv5 移动文本检测（Cui 等人，2025），置信度阈值为 0.5；若检测到的总文本面积超过图像的 5%，任何单个文本区域超过 3.5%，或检测到至少 20 个文本区域，则丢弃该图像。",
+   "sents": [
+    {
+     "en": "We filter COYO-700M ( Byeon et al., 2022 ) to retain images with a shorter side greater than 1,024 1,024 pixels, a LAION aesthetic score of at least 5.0 5.0 , and a watermark score no greater than 0.1 0.1 .",
+     "zh": "我们对 COYO-700M（Byeon 等人，2022）进行筛选，保留短边大于 1,024 像素、LAION 美学评分至少为 5.0，且水印评分不大于 0.1 的图像。"
+    },
+    {
+     "en": "We further remove samples rejected by caption or domain filters, as well as images whose available NSFW score from either OpenNSFW2 or GantMan exceeds 0.1 0.1 .",
+     "zh": "我们进一步移除因标题或领域过滤器而被拒绝的样本，以及 OpenNSFW2 或 GantMan 提供的 NSFW 评分超过 0.1 的图像。"
+    },
+    {
+     "en": "Using PP-OCRv5 mobile text detection ( Cui et al., 2025 ) with a confidence threshold of 0.5 0.5 , we discard images if the total detected text area exceeds 5 % 5\\% of the image, any single text region exceeds 3.5 % 3.5\\% , or at least 20 20 text regions are detected.",
+     "zh": "使用 PP-OCRv5 移动文本检测（Cui 等人，2025），置信度阈值为 0.5；若检测到的总文本面积超过图像的 5%，任何单个文本区域超过 3.5%，或检测到至少 20 个文本区域，则丢弃该图像。"
+    }
+   ]
+  },
+  {
+   "en": "For residual-branch training and residual-aware VAE decoder adaptation, we use prefix depths k ∈ { 5 , 6 , 7 , 8 , 9 , 10 } k\\in\\{5,6,7,8,9,10\\} . We follow a balanced deterministic schedule over prefix depths across training steps.",
+   "zh": "在残差分支训练和残差感知 VAE 解码器自适应中，我们使用的前缀深度为 k ∈ { 5 , 6 , 7 , 8 , 9 , 10 } k\\in\\{5,6,7,8,9,10\\}。 我们在训练步骤中遵循一个关于前缀深度的平衡确定性调度方案。",
+   "sents": [
+    {
+     "en": "For residual-branch training and residual-aware VAE decoder adaptation, we use prefix depths k ∈ { 5 , 6 , 7 , 8 , 9 , 10 } k\\in\\{5,6,7,8,9,10\\} .",
+     "zh": "在残差分支训练和残差感知 VAE 解码器自适应中，我们使用的前缀深度为 k ∈ { 5 , 6 , 7 , 8 , 9 , 10 } k\\in\\{5,6,7,8,9,10\\}。"
+    },
+    {
+     "en": "We follow a balanced deterministic schedule over prefix depths across training steps.",
+     "zh": "我们在训练步骤中遵循一个关于前缀深度的平衡确定性调度方案。"
+    }
+   ]
+  },
+  {
+   "en": "The Infinity-2B transformer ( Han et al., 2025 ) is fine-tuned for 2,000 iterations on 1024 × 1024 1024\\times 1024 images using AdamW ( Loshchilov and Hutter, 2019 ) , with a global batch size of 64 64 and a learning rate of 6 × 10 − 5 6\\times 10^{-5} . We optimize the autoregressive model with the cross-entropy objective",
+   "zh": "Infinity-2B 变换器（Han 等人，2025）在 1024 × 1024 的图像上采用 AdamW（Loshchilov 和 Hutter，2019）进行 2000 次迭代微调，全局批量大小为 64，学习率为 6 × 10⁻⁵。 我们通过交叉熵目标函数优化自回归模型。",
+   "sents": [
+    {
+     "en": "The Infinity-2B transformer ( Han et al., 2025 ) is fine-tuned for 2,000 iterations on 1024 × 1024 1024\\times 1024 images using AdamW ( Loshchilov and Hutter, 2019 ) , with a global batch size of 64 64 and a learning rate of 6 × 10 − 5 6\\times 10^{-5} .",
+     "zh": "Infinity-2B 变换器（Han 等人，2025）在 1024 × 1024 的图像上采用 AdamW（Loshchilov 和 Hutter，2019）进行 2000 次迭代微调，全局批量大小为 64，学习率为 6 × 10⁻⁵。"
+    },
+    {
+     "en": "We optimize the autoregressive model with the cross-entropy objective",
+     "zh": "我们通过交叉熵目标函数优化自回归模型。"
+    }
+   ]
+  },
+  {
+   "en": "where Ω \\Omega indexes valid token dimensions and p i , d p_{i,d} denotes the predicted probability associated with b i , d b_{i,d} , the d d -th dimension of token i i , conditioned on the preceding scales and text. The fine-tuned autoregressive model is then frozen for all subsequent training stages.",
+   "zh": "其中 Ω \\Omega 表示有效的词元维度，而 p i , d p_{i,d} 表示与 b i , d b_{i,d}（即词元 i i 的第 d d 个维度）相关的预测概率，该概率是在给定先前尺度和文本的条件下得出的。 随后，微调后的自回归模型在所有后续训练阶段中均保持冻结状态。",
+   "sents": [
+    {
+     "en": "where Ω \\Omega indexes valid token dimensions and p i , d p_{i,d} denotes the predicted probability associated with b i , d b_{i,d} , the d d -th dimension of token i i , conditioned on the preceding scales and text.",
+     "zh": "其中 Ω \\Omega 表示有效的词元维度，而 p i , d p_{i,d} 表示与 b i , d b_{i,d}（即词元 i i 的第 d d 个维度）相关的预测概率，该概率是在给定先前尺度和文本的条件下得出的。"
+    },
+    {
+     "en": "The fine-tuned autoregressive model is then frozen for all subsequent training stages.",
+     "zh": "随后，微调后的自回归模型在所有后续训练阶段中均保持冻结状态。"
+    }
+   ]
+  },
+  {
+   "en": "We further fine-tune the VAE decoder on our compression training data. Recovering the quantization residual shifts the decoder input from the quantized latent h q h_{q} toward the continuous latent h h . To adapt the decoder to this shift, we expose it to both latent distributions during training. Specifically, for each image, we sample z = h z=h with probability 0.5 0.5 and z = h q z=h_{q} otherwise, and reconstruct x 0 = 𝒟 0 ​ ( z ) x_{0}=\\mathcal{D}_{0}(z) . This balanced sampling improves the decoder’s compatibility with the compensated latents used in ResARC without over-specializing to either latent distribution. We then optimize the VAE decoder under this mixed-latent setting for 35,000 35,000 steps at a resolution of 512 × 512 512\\times 512 using the following objective:",
+   "zh": "我们在压缩训练数据上进一步微调了 VAE 解码器。 恢复量化残差会将解码器的输入从量化后的潜在变量 h q h_{q} 向连续潜在变量 h h 偏移。 为了让解码器适应这种偏移，我们在训练时同时引入两种潜在变量分布。 具体来说，对于每张图像，我们以 0.5 0.5 的概率采样 z = h z=h，否则采样 z = h q z=h_{q}，然后重建 x 0 = 𝒟 0 ​ ( z ) x_{0}=\\mathcal{D}_{0}(z) 。 这种平衡采样提升了解码器与 ResARC 中使用的补偿潜在变量的兼容性，而不会过度适应任何一种潜在变量分布。 接着，我们在混合潜在变量的设置下，以 512 × 512 512\\times 512 的分辨率，通过以下目标函数对 VAE 解码器进行 35,000 35,000 步的优化：",
+   "sents": [
+    {
+     "en": "We further fine-tune the VAE decoder on our compression training data.",
+     "zh": "我们在压缩训练数据上进一步微调了 VAE 解码器。"
+    },
+    {
+     "en": "Recovering the quantization residual shifts the decoder input from the quantized latent h q h_{q} toward the continuous latent h h .",
+     "zh": "恢复量化残差会将解码器的输入从量化后的潜在变量 h q h_{q} 向连续潜在变量 h h 偏移。"
+    },
+    {
+     "en": "To adapt the decoder to this shift, we expose it to both latent distributions during training.",
+     "zh": "为了让解码器适应这种偏移，我们在训练时同时引入两种潜在变量分布。"
+    },
+    {
+     "en": "Specifically, for each image, we sample z = h z=h with probability 0.5 0.5 and z = h q z=h_{q} otherwise, and reconstruct x 0 = 𝒟 0 ​ ( z ) x_{0}=\\mathcal{D}_{0}(z) .",
+     "zh": "具体来说，对于每张图像，我们以 0.5 0.5 的概率采样 z = h z=h，否则采样 z = h q z=h_{q}，然后重建 x 0 = 𝒟 0 ​ ( z ) x_{0}=\\mathcal{D}_{0}(z) 。"
+    },
+    {
+     "en": "This balanced sampling improves the decoder’s compatibility with the compensated latents used in ResARC without over-specializing to either latent distribution.",
+     "zh": "这种平衡采样提升了解码器与 ResARC 中使用的补偿潜在变量的兼容性，而不会过度适应任何一种潜在变量分布。"
+    },
+    {
+     "en": "We then optimize the VAE decoder under this mixed-latent setting for 35,000 35,000 steps at a resolution of 512 × 512 512\\times 512 using the following objective:",
+     "zh": "接着，我们在混合潜在变量的设置下，以 512 × 512 512\\times 512 的分辨率，通过以下目标函数对 VAE 解码器进行 35,000 35,000 步的优化："
+    }
+   ]
+  },
+  {
+   "en": "where ℒ LPIPS \\mathcal{L}_{\\text{LPIPS}} denotes the LPIPS-VGG loss ( Zhang et al., 2018 ) , and ℒ adv G \\mathcal{L}_{\\mathrm{adv}}^{G} is the adversarial loss enabled after 10,000 10,000 steps. The discriminator ℱ \\mathcal{F} consists of a frozen DINO feature extractor ( Caron et al., 2021 ) and trainable discriminator heads. Following the adaptive weighting strategy used in perceptual autoencoder training ( Rombach et al., 2022 ) , we set the adversarial weight λ adv \\lambda_{\\mathrm{adv}} as",
+   "zh": "其中 ℒ LPIPS \\mathcal{L}_{\\text{LPIPS}} 表示 LPIPS-VGG 损失（Zhang 等人，2018），而 ℒ adv G \\mathcal{L}_{\\mathrm{adv}}^{G} 是在第 10,000 步后启用的对抗性损失。 判别器 ℱ \\mathcal{F} 由一个冻结的 DINO 特征提取器（Caron 等人，2021）和可训练的判别器头组成。 遵循感知自编码器训练中使用的自适应加权策略（Rombach 等人，2022），我们将对抗性权重 λ adv \\lambda_{\\mathrm{adv}} 设置为",
+   "sents": [
+    {
+     "en": "where ℒ LPIPS \\mathcal{L}_{\\text{LPIPS}} denotes the LPIPS-VGG loss ( Zhang et al., 2018 ) , and ℒ adv G \\mathcal{L}_{\\mathrm{adv}}^{G} is the adversarial loss enabled after 10,000 10,000 steps.",
+     "zh": "其中 ℒ LPIPS \\mathcal{L}_{\\text{LPIPS}} 表示 LPIPS-VGG 损失（Zhang 等人，2018），而 ℒ adv G \\mathcal{L}_{\\mathrm{adv}}^{G} 是在第 10,000 步后启用的对抗性损失。"
+    },
+    {
+     "en": "The discriminator ℱ \\mathcal{F} consists of a frozen DINO feature extractor ( Caron et al., 2021 ) and trainable discriminator heads.",
+     "zh": "判别器 ℱ \\mathcal{F} 由一个冻结的 DINO 特征提取器（Caron 等人，2021）和可训练的判别器头组成。"
+    },
+    {
+     "en": "Following the adaptive weighting strategy used in perceptual autoencoder training ( Rombach et al., 2022 ) , we set the adversarial weight λ adv \\lambda_{\\mathrm{adv}} as",
+     "zh": "遵循感知自编码器训练中使用的自适应加权策略（Rombach 等人，2022），我们将对抗性权重 λ adv \\lambda_{\\mathrm{adv}} 设置为"
+    }
+   ]
+  },
+  {
+   "en": "where W W denotes the weights of the final convolutional layer of the decoder and sg ⁡ ( ⋅ ) \\operatorname{sg}(\\cdot) denotes the stop-gradient operator. Starting from step 10,000 10,000 , the discriminator heads are jointly optimized using the hinge loss",
+   "zh": "其中 W W 表示解码器最终卷积层的权重，而 sg ⁡ ( ⋅ ) \\operatorname{sg}(\\cdot) 表示梯度停止算子。 从第 10,000 步开始，判别器头将使用铰链损失进行联合优化。",
+   "sents": [
+    {
+     "en": "where W W denotes the weights of the final convolutional layer of the decoder and sg ⁡ ( ⋅ ) \\operatorname{sg}(\\cdot) denotes the stop-gradient operator.",
+     "zh": "其中 W W 表示解码器最终卷积层的权重，而 sg ⁡ ( ⋅ ) \\operatorname{sg}(\\cdot) 表示梯度停止算子。"
+    },
+    {
+     "en": "Starting from step 10,000 10,000 , the discriminator heads are jointly optimized using the hinge loss",
+     "zh": "从第 10,000 步开始，判别器头将使用铰链损失进行联合优化。"
+    }
+   ]
+  },
+  {
+   "en": "The discriminator heads are optimized with AdamW using a learning rate of 5 × 10 − 5 5\\times 10^{-5} , β = ( 0.5 , 0.9 ) \\beta=(0.5,0.9) , and zero weight decay.",
+   "zh": "判别器头使用 AdamW 进行优化，学习率为 5 × 10 − 5 5\\times 10^{-5}，β = ( 0.5 , 0.9 ) \\beta=(0.5,0.9)，且权重衰减为零。",
+   "sents": null
+  },
+  {
+   "en": "We train the Quantization Residual Generator in two stages: flow-matching pretraining and image-space perceptual refinement. The conditional DiT consists of 8 8 blocks with width 640 640 , 8 8 attention heads, and a latent patch size of 2 × 2 2\\times 2 . It predicts 32 residual channels conditioned on a 2048-channel autoregressive decoding feature c quant c_{\\mathrm{quant}} from the final-scale hidden features of the penultimate layer of the autoregressive model, without condition dropout or additional text conditioning. A fixed normalization is applied to the quantization residual before training and inverted after sampling.",
+   "zh": "我们以两个阶段训练量化残差生成器：流匹配预训练和图像空间感知优化。 条件 DiT 包含 8 个宽度为 640×640 的块、8 个注意力头，以及 2×2 的潜在图块大小。 它基于自回归模型倒数第二层最终尺度隐藏特征中的 2048 通道自回归解码特征 c_quant（c_{\\mathrm{quant}}）预测 32 个残差通道，且不使用条件 dropout 或额外的文本条件。 在训练前对量化残差应用固定的归一化操作，并在采样后将其反转。",
+   "sents": [
+    {
+     "en": "We train the Quantization Residual Generator in two stages: flow-matching pretraining and image-space perceptual refinement.",
+     "zh": "我们以两个阶段训练量化残差生成器：流匹配预训练和图像空间感知优化。"
+    },
+    {
+     "en": "The conditional DiT consists of 8 8 blocks with width 640 640 , 8 8 attention heads, and a latent patch size of 2 × 2 2\\times 2 .",
+     "zh": "条件 DiT 包含 8 个宽度为 640×640 的块、8 个注意力头，以及 2×2 的潜在图块大小。"
+    },
+    {
+     "en": "It predicts 32 residual channels conditioned on a 2048-channel autoregressive decoding feature c quant c_{\\mathrm{quant}} from the final-scale hidden features of the penultimate layer of the autoregressive model, without condition dropout or additional text conditioning.",
+     "zh": "它基于自回归模型倒数第二层最终尺度隐藏特征中的 2048 通道自回归解码特征 c_quant（c_{\\mathrm{quant}}）预测 32 个残差通道，且不使用条件 dropout 或额外的文本条件。"
+    },
+    {
+     "en": "A fixed normalization is applied to the quantization residual before training and inverted after sampling.",
+     "zh": "在训练前对量化残差应用固定的归一化操作，并在采样后将其反转。"
+    }
+   ]
+  },
+  {
+   "en": "We first train the conditional DiT for 3,000 3,000 steps using the flow-matching objective defined in Section 4.2 . The timestep is clipped to [ 10 − 5 , 1 − 10 − 5 ] [10^{-5},1-10^{-5}] for numerical stability.",
+   "zh": "我们首先使用第 4.2 节中定义的流匹配目标，对条件 DiT 进行 3,000 步训练。 为确保数值稳定性，时间步长被限制在 [10^{-5}, 1-10^{-5}] 范围内。",
+   "sents": [
+    {
+     "en": "We first train the conditional DiT for 3,000 3,000 steps using the flow-matching objective defined in Section 4.2 .",
+     "zh": "我们首先使用第 4.2 节中定义的流匹配目标，对条件 DiT 进行 3,000 步训练。"
+    },
+    {
+     "en": "The timestep is clipped to [ 10 − 5 , 1 − 10 − 5 ] [10^{-5},1-10^{-5}] for numerical stability.",
+     "zh": "为确保数值稳定性，时间步长被限制在 [10^{-5}, 1-10^{-5}] 范围内。"
+    }
+   ]
+  },
+  {
+   "en": "Flow-matching pretraining directly supervises the latent residual but does not optimize for the perceptual quality of the final reconstruction. We therefore further train the generator for 2,000 2,000 steps with image-space perceptual supervision. Specifically, with x ^ q ( k ) = 𝒟 0 ​ ( h ^ q ( k ) + r ^ q ( k ) ) \\hat{x}_{q}^{(k)}=\\mathcal{D}_{0}(\\hat{h}_{q}^{(k)}+\\hat{r}_{q}^{(k)}) , we optimize the generator using the training objective",
+   "zh": "流匹配预训练直接监督潜在残差，但并未针对最终重建的感知质量进行优化。 因此，我们进一步使用图像空间的感知监督对生成器进行 2,000 步的训练。 具体来说，对于 x ^ q ( k ) = 𝒟 0 ​ ( h ^ q ( k ) + r ^ q ( k ) ) \\hat{x}_{q}^{(k)}=\\mathcal{D}_{0}(\\hat{h}_{q}^{(k)}+\\hat{r}_{q}^{(k)})，我们使用训练目标来优化生成器。",
+   "sents": [
+    {
+     "en": "Flow-matching pretraining directly supervises the latent residual but does not optimize for the perceptual quality of the final reconstruction.",
+     "zh": "流匹配预训练直接监督潜在残差，但并未针对最终重建的感知质量进行优化。"
+    },
+    {
+     "en": "We therefore further train the generator for 2,000 2,000 steps with image-space perceptual supervision.",
+     "zh": "因此，我们进一步使用图像空间的感知监督对生成器进行 2,000 步的训练。"
+    },
+    {
+     "en": "Specifically, with x ^ q ( k ) = 𝒟 0 ​ ( h ^ q ( k ) + r ^ q ( k ) ) \\hat{x}_{q}^{(k)}=\\mathcal{D}_{0}(\\hat{h}_{q}^{(k)}+\\hat{r}_{q}^{(k)}) , we optimize the generator using the training objective",
+     "zh": "具体来说，对于 x ^ q ( k ) = 𝒟 0 ​ ( h ^ q ( k ) + r ^ q ( k ) ) \\hat{x}_{q}^{(k)}=\\mathcal{D}_{0}(\\hat{h}_{q}^{(k)}+\\hat{r}_{q}^{(k)})，我们使用训练目标来优化生成器。"
+    }
+   ]
+  },
+  {
+   "en": "The perceptual weight λ LPIPS ​ ( s ) \\lambda_{\\mathrm{LPIPS}}(s) increases linearly from 0 0 to 1 1 during the first 300 300 optimization steps of this stage and is maintained at 1 1 thereafter. This gradual ramp-up introduces perceptual supervision smoothly while retaining the flow-matching objective.",
+   "zh": "感知权重 λ LPIPS ( s ) \\lambda_{\\mathrm{LPIPS}}(s) 在本阶段的初始 300 个优化步骤中从 0 线性增加到 1，之后则保持为 1。 这种渐进式提升能够平滑地引入感知监督，同时保留流匹配目标。",
+   "sents": [
+    {
+     "en": "The perceptual weight λ LPIPS ​ ( s ) \\lambda_{\\mathrm{LPIPS}}(s) increases linearly from 0 0 to 1 1 during the first 300 300 optimization steps of this stage and is maintained at 1 1 thereafter.",
+     "zh": "感知权重 λ LPIPS ( s ) \\lambda_{\\mathrm{LPIPS}}(s) 在本阶段的初始 300 个优化步骤中从 0 线性增加到 1，之后则保持为 1。"
+    },
+    {
+     "en": "This gradual ramp-up introduces perceptual supervision smoothly while retaining the flow-matching objective.",
+     "zh": "这种渐进式提升能够平滑地引入感知监督，同时保留流匹配目标。"
+    }
+   ]
+  },
+  {
+   "en": "We first train the complete codec for 5,000 5,000 steps using a latent-space rate-distortion objective. Specifically, the generation residual reconstruction is supervised with Smooth L1 loss,",
+   "zh": "我们首先使用潜在空间率-失真目标，对完整的编解码器进行 5,000 步的训练。 具体来说，生成残差重建由平滑 L1 损失函数进行监督。",
+   "sents": [
+    {
+     "en": "We first train the complete codec for 5,000 5,000 steps using a latent-space rate-distortion objective.",
+     "zh": "我们首先使用潜在空间率-失真目标，对完整的编解码器进行 5,000 步的训练。"
+    },
+    {
+     "en": "Specifically, the generation residual reconstruction is supervised with Smooth L1 loss,",
+     "zh": "具体来说，生成残差重建由平滑 L1 损失函数进行监督。"
+    }
+   ]
+  },
+  {
+   "en": "where the transition parameter of the Smooth L1 loss is set to β SL1 = 0.02 \\beta_{\\mathrm{SL1}}=0.02 . The entropy model provides the differentiable rate estimate R g ( k ) R_{g}^{(k)} defined in Equation 18 . Combining these, the overall training objective is",
+   "zh": "其中 Smooth L1 损失的转换参数设为 β SL1 = 0.02 \\beta_{\\mathrm{SL1}}=0.02。 熵模型提供了方程 18 中定义的可选导率估计值 R g ( k ) R_{g}^{(k)}。 结合这些内容，整体的训练目标为",
+   "sents": [
+    {
+     "en": "where the transition parameter of the Smooth L1 loss is set to β SL1 = 0.02 \\beta_{\\mathrm{SL1}}=0.02 .",
+     "zh": "其中 Smooth L1 损失的转换参数设为 β SL1 = 0.02 \\beta_{\\mathrm{SL1}}=0.02。"
+    },
+    {
+     "en": "The entropy model provides the differentiable rate estimate R g ( k ) R_{g}^{(k)} defined in Equation 18 .",
+     "zh": "熵模型提供了方程 18 中定义的可选导率估计值 R g ( k ) R_{g}^{(k)}。"
+    },
+    {
+     "en": "Combining these, the overall training objective is",
+     "zh": "结合这些内容，整体的训练目标为"
+    }
+   ]
+  },
+  {
+   "en": "Latent-space reconstruction supervision alone does not directly optimize the perceptual quality of the reconstructed image. We therefore freeze the analysis transform and entropy model and refine only the synthesis transform for 300 300 steps using",
+   "zh": "仅通过潜在空间重建的监督无法直接优化重建图像的感知质量。 因此，我们冻结分析变换和熵模型，仅使用 300 步对合成变换进行优化。",
+   "sents": [
+    {
+     "en": "Latent-space reconstruction supervision alone does not directly optimize the perceptual quality of the reconstructed image.",
+     "zh": "仅通过潜在空间重建的监督无法直接优化重建图像的感知质量。"
+    },
+    {
+     "en": "We therefore freeze the analysis transform and entropy model and refine only the synthesis transform for 300 300 steps using",
+     "zh": "因此，我们冻结分析变换和熵模型，仅使用 300 步对合成变换进行优化。"
+    }
+   ]
+  },
+  {
+   "en": "This stage encourages the decoded generation residual to better preserve structural and textural information that is important for perceptual reconstruction.",
+   "zh": "该阶段旨在促使解码后的生成残差更好地保留对感知重建至关重要的结构和纹理信息。",
+   "sents": null
+  },
+  {
+   "en": "Finally, we jointly fine-tune the complete Generation Residual Codec for 2,000 2,000 steps with rate, latent reconstruction, and perceptual supervision:",
+   "zh": "最后，我们以速率、潜在重建和感知监督为指标，对完整的生成残差编解码器进行联合微调，迭代 2,000 步：",
+   "sents": null
+  },
+  {
+   "en": "After training the two residual branches, we freeze them and adapt only the VAE decoder for 1,000 1,000 iterations using the compensated latent representation",
+   "zh": "在训练完两个残差分支后，我们将它们冻结，仅使用补偿后的潜在表示对 VAE 解码器进行 1,000 次迭代调整。",
+   "sents": null
+  },
+  {
+   "en": "Given the reconstruction x ^ ( k ) = 𝒟 ~ ​ ( h ^ c ( k ) ) \\hat{x}^{(k)}=\\tilde{\\mathcal{D}}(\\hat{h}_{c}^{(k)}) , we optimize",
+   "zh": "鉴于重构结果 x ^ ( k ) = 𝒟 ~ ​ ( h ^ c ( k ) ) \\hat{x}^{(k)}=\\tilde{\\mathcal{D}}(\\hat{h}_{c}^{(k)})，我们对以下部分进行优化：",
+   "sents": null
+  },
+  {
+   "en": "where ℒ Charb \\mathcal{L}_{\\mathrm{Charb}} denotes the Charbonnier reconstruction loss ( Charbonnier et al., 1994 ) with ϵ Charb = 10 − 3 \\epsilon_{\\mathrm{Charb}}=10^{-3} . This final stage adapts the decoder to the latent distribution produced after the quantization and generation residual compensation.",
+   "zh": "其中 ℒ Charb \\mathcal{L}_{\\mathrm{Charb}} 表示 Charbonnier 重建损失（Charbonnier 等人，1994），且 ϵ Charb = 10 − 3 \\epsilon_{\\mathrm{Charb}}=10^{-3}。 这一最终阶段将解码器适配于量化和生成残差补偿之后产生的潜在分布。",
+   "sents": [
+    {
+     "en": "where ℒ Charb \\mathcal{L}_{\\mathrm{Charb}} denotes the Charbonnier reconstruction loss ( Charbonnier et al., 1994 ) with ϵ Charb = 10 − 3 \\epsilon_{\\mathrm{Charb}}=10^{-3} .",
+     "zh": "其中 ℒ Charb \\mathcal{L}_{\\mathrm{Charb}} 表示 Charbonnier 重建损失（Charbonnier 等人，1994），且 ϵ Charb = 10 − 3 \\epsilon_{\\mathrm{Charb}}=10^{-3}。"
+    },
+    {
+     "en": "This final stage adapts the decoder to the latent distribution produced after the quantization and generation residual compensation.",
+     "zh": "这一最终阶段将解码器适配于量化和生成残差补偿之后产生的潜在分布。"
+    }
+   ]
+  },
+  {
+   "en": "All training stages use AdamW ( Loshchilov and Hutter, 2019 ) with linear warm-up followed by cosine learning-rate decay and gradient-norm clipping at 1 1 . Training the quantization residual generator uses β = ( 0.9 , 0.999 ) \\beta=(0.9,0.999) , zero weight decay, and a final learning-rate ratio of 0.2 0.2 , while training the generation residual codec uses the same β \\beta , a weight decay of 10 − 4 10^{-4} , and a final learning-rate ratio of 0.1 0.1 . Both VAE decoder fine-tuning and residual-aware decoder adaptation use β = ( 0.9 , 0.95 ) \\beta=(0.9,0.95) with zero weight decay. Stage-specific training iterations, global batch sizes, and learning rates are summarized in Table 7 .",
+   "zh": "所有训练阶段均使用 AdamW（Loshchilov 和 Hutter，2019），采用线性预热，随后进行余弦学习率衰减，并将梯度范数裁剪至 1 1。 量化残差生成器的训练使用 β = (0.9, 0.999) \\beta=(0.9,0.999)、零权重衰减以及 0.2 0.2 的最终学习率比率；而生成残差编解码器的训练则使用相同的 β \\beta、10^{-4} 的权重衰减以及 0.1 0.1 的最终学习率比率。 VAE 解码器微调和残差感知解码器自适应均使用 β = (0.9, 0.95) \\beta=(0.9,0.95)，并采用零权重衰减。 各阶段的训练迭代次数、全局批量大小和学习率汇总于表 7 中。",
+   "sents": [
+    {
+     "en": "All training stages use AdamW ( Loshchilov and Hutter, 2019 ) with linear warm-up followed by cosine learning-rate decay and gradient-norm clipping at 1 1 .",
+     "zh": "所有训练阶段均使用 AdamW（Loshchilov 和 Hutter，2019），采用线性预热，随后进行余弦学习率衰减，并将梯度范数裁剪至 1 1。"
+    },
+    {
+     "en": "Training the quantization residual generator uses β = ( 0.9 , 0.999 ) \\beta=(0.9,0.999) , zero weight decay, and a final learning-rate ratio of 0.2 0.2 , while training the generation residual codec uses the same β \\beta , a weight decay of 10 − 4 10^{-4} , and a final learning-rate ratio of 0.1 0.1 .",
+     "zh": "量化残差生成器的训练使用 β = (0.9, 0.999) \\beta=(0.9,0.999)、零权重衰减以及 0.2 0.2 的最终学习率比率；而生成残差编解码器的训练则使用相同的 β \\beta、10^{-4} 的权重衰减以及 0.1 0.1 的最终学习率比率。"
+    },
+    {
+     "en": "Both VAE decoder fine-tuning and residual-aware decoder adaptation use β = ( 0.9 , 0.95 ) \\beta=(0.9,0.95) with zero weight decay.",
+     "zh": "VAE 解码器微调和残差感知解码器自适应均使用 β = (0.9, 0.95) \\beta=(0.9,0.95)，并采用零权重衰减。"
+    },
+    {
+     "en": "Stage-specific training iterations, global batch sizes, and learning rates are summarized in Table 7 .",
+     "zh": "各阶段的训练迭代次数、全局批量大小和学习率汇总于表 7 中。"
+    }
+   ]
+  },
+  {
+   "en": "The two residual branches incur different rate costs: quantization residual generation requires no additional payload, whereas generation residual coding introduces an additional transmitted bitstream. We report the measured bitrate contributions of the text condition, token prefix, and generation-residual bitstream. Specifically, when compressing an H × W H\\times W image, the total bitrate is",
+   "zh": "两个残差分支会产生不同的速率成本：量化残差生成不需要额外的有效载荷，而生成残差编码则会引入一个额外的传输比特流。 我们报告了文本条件、标记前缀和生成残差比特流所贡献的实测比特率。 具体来说，在压缩一个 H × W 的图像时，总比特率为",
+   "sents": [
+    {
+     "en": "The two residual branches incur different rate costs: quantization residual generation requires no additional payload, whereas generation residual coding introduces an additional transmitted bitstream.",
+     "zh": "两个残差分支会产生不同的速率成本：量化残差生成不需要额外的有效载荷，而生成残差编码则会引入一个额外的传输比特流。"
+    },
+    {
+     "en": "We report the measured bitrate contributions of the text condition, token prefix, and generation-residual bitstream.",
+     "zh": "我们报告了文本条件、标记前缀和生成残差比特流所贡献的实测比特率。"
+    },
+    {
+     "en": "Specifically, when compressing an H × W H\\times W image, the total bitrate is",
+     "zh": "具体来说，在压缩一个 H × W 的图像时，总比特率为"
+    }
+   ]
+  },
+  {
+   "en": "where B text B_{\\mathrm{text}} , B prefix ( k ) B_{\\mathrm{prefix}}^{(k)} , and B g ( k ) B_{g}^{(k)} denote the measured bit lengths of the text condition, transmitted token prefix, and generation-residual bitstream, respectively. The generation residual latent is entropy-coded using byte-rANS ( Duda, 2013 ) , and B g ( k ) B_{g}^{(k)} is measured from the complete encoded residual stream. The text rate is computed from its UTF-8 byte length.",
+   "zh": "其中，B text B_{\\mathrm{text}}、B prefix ( k ) B_{\\mathrm{prefix}}^{(k)} 和 B g ( k ) B_{g}^{(k)} 分别表示文本条件、传输的标记前缀以及生成残差比特流的测量比特长度。 生成残差潜在变量使用字节-rANS（Duda, 2013）进行熵编码，而 B g ( k ) B_{g}^{(k)} 则通过完整的编码残差流测量得到。 文本速率是根据其 UTF-8 字节长度计算得出的。",
+   "sents": [
+    {
+     "en": "where B text B_{\\mathrm{text}} , B prefix ( k ) B_{\\mathrm{prefix}}^{(k)} , and B g ( k ) B_{g}^{(k)} denote the measured bit lengths of the text condition, transmitted token prefix, and generation-residual bitstream, respectively.",
+     "zh": "其中，B text B_{\\mathrm{text}}、B prefix ( k ) B_{\\mathrm{prefix}}^{(k)} 和 B g ( k ) B_{g}^{(k)} 分别表示文本条件、传输的标记前缀以及生成残差比特流的测量比特长度。"
+    },
+    {
+     "en": "The generation residual latent is entropy-coded using byte-rANS ( Duda, 2013 ) , and B g ( k ) B_{g}^{(k)} is measured from the complete encoded residual stream.",
+     "zh": "生成残差潜在变量使用字节-rANS（Duda, 2013）进行熵编码，而 B g ( k ) B_{g}^{(k)} 则通过完整的编码残差流测量得到。"
+    },
+    {
+     "en": "The text rate is computed from its UTF-8 byte length.",
+     "zh": "文本速率是根据其 UTF-8 字节长度计算得出的。"
+    }
+   ]
+  },
+  {
+   "en": "As reported in Table 8 , the generation-residual bitstream occupies only 1.98 × 10 − 4 1.98\\times 10^{-4} - 3.14 × 10 − 4 3.14\\times 10^{-4} bpp across the evaluated prefix depths. Its fraction of the total bitrate decreases from 6.64 % 6.64\\% at k = 5 k=5 to 0.36 % 0.36\\% at k = 10 k=10 , as the transmitted token prefix increasingly dominates the overall rate. Figure 11 further visualizes the average bitrate composition across the prefix depths on DIV2K. These results show that generation residual coding incurs only a small fraction of the overall transmitted rate.",
+   "zh": "如表 8 所示，在评估的前缀深度范围内，生成残差比特流仅占用 1.98 × 10⁻⁴ 至 3.14 × 10⁻⁴ bpp。 随着传输的令牌前缀在整体速率中的占比逐渐增大，其占总比特率的比例从 k = 5 时的 6.64% 下降至 k = 10 时的 0.36%。 图 11 进一步展示了 DIV2K 数据集上不同前缀深度下的平均比特率构成。 这些结果表明，生成残差编码仅占整体传输速率的一小部分。",
+   "sents": [
+    {
+     "en": "As reported in Table 8 , the generation-residual bitstream occupies only 1.98 × 10 − 4 1.98\\times 10^{-4} - 3.14 × 10 − 4 3.14\\times 10^{-4} bpp across the evaluated prefix depths.",
+     "zh": "如表 8 所示，在评估的前缀深度范围内，生成残差比特流仅占用 1.98 × 10⁻⁴ 至 3.14 × 10⁻⁴ bpp。"
+    },
+    {
+     "en": "Its fraction of the total bitrate decreases from 6.64 % 6.64\\% at k = 5 k=5 to 0.36 % 0.36\\% at k = 10 k=10 , as the transmitted token prefix increasingly dominates the overall rate.",
+     "zh": "随着传输的令牌前缀在整体速率中的占比逐渐增大，其占总比特率的比例从 k = 5 时的 6.64% 下降至 k = 10 时的 0.36%。"
+    },
+    {
+     "en": "Figure 11 further visualizes the average bitrate composition across the prefix depths on DIV2K.",
+     "zh": "图 11 进一步展示了 DIV2K 数据集上不同前缀深度下的平均比特率构成。"
+    },
+    {
+     "en": "These results show that generation residual coding incurs only a small fraction of the overall transmitted rate.",
+     "zh": "这些结果表明，生成残差编码仅占整体传输速率的一小部分。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate saved 8-bit RGB reconstructions at a fixed resolution of 1024 × 1024 1024\\times 1024 on the DIV2K validation set and CLIC2020 test set, containing 100 and 428 images, respectively. Reconstruction quality is evaluated from three complementary perspectives: distortion-oriented fidelity, perceptual similarity, and distributional fidelity.",
+   "zh": "我们在 DIV2K 验证集和 CLIC2020 测试集上，以固定的 1024 × 1024 分辨率对保存的 8-bit RGB 重建结果进行评估，这两个数据集分别包含 100 张和 428 张图像。 我们从三个相互补充的角度评估重建质量：以失真为导向的保真度、感知相似性以及分布保真度。",
+   "sents": [
+    {
+     "en": "We evaluate saved 8-bit RGB reconstructions at a fixed resolution of 1024 × 1024 1024\\times 1024 on the DIV2K validation set and CLIC2020 test set, containing 100 and 428 images, respectively.",
+     "zh": "我们在 DIV2K 验证集和 CLIC2020 测试集上，以固定的 1024 × 1024 分辨率对保存的 8-bit RGB 重建结果进行评估，这两个数据集分别包含 100 张和 428 张图像。"
+    },
+    {
+     "en": "Reconstruction quality is evaluated from three complementary perspectives: distortion-oriented fidelity, perceptual similarity, and distributional fidelity.",
+     "zh": "我们从三个相互补充的角度评估重建质量：以失真为导向的保真度、感知相似性以及分布保真度。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate transmitted prefix depths k ∈ { 5 , 6 , 7 , 8 , 9 , 10 } k\\in\\{5,6,7,8,9,10\\} within the 13-scale token hierarchy. Autoregressive suffix generation uses multinomial sampling with temperature 0.5 0.5 , top-2, top- p = 0.97 p=0.97 , and classifier-free guidance scale 3.0 3.0 applied to the logits. The Quantization Residual Generator uses N = 4 N=4 sampling steps in Algorithm 2 , with unit noise temperature and no classifier-free guidance.",
+   "zh": "我们在 13 层级的标记层次结构中评估了传输的前缀深度 k ∈ {5, 6, 7, 8, 9, 10}。 自回归后缀生成采用多项式采样，温度设为 0.5，使用 top-2、top-p = 0.97，并将无分类器引导比例 3.0 应用于 logits。 量化残差生成器在算法 2 中使用 N = 4 个采样步骤，噪声温度为单位值，且不使用无分类器引导。",
+   "sents": [
+    {
+     "en": "We evaluate transmitted prefix depths k ∈ { 5 , 6 , 7 , 8 , 9 , 10 } k\\in\\{5,6,7,8,9,10\\} within the 13-scale token hierarchy.",
+     "zh": "我们在 13 层级的标记层次结构中评估了传输的前缀深度 k ∈ {5, 6, 7, 8, 9, 10}。"
+    },
+    {
+     "en": "Autoregressive suffix generation uses multinomial sampling with temperature 0.5 0.5 , top-2, top- p = 0.97 p=0.97 , and classifier-free guidance scale 3.0 3.0 applied to the logits.",
+     "zh": "自回归后缀生成采用多项式采样，温度设为 0.5，使用 top-2、top-p = 0.97，并将无分类器引导比例 3.0 应用于 logits。"
+    },
+    {
+     "en": "The Quantization Residual Generator uses N = 4 N=4 sampling steps in Algorithm 2 , with unit noise temperature and no classifier-free guidance.",
+     "zh": "量化残差生成器在算法 2 中使用 N = 4 个采样步骤，噪声温度为单位值，且不使用无分类器引导。"
+    }
+   ]
+  },
+  {
+   "en": "We report PSNR and MS-SSIM ( Wang et al., 2003 ) to evaluate conventional reconstruction fidelity. Both metrics are computed on full-resolution RGB images in [ 0 , 1 ] [0,1] . PSNR is averaged over images in dB, while MS-SSIM uses the default five-scale setting of pytorch-msssim .",
+   "zh": "我们报告 PSNR 和 MS-SSIM（Wang 等人，2003）来评估传统重建的保真度。 这两种指标都是在 [0,1] 范围内的全分辨率 RGB 图像上计算的。 PSNR 以分贝（dB）为单位对图像取平均值，而 MS-SSIM 则使用 pytorch-msssim 的默认五尺度设置。",
+   "sents": [
+    {
+     "en": "We report PSNR and MS-SSIM ( Wang et al., 2003 ) to evaluate conventional reconstruction fidelity.",
+     "zh": "我们报告 PSNR 和 MS-SSIM（Wang 等人，2003）来评估传统重建的保真度。"
+    },
+    {
+     "en": "Both metrics are computed on full-resolution RGB images in [ 0 , 1 ] [0,1] .",
+     "zh": "这两种指标都是在 [0,1] 范围内的全分辨率 RGB 图像上计算的。"
+    },
+    {
+     "en": "PSNR is averaged over images in dB, while MS-SSIM uses the default five-scale setting of pytorch-msssim .",
+     "zh": "PSNR 以分贝（dB）为单位对图像取平均值，而 MS-SSIM 则使用 pytorch-msssim 的默认五尺度设置。"
+    }
+   ]
+  },
+  {
+   "en": "We report LPIPS ( Zhang et al., 2018 ) , DISTS ( Ding et al., 2022 ) , and CLIP image-to-image similarity ( Radford et al., 2021 ) to measure perceptual similarity between each reconstruction and its corresponding original image. LPIPS uses AlexNet v0.1 with inputs scaled to [ − 1 , 1 ] [-1,1] , while DISTS is evaluated on images scaled to [ 0 , 1 ] [0,1] ; both are computed at the original resolution without resizing. CLIP image-to-image similarity is computed as 100 100 times the cosine similarity between ℓ 2 \\ell_{2} -normalized ViT-B/32 image embeddings using standard CLIP preprocessing.",
+   "zh": "我们报告 LPIPS（Zhang 等人，2018）、DISTS（Ding 等人，2022）以及 CLIP 图像到图像相似度（Radford 等人，2021），以衡量每次重建与其对应原始图像之间的感知相似度。 LPIPS 使用 AlexNet v0.1，其输入被缩放至 [−1, 1]；而 DISTS 则在缩放至 [0, 1] 的图像上进行评估；两者均在原始分辨率下计算，不进行尺寸调整。 CLIP 图像到图像相似度计算为 100 乘以 ℓ₂-归一化的 ViT-B/32 图像嵌入之间的余弦相似度，并使用标准的 CLIP 预处理方法。",
+   "sents": [
+    {
+     "en": "We report LPIPS ( Zhang et al., 2018 ) , DISTS ( Ding et al., 2022 ) , and CLIP image-to-image similarity ( Radford et al., 2021 ) to measure perceptual similarity between each reconstruction and its corresponding original image.",
+     "zh": "我们报告 LPIPS（Zhang 等人，2018）、DISTS（Ding 等人，2022）以及 CLIP 图像到图像相似度（Radford 等人，2021），以衡量每次重建与其对应原始图像之间的感知相似度。"
+    },
+    {
+     "en": "LPIPS uses AlexNet v0.1 with inputs scaled to [ − 1 , 1 ] [-1,1] , while DISTS is evaluated on images scaled to [ 0 , 1 ] [0,1] ; both are computed at the original resolution without resizing.",
+     "zh": "LPIPS 使用 AlexNet v0.1，其输入被缩放至 [−1, 1]；而 DISTS 则在缩放至 [0, 1] 的图像上进行评估；两者均在原始分辨率下计算，不进行尺寸调整。"
+    },
+    {
+     "en": "CLIP image-to-image similarity is computed as 100 100 times the cosine similarity between ℓ 2 \\ell_{2} -normalized ViT-B/32 image embeddings using standard CLIP preprocessing.",
+     "zh": "CLIP 图像到图像相似度计算为 100 乘以 ℓ₂-归一化的 ViT-B/32 图像嵌入之间的余弦相似度，并使用标准的 CLIP 预处理方法。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate the fidelity between the distributions of reconstructed and source images using FID ( Heusel et al., 2017 ) , KID ( Bińkowski et al., 2018 ) , CMMD ( Jayasumana et al., 2024 ) , and FD-DINOv2 ( Oquab et al., 2023 ) . FID and KID are computed with torchmetrics using 2048-dimensional Inception features. To obtain sufficient samples for distribution estimation, each 1024 × 1024 1024\\times 1024 image is partitioned into two 256 × 256 256\\times 256 patch grids with offsets ( 0 , 0 ) (0,0) and ( 128,128 ) (128,128) and stride 256 256 , yielding 25 valid patches per image. This results in 2,500 patches for DIV2K and 10,700 patches for CLIC2020. FID is computed from feature means and covariances, while KID uses the polynomial kernel κ ⁡ ( u , v ) = ( u ⊤ ​ v / 2048 + 1 ) 3 \\kappa(u,v)=(u^{\\top}v/2048+1)^{3} and averages 100 estimates, each computed from 1,000 randomly sampled feature vectors with a fixed random seed. CMMD is computed from one ℓ 2 \\ell_{2} -normalized CLIP ViT-L/14@336 embedding per image using an RBF kernel with σ = 10 \\sigma=10 and the diagonal-inclusive MMD estimator scaled by 1000 1000 . FD-DINOv2 uses one 1024-dimensional DINOv2 ViT-L/14 CLS embedding ( Oquab et al., 2023 ) per image without ℓ 2 \\ell_{2} normalization, with inputs resized to 224 × 224 224\\times 224 and normalized using ImageNet statistics.",
+   "zh": "我们使用 FID（Heusel 等人，2017）、KID（Bińkowski 等人，2018）、CMMD（Jayasumana 等人，2024）和 FD-DINOv2（Oquab 等人，2023）来评估重建图像与源图像分布之间的保真度。 FID 和 KID 的计算基于 torchmetrics，并使用 2048 维的 Inception 特征。 为了获得足够的样本以进行分布估计，每张 1024 × 1024 的图像被划分为两个 256 × 256 的图像块网格，偏移量分别为 (0,0) 和 (128,128)，步长为 256，从而每张图像得到 25 个有效图像块。 由此，DIV2K 数据集得到 2,500 个图像块，CLIC2020 数据集得到 10,700 个图像块。 FID 基于特征均值和协方差计算，而 KID 则使用多项式核函数 κ(u,v)=(u^{\\top}v/2048+1)^{3}，并对 100 个估计值取平均；每个估计值均基于 1,000 个随机采样的特征向量计算，且固定随机种子。 CMMD 基于每张图像的一个 ℓ₂ 归一化的 CLIP ViT-L/14@336 嵌入向量进行计算，使用 σ = 10 的 RBF 核函数以及包含对角线的 MMD 估计器，并乘以缩放因子 1000。 FD-DINOv2 使用每张图像的一个 1024 维 DINOv2 ViT-L/14 CLS 嵌入向量（Oquab 等人，2023），且未经过 ℓ₂ 归一化；输入图像被调整至 224 × 224 的尺寸，并使用 ImageNet 的统计量进行归一化。",
+   "sents": [
+    {
+     "en": "We evaluate the fidelity between the distributions of reconstructed and source images using FID ( Heusel et al., 2017 ) , KID ( Bińkowski et al., 2018 ) , CMMD ( Jayasumana et al., 2024 ) , and FD-DINOv2 ( Oquab et al., 2023 ) .",
+     "zh": "我们使用 FID（Heusel 等人，2017）、KID（Bińkowski 等人，2018）、CMMD（Jayasumana 等人，2024）和 FD-DINOv2（Oquab 等人，2023）来评估重建图像与源图像分布之间的保真度。"
+    },
+    {
+     "en": "FID and KID are computed with torchmetrics using 2048-dimensional Inception features.",
+     "zh": "FID 和 KID 的计算基于 torchmetrics，并使用 2048 维的 Inception 特征。"
+    },
+    {
+     "en": "To obtain sufficient samples for distribution estimation, each 1024 × 1024 1024\\times 1024 image is partitioned into two 256 × 256 256\\times 256 patch grids with offsets ( 0 , 0 ) (0,0) and ( 128,128 ) (128,128) and stride 256 256 , yielding 25 valid patches per image.",
+     "zh": "为了获得足够的样本以进行分布估计，每张 1024 × 1024 的图像被划分为两个 256 × 256 的图像块网格，偏移量分别为 (0,0) 和 (128,128)，步长为 256，从而每张图像得到 25 个有效图像块。"
+    },
+    {
+     "en": "This results in 2,500 patches for DIV2K and 10,700 patches for CLIC2020.",
+     "zh": "由此，DIV2K 数据集得到 2,500 个图像块，CLIC2020 数据集得到 10,700 个图像块。"
+    },
+    {
+     "en": "FID is computed from feature means and covariances, while KID uses the polynomial kernel κ ⁡ ( u , v ) = ( u ⊤ ​ v / 2048 + 1 ) 3 \\kappa(u,v)=(u^{\\top}v/2048+1)^{3} and averages 100 estimates, each computed from 1,000 randomly sampled feature vectors with a fixed random seed.",
+     "zh": "FID 基于特征均值和协方差计算，而 KID 则使用多项式核函数 κ(u,v)=(u^{\\top}v/2048+1)^{3}，并对 100 个估计值取平均；每个估计值均基于 1,000 个随机采样的特征向量计算，且固定随机种子。"
+    },
+    {
+     "en": "CMMD is computed from one ℓ 2 \\ell_{2} -normalized CLIP ViT-L/14@336 embedding per image using an RBF kernel with σ = 10 \\sigma=10 and the diagonal-inclusive MMD estimator scaled by 1000 1000 .",
+     "zh": "CMMD 基于每张图像的一个 ℓ₂ 归一化的 CLIP ViT-L/14@336 嵌入向量进行计算，使用 σ = 10 的 RBF 核函数以及包含对角线的 MMD 估计器，并乘以缩放因子 1000。"
+    },
+    {
+     "en": "FD-DINOv2 uses one 1024-dimensional DINOv2 ViT-L/14 CLS embedding ( Oquab et al., 2023 ) per image without ℓ 2 \\ell_{2} normalization, with inputs resized to 224 × 224 224\\times 224 and normalized using ImageNet statistics.",
+     "zh": "FD-DINOv2 使用每张图像的一个 1024 维 DINOv2 ViT-L/14 CLS 嵌入向量（Oquab 等人，2023），且未经过 ℓ₂ 归一化；输入图像被调整至 224 × 224 的尺寸，并使用 ImageNet 的统计量进行归一化。"
+    }
+   ]
+  },
+  {
+   "en": "Table 9 reports the raw KID values of ResARC on DIV2K across different prefix depths. The reported 𝚜𝚝𝚍 \\mathtt{std} is computed across the 100 random subsets used in the main KID evaluation. For k = 8 , 9 , 10 k=8,9,10 , we additionally repeat the evaluation with ten random seeds and report the range of the resulting mean KID values. As k k increases, KID consistently decreases and becomes negative at k = 9 k=9 and k = 10 k=10 . Although the population KID is non-negative, its unbiased finite-sample estimator may take negative values due to sampling variance ( Bińkowski et al., 2018 ; Gretton et al., 2012 ) . For BD-rate computation, we retain the raw signed KID values. For visualization only, values below 2 − 20 2^{-20} are clipped to 2 − 20 2^{-20} in the logarithmic KID plot in Figure 4 .",
+   "zh": "表9报告了ResARC在DIV2K数据集上不同前缀深度下的原始KID值。 所报告的𝚜𝚝𝚍 \\mathtt{std}是基于主KID评估中使用的100个随机子集计算得出的。 对于k = 8 , 9 , 10 k=8,9,10，我们额外使用十个随机种子重复评估，并报告所得平均KID值的范围。 随着k k的增加，KID持续下降，并在k = 9 k=9和k = 10 k=10时变为负值。 尽管总体KID是非负的，但由于抽样方差，其无偏有限样本估计量可能取负值（Bińkowski等，2018；Gretton等，2012）。 在计算BD-rate时，我们保留原始的带符号KID值。 仅为可视化目的，图4中的对数KID图中，低于2 − 20 2^{-20}的值被截断为2 − 20 2^{-20}。",
+   "sents": [
+    {
+     "en": "Table 9 reports the raw KID values of ResARC on DIV2K across different prefix depths.",
+     "zh": "表9报告了ResARC在DIV2K数据集上不同前缀深度下的原始KID值。"
+    },
+    {
+     "en": "The reported 𝚜𝚝𝚍 \\mathtt{std} is computed across the 100 random subsets used in the main KID evaluation.",
+     "zh": "所报告的𝚜𝚝𝚍 \\mathtt{std}是基于主KID评估中使用的100个随机子集计算得出的。"
+    },
+    {
+     "en": "For k = 8 , 9 , 10 k=8,9,10 , we additionally repeat the evaluation with ten random seeds and report the range of the resulting mean KID values.",
+     "zh": "对于k = 8 , 9 , 10 k=8,9,10，我们额外使用十个随机种子重复评估，并报告所得平均KID值的范围。"
+    },
+    {
+     "en": "As k k increases, KID consistently decreases and becomes negative at k = 9 k=9 and k = 10 k=10 .",
+     "zh": "随着k k的增加，KID持续下降，并在k = 9 k=9和k = 10 k=10时变为负值。"
+    },
+    {
+     "en": "Although the population KID is non-negative, its unbiased finite-sample estimator may take negative values due to sampling variance ( Bińkowski et al., 2018 ; Gretton et al., 2012 ) .",
+     "zh": "尽管总体KID是非负的，但由于抽样方差，其无偏有限样本估计量可能取负值（Bińkowski等，2018；Gretton等，2012）。"
+    },
+    {
+     "en": "For BD-rate computation, we retain the raw signed KID values.",
+     "zh": "在计算BD-rate时，我们保留原始的带符号KID值。"
+    },
+    {
+     "en": "For visualization only, values below 2 − 20 2^{-20} are clipped to 2 − 20 2^{-20} in the logarithmic KID plot in Figure 4 .",
+     "zh": "仅为可视化目的，图4中的对数KID图中，低于2 − 20 2^{-20}的值被截断为2 − 20 2^{-20}。"
+    }
+   ]
+  },
+  {
+   "en": "We additionally report PSNR, MS-SSIM ( Wang et al., 2003 ) , and CLIP image-to-image similarity ( Radford et al., 2021 ) on the DIV2K validation and CLIC2020 test sets. As shown in Figure 12 , ResARC achieves competitive CLIP similarity at low bitrates, while maintaining comparable PSNR and MS-SSIM performance. These results complement the main perceptual evaluation in Figure 4 by characterizing pixel-level and structural reconstruction fidelity.",
+   "zh": "我们还报告了 DIV2K 验证集和 CLIC2020 测试集上的 PSNR、MS-SSIM（Wang 等人，2003）以及 CLIP 图像到图像相似度（Radford 等人，2021）。 如图 12 所示，ResARC 在低码率下实现了具有竞争力的 CLIP 相似度，同时保持了相当的 PSNR 和 MS-SSIM 性能。 这些结果通过刻画像素级和结构层面的重建保真度，补充了图 4 中的主要感知性评估。",
+   "sents": [
+    {
+     "en": "We additionally report PSNR, MS-SSIM ( Wang et al., 2003 ) , and CLIP image-to-image similarity ( Radford et al., 2021 ) on the DIV2K validation and CLIC2020 test sets.",
+     "zh": "我们还报告了 DIV2K 验证集和 CLIC2020 测试集上的 PSNR、MS-SSIM（Wang 等人，2003）以及 CLIP 图像到图像相似度（Radford 等人，2021）。"
+    },
+    {
+     "en": "As shown in Figure 12 , ResARC achieves competitive CLIP similarity at low bitrates, while maintaining comparable PSNR and MS-SSIM performance.",
+     "zh": "如图 12 所示，ResARC 在低码率下实现了具有竞争力的 CLIP 相似度，同时保持了相当的 PSNR 和 MS-SSIM 性能。"
+    },
+    {
+     "en": "These results complement the main perceptual evaluation in Figure 4 by characterizing pixel-level and structural reconstruction fidelity.",
+     "zh": "这些结果通过刻画像素级和结构层面的重建保真度，补充了图 4 中的主要感知性评估。"
+    }
+   ]
+  },
+  {
+   "en": "Table 10 summarizes the signed BD-rate results across the six perceptual quality metrics. Using ARPC ( Zhang et al., 2026b ) as the reference, ResARC achieves the lowest reported BD-rates under DISTS and all four distributional fidelity metrics on both datasets, while remaining competitive under LPIPS. Specifically, compared with the autoregressive codec ARPC, ResARC achieves BD-rate reductions of 42.94 % 42.94\\% and 50.98 % 50.98\\% on DIV2K under DISTS and FID, respectively, and 46.51 % 46.51\\% and 51.22 % 51.22\\% on CLIC2020. ResARC also exhibits strong performance under KID, CMMD, and FD-DINOv2 while remaining competitive under LPIPS. Compared with diffusion-based codecs such as StableCodec, ResARC achieves lower DISTS and better overall distributional fidelity at comparable bitrates. These results further validate the effectiveness of explicitly compensating for both residuals in autoregressive generative codecs.",
+   "zh": "表10总结了在六种感知质量指标上的有符号BD-rate结果。 以ARPC（Zhang等，2026b）为参考，ResARC在两个数据集上均实现了DISTS和所有四种分布保真度指标下最低的已报告BD-rates，同时在LPIPS指标下仍保持竞争力。 具体而言，与自回归编解码器ARPC相比，ResARC在DIV2K数据集上，基于DISTS和FID分别实现了42.94%和50.98%的BD-rate降低；在CLIC2020数据集上则分别实现了46.51%和51.22%的降低。 ResARC在KID、CMMD和FD-DINOv2指标下也表现出强劲性能，同时在LPIPS指标下仍保持竞争力。 与StableCodec等基于扩散的编解码器相比，ResARC在可比码率下实现了更低的DISTS和更好的整体分布保真度。 这些结果进一步验证了明确补偿自回归生成式编解码器中残差的有效性。",
+   "sents": [
+    {
+     "en": "Table 10 summarizes the signed BD-rate results across the six perceptual quality metrics.",
+     "zh": "表10总结了在六种感知质量指标上的有符号BD-rate结果。"
+    },
+    {
+     "en": "Using ARPC ( Zhang et al., 2026b ) as the reference, ResARC achieves the lowest reported BD-rates under DISTS and all four distributional fidelity metrics on both datasets, while remaining competitive under LPIPS.",
+     "zh": "以ARPC（Zhang等，2026b）为参考，ResARC在两个数据集上均实现了DISTS和所有四种分布保真度指标下最低的已报告BD-rates，同时在LPIPS指标下仍保持竞争力。"
+    },
+    {
+     "en": "Specifically, compared with the autoregressive codec ARPC, ResARC achieves BD-rate reductions of 42.94 % 42.94\\% and 50.98 % 50.98\\% on DIV2K under DISTS and FID, respectively, and 46.51 % 46.51\\% and 51.22 % 51.22\\% on CLIC2020.",
+     "zh": "具体而言，与自回归编解码器ARPC相比，ResARC在DIV2K数据集上，基于DISTS和FID分别实现了42.94%和50.98%的BD-rate降低；在CLIC2020数据集上则分别实现了46.51%和51.22%的降低。"
+    },
+    {
+     "en": "ResARC also exhibits strong performance under KID, CMMD, and FD-DINOv2 while remaining competitive under LPIPS.",
+     "zh": "ResARC在KID、CMMD和FD-DINOv2指标下也表现出强劲性能，同时在LPIPS指标下仍保持竞争力。"
+    },
+    {
+     "en": "Compared with diffusion-based codecs such as StableCodec, ResARC achieves lower DISTS and better overall distributional fidelity at comparable bitrates.",
+     "zh": "与StableCodec等基于扩散的编解码器相比，ResARC在可比码率下实现了更低的DISTS和更好的整体分布保真度。"
+    },
+    {
+     "en": "These results further validate the effectiveness of explicitly compensating for both residuals in autoregressive generative codecs.",
+     "zh": "这些结果进一步验证了明确补偿自回归生成式编解码器中残差的有效性。"
+    }
+   ]
+  },
+  {
+   "en": "To inspect progressive rate control, Figure 13 compares the same five images as the transmitted prefix depth increases from k = 5 k=5 to k = 10 k=10 . As more ground-truth prefix tokens are transmitted, the bitrate increases and fewer suffix scales need to be autoregressively generated, leading to progressively improved recovery of fine-grained details and image structures, including butterfly markings, mushroom textures, railing patterns, and facial details.",
+   "zh": "为了检验渐进式速率控制，图 13 比较了相同的五张图像，随着传输的前缀深度从 k = 5 增加到 k = 10。 随着更多真实前缀标记被传输，比特率会上升，需要自回归生成的后缀标度也会减少，从而逐步提升对精细细节和图像结构的恢复效果，包括蝴蝶斑纹、蘑菇纹理、栏杆图案和面部细节。",
+   "sents": [
+    {
+     "en": "To inspect progressive rate control, Figure 13 compares the same five images as the transmitted prefix depth increases from k = 5 k=5 to k = 10 k=10 .",
+     "zh": "为了检验渐进式速率控制，图 13 比较了相同的五张图像，随着传输的前缀深度从 k = 5 增加到 k = 10。"
+    },
+    {
+     "en": "As more ground-truth prefix tokens are transmitted, the bitrate increases and fewer suffix scales need to be autoregressively generated, leading to progressively improved recovery of fine-grained details and image structures, including butterfly markings, mushroom textures, railing patterns, and facial details.",
+     "zh": "随着更多真实前缀标记被传输，比特率会上升，需要自回归生成的后缀标度也会减少，从而逐步提升对精细细节和图像结构的恢复效果，包括蝴蝶斑纹、蘑菇纹理、栏杆图案和面部细节。"
+    }
+   ]
+  },
+  {
+   "en": "We provide additional qualitative comparisons with diffusion-based and autoregressive generative codecs in Sections G.2 and G.2 . ResARC consistently preserves finer details and image structures, including facial details, headlight contours, glass boundaries, plate rims, and petal textures. It also achieves the lowest full-image DISTS in every displayed example. Together with Figure 5 , these results further demonstrate the effectiveness of ResARC at ultra-low bitrates. The improvements are consistent with our residual-aware design: quantization residual generation recovers fine-grained information lost during tokenization, while generation residual compensation reduces inaccuracies introduced by autoregressive suffix generation.",
+   "zh": "我们在 G.2 和 G.2 节中提供了与基于扩散模型和自回归生成式编解码器的额外定性比较。 ResARC 始终能够保留更精细的细节和图像结构，包括面部细节、前大灯轮廓、玻璃边界、车牌边缘以及花瓣纹理。 它在所有展示的例子中都实现了最低的整图 DISTS。 结合图 5，这些结果进一步证明了 ResARC 在极低码率下的有效性。 这些改进与我们的残差感知设计一致：量化残差生成恢复了在分词过程中丢失的精细信息，而生成残差补偿则减少了自回归后缀生成所引入的不准确性。",
+   "sents": [
+    {
+     "en": "We provide additional qualitative comparisons with diffusion-based and autoregressive generative codecs in Sections G.2 and G.2 .",
+     "zh": "我们在 G.2 和 G.2 节中提供了与基于扩散模型和自回归生成式编解码器的额外定性比较。"
+    },
+    {
+     "en": "ResARC consistently preserves finer details and image structures, including facial details, headlight contours, glass boundaries, plate rims, and petal textures.",
+     "zh": "ResARC 始终能够保留更精细的细节和图像结构，包括面部细节、前大灯轮廓、玻璃边界、车牌边缘以及花瓣纹理。"
+    },
+    {
+     "en": "It also achieves the lowest full-image DISTS in every displayed example.",
+     "zh": "它在所有展示的例子中都实现了最低的整图 DISTS。"
+    },
+    {
+     "en": "Together with Figure 5 , these results further demonstrate the effectiveness of ResARC at ultra-low bitrates.",
+     "zh": "结合图 5，这些结果进一步证明了 ResARC 在极低码率下的有效性。"
+    },
+    {
+     "en": "The improvements are consistent with our residual-aware design: quantization residual generation recovers fine-grained information lost during tokenization, while generation residual compensation reduces inaccuracies introduced by autoregressive suffix generation.",
+     "zh": "这些改进与我们的残差感知设计一致：量化残差生成恢复了在分词过程中丢失的精细信息，而生成残差补偿则减少了自回归后缀生成所引入的不准确性。"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,1258 @@
+{
+ "id": "4520783cd67fde2f",
+ "source": "arxiv-t2i",
+ "link": "https://arxiv.org/abs/2610.02203v1",
+ "title": "Embedding Prediction Helps Image Generation",
+ "title_zh": "嵌入预测助力图像生成",
+ "published": "2026-10-01T17:59:49Z",
+ "translated_at": "2026-10-18T06:29:47Z",
+ "paragraphs": [
+  {
+   "en": "In diffusion transformers, a class label or a text prompt is embedded once, and the same condition is reused at every denoising step. We ask whether predicted embeddings can serve as this condition instead. Next-Embedding Predictive Autoregression (NEPA) trains a Transformer to predict the next continuous embedding in a sequence. In generation, the clean image follows the noisy image, so its embeddings are the next embeddings after the condition and the noisy image. We train a NEPA model to predict them all at once with Multi-Embedding Prediction , and in Embedding Conditioned Generation , a DiT generator is conditioned on these predictions, recomputed at every denoising step, so the conditioning signal adapts to the current noisy state. Experiments on class-conditional ImageNet 256 × 256 256\\times 256 study the condition of the generator, the design of Multi-Embedding Prediction, and the scaling of both models. The NEPA model adds a second network to every sampling step; with it, and combined with REPA, our final model, NEPA-DiT-XL , reaches an FID of 1.32 using about a third of the training compute of REPA.",
+   "zh": "在扩散变换器中，类别标签或文本提示只需嵌入一次，然后在每次去噪步骤中重复使用相同的条件。 我们提出一个问题：预测的嵌入是否可以替代这一条件？ 下一嵌入预测自回归（NEPA）训练一个Transformer模型，以预测序列中的下一个连续嵌入。 在生成过程中，干净图像紧随噪声图像之后，因此其嵌入是条件与噪声图像之后的下一个嵌入。 我们通过多嵌入预测训练一个NEPA模型来一次性预测所有这些嵌入；在嵌入条件生成中，DiT生成器以这些预测为条件，并在每次去噪步骤中重新计算，从而使得条件信号能够适应当前的噪声状态。 在类别条件化的ImageNet 256 × 256数据集上的实验研究了生成器的条件、多嵌入预测的设计以及两个模型的扩展性。 NEPA模型为每个采样步骤增加了一个第二网络；借助这一设计，并结合REPA，我们的最终模型NEPA-DiT-XL在仅使用约三分之一REPA训练计算量的情况下，达到了1.32的FID值。",
+   "sents": [
+    {
+     "en": "In diffusion transformers, a class label or a text prompt is embedded once, and the same condition is reused at every denoising step.",
+     "zh": "在扩散变换器中，类别标签或文本提示只需嵌入一次，然后在每次去噪步骤中重复使用相同的条件。"
+    },
+    {
+     "en": "We ask whether predicted embeddings can serve as this condition instead.",
+     "zh": "我们提出一个问题：预测的嵌入是否可以替代这一条件？"
+    },
+    {
+     "en": "Next-Embedding Predictive Autoregression (NEPA) trains a Transformer to predict the next continuous embedding in a sequence.",
+     "zh": "下一嵌入预测自回归（NEPA）训练一个Transformer模型，以预测序列中的下一个连续嵌入。"
+    },
+    {
+     "en": "In generation, the clean image follows the noisy image, so its embeddings are the next embeddings after the condition and the noisy image.",
+     "zh": "在生成过程中，干净图像紧随噪声图像之后，因此其嵌入是条件与噪声图像之后的下一个嵌入。"
+    },
+    {
+     "en": "We train a NEPA model to predict them all at once with Multi-Embedding Prediction , and in Embedding Conditioned Generation , a DiT generator is conditioned on these predictions, recomputed at every denoising step, so the conditioning signal adapts to the current noisy state.",
+     "zh": "我们通过多嵌入预测训练一个NEPA模型来一次性预测所有这些嵌入；在嵌入条件生成中，DiT生成器以这些预测为条件，并在每次去噪步骤中重新计算，从而使得条件信号能够适应当前的噪声状态。"
+    },
+    {
+     "en": "Experiments on class-conditional ImageNet 256 × 256 256\\times 256 study the condition of the generator, the design of Multi-Embedding Prediction, and the scaling of both models.",
+     "zh": "在类别条件化的ImageNet 256 × 256数据集上的实验研究了生成器的条件、多嵌入预测的设计以及两个模型的扩展性。"
+    },
+    {
+     "en": "The NEPA model adds a second network to every sampling step; with it, and combined with REPA, our final model, NEPA-DiT-XL , reaches an FID of 1.32 using about a third of the training compute of REPA.",
+     "zh": "NEPA模型为每个采样步骤增加了一个第二网络；借助这一设计，并结合REPA，我们的最终模型NEPA-DiT-XL在仅使用约三分之一REPA训练计算量的情况下，达到了1.32的FID值。"
+    }
+   ]
+  },
+  {
+   "en": "Diffusion transformers have become the standard backbone for image generation ( Peebles & Xie, 2023 ; Ma et al., 2024 ; Esser et al., 2024 ) . Across these models, the condition enters through a fixed interface: a class label or a text prompt is embedded once, and the same condition is reused at every denoising step. It is left to the generator to work out what the condition implies for the image at hand as its state moves from noise to a clean sample. Recent work brings pretrained visual representations into this pipeline, as alignment targets for the generator’s features ( Yu et al., 2025 ) , as the latent space in which diffusion operates ( Zheng et al., 2026 ) , or as intermediate generation targets ( Li et al., 2024a ) .",
+   "zh": "扩散变换器已成为图像生成的标准主干模型（Peebles & Xie, 2023；Ma et al., 2024；Esser et al., 2024）。 在这些模型中，条件信息通过一个固定接口输入：一个类别标签或文本提示被嵌入一次，并在每个去噪步骤中重复使用相同的条件。 生成器需要自行判断该条件对当前图像意味着什么，随着其状态从噪声逐渐转变为干净的样本。 近期的研究将预训练的视觉表示引入了这一流程，用作生成器特征的对齐目标（Yu et al., 2025）、扩散模型运作的潜在空间（Zheng et al., 2026），或作为中间生成目标（Li et al., 2024a）。",
+   "sents": [
+    {
+     "en": "Diffusion transformers have become the standard backbone for image generation ( Peebles & Xie, 2023 ; Ma et al., 2024 ; Esser et al., 2024 ) .",
+     "zh": "扩散变换器已成为图像生成的标准主干模型（Peebles & Xie, 2023；Ma et al., 2024；Esser et al., 2024）。"
+    },
+    {
+     "en": "Across these models, the condition enters through a fixed interface: a class label or a text prompt is embedded once, and the same condition is reused at every denoising step.",
+     "zh": "在这些模型中，条件信息通过一个固定接口输入：一个类别标签或文本提示被嵌入一次，并在每个去噪步骤中重复使用相同的条件。"
+    },
+    {
+     "en": "It is left to the generator to work out what the condition implies for the image at hand as its state moves from noise to a clean sample.",
+     "zh": "生成器需要自行判断该条件对当前图像意味着什么，随着其状态从噪声逐渐转变为干净的样本。"
+    },
+    {
+     "en": "Recent work brings pretrained visual representations into this pipeline, as alignment targets for the generator’s features ( Yu et al., 2025 ) , as the latent space in which diffusion operates ( Zheng et al., 2026 ) , or as intermediate generation targets ( Li et al., 2024a ) .",
+     "zh": "近期的研究将预训练的视觉表示引入了这一流程，用作生成器特征的对齐目标（Yu et al., 2025）、扩散模型运作的潜在空间（Zheng et al., 2026），或作为中间生成目标（Li et al., 2024a）。"
+    }
+   ]
+  },
+  {
+   "en": "In all of these, the condition itself stays fixed while the image evolves. We ask: can the condition itself be predicted from the current noisy image, at every denoising step?",
+   "zh": "在所有这些情况中，条件本身保持不变，而图像则不断演变。 我们提出一个问题：在每次去噪步骤中，能否根据当前含噪的图像预测出条件本身？",
+   "sents": [
+    {
+     "en": "In all of these, the condition itself stays fixed while the image evolves.",
+     "zh": "在所有这些情况中，条件本身保持不变，而图像则不断演变。"
+    },
+    {
+     "en": "We ask: can the condition itself be predicted from the current noisy image, at every denoising step?",
+     "zh": "我们提出一个问题：在每次去噪步骤中，能否根据当前含噪的图像预测出条件本身？"
+    }
+   ]
+  },
+  {
+   "en": "NEPA trains a Transformer to predict the next embedding in a sequence, rather than to reconstruct pixels or discrete tokens ( Xu et al., 2025 ) . Unlike a feature extractor, such a model is predictive by construction: its outputs are estimates of embeddings it has not yet seen. In generation, the sequence runs from the condition through the noisy image to the clean image, so the clean image is what comes next, and its predicted embeddings are a natural candidate for what a generator should condition on.",
+   "zh": "NEPA 训练一个 Transformer 来预测序列中的下一个嵌入，而不是重建像素或离散标记（Xu 等人，2025）。 与特征提取器不同，这类模型在结构上就是预测性的：其输出是对尚未见过的嵌入的估计。 在生成过程中，序列从条件开始，经过噪声图像，最终得到清晰图像，因此清晰图像是接下来要生成的内容，而对其预测的嵌入自然成为生成器应基于的条件。",
+   "sents": [
+    {
+     "en": "NEPA trains a Transformer to predict the next embedding in a sequence, rather than to reconstruct pixels or discrete tokens ( Xu et al., 2025 ) .",
+     "zh": "NEPA 训练一个 Transformer 来预测序列中的下一个嵌入，而不是重建像素或离散标记（Xu 等人，2025）。"
+    },
+    {
+     "en": "Unlike a feature extractor, such a model is predictive by construction: its outputs are estimates of embeddings it has not yet seen.",
+     "zh": "与特征提取器不同，这类模型在结构上就是预测性的：其输出是对尚未见过的嵌入的估计。"
+    },
+    {
+     "en": "In generation, the sequence runs from the condition through the noisy image to the clean image, so the clean image is what comes next, and its predicted embeddings are a natural candidate for what a generator should condition on.",
+     "zh": "在生成过程中，序列从条件开始，经过噪声图像，最终得到清晰图像，因此清晰图像是接下来要生成的内容，而对其预测的嵌入自然成为生成器应基于的条件。"
+    }
+   ]
+  },
+  {
+   "en": "We answer this question with Embedding Conditioned Generation (ECG): a DiT generator is conditioned on the embeddings predicted by a frozen NEPA model instead of on the raw condition, and the NEPA model is queried at every denoising step, so the conditioning signal adapts to the current noisy state. The NEPA model is trained with Multi-Embedding Prediction (MEP), which extends NEPA to predict the next several embeddings at once, as multi-token prediction does for tokens in language modeling ( Gloeckle et al., 2024 ) ; it reads the condition and the noisy image and predicts the embeddings of the clean image (Figure 1 ).",
+   "zh": "我们通过嵌入条件生成（ECG）来回答这个问题：DiT 生成器以冻结的 NEPA 模型所预测的嵌入为条件，而不是以原始条件为条件；并且 NEPA 模型在每次去噪步骤中都会被查询，因此条件信号能够适应当前的噪声状态。 NEPA 模型采用多嵌入预测（MEP）进行训练，该方法将 NEPA 扩展为一次性预测接下来的多个嵌入，就像多标记预测在语言建模中对标记所做的那样（Gloeckle 等人，2024）；它读取条件和噪声图像，并预测干净图像的嵌入（图 1）。",
+   "sents": [
+    {
+     "en": "We answer this question with Embedding Conditioned Generation (ECG): a DiT generator is conditioned on the embeddings predicted by a frozen NEPA model instead of on the raw condition, and the NEPA model is queried at every denoising step, so the conditioning signal adapts to the current noisy state.",
+     "zh": "我们通过嵌入条件生成（ECG）来回答这个问题：DiT 生成器以冻结的 NEPA 模型所预测的嵌入为条件，而不是以原始条件为条件；并且 NEPA 模型在每次去噪步骤中都会被查询，因此条件信号能够适应当前的噪声状态。"
+    },
+    {
+     "en": "The NEPA model is trained with Multi-Embedding Prediction (MEP), which extends NEPA to predict the next several embeddings at once, as multi-token prediction does for tokens in language modeling ( Gloeckle et al., 2024 ) ; it reads the condition and the noisy image and predicts the embeddings of the clean image (Figure 1 ).",
+     "zh": "NEPA 模型采用多嵌入预测（MEP）进行训练，该方法将 NEPA 扩展为一次性预测接下来的多个嵌入，就像多标记预测在语言建模中对标记所做的那样（Gloeckle 等人，2024）；它读取条件和噪声图像，并预测干净图像的嵌入（图 1）。"
+    }
+   ]
+  },
+  {
+   "en": "On class-conditional ImageNet 256 × 256 256\\times 256 , we compare NEPA predictions with networks of the same size trained in other ways, and study the design of Multi-Embedding Prediction and the scaling of both models. Combined with REPA, our final model, NEPA-DiT-XL, reaches an FID of 1.32 .",
+   "zh": "在类条件 ImageNet 256 × 256 数据集上，我们将 NEPA 的预测结果与采用其他训练方式、但规模相同的网络进行比较，并研究多嵌入预测的设计以及两种模型的扩展性。 结合 REPA 后，我们的最终模型 NEPA-DiT-XL 实现了 1.32 的 FID 值。",
+   "sents": [
+    {
+     "en": "On class-conditional ImageNet 256 × 256 256\\times 256 , we compare NEPA predictions with networks of the same size trained in other ways, and study the design of Multi-Embedding Prediction and the scaling of both models.",
+     "zh": "在类条件 ImageNet 256 × 256 数据集上，我们将 NEPA 的预测结果与采用其他训练方式、但规模相同的网络进行比较，并研究多嵌入预测的设计以及两种模型的扩展性。"
+    },
+    {
+     "en": "Combined with REPA, our final model, NEPA-DiT-XL, reaches an FID of 1.32 .",
+     "zh": "结合 REPA 后，我们的最终模型 NEPA-DiT-XL 实现了 1.32 的 FID 值。"
+    }
+   ]
+  },
+  {
+   "en": "We highlight the main contributions of this paper below:",
+   "zh": "我们在下文重点介绍本文的主要贡献：",
+   "sents": null
+  },
+  {
+   "en": "We propose Embedding Conditioned Generation, which conditions a DiT generator on the clean embeddings predicted by a NEPA model from the condition and the noisy image, recomputed at every denoising step.",
+   "zh": "我们提出了“嵌入条件生成”方法，该方法将 DiT 生成器的条件设定为：由 NEPA 模型根据输入条件和含噪图像预测出的干净嵌入向量，并在每次去噪步骤中重新计算该向量。",
+   "sents": null
+  },
+  {
+   "en": "We train the NEPA model with Multi-Embedding Prediction, which extends NEPA to predict the embeddings of the whole clean image at once.",
+   "zh": "我们使用多嵌入预测方法训练 NEPA 模型，该方法将 NEPA 扩展为能够一次性预测整张干净图像的嵌入表示。",
+   "sents": null
+  },
+  {
+   "en": "On class-conditional ImageNet 256 × 256 256\\times 256 , we study the condition of the generator, the design of Multi-Embedding Prediction, and the scaling of both models; combined with REPA, NEPA-DiT-XL reaches an FID of 1.32.",
+   "zh": "在类别条件化的 ImageNet 256 × 256 数据集上，我们研究了生成器的条件设置、多嵌入预测的设计以及两个模型的扩展性；结合 REPA 后，NEPA-DiT-XL 的 FID 值达到了 1.32。",
+   "sents": null
+  },
+  {
+   "en": "Denoising diffusion models have become a dominant framework for image generation ( Song & Ermon, 2019 ; Ho et al., 2020 ; Song et al., 2021b ; Nichol & Dhariwal, 2021 ; Dhariwal & Nichol, 2021 ) , supported by faster samplers ( Song et al., 2021a ; Lu et al., 2022 ; Song et al., 2023 ) and by flow-based formulations ( Lipman et al., 2023 ; Liu et al., 2023 ; Ma et al., 2024 ; Huang et al., 2026 ) . Latent diffusion models operate in the latent space of a pretrained autoencoder to reduce the computational cost ( Rombach et al., 2022 ; Esser et al., 2021 ; Chen et al., 2025b ; Yao et al., 2025 ) , while diffusion transformers replace U-Net denoisers with more scalable architectures ( Peebles & Xie, 2023 ; Bao et al., 2023 ) . Text-to-image models further improve these systems through stronger architectures, flow-based objectives, and text conditioning ( Nichol et al., 2022 ; Ramesh et al., 2022 ; Saharia et al., 2022 ; Balaji et al., 2023 ; Podell et al., 2024 ; Chen et al., 2024b ; Chen et al., 2024a ; Esser et al., 2024 ; Li et al., 2024c ; Peng et al., 2025 ; Xie et al., 2025 ; Xie et al., 2026 ) . Beyond synthesis, diffusion models have been adapted to text-guided image manipulation and editing ( Meng et al., 2022 ; Hertz et al., 2023 ; Mokady et al., 2023 ; Brooks et al., 2023 ; Xu et al., 2023 ; Xu et al., 2024 ) , to spatially controlled generation ( Zhang et al., 2023 ) , and to temporally consistent video generation ( Ho et al., 2022 ; Guo et al., 2024 ; Xia et al., 2024 ) . Pretrained visual representations have been brought into this pipeline as generation targets ( Li et al., 2024a ; Wu et al., 2025 ; Kouzelis et al., 2025b ) , alignment signals for diffusion features ( Yu et al., 2025 ; Wang et al., 2026b ; Jiang et al., 2026 ; Tian et al., 2026 ; Leng et al., 2025 ) , and the generative latent space ( Zheng et al., 2026 ; Tong et al., 2026 ; Singh et al., 2026 ) . In these models, the class or text condition is injected by adaLN ( Peebles & Xie, 2023 ) or joint attention ( Esser et al., 2024 ) and stays fixed across denoising steps. Unified multimodal models condition a diffusion decoder on embeddings produced by a language model ( Sun et al., 2024b ; Ge et al., 2024 ; Pan et al., 2025 ; Chen et al., 2025a ) , but these embeddings are likewise computed once before sampling.",
+   "zh": "去噪扩散模型已成为图像生成的主流框架（Song & Ermon, 2019；Ho et al., 2020；Song et al., 2021b；Nichol & Dhariwal, 2021；Dhariwal & Nichol, 2021），并得到了更快速采样器（Song et al., 2021a；Lu et al., 2022；Song et al., 2023）和基于流的建模方法（Lipman et al., 2023；Liu et al., 2023；Ma et al., 2024；Huang et al., 2026）的支持。 潜在扩散模型在预训练自编码器的潜在空间中运行，以降低计算成本（Rombach et al., 2022；Esser et al., 2021；Chen et al., 2025b；Yao et al., 2025），而扩散Transformer则用更具扩展性的架构替代了U-Net去噪器（Peebles & Xie, 2023；Bao et al., 2023）。 文本到图像模型通过更强大的架构、基于流的目标函数和文本条件约束进一步改进了这些系统（Nichol et al., 2022；Ramesh et al., 2022；Saharia et al., 2022；Balaji et al., 2023；Podell et al., 2024；Chen et al., 2024b；Chen et al., 2024a；Esser et al., 2024；Li et al., 2024c；Peng et al., 2025；Xie et al., 2025；Xie et al., 2026）。 除了合成任务，扩散模型还被应用于文本引导的图像操控与编辑（Meng et al., 2022；Hertz et al., 2023；Mokady et al., 2023；Brooks et al., 2023；Xu et al., 2023；Xu et al., 2024）、空间可控生成（Zhang et al., 2023）以及时间一致的视频生成（Ho et al., 2022；Guo et al., 2024；Xia et al., 2024）。 预训练的视觉表示已被引入这一流程，用作生成目标（Li et al., 2024a；Wu et al., 2025；Kouzelis et al., 2025b）、扩散特征的对齐信号（Yu et al., 2025；Wang et al., 2026b；Jiang et al., 2026；Tian et al., 2026；Leng et al., 2025）以及生成性潜在空间（Zheng et al., 2026；Tong et al., 2026；Singh et al., 2026）。 在这些模型中，类别或文本条件通过 adaLN（Peebles & Xie, 2023）或联合注意力机制（Esser et al., 2024）注入，并在整个去噪过程中保持固定。 统一的跨模态模型将语言模型生成的嵌入作为扩散解码器的条件输入（Sun et al., 2024b；Ge et al., 2024；Pan et al., 2025；Chen et al., 2025a），但这些嵌入同样在采样前仅计算一次。",
+   "sents": [
+    {
+     "en": "Denoising diffusion models have become a dominant framework for image generation ( Song & Ermon, 2019 ; Ho et al., 2020 ; Song et al., 2021b ; Nichol & Dhariwal, 2021 ; Dhariwal & Nichol, 2021 ) , supported by faster samplers ( Song et al., 2021a ; Lu et al., 2022 ; Song et al., 2023 ) and by flow-based formulations ( Lipman et al., 2023 ; Liu et al., 2023 ; Ma et al., 2024 ; Huang et al., 2026 ) .",
+     "zh": "去噪扩散模型已成为图像生成的主流框架（Song & Ermon, 2019；Ho et al., 2020；Song et al., 2021b；Nichol & Dhariwal, 2021；Dhariwal & Nichol, 2021），并得到了更快速采样器（Song et al., 2021a；Lu et al., 2022；Song et al., 2023）和基于流的建模方法（Lipman et al., 2023；Liu et al., 2023；Ma et al., 2024；Huang et al., 2026）的支持。"
+    },
+    {
+     "en": "Latent diffusion models operate in the latent space of a pretrained autoencoder to reduce the computational cost ( Rombach et al., 2022 ; Esser et al., 2021 ; Chen et al., 2025b ; Yao et al., 2025 ) , while diffusion transformers replace U-Net denoisers with more scalable architectures ( Peebles & Xie, 2023 ; Bao et al., 2023 ) .",
+     "zh": "潜在扩散模型在预训练自编码器的潜在空间中运行，以降低计算成本（Rombach et al., 2022；Esser et al., 2021；Chen et al., 2025b；Yao et al., 2025），而扩散Transformer则用更具扩展性的架构替代了U-Net去噪器（Peebles & Xie, 2023；Bao et al., 2023）。"
+    },
+    {
+     "en": "Text-to-image models further improve these systems through stronger architectures, flow-based objectives, and text conditioning ( Nichol et al., 2022 ; Ramesh et al., 2022 ; Saharia et al., 2022 ; Balaji et al., 2023 ; Podell et al., 2024 ; Chen et al., 2024b ; Chen et al., 2024a ; Esser et al., 2024 ; Li et al., 2024c ; Peng et al., 2025 ; Xie et al., 2025 ; Xie et al., 2026 ) .",
+     "zh": "文本到图像模型通过更强大的架构、基于流的目标函数和文本条件约束进一步改进了这些系统（Nichol et al., 2022；Ramesh et al., 2022；Saharia et al., 2022；Balaji et al., 2023；Podell et al., 2024；Chen et al., 2024b；Chen et al., 2024a；Esser et al., 2024；Li et al., 2024c；Peng et al., 2025；Xie et al., 2025；Xie et al., 2026）。"
+    },
+    {
+     "en": "Beyond synthesis, diffusion models have been adapted to text-guided image manipulation and editing ( Meng et al., 2022 ; Hertz et al., 2023 ; Mokady et al., 2023 ; Brooks et al., 2023 ; Xu et al., 2023 ; Xu et al., 2024 ) , to spatially controlled generation ( Zhang et al., 2023 ) , and to temporally consistent video generation ( Ho et al., 2022 ; Guo et al., 2024 ; Xia et al., 2024 ) .",
+     "zh": "除了合成任务，扩散模型还被应用于文本引导的图像操控与编辑（Meng et al., 2022；Hertz et al., 2023；Mokady et al., 2023；Brooks et al., 2023；Xu et al., 2023；Xu et al., 2024）、空间可控生成（Zhang et al., 2023）以及时间一致的视频生成（Ho et al., 2022；Guo et al., 2024；Xia et al., 2024）。"
+    },
+    {
+     "en": "Pretrained visual representations have been brought into this pipeline as generation targets ( Li et al., 2024a ; Wu et al., 2025 ; Kouzelis et al., 2025b ) , alignment signals for diffusion features ( Yu et al., 2025 ; Wang et al., 2026b ; Jiang et al., 2026 ; Tian et al., 2026 ; Leng et al., 2025 ) , and the generative latent space ( Zheng et al., 2026 ; Tong et al., 2026 ; Singh et al., 2026 ) .",
+     "zh": "预训练的视觉表示已被引入这一流程，用作生成目标（Li et al., 2024a；Wu et al., 2025；Kouzelis et al., 2025b）、扩散特征的对齐信号（Yu et al., 2025；Wang et al., 2026b；Jiang et al., 2026；Tian et al., 2026；Leng et al., 2025）以及生成性潜在空间（Zheng et al., 2026；Tong et al., 2026；Singh et al., 2026）。"
+    },
+    {
+     "en": "In these models, the class or text condition is injected by adaLN ( Peebles & Xie, 2023 ) or joint attention ( Esser et al., 2024 ) and stays fixed across denoising steps.",
+     "zh": "在这些模型中，类别或文本条件通过 adaLN（Peebles & Xie, 2023）或联合注意力机制（Esser et al., 2024）注入，并在整个去噪过程中保持固定。"
+    },
+    {
+     "en": "Unified multimodal models condition a diffusion decoder on embeddings produced by a language model ( Sun et al., 2024b ; Ge et al., 2024 ; Pan et al., 2025 ; Chen et al., 2025a ) , but these embeddings are likewise computed once before sampling.",
+     "zh": "统一的跨模态模型将语言模型生成的嵌入作为扩散解码器的条件输入（Sun et al., 2024b；Ge et al., 2024；Pan et al., 2025；Chen et al., 2025a），但这些嵌入同样在采样前仅计算一次。"
+    }
+   ]
+  },
+  {
+   "en": "Self-conditioning ( Chen et al., 2023 ) feeds the estimate of the clean sample from the previous sampling step back into the denoiser, and RIN ( Jabri et al., 2023 ) carries latent states across steps; both reuse the estimates of the denoiser itself. We condition the generator on the predictions of a separate NEPA model, trained with its own embedding prediction objective and recomputed from the current noisy input at every step.",
+   "zh": "自我条件化（Chen 等人，2023）将上一采样步骤中干净样本的估计值反馈到去噪器中，而 RIN（Jabri 等人，2023）则在各个步骤间传递潜在状态；两者都重用了去噪器本身的估计值。 我们将生成器的条件建立在另一个独立的 NEPA 模型的预测之上，该模型使用其自身的嵌入预测目标进行训练，并在每一步根据当前的含噪输入重新计算。",
+   "sents": [
+    {
+     "en": "Self-conditioning ( Chen et al., 2023 ) feeds the estimate of the clean sample from the previous sampling step back into the denoiser, and RIN ( Jabri et al., 2023 ) carries latent states across steps; both reuse the estimates of the denoiser itself.",
+     "zh": "自我条件化（Chen 等人，2023）将上一采样步骤中干净样本的估计值反馈到去噪器中，而 RIN（Jabri 等人，2023）则在各个步骤间传递潜在状态；两者都重用了去噪器本身的估计值。"
+    },
+    {
+     "en": "We condition the generator on the predictions of a separate NEPA model, trained with its own embedding prediction objective and recomputed from the current noisy input at every step.",
+     "zh": "我们将生成器的条件建立在另一个独立的 NEPA 模型的预测之上，该模型使用其自身的嵌入预测目标进行训练，并在每一步根据当前的含噪输入重新计算。"
+    }
+   ]
+  },
+  {
+   "en": "Self-supervised visual learning has progressed from handcrafted pretext tasks ( Doersch et al., 2015 ; Noroozi & Favaro, 2016 ; Zhang et al., 2016 ; Gidaris et al., 2018 ) to contrastive and self-distillation methods ( van den Oord et al., 2019 ; He et al., 2020 ; Chen et al., 2020 ; Grill et al., 2020 ; Caron et al., 2020 ; Caron et al., 2021 ; Zhou et al., 2022 ) and to masked reconstruction approaches that predict pixels, tokens, or visual features ( Bao et al., 2022 ; He et al., 2022 ; Xie et al., 2022 ; Wei et al., 2022 ; Baevski et al., 2022 ) . Generative image models instead learn by predicting discrete or continuous visual tokens, either autoregressively or through masked and progressively refined prediction ( van den Oord et al., 2017 ; Esser et al., 2021 ; Yu et al., 2022 ; Lee et al., 2022 ; Chang et al., 2022 ; Li et al., 2023 ; Yu et al., 2024 ; Tian et al., 2024 ; Sun et al., 2024a ; Li et al., 2024b ) . However, pixel and discrete-token prediction can emphasize low-level details or tokenizer-specific structure. Predictive representation learning avoids direct reconstruction by predicting targets in a learned embedding space: JEPA and I-JEPA predict masked target representations from visible context, and V-JEPA extends this principle to spatiotemporal prediction ( LeCun, 2022 ; Assran et al., 2023 ; Bardes et al., 2024 ; Assran et al., 2025 ) . NEPA further combines representation prediction with causal modeling by replacing the next-token prediction of language models ( Radford et al., 2019 ; Brown et al., 2020 ) with next-embedding prediction ( Xu et al., 2025 ) . Our Multi-Embedding Prediction extends NEPA to predict several embeddings at once, analogous to multi-token prediction in language modeling ( Gloeckle et al., 2024 ) .",
+   "zh": "自监督视觉学习已从手工设计的预训练任务（Doersch 等人，2015；Noroozi & Favaro，2016；Zhang 等人，2016；Gidaris 等人，2018）发展到对比学习和自蒸馏方法（van den Oord 等人，2019；He 等人，2020；Chen 等人，2020；Grill 等人，2020；Caron 等人，2020；Caron 等人，2021；Zhou 等人，2022），再到预测像素、词元或视觉特征的掩码重建方法（Bao 等人，2022；He 等人，2022；Xie 等人，2022；Wei 等人，2022；Baevski 等人，2022）。 生成式图像模型则通过预测离散或连续的视觉词元进行学习，方式可以是自回归的，也可以是经过掩码和逐步优化预测的（van den Oord 等人，2017；Esser 等人，2021；Yu 等人，2022；Lee 等人，2022；Chang 等人，2022；Li 等人，2023；Yu 等人，2024；Tian 等人，2024；Sun 等人，2024a；Li 等人，2024b）。 然而，像素和离散词元的预测可能会强调低层细节或特定于分词器的结构。 预测性表示学习通过在已学习的嵌入空间中预测目标来避免直接重建：JEPA 和 I-JEPA 从可见上下文中预测被掩码的目标表示，而 V-JEPA 则将这一原则扩展到时空预测（LeCun，2022；Assran 等人，2023；Bardes 等人，2024；Assran 等人，2025）。 NEPA 进一步将表示预测与因果建模相结合，用下一嵌入预测（Xu 等人，2025）取代了语言模型中的下一词元预测（Radford 等人，2019；Brown 等人，2020）。 我们的多嵌入预测方法将 NEPA 扩展到同时预测多个嵌入，类似于语言建模中的多词元预测（Gloeckle 等人，2024）。",
+   "sents": [
+    {
+     "en": "Self-supervised visual learning has progressed from handcrafted pretext tasks ( Doersch et al., 2015 ; Noroozi & Favaro, 2016 ; Zhang et al., 2016 ; Gidaris et al., 2018 ) to contrastive and self-distillation methods ( van den Oord et al., 2019 ; He et al., 2020 ; Chen et al., 2020 ; Grill et al., 2020 ; Caron et al., 2020 ; Caron et al., 2021 ; Zhou et al., 2022 ) and to masked reconstruction approaches that predict pixels, tokens, or visual features ( Bao et al., 2022 ; He et al., 2022 ; Xie et al., 2022 ; Wei et al., 2022 ; Baevski et al., 2022 ) .",
+     "zh": "自监督视觉学习已从手工设计的预训练任务（Doersch 等人，2015；Noroozi & Favaro，2016；Zhang 等人，2016；Gidaris 等人，2018）发展到对比学习和自蒸馏方法（van den Oord 等人，2019；He 等人，2020；Chen 等人，2020；Grill 等人，2020；Caron 等人，2020；Caron 等人，2021；Zhou 等人，2022），再到预测像素、词元或视觉特征的掩码重建方法（Bao 等人，2022；He 等人，2022；Xie 等人，2022；Wei 等人，2022；Baevski 等人，2022）。"
+    },
+    {
+     "en": "Generative image models instead learn by predicting discrete or continuous visual tokens, either autoregressively or through masked and progressively refined prediction ( van den Oord et al., 2017 ; Esser et al., 2021 ; Yu et al., 2022 ; Lee et al., 2022 ; Chang et al., 2022 ; Li et al., 2023 ; Yu et al., 2024 ; Tian et al., 2024 ; Sun et al., 2024a ; Li et al., 2024b ) .",
+     "zh": "生成式图像模型则通过预测离散或连续的视觉词元进行学习，方式可以是自回归的，也可以是经过掩码和逐步优化预测的（van den Oord 等人，2017；Esser 等人，2021；Yu 等人，2022；Lee 等人，2022；Chang 等人，2022；Li 等人，2023；Yu 等人，2024；Tian 等人，2024；Sun 等人，2024a；Li 等人，2024b）。"
+    },
+    {
+     "en": "However, pixel and discrete-token prediction can emphasize low-level details or tokenizer-specific structure.",
+     "zh": "然而，像素和离散词元的预测可能会强调低层细节或特定于分词器的结构。"
+    },
+    {
+     "en": "Predictive representation learning avoids direct reconstruction by predicting targets in a learned embedding space: JEPA and I-JEPA predict masked target representations from visible context, and V-JEPA extends this principle to spatiotemporal prediction ( LeCun, 2022 ; Assran et al., 2023 ; Bardes et al., 2024 ; Assran et al., 2025 ) .",
+     "zh": "预测性表示学习通过在已学习的嵌入空间中预测目标来避免直接重建：JEPA 和 I-JEPA 从可见上下文中预测被掩码的目标表示，而 V-JEPA 则将这一原则扩展到时空预测（LeCun，2022；Assran 等人，2023；Bardes 等人，2024；Assran 等人，2025）。"
+    },
+    {
+     "en": "NEPA further combines representation prediction with causal modeling by replacing the next-token prediction of language models ( Radford et al., 2019 ; Brown et al., 2020 ) with next-embedding prediction ( Xu et al., 2025 ) .",
+     "zh": "NEPA 进一步将表示预测与因果建模相结合，用下一嵌入预测（Xu 等人，2025）取代了语言模型中的下一词元预测（Radford 等人，2019；Brown 等人，2020）。"
+    },
+    {
+     "en": "Our Multi-Embedding Prediction extends NEPA to predict several embeddings at once, analogous to multi-token prediction in language modeling ( Gloeckle et al., 2024 ) .",
+     "zh": "我们的多嵌入预测方法将 NEPA 扩展到同时预测多个嵌入，类似于语言建模中的多词元预测（Gloeckle 等人，2024）。"
+    }
+   ]
+  },
+  {
+   "en": "Our method has two stages. First, we train a NEPA model with Multi-Embedding Prediction to predict clean image embeddings from condition tokens and noisy image embeddings. Second, we train a DiT generator with Embedding Conditioned Generation , where the frozen NEPA model produces predictive embeddings at each denoising step and the DiT uses them as its condition.",
+   "zh": "我们的方法分为两个阶段。 首先，我们使用多嵌入预测（Multi-Embedding Prediction）训练一个 NEPA 模型，以从条件标记和噪声图像嵌入中预测干净图像的嵌入。 其次，我们使用嵌入条件生成（Embedding Conditioned Generation）训练一个 DiT 生成器，其中冻结的 NEPA 模型在每个去噪步骤中生成预测性嵌入，而 DiT 则将其用作条件。",
+   "sents": [
+    {
+     "en": "Our method has two stages.",
+     "zh": "我们的方法分为两个阶段。"
+    },
+    {
+     "en": "First, we train a NEPA model with Multi-Embedding Prediction to predict clean image embeddings from condition tokens and noisy image embeddings.",
+     "zh": "首先，我们使用多嵌入预测（Multi-Embedding Prediction）训练一个 NEPA 模型，以从条件标记和噪声图像嵌入中预测干净图像的嵌入。"
+    },
+    {
+     "en": "Second, we train a DiT generator with Embedding Conditioned Generation , where the frozen NEPA model produces predictive embeddings at each denoising step and the DiT uses them as its condition.",
+     "zh": "其次，我们使用嵌入条件生成（Embedding Conditioned Generation）训练一个 DiT 生成器，其中冻结的 NEPA 模型在每个去噪步骤中生成预测性嵌入，而 DiT 则将其用作条件。"
+    }
+   ]
+  },
+  {
+   "en": "Next-embedding predictive autoregression. NEPA replaces next-token prediction with next-embedding prediction ( Xu et al., 2025 ) . An input 𝐱 \\mathbf{x} is split into N N non-overlapping patches by a convolutional patch embedding layer f f , giving a sequence of continuous embeddings 𝐳 = f ⁡ ( 𝐱 ) \\mathbf{z}=f(\\mathbf{x}) . An autoregressive model h θ h_{\\theta} reads the sequence and predicts, at each position, the embedding that follows it, and is trained with a distance 𝒟 \\mathcal{D} in embedding space between the predictions 𝐩 \\mathbf{p} and the targets 𝐳 target \\mathbf{z}_{\\text{target}} :",
+   "zh": "下一嵌入预测自回归。 NEPA 用下一嵌入预测取代了下一词元预测（Xu 等人，2025）。 输入 𝐱 \\mathbf{x} 通过卷积块嵌入层 f f 被分割为 N 个不重叠的块，从而得到连续嵌入序列 𝐳 = f ⁡ ( 𝐱 ) \\mathbf{z}=f(\\mathbf{x})。 自回归模型 h θ h_{\\theta} 读取该序列，并在每个位置预测其后续的嵌入，同时使用嵌入空间中预测值 𝐩 \\mathbf{p} 与目标值 𝐳 target \\mathbf{z}_{\\text{target}} 之间的距离 𝒟 \\mathcal{D} 进行训练：",
+   "sents": [
+    {
+     "en": "Next-embedding predictive autoregression.",
+     "zh": "下一嵌入预测自回归。"
+    },
+    {
+     "en": "NEPA replaces next-token prediction with next-embedding prediction ( Xu et al., 2025 ) .",
+     "zh": "NEPA 用下一嵌入预测取代了下一词元预测（Xu 等人，2025）。"
+    },
+    {
+     "en": "An input 𝐱 \\mathbf{x} is split into N N non-overlapping patches by a convolutional patch embedding layer f f , giving a sequence of continuous embeddings 𝐳 = f ⁡ ( 𝐱 ) \\mathbf{z}=f(\\mathbf{x}) .",
+     "zh": "输入 𝐱 \\mathbf{x} 通过卷积块嵌入层 f f 被分割为 N 个不重叠的块，从而得到连续嵌入序列 𝐳 = f ⁡ ( 𝐱 ) \\mathbf{z}=f(\\mathbf{x})。"
+    },
+    {
+     "en": "An autoregressive model h θ h_{\\theta} reads the sequence and predicts, at each position, the embedding that follows it, and is trained with a distance 𝒟 \\mathcal{D} in embedding space between the predictions 𝐩 \\mathbf{p} and the targets 𝐳 target \\mathbf{z}_{\\text{target}} :",
+     "zh": "自回归模型 h θ h_{\\theta} 读取该序列，并在每个位置预测其后续的嵌入，同时使用嵌入空间中预测值 𝐩 \\mathbf{p} 与目标值 𝐳 target \\mathbf{z}_{\\text{target}} 之间的距离 𝒟 \\mathcal{D} 进行训练："
+    }
+   ]
+  },
+  {
+   "en": "where 𝒟 \\mathcal{D} is any distance between embeddings. For images, NEPA orders the patches into a sequence under causal attention, so the target is the next patch, 𝐳 target = 𝐳 2 : N \\mathbf{z}_{\\text{target}}=\\mathbf{z}_{2:N} .",
+   "zh": "其中 𝒟 \\mathcal{D} 是嵌入向量之间的任意距离。 对于图像，NEPA 在因果注意力机制下将图像块排序为一个序列，因此目标为下一个图像块，即 𝐳 target = 𝐳 2 : N \\mathbf{z}_{\\text{target}}=\\mathbf{z}_{2:N}。",
+   "sents": [
+    {
+     "en": "where 𝒟 \\mathcal{D} is any distance between embeddings.",
+     "zh": "其中 𝒟 \\mathcal{D} 是嵌入向量之间的任意距离。"
+    },
+    {
+     "en": "For images, NEPA orders the patches into a sequence under causal attention, so the target is the next patch, 𝐳 target = 𝐳 2 : N \\mathbf{z}_{\\text{target}}=\\mathbf{z}_{2:N} .",
+     "zh": "对于图像，NEPA 在因果注意力机制下将图像块排序为一个序列，因此目标为下一个图像块，即 𝐳 target = 𝐳 2 : N \\mathbf{z}_{\\text{target}}=\\mathbf{z}_{2:N}。"
+    }
+   ]
+  },
+  {
+   "en": "Latent diffusion and flow matching. Following latent diffusion models and DiT ( Rombach et al., 2022 ; Peebles & Xie, 2023 ) , we perform image generation in the latent space of a pretrained autoencoder: a frozen encoder ℰ \\mathcal{E} maps each image to a clean latent 𝐱 0 \\mathbf{x}_{0} , which serves as the input to both models, and a frozen decoder maps generated latents back to images. During training, we sample Gaussian noise ϵ ∼ 𝒩 ⁡ ( 𝟎 , 𝐈 ) \\boldsymbol{\\epsilon}\\sim\\mathcal{N}(\\mathbf{0},\\mathbf{I}) and a noise level t t , then construct the noisy input 𝐱 t = ( 1 − t ) ​ 𝐱 0 + t ​ ϵ \\mathbf{x}_{t}=(1-t)\\mathbf{x}_{0}+t\\boldsymbol{\\epsilon} . We train the diffusion transformer to predict the flow target 𝐯 t = ϵ − 𝐱 0 \\mathbf{v}_{t}=\\boldsymbol{\\epsilon}-\\mathbf{x}_{0} ( Ma et al., 2024 ; Liu et al., 2023 ) . Given a condition c c 1 1 1 A class label for class-to-image generation, or a text prompt for text-to-image generation. , the generator G ϕ G_{\\phi} is optimized with",
+   "zh": "潜在扩散与流匹配。 遵循潜在扩散模型和 DiT（Rombach 等人，2022；Peebles & Xie，2023），我们在预训练自编码器的潜在空间中执行图像生成：一个冻结的编码器 ℰ \\mathcal{E} 将每张图像映射为一个干净的潜在表示 𝐱 0 \\mathbf{x}_{0}，该表示作为两种模型的输入；一个冻结的解码器则将生成的潜在表示转换回图像。 在训练期间，我们采样高斯噪声 ϵ ∼ 𝒩 ⁡ ( 𝟎 , 𝐈 ) \\boldsymbol{\\epsilon}\\sim\\mathcal{N}(\\mathbf{0},\\mathbf{I}) 和一个噪声水平 t t，然后构建含噪输入 𝐱 t = ( 1 − t ) ​ 𝐱 0 + t ​ ϵ \\mathbf{x}_{t}=(1-t)\\mathbf{x}_{0}+t\\boldsymbol{\\epsilon}。 我们训练扩散变换器来预测流目标 𝐯 t = ϵ − 𝐱 0 \\mathbf{v}_{t}=\\boldsymbol{\\epsilon}-\\mathbf{x}_{0}（Ma 等人，2024；Liu 等人，2023）。 给定一个条件 c c 1 1 1：对于类别到图像的生成，这是一个类别标签；对于文本到图像的生成，这是一个文本提示。，生成器 G ϕ G_{\\phi} 通过以下方式进行优化：",
+   "sents": [
+    {
+     "en": "Latent diffusion and flow matching.",
+     "zh": "潜在扩散与流匹配。"
+    },
+    {
+     "en": "Following latent diffusion models and DiT ( Rombach et al., 2022 ; Peebles & Xie, 2023 ) , we perform image generation in the latent space of a pretrained autoencoder: a frozen encoder ℰ \\mathcal{E} maps each image to a clean latent 𝐱 0 \\mathbf{x}_{0} , which serves as the input to both models, and a frozen decoder maps generated latents back to images.",
+     "zh": "遵循潜在扩散模型和 DiT（Rombach 等人，2022；Peebles & Xie，2023），我们在预训练自编码器的潜在空间中执行图像生成：一个冻结的编码器 ℰ \\mathcal{E} 将每张图像映射为一个干净的潜在表示 𝐱 0 \\mathbf{x}_{0}，该表示作为两种模型的输入；一个冻结的解码器则将生成的潜在表示转换回图像。"
+    },
+    {
+     "en": "During training, we sample Gaussian noise ϵ ∼ 𝒩 ⁡ ( 𝟎 , 𝐈 ) \\boldsymbol{\\epsilon}\\sim\\mathcal{N}(\\mathbf{0},\\mathbf{I}) and a noise level t t , then construct the noisy input 𝐱 t = ( 1 − t ) ​ 𝐱 0 + t ​ ϵ \\mathbf{x}_{t}=(1-t)\\mathbf{x}_{0}+t\\boldsymbol{\\epsilon} .",
+     "zh": "在训练期间，我们采样高斯噪声 ϵ ∼ 𝒩 ⁡ ( 𝟎 , 𝐈 ) \\boldsymbol{\\epsilon}\\sim\\mathcal{N}(\\mathbf{0},\\mathbf{I}) 和一个噪声水平 t t，然后构建含噪输入 𝐱 t = ( 1 − t ) ​ 𝐱 0 + t ​ ϵ \\mathbf{x}_{t}=(1-t)\\mathbf{x}_{0}+t\\boldsymbol{\\epsilon}。"
+    },
+    {
+     "en": "We train the diffusion transformer to predict the flow target 𝐯 t = ϵ − 𝐱 0 \\mathbf{v}_{t}=\\boldsymbol{\\epsilon}-\\mathbf{x}_{0} ( Ma et al., 2024 ; Liu et al., 2023 ) .",
+     "zh": "我们训练扩散变换器来预测流目标 𝐯 t = ϵ − 𝐱 0 \\mathbf{v}_{t}=\\boldsymbol{\\epsilon}-\\mathbf{x}_{0}（Ma 等人，2024；Liu 等人，2023）。"
+    },
+    {
+     "en": "Given a condition c c 1 1 1 A class label for class-to-image generation, or a text prompt for text-to-image generation. , the generator G ϕ G_{\\phi} is optimized with",
+     "zh": "给定一个条件 c c 1 1 1：对于类别到图像的生成，这是一个类别标签；对于文本到图像的生成，这是一个文本提示。，生成器 G ϕ G_{\\phi} 通过以下方式进行优化："
+    }
+   ]
+  },
+  {
+   "en": "where w ⁡ ( t ) w(t) is the timestep-dependent loss weighting. Conventionally, c c is fixed across the sampling trajectory; we replace it with embeddings predicted by a NEPA model from both the condition c c and the current noisy image state 𝐱 t \\mathbf{x}_{t} . This allows the conditioning signal to adapt throughout denoising, as described in Section 3.4 .",
+   "zh": "其中 w⁡(t) w(t) 是依赖于时间步的损失权重。 传统上，c c 在整个采样轨迹中保持不变；我们将其替换为通过 NEPA 模型根据条件 c c 和当前含噪图像状态 𝐱 t \\mathbf{x}_{t} 预测的嵌入表示。 这使得条件信号能够在去噪过程中不断调整，具体如第 3.4 节所述。",
+   "sents": [
+    {
+     "en": "where w ⁡ ( t ) w(t) is the timestep-dependent loss weighting.",
+     "zh": "其中 w⁡(t) w(t) 是依赖于时间步的损失权重。"
+    },
+    {
+     "en": "Conventionally, c c is fixed across the sampling trajectory; we replace it with embeddings predicted by a NEPA model from both the condition c c and the current noisy image state 𝐱 t \\mathbf{x}_{t} .",
+     "zh": "传统上，c c 在整个采样轨迹中保持不变；我们将其替换为通过 NEPA 模型根据条件 c c 和当前含噪图像状态 𝐱 t \\mathbf{x}_{t} 预测的嵌入表示。"
+    },
+    {
+     "en": "This allows the conditioning signal to adapt throughout denoising, as described in Section 3.4 .",
+     "zh": "这使得条件信号能够在去噪过程中不断调整，具体如第 3.4 节所述。"
+    }
+   ]
+  },
+  {
+   "en": "NEPA predicts one next embedding at a time. In language modeling, predicting several future tokens at once improves over next-token prediction ( Gloeckle et al., 2024 ) . Predicting one embedding at a time is similarly limiting when the next embeddings form a group that is needed together, such as the patch embeddings of an image. Multi-Embedding Prediction (MEP) extends NEPA to predict the next K K embeddings simultaneously from the same context. Given the context embeddings 𝐳 ≤ n \\mathbf{z}_{\\leq n} , the model predicts the next K K embeddings in a single forward pass:",
+   "zh": "NEPA 每次仅预测下一个嵌入。 在语言建模中，一次性预测多个未来词元比逐词元预测效果更佳（Gloeckle 等，2024）。 当需要同时使用多个后续嵌入（例如图像的块嵌入）时，每次仅预测一个嵌入同样存在局限性。 多嵌入预测（MEP）扩展了 NEPA，使其能够基于相同上下文同时预测接下来的 K 个嵌入。 给定上下文嵌入 𝐳 ≤ n \\mathbf{z}_{\\leq n}，模型在一次前向传播中即可预测接下来的 K 个嵌入：",
+   "sents": [
+    {
+     "en": "NEPA predicts one next embedding at a time.",
+     "zh": "NEPA 每次仅预测下一个嵌入。"
+    },
+    {
+     "en": "In language modeling, predicting several future tokens at once improves over next-token prediction ( Gloeckle et al., 2024 ) .",
+     "zh": "在语言建模中，一次性预测多个未来词元比逐词元预测效果更佳（Gloeckle 等，2024）。"
+    },
+    {
+     "en": "Predicting one embedding at a time is similarly limiting when the next embeddings form a group that is needed together, such as the patch embeddings of an image.",
+     "zh": "当需要同时使用多个后续嵌入（例如图像的块嵌入）时，每次仅预测一个嵌入同样存在局限性。"
+    },
+    {
+     "en": "Multi-Embedding Prediction (MEP) extends NEPA to predict the next K K embeddings simultaneously from the same context.",
+     "zh": "多嵌入预测（MEP）扩展了 NEPA，使其能够基于相同上下文同时预测接下来的 K 个嵌入。"
+    },
+    {
+     "en": "Given the context embeddings 𝐳 ≤ n \\mathbf{z}_{\\leq n} , the model predicts the next K K embeddings in a single forward pass:",
+     "zh": "给定上下文嵌入 𝐳 ≤ n \\mathbf{z}_{\\leq n}，模型在一次前向传播中即可预测接下来的 K 个嵌入："
+    }
+   ]
+  },
+  {
+   "en": "NEPA is the special case K = 1 K=1 . Like multi-token prediction, MEP predicts several items at once; it differs in predicting in embedding space rather than token space. Predicted tokens must be decoded from hidden states by output heads, whereas predicted embeddings are the outputs of the model themselves (Figure 2 ). Section 3.3 instantiates MEP for image generation.",
+   "zh": "NEPA 是 K = 1 的特殊情况。 与多词元预测类似，MEP 会同时预测多个项目；不同之处在于，它是在嵌入空间中而非词元空间中进行预测。 预测的词元必须通过输出头从隐藏状态中解码，而预测的嵌入则是模型本身的输出（图 2）。 第 3.3 节展示了 MEP 在图像生成中的具体实现。",
+   "sents": [
+    {
+     "en": "NEPA is the special case K = 1 K=1 .",
+     "zh": "NEPA 是 K = 1 的特殊情况。"
+    },
+    {
+     "en": "Like multi-token prediction, MEP predicts several items at once; it differs in predicting in embedding space rather than token space.",
+     "zh": "与多词元预测类似，MEP 会同时预测多个项目；不同之处在于，它是在嵌入空间中而非词元空间中进行预测。"
+    },
+    {
+     "en": "Predicted tokens must be decoded from hidden states by output heads, whereas predicted embeddings are the outputs of the model themselves (Figure 2 ).",
+     "zh": "预测的词元必须通过输出头从隐藏状态中解码，而预测的嵌入则是模型本身的输出（图 2）。"
+    },
+    {
+     "en": "Section 3.3 instantiates MEP for image generation.",
+     "zh": "第 3.3 节展示了 MEP 在图像生成中的具体实现。"
+    }
+   ]
+  },
+  {
+   "en": "Generation produces an image through a sequence of states: from the condition, through a noisy image, to the clean image. We write this as a sequence of embeddings, the condition, then the N N patch embeddings of the noisy image, then the N N patch embeddings of the clean image. In this sequence, the clean embeddings are the next N N embeddings after the condition and the noisy image, and we train a NEPA model to predict them with MEP, taking K = N K=N . The sequence is ordered by generation state rather than by patch position, so the embedding that follows noisy patch i i is clean patch i i . MEP predicts all N N embeddings of the clean image in one forward pass, each from the full context of the condition and the noisy image. The model is defined by three choices: the sequence and its readout, an attention mask with the condition as a causal prefix, and an InfoNCE loss.",
+   "zh": "生成过程通过一系列状态产生图像：从条件出发，经过一个含噪图像，最终得到干净图像。 我们将这一过程表示为一系列嵌入：首先是条件，接着是含噪图像的 N N 个块嵌入，最后是干净图像的 N N 个块嵌入。 在这一序列中，干净的嵌入位于条件与含噪图像之后的下一个 N N 个嵌入位置，我们训练一个 NEPA 模型，利用 MEP 预测这些嵌入，其中 K = N K=N 。 该序列的排列依据是生成状态而非块的位置，因此紧随含噪块 i i 的嵌入是干净块 i i 。 MEP 在一次前向传播中预测干净图像的全部 N N 个嵌入，每个嵌入都基于条件和含噪图像的完整上下文进行预测。 该模型由三个选择定义：序列及其读出机制、以条件为因果前缀的注意力掩码，以及一个 InfoNCE 损失函数。",
+   "sents": [
+    {
+     "en": "Generation produces an image through a sequence of states: from the condition, through a noisy image, to the clean image.",
+     "zh": "生成过程通过一系列状态产生图像：从条件出发，经过一个含噪图像，最终得到干净图像。"
+    },
+    {
+     "en": "We write this as a sequence of embeddings, the condition, then the N N patch embeddings of the noisy image, then the N N patch embeddings of the clean image.",
+     "zh": "我们将这一过程表示为一系列嵌入：首先是条件，接着是含噪图像的 N N 个块嵌入，最后是干净图像的 N N 个块嵌入。"
+    },
+    {
+     "en": "In this sequence, the clean embeddings are the next N N embeddings after the condition and the noisy image, and we train a NEPA model to predict them with MEP, taking K = N K=N .",
+     "zh": "在这一序列中，干净的嵌入位于条件与含噪图像之后的下一个 N N 个嵌入位置，我们训练一个 NEPA 模型，利用 MEP 预测这些嵌入，其中 K = N K=N 。"
+    },
+    {
+     "en": "The sequence is ordered by generation state rather than by patch position, so the embedding that follows noisy patch i i is clean patch i i .",
+     "zh": "该序列的排列依据是生成状态而非块的位置，因此紧随含噪块 i i 的嵌入是干净块 i i 。"
+    },
+    {
+     "en": "MEP predicts all N N embeddings of the clean image in one forward pass, each from the full context of the condition and the noisy image.",
+     "zh": "MEP 在一次前向传播中预测干净图像的全部 N N 个嵌入，每个嵌入都基于条件和含噪图像的完整上下文进行预测。"
+    },
+    {
+     "en": "The model is defined by three choices: the sequence and its readout, an attention mask with the condition as a causal prefix, and an InfoNCE loss.",
+     "zh": "该模型由三个选择定义：序列及其读出机制、以条件为因果前缀的注意力掩码，以及一个 InfoNCE 损失函数。"
+    }
+   ]
+  },
+  {
+   "en": "Given a clean input 𝐱 0 \\mathbf{x}_{0} , we sample a noise level t t and construct the noisy input 𝐱 t = ( 1 − t ) ​ 𝐱 0 + t ​ ϵ \\mathbf{x}_{t}=(1-t)\\mathbf{x}_{0}+t\\boldsymbol{\\epsilon} . Both are patchified by the embedding layer into noisy and clean patch embeddings, 𝐳 t = f ⁡ ( 𝐱 t ) \\mathbf{z}_{t}=f(\\mathbf{x}_{t}) and 𝐳 0 = f ⁡ ( 𝐱 0 ) \\mathbf{z}_{0}=f(\\mathbf{x}_{0}) . As in NEPA, the targets come from the model’s own patch embedding layer f f , which is learned jointly with the model. The targets are compared through InfoNCE rather than regressed: the model only has to tell each patch apart from the other patches of the image, and the remaining detail is left to the generator. The noise level is sampled uniformly, t ∼ 𝒰 ⁡ ( 0 , 1 ) t\\sim\\mathcal{U}(0,1) , so that a single model covers every denoising step at inference, and the condition is replaced by a null token with probability 0.1, so that the same model also provides the unconditional predictions used for classifier-free guidance (Section 3.4 ). As shown in Figure 3 , the NEPA model h θ h_{\\theta} reads the condition c c , a begin-of-image token ⟨ boi ⟩ \\langle\\mathrm{boi}\\rangle , and the noisy embeddings, and predicts the next N N embeddings, the clean image:",
+   "zh": "给定一个干净的输入 𝐱₀，我们采样一个噪声水平 t，并构建带噪声的输入 𝐱ₜ = (1 − t)𝐱₀ + t𝜖。 两者都通过嵌入层被分块为带噪声和干净的块嵌入：𝐳ₜ = f(𝐱ₜ) 和 𝐳₀ = f(𝐱₀)。 与 NEPA 类似，目标来自模型自身的嵌入层 f，该层与模型一同学习。 目标通过 InfoNCE 进行比较而非回归：模型只需将每个块与图像中的其他块区分开来，其余细节则由生成器处理。 噪声水平均匀采样，t ∼ 𝒰(0,1)，因此单个模型在推理阶段即可覆盖所有去噪步骤；同时，该条件以 0.1 的概率被替换为空标记，使得同一模型也能提供用于无分类器引导的无条件预测（第 3.4 节）。 如图 3 所示，NEPA 模型 hθ 读取条件 c（一个图像开始标记 ⟨boi⟩）和带噪声的嵌入，并预测接下来的 N 个嵌入，即干净的图像：",
+   "sents": [
+    {
+     "en": "Given a clean input 𝐱 0 \\mathbf{x}_{0} , we sample a noise level t t and construct the noisy input 𝐱 t = ( 1 − t ) ​ 𝐱 0 + t ​ ϵ \\mathbf{x}_{t}=(1-t)\\mathbf{x}_{0}+t\\boldsymbol{\\epsilon} .",
+     "zh": "给定一个干净的输入 𝐱₀，我们采样一个噪声水平 t，并构建带噪声的输入 𝐱ₜ = (1 − t)𝐱₀ + t𝜖。"
+    },
+    {
+     "en": "Both are patchified by the embedding layer into noisy and clean patch embeddings, 𝐳 t = f ⁡ ( 𝐱 t ) \\mathbf{z}_{t}=f(\\mathbf{x}_{t}) and 𝐳 0 = f ⁡ ( 𝐱 0 ) \\mathbf{z}_{0}=f(\\mathbf{x}_{0}) .",
+     "zh": "两者都通过嵌入层被分块为带噪声和干净的块嵌入：𝐳ₜ = f(𝐱ₜ) 和 𝐳₀ = f(𝐱₀)。"
+    },
+    {
+     "en": "As in NEPA, the targets come from the model’s own patch embedding layer f f , which is learned jointly with the model.",
+     "zh": "与 NEPA 类似，目标来自模型自身的嵌入层 f，该层与模型一同学习。"
+    },
+    {
+     "en": "The targets are compared through InfoNCE rather than regressed: the model only has to tell each patch apart from the other patches of the image, and the remaining detail is left to the generator.",
+     "zh": "目标通过 InfoNCE 进行比较而非回归：模型只需将每个块与图像中的其他块区分开来，其余细节则由生成器处理。"
+    },
+    {
+     "en": "The noise level is sampled uniformly, t ∼ 𝒰 ⁡ ( 0 , 1 ) t\\sim\\mathcal{U}(0,1) , so that a single model covers every denoising step at inference, and the condition is replaced by a null token with probability 0.1, so that the same model also provides the unconditional predictions used for classifier-free guidance (Section 3.4 ).",
+     "zh": "噪声水平均匀采样，t ∼ 𝒰(0,1)，因此单个模型在推理阶段即可覆盖所有去噪步骤；同时，该条件以 0.1 的概率被替换为空标记，使得同一模型也能提供用于无分类器引导的无条件预测（第 3.4 节）。"
+    },
+    {
+     "en": "As shown in Figure 3 , the NEPA model h θ h_{\\theta} reads the condition c c , a begin-of-image token ⟨ boi ⟩ \\langle\\mathrm{boi}\\rangle , and the noisy embeddings, and predicts the next N N embeddings, the clean image:",
+     "zh": "如图 3 所示，NEPA 模型 hθ 读取条件 c（一个图像开始标记 ⟨boi⟩）和带噪声的嵌入，并预测接下来的 N 个嵌入，即干净的图像："
+    }
+   ]
+  },
+  {
+   "en": "This is Equation 3 with the context [ c , ⟨ boi ⟩ , 𝐳 t ] [c,\\langle\\mathrm{boi}\\rangle,\\mathbf{z}_{t}] and the next K = N K=N embeddings 𝐳 0 \\mathbf{z}_{0} . As in NEPA, where the output at each position predicts the embedding that follows it, the output at noisy patch i i predicts its next embedding 𝐳 0 , i \\mathbf{z}_{0,i} . The noise level sets the difficulty: at t = 1 t=1 the noisy image carries no information and the clean image must be predicted from the condition alone, whereas as t → 0 t\\to 0 the noisy image approaches the clean one.",
+   "zh": "这是方程 3，其上下文为 [ c , ⟨ boi ⟩ , 𝐳 t ] [c,\\langle\\mathrm{boi}\\rangle,\\mathbf{z}_{t}]，接下来的 K = N K=N 个嵌入为 𝐳 0 \\mathbf{z}_{0}。 与 NEPA 类似，其中每个位置的输出都预测其后续的嵌入，因此嘈杂区域 i 的输出会预测其下一个嵌入 𝐳 0 , i \\mathbf{z}_{0,i}。 噪声水平决定了难度：当 t = 1 t=1 时，嘈杂图像不包含任何信息，必须仅根据条件预测清晰图像；而当 t → 0 t\\to 0 时，嘈杂图像会趋近于清晰图像。",
+   "sents": [
+    {
+     "en": "This is Equation 3 with the context [ c , ⟨ boi ⟩ , 𝐳 t ] [c,\\langle\\mathrm{boi}\\rangle,\\mathbf{z}_{t}] and the next K = N K=N embeddings 𝐳 0 \\mathbf{z}_{0} .",
+     "zh": "这是方程 3，其上下文为 [ c , ⟨ boi ⟩ , 𝐳 t ] [c,\\langle\\mathrm{boi}\\rangle,\\mathbf{z}_{t}]，接下来的 K = N K=N 个嵌入为 𝐳 0 \\mathbf{z}_{0}。"
+    },
+    {
+     "en": "As in NEPA, where the output at each position predicts the embedding that follows it, the output at noisy patch i i predicts its next embedding 𝐳 0 , i \\mathbf{z}_{0,i} .",
+     "zh": "与 NEPA 类似，其中每个位置的输出都预测其后续的嵌入，因此嘈杂区域 i 的输出会预测其下一个嵌入 𝐳 0 , i \\mathbf{z}_{0,i}。"
+    },
+    {
+     "en": "The noise level sets the difficulty: at t = 1 t=1 the noisy image carries no information and the clean image must be predicted from the condition alone, whereas as t → 0 t\\to 0 the noisy image approaches the clean one.",
+     "zh": "噪声水平决定了难度：当 t = 1 t=1 时，嘈杂图像不包含任何信息，必须仅根据条件预测清晰图像；而当 t → 0 t\\to 0 时，嘈杂图像会趋近于清晰图像。"
+    }
+   ]
+  },
+  {
+   "en": "Attention mask. The condition tokens and ⟨ boi ⟩ \\langle\\mathrm{boi}\\rangle form a causal prefix that never attends to image tokens. The image tokens of the noisy image attend to the whole prefix and to each other, and every prediction uses the full spatial context of the noisy image (Figure 4 ). Since the prefix does not depend on the image, it is encoded once and cached during sampling (Section 3.4 ).",
+   "zh": "注意力掩码。 条件标记和 ⟨ boi ⟩ \\langle\\mathrm{boi}\\rangle 构成一个因果前缀，该前缀从不关注图像标记。 噪声图像的图像标记会关注整个前缀以及彼此之间，并且每次预测都会利用噪声图像的全部空间上下文（图 4）。 由于前缀不依赖于图像，因此它在采样过程中只需编码一次并缓存（第 3.4 节）。",
+   "sents": [
+    {
+     "en": "Attention mask.",
+     "zh": "注意力掩码。"
+    },
+    {
+     "en": "The condition tokens and ⟨ boi ⟩ \\langle\\mathrm{boi}\\rangle form a causal prefix that never attends to image tokens.",
+     "zh": "条件标记和 ⟨ boi ⟩ \\langle\\mathrm{boi}\\rangle 构成一个因果前缀，该前缀从不关注图像标记。"
+    },
+    {
+     "en": "The image tokens of the noisy image attend to the whole prefix and to each other, and every prediction uses the full spatial context of the noisy image (Figure 4 ).",
+     "zh": "噪声图像的图像标记会关注整个前缀以及彼此之间，并且每次预测都会利用噪声图像的全部空间上下文（图 4）。"
+    },
+    {
+     "en": "Since the prefix does not depend on the image, it is encoded once and cached during sampling (Section 3.4 ).",
+     "zh": "由于前缀不依赖于图像，因此它在采样过程中只需编码一次并缓存（第 3.4 节）。"
+    }
+   ]
+  },
+  {
+   "en": "Embedding prediction loss. Each prediction 𝐩 i \\mathbf{p}_{i} is trained to match its next embedding 𝐳 0 , i \\mathbf{z}_{0,i} . The distance 𝒟 \\mathcal{D} in Equation 4 can take many forms (Section 4.1 ); we use the InfoNCE loss ( van den Oord et al., 2019 ) , with predicted embeddings as queries and clean embeddings as keys.",
+   "zh": "嵌入预测损失。 每个预测值 𝐩 i \\mathbf{p}_{i} 都经过训练，以匹配其下一个嵌入值 𝐳 0 , i \\mathbf{z}_{0,i}。 公式 4 中的距离 𝒟 \\mathcal{D} 可以有许多形式（第 4.1 节）；我们使用 InfoNCE 损失（van den Oord 等人，2019），其中预测的嵌入值作为查询，干净的嵌入值作为键。",
+   "sents": [
+    {
+     "en": "Embedding prediction loss.",
+     "zh": "嵌入预测损失。"
+    },
+    {
+     "en": "Each prediction 𝐩 i \\mathbf{p}_{i} is trained to match its next embedding 𝐳 0 , i \\mathbf{z}_{0,i} .",
+     "zh": "每个预测值 𝐩 i \\mathbf{p}_{i} 都经过训练，以匹配其下一个嵌入值 𝐳 0 , i \\mathbf{z}_{0,i}。"
+    },
+    {
+     "en": "The distance 𝒟 \\mathcal{D} in Equation 4 can take many forms (Section 4.1 ); we use the InfoNCE loss ( van den Oord et al., 2019 ) , with predicted embeddings as queries and clean embeddings as keys.",
+     "zh": "公式 4 中的距离 𝒟 \\mathcal{D} 可以有许多形式（第 4.1 节）；我们使用 InfoNCE 损失（van den Oord 等人，2019），其中预测的嵌入值作为查询，干净的嵌入值作为键。"
+    }
+   ]
+  },
+  {
+   "en": "As illustrated in Figure 5 , the positives lie on the diagonal, pairing each 𝐩 i \\mathbf{p}_{i} with 𝐳 0 , i \\mathbf{z}_{0,i} , while the other patches of the same image serve as negatives:",
+   "zh": "如图 5 所示，正样本位于对角线上，将每个 𝐩 i \\mathbf{p}_{i} 与 𝐳 0 , i \\mathbf{z}_{0,i} 配对，而同一图像的其他区域则作为负样本：",
+   "sents": null
+  },
+  {
+   "en": "After this stage, the NEPA model maps the condition and the noisy image to predicted clean image embeddings.",
+   "zh": "在此阶段之后，NEPA模型将状态和含噪图像映射为预测的干净图像嵌入。",
+   "sents": null
+  },
+  {
+   "en": "The second stage trains the generator G ϕ G_{\\phi} with the NEPA model h θ h_{\\theta} frozen as its conditioning module. The NEPA model predicts the clean embeddings, while the generator learns the denoising vector field.",
+   "zh": "第二阶段使用 NEPA 模型 h θ h_{\\theta}（作为其条件模块并保持冻结）来训练生成器 G ϕ G_{\\phi}。 NEPA 模型预测干净的嵌入向量，而生成器则学习去噪向量场。",
+   "sents": [
+    {
+     "en": "The second stage trains the generator G ϕ G_{\\phi} with the NEPA model h θ h_{\\theta} frozen as its conditioning module.",
+     "zh": "第二阶段使用 NEPA 模型 h θ h_{\\theta}（作为其条件模块并保持冻结）来训练生成器 G ϕ G_{\\phi}。"
+    },
+    {
+     "en": "The NEPA model predicts the clean embeddings, while the generator learns the denoising vector field.",
+     "zh": "NEPA 模型预测干净的嵌入向量，而生成器则学习去噪向量场。"
+    }
+   ]
+  },
+  {
+   "en": "At each denoising step, the current noisy input 𝐱 t \\mathbf{x}_{t} is first fed into the NEPA model, which outputs predictive embeddings 𝐩 t = h θ ​ ( [ c , ⟨ boi ⟩ ] , f ⁡ ( 𝐱 t ) ) \\mathbf{p}_{t}=h_{\\theta}([c,\\langle\\mathrm{boi}\\rangle],f(\\mathbf{x}_{t})) . The generator follows DiT ( Peebles & Xie, 2023 ) (details in Appendix C ), except that it is conditioned on 𝐩 t \\mathbf{p}_{t} through the MM-DiT blocks of SD3 ( Esser et al., 2024 ) : the predicted embeddings and the noisy latent tokens are processed with separate weights and exchange information through joint attention, followed by single-stream blocks on the concatenated sequence. The generator receives the condition only through 𝐩 t \\mathbf{p}_{t} and has no separate class embedding; the timestep enters through adaLN modulation, as in DiT. The training loss is the weighted flow-matching loss",
+   "zh": "在每个去噪步骤中，当前的含噪输入 𝐱 t \\mathbf{x}_{t} 首先被送入 NEPA 模型，该模型输出预测嵌入 𝐩 t = h θ ​ ( [ c , ⟨ boi ⟩ ] , f ⁡ ( 𝐱 t ) ) \\mathbf{p}_{t}=h_{\\theta}([c,\\langle\\mathrm{boi}\\rangle],f(\\mathbf{x}_{t})) 。 生成器遵循 DiT（Peebles & Xie, 2023）的设计（详见附录 C），不同之处在于它通过 SD3 的 MM-DiT 模块以 𝐩 t \\mathbf{p}_{t} 为条件：预测嵌入和含噪潜在标记分别使用独立的权重进行处理，并通过联合注意力交换信息，随后对拼接后的序列进行单流处理。 生成器仅通过 𝐩 t \\mathbf{p}_{t} 接收条件，且没有独立的类别嵌入；时间步则通过 adaLN 调制传入，与 DiT 的设计一致。 训练损失为加权流匹配损失。",
+   "sents": [
+    {
+     "en": "At each denoising step, the current noisy input 𝐱 t \\mathbf{x}_{t} is first fed into the NEPA model, which outputs predictive embeddings 𝐩 t = h θ ​ ( [ c , ⟨ boi ⟩ ] , f ⁡ ( 𝐱 t ) ) \\mathbf{p}_{t}=h_{\\theta}([c,\\langle\\mathrm{boi}\\rangle],f(\\mathbf{x}_{t})) .",
+     "zh": "在每个去噪步骤中，当前的含噪输入 𝐱 t \\mathbf{x}_{t} 首先被送入 NEPA 模型，该模型输出预测嵌入 𝐩 t = h θ ​ ( [ c , ⟨ boi ⟩ ] , f ⁡ ( 𝐱 t ) ) \\mathbf{p}_{t}=h_{\\theta}([c,\\langle\\mathrm{boi}\\rangle],f(\\mathbf{x}_{t})) 。"
+    },
+    {
+     "en": "The generator follows DiT ( Peebles & Xie, 2023 ) (details in Appendix C ), except that it is conditioned on 𝐩 t \\mathbf{p}_{t} through the MM-DiT blocks of SD3 ( Esser et al., 2024 ) : the predicted embeddings and the noisy latent tokens are processed with separate weights and exchange information through joint attention, followed by single-stream blocks on the concatenated sequence.",
+     "zh": "生成器遵循 DiT（Peebles & Xie, 2023）的设计（详见附录 C），不同之处在于它通过 SD3 的 MM-DiT 模块以 𝐩 t \\mathbf{p}_{t} 为条件：预测嵌入和含噪潜在标记分别使用独立的权重进行处理，并通过联合注意力交换信息，随后对拼接后的序列进行单流处理。"
+    },
+    {
+     "en": "The generator receives the condition only through 𝐩 t \\mathbf{p}_{t} and has no separate class embedding; the timestep enters through adaLN modulation, as in DiT.",
+     "zh": "生成器仅通过 𝐩 t \\mathbf{p}_{t} 接收条件，且没有独立的类别嵌入；时间步则通过 adaLN 调制传入，与 DiT 的设计一致。"
+    },
+    {
+     "en": "The training loss is the weighted flow-matching loss",
+     "zh": "训练损失为加权流匹配损失。"
+    }
+   ]
+  },
+  {
+   "en": "During this stage, gradients update only the generator; the VAE and the NEPA model remain frozen.",
+   "zh": "在此阶段，梯度仅更新生成器；VAE 和 NEPA 模型保持冻结状态。",
+   "sents": null
+  },
+  {
+   "en": "Condition caching. Because the condition prefix never attends to image tokens, its key-value cache in the NEPA model is computed once before the denoising loop and reused at every step; only the image tokens are re-encoded as 𝐱 t \\mathbf{x}_{t} changes.",
+   "zh": "条件缓存。 由于条件前缀从未关注图像标记，因此其在 NEPA 模型中的键值缓存在去噪循环之前计算一次，并在每一步重复使用；只有当 𝐱 t \\mathbf{x}_{t} 变化时，图像标记才会被重新编码。",
+   "sents": [
+    {
+     "en": "Condition caching.",
+     "zh": "条件缓存。"
+    },
+    {
+     "en": "Because the condition prefix never attends to image tokens, its key-value cache in the NEPA model is computed once before the denoising loop and reused at every step; only the image tokens are re-encoded as 𝐱 t \\mathbf{x}_{t} changes.",
+     "zh": "由于条件前缀从未关注图像标记，因此其在 NEPA 模型中的键值缓存在去噪循环之前计算一次，并在每一步重复使用；只有当 𝐱 t \\mathbf{x}_{t} 变化时，图像标记才会被重新编码。"
+    }
+   ]
+  },
+  {
+   "en": "Classifier-free guidance ( Ho & Salimans, 2021 ) . During training, we randomly replace the condition c c with a learned null token. At inference, the unconditional branch feeds the null token to the NEPA model, which yields 𝐩 t ∅ \\mathbf{p}_{t}^{\\varnothing} , and guidance is applied to the velocities predicted by the generator:",
+   "zh": "无分类器引导（Ho & Salimans，2021）。 在训练期间，我们随机将条件 c c 替换为一个已学习的空标记。 在推理阶段，无条件分支将空标记输入 NEPA 模型，从而得到 𝐩 t ∅ \\mathbf{p}_{t}^{\\varnothing}，并对生成器预测的速度应用引导：",
+   "sents": [
+    {
+     "en": "Classifier-free guidance ( Ho & Salimans, 2021 ) .",
+     "zh": "无分类器引导（Ho & Salimans，2021）。"
+    },
+    {
+     "en": "During training, we randomly replace the condition c c with a learned null token.",
+     "zh": "在训练期间，我们随机将条件 c c 替换为一个已学习的空标记。"
+    },
+    {
+     "en": "At inference, the unconditional branch feeds the null token to the NEPA model, which yields 𝐩 t ∅ \\mathbf{p}_{t}^{\\varnothing} , and guidance is applied to the velocities predicted by the generator:",
+     "zh": "在推理阶段，无条件分支将空标记输入 NEPA 模型，从而得到 𝐩 t ∅ \\mathbf{p}_{t}^{\\varnothing}，并对生成器预测的速度应用引导："
+    }
+   ]
+  },
+  {
+   "en": "We evaluate our framework on class-conditional ImageNet-1K generation at 256 × 256 256\\times 256 resolution. At small scale, Section 4.1 ablates the design of Multi-Embedding Prediction and Section 4.2 compares conditions of the generator; Section 4.3 then scales up the NEPA model and the generator, and Section 4.4 compares our final model with prior work.",
+   "zh": "我们在 256 × 256 分辨率下，基于类别条件 ImageNet-1K 生成任务对我们的框架进行了评估。 在小规模实验中，第 4.1 节分析了多嵌入预测模块的设计，第 4.2 节比较了生成器的条件设置；随后，第 4.3 节对 NEPA 模型和生成器进行了扩展，而第 4.4 节则将我们的最终模型与先前的工作进行了对比。",
+   "sents": [
+    {
+     "en": "We evaluate our framework on class-conditional ImageNet-1K generation at 256 × 256 256\\times 256 resolution.",
+     "zh": "我们在 256 × 256 分辨率下，基于类别条件 ImageNet-1K 生成任务对我们的框架进行了评估。"
+    },
+    {
+     "en": "At small scale, Section 4.1 ablates the design of Multi-Embedding Prediction and Section 4.2 compares conditions of the generator; Section 4.3 then scales up the NEPA model and the generator, and Section 4.4 compares our final model with prior work.",
+     "zh": "在小规模实验中，第 4.1 节分析了多嵌入预测模块的设计，第 4.2 节比较了生成器的条件设置；随后，第 4.3 节对 NEPA 模型和生成器进行了扩展，而第 4.4 节则将我们的最终模型与先前的工作进行了对比。"
+    }
+   ]
+  },
+  {
+   "en": "Setup. Following ADM ( Dhariwal & Nichol, 2021 ) , images are center-cropped to 256 × 256 256\\times 256 and encoded by the frozen SD-VAE ( Rombach et al., 2022 ) into 32 × 32 × 4 32\\times 32\\times 4 latents. The NEPA model follows Xu et al. (2025) and the generator follows DiT ( Peebles & Xie, 2023 ) , each at B, L, and XL scale; NEPA-DiT-B/L/XL denotes a NEPA model paired with a DiT-B/L/XL generator. Unless stated otherwise, the NEPA model is NEPA-XL with patch size 4, and the generator uses patch size 2. The NEPA model is trained with Multi-Embedding Prediction for 240 epochs, then frozen while the generator is trained with the flow-matching loss for 400K iterations (80 epochs), both at batch size 256. Appendix C gives further details.",
+   "zh": "设置。 遵循 ADM（Dhariwal & Nichol, 2021），图像被中心裁剪至 256 × 256，并通过冻结的 SD-VAE（Rombach et al., 2022）编码为 32 × 32 × 4 的潜在变量。 NEPA 模型遵循 Xu et al. （2025），而生成器遵循 DiT（Peebles & Xie, 2023），两者均使用 B、L 和 XL 规模；NEPA-DiT-B/L/XL 表示一个与 DiT-B/L/XL 生成器配对的 NEPA 模型。 除非另有说明，NEPA 模型为 NEPA-XL，块大小为 4，而生成器使用块大小为 2。 NEPA 模型采用多嵌入预测方法训练 240 个周期，之后被冻结；同时生成器使用流匹配损失训练 400K 次迭代（80 个周期），两者均使用批量大小 256。 附录 C 提供了更多细节。",
+   "sents": [
+    {
+     "en": "Setup.",
+     "zh": "设置。"
+    },
+    {
+     "en": "Following ADM ( Dhariwal & Nichol, 2021 ) , images are center-cropped to 256 × 256 256\\times 256 and encoded by the frozen SD-VAE ( Rombach et al., 2022 ) into 32 × 32 × 4 32\\times 32\\times 4 latents.",
+     "zh": "遵循 ADM（Dhariwal & Nichol, 2021），图像被中心裁剪至 256 × 256，并通过冻结的 SD-VAE（Rombach et al., 2022）编码为 32 × 32 × 4 的潜在变量。"
+    },
+    {
+     "en": "The NEPA model follows Xu et al.",
+     "zh": "NEPA 模型遵循 Xu et al."
+    },
+    {
+     "en": "(2025) and the generator follows DiT ( Peebles & Xie, 2023 ) , each at B, L, and XL scale; NEPA-DiT-B/L/XL denotes a NEPA model paired with a DiT-B/L/XL generator.",
+     "zh": "（2025），而生成器遵循 DiT（Peebles & Xie, 2023），两者均使用 B、L 和 XL 规模；NEPA-DiT-B/L/XL 表示一个与 DiT-B/L/XL 生成器配对的 NEPA 模型。"
+    },
+    {
+     "en": "Unless stated otherwise, the NEPA model is NEPA-XL with patch size 4, and the generator uses patch size 2.",
+     "zh": "除非另有说明，NEPA 模型为 NEPA-XL，块大小为 4，而生成器使用块大小为 2。"
+    },
+    {
+     "en": "The NEPA model is trained with Multi-Embedding Prediction for 240 epochs, then frozen while the generator is trained with the flow-matching loss for 400K iterations (80 epochs), both at batch size 256.",
+     "zh": "NEPA 模型采用多嵌入预测方法训练 240 个周期，之后被冻结；同时生成器使用流匹配损失训练 400K 次迭代（80 个周期），两者均使用批量大小 256。"
+    },
+    {
+     "en": "Appendix C gives further details.",
+     "zh": "附录 C 提供了更多细节。"
+    }
+   ]
+  },
+  {
+   "en": "Evaluation. We report the Fréchet Inception Distance on 50K samples (FID-50K), computed with the ADM evaluation suite and its ImageNet 256 × 256 256\\times 256 reference batch ( Dhariwal & Nichol, 2021 ) . Unless stated otherwise, ablation and scaling experiments sample with a 64-step ODE solver and no classifier-free guidance; the sampling setup of our final model is given in Section 4.4 .",
+   "zh": "评估。 我们报告了基于 50K 样本的 Fréchet Inception Distance（FID-50K），该指标使用 ADM 评估套件及其 ImageNet 256 × 256 参考批次计算得出（Dhariwal & Nichol, 2021）。 除非另有说明，消融和缩放实验均使用 64 步 ODE 求解器进行采样，且不使用无分类器引导；我们最终模型的采样设置见第 4.4 节。",
+   "sents": [
+    {
+     "en": "Evaluation.",
+     "zh": "评估。"
+    },
+    {
+     "en": "We report the Fréchet Inception Distance on 50K samples (FID-50K), computed with the ADM evaluation suite and its ImageNet 256 × 256 256\\times 256 reference batch ( Dhariwal & Nichol, 2021 ) .",
+     "zh": "我们报告了基于 50K 样本的 Fréchet Inception Distance（FID-50K），该指标使用 ADM 评估套件及其 ImageNet 256 × 256 参考批次计算得出（Dhariwal & Nichol, 2021）。"
+    },
+    {
+     "en": "Unless stated otherwise, ablation and scaling experiments sample with a 64-step ODE solver and no classifier-free guidance; the sampling setup of our final model is given in Section 4.4 .",
+     "zh": "除非另有说明，消融和缩放实验均使用 64 步 ODE 求解器进行采样，且不使用无分类器引导；我们最终模型的采样设置见第 4.4 节。"
+    }
+   ]
+  },
+  {
+   "en": "Following previous work ( Ma et al., 2024 ; Wang et al., 2026b ) , we run ablations at the B scale with NEPA-B and patch size 2, one factor at a time (defaults in gray); Table 6 then selects patch size 4.",
+   "zh": "基于先前的研究（Ma et al., 2024；Wang et al., 2026b），我们在 B 规模上，使用 NEPA-B 和 2 的块大小，每次仅改变一个因素（默认值以灰色显示）进行消融实验；随后，表 6 选择了块大小为 4。",
+   "sents": null
+  },
+  {
+   "en": "Loss. We compare the InfoNCE loss of Section 3.3 with two regression losses, negative cosine similarity and mean squared error (MSE), which pull each prediction toward its own target without contrasting it against the others. InfoNCE gives the best FID, 31.36 against 35.23 for MSE and 37.82 for cosine similarity (Table 1 ). ImageNet-1K accuracy of the fine-tuned NEPA model follows the opposite order. InfoNCE must tell each patch apart from the other patches of the same image, so its predictions keep patch-level detail that helps generation; the regression losses favor smoother, more global predictions, which help classification instead.",
+   "zh": "损失函数。 我们将第 3.3 节中的 InfoNCE 损失与两种回归损失——负余弦相似度和均方误差（MSE）——进行了比较；后两者会将每个预测值向其自身目标拉近，而不会将其与其他预测值进行对比。 InfoNCE 取得了最佳的 FID 分数：31.36，优于 MSE 的 35.23 和余弦相似度的 37.82（见表 1）。 经过微调的 NEPA 模型在 ImageNet-1K 上的准确率则呈现出相反的顺序。 InfoNCE 必须使每个图像块与其他同一图像中的图像块区分开来，因此其预测能够保留有助于生成的图像块级细节；而回归损失则更倾向于生成更平滑、更具全局性的预测，这反而有助于分类任务。",
+   "sents": [
+    {
+     "en": "Loss.",
+     "zh": "损失函数。"
+    },
+    {
+     "en": "We compare the InfoNCE loss of Section 3.3 with two regression losses, negative cosine similarity and mean squared error (MSE), which pull each prediction toward its own target without contrasting it against the others.",
+     "zh": "我们将第 3.3 节中的 InfoNCE 损失与两种回归损失——负余弦相似度和均方误差（MSE）——进行了比较；后两者会将每个预测值向其自身目标拉近，而不会将其与其他预测值进行对比。"
+    },
+    {
+     "en": "InfoNCE gives the best FID, 31.36 against 35.23 for MSE and 37.82 for cosine similarity (Table 1 ).",
+     "zh": "InfoNCE 取得了最佳的 FID 分数：31.36，优于 MSE 的 35.23 和余弦相似度的 37.82（见表 1）。"
+    },
+    {
+     "en": "ImageNet-1K accuracy of the fine-tuned NEPA model follows the opposite order.",
+     "zh": "经过微调的 NEPA 模型在 ImageNet-1K 上的准确率则呈现出相反的顺序。"
+    },
+    {
+     "en": "InfoNCE must tell each patch apart from the other patches of the same image, so its predictions keep patch-level detail that helps generation; the regression losses favor smoother, more global predictions, which help classification instead.",
+     "zh": "InfoNCE 必须使每个图像块与其他同一图像中的图像块区分开来，因此其预测能够保留有助于生成的图像块级细节；而回归损失则更倾向于生成更平滑、更具全局性的预测，这反而有助于分类任务。"
+    }
+   ]
+  },
+  {
+   "en": "Stop-gradient. Detaching the targets 𝐳 0 \\mathbf{z}_{0} from the gradient prevents training from converging (n.c. in Table 2 ), so gradients flow through the targets.",
+   "zh": "梯度截断。 将目标 𝐳 0 \\mathbf{z}_{0} 从梯度中解耦会阻止训练收敛（参见表 2 中的 n.c.），因此梯度会通过这些目标流动。",
+   "sents": [
+    {
+     "en": "Stop-gradient.",
+     "zh": "梯度截断。"
+    },
+    {
+     "en": "Detaching the targets 𝐳 0 \\mathbf{z}_{0} from the gradient prevents training from converging (n.c. in Table 2 ), so gradients flow through the targets.",
+     "zh": "将目标 𝐳 0 \\mathbf{z}_{0} 从梯度中解耦会阻止训练收敛（参见表 2 中的 n.c.），因此梯度会通过这些目标流动。"
+    }
+   ]
+  },
+  {
+   "en": "Target normalization. Normalizing the target embeddings raises FID from 31.36 to 34.76 (Table 3 ), so we use raw targets.",
+   "zh": "目标归一化。 对目标嵌入进行归一化会使 FID 从 31.36 上升到 34.76（表 3），因此我们使用原始目标。",
+   "sents": [
+    {
+     "en": "Target normalization.",
+     "zh": "目标归一化。"
+    },
+    {
+     "en": "Normalizing the target embeddings raises FID from 31.36 to 34.76 (Table 3 ), so we use raw targets.",
+     "zh": "对目标嵌入进行归一化会使 FID 从 31.36 上升到 34.76（表 3），因此我们使用原始目标。"
+    }
+   ]
+  },
+  {
+   "en": "Timestep input. Feeding the diffusion timestep to the NEPA model changes FID from 31.36 to 31.40 (Table 4 ), presumably because the noise level is already evident from the noisy patches; we therefore keep the NEPA model timestep-free, while the generator still receives the timestep through adaLN.",
+   "zh": "时间步输入。 将扩散时间步输入到 NEPA 模型中，会使 FID 从 31.36 变为 31.40（表 4），这可能是因为噪声水平已从噪声斑块中清晰体现；因此，我们保持 NEPA 模型不依赖时间步，而生成器仍通过 adaLN 接收时间步信息。",
+   "sents": [
+    {
+     "en": "Timestep input.",
+     "zh": "时间步输入。"
+    },
+    {
+     "en": "Feeding the diffusion timestep to the NEPA model changes FID from 31.36 to 31.40 (Table 4 ), presumably because the noise level is already evident from the noisy patches; we therefore keep the NEPA model timestep-free, while the generator still receives the timestep through adaLN.",
+     "zh": "将扩散时间步输入到 NEPA 模型中，会使 FID 从 31.36 变为 31.40（表 4），这可能是因为噪声水平已从噪声斑块中清晰体现；因此，我们保持 NEPA 模型不依赖时间步，而生成器仍通过 adaLN 接收时间步信息。"
+    }
+   ]
+  },
+  {
+   "en": "Vocabulary. The InfoNCE loss scores each prediction against a bank of candidate targets. We compare banks built from the patches of the same image (instance), of all images in the per-device batch (batch), and of all images across devices (full). The instance, batch, and full banks give 31.36, 32.13, and 31.21 (Table 5 ). We use the instance bank, which requires no communication across devices; its negatives are the other patches of the same image, as in Equation 5 .",
+   "zh": "词汇。 InfoNCE 损失函数将每个预测与候选目标库进行评分比较。 我们比较了从同一图像（实例）的图像块构建的库、设备内批次中所有图像的库（批次），以及跨所有设备的所有图像的库（完整）。 实例库、批次库和完整库分别得到 31.36、32.13 和 31.21（表 5）。 我们使用实例库，它不需要跨设备通信；其负样本是同一图像的其他图像块，如方程 5 所示。",
+   "sents": [
+    {
+     "en": "Vocabulary.",
+     "zh": "词汇。"
+    },
+    {
+     "en": "The InfoNCE loss scores each prediction against a bank of candidate targets.",
+     "zh": "InfoNCE 损失函数将每个预测与候选目标库进行评分比较。"
+    },
+    {
+     "en": "We compare banks built from the patches of the same image (instance), of all images in the per-device batch (batch), and of all images across devices (full).",
+     "zh": "我们比较了从同一图像（实例）的图像块构建的库、设备内批次中所有图像的库（批次），以及跨所有设备的所有图像的库（完整）。"
+    },
+    {
+     "en": "The instance, batch, and full banks give 31.36, 32.13, and 31.21 (Table 5 ).",
+     "zh": "实例库、批次库和完整库分别得到 31.36、32.13 和 31.21（表 5）。"
+    },
+    {
+     "en": "We use the instance bank, which requires no communication across devices; its negatives are the other patches of the same image, as in Equation 5 .",
+     "zh": "我们使用实例库，它不需要跨设备通信；其负样本是同一图像的其他图像块，如方程 5 所示。"
+    }
+   ]
+  },
+  {
+   "en": "Patch size. The patch size of the NEPA model sets the number of predicted embeddings (Table 6 ). Patch size 4 gives 31.00 against 31.36 for patch size 2 with a quarter of the tokens, which makes the query at every denoising step correspondingly cheaper, whereas patch size 8 is too coarse (33.20). We therefore use patch size 4 in all remaining experiments.",
+   "zh": "块大小。 NEPA 模型的块大小决定了预测嵌入的数量（表 6）。 块大小为 4 时，结果与块大小为 2 的情况相比减少了四分之一的 token，得到 31.00，而后者为 31.36；这使得每次去噪步骤中的查询成本相应降低，但块大小为 8 则过于粗糙（33.20）。 因此，我们在所有后续实验中均使用块大小为 4。",
+   "sents": [
+    {
+     "en": "Patch size.",
+     "zh": "块大小。"
+    },
+    {
+     "en": "The patch size of the NEPA model sets the number of predicted embeddings (Table 6 ).",
+     "zh": "NEPA 模型的块大小决定了预测嵌入的数量（表 6）。"
+    },
+    {
+     "en": "Patch size 4 gives 31.00 against 31.36 for patch size 2 with a quarter of the tokens, which makes the query at every denoising step correspondingly cheaper, whereas patch size 8 is too coarse (33.20).",
+     "zh": "块大小为 4 时，结果与块大小为 2 的情况相比减少了四分之一的 token，得到 31.00，而后者为 31.36；这使得每次去噪步骤中的查询成本相应降低，但块大小为 8 则过于粗糙（33.20）。"
+    },
+    {
+     "en": "We therefore use patch size 4 in all remaining experiments.",
+     "zh": "因此，我们在所有后续实验中均使用块大小为 4。"
+    }
+   ]
+  },
+  {
+   "en": "At the same small scale, Table 7 keeps the generator and its training recipe fixed and varies only what it is conditioned on. The class embedding gives 36.39, and adding the patch embeddings of 𝐱 t \\mathbf{x}_{t} to the class token gives 37.21. The last three rows give the generator the same extra network as ours, of the NEPA-XL architecture, so that their parameters and FLOPs per step match those of our model; what differs is how that network is trained. Trained end to end with the generator as a single network, it gives 29.52. Pretrained as a flow-matching model for 240 epochs, the same budget as MEP, and then frozen, its features give 30.86. Trained with MEP and frozen, its predicted embeddings give 25.04.",
+   "zh": "在同样的小规模下，表 7 保持生成器及其训练方案不变，仅改变其条件输入。 类别嵌入得到 36.39，而将 𝐱 t \\mathbf{x}_{t} 的块嵌入添加到类别标记中则得到 37.21。 最后三行为生成器提供了与我们相同的额外网络，即 NEPA-XL 架构，因此其参数和每步 FLOPs 与我们的模型相匹配；不同之处在于该网络的训练方式。 作为单一网络与生成器一同端到端训练时，它得到 29.52。 作为流匹配模型预训练 240 个周期（与 MEP 相同的预算），然后将其冻结，其特征得到 30.86。 使用 MEP 进行训练并冻结后，其预测嵌入得到 25.04。",
+   "sents": [
+    {
+     "en": "At the same small scale, Table 7 keeps the generator and its training recipe fixed and varies only what it is conditioned on.",
+     "zh": "在同样的小规模下，表 7 保持生成器及其训练方案不变，仅改变其条件输入。"
+    },
+    {
+     "en": "The class embedding gives 36.39, and adding the patch embeddings of 𝐱 t \\mathbf{x}_{t} to the class token gives 37.21.",
+     "zh": "类别嵌入得到 36.39，而将 𝐱 t \\mathbf{x}_{t} 的块嵌入添加到类别标记中则得到 37.21。"
+    },
+    {
+     "en": "The last three rows give the generator the same extra network as ours, of the NEPA-XL architecture, so that their parameters and FLOPs per step match those of our model; what differs is how that network is trained.",
+     "zh": "最后三行为生成器提供了与我们相同的额外网络，即 NEPA-XL 架构，因此其参数和每步 FLOPs 与我们的模型相匹配；不同之处在于该网络的训练方式。"
+    },
+    {
+     "en": "Trained end to end with the generator as a single network, it gives 29.52.",
+     "zh": "作为单一网络与生成器一同端到端训练时，它得到 29.52。"
+    },
+    {
+     "en": "Pretrained as a flow-matching model for 240 epochs, the same budget as MEP, and then frozen, its features give 30.86.",
+     "zh": "作为流匹配模型预训练 240 个周期（与 MEP 相同的预算），然后将其冻结，其特征得到 30.86。"
+    },
+    {
+     "en": "Trained with MEP and frozen, its predicted embeddings give 25.04.",
+     "zh": "使用 MEP 进行训练并冻结后，其预测嵌入得到 25.04。"
+    }
+   ]
+  },
+  {
+   "en": "Scaling the NEPA model and the generator. Beyond the small-scale setting, Table 8 scales both models, training all nine combinations of NEPA-B/L/XL and DiT-B/L/XL, each for 400K iterations and evaluated with 64 ODE steps without guidance. FID decreases monotonically along both axes. Scaling the generator from DiT-B to DiT-XL improves FID by about 14 points for every NEPA model, and scaling the NEPA model from NEPA-B to NEPA-XL improves FID by about 5 points for every generator. All entries use patch size 4 for the NEPA model and patch size 2 for the generator, and the generators match DiT-B/L/XL in depth, width, and number of heads. Each NEPA model is trained once and shared by the three generators of its row.",
+   "zh": "扩展 NEPA 模型和生成器。 在小规模设置之外，表 8 扩展了两种模型，对 NEPA-B/L/XL 和 DiT-B/L/XL 的所有九种组合进行训练，每种组合训练 400K 次迭代，并使用 64 个 ODE 步长（无引导）进行评估。 FID 沿两个轴均单调下降。 将生成器从 DiT-B 扩展至 DiT-XL，可为每个 NEPA 模型提升约 14 分的 FID；而将 NEPA 模型从 NEPA-B 扩展至 NEPA-XL，则可为每个生成器提升约 5 分的 FID。 所有条目中，NEPA 模型均使用 4 的块大小，生成器使用 2 的块大小；生成器的深度、宽度和头数与 DiT-B/L/XL 一致。 每个 NEPA 模型仅训练一次，并由其所在行的三个生成器共享。",
+   "sents": [
+    {
+     "en": "Scaling the NEPA model and the generator.",
+     "zh": "扩展 NEPA 模型和生成器。"
+    },
+    {
+     "en": "Beyond the small-scale setting, Table 8 scales both models, training all nine combinations of NEPA-B/L/XL and DiT-B/L/XL, each for 400K iterations and evaluated with 64 ODE steps without guidance.",
+     "zh": "在小规模设置之外，表 8 扩展了两种模型，对 NEPA-B/L/XL 和 DiT-B/L/XL 的所有九种组合进行训练，每种组合训练 400K 次迭代，并使用 64 个 ODE 步长（无引导）进行评估。"
+    },
+    {
+     "en": "FID decreases monotonically along both axes.",
+     "zh": "FID 沿两个轴均单调下降。"
+    },
+    {
+     "en": "Scaling the generator from DiT-B to DiT-XL improves FID by about 14 points for every NEPA model, and scaling the NEPA model from NEPA-B to NEPA-XL improves FID by about 5 points for every generator.",
+     "zh": "将生成器从 DiT-B 扩展至 DiT-XL，可为每个 NEPA 模型提升约 14 分的 FID；而将 NEPA 模型从 NEPA-B 扩展至 NEPA-XL，则可为每个生成器提升约 5 分的 FID。"
+    },
+    {
+     "en": "All entries use patch size 4 for the NEPA model and patch size 2 for the generator, and the generators match DiT-B/L/XL in depth, width, and number of heads.",
+     "zh": "所有条目中，NEPA 模型均使用 4 的块大小，生成器使用 2 的块大小；生成器的深度、宽度和头数与 DiT-B/L/XL 一致。"
+    },
+    {
+     "en": "Each NEPA model is trained once and shared by the three generators of its row.",
+     "zh": "每个 NEPA 模型仅训练一次，并由其所在行的三个生成器共享。"
+    }
+   ]
+  },
+  {
+   "en": "Training progress. Figure 6 follows NEPA-DiT-B/L/XL over training; all three use the same frozen NEPA-XL model. Each point is FID-50K with 64 ODE steps and no guidance, evaluated every 100K iterations. Larger generators are better at every checkpoint, and the gap opens early: at 200K iterations, NEPA-DiT-L (17.55) and NEPA-DiT-XL (15.23) are already well ahead of NEPA-DiT-B at 400K (25.04). At 400K iterations, the three reach 25.04, 12.86, and 11.27, the NEPA-XL row of Table 8 .",
+   "zh": "训练进度。 图 6 展示了 NEPA-DiT-B/L/XL 在训练过程中的表现；三者均使用相同的冻结 NEPA-XL 模型。 每个数据点均为 FID-50K，采用 64 个 ODE 步长且无引导，每 100K 次迭代评估一次。 在每一个检查点，规模更大的生成器表现更优，且差距很早就显现出来：在 200K 次迭代时，NEPA-DiT-L（17.55）和 NEPA-DiT-XL（15.23）已经明显领先于 400K 次迭代时的 NEPA-DiT-B（25.04）。 在 400K 次迭代时，三者分别达到 25.04、12.86 和 11.27，与表 8 中 NEPA-XL 行的数据一致。",
+   "sents": [
+    {
+     "en": "Training progress.",
+     "zh": "训练进度。"
+    },
+    {
+     "en": "Figure 6 follows NEPA-DiT-B/L/XL over training; all three use the same frozen NEPA-XL model.",
+     "zh": "图 6 展示了 NEPA-DiT-B/L/XL 在训练过程中的表现；三者均使用相同的冻结 NEPA-XL 模型。"
+    },
+    {
+     "en": "Each point is FID-50K with 64 ODE steps and no guidance, evaluated every 100K iterations.",
+     "zh": "每个数据点均为 FID-50K，采用 64 个 ODE 步长且无引导，每 100K 次迭代评估一次。"
+    },
+    {
+     "en": "Larger generators are better at every checkpoint, and the gap opens early: at 200K iterations, NEPA-DiT-L (17.55) and NEPA-DiT-XL (15.23) are already well ahead of NEPA-DiT-B at 400K (25.04).",
+     "zh": "在每一个检查点，规模更大的生成器表现更优，且差距很早就显现出来：在 200K 次迭代时，NEPA-DiT-L（17.55）和 NEPA-DiT-XL（15.23）已经明显领先于 400K 次迭代时的 NEPA-DiT-B（25.04）。"
+    },
+    {
+     "en": "At 400K iterations, the three reach 25.04, 12.86, and 11.27, the NEPA-XL row of Table 8 .",
+     "zh": "在 400K 次迭代时，三者分别达到 25.04、12.86 和 11.27，与表 8 中 NEPA-XL 行的数据一致。"
+    }
+   ]
+  },
+  {
+   "en": "Setup. Our final model combines Embedding Conditioned Generation, which sets the condition of the generator, with REPA ( Yu et al., 2025 ) , which aligns its features. NEPA-DiT-XL pairs NEPA-XL, the frozen model of Section 4.3 , with a DiT-XL generator, and the generator is trained with both the flow-matching loss and the REPA alignment loss (DINOv2-B aligned at the third two-stream block, λ = 0.5 \\lambda=0.5 ) for 400K iterations. We report results with the 96-step ODE and the 250-step SDE samplers of SiT ( Ma et al., 2024 ) . Besides FID ( Heusel et al., 2017 ) , we report sFID ( Nash et al., 2021 ) , Inception Score ( Salimans et al., 2016 ) , and precision and recall ( Kynkäänniemi et al., 2019 ) on the same 50K samples.",
+   "zh": "设置。 我们的最终模型结合了嵌入条件生成（为生成器设定条件）和 REPA（Yu et al., 2025）（用于对齐其特征）。 NEPA-DiT-XL 将 NEPA-XL（第 4.3 节中的冻结模型）与 DiT-XL 生成器配对，并使用流匹配损失和 REPA 对齐损失（DINOv2-B 在第三个双流块处对齐，λ = 0.5 \\lambda=0.5）对生成器进行 400K 次迭代训练。 我们报告了使用 SiT（Ma et al., 2024）的 96 步 ODE 和 250 步 SDE 采样器的结果。 除了 FID（Heusel et al., 2017），我们还报告了 sFID（Nash et al., 2021）、Inception Score（Salimans et al., 2016）以及在同一 50K 样本上的精确率和召回率（Kynkäänniemi et al., 2019）。",
+   "sents": [
+    {
+     "en": "Setup.",
+     "zh": "设置。"
+    },
+    {
+     "en": "Our final model combines Embedding Conditioned Generation, which sets the condition of the generator, with REPA ( Yu et al., 2025 ) , which aligns its features.",
+     "zh": "我们的最终模型结合了嵌入条件生成（为生成器设定条件）和 REPA（Yu et al., 2025）（用于对齐其特征）。"
+    },
+    {
+     "en": "NEPA-DiT-XL pairs NEPA-XL, the frozen model of Section 4.3 , with a DiT-XL generator, and the generator is trained with both the flow-matching loss and the REPA alignment loss (DINOv2-B aligned at the third two-stream block, λ = 0.5 \\lambda=0.5 ) for 400K iterations.",
+     "zh": "NEPA-DiT-XL 将 NEPA-XL（第 4.3 节中的冻结模型）与 DiT-XL 生成器配对，并使用流匹配损失和 REPA 对齐损失（DINOv2-B 在第三个双流块处对齐，λ = 0.5 \\lambda=0.5）对生成器进行 400K 次迭代训练。"
+    },
+    {
+     "en": "We report results with the 96-step ODE and the 250-step SDE samplers of SiT ( Ma et al., 2024 ) .",
+     "zh": "我们报告了使用 SiT（Ma et al., 2024）的 96 步 ODE 和 250 步 SDE 采样器的结果。"
+    },
+    {
+     "en": "Besides FID ( Heusel et al., 2017 ) , we report sFID ( Nash et al., 2021 ) , Inception Score ( Salimans et al., 2016 ) , and precision and recall ( Kynkäänniemi et al., 2019 ) on the same 50K samples.",
+     "zh": "除了 FID（Heusel et al., 2017），我们还报告了 sFID（Nash et al., 2021）、Inception Score（Salimans et al., 2016）以及在同一 50K 样本上的精确率和召回率（Kynkäänniemi et al., 2019）。"
+    }
+   ]
+  },
+  {
+   "en": "Guidance. Table 10 lists guidance settings. Restricting guidance to an interval ( Kynkäänniemi et al., 2024 ) admits larger scales: scale 3.6 on t ∈ [ 0.4 , 1 ] t\\in[0.4,1] gives 1.57 and 1.32, the best with both samplers, selected by FID-50K. All guided results in Table 9 use this setting.",
+   "zh": "引导设置。 表 10 列出了引导设置。 将引导限制在一个区间内（Kynkäänniemi 等人，2024）可以支持更大的尺度：当 t ∈ [0.4, 1] 时，尺度 3.6 分别得到 1.57 和 1.32，这是两种采样器下的最佳结果，由 FID-50K 选出。 表 9 中所有引导生成的结果都使用了此设置。",
+   "sents": [
+    {
+     "en": "Guidance.",
+     "zh": "引导设置。"
+    },
+    {
+     "en": "Table 10 lists guidance settings.",
+     "zh": "表 10 列出了引导设置。"
+    },
+    {
+     "en": "Restricting guidance to an interval ( Kynkäänniemi et al., 2024 ) admits larger scales: scale 3.6 on t ∈ [ 0.4 , 1 ] t\\in[0.4,1] gives 1.57 and 1.32, the best with both samplers, selected by FID-50K.",
+     "zh": "将引导限制在一个区间内（Kynkäänniemi 等人，2024）可以支持更大的尺度：当 t ∈ [0.4, 1] 时，尺度 3.6 分别得到 1.57 和 1.32，这是两种采样器下的最佳结果，由 FID-50K 选出。"
+    },
+    {
+     "en": "All guided results in Table 9 use this setting.",
+     "zh": "表 9 中所有引导生成的结果都使用了此设置。"
+    }
+   ]
+  },
+  {
+   "en": "Query rate. With the 96-step ODE sampler, computing the NEPA predictions only once, at the first step, and reusing them for all later steps gives an FID of 242.63, as all later steps are then conditioned on embeddings predicted from pure noise. Querying every 8 steps gives 1.82, against 1.57 at every step (Table 14 ). Querying at every step also sets the sampling cost of the NEPA model, 92 GFLOPs per step next to 309 for the generator; with 96 ODE steps, one image takes 62 TFLOPs in all, below the 91 TFLOPs of SiT-XL/2 with REPA with 250 SDE steps.",
+   "zh": "查询频率。 使用 96 步 ODE 采样器时，若仅在第一步计算一次 NEPA 预测结果，并在后续所有步骤中重复使用该结果，则 FID 为 242.63，因为此时所有后续步骤的条件都基于从纯噪声预测出的嵌入。 每 8 步查询一次的结果为 1.82，而每一步都查询的结果为 1.57（见表 14）。 每一步都进行查询也决定了 NEPA 模型的采样成本：每步为 92 GFLOPs，而生成器则为 309 GFLOPs；在 96 步 ODE 的情况下，生成一张图像总共需要 62 TFLOPs，低于 SiT-XL/2 使用 REPA 和 250 步 SDE 所需的 91 TFLOPs。",
+   "sents": [
+    {
+     "en": "Query rate.",
+     "zh": "查询频率。"
+    },
+    {
+     "en": "With the 96-step ODE sampler, computing the NEPA predictions only once, at the first step, and reusing them for all later steps gives an FID of 242.63, as all later steps are then conditioned on embeddings predicted from pure noise.",
+     "zh": "使用 96 步 ODE 采样器时，若仅在第一步计算一次 NEPA 预测结果，并在后续所有步骤中重复使用该结果，则 FID 为 242.63，因为此时所有后续步骤的条件都基于从纯噪声预测出的嵌入。"
+    },
+    {
+     "en": "Querying every 8 steps gives 1.82, against 1.57 at every step (Table 14 ).",
+     "zh": "每 8 步查询一次的结果为 1.82，而每一步都查询的结果为 1.57（见表 14）。"
+    },
+    {
+     "en": "Querying at every step also sets the sampling cost of the NEPA model, 92 GFLOPs per step next to 309 for the generator; with 96 ODE steps, one image takes 62 TFLOPs in all, below the 91 TFLOPs of SiT-XL/2 with REPA with 250 SDE steps.",
+     "zh": "每一步都进行查询也决定了 NEPA 模型的采样成本：每步为 92 GFLOPs，而生成器则为 309 GFLOPs；在 96 步 ODE 的情况下，生成一张图像总共需要 62 TFLOPs，低于 SiT-XL/2 使用 REPA 和 250 步 SDE 所需的 91 TFLOPs。"
+    }
+   ]
+  },
+  {
+   "en": "Results. Among the methods of Table 9 in the SD-VAE latent space, NEPA-DiT-XL + REPA reaches an FID of 1.32 with the 250-step SDE sampler and 1.57 with the 96-step ODE sampler. Most of its training compute goes into the NEPA model, trained once: with it included, NEPA-DiT-XL, 1.39B parameters in all, is trained with 3.1 × 10 20 3.1\\times 10^{20} FLOPs, about a third of what SiT-XL/2 with REPA uses over its 800 epochs to reach 1.42 (Appendix C ). Figure 7 and Appendix E show samples.",
+   "zh": "结果。 在 SD-VAE 潜在空间中的表 9 所列方法中，NEPA-DiT-XL + REPA 使用 250 步 SDE 采样器时达到 FID 为 1.32，使用 96 步 ODE 采样器时达到 1.57。 其大部分训练计算量都用于 NEPA 模型，且该模型仅训练一次：包含该模型后，NEPA-DiT-XL（总参数量为 1.39B）的训练计算量为 3.1 × 10^{20} FLOPs，约占 SiT-XL/2 搭配 REPA 在 800 个周期内达到 1.42 时所用计算量的三分之一（附录 C）。 图 7 和附录 E 展示了样本。",
+   "sents": [
+    {
+     "en": "Results.",
+     "zh": "结果。"
+    },
+    {
+     "en": "Among the methods of Table 9 in the SD-VAE latent space, NEPA-DiT-XL + REPA reaches an FID of 1.32 with the 250-step SDE sampler and 1.57 with the 96-step ODE sampler.",
+     "zh": "在 SD-VAE 潜在空间中的表 9 所列方法中，NEPA-DiT-XL + REPA 使用 250 步 SDE 采样器时达到 FID 为 1.32，使用 96 步 ODE 采样器时达到 1.57。"
+    },
+    {
+     "en": "Most of its training compute goes into the NEPA model, trained once: with it included, NEPA-DiT-XL, 1.39B parameters in all, is trained with 3.1 × 10 20 3.1\\times 10^{20} FLOPs, about a third of what SiT-XL/2 with REPA uses over its 800 epochs to reach 1.42 (Appendix C ).",
+     "zh": "其大部分训练计算量都用于 NEPA 模型，且该模型仅训练一次：包含该模型后，NEPA-DiT-XL（总参数量为 1.39B）的训练计算量为 3.1 × 10^{20} FLOPs，约占 SiT-XL/2 搭配 REPA 在 800 个周期内达到 1.42 时所用计算量的三分之一（附录 C）。"
+    },
+    {
+     "en": "Figure 7 and Appendix E show samples.",
+     "zh": "图 7 和附录 E 展示了样本。"
+    }
+   ]
+  },
+  {
+   "en": "We have shown that predictive embeddings can serve as the condition of an image generator. In Embedding Conditioned Generation, a DiT generator is conditioned at every denoising step on the clean-image embeddings that a NEPA model, trained with Multi-Embedding Prediction, predicts from the condition and the current noisy image. On ImageNet 256 × 256 256\\times 256 , combined with REPA, NEPA-DiT-XL reaches an FID of 1.32 with the 250-step SDE sampler and 1.57 with the 96-step ODE sampler, trained with about a third of REPA’s compute even though it trains and runs two networks. Code and model weights will be released. Future work is discussed in Appendix B .",
+   "zh": "我们已经证明，预测性嵌入可以作为图像生成器的条件。 在嵌入条件生成中，DiT 生成器在每个去噪步骤都以干净图像的嵌入为条件，而这些嵌入是由一个经过多嵌入预测训练的 NEPA 模型根据当前条件和当前含噪图像预测出来的。 在 ImageNet 256 × 256 上，结合 REPA，NEPA-DiT-XL 使用 250 步的 SDE 采样器时达到 FID 1.32，使用 96 步的 ODE 采样器时达到 1.57，尽管它需要训练和运行两个网络，但训练所需的计算量仅为 REPA 的大约三分之一。 代码和模型权重将会发布。 未来的工作将在附录 B 中讨论。",
+   "sents": [
+    {
+     "en": "We have shown that predictive embeddings can serve as the condition of an image generator.",
+     "zh": "我们已经证明，预测性嵌入可以作为图像生成器的条件。"
+    },
+    {
+     "en": "In Embedding Conditioned Generation, a DiT generator is conditioned at every denoising step on the clean-image embeddings that a NEPA model, trained with Multi-Embedding Prediction, predicts from the condition and the current noisy image.",
+     "zh": "在嵌入条件生成中，DiT 生成器在每个去噪步骤都以干净图像的嵌入为条件，而这些嵌入是由一个经过多嵌入预测训练的 NEPA 模型根据当前条件和当前含噪图像预测出来的。"
+    },
+    {
+     "en": "On ImageNet 256 × 256 256\\times 256 , combined with REPA, NEPA-DiT-XL reaches an FID of 1.32 with the 250-step SDE sampler and 1.57 with the 96-step ODE sampler, trained with about a third of REPA’s compute even though it trains and runs two networks.",
+     "zh": "在 ImageNet 256 × 256 上，结合 REPA，NEPA-DiT-XL 使用 250 步的 SDE 采样器时达到 FID 1.32，使用 96 步的 ODE 采样器时达到 1.57，尽管它需要训练和运行两个网络，但训练所需的计算量仅为 REPA 的大约三分之一。"
+    },
+    {
+     "en": "Code and model weights will be released.",
+     "zh": "代码和模型权重将会发布。"
+    },
+    {
+     "en": "Future work is discussed in Appendix B .",
+     "zh": "未来的工作将在附录 B 中讨论。"
+    }
+   ]
+  },
+  {
+   "en": "We used large language models only to polish the writing of this paper, such as correcting grammar and improving wording. The authors reviewed all edits and take full responsibility for the content.",
+   "zh": "我们仅使用大型语言模型来润色本文的写作，例如纠正语法和改良措辞。 作者们审阅了所有修改，并对内容承担全部责任。",
+   "sents": [
+    {
+     "en": "We used large language models only to polish the writing of this paper, such as correcting grammar and improving wording.",
+     "zh": "我们仅使用大型语言模型来润色本文的写作，例如纠正语法和改良措辞。"
+    },
+    {
+     "en": "The authors reviewed all edits and take full responsibility for the content.",
+     "zh": "作者们审阅了所有修改，并对内容承担全部责任。"
+    }
+   ]
+  },
+  {
+   "en": "Relation to RepFusion. RepFusion ( Pan et al., 2026a ) also conditions a diffusion transformer on the outputs of a model that reads the noisy input at every denoising step. It builds on two existing components: the latent space of a representation autoencoder ( Zheng et al., 2026 ) , which it adopts so that noisy latents are compatible with pretrained language-model priors, and a pretrained multimodal LLM, which it repurposes as the encoder of noisy representations. Our NEPA model depends on neither. It is trained from scratch with Multi-Embedding Prediction directly on the latents of a standard VAE, so the conditioning interface is defined by a training objective rather than by an existing model. The same recipe can therefore be applied to any Transformer as the NEPA model and to any generator that accepts conditioning tokens.",
+   "zh": "与 RepFusion 的关系。 RepFusion（Pan 等人，2026a）同样将扩散变换器的条件建立在某个模型之上，该模型在每个去噪步骤中都会读取含噪声的输入。 它基于两个现有组件：表示自编码器的潜在空间（Zheng 等人，2026），通过采用该空间，含噪声的潜在变量可以与预训练语言模型的先验兼容；以及一个预训练的多模态大型语言模型，它被重新用作含噪声表示的编码器。 我们的 NEPA 模型不依赖这两者中的任何一项。 它从零开始使用多嵌入预测方法直接对标准 VAE 的潜在变量进行训练，因此其条件接口是由训练目标定义的，而非由现有模型定义。 因此，同样的方法可以应用于任何作为 NEPA 模型的 Transformer，以及任何接受条件标记的生成器。",
+   "sents": [
+    {
+     "en": "Relation to RepFusion.",
+     "zh": "与 RepFusion 的关系。"
+    },
+    {
+     "en": "RepFusion ( Pan et al., 2026a ) also conditions a diffusion transformer on the outputs of a model that reads the noisy input at every denoising step.",
+     "zh": "RepFusion（Pan 等人，2026a）同样将扩散变换器的条件建立在某个模型之上，该模型在每个去噪步骤中都会读取含噪声的输入。"
+    },
+    {
+     "en": "It builds on two existing components: the latent space of a representation autoencoder ( Zheng et al., 2026 ) , which it adopts so that noisy latents are compatible with pretrained language-model priors, and a pretrained multimodal LLM, which it repurposes as the encoder of noisy representations.",
+     "zh": "它基于两个现有组件：表示自编码器的潜在空间（Zheng 等人，2026），通过采用该空间，含噪声的潜在变量可以与预训练语言模型的先验兼容；以及一个预训练的多模态大型语言模型，它被重新用作含噪声表示的编码器。"
+    },
+    {
+     "en": "Our NEPA model depends on neither.",
+     "zh": "我们的 NEPA 模型不依赖这两者中的任何一项。"
+    },
+    {
+     "en": "It is trained from scratch with Multi-Embedding Prediction directly on the latents of a standard VAE, so the conditioning interface is defined by a training objective rather than by an existing model.",
+     "zh": "它从零开始使用多嵌入预测方法直接对标准 VAE 的潜在变量进行训练，因此其条件接口是由训练目标定义的，而非由现有模型定义。"
+    },
+    {
+     "en": "The same recipe can therefore be applied to any Transformer as the NEPA model and to any generator that accepts conditioning tokens.",
+     "zh": "因此，同样的方法可以应用于任何作为 NEPA 模型的 Transformer，以及任何接受条件标记的生成器。"
+    }
+   ]
+  },
+  {
+   "en": "Relation to DDT. DDT ( Wang et al., 2026b ) also splits the generator into a condition encoder that reads the noisy latent and a velocity decoder conditioned on the encoder output. The two are trained jointly: the encoder is supervised indirectly through the velocity loss of the decoder, together with a REPA alignment to DINOv2 features. Our NEPA model is instead trained separately to predict the clean embeddings of the image and is then frozen, so the condition is a representation learned with its own objective rather than an intermediate feature of the generator. DDT also shares the encoder output between adjacent denoising steps to accelerate sampling, and Table 14 studies the corresponding choice for our NEPA model.",
+   "zh": "与 DDT 的关系。 DDT（Wang 等人，2026b）也将生成器拆分为一个读取噪声潜在条件的条件编码器和一个以编码器输出为条件的速度解码器。 两者是联合训练的：编码器通过解码器的速度损失间接接受监督，同时还需要与 DINOv2 特征的 REPA 对齐。 相比之下，我们的 NEPA 模型是分开训练以预测图像的干净嵌入，之后会被冻结，因此其条件是通过自身目标学习到的表示，而非生成器的中间特征。 DDT 还会在相邻的去噪步骤间共享编码器输出以加速采样，表 14 研究了我们 NEPA 模型对此的相应选择。",
+   "sents": [
+    {
+     "en": "Relation to DDT.",
+     "zh": "与 DDT 的关系。"
+    },
+    {
+     "en": "DDT ( Wang et al., 2026b ) also splits the generator into a condition encoder that reads the noisy latent and a velocity decoder conditioned on the encoder output.",
+     "zh": "DDT（Wang 等人，2026b）也将生成器拆分为一个读取噪声潜在条件的条件编码器和一个以编码器输出为条件的速度解码器。"
+    },
+    {
+     "en": "The two are trained jointly: the encoder is supervised indirectly through the velocity loss of the decoder, together with a REPA alignment to DINOv2 features.",
+     "zh": "两者是联合训练的：编码器通过解码器的速度损失间接接受监督，同时还需要与 DINOv2 特征的 REPA 对齐。"
+    },
+    {
+     "en": "Our NEPA model is instead trained separately to predict the clean embeddings of the image and is then frozen, so the condition is a representation learned with its own objective rather than an intermediate feature of the generator.",
+     "zh": "相比之下，我们的 NEPA 模型是分开训练以预测图像的干净嵌入，之后会被冻结，因此其条件是通过自身目标学习到的表示，而非生成器的中间特征。"
+    },
+    {
+     "en": "DDT also shares the encoder output between adjacent denoising steps to accelerate sampling, and Table 14 studies the corresponding choice for our NEPA model.",
+     "zh": "DDT 还会在相邻的去噪步骤间共享编码器输出以加速采样，表 14 研究了我们 NEPA 模型对此的相应选择。"
+    }
+   ]
+  },
+  {
+   "en": "Relation to 𝐱 0 \\mathbf{x}_{0} -prediction and self-conditioning. A diffusion model can be parameterized to predict the clean sample 𝐱 0 \\mathbf{x}_{0} ( Ho et al., 2020 ; Karras et al., 2022 ) , and JiT ( Li & He, 2026 ) predicts it directly with a Transformer on raw pixels. Self-conditioning ( Chen et al., 2023 ) and RIN ( Jabri et al., 2023 ) feed such an estimate, or the latent state behind it, back into the same denoiser at the next step. In both cases the estimate comes from the denoiser itself and is trained by its denoising loss. Our NEPA model is a separate network, trained with its own embedding prediction objective and then frozen, and its predictions are recomputed from the current noisy input at every step. Table 7 includes, in the same setting, a network of the same architecture trained end to end with the generator by flow matching, and the same network pretrained as a flow-matching model and then frozen.",
+   "zh": "与 𝐱₀ 的关联：预测与自条件化。 扩散模型可以被参数化为预测干净的样本 𝐱₀（Ho et al., 2020; Karras et al., 2022），而 JiT（Li & He, 2026）则通过 Transformer 直接对原始像素进行预测。 自条件化（Chen et al., 2023）和 RIN（Jabri et al., 2023）将此类估计值，或其后方的潜在状态，在下一步重新输入到同一个去噪器中。 在这两种情况下，该估计值都来自去噪器本身，并通过其去噪损失进行训练。 我们的 NEPA 模型是一个独立的网络，使用自身的嵌入预测目标进行训练并随后被冻结，其预测值在每一步都会根据当前的含噪输入重新计算。 表 7 在同一设置下，包含一个采用相同架构、通过流匹配与生成器端到端训练的模型，以及一个预先训练为流匹配模型并随后被冻结的同一网络。",
+   "sents": [
+    {
+     "en": "Relation to 𝐱 0 \\mathbf{x}_{0} -prediction and self-conditioning.",
+     "zh": "与 𝐱₀ 的关联：预测与自条件化。"
+    },
+    {
+     "en": "A diffusion model can be parameterized to predict the clean sample 𝐱 0 \\mathbf{x}_{0} ( Ho et al., 2020 ; Karras et al., 2022 ) , and JiT ( Li & He, 2026 ) predicts it directly with a Transformer on raw pixels.",
+     "zh": "扩散模型可以被参数化为预测干净的样本 𝐱₀（Ho et al., 2020; Karras et al., 2022），而 JiT（Li & He, 2026）则通过 Transformer 直接对原始像素进行预测。"
+    },
+    {
+     "en": "Self-conditioning ( Chen et al., 2023 ) and RIN ( Jabri et al., 2023 ) feed such an estimate, or the latent state behind it, back into the same denoiser at the next step.",
+     "zh": "自条件化（Chen et al., 2023）和 RIN（Jabri et al., 2023）将此类估计值，或其后方的潜在状态，在下一步重新输入到同一个去噪器中。"
+    },
+    {
+     "en": "In both cases the estimate comes from the denoiser itself and is trained by its denoising loss.",
+     "zh": "在这两种情况下，该估计值都来自去噪器本身，并通过其去噪损失进行训练。"
+    },
+    {
+     "en": "Our NEPA model is a separate network, trained with its own embedding prediction objective and then frozen, and its predictions are recomputed from the current noisy input at every step.",
+     "zh": "我们的 NEPA 模型是一个独立的网络，使用自身的嵌入预测目标进行训练并随后被冻结，其预测值在每一步都会根据当前的含噪输入重新计算。"
+    },
+    {
+     "en": "Table 7 includes, in the same setting, a network of the same architecture trained end to end with the generator by flow matching, and the same network pretrained as a flow-matching model and then frozen.",
+     "zh": "表 7 在同一设置下，包含一个采用相同架构、通过流匹配与生成器端到端训练的模型，以及一个预先训练为流匹配模型并随后被冻结的同一网络。"
+    }
+   ]
+  },
+  {
+   "en": "Text conditions. Text-to-image models either encode the prompt once with a separate text encoder ( Saharia et al., 2022 ; Chen et al., 2024b ; Esser et al., 2024 ) , which cannot adapt to the evolving noisy image and often fixes the length of the condition, or process the prompt together with the image in a single unified model ( Deng et al., 2025 ) , where the condition and the image share one backbone. A NEPA model could instead read the whole prompt before the noisy image and predict the clean image embeddings from both, as it does for class labels in this paper.",
+   "zh": "文本条件。 文本到图像模型要么使用独立的文本编码器对提示词进行一次性编码（Saharia 等，2022；Chen 等，2024b；Esser 等，2024），这种方式无法适应不断变化的含噪图像，且通常会使条件的长度固定不变；要么将提示词与图像一同处理于一个统一的模型中（Deng 等，2025），其中条件与图像共享同一个主干网络。 相比之下，NEPA 模型可以在读取含噪图像之前先读取整个提示词，并基于两者预测干净图像的嵌入表示，就像本文中对类别标签所做的那样。",
+   "sents": [
+    {
+     "en": "Text conditions.",
+     "zh": "文本条件。"
+    },
+    {
+     "en": "Text-to-image models either encode the prompt once with a separate text encoder ( Saharia et al., 2022 ; Chen et al., 2024b ; Esser et al., 2024 ) , which cannot adapt to the evolving noisy image and often fixes the length of the condition, or process the prompt together with the image in a single unified model ( Deng et al., 2025 ) , where the condition and the image share one backbone.",
+     "zh": "文本到图像模型要么使用独立的文本编码器对提示词进行一次性编码（Saharia 等，2022；Chen 等，2024b；Esser 等，2024），这种方式无法适应不断变化的含噪图像，且通常会使条件的长度固定不变；要么将提示词与图像一同处理于一个统一的模型中（Deng 等，2025），其中条件与图像共享同一个主干网络。"
+    },
+    {
+     "en": "A NEPA model could instead read the whole prompt before the noisy image and predict the clean image embeddings from both, as it does for class labels in this paper.",
+     "zh": "相比之下，NEPA 模型可以在读取含噪图像之前先读取整个提示词，并基于两者预测干净图像的嵌入表示，就像本文中对类别标签所做的那样。"
+    }
+   ]
+  },
+  {
+   "en": "Unified models. Since the NEPA model is an autoregressive Transformer, a single NEPA model could in principle serve both as a language model with an output head and as the conditioning model of a DiT generator. Studying text conditions, other latent spaces, and higher resolutions are directions for future work.",
+   "zh": "统一模型。 由于 NEPA 模型是一种自回归 Transformer，原则上单个 NEPA 模型既可以作为带有输出头的语言模型，也可以作为 DiT 生成器的条件模型。 研究文本条件、其他潜在空间以及更高分辨率是未来工作的方向。",
+   "sents": [
+    {
+     "en": "Unified models.",
+     "zh": "统一模型。"
+    },
+    {
+     "en": "Since the NEPA model is an autoregressive Transformer, a single NEPA model could in principle serve both as a language model with an output head and as the conditioning model of a DiT generator.",
+     "zh": "由于 NEPA 模型是一种自回归 Transformer，原则上单个 NEPA 模型既可以作为带有输出头的语言模型，也可以作为 DiT 生成器的条件模型。"
+    },
+    {
+     "en": "Studying text conditions, other latent spaces, and higher resolutions are directions for future work.",
+     "zh": "研究文本条件、其他潜在空间以及更高分辨率是未来工作的方向。"
+    }
+   ]
+  },
+  {
+   "en": "Further implementation details. Throughout the experiments, the generator matches DiT ( Peebles & Xie, 2023 ) in depth, width, and number of heads, but uses MM-DiT blocks ( Esser et al., 2024 ) : the first blocks are two-stream and process the predicted embeddings and the latent tokens with separate weights, and the remaining blocks are single-stream blocks on the concatenated sequence. The NEPA model is kept frozen when training the generator. We use mixed precision (bfloat16) with gradient clipping at 1.0 for both stages, and keep an EMA of the generator weights with decay 0.9999. The timestep of the generator is sampled from a logit-normal distribution with zero mean and unit variance ( Esser et al., 2024 ) . We use the stabilityai/sd-vae-ft-mse VAE ( Rombach et al., 2022 ) for encoding images during training and the stabilityai/sd-vae-ft-ema VAE for decoding samples. For the REPA projector, we use a three-layer MLP with SiLU activations and hidden dimension 2,048, following Yu et al. (2025) . We provide a detailed hyperparameter setup in Tables 11 and 12 .",
+   "zh": "更多实现细节。 在整个实验过程中，生成器的深度、宽度和头数与 DiT（Peebles & Xie, 2023）一致，但使用了 MM-DiT 块（Esser et al., 2024）：前几个块是双流结构，使用独立的权重处理预测嵌入和潜在标记；其余块则是基于拼接序列的单流块。 在训练生成器时，NEPA 模型保持冻结状态。 我们在两个阶段均使用混合精度（bfloat16），并将梯度裁剪值设为 1.0，同时以 0.9999 的衰减率维护生成器权重的 EMA。 生成器的时间步长从均值为零、方差为一的对数正态分布中采样（Esser et al., 2024）。 在训练期间，我们使用 stabilityai/sd-vae-ft-mse VAE（Rombach et al., 2022）对图像进行编码，并使用 stabilityai/sd-vae-ft-ema VAE 对样本进行解码。 对于 REPA 投影器，我们采用 Yu et al.（2025）的方法，使用一个包含 SiLU 激活函数和 2,048 维隐藏层的三层 MLP。 我们在表 11 和表 12 中提供了详细的超参数设置。",
+   "sents": [
+    {
+     "en": "Further implementation details.",
+     "zh": "更多实现细节。"
+    },
+    {
+     "en": "Throughout the experiments, the generator matches DiT ( Peebles & Xie, 2023 ) in depth, width, and number of heads, but uses MM-DiT blocks ( Esser et al., 2024 ) : the first blocks are two-stream and process the predicted embeddings and the latent tokens with separate weights, and the remaining blocks are single-stream blocks on the concatenated sequence.",
+     "zh": "在整个实验过程中，生成器的深度、宽度和头数与 DiT（Peebles & Xie, 2023）一致，但使用了 MM-DiT 块（Esser et al., 2024）：前几个块是双流结构，使用独立的权重处理预测嵌入和潜在标记；其余块则是基于拼接序列的单流块。"
+    },
+    {
+     "en": "The NEPA model is kept frozen when training the generator.",
+     "zh": "在训练生成器时，NEPA 模型保持冻结状态。"
+    },
+    {
+     "en": "We use mixed precision (bfloat16) with gradient clipping at 1.0 for both stages, and keep an EMA of the generator weights with decay 0.9999.",
+     "zh": "我们在两个阶段均使用混合精度（bfloat16），并将梯度裁剪值设为 1.0，同时以 0.9999 的衰减率维护生成器权重的 EMA。"
+    },
+    {
+     "en": "The timestep of the generator is sampled from a logit-normal distribution with zero mean and unit variance ( Esser et al., 2024 ) .",
+     "zh": "生成器的时间步长从均值为零、方差为一的对数正态分布中采样（Esser et al., 2024）。"
+    },
+    {
+     "en": "We use the stabilityai/sd-vae-ft-mse VAE ( Rombach et al., 2022 ) for encoding images during training and the stabilityai/sd-vae-ft-ema VAE for decoding samples.",
+     "zh": "在训练期间，我们使用 stabilityai/sd-vae-ft-mse VAE（Rombach et al., 2022）对图像进行编码，并使用 stabilityai/sd-vae-ft-ema VAE 对样本进行解码。"
+    },
+    {
+     "en": "For the REPA projector, we use a three-layer MLP with SiLU activations and hidden dimension 2,048, following Yu et al. (2025) .",
+     "zh": "对于 REPA 投影器，我们采用 Yu et al.（2025）的方法，使用一个包含 SiLU 激活函数和 2,048 维隐藏层的三层 MLP。"
+    },
+    {
+     "en": "We provide a detailed hyperparameter setup in Tables 11 and 12 .",
+     "zh": "我们在表 11 和表 12 中提供了详细的超参数设置。"
+    }
+   ]
+  },
+  {
+   "en": "Pretrained encoder. For REPA, we use the official DINOv2-B checkpoint with registers.",
+   "zh": "预训练编码器。 对于 REPA，我们使用带有寄存器的官方 DINOv2-B 检查点。",
+   "sents": [
+    {
+     "en": "Pretrained encoder.",
+     "zh": "预训练编码器。"
+    },
+    {
+     "en": "For REPA, we use the official DINOv2-B checkpoint with registers.",
+     "zh": "对于 REPA，我们使用带有寄存器的官方 DINOv2-B 检查点。"
+    }
+   ]
+  },
+  {
+   "en": "ImageNet-1K accuracy. The accuracy reported in Tables 1 and 8 is the top-1 accuracy of the NEPA model after fine-tuning it for ImageNet-1K classification with the fine-tuning recipe of NEPA ( Xu et al., 2025 ) .",
+   "zh": "ImageNet-1K 准确率。 表 1 和表 8 中报告的准确率为 NEPA 模型在通过 NEPA（Xu et al., 2025）的微调方案进行 ImageNet-1K 分类微调后的 top-1 准确率。",
+   "sents": [
+    {
+     "en": "ImageNet-1K accuracy.",
+     "zh": "ImageNet-1K 准确率。"
+    },
+    {
+     "en": "The accuracy reported in Tables 1 and 8 is the top-1 accuracy of the NEPA model after fine-tuning it for ImageNet-1K classification with the fine-tuning recipe of NEPA ( Xu et al., 2025 ) .",
+     "zh": "表 1 和表 8 中报告的准确率为 NEPA 模型在通过 NEPA（Xu et al., 2025）的微调方案进行 ImageNet-1K 分类微调后的 top-1 准确率。"
+    }
+   ]
+  },
+  {
+   "en": "Sampling. For the system-level comparison, we use the SDE Euler-Maruyama sampler of SiT ( Ma et al., 2024 ) with 250 steps, or the Euler ODE sampler with 96 steps, and apply classifier-free guidance with a scale of 3.6 only for t ∈ [ 0.4 , 1 ] t\\in[0.4,1] ( Kynkäänniemi et al., 2024 ) . Other results use the Euler ODE sampler, and the number of steps is given with each table.",
+   "zh": "采样。 在系统级比较中，我们使用 SiT（Ma et al., 2024）的 SDE Euler-Maruyama 采样器，步数为 250，或使用 Euler ODE 采样器，步数为 96，并且仅对 t ∈ [0.4, 1]（Kynkäänniemi et al., 2024）应用尺度为 3.6 的无分类器引导。 其他结果使用 Euler ODE 采样器，具体步数在每张表格中均有说明。",
+   "sents": [
+    {
+     "en": "Sampling.",
+     "zh": "采样。"
+    },
+    {
+     "en": "For the system-level comparison, we use the SDE Euler-Maruyama sampler of SiT ( Ma et al., 2024 ) with 250 steps, or the Euler ODE sampler with 96 steps, and apply classifier-free guidance with a scale of 3.6 only for t ∈ [ 0.4 , 1 ] t\\in[0.4,1] ( Kynkäänniemi et al., 2024 ) .",
+     "zh": "在系统级比较中，我们使用 SiT（Ma et al., 2024）的 SDE Euler-Maruyama 采样器，步数为 250，或使用 Euler ODE 采样器，步数为 96，并且仅对 t ∈ [0.4, 1]（Kynkäänniemi et al., 2024）应用尺度为 3.6 的无分类器引导。"
+    },
+    {
+     "en": "Other results use the Euler ODE sampler, and the number of steps is given with each table.",
+     "zh": "其他结果使用 Euler ODE 采样器，具体步数在每张表格中均有说明。"
+    }
+   ]
+  },
+  {
+   "en": "DiT baseline. The DiT-B baseline uses the same generator as NEPA-DiT-B, but conditions it directly on a learned class embedding instead of the embeddings predicted by the NEPA model. The class embedding enters the text stream of the MM-DiT blocks as a single token, in place of the predicted embeddings; in both models, the timestep enters through adaLN modulation. All other settings, including the training objective, timestep distribution, and optimization, are the same (Table 12 ).",
+   "zh": "DiT 基线模型。 DiT-B 基线模型使用与 NEPA-DiT-B 相同的生成器，但直接以学习到的类别嵌入作为条件，而非由 NEPA 模型预测的嵌入。 类别嵌入作为一个单一标记进入 MM-DiT 模块的文本流，取代了预测的嵌入；在两种模型中，时间步都通过 adaLN 调制输入。 所有其他设置（包括训练目标、时间步分布和优化方法）均保持一致（表 12）。",
+   "sents": [
+    {
+     "en": "DiT baseline.",
+     "zh": "DiT 基线模型。"
+    },
+    {
+     "en": "The DiT-B baseline uses the same generator as NEPA-DiT-B, but conditions it directly on a learned class embedding instead of the embeddings predicted by the NEPA model.",
+     "zh": "DiT-B 基线模型使用与 NEPA-DiT-B 相同的生成器，但直接以学习到的类别嵌入作为条件，而非由 NEPA 模型预测的嵌入。"
+    },
+    {
+     "en": "The class embedding enters the text stream of the MM-DiT blocks as a single token, in place of the predicted embeddings; in both models, the timestep enters through adaLN modulation.",
+     "zh": "类别嵌入作为一个单一标记进入 MM-DiT 模块的文本流，取代了预测的嵌入；在两种模型中，时间步都通过 adaLN 调制输入。"
+    },
+    {
+     "en": "All other settings, including the training objective, timestep distribution, and optimization, are the same (Table 12 ).",
+     "zh": "所有其他设置（包括训练目标、时间步分布和优化方法）均保持一致（表 12）。"
+    }
+   ]
+  },
+  {
+   "en": "Computing resources. All models are trained on NVIDIA H200 GPUs. The NEPA model is trained once for 240 epochs and is then frozen and shared by all generators; each generator is trained for 400K iterations at batch size 256 (80 epochs). Table 13 lists the parameters and the sampling FLOPs of both models, counted with the PyTorch FLOP counter for one 256 × 256 256\\times 256 image (one multiply-add counts as two FLOPs); SiT-XL/2 is counted in the same way. Training FLOPs are counted with the same counter and include on-the-fly VAE encoding: the NEPA model (240 epochs) and the generator with REPA (400K iterations) together take 3.1 × 10 20 3.1\\times 10^{20} FLOPs, and SiT-XL/2 with REPA takes about 1.0 × 10 21 1.0\\times 10^{21} FLOPs for its 800 epochs. With classifier-free guidance, the generator and the NEPA model both run on the conditional and the unconditional branch at each guided step.",
+   "zh": "计算资源。 所有模型均在 NVIDIA H200 GPU 上进行训练。 NEPA 模型先训练 240 个周期，之后被冻结并由所有生成器共享；每个生成器以 256 的批量大小训练 400K 次迭代（即 80 个周期）。 表 13 列出了两种模型的所有参数和采样 FLOPs，这些数值是使用 PyTorch FLOP 计数器针对一张 256 × 256 的图像计算的（一次乘加操作计为两次 FLOPs）；SiT-XL/2 也采用相同方式计算。 训练 FLOPs 使用相同的计数器计算，并包含实时 VAE 编码：NEPA 模型（240 个周期）与带有 REPA 的生成器（400K 次迭代）合计消耗 3.1 × 10²⁰ FLOPs，而带有 REPA 的 SiT-XL/2 在 800 个周期内消耗约 1.0 × 10²¹ FLOPs。 在使用无分类器引导时，生成器和 NEPA 模型在每个引导步骤中都会在条件分支和无条件分支上同时运行。",
+   "sents": [
+    {
+     "en": "Computing resources.",
+     "zh": "计算资源。"
+    },
+    {
+     "en": "All models are trained on NVIDIA H200 GPUs.",
+     "zh": "所有模型均在 NVIDIA H200 GPU 上进行训练。"
+    },
+    {
+     "en": "The NEPA model is trained once for 240 epochs and is then frozen and shared by all generators; each generator is trained for 400K iterations at batch size 256 (80 epochs).",
+     "zh": "NEPA 模型先训练 240 个周期，之后被冻结并由所有生成器共享；每个生成器以 256 的批量大小训练 400K 次迭代（即 80 个周期）。"
+    },
+    {
+     "en": "Table 13 lists the parameters and the sampling FLOPs of both models, counted with the PyTorch FLOP counter for one 256 × 256 256\\times 256 image (one multiply-add counts as two FLOPs); SiT-XL/2 is counted in the same way.",
+     "zh": "表 13 列出了两种模型的所有参数和采样 FLOPs，这些数值是使用 PyTorch FLOP 计数器针对一张 256 × 256 的图像计算的（一次乘加操作计为两次 FLOPs）；SiT-XL/2 也采用相同方式计算。"
+    },
+    {
+     "en": "Training FLOPs are counted with the same counter and include on-the-fly VAE encoding: the NEPA model (240 epochs) and the generator with REPA (400K iterations) together take 3.1 × 10 20 3.1\\times 10^{20} FLOPs, and SiT-XL/2 with REPA takes about 1.0 × 10 21 1.0\\times 10^{21} FLOPs for its 800 epochs.",
+     "zh": "训练 FLOPs 使用相同的计数器计算，并包含实时 VAE 编码：NEPA 模型（240 个周期）与带有 REPA 的生成器（400K 次迭代）合计消耗 3.1 × 10²⁰ FLOPs，而带有 REPA 的 SiT-XL/2 在 800 个周期内消耗约 1.0 × 10²¹ FLOPs。"
+    },
+    {
+     "en": "With classifier-free guidance, the generator and the NEPA model both run on the conditional and the unconditional branch at each guided step.",
+     "zh": "在使用无分类器引导时，生成器和 NEPA 模型在每个引导步骤中都会在条件分支和无条件分支上同时运行。"
+    }
+   ]
+  },
+  {
+   "en": "Refresh rate. Table 14 queries the NEPA model less often than every denoising step, reusing the last prediction in between. Querying it every 8 steps raises FID from 1.57 to 1.82, and querying it only once, at the first step, gives 242.63.",
+   "zh": "刷新率。 表 14 查询 NEPA 模型的时间间隔长于每次降噪步骤，并在两次查询之间重复使用上一次预测结果。 每 8 步查询一次会使 FID 从 1.57 上升到 1.82，而仅在第一步查询一次则得到 242.63。",
+   "sents": [
+    {
+     "en": "Refresh rate.",
+     "zh": "刷新率。"
+    },
+    {
+     "en": "Table 14 queries the NEPA model less often than every denoising step, reusing the last prediction in between.",
+     "zh": "表 14 查询 NEPA 模型的时间间隔长于每次降噪步骤，并在两次查询之间重复使用上一次预测结果。"
+    },
+    {
+     "en": "Querying it every 8 steps raises FID from 1.57 to 1.82, and querying it only once, at the first step, gives 242.63.",
+     "zh": "每 8 步查询一次会使 FID 从 1.57 上升到 1.82，而仅在第一步查询一次则得到 242.63。"
+    }
+   ]
+  },
+  {
+   "en": "Figures 8 – 10 show more samples of NEPA-DiT-XL on ImageNet 256 × 256 256\\times 256 , selected from 16 samples per class.",
+   "zh": "图 8–10 展示了更多在 ImageNet 256 × 256 上运行的 NEPA-DiT-XL 的样本，这些样本从每个类别的 16 个样本中选出。",
+   "sents": null
+  }
+ ]
+}
