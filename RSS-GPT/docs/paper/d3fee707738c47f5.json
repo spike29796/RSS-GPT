@@ -1,0 +1,897 @@
+{
+ "id": "d3fee707738c47f5",
+ "source": "arxiv-t2i",
+ "link": "https://arxiv.org/abs/2609.37925v1",
+ "title": "Rollout-Marginal Distillation for Long-Horizon Autoregressive Video Generation",
+ "title_zh": "视频级分布匹配蒸馏与滚动边际蒸馏相结合的自回归视频生成",
+ "published": "2026-09-29T16:16:37Z",
+ "translated_at": "2026-10-19T09:20:54Z",
+ "paragraphs": [
+  {
+   "en": "Autoregressive (AR) video diffusion enables low-latency, streamable video generation, but prediction errors often accumulate over long rollouts. Training the generator on its own rollouts exposes it to these imperfect histories. However, existing video-level distribution matching distillation (DMD) scores the whole rollout jointly. Because a chunk is evaluated together with its past and future, its correction can favor matching artifacts in the surrounding context merely to preserve temporal consistency. To provide a clearer visual-quality signal, we introduce Rollout-Marginal Distillation (RMD). RMD retains the generated history for AR prediction but scores each chunk independently against a chunk teacher, ensuring its quality correction is not compromised by an imperfect temporal context. To compensate for the lack of temporal context in independent chunk scoring, RMD subsequently applies video-level DMD to restore temporal coherence. Extensive experiments demonstrate that RMD maintains high visual quality far beyond its training horizon and outperforms video-level DMD baselines. Code and video results are available at https://cjeen.github.io/RMD/ .",
+   "zh": "自回归（AR）视频扩散模型能够生成低延迟、可流式播放的视频，但预测错误在长序列生成过程中往往会不断累积。 在模型自身生成的序列上进行训练，会使其接触到这些不完整的历史信息。 然而，现有的视频级分布匹配蒸馏（DMD）方法会对整个生成序列进行联合评分。 由于每个片段是与前后上下文一同评估的，因此其修正过程可能会为了维持时间一致性而倾向于匹配周围上下文中的瑕疵内容。 为了提供更清晰的视觉质量信号，我们提出了“生成序列边缘蒸馏”（Rollout-Marginal Distillation，RMD）方法。 RMD 保留自回归预测所需的生成历史，但将每个片段与片段级教师模型独立评分，从而确保其质量修正不会受到不完整时间上下文的影响。 为弥补独立片段评分中缺乏时间上下文的问题，RMD 随后会应用视频级 DMD 以恢复时间连贯性。 大量实验表明，RMD 能够在远超训练范围的情况下保持高视觉质量，并且性能优于基于视频级的 DMD 基线方法。 代码和视频结果可在 https://cjeen.github.io/RMD/ 获取。",
+   "sents": [
+    {
+     "en": "Autoregressive (AR) video diffusion enables low-latency, streamable video generation, but prediction errors often accumulate over long rollouts.",
+     "zh": "自回归（AR）视频扩散模型能够生成低延迟、可流式播放的视频，但预测错误在长序列生成过程中往往会不断累积。"
+    },
+    {
+     "en": "Training the generator on its own rollouts exposes it to these imperfect histories.",
+     "zh": "在模型自身生成的序列上进行训练，会使其接触到这些不完整的历史信息。"
+    },
+    {
+     "en": "However, existing video-level distribution matching distillation (DMD) scores the whole rollout jointly.",
+     "zh": "然而，现有的视频级分布匹配蒸馏（DMD）方法会对整个生成序列进行联合评分。"
+    },
+    {
+     "en": "Because a chunk is evaluated together with its past and future, its correction can favor matching artifacts in the surrounding context merely to preserve temporal consistency.",
+     "zh": "由于每个片段是与前后上下文一同评估的，因此其修正过程可能会为了维持时间一致性而倾向于匹配周围上下文中的瑕疵内容。"
+    },
+    {
+     "en": "To provide a clearer visual-quality signal, we introduce Rollout-Marginal Distillation (RMD).",
+     "zh": "为了提供更清晰的视觉质量信号，我们提出了“生成序列边缘蒸馏”（Rollout-Marginal Distillation，RMD）方法。"
+    },
+    {
+     "en": "RMD retains the generated history for AR prediction but scores each chunk independently against a chunk teacher, ensuring its quality correction is not compromised by an imperfect temporal context.",
+     "zh": "RMD 保留自回归预测所需的生成历史，但将每个片段与片段级教师模型独立评分，从而确保其质量修正不会受到不完整时间上下文的影响。"
+    },
+    {
+     "en": "To compensate for the lack of temporal context in independent chunk scoring, RMD subsequently applies video-level DMD to restore temporal coherence.",
+     "zh": "为弥补独立片段评分中缺乏时间上下文的问题，RMD 随后会应用视频级 DMD 以恢复时间连贯性。"
+    },
+    {
+     "en": "Extensive experiments demonstrate that RMD maintains high visual quality far beyond its training horizon and outperforms video-level DMD baselines.",
+     "zh": "大量实验表明，RMD 能够在远超训练范围的情况下保持高视觉质量，并且性能优于基于视频级的 DMD 基线方法。"
+    },
+    {
+     "en": "Code and video results are available at https://cjeen.github.io/RMD/ .",
+     "zh": "代码和视频结果可在 https://cjeen.github.io/RMD/ 获取。"
+    }
+   ]
+  },
+  {
+   "en": "Due to high computational and memory costs, video diffusion models are typically trained on short clips ( Wan et al., 2025 ; Huang et al., 2026a ) . However, many real-world applications demand much longer sequences, including autonomous-driving simulation, interactive and embodied world models, and physics-grounded visual simulation ( Zhang et al., 2025 ; Bruce et al., 2024 ; Liu et al., 2024 ) . Autoregressive (AR) models naturally support this by extending video generation chunk by chunk ( Yin et al., 2025 ; Huang et al., 2026a ) . Specifically, the diffusion process for each new chunk conditions on previously generated frames. As the video grows, a sliding context window ensures the model only attends to the most recent history, keeping the generation cost bounded. However, this sequential process introduces an inherent challenge: each generated chunk inevitably contains minor prediction errors, which then become the context for future steps. Consequently, errors barely noticeable in a short sequence can compound and severely degrade visual quality over a long rollout.",
+   "zh": "由于计算和内存成本高昂，视频扩散模型通常在短片段上进行训练（Wan 等，2025；Huang 等，2026a）。 然而，许多现实世界的应用需要更长的序列，包括自动驾驶模拟、交互式具身世界模型以及基于物理的视觉模拟（Zhang 等，2025；Bruce 等，2024；Liu 等，2024）。 自回归（AR）模型通过逐段扩展视频生成，自然地支持了这一需求（Yin 等，2025；Huang 等，2026a）。 具体来说，每个新片段的扩散过程都以先前生成的帧为条件。 随着视频长度的增加，滑动上下文窗口确保模型仅关注最近的上下文历史，从而将生成成本限制在可控范围内。 然而，这种顺序处理过程引入了一个内在挑战：每个生成的片段都不可避免地包含微小的预测误差，而这些误差随后会成为后续步骤的上下文。 因此，在短序列中几乎不可察觉的误差，在长序列生成过程中可能会不断累积，并严重降低视觉质量。",
+   "sents": [
+    {
+     "en": "Due to high computational and memory costs, video diffusion models are typically trained on short clips ( Wan et al., 2025 ; Huang et al., 2026a ) .",
+     "zh": "由于计算和内存成本高昂，视频扩散模型通常在短片段上进行训练（Wan 等，2025；Huang 等，2026a）。"
+    },
+    {
+     "en": "However, many real-world applications demand much longer sequences, including autonomous-driving simulation, interactive and embodied world models, and physics-grounded visual simulation ( Zhang et al., 2025 ; Bruce et al., 2024 ; Liu et al., 2024 ) .",
+     "zh": "然而，许多现实世界的应用需要更长的序列，包括自动驾驶模拟、交互式具身世界模型以及基于物理的视觉模拟（Zhang 等，2025；Bruce 等，2024；Liu 等，2024）。"
+    },
+    {
+     "en": "Autoregressive (AR) models naturally support this by extending video generation chunk by chunk ( Yin et al., 2025 ; Huang et al., 2026a ) .",
+     "zh": "自回归（AR）模型通过逐段扩展视频生成，自然地支持了这一需求（Yin 等，2025；Huang 等，2026a）。"
+    },
+    {
+     "en": "Specifically, the diffusion process for each new chunk conditions on previously generated frames.",
+     "zh": "具体来说，每个新片段的扩散过程都以先前生成的帧为条件。"
+    },
+    {
+     "en": "As the video grows, a sliding context window ensures the model only attends to the most recent history, keeping the generation cost bounded.",
+     "zh": "随着视频长度的增加，滑动上下文窗口确保模型仅关注最近的上下文历史，从而将生成成本限制在可控范围内。"
+    },
+    {
+     "en": "However, this sequential process introduces an inherent challenge: each generated chunk inevitably contains minor prediction errors, which then become the context for future steps.",
+     "zh": "然而，这种顺序处理过程引入了一个内在挑战：每个生成的片段都不可避免地包含微小的预测误差，而这些误差随后会成为后续步骤的上下文。"
+    },
+    {
+     "en": "Consequently, errors barely noticeable in a short sequence can compound and severely degrade visual quality over a long rollout.",
+     "zh": "因此，在短序列中几乎不可察觉的误差，在长序列生成过程中可能会不断累积，并严重降低视觉质量。"
+    }
+   ]
+  },
+  {
+   "en": "To mitigate error accumulation, self-rollout training exposes the generator to its own imperfect predictions ( Huang et al., 2026a ; Zhu et al., 2026 ) . Since a generated video rarely matches real videos perfectly, no paired ground-truth continuation exists to supervise the next steps. To overcome this lack of paired data, distribution matching distillation (DMD) is often employed ( Yin et al., 2024b ; Yin et al., 2025 ) . Instead of requiring exact continuations, a bidirectional diffusion teacher evaluates the entire sequence jointly. It provides corrective feedback by matching a fake score tracking the student’s output against a real score representing the teacher’s high-quality prior.",
+   "zh": "为缓解错误累积问题，自展开训练将生成器暴露于其自身的不完美预测中（Huang 等，2026a；Zhu 等，2026）。 由于生成的视频很少能完全匹配真实视频，因此不存在成对的真实延续数据来监督后续步骤。 为克服这种成对数据的缺失，通常采用分布匹配蒸馏（DMD）方法（Yin 等，2024b；Yin 等，2025）。 无需精确的延续内容，双向扩散教师模型会联合评估整个序列。 它通过将跟踪学生输出的虚假分数与代表教师高质量先验的真实分数进行匹配，从而提供纠正性反馈。",
+   "sents": [
+    {
+     "en": "To mitigate error accumulation, self-rollout training exposes the generator to its own imperfect predictions ( Huang et al., 2026a ; Zhu et al., 2026 ) .",
+     "zh": "为缓解错误累积问题，自展开训练将生成器暴露于其自身的不完美预测中（Huang 等，2026a；Zhu 等，2026）。"
+    },
+    {
+     "en": "Since a generated video rarely matches real videos perfectly, no paired ground-truth continuation exists to supervise the next steps.",
+     "zh": "由于生成的视频很少能完全匹配真实视频，因此不存在成对的真实延续数据来监督后续步骤。"
+    },
+    {
+     "en": "To overcome this lack of paired data, distribution matching distillation (DMD) is often employed ( Yin et al., 2024b ; Yin et al., 2025 ) .",
+     "zh": "为克服这种成对数据的缺失，通常采用分布匹配蒸馏（DMD）方法（Yin 等，2024b；Yin 等，2025）。"
+    },
+    {
+     "en": "Instead of requiring exact continuations, a bidirectional diffusion teacher evaluates the entire sequence jointly.",
+     "zh": "无需精确的延续内容，双向扩散教师模型会联合评估整个序列。"
+    },
+    {
+     "en": "It provides corrective feedback by matching a fake score tracking the student’s output against a real score representing the teacher’s high-quality prior.",
+     "zh": "它通过将跟踪学生输出的虚假分数与代表教师高质量先验的真实分数进行匹配，从而提供纠正性反馈。"
+    }
+   ]
+  },
+  {
+   "en": "However, DMD-trained models still struggle to generate very long sequences. We attribute this to a bias introduced by the video teacher’s joint supervision. As visual artifacts accumulate over a long autoregressive rollout (e.g., the severe texture and color corruption in the background foliage in Figure 2 (a)), the teacher must evaluate the new chunk alongside this flawed history. Because the teacher cannot modify past frames, enforcing a clean, natural background in the current chunk would cause an abrupt visual shift. Consequently, to preserve temporal consistency, the video-level teacher often retains these accumulated errors, which manifest as non-physical ghosting artifacts, in its real-score prediction (Figure 2 (b)). The temporal consistency constraint thus fundamentally limits the teacher’s ability to correct local errors.",
+   "zh": "然而，通过 DMD 训练出的模型在生成极长序列时仍存在困难。 我们认为这是由视频教师模型联合监督所引入的偏差所致。 随着视觉伪影在漫长的自回归展开过程中不断累积（例如，图 2 (a) 中背景植被出现的严重纹理和色彩失真），教师模型必须将新片段与这段有缺陷的历史一同进行评估。 由于教师模型无法修改过往帧，若强行在当前片段中生成干净自然的背景，会导致突兀的视觉跳跃。 因此，为了保持时间一致性，视频级教师模型往往会在其实时得分预测中保留这些累积错误（图 2 (b)），而这些错误会表现为非物理性的残影伪影。 因此，时间一致性约束从根本上限制了教师模型纠正局部错误的能力。",
+   "sents": [
+    {
+     "en": "However, DMD-trained models still struggle to generate very long sequences.",
+     "zh": "然而，通过 DMD 训练出的模型在生成极长序列时仍存在困难。"
+    },
+    {
+     "en": "We attribute this to a bias introduced by the video teacher’s joint supervision.",
+     "zh": "我们认为这是由视频教师模型联合监督所引入的偏差所致。"
+    },
+    {
+     "en": "As visual artifacts accumulate over a long autoregressive rollout (e.g., the severe texture and color corruption in the background foliage in Figure 2 (a)), the teacher must evaluate the new chunk alongside this flawed history.",
+     "zh": "随着视觉伪影在漫长的自回归展开过程中不断累积（例如，图 2 (a) 中背景植被出现的严重纹理和色彩失真），教师模型必须将新片段与这段有缺陷的历史一同进行评估。"
+    },
+    {
+     "en": "Because the teacher cannot modify past frames, enforcing a clean, natural background in the current chunk would cause an abrupt visual shift.",
+     "zh": "由于教师模型无法修改过往帧，若强行在当前片段中生成干净自然的背景，会导致突兀的视觉跳跃。"
+    },
+    {
+     "en": "Consequently, to preserve temporal consistency, the video-level teacher often retains these accumulated errors, which manifest as non-physical ghosting artifacts, in its real-score prediction (Figure 2 (b)).",
+     "zh": "因此，为了保持时间一致性，视频级教师模型往往会在其实时得分预测中保留这些累积错误（图 2 (b)），而这些错误会表现为非物理性的残影伪影。"
+    },
+    {
+     "en": "The temporal consistency constraint thus fundamentally limits the teacher’s ability to correct local errors.",
+     "zh": "因此，时间一致性约束从根本上限制了教师模型纠正局部错误的能力。"
+    }
+   ]
+  },
+  {
+   "en": "We break this coupling with Rollout-Marginal Distillation (RMD). The generator still uses its history to produce continuations, but the teacher evaluates the generated chunk independently, without checking the history or future chunks. As shown in Figure 2 (c), context-free scoring ensures the teacher provides a clean, high-fidelity real score despite the degraded history. RMD achieves this by matching the student’s chunk marginal distribution to a teacher-defined chunk distribution. To provide this supervision, we prepare the RMD teacher by adapting a video diffusion model on individual chunks extracted from videos generated by the original bidirectional model. However, because independent chunk supervision does not enforce cross-chunk relationships, generated videos might exhibit motion jitter between chunks. To resolve this, we subsequently refine the generator with a video-level DMD stage, explicitly smoothing these transitions to promote temporal coherence.",
+   "zh": "我们通过“展开边缘蒸馏”（RMD）方法打破了这种耦合。 生成器仍然使用其历史信息来生成续写内容，但教师模型会独立评估生成的片段，而不会检查历史信息或未来的片段。 如图 2 (c) 所示，无上下文评分确保了教师模型尽管历史信息质量下降，仍能提供一个干净、高保真的真实分数。 RMD 通过将学生模型的片段边缘分布与教师模型定义的片段分布进行匹配来实现这一点。 为了提供这种监督，我们通过将视频扩散模型适配于从原始双向模型生成的视频中提取出的单个片段，来构建 RMD 教师模型。 然而，由于对片段的独立监督无法强制建立片段间的关系，生成的视频可能在片段之间出现运动抖动。 为了解决这个问题，我们随后通过一个视频级别的 DMD 阶段对生成器进行优化，明确平滑这些过渡，以促进时间上的连贯性。",
+   "sents": [
+    {
+     "en": "We break this coupling with Rollout-Marginal Distillation (RMD).",
+     "zh": "我们通过“展开边缘蒸馏”（RMD）方法打破了这种耦合。"
+    },
+    {
+     "en": "The generator still uses its history to produce continuations, but the teacher evaluates the generated chunk independently, without checking the history or future chunks.",
+     "zh": "生成器仍然使用其历史信息来生成续写内容，但教师模型会独立评估生成的片段，而不会检查历史信息或未来的片段。"
+    },
+    {
+     "en": "As shown in Figure 2 (c), context-free scoring ensures the teacher provides a clean, high-fidelity real score despite the degraded history.",
+     "zh": "如图 2 (c) 所示，无上下文评分确保了教师模型尽管历史信息质量下降，仍能提供一个干净、高保真的真实分数。"
+    },
+    {
+     "en": "RMD achieves this by matching the student’s chunk marginal distribution to a teacher-defined chunk distribution.",
+     "zh": "RMD 通过将学生模型的片段边缘分布与教师模型定义的片段分布进行匹配来实现这一点。"
+    },
+    {
+     "en": "To provide this supervision, we prepare the RMD teacher by adapting a video diffusion model on individual chunks extracted from videos generated by the original bidirectional model.",
+     "zh": "为了提供这种监督，我们通过将视频扩散模型适配于从原始双向模型生成的视频中提取出的单个片段，来构建 RMD 教师模型。"
+    },
+    {
+     "en": "However, because independent chunk supervision does not enforce cross-chunk relationships, generated videos might exhibit motion jitter between chunks.",
+     "zh": "然而，由于对片段的独立监督无法强制建立片段间的关系，生成的视频可能在片段之间出现运动抖动。"
+    },
+    {
+     "en": "To resolve this, we subsequently refine the generator with a video-level DMD stage, explicitly smoothing these transitions to promote temporal coherence.",
+     "zh": "为了解决这个问题，我们随后通过一个视频级别的 DMD 阶段对生成器进行优化，明确平滑这些过渡，以促进时间上的连贯性。"
+    }
+   ]
+  },
+  {
+   "en": "Extensive experiments demonstrate that RMD achieves significantly higher visual quality than video-level DMD baselines beyond the training horizon. Our quantitative evaluation covers rollouts of approximately 60 seconds ( 12 × 12\\times the 5-second training horizon). In addition, Figure 1 provides a qualitative example extending to 500 seconds ( 100 × 100\\times the training horizon). Generation relies entirely on a fully sliding context window, without fixed anchors such as frame sinks ( Yang et al., 2026 ; Li et al., 2026 ) , additional explicit memory mechanisms, or changes to the generator architecture.",
+   "zh": "大量实验表明，在超出训练时间范围的情况下，RMD 实现的视觉质量显著高于视频级别的 DMD 基线模型。 我们的定量评估涵盖了约 60 秒的生成过程（即 12 × 12\\times 5 秒的训练时间范围）。 此外，图 1 提供了一个延伸至 500 秒（即 100 × 100\\times 训练时间范围）的定性示例。 生成过程完全依赖一个全滑动上下文窗口，无需使用帧缓存等固定锚点（Yang et al., 2026; Li et al., 2026）、额外的显式记忆机制或对生成器架构的修改。",
+   "sents": [
+    {
+     "en": "Extensive experiments demonstrate that RMD achieves significantly higher visual quality than video-level DMD baselines beyond the training horizon.",
+     "zh": "大量实验表明，在超出训练时间范围的情况下，RMD 实现的视觉质量显著高于视频级别的 DMD 基线模型。"
+    },
+    {
+     "en": "Our quantitative evaluation covers rollouts of approximately 60 seconds ( 12 × 12\\times the 5-second training horizon).",
+     "zh": "我们的定量评估涵盖了约 60 秒的生成过程（即 12 × 12\\times 5 秒的训练时间范围）。"
+    },
+    {
+     "en": "In addition, Figure 1 provides a qualitative example extending to 500 seconds ( 100 × 100\\times the training horizon).",
+     "zh": "此外，图 1 提供了一个延伸至 500 秒（即 100 × 100\\times 训练时间范围）的定性示例。"
+    },
+    {
+     "en": "Generation relies entirely on a fully sliding context window, without fixed anchors such as frame sinks ( Yang et al., 2026 ; Li et al., 2026 ) , additional explicit memory mechanisms, or changes to the generator architecture.",
+     "zh": "生成过程完全依赖一个全滑动上下文窗口，无需使用帧缓存等固定锚点（Yang et al., 2026; Li et al., 2026）、额外的显式记忆机制或对生成器架构的修改。"
+    }
+   ]
+  },
+  {
+   "en": "Causal video diffusion generates frames or blocks sequentially with KV caching for low-latency streaming. CausVid converts a pretrained bidirectional video diffusion model into a causal generator and extends DMD to few-step video generation ( Yin et al., 2025 ) . Self-Forcing further performs autoregressive rollout during training, feeding generated outputs back as context and supervising the sequence with a holistic video objective ( Huang et al., 2026a ) . Causal Forcing instead studies initialization and uses an autoregressive teacher for ODE distillation before applying Self-Forcing DMD ( Zhu et al., 2026 ) . Causal-rCM similarly combines teacher-forced consistency training with self-forced DMD refinement ( Zheng et al., 2026a ) . Solaris introduces Checkpointed Self Forcing , which decouples serial self-rollout from parallel differentiable replay to reduce training memory ( Savva et al., 2026 ) . Together, these methods establish causal students and on-policy training pipelines. We adopt the Solaris replay mechanism directly and focus RMD on the distribution matched during on-policy DMD.",
+   "zh": "因果视频扩散通过 KV 缓存按顺序生成帧或块，以实现低延迟流媒体传输。 CausVid 将预训练的双向视频扩散模型转换为因果生成器，并将 DMD 扩展为少步视频生成（Yin 等，2025）。 Self-Forcing 在训练期间进一步执行自回归展开，将生成的输出作为上下文反馈，并使用整体视频目标监督序列（Huang 等，2026a）。 Causal Forcing 则研究初始化问题，并在应用 Self-Forcing DMD 之前使用自回归教师模型进行 ODE 蒸馏（Zhu 等，2026）。 Causal-rCM 同样结合了教师强制一致性训练与自我强制 DMD 优化（Zheng 等，2026a）。 Solaris 引入了检查点自我强制机制，该机制将串行自我展开与并行可微重播分离，以减少训练时的内存占用（Savva 等，2026）。 这些方法共同确立了因果学生模型和在线策略训练流程。 我们直接采用 Solaris 的重播机制，并将 RMD 的重点放在在线策略 DMD 期间匹配的分佈上。",
+   "sents": [
+    {
+     "en": "Causal video diffusion generates frames or blocks sequentially with KV caching for low-latency streaming.",
+     "zh": "因果视频扩散通过 KV 缓存按顺序生成帧或块，以实现低延迟流媒体传输。"
+    },
+    {
+     "en": "CausVid converts a pretrained bidirectional video diffusion model into a causal generator and extends DMD to few-step video generation ( Yin et al., 2025 ) .",
+     "zh": "CausVid 将预训练的双向视频扩散模型转换为因果生成器，并将 DMD 扩展为少步视频生成（Yin 等，2025）。"
+    },
+    {
+     "en": "Self-Forcing further performs autoregressive rollout during training, feeding generated outputs back as context and supervising the sequence with a holistic video objective ( Huang et al., 2026a ) .",
+     "zh": "Self-Forcing 在训练期间进一步执行自回归展开，将生成的输出作为上下文反馈，并使用整体视频目标监督序列（Huang 等，2026a）。"
+    },
+    {
+     "en": "Causal Forcing instead studies initialization and uses an autoregressive teacher for ODE distillation before applying Self-Forcing DMD ( Zhu et al., 2026 ) .",
+     "zh": "Causal Forcing 则研究初始化问题，并在应用 Self-Forcing DMD 之前使用自回归教师模型进行 ODE 蒸馏（Zhu 等，2026）。"
+    },
+    {
+     "en": "Causal-rCM similarly combines teacher-forced consistency training with self-forced DMD refinement ( Zheng et al., 2026a ) .",
+     "zh": "Causal-rCM 同样结合了教师强制一致性训练与自我强制 DMD 优化（Zheng 等，2026a）。"
+    },
+    {
+     "en": "Solaris introduces Checkpointed Self Forcing , which decouples serial self-rollout from parallel differentiable replay to reduce training memory ( Savva et al., 2026 ) .",
+     "zh": "Solaris 引入了检查点自我强制机制，该机制将串行自我展开与并行可微重播分离，以减少训练时的内存占用（Savva 等，2026）。"
+    },
+    {
+     "en": "Together, these methods establish causal students and on-policy training pipelines.",
+     "zh": "这些方法共同确立了因果学生模型和在线策略训练流程。"
+    },
+    {
+     "en": "We adopt the Solaris replay mechanism directly and focus RMD on the distribution matched during on-policy DMD.",
+     "zh": "我们直接采用 Solaris 的重播机制，并将 RMD 的重点放在在线策略 DMD 期间匹配的分佈上。"
+    }
+   ]
+  },
+  {
+   "en": "DMD trains a few-step generator by minimizing a reverse KL divergence to the distribution of a pretrained diffusion model, using the difference between real and fake scores as generator supervision ( Yin et al., 2024b ) . DMD2 removes the costly regression objective and improves stability through a two-time-scale update rule, adversarial learning, and multi-step training ( Yin et al., 2024a ) . Subsequent work has combined distribution matching with adversarial learning ( Lu et al., 2025 ) , replaced KL-based matching with an optimal-transport objective ( Wang et al., 2026 ) , or coupled reverse-KL refinement with score-regularized consistency training ( Zheng et al., 2026b ) . These developments primarily modify the divergence, regularization, or optimization of distribution matching. By contrast, RMD retains the DMD score-difference update but changes its output space from a joint rollout to the chunk marginal induced by autoregressive sampling.",
+   "zh": "DMD 通过最小化与预训练扩散模型分布之间的反向 KL 散度来训练一个多步生成器，并利用真实分数与虚假分数之间的差异作为生成器的监督信号（Yin et al., 2024b）。 DMD2 去除了代价高昂的回归目标，并通过双时间尺度更新规则、对抗性学习和多步训练提升了稳定性（Yin et al., 2024a）。 后续研究将分布匹配与对抗性学习相结合（Lu et al., 2025），用最优传输目标替代了基于 KL 的匹配方法（Wang et al., 2026），或将反向 KL 优化与分数正则化的一致性训练耦合起来（Zheng et al., 2026b）。 这些进展主要修改了分布匹配的散度、正则化或优化方式。 相比之下，RMD 保留了 DMD 的分数差异更新机制，但将其输出空间从联合展开结果改为自回归采样所诱导的片段边缘分布。",
+   "sents": [
+    {
+     "en": "DMD trains a few-step generator by minimizing a reverse KL divergence to the distribution of a pretrained diffusion model, using the difference between real and fake scores as generator supervision ( Yin et al., 2024b ) .",
+     "zh": "DMD 通过最小化与预训练扩散模型分布之间的反向 KL 散度来训练一个多步生成器，并利用真实分数与虚假分数之间的差异作为生成器的监督信号（Yin et al., 2024b）。"
+    },
+    {
+     "en": "DMD2 removes the costly regression objective and improves stability through a two-time-scale update rule, adversarial learning, and multi-step training ( Yin et al., 2024a ) .",
+     "zh": "DMD2 去除了代价高昂的回归目标，并通过双时间尺度更新规则、对抗性学习和多步训练提升了稳定性（Yin et al., 2024a）。"
+    },
+    {
+     "en": "Subsequent work has combined distribution matching with adversarial learning ( Lu et al., 2025 ) , replaced KL-based matching with an optimal-transport objective ( Wang et al., 2026 ) , or coupled reverse-KL refinement with score-regularized consistency training ( Zheng et al., 2026b ) .",
+     "zh": "后续研究将分布匹配与对抗性学习相结合（Lu et al., 2025），用最优传输目标替代了基于 KL 的匹配方法（Wang et al., 2026），或将反向 KL 优化与分数正则化的一致性训练耦合起来（Zheng et al., 2026b）。"
+    },
+    {
+     "en": "These developments primarily modify the divergence, regularization, or optimization of distribution matching.",
+     "zh": "这些进展主要修改了分布匹配的散度、正则化或优化方式。"
+    },
+    {
+     "en": "By contrast, RMD retains the DMD score-difference update but changes its output space from a joint rollout to the chunk marginal induced by autoregressive sampling.",
+     "zh": "相比之下，RMD 保留了 DMD 的分数差异更新机制，但将其输出空间从联合展开结果改为自回归采样所诱导的片段边缘分布。"
+    }
+   ]
+  },
+  {
+   "en": "LongLive improves extended AR generation through streaming long-video tuning, a finite attention window, and a persistent frame sink ( Yang et al., 2026 ) . Rolling Sink studies cache maintenance beyond the training horizon and introduces a training-free cache-maintenance strategy ( Li et al., 2026 ) . More directly related to training-time supervision, OPSD-V post-trains few-step AR generators on their inference-time trajectories while supplying the teacher with a cleaner cache that can incorporate real long-video context ( Liu et al., 2026 ) . Most closely related to our analysis, Context-Matched Distillation (CMD) observes that a bidirectional full-clip teacher can use future information unavailable to a causal student ( Bandyopadhyay et al., 2026 ) . CMD addresses this issue with a causal teacher and prefix scoring under the student’s realized rollout context. RMD takes a different route. It does not construct a teacher conditional for each self-rollout history. Instead, it uses a bidirectional diffusion prior as a chunk-distribution target, scores the rollout chunks independently, and subsequently restores joint temporal structure through video-level refinement. It therefore requires neither paired continuations for generated histories nor real long-video context.",
+   "zh": "LongLive 通过流式长视频微调、有限注意力窗口和持久帧缓存，改进了扩展 AR 生成（Yang et al., 2026）。 Rolling Sink 研究了超出训练时间范围的缓存维护问题，并提出了一种无需训练的缓存维护策略（Li et al., 2026）。 与训练时的监督更直接相关的是，OPSD-V 在推理轨迹上对少步 AR 生成器进行后训练，同时为教师模型提供更干净的缓存，使其能够整合真实的长视频上下文（Liu et al., 2026）。 与我们分析最密切相关的是 Context-Matched Distillation（CMD），它观察到双向全片段教师模型可以利用因果学生模型无法获取的未来信息（Bandyopadhyay et al., 2026）。 CMD 通过因果教师模型和学生在实际展开上下文下的前缀评分来解决这一问题。 RMD 采取了不同的方法。 它不会为每次自我展开历史构建条件教师模型。 相反，它使用双向扩散先验作为分块分布目标，独立地对展开块进行评分，随后通过视频级优化恢复联合时间结构。 因此，它既不需要生成历史的配对延续，也不需要真实的长视频上下文。",
+   "sents": [
+    {
+     "en": "LongLive improves extended AR generation through streaming long-video tuning, a finite attention window, and a persistent frame sink ( Yang et al., 2026 ) .",
+     "zh": "LongLive 通过流式长视频微调、有限注意力窗口和持久帧缓存，改进了扩展 AR 生成（Yang et al., 2026）。"
+    },
+    {
+     "en": "Rolling Sink studies cache maintenance beyond the training horizon and introduces a training-free cache-maintenance strategy ( Li et al., 2026 ) .",
+     "zh": "Rolling Sink 研究了超出训练时间范围的缓存维护问题，并提出了一种无需训练的缓存维护策略（Li et al., 2026）。"
+    },
+    {
+     "en": "More directly related to training-time supervision, OPSD-V post-trains few-step AR generators on their inference-time trajectories while supplying the teacher with a cleaner cache that can incorporate real long-video context ( Liu et al., 2026 ) .",
+     "zh": "与训练时的监督更直接相关的是，OPSD-V 在推理轨迹上对少步 AR 生成器进行后训练，同时为教师模型提供更干净的缓存，使其能够整合真实的长视频上下文（Liu et al., 2026）。"
+    },
+    {
+     "en": "Most closely related to our analysis, Context-Matched Distillation (CMD) observes that a bidirectional full-clip teacher can use future information unavailable to a causal student ( Bandyopadhyay et al., 2026 ) .",
+     "zh": "与我们分析最密切相关的是 Context-Matched Distillation（CMD），它观察到双向全片段教师模型可以利用因果学生模型无法获取的未来信息（Bandyopadhyay et al., 2026）。"
+    },
+    {
+     "en": "CMD addresses this issue with a causal teacher and prefix scoring under the student’s realized rollout context.",
+     "zh": "CMD 通过因果教师模型和学生在实际展开上下文下的前缀评分来解决这一问题。"
+    },
+    {
+     "en": "RMD takes a different route.",
+     "zh": "RMD 采取了不同的方法。"
+    },
+    {
+     "en": "It does not construct a teacher conditional for each self-rollout history.",
+     "zh": "它不会为每次自我展开历史构建条件教师模型。"
+    },
+    {
+     "en": "Instead, it uses a bidirectional diffusion prior as a chunk-distribution target, scores the rollout chunks independently, and subsequently restores joint temporal structure through video-level refinement.",
+     "zh": "相反，它使用双向扩散先验作为分块分布目标，独立地对展开块进行评分，随后通过视频级优化恢复联合时间结构。"
+    },
+    {
+     "en": "It therefore requires neither paired continuations for generated histories nor real long-video context.",
+     "zh": "因此，它既不需要生成历史的配对延续，也不需要真实的长视频上下文。"
+    }
+   ]
+  },
+  {
+   "en": "In this section, we present Rollout-Marginal Distillation (RMD), an approach designed to disentangle visual quality supervision from temporal context in autoregressive video generation. We first review video-level distribution matching distillation (DMD) and formalize how its joint scoring mechanism inherently couples the current chunk’s gradient to past and future frames (Section 3.1 ). To break this coupling, we introduce our rollout-marginal objective, which independently penalizes unrealistic chunks without conditioning on the imperfect context (Section 3.2 ). We then detail the training procedure in practice (Section 3.3 ). Finally, because independent scoring ignores cross-chunk relationships, we describe a subsequent video-level refinement stage that explicitly restores temporal coherence (Section 3.4 ).",
+   "zh": "在本节中，我们提出“展开边缘蒸馏”（Rollout-Marginal Distillation，RMD）方法，该方法旨在将视觉质量监督与自回归视频生成中的时间上下文解耦。 首先，我们回顾视频级分布匹配蒸馏（DMD）方法，并形式化说明其联合评分机制如何将当前片段梯度与过去及未来帧内在耦合（第 3.1 节）。 为打破这种耦合，我们引入了“展开边缘目标函数”，该函数在不依赖不完美上下文的情况下，独立地对不真实的片段施加惩罚（第 3.2 节）。 接着，我们详细说明实际训练流程（第 3.3 节）。 最后，由于独立评分会忽略片段间的关系，我们描述了一个后续的视频级优化阶段，该阶段明确恢复时间连贯性（第 3.4 节）。",
+   "sents": [
+    {
+     "en": "In this section, we present Rollout-Marginal Distillation (RMD), an approach designed to disentangle visual quality supervision from temporal context in autoregressive video generation.",
+     "zh": "在本节中，我们提出“展开边缘蒸馏”（Rollout-Marginal Distillation，RMD）方法，该方法旨在将视觉质量监督与自回归视频生成中的时间上下文解耦。"
+    },
+    {
+     "en": "We first review video-level distribution matching distillation (DMD) and formalize how its joint scoring mechanism inherently couples the current chunk’s gradient to past and future frames (Section 3.1 ).",
+     "zh": "首先，我们回顾视频级分布匹配蒸馏（DMD）方法，并形式化说明其联合评分机制如何将当前片段梯度与过去及未来帧内在耦合（第 3.1 节）。"
+    },
+    {
+     "en": "To break this coupling, we introduce our rollout-marginal objective, which independently penalizes unrealistic chunks without conditioning on the imperfect context (Section 3.2 ).",
+     "zh": "为打破这种耦合，我们引入了“展开边缘目标函数”，该函数在不依赖不完美上下文的情况下，独立地对不真实的片段施加惩罚（第 3.2 节）。"
+    },
+    {
+     "en": "We then detail the training procedure in practice (Section 3.3 ).",
+     "zh": "接着，我们详细说明实际训练流程（第 3.3 节）。"
+    },
+    {
+     "en": "Finally, because independent scoring ignores cross-chunk relationships, we describe a subsequent video-level refinement stage that explicitly restores temporal coherence (Section 3.4 ).",
+     "zh": "最后，由于独立评分会忽略片段间的关系，我们描述了一个后续的视频级优化阶段，该阶段明确恢复时间连贯性（第 3.4 节）。"
+    }
+   ]
+  },
+  {
+   "en": "To understand the necessity of rollout-marginal supervision, we first examine how video-level DMD improves a causal video generator and why its joint scoring mechanism introduces a critical flaw.",
+   "zh": "为了理解 rollout-marginal 监督的必要性，我们首先研究视频级 DMD 如何改进因果视频生成器，以及其联合评分机制为何引入了一个关键缺陷。",
+   "sents": null
+  },
+  {
+   "en": "Given a text prompt c c , let the causal generator G θ G_{\\theta} produce a latent rollout 𝐱 = ( x 1 , … , x T ) \\mathbf{x}=(x_{1},\\ldots,x_{T}) , where each x i x_{i} is a chunk. The distribution of the generated video 𝐱 \\mathbf{x} can be naturally factorized as:",
+   "zh": "给定一个文本提示 c c，让因果生成器 G θ G_{\\theta} 生成一个潜在序列 𝐱 = ( x 1 , … , x T ) \\mathbf{x}=(x_{1},\\ldots,x_{T})，其中每个 x i x_{i} 都是一个片段。 生成的视频 𝐱 \\mathbf{x} 的分布可以自然地分解为：",
+   "sents": [
+    {
+     "en": "Given a text prompt c c , let the causal generator G θ G_{\\theta} produce a latent rollout 𝐱 = ( x 1 , … , x T ) \\mathbf{x}=(x_{1},\\ldots,x_{T}) , where each x i x_{i} is a chunk.",
+     "zh": "给定一个文本提示 c c，让因果生成器 G θ G_{\\theta} 生成一个潜在序列 𝐱 = ( x 1 , … , x T ) \\mathbf{x}=(x_{1},\\ldots,x_{T})，其中每个 x i x_{i} 都是一个片段。"
+    },
+    {
+     "en": "The distribution of the generated video 𝐱 \\mathbf{x} can be naturally factorized as:",
+     "zh": "生成的视频 𝐱 \\mathbf{x} 的分布可以自然地分解为："
+    }
+   ]
+  },
+  {
+   "en": "Following the self-rollout framework ( Huang et al., 2026a ; Zhu et al., 2026 ) , the generator conditions each continuation on its own generated history x < i x_{<i} , exposing it to the prediction errors it will encounter at inference. Because there are no ground-truth continuations paired with these imperfect generated histories, video-level distribution matching distillation (DMD) is employed to supervise the entire student rollout jointly ( Yin et al., 2024b ; Yin et al., 2024a ; Yin et al., 2025 ) .",
+   "zh": "遵循自我展开框架（Huang 等人，2026a；Zhu 等人，2026），生成器将每个续写结果的条件都设定为其自身生成的历史 x < i x_{<i}，使其暴露于推理阶段将会遇到的预测误差中。 由于这些不完整的生成历史没有对应的真实续写结果，因此采用视频级分布匹配蒸馏（DMD）来联合监督整个学生模型的展开过程（Yin 等人，2024b；Yin 等人，2024a；Yin 等人，2025）。",
+   "sents": [
+    {
+     "en": "Following the self-rollout framework ( Huang et al., 2026a ; Zhu et al., 2026 ) , the generator conditions each continuation on its own generated history x < i x_{<i} , exposing it to the prediction errors it will encounter at inference.",
+     "zh": "遵循自我展开框架（Huang 等人，2026a；Zhu 等人，2026），生成器将每个续写结果的条件都设定为其自身生成的历史 x < i x_{<i}，使其暴露于推理阶段将会遇到的预测误差中。"
+    },
+    {
+     "en": "Because there are no ground-truth continuations paired with these imperfect generated histories, video-level distribution matching distillation (DMD) is employed to supervise the entire student rollout jointly ( Yin et al., 2024b ; Yin et al., 2024a ; Yin et al., 2025 ) .",
+     "zh": "由于这些不完整的生成历史没有对应的真实续写结果，因此采用视频级分布匹配蒸馏（DMD）来联合监督整个学生模型的展开过程（Yin 等人，2024b；Yin 等人，2024a；Yin 等人，2025）。"
+    }
+   ]
+  },
+  {
+   "en": "At noise level τ \\tau , let 𝐱 τ = α τ ​ 𝐱 + σ τ ​ ϵ \\mathbf{x}_{\\tau}=\\alpha_{\\tau}\\mathbf{x}+\\sigma_{\\tau}\\bm{\\epsilon} denote a noised rollout. The video-level objective minimizes the reverse KL divergence between the noised student video distribution q θ , τ q_{\\theta,\\tau} and a pretrained teacher video distribution p τ p_{\\tau} :",
+   "zh": "在噪声水平 τ \\tau 下，令 𝐱 τ = α τ ​ 𝐱 + σ τ ​ ϵ \\mathbf{x}_{\\tau}=\\alpha_{\\tau}\\mathbf{x}+\\sigma_{\\tau}\\bm{\\epsilon} 表示一个带噪声的展开结果。 视频级目标是最小化带噪声的学生视频分布 q θ , τ q_{\\theta,\\tau} 与预训练的教师视频分布 p τ p_{\\tau} 之间的反向 KL 散度：",
+   "sents": [
+    {
+     "en": "At noise level τ \\tau , let 𝐱 τ = α τ ​ 𝐱 + σ τ ​ ϵ \\mathbf{x}_{\\tau}=\\alpha_{\\tau}\\mathbf{x}+\\sigma_{\\tau}\\bm{\\epsilon} denote a noised rollout.",
+     "zh": "在噪声水平 τ \\tau 下，令 𝐱 τ = α τ ​ 𝐱 + σ τ ​ ϵ \\mathbf{x}_{\\tau}=\\alpha_{\\tau}\\mathbf{x}+\\sigma_{\\tau}\\bm{\\epsilon} 表示一个带噪声的展开结果。"
+    },
+    {
+     "en": "The video-level objective minimizes the reverse KL divergence between the noised student video distribution q θ , τ q_{\\theta,\\tau} and a pretrained teacher video distribution p τ p_{\\tau} :",
+     "zh": "视频级目标是最小化带噪声的学生视频分布 q θ , τ q_{\\theta,\\tau} 与预训练的教师视频分布 p τ p_{\\tau} 之间的反向 KL 散度："
+    }
+   ]
+  },
+  {
+   "en": "The generator is updated using the difference between two diffusion scores:",
+   "zh": "生成器通过两个扩散分数之间的差异进行更新：",
+   "sents": null
+  },
+  {
+   "en": "where J θ ​ ( 𝐱 ) = ∂ 𝐱 / ∂ θ J_{\\theta}(\\mathbf{x})=\\partial\\mathbf{x}/\\partial\\theta is the generator Jacobian, w ⁡ ( τ ) w(\\tau) is a noise-level weight, s real s_{\\mathrm{real}} is a frozen teacher score representing the target distribution, and s fake s_{\\mathrm{fake}} is an online score model trained to track the student’s distribution.",
+   "zh": "其中，J θ ​ ( 𝐱 ) = ∂ 𝐱 / ∂ θ J_{\\theta}(\\mathbf{x})=\\partial\\mathbf{x}/\\partial\\theta 是生成器的雅可比矩阵，w ⁡ ( τ ) w(\\tau) 是噪声水平权重，s real s_{\\mathrm{real}} 是一个表示目标分布的固定教师分数，而 s fake s_{\\mathrm{fake}} 是一个用于跟踪学生分布的在线评分模型。",
+   "sents": null
+  },
+  {
+   "en": "Equation 3 reveals a fundamental issue in applying video-level DMD to autoregressive rollouts. Both the real and fake score networks ( s real s_{\\mathrm{real}} and s fake s_{\\mathrm{fake}} ) take the entire sequence 𝐱 τ \\mathbf{x}_{\\tau} as input. Consequently, the correction signal assigned to any specific chunk x i x_{i} is coupled with its generated past ( x < i x_{<i} ) and future ( x > i x_{>i} ). If an artifact appears in the generated history, a joint score evaluation will likely penalize a sudden correction to natural colors in the current chunk, as such a transition breaks the temporal consistency of the sequence. The model is thereby forced to compromise local visual realism to accommodate an imperfect temporal context. To resolve this, we must disentangle the quality supervision of x i x_{i} from the rest of the rollout.",
+   "zh": "方程 3 揭示了将视频级 DMD 应用于自回归展开时的一个根本问题。 真实和虚假得分网络（s_real s_{\\mathrm{real}} 和 s_fake s_{\\mathrm{fake}}）都将整个序列 𝐱 τ \\mathbf{x}_{\\tau} 作为输入。 因此，分配给任何特定片段 x_i x_{i} 的修正信号都与其生成的过去（x < i x_{<i}）和未来（x > i x_{>i}）耦合在一起。 如果生成历史中出现异常，联合得分评估很可能会对当前片段中自然颜色的突然修正进行惩罚，因为这种转变会破坏序列的时间一致性。 因此，模型被迫在局部视觉真实感与适应不完美时间上下文之间做出权衡。 为了解决这个问题，我们必须将 x_i x_{i} 的质量监督与展开的其他部分分离开来。",
+   "sents": [
+    {
+     "en": "Equation 3 reveals a fundamental issue in applying video-level DMD to autoregressive rollouts.",
+     "zh": "方程 3 揭示了将视频级 DMD 应用于自回归展开时的一个根本问题。"
+    },
+    {
+     "en": "Both the real and fake score networks ( s real s_{\\mathrm{real}} and s fake s_{\\mathrm{fake}} ) take the entire sequence 𝐱 τ \\mathbf{x}_{\\tau} as input.",
+     "zh": "真实和虚假得分网络（s_real s_{\\mathrm{real}} 和 s_fake s_{\\mathrm{fake}}）都将整个序列 𝐱 τ \\mathbf{x}_{\\tau} 作为输入。"
+    },
+    {
+     "en": "Consequently, the correction signal assigned to any specific chunk x i x_{i} is coupled with its generated past ( x < i x_{<i} ) and future ( x > i x_{>i} ).",
+     "zh": "因此，分配给任何特定片段 x_i x_{i} 的修正信号都与其生成的过去（x < i x_{<i}）和未来（x > i x_{>i}）耦合在一起。"
+    },
+    {
+     "en": "If an artifact appears in the generated history, a joint score evaluation will likely penalize a sudden correction to natural colors in the current chunk, as such a transition breaks the temporal consistency of the sequence.",
+     "zh": "如果生成历史中出现异常，联合得分评估很可能会对当前片段中自然颜色的突然修正进行惩罚，因为这种转变会破坏序列的时间一致性。"
+    },
+    {
+     "en": "The model is thereby forced to compromise local visual realism to accommodate an imperfect temporal context.",
+     "zh": "因此，模型被迫在局部视觉真实感与适应不完美时间上下文之间做出权衡。"
+    },
+    {
+     "en": "To resolve this, we must disentangle the quality supervision of x i x_{i} from the rest of the rollout.",
+     "zh": "为了解决这个问题，我们必须将 x_i x_{i} 的质量监督与展开的其他部分分离开来。"
+    }
+   ]
+  },
+  {
+   "en": "Video-level DMD scores the entire sequence, tying each chunk’s quality correction to its compatibility with the surrounding content. RMD breaks this dependency by matching chunks from the causal rollouts independently, while the generator still uses its history for prediction.",
+   "zh": "视频级 DMD 对整个序列进行评分，将每个片段的质量修正与其与周围内容的兼容性相关联。 RMD 通过独立匹配因果展开中的片段来打破这种依赖关系，而生成器仍然使用其历史数据来进行预测。",
+   "sents": [
+    {
+     "en": "Video-level DMD scores the entire sequence, tying each chunk’s quality correction to its compatibility with the surrounding content.",
+     "zh": "视频级 DMD 对整个序列进行评分，将每个片段的质量修正与其与周围内容的兼容性相关联。"
+    },
+    {
+     "en": "RMD breaks this dependency by matching chunks from the causal rollouts independently, while the generator still uses its history for prediction.",
+     "zh": "RMD 通过独立匹配因果展开中的片段来打破这种依赖关系，而生成器仍然使用其历史数据来进行预测。"
+    }
+   ]
+  },
+  {
+   "en": "We model the initial and continuation chunks separately to account for their distinct latent statistics. Specifically, under the video VAE, the first latent frame encodes only the initial image without temporal compression ( Wan et al., 2025 ; Huang et al., 2026a ) . This gives it completely different statistical properties compared to subsequent frames. Let q θ , 1 ​ ( x 1 ∣ c ) q_{\\theta,1}(x_{1}\\mid c) denote the initial chunk distribution. To define the continuation rollout marginal , we pool the chunks x 2 , … , x T x_{2},\\ldots,x_{T} across the student’s causal rollouts for prompt c c :",
+   "zh": "我们将初始片段和延续片段分开建模，以反映它们不同的潜在统计特性。 具体而言，在视频 VAE 中，第一个潜在帧仅编码初始图像，不进行时间压缩（Wan et al., 2025; Huang et al., 2026a）。 这使得它与后续帧相比具有完全不同的统计特性。 令 q_{\\theta,1}(x_{1}\\mid c) 表示初始片段的分布。 为定义延续展开的边缘分布，我们将学生模型针对提示 c 的因果展开中的片段 x_{2},\\ldots,x_{T} 进行池化：",
+   "sents": [
+    {
+     "en": "We model the initial and continuation chunks separately to account for their distinct latent statistics.",
+     "zh": "我们将初始片段和延续片段分开建模，以反映它们不同的潜在统计特性。"
+    },
+    {
+     "en": "Specifically, under the video VAE, the first latent frame encodes only the initial image without temporal compression ( Wan et al., 2025 ; Huang et al., 2026a ) .",
+     "zh": "具体而言，在视频 VAE 中，第一个潜在帧仅编码初始图像，不进行时间压缩（Wan et al., 2025; Huang et al., 2026a）。"
+    },
+    {
+     "en": "This gives it completely different statistical properties compared to subsequent frames.",
+     "zh": "这使得它与后续帧相比具有完全不同的统计特性。"
+    },
+    {
+     "en": "Let q θ , 1 ​ ( x 1 ∣ c ) q_{\\theta,1}(x_{1}\\mid c) denote the initial chunk distribution.",
+     "zh": "令 q_{\\theta,1}(x_{1}\\mid c) 表示初始片段的分布。"
+    },
+    {
+     "en": "To define the continuation rollout marginal , we pool the chunks x 2 , … , x T x_{2},\\ldots,x_{T} across the student’s causal rollouts for prompt c c :",
+     "zh": "为定义延续展开的边缘分布，我们将学生模型针对提示 c 的因果展开中的片段 x_{2},\\ldots,x_{T} 进行池化："
+    }
+   ]
+  },
+  {
+   "en": "This distribution averages over both the generated histories and the continuation positions. Sampling from it requires the causal rollout, but evaluating a chunk’s realism requires neither its history nor its rollout position.",
+   "zh": "这种分布对生成的历史信息和延续位置都进行了平均。 从中采样需要进行因果展开，但评估一个片段是否真实既不需要其历史信息，也不需要其展开位置。",
+   "sents": [
+    {
+     "en": "This distribution averages over both the generated histories and the continuation positions.",
+     "zh": "这种分布对生成的历史信息和延续位置都进行了平均。"
+    },
+    {
+     "en": "Sampling from it requires the causal rollout, but evaluating a chunk’s realism requires neither its history nor its rollout position.",
+     "zh": "从中采样需要进行因果展开，但评估一个片段是否真实既不需要其历史信息，也不需要其展开位置。"
+    }
+   ]
+  },
+  {
+   "en": "At noise level τ \\tau , let p 1 , τ p_{1,\\tau} and p chunk , τ p_{\\mathrm{chunk},\\tau} denote the teacher-defined target distributions for the initial frame and continuation chunks, respectively. Weighting these two groups by their frequency in the rollout yields the RMD objective:",
+   "zh": "在噪声水平 τ \\tau 下，令 p 1 , τ p_{1,\\tau} 和 p chunk , τ p_{\\mathrm{chunk},\\tau} 分别表示教师为初始帧和延续片段定义的目标分布。 根据它们在展开过程中的频率对这两组进行加权，即可得到 RMD 目标：",
+   "sents": [
+    {
+     "en": "At noise level τ \\tau , let p 1 , τ p_{1,\\tau} and p chunk , τ p_{\\mathrm{chunk},\\tau} denote the teacher-defined target distributions for the initial frame and continuation chunks, respectively.",
+     "zh": "在噪声水平 τ \\tau 下，令 p 1 , τ p_{1,\\tau} 和 p chunk , τ p_{\\mathrm{chunk},\\tau} 分别表示教师为初始帧和延续片段定义的目标分布。"
+    },
+    {
+     "en": "Weighting these two groups by their frequency in the rollout yields the RMD objective:",
+     "zh": "根据它们在展开过程中的频率对这两组进行加权，即可得到 RMD 目标："
+    }
+   ]
+  },
+  {
+   "en": "Crucially, the generation process remains causal, meaning each sample x i x_{i} is still produced conditionally from its actual on-policy history x < i x_{<i} . However, the supervision applied to each chunk is entirely context-free. This objective simply penalizes generated chunks that are unlikely under the teacher’s chunk distribution. By doing so, it explicitly isolates visual quality supervision from the imperfect generated history. Instead of forcing the model to repeat past artifacts to maintain temporal consistency, this marginal matching ensures the teacher guides the current chunk toward high-quality targets, regardless of the flaws in the preceding frames.",
+   "zh": "关键在于，生成过程仍然是因果的，这意味着每个样本 x_i 仍然由其实际的在线策略历史 x_{<i} 条件性地生成。 然而，施加于每个分块的监督完全与上下文无关。 该目标仅对根据教师模型的分块分布而言可能性较低的生成分块进行惩罚。 通过这样做，它将视觉质量监督明确地与不完美的生成历史分离开来。 与其迫使模型重复过去的瑕疵以维持时间一致性，这种边缘匹配确保了教师模型能够引导当前分块朝向高质量的目标，而不管先前帧中的缺陷如何。",
+   "sents": [
+    {
+     "en": "Crucially, the generation process remains causal, meaning each sample x i x_{i} is still produced conditionally from its actual on-policy history x < i x_{<i} .",
+     "zh": "关键在于，生成过程仍然是因果的，这意味着每个样本 x_i 仍然由其实际的在线策略历史 x_{<i} 条件性地生成。"
+    },
+    {
+     "en": "However, the supervision applied to each chunk is entirely context-free.",
+     "zh": "然而，施加于每个分块的监督完全与上下文无关。"
+    },
+    {
+     "en": "This objective simply penalizes generated chunks that are unlikely under the teacher’s chunk distribution.",
+     "zh": "该目标仅对根据教师模型的分块分布而言可能性较低的生成分块进行惩罚。"
+    },
+    {
+     "en": "By doing so, it explicitly isolates visual quality supervision from the imperfect generated history.",
+     "zh": "通过这样做，它将视觉质量监督明确地与不完美的生成历史分离开来。"
+    },
+    {
+     "en": "Instead of forcing the model to repeat past artifacts to maintain temporal consistency, this marginal matching ensures the teacher guides the current chunk toward high-quality targets, regardless of the flaws in the preceding frames.",
+     "zh": "与其迫使模型重复过去的瑕疵以维持时间一致性，这种边缘匹配确保了教师模型能够引导当前分块朝向高质量的目标，而不管先前帧中的缺陷如何。"
+    }
+   ]
+  },
+  {
+   "en": "To realize this decoupled supervision in practice, our training pipeline (Figure 3 ) optimizes the rollout-marginal objective by first generating the causal rollout, then evaluating the initial and continuation chunks against their distinct target distributions, and finally backpropagating the isolated gradients to the generator.",
+   "zh": "为了在实践中实现这种解耦的监督机制，我们的训练流程（图 3）通过以下三个步骤来优化展开边缘目标：首先生成因果展开序列，然后分别评估初始片段和延续片段与各自不同目标分布的匹配程度，最后将隔离后的梯度反向传播至生成器。",
+   "sents": null
+  },
+  {
+   "en": "We initialize the AR generators from Causal Forcing’s causal ODE checkpoints ( Zhu et al., 2026 ) . Following the self-forcing framework ( Huang et al., 2026a ) , at each training iteration, we generate a causal rollout of chunks x 1 , … , x T x_{1},\\ldots,x_{T} , sampling each chunk in 4 denoising steps. To retain the temporal dynamics prior in the pretrained model, we carefully choose which denoising step to supervise for each chunk ( Wu et al., 2026 ) . Early steps in the sampling trajectory rely heavily on historical context to establish global motion, and applying independent supervision at these timesteps would disrupt the temporal consistency. Therefore, we adopt an asymmetric supervision strategy: for the initial chunk x 1 x_{1} , we compute the loss at a randomly selected intermediate exit step along the trajectory, whereas for the continuation chunks x 2 , … , x T x_{2},\\ldots,x_{T} , we apply the loss only at the final, lowest-noise step of the rollout where the network refines local visual details.",
+   "zh": "我们从因果强制（Causal Forcing）的因果 ODE 检查点（Zhu et al., 2026）初始化 AR 生成器。 遵循自强制框架（Huang et al., 2026a），在每次训练迭代中，我们生成一个由片段 x₁, …, x_T 组成的因果展开序列，并对每个片段进行 4 个去噪步骤的采样。 为了保留预训练模型中的时间动态先验知识，我们谨慎选择每个片段应监督的去噪步骤（Wu et al., 2026）。 采样轨迹中的早期步骤严重依赖历史上下文来建立全局运动，若在这些时间步施加独立监督，将破坏时间一致性。 因此，我们采用一种非对称的监督策略：对于初始片段 x₁，我们在轨迹中随机选定的一个中间退出步骤计算损失；而对于后续片段 x₂, …, x_T，我们仅在展开序列的最终、噪声最低的步骤（即网络优化局部视觉细节的阶段）应用损失。",
+   "sents": [
+    {
+     "en": "We initialize the AR generators from Causal Forcing’s causal ODE checkpoints ( Zhu et al., 2026 ) .",
+     "zh": "我们从因果强制（Causal Forcing）的因果 ODE 检查点（Zhu et al., 2026）初始化 AR 生成器。"
+    },
+    {
+     "en": "Following the self-forcing framework ( Huang et al., 2026a ) , at each training iteration, we generate a causal rollout of chunks x 1 , … , x T x_{1},\\ldots,x_{T} , sampling each chunk in 4 denoising steps.",
+     "zh": "遵循自强制框架（Huang et al., 2026a），在每次训练迭代中，我们生成一个由片段 x₁, …, x_T 组成的因果展开序列，并对每个片段进行 4 个去噪步骤的采样。"
+    },
+    {
+     "en": "To retain the temporal dynamics prior in the pretrained model, we carefully choose which denoising step to supervise for each chunk ( Wu et al., 2026 ) .",
+     "zh": "为了保留预训练模型中的时间动态先验知识，我们谨慎选择每个片段应监督的去噪步骤（Wu et al., 2026）。"
+    },
+    {
+     "en": "Early steps in the sampling trajectory rely heavily on historical context to establish global motion, and applying independent supervision at these timesteps would disrupt the temporal consistency.",
+     "zh": "采样轨迹中的早期步骤严重依赖历史上下文来建立全局运动，若在这些时间步施加独立监督，将破坏时间一致性。"
+    },
+    {
+     "en": "Therefore, we adopt an asymmetric supervision strategy: for the initial chunk x 1 x_{1} , we compute the loss at a randomly selected intermediate exit step along the trajectory, whereas for the continuation chunks x 2 , … , x T x_{2},\\ldots,x_{T} , we apply the loss only at the final, lowest-noise step of the rollout where the network refines local visual details.",
+     "zh": "因此，我们采用一种非对称的监督策略：对于初始片段 x₁，我们在轨迹中随机选定的一个中间退出步骤计算损失；而对于后续片段 x₂, …, x_T，我们仅在展开序列的最终、噪声最低的步骤（即网络优化局部视觉细节的阶段）应用损失。"
+    }
+   ]
+  },
+  {
+   "en": "To score the sampled chunks, we use separate teacher targets for the initial frame and continuations. As discussed in Section 3.2 , Wan’s causal VAE gives them different latent statistics. An unmodified video teacher would treat an isolated continuation chunk as the start of a video and expect an uncompressed first frame. We therefore adapt the Wan 14B video teacher ( Wan et al., 2025 ) with LoRA ( Hu et al., 2022 ) on continuation chunks extracted from videos generated by the original model. The adapted teacher supplies the continuation target p chunk , τ p_{\\mathrm{chunk},\\tau} in Equation 5 , allowing each continuation to be scored without its generated history.",
+   "zh": "为了对采样片段进行评分，我们为初始帧和延续部分分别使用独立的教师目标。 如第 3.2 节所述，Wan 的因果 VAE 使它们具有不同的潜在统计特性。 未经修改的视频教师会将一个孤立的延续片段视为视频的开端，并期望得到一个未压缩的首帧。 因此，我们对 Wan 14B 视频教师（Wan 等，2025）进行了适配，使用 LoRA（Hu 等，2022）处理从原始模型生成的视频中提取出的延续片段。 经过适配的教师提供延续目标 p_chunk，τ p_{\\mathrm{chunk},\\tau}（见公式 5），从而可以在不依赖其生成历史的情况下对每个延续部分进行评分。",
+   "sents": [
+    {
+     "en": "To score the sampled chunks, we use separate teacher targets for the initial frame and continuations.",
+     "zh": "为了对采样片段进行评分，我们为初始帧和延续部分分别使用独立的教师目标。"
+    },
+    {
+     "en": "As discussed in Section 3.2 , Wan’s causal VAE gives them different latent statistics.",
+     "zh": "如第 3.2 节所述，Wan 的因果 VAE 使它们具有不同的潜在统计特性。"
+    },
+    {
+     "en": "An unmodified video teacher would treat an isolated continuation chunk as the start of a video and expect an uncompressed first frame.",
+     "zh": "未经修改的视频教师会将一个孤立的延续片段视为视频的开端，并期望得到一个未压缩的首帧。"
+    },
+    {
+     "en": "We therefore adapt the Wan 14B video teacher ( Wan et al., 2025 ) with LoRA ( Hu et al., 2022 ) on continuation chunks extracted from videos generated by the original model.",
+     "zh": "因此，我们对 Wan 14B 视频教师（Wan 等，2025）进行了适配，使用 LoRA（Hu 等，2022）处理从原始模型生成的视频中提取出的延续片段。"
+    },
+    {
+     "en": "The adapted teacher supplies the continuation target p chunk , τ p_{\\mathrm{chunk},\\tau} in Equation 5 , allowing each continuation to be scored without its generated history.",
+     "zh": "经过适配的教师提供延续目标 p_chunk，τ p_{\\mathrm{chunk},\\tau}（见公式 5），从而可以在不依赖其生成历史的情况下对每个延续部分进行评分。"
+    }
+   ]
+  },
+  {
+   "en": "For each x i x_{i} , we add scoring noise and obtain clean predictions from its teacher and fake-score networks on the same noisy input. Let D real , i D_{\\mathrm{real},i} and D fake , i D_{\\mathrm{fake},i} denote these two predictions. Their normalized difference gives a gradient estimate g i g_{i} for the chunk:",
+   "zh": "对于每个 x_i，我们添加评分噪声，并在相同的含噪输入上从其教师网络和虚假评分网络获得干净的预测。 令 D_real,i 和 D_fake,i 分别表示这两个预测。 它们的归一化差值给出了该分块的梯度估计 g_i：",
+   "sents": [
+    {
+     "en": "For each x i x_{i} , we add scoring noise and obtain clean predictions from its teacher and fake-score networks on the same noisy input.",
+     "zh": "对于每个 x_i，我们添加评分噪声，并在相同的含噪输入上从其教师网络和虚假评分网络获得干净的预测。"
+    },
+    {
+     "en": "Let D real , i D_{\\mathrm{real},i} and D fake , i D_{\\mathrm{fake},i} denote these two predictions.",
+     "zh": "令 D_real,i 和 D_fake,i 分别表示这两个预测。"
+    },
+    {
+     "en": "Their normalized difference gives a gradient estimate g i g_{i} for the chunk:",
+     "zh": "它们的归一化差值给出了该分块的梯度估计 g_i："
+    }
+   ]
+  },
+  {
+   "en": "To propagate g i g_{i} to the generator parameters, we follow checkpointed self-forcing ( Savva et al., 2026 ) . The causal rollout is generated without retaining its computation graph. A differentiable replay then recomputes each supervised prediction from its sampled noisy input and generated history, allowing g i g_{i} to be backpropagated through the generator.",
+   "zh": "为了将 g_i（g_{i}）传播到生成器参数中，我们遵循了带检查点的自强化方法（Savva 等人，2026）。 因果展开在生成时不会保留其计算图。 随后，一个可微分的重播机制会基于采样得到的含噪输入和生成的历史，重新计算每个监督预测，从而使得 g_i（g_{i}）能够通过生成器进行反向传播。",
+   "sents": [
+    {
+     "en": "To propagate g i g_{i} to the generator parameters, we follow checkpointed self-forcing ( Savva et al., 2026 ) .",
+     "zh": "为了将 g_i（g_{i}）传播到生成器参数中，我们遵循了带检查点的自强化方法（Savva 等人，2026）。"
+    },
+    {
+     "en": "The causal rollout is generated without retaining its computation graph.",
+     "zh": "因果展开在生成时不会保留其计算图。"
+    },
+    {
+     "en": "A differentiable replay then recomputes each supervised prediction from its sampled noisy input and generated history, allowing g i g_{i} to be backpropagated through the generator.",
+     "zh": "随后，一个可微分的重播机制会基于采样得到的含噪输入和生成的历史，重新计算每个监督预测，从而使得 g_i（g_{i}）能够通过生成器进行反向传播。"
+    }
+   ]
+  },
+  {
+   "en": "The first latent frame has different statistics from later latents. Once it leaves the sliding window, the generator must predict without that distinctive frame, a condition absent from short training rollouts that can cause flicker. Following Self-Forcing ( Huang et al., 2026a ) , we mask attention to the initial block when replaying predictions in the latter half of the training window.",
+   "zh": "第一个潜在帧的统计特性与后续潜在帧不同。 一旦它离开滑动窗口，生成器就必须在没有这个独特帧的情况下进行预测；而短训练序列中不存在这种情况，这可能导致画面闪烁。 遵循自我强制方法（Huang 等人，2026a），在训练窗口的后半部分重复预测时，我们会对初始块进行注意力掩码处理。",
+   "sents": [
+    {
+     "en": "The first latent frame has different statistics from later latents.",
+     "zh": "第一个潜在帧的统计特性与后续潜在帧不同。"
+    },
+    {
+     "en": "Once it leaves the sliding window, the generator must predict without that distinctive frame, a condition absent from short training rollouts that can cause flicker.",
+     "zh": "一旦它离开滑动窗口，生成器就必须在没有这个独特帧的情况下进行预测；而短训练序列中不存在这种情况，这可能导致画面闪烁。"
+    },
+    {
+     "en": "Following Self-Forcing ( Huang et al., 2026a ) , we mask attention to the initial block when replaying predictions in the latter half of the training window.",
+     "zh": "遵循自我强制方法（Huang 等人，2026a），在训练窗口的后半部分重复预测时，我们会对初始块进行注意力掩码处理。"
+    }
+   ]
+  },
+  {
+   "en": "Matching chunk marginals improves their appearance but does not directly constrain the transitions between them. Individually realistic chunks can still form a video with inconsistent appearance or motion. We therefore refine the AR generator with the video-level DMD objective in Equation 2 .",
+   "zh": "匹配分块边缘可以改善其外观，但不会直接约束分块之间的过渡。 单个分块即使看起来真实，仍可能组合成一个外观或运动不一致的视频。 因此，我们使用方程 2 中的视频级 DMD 目标来优化 AR 生成器。",
+   "sents": [
+    {
+     "en": "Matching chunk marginals improves their appearance but does not directly constrain the transitions between them.",
+     "zh": "匹配分块边缘可以改善其外观，但不会直接约束分块之间的过渡。"
+    },
+    {
+     "en": "Individually realistic chunks can still form a video with inconsistent appearance or motion.",
+     "zh": "单个分块即使看起来真实，仍可能组合成一个外观或运动不一致的视频。"
+    },
+    {
+     "en": "We therefore refine the AR generator with the video-level DMD objective in Equation 2 .",
+     "zh": "因此，我们使用方程 2 中的视频级 DMD 目标来优化 AR 生成器。"
+    }
+   ]
+  },
+  {
+   "en": "The generator still produces causal self-rollouts, but the video teacher and online fake-score network now evaluate each complete rollout jointly. Their score difference updates the generator through the same differentiable replay, supervising motion and consistency across chunks. This stage begins from a generator already trained using the rollout-marginal objective. We use smaller learning rates to limit the changes made during refinement.",
+   "zh": "生成器仍然会生成因果自展开序列，但此时视频教师网络和在线虚假评分网络将共同评估每个完整的展开序列。 它们的评分差异通过相同的可微重播机制更新生成器，从而监督各片段之间的动作与一致性。 此阶段从一个已使用展开边缘目标函数训练好的生成器开始。 我们采用较小的学习率，以限制在优化过程中产生的变化。",
+   "sents": [
+    {
+     "en": "The generator still produces causal self-rollouts, but the video teacher and online fake-score network now evaluate each complete rollout jointly.",
+     "zh": "生成器仍然会生成因果自展开序列，但此时视频教师网络和在线虚假评分网络将共同评估每个完整的展开序列。"
+    },
+    {
+     "en": "Their score difference updates the generator through the same differentiable replay, supervising motion and consistency across chunks.",
+     "zh": "它们的评分差异通过相同的可微重播机制更新生成器，从而监督各片段之间的动作与一致性。"
+    },
+    {
+     "en": "This stage begins from a generator already trained using the rollout-marginal objective.",
+     "zh": "此阶段从一个已使用展开边缘目标函数训练好的生成器开始。"
+    },
+    {
+     "en": "We use smaller learning rates to limit the changes made during refinement.",
+     "zh": "我们采用较小的学习率，以限制在优化过程中产生的变化。"
+    }
+   ]
+  },
+  {
+   "en": "We distill the pretrained Wan 14B video diffusion model into a causal Wan 1.3B generator, initialized from Causal Forcing’s causal ODE checkpoints ( Zhu et al., 2026 ) . RMD is trained in two stages using a metadata set comprising 70,000 unique prompts sourced from Self Forcing ( Huang et al., 2026a ) . Our models are trained under a strictly fixed 81-frame horizon, without performing longer rollouts during the training phase.",
+   "zh": "我们将预训练的 Wan 14B 视频扩散模型提炼为一个因果 Wan 1.3B 生成器，其初始化基于 Causal Forcing 的因果 ODE 检查点（Zhu 等人，2026）。 RMD 采用两阶段训练方法，使用一个包含 70,000 个来自 Self Forcing（Huang 等人，2026a）的独特提示词组成的元数据集进行训练。 我们的模型在严格固定的 81 帧时间范围内进行训练，训练阶段不会执行更长的序列生成。",
+   "sents": [
+    {
+     "en": "We distill the pretrained Wan 14B video diffusion model into a causal Wan 1.3B generator, initialized from Causal Forcing’s causal ODE checkpoints ( Zhu et al., 2026 ) .",
+     "zh": "我们将预训练的 Wan 14B 视频扩散模型提炼为一个因果 Wan 1.3B 生成器，其初始化基于 Causal Forcing 的因果 ODE 检查点（Zhu 等人，2026）。"
+    },
+    {
+     "en": "RMD is trained in two stages using a metadata set comprising 70,000 unique prompts sourced from Self Forcing ( Huang et al., 2026a ) .",
+     "zh": "RMD 采用两阶段训练方法，使用一个包含 70,000 个来自 Self Forcing（Huang 等人，2026a）的独特提示词组成的元数据集进行训练。"
+    },
+    {
+     "en": "Our models are trained under a strictly fixed 81-frame horizon, without performing longer rollouts during the training phase.",
+     "zh": "我们的模型在严格固定的 81 帧时间范围内进行训练，训练阶段不会执行更长的序列生成。"
+    }
+   ]
+  },
+  {
+   "en": "All trainable networks are optimized using AdamW ( Loshchilov and Hutter, 2019 ) ( β 1 = 0 \\beta_{1}=0 , β 2 = 0.999 \\beta_{2}=0.999 , weight decay 0.01 0.01 ) with a global batch size of 8. During the rollout-marginal training stage, we alternate 5 fake-score updates for every 1 generator update. When the chunk size is 1, both the generator and fake-score networks use a learning rate of 2 × 10 − 5 2\\times 10^{-5} , and we train for 900 steps. When the chunk size is 3, the generator learning rate remains 2 × 10 − 5 2\\times 10^{-5} , while the fake-score learning rates are reduced to 2 × 10 − 7 2\\times 10^{-7} , and we train for 750 steps. In the subsequent video-level refinement stage, the generator and fake-score learning rates are reduced to 2 × 10 − 6 2\\times 10^{-6} and 4 × 10 − 7 4\\times 10^{-7} , respectively, and both models are trained for 800 steps.",
+   "zh": "所有可训练网络均使用 AdamW（Loshchilov 和 Hutter，2019）进行优化（β₁ = 0，β₂ = 0.999，权重衰减为 0.01），全局批量大小为 8。 在 rollout-marginal 训练阶段，我们每更新一次生成器，就交替进行 5 次伪分数更新。 当分块大小为 1 时，生成器和伪分数网络均使用学习率 2 × 10⁻⁵，并且我们训练 900 步。 当分块大小为 3 时，生成器的学习率保持为 2 × 10⁻⁵，而伪分数的学习率则降低至 2 × 10⁻⁷，并且我们训练 750 步。 在随后的视频级优化阶段，生成器和伪分数的学习率分别降低至 2 × 10⁻⁶ 和 4 × 10⁻⁷，并且两个模型均训练 800 步。",
+   "sents": [
+    {
+     "en": "All trainable networks are optimized using AdamW ( Loshchilov and Hutter, 2019 ) ( β 1 = 0 \\beta_{1}=0 , β 2 = 0.999 \\beta_{2}=0.999 , weight decay 0.01 0.01 ) with a global batch size of 8.",
+     "zh": "所有可训练网络均使用 AdamW（Loshchilov 和 Hutter，2019）进行优化（β₁ = 0，β₂ = 0.999，权重衰减为 0.01），全局批量大小为 8。"
+    },
+    {
+     "en": "During the rollout-marginal training stage, we alternate 5 fake-score updates for every 1 generator update.",
+     "zh": "在 rollout-marginal 训练阶段，我们每更新一次生成器，就交替进行 5 次伪分数更新。"
+    },
+    {
+     "en": "When the chunk size is 1, both the generator and fake-score networks use a learning rate of 2 × 10 − 5 2\\times 10^{-5} , and we train for 900 steps.",
+     "zh": "当分块大小为 1 时，生成器和伪分数网络均使用学习率 2 × 10⁻⁵，并且我们训练 900 步。"
+    },
+    {
+     "en": "When the chunk size is 3, the generator learning rate remains 2 × 10 − 5 2\\times 10^{-5} , while the fake-score learning rates are reduced to 2 × 10 − 7 2\\times 10^{-7} , and we train for 750 steps.",
+     "zh": "当分块大小为 3 时，生成器的学习率保持为 2 × 10⁻⁵，而伪分数的学习率则降低至 2 × 10⁻⁷，并且我们训练 750 步。"
+    },
+    {
+     "en": "In the subsequent video-level refinement stage, the generator and fake-score learning rates are reduced to 2 × 10 − 6 2\\times 10^{-6} and 4 × 10 − 7 4\\times 10^{-7} , respectively, and both models are trained for 800 steps.",
+     "zh": "在随后的视频级优化阶段，生成器和伪分数的学习率分别降低至 2 × 10⁻⁶ 和 4 × 10⁻⁷，并且两个模型均训练 800 步。"
+    }
+   ]
+  },
+  {
+   "en": "We adopt the VBench-Long suite ( Huang et al., 2024 ; Huang et al., 2026b ) for our primary evaluation, using the complete standard set of 944 unique prompts with five generations per prompt. All videos are generated at 832 × 480 832\\times 480 resolution and 16 FPS, and evaluated at a duration of approximately 60 seconds for both chunk sizes. The 500-second rollout in Figure 1 is a qualitative example and is not included in these aggregate metrics.",
+   "zh": "我们采用 VBench-Long 套件（Huang 等人，2024；Huang 等人，2026b）进行主要评估，使用包含 944 个唯一提示词的完整标准集，每个提示词生成五个版本。 所有视频均以 832 × 480 分辨率和 16 FPS 帧率生成，并在两种片段大小下以约 60 秒的时长进行评估。 图 1 中的 500 秒滚动演示是一个定性示例，未包含在这些汇总指标中。",
+   "sents": [
+    {
+     "en": "We adopt the VBench-Long suite ( Huang et al., 2024 ; Huang et al., 2026b ) for our primary evaluation, using the complete standard set of 944 unique prompts with five generations per prompt.",
+     "zh": "我们采用 VBench-Long 套件（Huang 等人，2024；Huang 等人，2026b）进行主要评估，使用包含 944 个唯一提示词的完整标准集，每个提示词生成五个版本。"
+    },
+    {
+     "en": "All videos are generated at 832 × 480 832\\times 480 resolution and 16 FPS, and evaluated at a duration of approximately 60 seconds for both chunk sizes.",
+     "zh": "所有视频均以 832 × 480 分辨率和 16 FPS 帧率生成，并在两种片段大小下以约 60 秒的时长进行评估。"
+    },
+    {
+     "en": "The 500-second rollout in Figure 1 is a qualitative example and is not included in these aggregate metrics.",
+     "zh": "图 1 中的 500 秒滚动演示是一个定性示例，未包含在这些汇总指标中。"
+    }
+   ]
+  },
+  {
+   "en": "We compare RMD with Self Forcing ( Huang et al., 2026a ) and Causal Forcing ( Zhu et al., 2026 ) . Both baselines share our standard sliding-window generation protocol, operating entirely without fixed frame anchors or modifications to the underlying autoregressive logic. This isolates the distillation objectives and ensures RMD introduces zero additional computational overhead during inference. We report results separately using chunk sizes of 1 and 3.",
+   "zh": "我们将 RMD 与 Self Forcing（Huang 等人，2026a）和 Causal Forcing（Zhu 等人，2026）进行了比较。 这两种基线方法都采用了我们标准的滑动窗口生成协议，完全无需固定的帧锚点或对底层自回归逻辑进行任何修改。 这样就能将蒸馏目标独立出来，并确保 RMD 在推理阶段不会引入任何额外的计算开销。 我们分别使用大小为 1 和 3 的块来报告结果。",
+   "sents": [
+    {
+     "en": "We compare RMD with Self Forcing ( Huang et al., 2026a ) and Causal Forcing ( Zhu et al., 2026 ) .",
+     "zh": "我们将 RMD 与 Self Forcing（Huang 等人，2026a）和 Causal Forcing（Zhu 等人，2026）进行了比较。"
+    },
+    {
+     "en": "Both baselines share our standard sliding-window generation protocol, operating entirely without fixed frame anchors or modifications to the underlying autoregressive logic.",
+     "zh": "这两种基线方法都采用了我们标准的滑动窗口生成协议，完全无需固定的帧锚点或对底层自回归逻辑进行任何修改。"
+    },
+    {
+     "en": "This isolates the distillation objectives and ensures RMD introduces zero additional computational overhead during inference.",
+     "zh": "这样就能将蒸馏目标独立出来，并确保 RMD 在推理阶段不会引入任何额外的计算开销。"
+    },
+    {
+     "en": "We report results separately using chunk sizes of 1 and 3.",
+     "zh": "我们分别使用大小为 1 和 3 的块来报告结果。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 4 presents corresponding qualitative comparisons over extended rollouts. Within the 5-second training horizon, all methods generate reasonable frames. However, as generation progresses far beyond this boundary (20s, 40s, 60s), the baselines exhibit visual degradation including color saturation and structural collapse. In contrast, RMD consistently preserves clear subject details and stable scene structures throughout the 1-minute trajectory.",
+   "zh": "图 4 展示了在扩展生成过程中的相应定性比较。 在 5 秒的训练时间范围内，所有方法都能生成合理的帧。 然而，随着生成过程远超这一界限（20 秒、40 秒、60 秒），基线方法出现了视觉退化，包括色彩饱和度下降和结构崩溃。 相比之下，RMD 在整个 1 分钟的时间轨迹中始终能保持清晰的主题细节和稳定的场景结构。",
+   "sents": [
+    {
+     "en": "Figure 4 presents corresponding qualitative comparisons over extended rollouts.",
+     "zh": "图 4 展示了在扩展生成过程中的相应定性比较。"
+    },
+    {
+     "en": "Within the 5-second training horizon, all methods generate reasonable frames.",
+     "zh": "在 5 秒的训练时间范围内，所有方法都能生成合理的帧。"
+    },
+    {
+     "en": "However, as generation progresses far beyond this boundary (20s, 40s, 60s), the baselines exhibit visual degradation including color saturation and structural collapse.",
+     "zh": "然而，随着生成过程远超这一界限（20 秒、40 秒、60 秒），基线方法出现了视觉退化，包括色彩饱和度下降和结构崩溃。"
+    },
+    {
+     "en": "In contrast, RMD consistently preserves clear subject details and stable scene structures throughout the 1-minute trajectory.",
+     "zh": "相比之下，RMD 在整个 1 分钟的时间轨迹中始终能保持清晰的主题细节和稳定的场景结构。"
+    }
+   ]
+  },
+  {
+   "en": "Table 1 presents the quantitative comparison on 1-minute generated videos. RMD establishes a clear advantage across both configurations. With a chunk size of 1, our method improves the total score by over 10 absolute points compared with the baselines (81.26 vs. 70.94 and 69.88), while attaining quality and semantic scores of 84.52 and 68.24, respectively. With a chunk size of 3, RMD achieves a total score of 81.48, with corresponding quality and semantic scores of 85.03 and 67.24. Together, these quantitative and qualitative results demonstrate that explicitly decoupling chunk supervision from historical context effectively prevents the degradation typical of joint video-level distillation.",
+   "zh": "表1展示了1分钟生成视频的定量比较结果。 RMD在两种配置下都展现出明显优势。 当分块大小为1时，与基线方法相比（81.26 vs. 70.94和69.88），我们的方法将总分提高了超过10个绝对分值，同时质量得分和语义得分分别达到84.52和68.24。 当分块大小为3时，RMD的总分为81.48，对应的质量得分和语义得分分别为85.03和67.24。 综合这些定量与定性结果可以看出，将分块监督与历史上下文显式解耦，能有效避免联合视频级蒸馏中常见的性能退化问题。",
+   "sents": [
+    {
+     "en": "Table 1 presents the quantitative comparison on 1-minute generated videos.",
+     "zh": "表1展示了1分钟生成视频的定量比较结果。"
+    },
+    {
+     "en": "RMD establishes a clear advantage across both configurations.",
+     "zh": "RMD在两种配置下都展现出明显优势。"
+    },
+    {
+     "en": "With a chunk size of 1, our method improves the total score by over 10 absolute points compared with the baselines (81.26 vs. 70.94 and 69.88), while attaining quality and semantic scores of 84.52 and 68.24, respectively.",
+     "zh": "当分块大小为1时，与基线方法相比（81.26 vs. 70.94和69.88），我们的方法将总分提高了超过10个绝对分值，同时质量得分和语义得分分别达到84.52和68.24。"
+    },
+    {
+     "en": "With a chunk size of 3, RMD achieves a total score of 81.48, with corresponding quality and semantic scores of 85.03 and 67.24.",
+     "zh": "当分块大小为3时，RMD的总分为81.48，对应的质量得分和语义得分分别为85.03和67.24。"
+    },
+    {
+     "en": "Together, these quantitative and qualitative results demonstrate that explicitly decoupling chunk supervision from historical context effectively prevents the degradation typical of joint video-level distillation.",
+     "zh": "综合这些定量与定性结果可以看出，将分块监督与历史上下文显式解耦，能有效避免联合视频级蒸馏中常见的性能退化问题。"
+    }
+   ]
+  },
+  {
+   "en": "To assess performance degradation over extended rollouts, we evaluate the same videos generated with a chunk size of 1 at durations ranging from 10 to 60 seconds. Figure 5 plots the performance dynamics over these trajectories. RMD maintains stable visual quality as the rollout extends: its quality score changes only from 84.68 at 10 seconds to 84.52 at 60 seconds, where it retains a semantic score of 68.24. In contrast, the baselines degrade steeply as prediction errors compound; for example, the total score of Self Forcing drops from 79.12 to 70.94 over the same interval. This robust extrapolation confirms that independent chunk supervision effectively mitigates the accumulation of visual artifacts.",
+   "zh": "为了评估长时间生成过程中性能下降的情况，我们使用块大小为 1 的方式生成相同视频，并测试其持续时间为 10 到 60 秒的不同情况。 图 5 展示了这些生成轨迹中性能的变化动态。 随着生成时间的延长，RMD 的视觉质量保持稳定：其质量分数仅从 10 秒时的 84.68 变为 60 秒时的 84.52，同时语义分数仍维持在 68.24。 相比之下，基线模型的性能随着预测误差的累积而急剧下降；例如，Self Forcing 的总分在同一时间段内从 79.12 降至 70.94。 这种稳健的外推能力证实了独立块监督能有效缓解视觉伪影的累积问题。",
+   "sents": [
+    {
+     "en": "To assess performance degradation over extended rollouts, we evaluate the same videos generated with a chunk size of 1 at durations ranging from 10 to 60 seconds.",
+     "zh": "为了评估长时间生成过程中性能下降的情况，我们使用块大小为 1 的方式生成相同视频，并测试其持续时间为 10 到 60 秒的不同情况。"
+    },
+    {
+     "en": "Figure 5 plots the performance dynamics over these trajectories.",
+     "zh": "图 5 展示了这些生成轨迹中性能的变化动态。"
+    },
+    {
+     "en": "RMD maintains stable visual quality as the rollout extends: its quality score changes only from 84.68 at 10 seconds to 84.52 at 60 seconds, where it retains a semantic score of 68.24.",
+     "zh": "随着生成时间的延长，RMD 的视觉质量保持稳定：其质量分数仅从 10 秒时的 84.68 变为 60 秒时的 84.52，同时语义分数仍维持在 68.24。"
+    },
+    {
+     "en": "In contrast, the baselines degrade steeply as prediction errors compound; for example, the total score of Self Forcing drops from 79.12 to 70.94 over the same interval.",
+     "zh": "相比之下，基线模型的性能随着预测误差的累积而急剧下降；例如，Self Forcing 的总分在同一时间段内从 79.12 降至 70.94。"
+    },
+    {
+     "en": "This robust extrapolation confirms that independent chunk supervision effectively mitigates the accumulation of visual artifacts.",
+     "zh": "这种稳健的外推能力证实了独立块监督能有效缓解视觉伪影的累积问题。"
+    }
+   ]
+  },
+  {
+   "en": "Table 2 evaluates the components of RMD using a chunk size of 1. Applying video-level DMD alone yields a total score of 72.44, and qualitatively, the generation rapidly collapses into severe color artifacts (Figure 6 ). Optimizing exclusively for the rollout-marginal objective ( Marginal only ) raises the quality score to 84.90, confirming that context-free scoring effectively prevents the visual degradation.",
+   "zh": "表2使用大小为1的块对RMD的各个组成部分进行了评估。 仅应用视频级别的DMD可获得72.44的总分，但从定性角度来看，生成结果会迅速出现严重的色彩伪影（图6）。 若仅针对展开边际目标进行优化（仅边际），质量得分将提升至84.90，这证实了无上下文评分能有效防止视觉质量的下降。",
+   "sents": [
+    {
+     "en": "Table 2 evaluates the components of RMD using a chunk size of 1.",
+     "zh": "表2使用大小为1的块对RMD的各个组成部分进行了评估。"
+    },
+    {
+     "en": "Applying video-level DMD alone yields a total score of 72.44, and qualitatively, the generation rapidly collapses into severe color artifacts (Figure 6 ).",
+     "zh": "仅应用视频级别的DMD可获得72.44的总分，但从定性角度来看，生成结果会迅速出现严重的色彩伪影（图6）。"
+    },
+    {
+     "en": "Optimizing exclusively for the rollout-marginal objective ( Marginal only ) raises the quality score to 84.90, confirming that context-free scoring effectively prevents the visual degradation.",
+     "zh": "若仅针对展开边际目标进行优化（仅边际），质量得分将提升至84.90，这证实了无上下文评分能有效防止视觉质量的下降。"
+    }
+   ]
+  },
+  {
+   "en": "While the Marginal only variant achieves high visual realism, it lacks cross-chunk constraints and falls short on temporal coherence, which is visibly manifested as jagged flickering in its spatio-temporal slice (Figure 6 ). The full RMD pipeline resolves this via subsequent refinement with video-level DMD, which improves subject consistency, background consistency, and motion smoothness (Table 2 (b)). As shown in Figure 6 , this combined approach achieves the best total and semantic scores (81.26 and 68.24, respectively) while restoring smoother, more continuous trajectories in the spatio-temporal slice.",
+   "zh": "尽管仅使用 Marginal 的变体实现了较高的视觉真实感，但它缺乏跨分块约束，并且在时间连贯性方面表现不足，这一点在其时空切片中表现为明显的锯齿状闪烁（图 6）。 完整的 RMD 流程通过后续使用视频级 DMD 进行优化解决了这一问题，从而提升了主体一致性、背景一致性和运动平滑度（表 2 (b)）。 如图 6 所示，这种结合方法获得了最高的总分和语义分（分别为 81.26 和 68.24），同时恢复了时空切片中更平滑、更连续的轨迹。",
+   "sents": [
+    {
+     "en": "While the Marginal only variant achieves high visual realism, it lacks cross-chunk constraints and falls short on temporal coherence, which is visibly manifested as jagged flickering in its spatio-temporal slice (Figure 6 ).",
+     "zh": "尽管仅使用 Marginal 的变体实现了较高的视觉真实感，但它缺乏跨分块约束，并且在时间连贯性方面表现不足，这一点在其时空切片中表现为明显的锯齿状闪烁（图 6）。"
+    },
+    {
+     "en": "The full RMD pipeline resolves this via subsequent refinement with video-level DMD, which improves subject consistency, background consistency, and motion smoothness (Table 2 (b)).",
+     "zh": "完整的 RMD 流程通过后续使用视频级 DMD 进行优化解决了这一问题，从而提升了主体一致性、背景一致性和运动平滑度（表 2 (b)）。"
+    },
+    {
+     "en": "As shown in Figure 6 , this combined approach achieves the best total and semantic scores (81.26 and 68.24, respectively) while restoring smoother, more continuous trajectories in the spatio-temporal slice.",
+     "zh": "如图 6 所示，这种结合方法获得了最高的总分和语义分（分别为 81.26 和 68.24），同时恢复了时空切片中更平滑、更连续的轨迹。"
+    }
+   ]
+  },
+  {
+   "en": "A variant that applies random-step exits uniformly across all chunks suffers from severe temporal jitter (Figure 6 ) and performs worse across all metrics, with total and quality scores of 78.29 and 82.48, respectively (Table 2 (a)). This supports our asymmetric design: supervising the initial chunk across random steps preserves the pretrained temporal prior, while restricting continuation chunks to the final exit strictly refines local details.",
+   "zh": "一种在所有分块中均匀应用随机步长退出机制的变体，存在严重的时序抖动（图6），并且在所有指标上的表现更差，其总分和质量得分分别为78.29和82.48（表2(a)）。 这支持了我们的非对称设计：在随机步长中监督初始分块可以保留预训练时的时序先验，而将后续分块的退出限制在最终步长，则能严格优化局部细节。",
+   "sents": [
+    {
+     "en": "A variant that applies random-step exits uniformly across all chunks suffers from severe temporal jitter (Figure 6 ) and performs worse across all metrics, with total and quality scores of 78.29 and 82.48, respectively (Table 2 (a)).",
+     "zh": "一种在所有分块中均匀应用随机步长退出机制的变体，存在严重的时序抖动（图6），并且在所有指标上的表现更差，其总分和质量得分分别为78.29和82.48（表2(a)）。"
+    },
+    {
+     "en": "This supports our asymmetric design: supervising the initial chunk across random steps preserves the pretrained temporal prior, while restricting continuation chunks to the final exit strictly refines local details.",
+     "zh": "这支持了我们的非对称设计：在随机步长中监督初始分块可以保留预训练时的时序先验，而将后续分块的退出限制在最终步长，则能严格优化局部细节。"
+    }
+   ]
+  },
+  {
+   "en": "Autoregressive video generation inherently suffers from error accumulation because joint temporal scoring forces the teacher to compromise local visual quality for sequence-level consistency. To resolve this coupling, we introduce Rollout-Marginal Distillation (RMD), which disentangles spatial realism from temporal coherence. By independently matching chunk marginals and subsequently refining global dynamics, RMD provides a clean, context-free supervision signal. Quantitative evaluations over 60-second rollouts demonstrate that RMD effectively prevents artifact accumulation beyond the training horizon, while a 500-second qualitative example illustrates its potential at substantially longer durations. We believe this decoupled paradigm offers a robust foundation for future long-horizon, streamable video generation.",
+   "zh": "自回归视频生成本质上存在误差累积问题，因为联合时间评分迫使教师模型为了序列级一致性而牺牲局部视觉质量。 为了解决这种耦合问题，我们提出了“展开边缘蒸馏”（RMD），该方法将空间真实感与时间连贯性分离开来。 通过独立匹配片段边缘分布并随后优化全局动态，RMD 提供了一个纯净且无上下文依赖的监督信号。 在 60 秒展开序列上的定量评估表明，RMD 能有效防止超出训练时间范围后的伪影累积，而一个 500 秒的定性示例则展示了其在更长时长上的潜力。 我们相信，这种解耦范式为未来长时长的可流式视频生成提供了坚实的基础。",
+   "sents": [
+    {
+     "en": "Autoregressive video generation inherently suffers from error accumulation because joint temporal scoring forces the teacher to compromise local visual quality for sequence-level consistency.",
+     "zh": "自回归视频生成本质上存在误差累积问题，因为联合时间评分迫使教师模型为了序列级一致性而牺牲局部视觉质量。"
+    },
+    {
+     "en": "To resolve this coupling, we introduce Rollout-Marginal Distillation (RMD), which disentangles spatial realism from temporal coherence.",
+     "zh": "为了解决这种耦合问题，我们提出了“展开边缘蒸馏”（RMD），该方法将空间真实感与时间连贯性分离开来。"
+    },
+    {
+     "en": "By independently matching chunk marginals and subsequently refining global dynamics, RMD provides a clean, context-free supervision signal.",
+     "zh": "通过独立匹配片段边缘分布并随后优化全局动态，RMD 提供了一个纯净且无上下文依赖的监督信号。"
+    },
+    {
+     "en": "Quantitative evaluations over 60-second rollouts demonstrate that RMD effectively prevents artifact accumulation beyond the training horizon, while a 500-second qualitative example illustrates its potential at substantially longer durations.",
+     "zh": "在 60 秒展开序列上的定量评估表明，RMD 能有效防止超出训练时间范围后的伪影累积，而一个 500 秒的定性示例则展示了其在更长时长上的潜力。"
+    },
+    {
+     "en": "We believe this decoupled paradigm offers a robust foundation for future long-horizon, streamable video generation.",
+     "zh": "我们相信，这种解耦范式为未来长时长的可流式视频生成提供了坚实的基础。"
+    }
+   ]
+  }
+ ]
+}

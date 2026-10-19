@@ -1,0 +1,1727 @@
+{
+ "id": "c5f4868f27c925e8",
+ "source": "arxiv-t2i",
+ "link": "https://arxiv.org/abs/2609.37816v1",
+ "title": "WINGS: Reference-Free Gaussian Splatting Inpainting with 3D-Native Generative Priors",
+ "title_zh": "WINGS: 参考自由的 3D 高斯点云填补方法",
+ "published": "2026-09-29T15:27:34Z",
+ "translated_at": "2026-10-19T09:48:08Z",
+ "paragraphs": [
+  {
+   "en": "Inpainting 3D Gaussian Splatting scenes, a key challenge in 3D editing, requires generating plausible content within a masked region of 3D space. Prior approaches rely on 2D diffusion models to produce one or several inpainted reference views, making them susceptible to challenges associated with multi-view inconsistency and lengthy optimization times. Departing from these approaches, we introduce a reference-free Gaussian splatting inpainting method operating natively in 3D. Our method leverages the embedding space of a large, pre-trained 3D prior, combined with a structure completion network to feed a generative prior which reconstructs the missing region’s geometry and appearance. Performing content generation entirely in 3D, it avoids the need to reconcile inconsistencies of multiple inpainted reference images, and is faster than related 2D-based methods. We demonstrate the effectiveness of our method qualitatively and quantitatively, through extensive experiments and a user study. To the best of our knowledge, this work is the first Gaussian splatting inpainting method to operate in the learned representation space of a 3D-native generative prior without relying on inpainted reference views.",
+   "zh": "在 3D 编辑中，对 3D 高斯泼溅场景进行内容填充是一项关键挑战，需要在 3D 空间的掩码区域内生成合理的内容。 以往的方法依赖 2D 扩散模型来生成一个或多个经过内容填充的参考视图，这使其容易受到多视图不一致性和优化时间过长等问题的影响。 与这些方法不同，我们提出了一种无需参考图像、直接在 3D 空间中运行的高斯泼溅内容填充方法。 我们的方法利用一个大型预训练 3D 先验的嵌入空间，并结合结构补全网络，为生成式先验提供输入，从而重建缺失区域的几何形状和外观。 由于所有内容生成都在 3D 空间中完成，因此无需解决多个经过内容填充的参考图像之间的一致性差异，且速度比相关的基于 2D 的方法更快。 我们通过大量实验和用户研究，从定性和定量两个层面证明了该方法的有效性。 据我们所知，这是首个在 3D 原生生成式先验的学习表示空间中运行、且不依赖经过内容填充的参考视图的高斯泼溅内容填充方法。",
+   "sents": [
+    {
+     "en": "Inpainting 3D Gaussian Splatting scenes, a key challenge in 3D editing, requires generating plausible content within a masked region of 3D space.",
+     "zh": "在 3D 编辑中，对 3D 高斯泼溅场景进行内容填充是一项关键挑战，需要在 3D 空间的掩码区域内生成合理的内容。"
+    },
+    {
+     "en": "Prior approaches rely on 2D diffusion models to produce one or several inpainted reference views, making them susceptible to challenges associated with multi-view inconsistency and lengthy optimization times.",
+     "zh": "以往的方法依赖 2D 扩散模型来生成一个或多个经过内容填充的参考视图，这使其容易受到多视图不一致性和优化时间过长等问题的影响。"
+    },
+    {
+     "en": "Departing from these approaches, we introduce a reference-free Gaussian splatting inpainting method operating natively in 3D.",
+     "zh": "与这些方法不同，我们提出了一种无需参考图像、直接在 3D 空间中运行的高斯泼溅内容填充方法。"
+    },
+    {
+     "en": "Our method leverages the embedding space of a large, pre-trained 3D prior, combined with a structure completion network to feed a generative prior which reconstructs the missing region’s geometry and appearance.",
+     "zh": "我们的方法利用一个大型预训练 3D 先验的嵌入空间，并结合结构补全网络，为生成式先验提供输入，从而重建缺失区域的几何形状和外观。"
+    },
+    {
+     "en": "Performing content generation entirely in 3D, it avoids the need to reconcile inconsistencies of multiple inpainted reference images, and is faster than related 2D-based methods.",
+     "zh": "由于所有内容生成都在 3D 空间中完成，因此无需解决多个经过内容填充的参考图像之间的一致性差异，且速度比相关的基于 2D 的方法更快。"
+    },
+    {
+     "en": "We demonstrate the effectiveness of our method qualitatively and quantitatively, through extensive experiments and a user study.",
+     "zh": "我们通过大量实验和用户研究，从定性和定量两个层面证明了该方法的有效性。"
+    },
+    {
+     "en": "To the best of our knowledge, this work is the first Gaussian splatting inpainting method to operate in the learned representation space of a 3D-native generative prior without relying on inpainted reference views.",
+     "zh": "据我们所知，这是首个在 3D 原生生成式先验的学习表示空间中运行、且不依赖经过内容填充的参考视图的高斯泼溅内容填充方法。"
+    }
+   ]
+  },
+  {
+   "en": "3DGS ( 3DGS ) ( Kerbl et al., 2023 ) has become the de facto standard for scene reconstruction and novel view synthesis due to its high fidelity, explicit representation and efficient rendering. As a consequence, many recent works focus on editing 3DGS assets and scenes, often with the goal of changing or removing objects from the scene. Object removal, specifically, leads to an interesting problem: parts of the scene that were previously hidden (e.g., the tabletop on which a vase had rested before removal) become disoccluded and are now visible, but were neither observed nor reconstructed during the initial 3DGS training, leading to empty holes and artifacts. Such areas now need to be inpainted: an algorithm needs to synthesize a plausible 3D continuation of surrounding surfaces and appearance that remains coherent under novel views, a problem that becomes especially difficult when the original 2D observations are no longer available.",
+   "zh": "3DGS (3DGS) (Kerbl 等人，2023) 因其高保真度、显式表示和高效渲染，已成为场景重建和新视角合成的事实标准。 因此，许多近期的研究都聚焦于编辑 3DGS 资产和场景，通常旨在改变或移除场景中的物体。 特别是，物体移除会引发一个有趣的问题：场景中原本被遮挡的部分（例如花瓶移除前放置其上的桌面）会变为可见，但这些部分在最初的 3DGS 训练阶段既未被观测到也未被重建，从而留下空洞和伪影。 这些区域现在需要进行修复：算法需要合成周围表面和外观的合理 3D 延续，并确保其在新视角下保持一致性；当原始 2D 观测数据不再可用时，这个问题会尤为困难。",
+   "sents": [
+    {
+     "en": "3DGS ( 3DGS ) ( Kerbl et al., 2023 ) has become the de facto standard for scene reconstruction and novel view synthesis due to its high fidelity, explicit representation and efficient rendering.",
+     "zh": "3DGS (3DGS) (Kerbl 等人，2023) 因其高保真度、显式表示和高效渲染，已成为场景重建和新视角合成的事实标准。"
+    },
+    {
+     "en": "As a consequence, many recent works focus on editing 3DGS assets and scenes, often with the goal of changing or removing objects from the scene.",
+     "zh": "因此，许多近期的研究都聚焦于编辑 3DGS 资产和场景，通常旨在改变或移除场景中的物体。"
+    },
+    {
+     "en": "Object removal, specifically, leads to an interesting problem: parts of the scene that were previously hidden (e.g., the tabletop on which a vase had rested before removal) become disoccluded and are now visible, but were neither observed nor reconstructed during the initial 3DGS training, leading to empty holes and artifacts.",
+     "zh": "特别是，物体移除会引发一个有趣的问题：场景中原本被遮挡的部分（例如花瓶移除前放置其上的桌面）会变为可见，但这些部分在最初的 3DGS 训练阶段既未被观测到也未被重建，从而留下空洞和伪影。"
+    },
+    {
+     "en": "Such areas now need to be inpainted: an algorithm needs to synthesize a plausible 3D continuation of surrounding surfaces and appearance that remains coherent under novel views, a problem that becomes especially difficult when the original 2D observations are no longer available.",
+     "zh": "这些区域现在需要进行修复：算法需要合成周围表面和外观的合理 3D 延续，并确保其在新视角下保持一致性；当原始 2D 观测数据不再可用时，这个问题会尤为困难。"
+    }
+   ]
+  },
+  {
+   "en": "Earlier existing 3DGS inpainting methods use 2D image diffusion models to provide one or several 2D-inpainted reference views of the scene, which are then optimized back into the 3D representation through differentiable rendering. They therefore solve a 3D-completion problem indirectly, by first hallucinating 2D projections and subsequently optimizing a 3D representation to explain them. Since the generative prior operates in 2D, the inpainted content often is not multiview-consistent, and it requires special care to consolidate these disagreements into 3D, often leading to blurry artifacts in and around the inpainted regions. Additionally, generating multiple inpainted reference views and re-optimizing the scene introduces significant computational overhead, leading to long inpainting times ( Wu et al., 2025b ) and motivating the reduction of this complexity by operating directly in 3D.",
+   "zh": "早期的 3DGS 修复方法使用二维图像扩散模型来生成场景的一个或多个经过二维修复的参考视图，然后通过可微渲染将这些视图重新优化为三维表示。 因此，它们通过先生成二维投影，随后优化三维表示以解释这些投影，间接地解决了三维补全问题。 由于生成式先验在二维空间中运行，修复后的内容通常不具备多视角一致性，需要特别处理才能将这些不一致性整合到三维空间中，这常常导致修复区域及其周围出现模糊的伪影。 此外，生成多个修复后的参考视图并重新优化场景会带来显著的计算开销，导致修复时间过长（Wu et al., 2025b），因此有必要通过直接在三维空间中操作来降低这种复杂性。",
+   "sents": [
+    {
+     "en": "Earlier existing 3DGS inpainting methods use 2D image diffusion models to provide one or several 2D-inpainted reference views of the scene, which are then optimized back into the 3D representation through differentiable rendering.",
+     "zh": "早期的 3DGS 修复方法使用二维图像扩散模型来生成场景的一个或多个经过二维修复的参考视图，然后通过可微渲染将这些视图重新优化为三维表示。"
+    },
+    {
+     "en": "They therefore solve a 3D-completion problem indirectly, by first hallucinating 2D projections and subsequently optimizing a 3D representation to explain them.",
+     "zh": "因此，它们通过先生成二维投影，随后优化三维表示以解释这些投影，间接地解决了三维补全问题。"
+    },
+    {
+     "en": "Since the generative prior operates in 2D, the inpainted content often is not multiview-consistent, and it requires special care to consolidate these disagreements into 3D, often leading to blurry artifacts in and around the inpainted regions.",
+     "zh": "由于生成式先验在二维空间中运行，修复后的内容通常不具备多视角一致性，需要特别处理才能将这些不一致性整合到三维空间中，这常常导致修复区域及其周围出现模糊的伪影。"
+    },
+    {
+     "en": "Additionally, generating multiple inpainted reference views and re-optimizing the scene introduces significant computational overhead, leading to long inpainting times ( Wu et al., 2025b ) and motivating the reduction of this complexity by operating directly in 3D.",
+     "zh": "此外，生成多个修复后的参考视图并重新优化场景会带来显著的计算开销，导致修复时间过长（Wu et al., 2025b），因此有必要通过直接在三维空间中操作来降低这种复杂性。"
+    }
+   ]
+  },
+  {
+   "en": "Recent large-scale 3D generative models provide a compelling alternative: rather than generating 2D content that is subsequently lifted into 3D, their learned priors enable reasoning about the missing content directly in 3D. Motivated by this observation, we introduce a reference-free approach to 3DGS inpainting that operates natively in three-dimensional space. Specifically, we start by embedding the 3DGS scene into the latent space of the 3D prior. Expressing the observed 3D context in a latent space, we predict the missing geometric structure of the target region, providing spatial support for the following latent masked region feature generation. Having predicted the target region’s structure, we subsequently generate the associated appearance features by conditionally sampling from the generative prior, via a combination of a progressive context-conditioning algorithm and a novel self-attention masking mechanism. Finally, we transform the generated latent features to Gaussians via a generative decoder adapted to the observed 3DGS scene in order to ensure perceptual consistency between existing and generated content, before merging generated and existing context Gaussians.",
+   "zh": "最近的大规模三维生成模型提供了一种极具吸引力的替代方案：与其先生成二维内容再将其提升至三维，这些模型通过学习到的先验知识，能够直接在三维空间中推理缺失内容。 基于这一观察，我们提出了一种无需参考的三维GS修复方法，该方法可在三维空间中直接运行。 具体来说，我们首先将三维GS场景嵌入到三维先验的潜在空间中。 通过将观测到的三维上下文表示在潜在空间中，我们预测目标区域的缺失几何结构，从而为后续的潜在掩码区域特征生成提供空间支持。 在预测出目标区域的结构后，我们通过结合渐进式上下文条件算法和一种新颖的自我注意力掩码机制，从生成先验中进行条件采样，以生成相关的表观特征。 最后，我们通过一个针对观测到的三维GS场景进行适配的生成解码器，将生成的潜在特征转换为高斯分布，以确保现有内容与生成内容在感知上的一致性，然后再将生成的上下文高斯分布与现有上下文高斯分布合并。",
+   "sents": [
+    {
+     "en": "Recent large-scale 3D generative models provide a compelling alternative: rather than generating 2D content that is subsequently lifted into 3D, their learned priors enable reasoning about the missing content directly in 3D.",
+     "zh": "最近的大规模三维生成模型提供了一种极具吸引力的替代方案：与其先生成二维内容再将其提升至三维，这些模型通过学习到的先验知识，能够直接在三维空间中推理缺失内容。"
+    },
+    {
+     "en": "Motivated by this observation, we introduce a reference-free approach to 3DGS inpainting that operates natively in three-dimensional space.",
+     "zh": "基于这一观察，我们提出了一种无需参考的三维GS修复方法，该方法可在三维空间中直接运行。"
+    },
+    {
+     "en": "Specifically, we start by embedding the 3DGS scene into the latent space of the 3D prior.",
+     "zh": "具体来说，我们首先将三维GS场景嵌入到三维先验的潜在空间中。"
+    },
+    {
+     "en": "Expressing the observed 3D context in a latent space, we predict the missing geometric structure of the target region, providing spatial support for the following latent masked region feature generation.",
+     "zh": "通过将观测到的三维上下文表示在潜在空间中，我们预测目标区域的缺失几何结构，从而为后续的潜在掩码区域特征生成提供空间支持。"
+    },
+    {
+     "en": "Having predicted the target region’s structure, we subsequently generate the associated appearance features by conditionally sampling from the generative prior, via a combination of a progressive context-conditioning algorithm and a novel self-attention masking mechanism.",
+     "zh": "在预测出目标区域的结构后，我们通过结合渐进式上下文条件算法和一种新颖的自我注意力掩码机制，从生成先验中进行条件采样，以生成相关的表观特征。"
+    },
+    {
+     "en": "Finally, we transform the generated latent features to Gaussians via a generative decoder adapted to the observed 3DGS scene in order to ensure perceptual consistency between existing and generated content, before merging generated and existing context Gaussians.",
+     "zh": "最后，我们通过一个针对观测到的三维GS场景进行适配的生成解码器，将生成的潜在特征转换为高斯分布，以确保现有内容与生成内容在感知上的一致性，然后再将生成的上下文高斯分布与现有上下文高斯分布合并。"
+    }
+   ]
+  },
+  {
+   "en": "Importantly, our approach does not require inpainted reference views from a 2D model: the missing content is generated directly in 3D space, which avoids blur and artifacts from multi-view inconsistencies of several hallucinated 2D completions. Further, generating content in 3D allows us to skip expensive post-inpainting 3DGS optimization, which notably reduces inference time, a key requirement in interactive applications. The generated Gaussians are, by design, multiview-consistent, and conditioning the generation on the observed context and adapting the decoder to scene-specific characteristics allows the generated Gaussians to seamlessly integrate with the existing scene.",
+   "zh": "重要的是，我们的方法不需要从二维模型中获取已修复的参考视图：缺失的内容直接在三维空间中生成，从而避免了因多个幻觉生成的二维补全结果在多视角上不一致而导致的模糊和伪影。 此外，在三维空间中生成内容使我们能够跳过代价高昂的后修复三维高斯溅射优化步骤，这显著减少了推理时间，而这是交互式应用的关键要求。 所生成的高斯分布经过精心设计以确保多视角一致性，并且通过以观测到的上下文为条件进行生成，并将解码器适应于场景特定特征，使得生成的高斯分布能够与现有场景无缝融合。",
+   "sents": [
+    {
+     "en": "Importantly, our approach does not require inpainted reference views from a 2D model: the missing content is generated directly in 3D space, which avoids blur and artifacts from multi-view inconsistencies of several hallucinated 2D completions.",
+     "zh": "重要的是，我们的方法不需要从二维模型中获取已修复的参考视图：缺失的内容直接在三维空间中生成，从而避免了因多个幻觉生成的二维补全结果在多视角上不一致而导致的模糊和伪影。"
+    },
+    {
+     "en": "Further, generating content in 3D allows us to skip expensive post-inpainting 3DGS optimization, which notably reduces inference time, a key requirement in interactive applications.",
+     "zh": "此外，在三维空间中生成内容使我们能够跳过代价高昂的后修复三维高斯溅射优化步骤，这显著减少了推理时间，而这是交互式应用的关键要求。"
+    },
+    {
+     "en": "The generated Gaussians are, by design, multiview-consistent, and conditioning the generation on the observed context and adapting the decoder to scene-specific characteristics allows the generated Gaussians to seamlessly integrate with the existing scene.",
+     "zh": "所生成的高斯分布经过精心设计以确保多视角一致性，并且通过以观测到的上下文为条件进行生成，并将解码器适应于场景特定特征，使得生成的高斯分布能够与现有场景无缝融合。"
+    }
+   ]
+  },
+  {
+   "en": "The contributions of this work are the following: (i) we introduce Wings : a novel, reference-free framework for inpainting 3DGS with a 3D-native generative prior that does not rely on any 2D-inpainted reference views. (ii) We propose a novel structure-completion network and an attention-masking strategy for structured latent inpainting that enables generation of context-consistent target-region features at inference time without the need to retrain the generative prior. (iii) We introduce a scene-conditioned decoder adaptation procedure that bridges the representation gap between the learned prior and the observed scene’s arbitrary appearance distribution.",
+   "zh": "本工作的贡献如下：(i) 我们提出了 Wings：一种新颖的、无需参考图像的 3DGS 修复框架，它采用原生 3D 生成先验，不依赖任何经过 2D 修复的参考视图。 (ii) 我们提出了一种新颖的结构补全网络和注意力掩码策略，用于结构化潜在表示的修复，使得在推理阶段无需重新训练生成先验即可生成与上下文一致的目标区域特征。 (iii) 我们引入了一种场景条件化的解码器适配流程，以弥合所学先验与观测场景中任意外观分布之间的表示差异。",
+   "sents": [
+    {
+     "en": "The contributions of this work are the following: (i) we introduce Wings : a novel, reference-free framework for inpainting 3DGS with a 3D-native generative prior that does not rely on any 2D-inpainted reference views.",
+     "zh": "本工作的贡献如下：(i) 我们提出了 Wings：一种新颖的、无需参考图像的 3DGS 修复框架，它采用原生 3D 生成先验，不依赖任何经过 2D 修复的参考视图。"
+    },
+    {
+     "en": "(ii) We propose a novel structure-completion network and an attention-masking strategy for structured latent inpainting that enables generation of context-consistent target-region features at inference time without the need to retrain the generative prior.",
+     "zh": "(ii) 我们提出了一种新颖的结构补全网络和注意力掩码策略，用于结构化潜在表示的修复，使得在推理阶段无需重新训练生成先验即可生成与上下文一致的目标区域特征。"
+    },
+    {
+     "en": "(iii) We introduce a scene-conditioned decoder adaptation procedure that bridges the representation gap between the learned prior and the observed scene’s arbitrary appearance distribution.",
+     "zh": "(iii) 我们引入了一种场景条件化的解码器适配流程，以弥合所学先验与观测场景中任意外观分布之间的表示差异。"
+    }
+   ]
+  },
+  {
+   "en": "3D Gaussian Splatting Inpainting. The first methods for 3D radiance field inpainting, SPIn-NeRF ( Mirzaei et al., 2023 ) and Weder et al. (2023) , address object removal in NeRFs by obtaining multiview segmentation masks and independently inpainting the masked RGB input views with a learned 2D inpainter. To mitigate inconsistencies across the inpainted views, SPIn-NeRF optimizes the NeRF via a perceptual loss rather than pixel-wise supervision, and further inpaints depth-maps from the original NeRF to use as geometric priors during optimization. Adapting this idea to Gaussian splatting, a first category of 3DGS inpainting methods leverages multiple views inpainted through a 2D diffusion model followed by optimization from points initialized around the target region. GaussianEditor ( Chen et al., 2024b ) transforms an inpainted render to a mesh, which is then re-converted to Gaussians and re-optimized with supervision from the inpainted view. Gaussian Grouping ( Ye et al., 2024 ) inpaints in 2D with LaMa ( Suvorov et al., 2022 ) , then lifts inpainted pixels to 3D and proceeds to 3DGS optimization supervised by the inpainted views.",
+   "zh": "3D高斯泼溅修复。首批用于3D辐射场修复的方法，即SPIn-NeRF（Mirzaei等，2023）和Weder等（2023），通过获取多视角分割掩码，并使用一个学习到的2D修复器对掩码后的RGB输入视图进行独立修复，从而解决NeRF中的物体移除问题。为缓解修复后各视图之间的一致性差异，SPIn-NeRF通过感知损失而非像素级监督来优化NeRF，并进一步从原始NeRF中修复深度图，在优化过程中用作几何先验。将这一思路应用于高斯泼溅技术，第一类3DGS修复方法利用通过2D扩散模型修复后的多个视图，随后对围绕目标区域初始化的点云进行优化。GaussianEditor（Chen等，2024b）将修复后的渲染结果转换为网格，再将其重新转换回高斯函数，并借助修复后视图的监督信息进行重新优化。Gaussian Grouping（Ye等，2024）则先通过LaMa（Suvorov等，2022）在2D中完成修复，随后将修复后的像素提升至3D，并继续进行由修复后视图监督的3DGS优化。",
+   "sents": null
+  },
+  {
+   "en": "More recently, 3DGS inpainting approaches have largely relied on joint appearance and depth inpainting. GScream ( Wang et al., 2024 ) uses guidance from estimated monocular depth to initialize Gaussians from a single 2D inpainted view, while GPGS ( Lee and Cho, 2026 ) leverages a point cloud masked autoencoder to perform geometry completion. AuraFusion360 ( Wu et al., 2025a ) uses depth diffusion to initialize Gaussians, and Inpaint360GS ( Wang et al., 2026 ) performs depth-guided inpainting, combined with cross-frame conditioning in order to improve multi-view consistency. 3DGIC ( Huang et al., 2025 ) uses a similar depth-guided approach to identify background pixels. Similarly, InFusion ( Liu et al., 2024 ) combines inpainted reference views with a depth completion model, and Zhou et al. (2025) proposes an uncertainty-guided approach to Gaussian inpainting.",
+   "zh": "近期，3DGS 图像修复方法主要依赖外观与深度的联合修复。 GScream（Wang 等，2024）利用估计的单目深度作为引导，从单个 2D 修复视图中初始化高斯分布；而 GPGS（Lee 和 Cho，2026）则借助带掩码的点云自编码器进行几何补全。 AuraFusion360（Wu 等，2025a）使用深度扩散来初始化高斯分布，Inpaint360GS（Wang 等，2026）则执行深度引导的修复，并结合跨帧条件约束以提升多视图一致性。3DGIC（Huang 等，2025）采用类似深度引导的方法识别背景像素。 同样地，InFusion（Liu 等，2024）将修复后的参考视图与深度补全模型相结合，而 Zhou 等 （2025）提出了一种基于不确定性的引导方法用于高斯分布修复。",
+   "sents": [
+    {
+     "en": "More recently, 3DGS inpainting approaches have largely relied on joint appearance and depth inpainting.",
+     "zh": "近期，3DGS 图像修复方法主要依赖外观与深度的联合修复。"
+    },
+    {
+     "en": "GScream ( Wang et al., 2024 ) uses guidance from estimated monocular depth to initialize Gaussians from a single 2D inpainted view, while GPGS ( Lee and Cho, 2026 ) leverages a point cloud masked autoencoder to perform geometry completion.",
+     "zh": "GScream（Wang 等，2024）利用估计的单目深度作为引导，从单个 2D 修复视图中初始化高斯分布；而 GPGS（Lee 和 Cho，2026）则借助带掩码的点云自编码器进行几何补全。"
+    },
+    {
+     "en": "AuraFusion360 ( Wu et al., 2025a ) uses depth diffusion to initialize Gaussians, and Inpaint360GS ( Wang et al., 2026 ) performs depth-guided inpainting, combined with cross-frame conditioning in order to improve multi-view consistency. 3DGIC ( Huang et al., 2025 ) uses a similar depth-guided approach to identify background pixels.",
+     "zh": "AuraFusion360（Wu 等，2025a）使用深度扩散来初始化高斯分布，Inpaint360GS（Wang 等，2026）则执行深度引导的修复，并结合跨帧条件约束以提升多视图一致性。3DGIC（Huang 等，2025）采用类似深度引导的方法识别背景像素。"
+    },
+    {
+     "en": "Similarly, InFusion ( Liu et al., 2024 ) combines inpainted reference views with a depth completion model, and Zhou et al.",
+     "zh": "同样地，InFusion（Liu 等，2024）将修复后的参考视图与深度补全模型相结合，而 Zhou 等"
+    },
+    {
+     "en": "(2025) proposes an uncertainty-guided approach to Gaussian inpainting.",
+     "zh": "（2025）提出了一种基于不确定性的引导方法用于高斯分布修复。"
+    }
+   ]
+  },
+  {
+   "en": "Recent approaches increasingly investigate inpainting in 3D space directly, with or without inpainted reference views. InstaInpaint ( You et al., 2025 ) leverages a large reconstruction model ( Zhang et al., 2025 ) to inpaint a 3DGS scene conditioned on a unique inpainted reference view. 3D-GIMP ( Tian et al., 2026 ) similarly inpaints a single keyframe in 2D and then runs a 3D-aware patch-match algorithm, while GS-RoadPatching ( Chen et al., 2025 ) searches for correspondences in 3D with applications to completion of road scans.",
+   "zh": "近期的方法越来越多地直接研究三维空间中的图像修复，无论是否使用已修复的参考视图。 InstaInpaint（You 等人，2025）利用一个大型重建模型（Zhang 等人，2025），基于一个独特的已修复参考视图来修复 3DGS 场景。3D-GIMP（Tian 等人，2026）也以类似方式先修复单个二维关键帧，然后运行一种感知三维的补丁匹配算法；而 GS-RoadPatching（Chen 等人，2025）则在三维空间中搜索对应关系，并应用于道路扫描数据的补全。",
+   "sents": [
+    {
+     "en": "Recent approaches increasingly investigate inpainting in 3D space directly, with or without inpainted reference views.",
+     "zh": "近期的方法越来越多地直接研究三维空间中的图像修复，无论是否使用已修复的参考视图。"
+    },
+    {
+     "en": "InstaInpaint ( You et al., 2025 ) leverages a large reconstruction model ( Zhang et al., 2025 ) to inpaint a 3DGS scene conditioned on a unique inpainted reference view. 3D-GIMP ( Tian et al., 2026 ) similarly inpaints a single keyframe in 2D and then runs a 3D-aware patch-match algorithm, while GS-RoadPatching ( Chen et al., 2025 ) searches for correspondences in 3D with applications to completion of road scans.",
+     "zh": "InstaInpaint（You 等人，2025）利用一个大型重建模型（Zhang 等人，2025），基于一个独特的已修复参考视图来修复 3DGS 场景。3D-GIMP（Tian 等人，2026）也以类似方式先修复单个二维关键帧，然后运行一种感知三维的补丁匹配算法；而 GS-RoadPatching（Chen 等人，2025）则在三维空间中搜索对应关系，并应用于道路扫描数据的补全。"
+    }
+   ]
+  },
+  {
+   "en": "Despite increasingly incorporating 3D-aware geometric priors, many of the aforementioned approaches still derive the missing region’s appearance from one or more 2D inpainted reference views and subsequently reconcile or refine this information in the 3D representation via depth-cues, cross-view-attention or other auxiliaries. Our method, in contrast, operates directly in 3D space.",
+   "zh": "尽管上述方法越来越多地融入了感知三维结构的几何先验，但其中许多方法仍然从一种或多种经过二维修复的参考视图中推导出缺失区域的外观，随后通过深度线索、跨视图注意力或其他辅助手段，在三维表示中协调或优化这些信息。 相比之下，我们的方法直接在三维空间中操作。",
+   "sents": [
+    {
+     "en": "Despite increasingly incorporating 3D-aware geometric priors, many of the aforementioned approaches still derive the missing region’s appearance from one or more 2D inpainted reference views and subsequently reconcile or refine this information in the 3D representation via depth-cues, cross-view-attention or other auxiliaries.",
+     "zh": "尽管上述方法越来越多地融入了感知三维结构的几何先验，但其中许多方法仍然从一种或多种经过二维修复的参考视图中推导出缺失区域的外观，随后通过深度线索、跨视图注意力或其他辅助手段，在三维表示中协调或优化这些信息。"
+    },
+    {
+     "en": "Our method, in contrast, operates directly in 3D space.",
+     "zh": "相比之下，我们的方法直接在三维空间中操作。"
+    }
+   ]
+  },
+  {
+   "en": "Generative priors. Recently, generative models have emerged as remarkable means of creating 3D assets with text or image conditioning ( Xiang et al., 2025b ; Xiang et al., 2025a ; Zhao et al., 2026 ; Yan et al., 2026 ) . While largely operating inside learned latent spaces, some generative 3D models interface with 3D Gaussians, through variational autoencoders ( Xiang et al., 2025b ) or direct generation ( Yan et al., 2026 ) .",
+   "zh": "生成性先验。 最近，生成模型已成为通过文本或图像条件创建 3D 资产的卓越手段（Xiang 等，2025b；Xiang 等，2025a；Zhao 等，2026；Yan 等，2026）。 尽管大多数生成性 3D 模型都在已学习的潜在空间内运行，但部分模型会通过变分自编码器（Xiang 等，2025b）或直接生成（Yan 等，2026）与 3D 高斯分布进行交互。",
+   "sents": [
+    {
+     "en": "Generative priors.",
+     "zh": "生成性先验。"
+    },
+    {
+     "en": "Recently, generative models have emerged as remarkable means of creating 3D assets with text or image conditioning ( Xiang et al., 2025b ; Xiang et al., 2025a ; Zhao et al., 2026 ; Yan et al., 2026 ) .",
+     "zh": "最近，生成模型已成为通过文本或图像条件创建 3D 资产的卓越手段（Xiang 等，2025b；Xiang 等，2025a；Zhao 等，2026；Yan 等，2026）。"
+    },
+    {
+     "en": "While largely operating inside learned latent spaces, some generative 3D models interface with 3D Gaussians, through variational autoencoders ( Xiang et al., 2025b ) or direct generation ( Yan et al., 2026 ) .",
+     "zh": "尽管大多数生成性 3D 模型都在已学习的潜在空间内运行，但部分模型会通过变分自编码器（Xiang 等，2025b）或直接生成（Yan 等，2026）与 3D 高斯分布进行交互。"
+    }
+   ]
+  },
+  {
+   "en": "VoxHammer ( Li et al., 2026 ) performs inpainting and editing on 3D structured latents by sampling from a general 3D generative model ( Xiang et al., 2025b ) , relying on a single inpainted image injected as conditioning in the prior. Albeit related to our method, VoxHammer requires an inpainted reference view, is focused on mesh- and structured-latent-editing, and restricts 3DGS applications to asset editing. Similarly, InpaintSLat ( Chung et al., 2026 ) proposes a structured latent inpainting framework based on the TRELLIS model ( Xiang et al., 2025b ) to edit 3D assets. Importantly, both frameworks focus on mesh editing and object-level completion, rather than full-scene inpainting.",
+   "zh": "VoxHammer（Li 等人，2026）通过从通用 3D 生成模型（Xiang 等人，2025b）中采样，对结构化 3D 潜在表示进行补全和编辑，其依赖作为先验条件注入的单张补全图像。 尽管 VoxHammer 与我们的方法相关，但它需要一张经过补全的参考视图，专注于网格和结构化潜在表示的编辑，并将 3DGS 的应用限制在资产编辑领域。 类似地，InpaintSLat（Chung 等人，2026）提出了一种基于 TRELLIS 模型（Xiang 等人，2025b）的结构化潜在补全框架，用于编辑 3D 资产。 重要的是，这两种框架都专注于网格编辑和对象级补全，而非整个场景的补全。",
+   "sents": [
+    {
+     "en": "VoxHammer ( Li et al., 2026 ) performs inpainting and editing on 3D structured latents by sampling from a general 3D generative model ( Xiang et al., 2025b ) , relying on a single inpainted image injected as conditioning in the prior.",
+     "zh": "VoxHammer（Li 等人，2026）通过从通用 3D 生成模型（Xiang 等人，2025b）中采样，对结构化 3D 潜在表示进行补全和编辑，其依赖作为先验条件注入的单张补全图像。"
+    },
+    {
+     "en": "Albeit related to our method, VoxHammer requires an inpainted reference view, is focused on mesh- and structured-latent-editing, and restricts 3DGS applications to asset editing.",
+     "zh": "尽管 VoxHammer 与我们的方法相关，但它需要一张经过补全的参考视图，专注于网格和结构化潜在表示的编辑，并将 3DGS 的应用限制在资产编辑领域。"
+    },
+    {
+     "en": "Similarly, InpaintSLat ( Chung et al., 2026 ) proposes a structured latent inpainting framework based on the TRELLIS model ( Xiang et al., 2025b ) to edit 3D assets.",
+     "zh": "类似地，InpaintSLat（Chung 等人，2026）提出了一种基于 TRELLIS 模型（Xiang 等人，2025b）的结构化潜在补全框架，用于编辑 3D 资产。"
+    },
+    {
+     "en": "Importantly, both frameworks focus on mesh editing and object-level completion, rather than full-scene inpainting.",
+     "zh": "重要的是，这两种框架都专注于网格编辑和对象级补全，而非整个场景的补全。"
+    }
+   ]
+  },
+  {
+   "en": "Overall, existing 3DGS inpainting methods overwhelmingly rely on 2D diffusion priors, while 3D-native editing methods largely operate within the learned distribution of their native representations, whose appearance domain often differs substantially from that of photorealistic, reconstructed scenes. Bridging the two, we show how a powerful pre-trained 3D generative model can be transferred to arbitrary Gaussian splatting scenes by conditionally generating a latent representation and adapting the generative decoder to the scene-specific, photorealistic Gaussian distribution.",
+   "zh": "总体而言，现有的 3DGS 图像修复方法几乎完全依赖二维扩散先验，而基于三维的编辑方法则主要在其自然表示的学习分布内运行，但这种表示的外观域通常与真实感重建场景的外观域存在显著差异。 为了连接这两者，我们展示了一种方法：通过条件生成潜在表示，并将生成式解码器适配到场景特定的真实感高斯分布，从而将强大的预训练三维生成模型迁移到任意高斯喷涂场景中。",
+   "sents": [
+    {
+     "en": "Overall, existing 3DGS inpainting methods overwhelmingly rely on 2D diffusion priors, while 3D-native editing methods largely operate within the learned distribution of their native representations, whose appearance domain often differs substantially from that of photorealistic, reconstructed scenes.",
+     "zh": "总体而言，现有的 3DGS 图像修复方法几乎完全依赖二维扩散先验，而基于三维的编辑方法则主要在其自然表示的学习分布内运行，但这种表示的外观域通常与真实感重建场景的外观域存在显著差异。"
+    },
+    {
+     "en": "Bridging the two, we show how a powerful pre-trained 3D generative model can be transferred to arbitrary Gaussian splatting scenes by conditionally generating a latent representation and adapting the generative decoder to the scene-specific, photorealistic Gaussian distribution.",
+     "zh": "为了连接这两者，我们展示了一种方法：通过条件生成潜在表示，并将生成式解码器适配到场景特定的真实感高斯分布，从而将强大的预训练三维生成模型迁移到任意高斯喷涂场景中。"
+    }
+   ]
+  },
+  {
+   "en": "Training-Free Conditioning of Generative Priors. A complementary line of work repurposes pre-trained generative models for conditional generation without task-specific re-training. RePaint ( Lugmayr et al., 2022 ) performs image inpainting with an unconditional diffusion model by repeatedly injecting observations of the known region throughout the reverse process, and harmonizes generated with observed content via re-sampling. More generally, diffusion posterior sampling (DPS, Chung et al. (2023) incorporates measurement constraints into generation through likelihood-guided updates, while ReSample ( Song et al., 2023 ) enforces hard data consistency when solving inverse problems with latent diffusion models. Orthogonally, inference-time attention control methods such as MasaCtrl ( Cao et al., 2023 ) manipulate self-attention to control information flow during generation without modifying the underlying model. Sartor et al. (2026) further show that joint attention with attention dropout can be leveraged to control interactions between input modalities.",
+   "zh": "无训练条件化的生成先验。 另一条互补的研究路线将预训练的生成模型重新用于条件生成，而无需针对特定任务进行重新训练。 RePaint（Lugmayr 等人，2022）通过在整个反向过程中重复注入已知区域的观测信息，利用无条件扩散模型执行图像修复，并通过重采样使生成的内容与观测内容相协调。 更一般地，扩散后验采样（DPS，Chung 等人 （2023）通过似然引导的更新将测量约束融入生成过程，而 ReSample（Song 等人，2023）则在利用潜在扩散模型解决逆问题时强制实现严格的数据一致性。 与此正交的是，推理时的注意力控制方法（如 MasaCtrl（Cao 等人，2023）通过操控自注意力来控制生成过程中的信息流，而无需修改底层模型。Sartor 等人 （2026）进一步表明，可以通过联合注意力与注意力丢弃来调控输入模态之间的相互作用。",
+   "sents": [
+    {
+     "en": "Training-Free Conditioning of Generative Priors.",
+     "zh": "无训练条件化的生成先验。"
+    },
+    {
+     "en": "A complementary line of work repurposes pre-trained generative models for conditional generation without task-specific re-training.",
+     "zh": "另一条互补的研究路线将预训练的生成模型重新用于条件生成，而无需针对特定任务进行重新训练。"
+    },
+    {
+     "en": "RePaint ( Lugmayr et al., 2022 ) performs image inpainting with an unconditional diffusion model by repeatedly injecting observations of the known region throughout the reverse process, and harmonizes generated with observed content via re-sampling.",
+     "zh": "RePaint（Lugmayr 等人，2022）通过在整个反向过程中重复注入已知区域的观测信息，利用无条件扩散模型执行图像修复，并通过重采样使生成的内容与观测内容相协调。"
+    },
+    {
+     "en": "More generally, diffusion posterior sampling (DPS, Chung et al.",
+     "zh": "更一般地，扩散后验采样（DPS，Chung 等人"
+    },
+    {
+     "en": "(2023) incorporates measurement constraints into generation through likelihood-guided updates, while ReSample ( Song et al., 2023 ) enforces hard data consistency when solving inverse problems with latent diffusion models.",
+     "zh": "（2023）通过似然引导的更新将测量约束融入生成过程，而 ReSample（Song 等人，2023）则在利用潜在扩散模型解决逆问题时强制实现严格的数据一致性。"
+    },
+    {
+     "en": "Orthogonally, inference-time attention control methods such as MasaCtrl ( Cao et al., 2023 ) manipulate self-attention to control information flow during generation without modifying the underlying model. Sartor et al.",
+     "zh": "与此正交的是，推理时的注意力控制方法（如 MasaCtrl（Cao 等人，2023）通过操控自注意力来控制生成过程中的信息流，而无需修改底层模型。Sartor 等人"
+    },
+    {
+     "en": "(2026) further show that joint attention with attention dropout can be leveraged to control interactions between input modalities.",
+     "zh": "（2026）进一步表明，可以通过联合注意力与注意力丢弃来调控输入模态之间的相互作用。"
+    }
+   ]
+  },
+  {
+   "en": "In contrast to the previous methods, our approach builds on these principles in a structured three-dimensional latent space, conditioning a frozen 3D generative prior on observed scene latents while restricting information flow between observed and inpainted regions.",
+   "zh": "与先前的方法不同，我们的方法在这些原则的基础上构建了一个结构化的三维潜在空间，将冻结的三维生成先验条件化于观测到的场景潜在变量，同时限制观测区域与修复区域之间的信息流动。",
+   "sents": null
+  },
+  {
+   "en": "We consider a 3DGS scene G G and a user-prescribed masked region ℳ \\mathcal{M} . After removing the Gaussians lying in ℳ \\mathcal{M} , usually corresponding to an unwanted object, our goal consists in generating Gaussian primitives G m G_{m} inside the masked region while remaining consistent with the observed remaining context G c G_{c} . Adopting the probabilistic view of Kheradmand et al. (2024) , we thus aim at sampling masked region Gaussians from the conditional distribution G m ∼ 𝒫 ⁡ ( G m | G c ) G_{m}\\sim\\mathcal{P}(G_{m}|G_{c}) .",
+   "zh": "我们考虑一个 3DGS 场景 G 和一个用户指定的掩码区域 ℳ \\mathcal{M}。 在移除位于 ℳ \\mathcal{M} 内的 Gaussians（通常对应于不需要的物体）之后，我们的目标是在掩码区域内生成 Gaussian primitives G m G_{m}，同时保持与观测到的剩余上下文 G c G_{c} 的一致性。 采用 Kheradmand 等人提出的概率视角。 (2024)，因此我们的目标是根据条件分布 G m ∼ 𝒫 ⁡ ( G m | G c ) G_{m}\\sim\\mathcal{P}(G_{m}|G_{c}) 对掩码区域内的 Gaussians 进行采样。",
+   "sents": [
+    {
+     "en": "We consider a 3DGS scene G G and a user-prescribed masked region ℳ \\mathcal{M} .",
+     "zh": "我们考虑一个 3DGS 场景 G 和一个用户指定的掩码区域 ℳ \\mathcal{M}。"
+    },
+    {
+     "en": "After removing the Gaussians lying in ℳ \\mathcal{M} , usually corresponding to an unwanted object, our goal consists in generating Gaussian primitives G m G_{m} inside the masked region while remaining consistent with the observed remaining context G c G_{c} .",
+     "zh": "在移除位于 ℳ \\mathcal{M} 内的 Gaussians（通常对应于不需要的物体）之后，我们的目标是在掩码区域内生成 Gaussian primitives G m G_{m}，同时保持与观测到的剩余上下文 G c G_{c} 的一致性。"
+    },
+    {
+     "en": "Adopting the probabilistic view of Kheradmand et al.",
+     "zh": "采用 Kheradmand 等人提出的概率视角。"
+    },
+    {
+     "en": "(2024) , we thus aim at sampling masked region Gaussians from the conditional distribution G m ∼ 𝒫 ⁡ ( G m | G c ) G_{m}\\sim\\mathcal{P}(G_{m}|G_{c}) .",
+     "zh": "(2024)，因此我们的目标是根据条件分布 G m ∼ 𝒫 ⁡ ( G m | G c ) G_{m}\\sim\\mathcal{P}(G_{m}|G_{c}) 对掩码区域内的 Gaussians 进行采样。"
+    }
+   ]
+  },
+  {
+   "en": "This conditional distribution is highly multi-modal at two levels. At a semantic level, the generation of plausible content admits infinitely many valid solutions, and at the primitive level, multiple combinations of Gaussians can result in perceptually identical results. Because of the former, relying on 2D inpainting priors ( Ye et al., 2024 ; Liu et al., 2024 ) can lead to multi-view inconsistencies; while the latter presents a significant obstacle to generating content directly in the space of 3D Gaussians. Motivated by these observations, our method operates in the structured latent space of a pre-trained 3D-native generative prior, namely TRELLIS ( Xiang et al., 2025b ) .",
+   "zh": "这种条件分布在两个层面上都具有高度的多模态性。 在语义层面，生成合理的内容存在无限多个有效解；而在原始层面，多种高斯分布的组合也可能产生感知上完全相同的结果。 由于前者，依赖二维图像修复先验（Ye et al., 2024; Liu et al., 2024）可能导致多视角不一致；而后者则给直接在三维高斯空间生成内容带来了重大障碍。 基于这些观察，我们的方法在一个预训练的、专为三维数据设计的生成性先验模型——即 TRELLIS（Xiang et al., 2025b）——的结构化潜在空间中运行。",
+   "sents": [
+    {
+     "en": "This conditional distribution is highly multi-modal at two levels.",
+     "zh": "这种条件分布在两个层面上都具有高度的多模态性。"
+    },
+    {
+     "en": "At a semantic level, the generation of plausible content admits infinitely many valid solutions, and at the primitive level, multiple combinations of Gaussians can result in perceptually identical results.",
+     "zh": "在语义层面，生成合理的内容存在无限多个有效解；而在原始层面，多种高斯分布的组合也可能产生感知上完全相同的结果。"
+    },
+    {
+     "en": "Because of the former, relying on 2D inpainting priors ( Ye et al., 2024 ; Liu et al., 2024 ) can lead to multi-view inconsistencies; while the latter presents a significant obstacle to generating content directly in the space of 3D Gaussians.",
+     "zh": "由于前者，依赖二维图像修复先验（Ye et al., 2024; Liu et al., 2024）可能导致多视角不一致；而后者则给直接在三维高斯空间生成内容带来了重大障碍。"
+    },
+    {
+     "en": "Motivated by these observations, our method operates in the structured latent space of a pre-trained 3D-native generative prior, namely TRELLIS ( Xiang et al., 2025b ) .",
+     "zh": "基于这些观察，我们的方法在一个预训练的、专为三维数据设计的生成性先验模型——即 TRELLIS（Xiang et al., 2025b）——的结构化潜在空间中运行。"
+    }
+   ]
+  },
+  {
+   "en": "After recalling the general architecture of the 3D-native generative prior used here ( Section 3.1 ), we describe our protocol for sampling G m ∼ 𝒫 ⁡ ( G m | G c ) G_{m}\\sim\\mathcal{P}(G_{m}|G_{c}) . First, we predict the sparse voxel structure of the missing region ( Section 3.2 ), before generating latent features for these voxels through a combination of conditional sampling and a self-attention masking mechanism ( Section 3.3 ). Finally, we adapt the latent decoder to the specific appearance of the scene ( Section 3.4 ), and merge the decoded Gaussians with the original context. An overview of our method is displayed in Figure 1 .",
+   "zh": "在回顾了本文使用的三维原生生成性先验的总体架构（第 3.1 节）之后，我们将描述从 G m ∼ 𝒫 ⁡ ( G m | G c ) 中采样的协议。 首先，我们预测缺失区域的稀疏体素结构（第 3.2 节），然后通过条件采样与自注意力掩码机制的结合，为这些体素生成潜在特征（第 3.3 节）。 最后，我们将潜在解码器适配到场景的具体外观（第 3.4 节），并将解码后的高斯分布与原始上下文合并。 我们的方法概览展示在图 1 中。",
+   "sents": [
+    {
+     "en": "After recalling the general architecture of the 3D-native generative prior used here ( Section 3.1 ), we describe our protocol for sampling G m ∼ 𝒫 ⁡ ( G m | G c ) G_{m}\\sim\\mathcal{P}(G_{m}|G_{c}) .",
+     "zh": "在回顾了本文使用的三维原生生成性先验的总体架构（第 3.1 节）之后，我们将描述从 G m ∼ 𝒫 ⁡ ( G m | G c ) 中采样的协议。"
+    },
+    {
+     "en": "First, we predict the sparse voxel structure of the missing region ( Section 3.2 ), before generating latent features for these voxels through a combination of conditional sampling and a self-attention masking mechanism ( Section 3.3 ).",
+     "zh": "首先，我们预测缺失区域的稀疏体素结构（第 3.2 节），然后通过条件采样与自注意力掩码机制的结合，为这些体素生成潜在特征（第 3.3 节）。"
+    },
+    {
+     "en": "Finally, we adapt the latent decoder to the specific appearance of the scene ( Section 3.4 ), and merge the decoded Gaussians with the original context.",
+     "zh": "最后，我们将潜在解码器适配到场景的具体外观（第 3.4 节），并将解码后的高斯分布与原始上下文合并。"
+    },
+    {
+     "en": "An overview of our method is displayed in Figure 1 .",
+     "zh": "我们的方法概览展示在图 1 中。"
+    }
+   ]
+  },
+  {
+   "en": "The generative prior we use operates in a learned latent space, where 3D content is modeled by a collection of L L d d -dimensional latent tokens 𝒛 ∈ ℝ d × L \\bm{z}\\in\\mathbb{R}^{d\\times L} obtained by encoding the Gaussian splats. These latents reside on a voxel grid, and are henceforth denoted as structured latents ( SLAT s), enabling us to distinguish the latents 𝒛 c \\bm{z}_{c} obtained from the observed context from the latents 𝒛 m \\bm{z}_{m} that we generate within the masked region ℳ \\mathcal{M} : we denote 𝒛 = 𝒛 m ∪ 𝒛 c \\bm{z}=\\bm{z}_{m}\\cup\\bm{z}_{c} . Our goal is thus to sample from the conditional distribution 𝒫 𝒢 L ​ ( 𝒛 m | 𝒛 c ) \\mathcal{P}_{\\mathcal{G}_{L}}(\\bm{z}_{m}|\\bm{z}_{c}) , which is induced by a latent generator 𝒢 L \\mathcal{G}_{L} .",
+   "zh": "我们使用的生成先验在已学习的潜在空间中运行，其中三维内容由一组 L 维潜在标记 𝒛 ∈ ℝ d × L \\bm{z}\\in\\mathbb{R}^{d\\times L} 建模，这些标记通过对高斯斑点进行编码获得。 这些潜在变量位于体素网格上，因此下文将其称为结构化潜在变量（SLATs），这使我们能够将来自观测上下文的潜在变量 𝒛 c \\bm{z}_{c} 与在掩码区域 ℳ \\mathcal{M} 内生成的潜在变量 𝒛 m \\bm{z}_{m} 区分开来：我们表示为 𝒛 = 𝒛 m ∪ 𝒛 c \\bm{z}=\\bm{z}_{m}\\cup\\bm{z}_{c}。 因此，我们的目标是从条件分布 𝒫 𝒢 L ​ ( 𝒛 m | 𝒛 c ) \\mathcal{P}_{\\mathcal{G}_{L}}(\\bm{z}_{m}|\\bm{z}_{c}) 中采样，该分布由潜在生成器 𝒢 L \\mathcal{G}_{L} 诱导。",
+   "sents": [
+    {
+     "en": "The generative prior we use operates in a learned latent space, where 3D content is modeled by a collection of L L d d -dimensional latent tokens 𝒛 ∈ ℝ d × L \\bm{z}\\in\\mathbb{R}^{d\\times L} obtained by encoding the Gaussian splats.",
+     "zh": "我们使用的生成先验在已学习的潜在空间中运行，其中三维内容由一组 L 维潜在标记 𝒛 ∈ ℝ d × L \\bm{z}\\in\\mathbb{R}^{d\\times L} 建模，这些标记通过对高斯斑点进行编码获得。"
+    },
+    {
+     "en": "These latents reside on a voxel grid, and are henceforth denoted as structured latents ( SLAT s), enabling us to distinguish the latents 𝒛 c \\bm{z}_{c} obtained from the observed context from the latents 𝒛 m \\bm{z}_{m} that we generate within the masked region ℳ \\mathcal{M} : we denote 𝒛 = 𝒛 m ∪ 𝒛 c \\bm{z}=\\bm{z}_{m}\\cup\\bm{z}_{c} .",
+     "zh": "这些潜在变量位于体素网格上，因此下文将其称为结构化潜在变量（SLATs），这使我们能够将来自观测上下文的潜在变量 𝒛 c \\bm{z}_{c} 与在掩码区域 ℳ \\mathcal{M} 内生成的潜在变量 𝒛 m \\bm{z}_{m} 区分开来：我们表示为 𝒛 = 𝒛 m ∪ 𝒛 c \\bm{z}=\\bm{z}_{m}\\cup\\bm{z}_{c}。"
+    },
+    {
+     "en": "Our goal is thus to sample from the conditional distribution 𝒫 𝒢 L ​ ( 𝒛 m | 𝒛 c ) \\mathcal{P}_{\\mathcal{G}_{L}}(\\bm{z}_{m}|\\bm{z}_{c}) , which is induced by a latent generator 𝒢 L \\mathcal{G}_{L} .",
+     "zh": "因此，我们的目标是从条件分布 𝒫 𝒢 L ​ ( 𝒛 m | 𝒛 c ) \\mathcal{P}_{\\mathcal{G}_{L}}(\\bm{z}_{m}|\\bm{z}_{c}) 中采样，该分布由潜在生成器 𝒢 L \\mathcal{G}_{L} 诱导。"
+    }
+   ]
+  },
+  {
+   "en": "In practice, we use the two-stage TRELLIS architecture ( Xiang et al., 2025b ) : a first model 𝒢 S \\mathcal{G}_{S} predicts the latent occupancy structure O O (a 64 3 64^{3} binary voxel grid) and a second model 𝒢 L \\mathcal{G}_{L} assigns latent features z i z_{i} to active voxels through rectified flow integration. We use TRELLIS.1 as it provides a pre-trained variational autoencoder interfacing Gaussians with SLAT s. A notable challenge that we address in this paper is inpainting Gaussians from photorealistic, multi-object scenes, which conflicts with the non-photorealistic appearance of TRELLIS-generated assets stemming from the model’s object-centric training procedure. We tackle this distribution mismatch through inpaint-specific structure completion ( Section 3.2 ), conditional latent sampling ( Section 3.3 ) and scene-conditioned decoder adaptation ( Section 3.4 ).",
+   "zh": "在实践中，我们使用两阶段 TRELLIS 架构（Xiang et al., 2025b）：第一个模型 𝒢 S \\mathcal{G}_{S} 预测潜在占用结构 O O（一个 64^{3} 的二进制体素网格），而第二个模型 𝒢 L \\mathcal{G}_{L} 则通过整流流积分将潜在特征 z i z_{i} 分配给激活体素。 我们使用 TRELLIS.1，因为它提供了一个预训练的变分自编码器，可将高斯分布与 SLAT s 对接。 本文解决的一个显著挑战是从照片级真实的多物体场景中进行高斯分布的图像修复，这与 TRELLIS 生成的资产的非照片级外观存在冲突，而后者源于模型以物体为中心的训练过程。 我们通过针对图像修复的结构补全（第 3.2 节）、条件潜在采样（第 3.3 节）以及场景条件解码器自适应（第 3.4 节）来解决这一分布不匹配问题。",
+   "sents": [
+    {
+     "en": "In practice, we use the two-stage TRELLIS architecture ( Xiang et al., 2025b ) : a first model 𝒢 S \\mathcal{G}_{S} predicts the latent occupancy structure O O (a 64 3 64^{3} binary voxel grid) and a second model 𝒢 L \\mathcal{G}_{L} assigns latent features z i z_{i} to active voxels through rectified flow integration.",
+     "zh": "在实践中，我们使用两阶段 TRELLIS 架构（Xiang et al., 2025b）：第一个模型 𝒢 S \\mathcal{G}_{S} 预测潜在占用结构 O O（一个 64^{3} 的二进制体素网格），而第二个模型 𝒢 L \\mathcal{G}_{L} 则通过整流流积分将潜在特征 z i z_{i} 分配给激活体素。"
+    },
+    {
+     "en": "We use TRELLIS.1 as it provides a pre-trained variational autoencoder interfacing Gaussians with SLAT s.",
+     "zh": "我们使用 TRELLIS.1，因为它提供了一个预训练的变分自编码器，可将高斯分布与 SLAT s 对接。"
+    },
+    {
+     "en": "A notable challenge that we address in this paper is inpainting Gaussians from photorealistic, multi-object scenes, which conflicts with the non-photorealistic appearance of TRELLIS-generated assets stemming from the model’s object-centric training procedure.",
+     "zh": "本文解决的一个显著挑战是从照片级真实的多物体场景中进行高斯分布的图像修复，这与 TRELLIS 生成的资产的非照片级外观存在冲突，而后者源于模型以物体为中心的训练过程。"
+    },
+    {
+     "en": "We tackle this distribution mismatch through inpaint-specific structure completion ( Section 3.2 ), conditional latent sampling ( Section 3.3 ) and scene-conditioned decoder adaptation ( Section 3.4 ).",
+     "zh": "我们通过针对图像修复的结构补全（第 3.2 节）、条件潜在采样（第 3.3 节）以及场景条件解码器自适应（第 3.4 节）来解决这一分布不匹配问题。"
+    }
+   ]
+  },
+  {
+   "en": "Although we seek to perform inpainting on potentially large scenes, the TRELLIS prior operates at a specific scale determined by the fixed resolution of its SLAT structure. We therefore extract a local context G c ∗ ⊂ G c G_{c^{*}}\\subset G_{c} around the target region ℳ \\mathcal{M} by discretizing and finding the smallest bounding box such that the total ratio of voxels in G c ∗ G_{c^{*}} to voxels in the masked region is 6 6 . We find this empirically determined ratio to be a good trade-off between enough context information and sufficiently dense resolution for the reconstructed Gaussians G m G_{m} . Our early experiments revealed the TRELLIS latent flow model 𝒢 L \\mathcal{G}_{L} to be biased towards generating axis-aligned structures, so we automatically align the bounding box with the visual features of the context G c ∗ G_{c^{*}} using the structure tensor ( Bigun et al., 1991 ) (see Appendix B.3 for details). Following the TRELLIS protocol, we finally encode this context into context latents 𝒛 c \\bm{z}_{c} via the pretrained VAE encoder ℰ \\mathcal{E} .",
+   "zh": "尽管我们希望在潜在的大场景中执行图像修复，但 TRELLIS 先验模型是在由其 SLAT 结构固定分辨率所决定的特定尺度上运行的。 因此，我们通过离散化并寻找最小的包围框来提取目标区域 ℳ \\mathcal{M} 周围的局部上下文 G c ∗ ⊂ G c G_{c^{*}}\\subset G_{c}，使得 G c ∗ G_{c^{*}} 中体素与遮罩区域中体素的总比例为 6/6。 我们发现这个通过经验确定的比例，在提供足够上下文信息与确保重建高斯分布 G m G_{m} 具有足够密集的分辨率之间取得了良好的平衡。 我们的早期实验表明，TRELLIS 潜在流模型 𝒢 L \\mathcal{G}_{L} 倾向于生成与坐标轴对齐的结构，因此我们使用结构张量（Bigun 等人，1991）自动将包围框与上下文 G c ∗ G_{c^{*}} 的视觉特征对齐（详见附录 B.3）。 遵循 TRELLIS 协议，我们最终通过预训练的 VAE 编码器 ℰ \\mathcal{E} 将此上下文编码为上下文潜在变量 𝒛 c \\bm{z}_{c}。",
+   "sents": [
+    {
+     "en": "Although we seek to perform inpainting on potentially large scenes, the TRELLIS prior operates at a specific scale determined by the fixed resolution of its SLAT structure.",
+     "zh": "尽管我们希望在潜在的大场景中执行图像修复，但 TRELLIS 先验模型是在由其 SLAT 结构固定分辨率所决定的特定尺度上运行的。"
+    },
+    {
+     "en": "We therefore extract a local context G c ∗ ⊂ G c G_{c^{*}}\\subset G_{c} around the target region ℳ \\mathcal{M} by discretizing and finding the smallest bounding box such that the total ratio of voxels in G c ∗ G_{c^{*}} to voxels in the masked region is 6 6 .",
+     "zh": "因此，我们通过离散化并寻找最小的包围框来提取目标区域 ℳ \\mathcal{M} 周围的局部上下文 G c ∗ ⊂ G c G_{c^{*}}\\subset G_{c}，使得 G c ∗ G_{c^{*}} 中体素与遮罩区域中体素的总比例为 6/6。"
+    },
+    {
+     "en": "We find this empirically determined ratio to be a good trade-off between enough context information and sufficiently dense resolution for the reconstructed Gaussians G m G_{m} .",
+     "zh": "我们发现这个通过经验确定的比例，在提供足够上下文信息与确保重建高斯分布 G m G_{m} 具有足够密集的分辨率之间取得了良好的平衡。"
+    },
+    {
+     "en": "Our early experiments revealed the TRELLIS latent flow model 𝒢 L \\mathcal{G}_{L} to be biased towards generating axis-aligned structures, so we automatically align the bounding box with the visual features of the context G c ∗ G_{c^{*}} using the structure tensor ( Bigun et al., 1991 ) (see Appendix B.3 for details).",
+     "zh": "我们的早期实验表明，TRELLIS 潜在流模型 𝒢 L \\mathcal{G}_{L} 倾向于生成与坐标轴对齐的结构，因此我们使用结构张量（Bigun 等人，1991）自动将包围框与上下文 G c ∗ G_{c^{*}} 的视觉特征对齐（详见附录 B.3）。"
+    },
+    {
+     "en": "Following the TRELLIS protocol, we finally encode this context into context latents 𝒛 c \\bm{z}_{c} via the pretrained VAE encoder ℰ \\mathcal{E} .",
+     "zh": "遵循 TRELLIS 协议，我们最终通过预训练的 VAE 编码器 ℰ \\mathcal{E} 将此上下文编码为上下文潜在变量 𝒛 c \\bm{z}_{c}。"
+    }
+   ]
+  },
+  {
+   "en": "The 64 3 64^{3} binary occupancy grid O O is known for context but initially empty for the voxels corresponding to the masked region ℳ \\mathcal{M} ​. Accurate completion of this structure is crucial, since the subsequent latent generator 𝒢 L \\mathcal{G}_{L} can only produce content for voxels marked as active in O O . Xiang et al. (2025b) use a structure flow model 𝒢 S \\mathcal{G}_{S} for this task and investigate the application of the RePaint algorithm ( Lugmayr et al., 2022 ) for structural completion. However, we find that 𝒢 S \\mathcal{G}_{S} ’s learned objective of generating new, complex content competes with the inpainting task, which aims at producing a visually plausible continuation of the surrounding context rather than complex new structures. While satisfactory for image-conditioned generative inpainting tasks ( Xiang et al., 2025b ; Li et al., 2026 ) , 𝒢 S \\mathcal{G}_{S} exhibits degraded generation quality in the structure completion regime in which we operate (see Figure 4 for an analysis).",
+   "zh": "64 3 64^{3} 二进制占用网格 O O 的背景信息是已知的，但与掩码区域 ℳ \\mathcal{M} 对应的体素最初为空。 准确完成这一结构至关重要，因为后续的潜在生成器 𝒢 L \\mathcal{G}_{L} 只能为 O O 中标记为活跃的体素生成内容。Xiang 等人 (2025b) 使用结构流模型 𝒢 S \\mathcal{G}_{S} 来完成这项任务，并研究了 RePaint 算法（Lugmayr 等人，2022）在结构完成中的应用。 然而，我们发现 𝒢 S \\mathcal{G}_{S} 所学习的生成新复杂内容的目标与修复任务存在冲突：修复任务旨在生成周围背景在视觉上合理的延续，而非复杂的新型结构。 尽管 𝒢 S \\mathcal{G}_{S} 在基于图像的生成式修复任务中表现令人满意（Xiang 等人，2025b；Li 等人，2026），但在我们所处的结构完成领域，其生成质量有所下降（具体分析参见图 4）。",
+   "sents": [
+    {
+     "en": "The 64 3 64^{3} binary occupancy grid O O is known for context but initially empty for the voxels corresponding to the masked region ℳ \\mathcal{M} ​.",
+     "zh": "64 3 64^{3} 二进制占用网格 O O 的背景信息是已知的，但与掩码区域 ℳ \\mathcal{M} 对应的体素最初为空。"
+    },
+    {
+     "en": "Accurate completion of this structure is crucial, since the subsequent latent generator 𝒢 L \\mathcal{G}_{L} can only produce content for voxels marked as active in O O . Xiang et al.",
+     "zh": "准确完成这一结构至关重要，因为后续的潜在生成器 𝒢 L \\mathcal{G}_{L} 只能为 O O 中标记为活跃的体素生成内容。Xiang 等人"
+    },
+    {
+     "en": "(2025b) use a structure flow model 𝒢 S \\mathcal{G}_{S} for this task and investigate the application of the RePaint algorithm ( Lugmayr et al., 2022 ) for structural completion.",
+     "zh": "(2025b) 使用结构流模型 𝒢 S \\mathcal{G}_{S} 来完成这项任务，并研究了 RePaint 算法（Lugmayr 等人，2022）在结构完成中的应用。"
+    },
+    {
+     "en": "However, we find that 𝒢 S \\mathcal{G}_{S} ’s learned objective of generating new, complex content competes with the inpainting task, which aims at producing a visually plausible continuation of the surrounding context rather than complex new structures.",
+     "zh": "然而，我们发现 𝒢 S \\mathcal{G}_{S} 所学习的生成新复杂内容的目标与修复任务存在冲突：修复任务旨在生成周围背景在视觉上合理的延续，而非复杂的新型结构。"
+    },
+    {
+     "en": "While satisfactory for image-conditioned generative inpainting tasks ( Xiang et al., 2025b ; Li et al., 2026 ) , 𝒢 S \\mathcal{G}_{S} exhibits degraded generation quality in the structure completion regime in which we operate (see Figure 4 for an analysis).",
+     "zh": "尽管 𝒢 S \\mathcal{G}_{S} 在基于图像的生成式修复任务中表现令人满意（Xiang 等人，2025b；Li 等人，2026），但在我们所处的结构完成领域，其生成质量有所下降（具体分析参见图 4）。"
+    }
+   ]
+  },
+  {
+   "en": "We therefore opt to train a new structure completion model that directly predicts O O based on the context structure O c O_{c} and the target region mask ℳ \\mathcal{M} ​. We choose a 3D residual U-Net architecture ( Çiçek et al., 2016 ; He et al., 2016 ) with bottleneck attention, which allows us to benefit from the translation-equivariance and multi-scale receptive field of convolutional networks, while preserving fine-grained spatial structure through skip-connections. We train our model on a curated corpus of 900 diverse voxelized scene-level 3D Gaussian splatting scenes with randomly sampled masked regions. No scene from any of our benchmark evaluation datasets was used in training the structure prediction network. In order to guarantee clean structure completion example pairs, we curate the dataset by rejecting samples where the target structure deviates substantially from a quadric extrapolation of the context structure or contains high volumetric variations. The dataset curation process is further detailed in Appendix C.1 and results in more than 71,000 training samples. We train our structure completion network for 300 epochs using a linear combination of weighted binary cross-entropy and Dice loss: ℒ structure = 0.3 ​ ℒ W-BCE + 0.7 ​ ℒ DICE . \\mathcal{L}_{\\text{structure}}=0.3\\,\\mathcal{L}_{\\text{W-BCE}}+0.7\\,\\mathcal{L}_{\\text{DICE}}\\,.",
+   "zh": "因此，我们选择训练一种新的结构补全模型，该模型基于上下文结构 O c O_{c} 和目标区域掩码 ℳ \\mathcal{M} 直接预测 O O。 我们采用了一种带有瓶颈注意力的三维残差 U-Net 架构（Çiçek 等人，2016；He 等人，2016），这使得我们能够利用卷积网络的平移不变性和多尺度感受野特性，同时通过跳跃连接保留精细的空间结构。 我们在一个精心挑选的数据集上训练模型，该数据集包含 900 个多样化的体素化场景级三维高斯泼溅场景，其中掩码区域是随机采样的。 我们任何基准评估数据集中的场景均未用于训练结构预测网络。 为了确保结构补全示例对的质量纯净，我们通过剔除那些目标结构与上下文结构的二次曲面外推结果存在显著偏差，或包含高体积变化的样本来净化数据集。 数据集的净化过程在附录 C.1 中有更详细的说明，最终获得了超过 71,000 个训练样本。 我们使用加权二元交叉熵和 Dice 损失的线性组合对结构补全网络进行 300 个周期的训练：ℒ structure = 0.3 ℒ W-BCE + 0.7 ℒ DICE。 \\mathcal{L}_{\\text{structure}}=0.3\\,\\mathcal{L}_{\\text{W-BCE}}+0.7\\,\\mathcal{L}_{\\text{DICE}}\\,.",
+   "sents": [
+    {
+     "en": "We therefore opt to train a new structure completion model that directly predicts O O based on the context structure O c O_{c} and the target region mask ℳ \\mathcal{M} ​.",
+     "zh": "因此，我们选择训练一种新的结构补全模型，该模型基于上下文结构 O c O_{c} 和目标区域掩码 ℳ \\mathcal{M} 直接预测 O O。"
+    },
+    {
+     "en": "We choose a 3D residual U-Net architecture ( Çiçek et al., 2016 ; He et al., 2016 ) with bottleneck attention, which allows us to benefit from the translation-equivariance and multi-scale receptive field of convolutional networks, while preserving fine-grained spatial structure through skip-connections.",
+     "zh": "我们采用了一种带有瓶颈注意力的三维残差 U-Net 架构（Çiçek 等人，2016；He 等人，2016），这使得我们能够利用卷积网络的平移不变性和多尺度感受野特性，同时通过跳跃连接保留精细的空间结构。"
+    },
+    {
+     "en": "We train our model on a curated corpus of 900 diverse voxelized scene-level 3D Gaussian splatting scenes with randomly sampled masked regions.",
+     "zh": "我们在一个精心挑选的数据集上训练模型，该数据集包含 900 个多样化的体素化场景级三维高斯泼溅场景，其中掩码区域是随机采样的。"
+    },
+    {
+     "en": "No scene from any of our benchmark evaluation datasets was used in training the structure prediction network.",
+     "zh": "我们任何基准评估数据集中的场景均未用于训练结构预测网络。"
+    },
+    {
+     "en": "In order to guarantee clean structure completion example pairs, we curate the dataset by rejecting samples where the target structure deviates substantially from a quadric extrapolation of the context structure or contains high volumetric variations.",
+     "zh": "为了确保结构补全示例对的质量纯净，我们通过剔除那些目标结构与上下文结构的二次曲面外推结果存在显著偏差，或包含高体积变化的样本来净化数据集。"
+    },
+    {
+     "en": "The dataset curation process is further detailed in Appendix C.1 and results in more than 71,000 training samples.",
+     "zh": "数据集的净化过程在附录 C.1 中有更详细的说明，最终获得了超过 71,000 个训练样本。"
+    },
+    {
+     "en": "We train our structure completion network for 300 epochs using a linear combination of weighted binary cross-entropy and Dice loss: ℒ structure = 0.3 ​ ℒ W-BCE + 0.7 ​ ℒ DICE . \\mathcal{L}_{\\text{structure}}=0.3\\,\\mathcal{L}_{\\text{W-BCE}}+0.7\\,\\mathcal{L}_{\\text{DICE}}\\,.",
+     "zh": "我们使用加权二元交叉熵和 Dice 损失的线性组合对结构补全网络进行 300 个周期的训练：ℒ structure = 0.3 ℒ W-BCE + 0.7 ℒ DICE。 \\mathcal{L}_{\\text{structure}}=0.3\\,\\mathcal{L}_{\\text{W-BCE}}+0.7\\,\\mathcal{L}_{\\text{DICE}}\\,."
+    }
+   ]
+  },
+  {
+   "en": "The predicted structure O m O_{m} specifies the spatial structure of target region latents z m z_{m} , but not the value of their latent features, which we must sample from the conditional distribution 𝒫 𝒢 L ​ ( 𝒛 m | 𝒛 c ) \\mathcal{P}_{\\mathcal{G}_{L}}(\\bm{z}_{m}|\\bm{z}_{c}) . However, TRELLIS’ flow model 𝒢 L \\mathcal{G}_{L} only allows us to sample from the unconditional prior 𝒫 𝒢 L ​ ( 𝒛 ) \\mathcal{P}_{\\mathcal{G}_{L}}(\\bm{z}) (notwithstanding image/text conditioning injected through cross-attention, unused here). In the following section, we show that this general prior can be used to approximate conditional sampling in the case of inpainting by combining two schemes: context conditioning and self-attention masking.",
+   "zh": "预测的结构 O m O_{m} 指定了目标区域潜在变量 z m z_{m} 的空间结构，但并未指定其潜在特征的具体值，这些值必须从条件分布 𝒫 𝒢 L ​ ( 𝒛 m | 𝒛 c ) \\mathcal{P}_{\\mathcal{G}_{L}}(\\bm{z}_{m}|\\bm{z}_{c}) 中进行采样。 然而，TRELLIS 的流模型 𝒢 L \\mathcal{G}_{L} 仅允许我们从无条件先验分布 𝒫 𝒢 L ​ ( 𝒛 ) \\mathcal{P}_{\\mathcal{G}_{L}}(\\bm{z}) 中进行采样（尽管通过交叉注意力引入了图像/文本条件，但此处并未使用）。 在下一节中，我们将展示如何通过结合两种方案——上下文条件约束和自注意力掩码——利用这一通用先验分布来近似实现修复任务中的条件采样。",
+   "sents": [
+    {
+     "en": "The predicted structure O m O_{m} specifies the spatial structure of target region latents z m z_{m} , but not the value of their latent features, which we must sample from the conditional distribution 𝒫 𝒢 L ​ ( 𝒛 m | 𝒛 c ) \\mathcal{P}_{\\mathcal{G}_{L}}(\\bm{z}_{m}|\\bm{z}_{c}) .",
+     "zh": "预测的结构 O m O_{m} 指定了目标区域潜在变量 z m z_{m} 的空间结构，但并未指定其潜在特征的具体值，这些值必须从条件分布 𝒫 𝒢 L ​ ( 𝒛 m | 𝒛 c ) \\mathcal{P}_{\\mathcal{G}_{L}}(\\bm{z}_{m}|\\bm{z}_{c}) 中进行采样。"
+    },
+    {
+     "en": "However, TRELLIS’ flow model 𝒢 L \\mathcal{G}_{L} only allows us to sample from the unconditional prior 𝒫 𝒢 L ​ ( 𝒛 ) \\mathcal{P}_{\\mathcal{G}_{L}}(\\bm{z}) (notwithstanding image/text conditioning injected through cross-attention, unused here).",
+     "zh": "然而，TRELLIS 的流模型 𝒢 L \\mathcal{G}_{L} 仅允许我们从无条件先验分布 𝒫 𝒢 L ​ ( 𝒛 ) \\mathcal{P}_{\\mathcal{G}_{L}}(\\bm{z}) 中进行采样（尽管通过交叉注意力引入了图像/文本条件，但此处并未使用）。"
+    },
+    {
+     "en": "In the following section, we show that this general prior can be used to approximate conditional sampling in the case of inpainting by combining two schemes: context conditioning and self-attention masking.",
+     "zh": "在下一节中，我们将展示如何通过结合两种方案——上下文条件约束和自注意力掩码——利用这一通用先验分布来近似实现修复任务中的条件采样。"
+    }
+   ]
+  },
+  {
+   "en": "The conditional sampling scheme that we adopt is based on the RePaint strategy ( Lugmayr et al., 2022 ) , which repurposes an unconditional flow model by altering the sampling trajectory. Let 𝒛 t = 𝒛 m t ∪ 𝒛 c t \\bm{z}^{t}=\\bm{z}_{m}^{t}\\cup\\bm{z}_{c}^{t} be the structured latents at flow time t t . At each integration step, the flow model 𝒢 L \\mathcal{G}_{L} predicts a rectified flow velocity v ⁡ ( 𝒛 t , t ) v(\\bm{z}^{t},t) and advances through the flow trajectory by generating 𝒛 t + d ​ t = 𝒛 t + v ⁡ ( 𝒛 t , t ) ​ d ​ t \\bm{z}^{t+dt}=\\bm{z}^{t}+v(\\bm{z}^{t},t)dt . Given that the true context latents 𝒛 c 0 \\bm{z}^{0}_{c} are known, RePaint then replaces the context 𝒛 c t + d ​ t \\bm{z}^{t+dt}_{c} with 𝒛 ^ c t + d ​ t \\hat{\\bm{z}}^{t+dt}_{c} , the known context latents noised at that time:",
+   "zh": "我们采用的条件采样方案基于 RePaint 策略（Lugmayr 等人，2022），该策略通过改变采样轨迹来重新利用一个无条件流模型。 令 𝒛 t = 𝒛 m t ∪ 𝒛 c t \\bm{z}^{t}=\\bm{z}_{m}^{t}\\cup\\bm{z}_{c}^{t} 表示在流时间 t t 处的结构化潜在变量。 在每个积分步骤中，流模型 𝒢 L \\mathcal{G}_{L} 会预测一个修正后的流速度 v ⁡ ( 𝒛 t , t ) v(\\bm{z}^{t},t)，并通过生成 𝒛 t + d ​ t = 𝒛 t + v ⁡ ( 𝒛 t , t ) ​ d ​ t \\bm{z}^{t+dt}=\\bm{z}^{t}+v(\\bm{z}^{t},t)dt 来沿流轨迹推进。 鉴于真实的上下文潜在变量 𝒛 c 0 \\bm{z}^{0}_{c} 是已知的，RePaint 随后会用 𝒛 ^ c t + d ​ t \\hat{\\bm{z}}^{t+dt}_{c} 替换上下文 𝒛 c t + d ​ t \\bm{z}^{t+dt}_{c}，即在该时刻被添加噪声的已知上下文潜在变量：",
+   "sents": [
+    {
+     "en": "The conditional sampling scheme that we adopt is based on the RePaint strategy ( Lugmayr et al., 2022 ) , which repurposes an unconditional flow model by altering the sampling trajectory.",
+     "zh": "我们采用的条件采样方案基于 RePaint 策略（Lugmayr 等人，2022），该策略通过改变采样轨迹来重新利用一个无条件流模型。"
+    },
+    {
+     "en": "Let 𝒛 t = 𝒛 m t ∪ 𝒛 c t \\bm{z}^{t}=\\bm{z}_{m}^{t}\\cup\\bm{z}_{c}^{t} be the structured latents at flow time t t .",
+     "zh": "令 𝒛 t = 𝒛 m t ∪ 𝒛 c t \\bm{z}^{t}=\\bm{z}_{m}^{t}\\cup\\bm{z}_{c}^{t} 表示在流时间 t t 处的结构化潜在变量。"
+    },
+    {
+     "en": "At each integration step, the flow model 𝒢 L \\mathcal{G}_{L} predicts a rectified flow velocity v ⁡ ( 𝒛 t , t ) v(\\bm{z}^{t},t) and advances through the flow trajectory by generating 𝒛 t + d ​ t = 𝒛 t + v ⁡ ( 𝒛 t , t ) ​ d ​ t \\bm{z}^{t+dt}=\\bm{z}^{t}+v(\\bm{z}^{t},t)dt .",
+     "zh": "在每个积分步骤中，流模型 𝒢 L \\mathcal{G}_{L} 会预测一个修正后的流速度 v ⁡ ( 𝒛 t , t ) v(\\bm{z}^{t},t)，并通过生成 𝒛 t + d ​ t = 𝒛 t + v ⁡ ( 𝒛 t , t ) ​ d ​ t \\bm{z}^{t+dt}=\\bm{z}^{t}+v(\\bm{z}^{t},t)dt 来沿流轨迹推进。"
+    },
+    {
+     "en": "Given that the true context latents 𝒛 c 0 \\bm{z}^{0}_{c} are known, RePaint then replaces the context 𝒛 c t + d ​ t \\bm{z}^{t+dt}_{c} with 𝒛 ^ c t + d ​ t \\hat{\\bm{z}}^{t+dt}_{c} , the known context latents noised at that time:",
+     "zh": "鉴于真实的上下文潜在变量 𝒛 c 0 \\bm{z}^{0}_{c} 是已知的，RePaint 随后会用 𝒛 ^ c t + d ​ t \\hat{\\bm{z}}^{t+dt}_{c} 替换上下文 𝒛 c t + d ​ t \\bm{z}^{t+dt}_{c}，即在该时刻被添加噪声的已知上下文潜在变量："
+    }
+   ]
+  },
+  {
+   "en": "In order to harmonize the joint generation of context and masked latents, this consistency replacement is supplemented by stochastic renoising jumps that provide additional opportunities for the masked region to be denoised towards context-consistent latents. While this conditional sampling strategy was originally suggested by TRELLIS ( Xiang et al., 2025b ) , its efficacy is highly tied to the use of their original structure prediction model 𝒢 S \\mathcal{G}_{S} , as its generated sparse structure is generally in-distribution for 𝒢 L \\mathcal{G}_{L} . While switching to our U-Net predictor improves structure completion, it also creates a potential mismatch between the context and masked region distributions. Using a high number of flow integration timesteps for SLAT generation alleviates this issue, but leads to a significant slowdown. We instead introduce a complementary conditioning mechanism that alters the flow transformer’s self-attention.",
+   "zh": "为了协调上下文与掩码潜在变量的联合生成，这种一致性替换方法通过随机重噪声跳跃进行补充，从而为掩码区域提供更多向与上下文一致的潜在变量去噪的机会。 尽管这种条件采样策略最初由 TRELLIS（Xiang 等人，2025b）提出，但其有效性高度依赖于其原始的结构预测模型 𝒢 S \\mathcal{G}_{S}，因为该模型生成的稀疏结构通常符合 𝒢 L \\mathcal{G}_{L} 的分布。 虽然改用我们的 U-Net 预测器能够改善结构补全，但也会在上下文区域与掩码区域的分布之间产生潜在的失配问题。 在 SLAT 生成过程中使用较多的流集成时间步可以缓解这一问题，但会导致显著的性能下降。 因此，我们引入了一种互补的条件机制，用于改变流变换器的自注意力机制。",
+   "sents": [
+    {
+     "en": "In order to harmonize the joint generation of context and masked latents, this consistency replacement is supplemented by stochastic renoising jumps that provide additional opportunities for the masked region to be denoised towards context-consistent latents.",
+     "zh": "为了协调上下文与掩码潜在变量的联合生成，这种一致性替换方法通过随机重噪声跳跃进行补充，从而为掩码区域提供更多向与上下文一致的潜在变量去噪的机会。"
+    },
+    {
+     "en": "While this conditional sampling strategy was originally suggested by TRELLIS ( Xiang et al., 2025b ) , its efficacy is highly tied to the use of their original structure prediction model 𝒢 S \\mathcal{G}_{S} , as its generated sparse structure is generally in-distribution for 𝒢 L \\mathcal{G}_{L} .",
+     "zh": "尽管这种条件采样策略最初由 TRELLIS（Xiang 等人，2025b）提出，但其有效性高度依赖于其原始的结构预测模型 𝒢 S \\mathcal{G}_{S}，因为该模型生成的稀疏结构通常符合 𝒢 L \\mathcal{G}_{L} 的分布。"
+    },
+    {
+     "en": "While switching to our U-Net predictor improves structure completion, it also creates a potential mismatch between the context and masked region distributions.",
+     "zh": "虽然改用我们的 U-Net 预测器能够改善结构补全，但也会在上下文区域与掩码区域的分布之间产生潜在的失配问题。"
+    },
+    {
+     "en": "Using a high number of flow integration timesteps for SLAT generation alleviates this issue, but leads to a significant slowdown.",
+     "zh": "在 SLAT 生成过程中使用较多的流集成时间步可以缓解这一问题，但会导致显著的性能下降。"
+    },
+    {
+     "en": "We instead introduce a complementary conditioning mechanism that alters the flow transformer’s self-attention.",
+     "zh": "因此，我们引入了一种互补的条件机制，用于改变流变换器的自注意力机制。"
+    }
+   ]
+  },
+  {
+   "en": "The TRELLIS latent flow model 𝒢 L \\mathcal{G}_{L} uses transformer blocks that compute multi-head self-attention over structured latents. Applying the RePaint strategy here initially leaves the target region latents 𝒛 m \\bm{z}_{m} primarily determined by the flow model’s unconditional trajectory. Since they continuously self-attend throughout the transformer and due to potential sparse structure distributional mismatch, they risk to form a self-consistent region that is too robust for the context to impose its condition.We therefore propose to alter the information flow during integration in a way that explicitly promotes information sharing between context and target latents, while simultaneously hindering their self-attention. Inspired by the mutual self-attention mechanism from Cao et al. (2023) , we use an additive attention mask M M to prevent the target region’s queries from attending to any of the target region’s keys:",
+   "zh": "TRELLIS 潜在流模型 𝒢 L \\mathcal{G}_{L} 使用变压器块，对结构化潜在变量计算多头自注意力。 在此处应用 RePaint 策略时，目标区域的潜在变量 𝒛 m \\bm{z}_{m} 最初主要由流模型的无条件轨迹决定。 由于这些潜在变量在整个变压器中持续进行自注意力交互，并且可能存在稀疏结构分布的不匹配，它们有形成过于稳健的自一致区域的风险，导致上下文难以施加其条件。因此，我们提出在整合过程中改变信息流，以明确促进上下文与目标潜在变量之间的信息共享，同时抑制它们的自注意力。 受 Cao 等人（2023）提出的相互自注意力机制启发， 我们使用一个加法注意力掩码 M M，防止目标区域的查询关注目标区域中的任何键：",
+   "sents": [
+    {
+     "en": "The TRELLIS latent flow model 𝒢 L \\mathcal{G}_{L} uses transformer blocks that compute multi-head self-attention over structured latents.",
+     "zh": "TRELLIS 潜在流模型 𝒢 L \\mathcal{G}_{L} 使用变压器块，对结构化潜在变量计算多头自注意力。"
+    },
+    {
+     "en": "Applying the RePaint strategy here initially leaves the target region latents 𝒛 m \\bm{z}_{m} primarily determined by the flow model’s unconditional trajectory.",
+     "zh": "在此处应用 RePaint 策略时，目标区域的潜在变量 𝒛 m \\bm{z}_{m} 最初主要由流模型的无条件轨迹决定。"
+    },
+    {
+     "en": "Since they continuously self-attend throughout the transformer and due to potential sparse structure distributional mismatch, they risk to form a self-consistent region that is too robust for the context to impose its condition.We therefore propose to alter the information flow during integration in a way that explicitly promotes information sharing between context and target latents, while simultaneously hindering their self-attention.",
+     "zh": "由于这些潜在变量在整个变压器中持续进行自注意力交互，并且可能存在稀疏结构分布的不匹配，它们有形成过于稳健的自一致区域的风险，导致上下文难以施加其条件。因此，我们提出在整合过程中改变信息流，以明确促进上下文与目标潜在变量之间的信息共享，同时抑制它们的自注意力。"
+    },
+    {
+     "en": "Inspired by the mutual self-attention mechanism from Cao et al.",
+     "zh": "受 Cao 等人（2023）提出的相互自注意力机制启发，"
+    },
+    {
+     "en": "(2023) , we use an additive attention mask M M to prevent the target region’s queries from attending to any of the target region’s keys:",
+     "zh": "我们使用一个加法注意力掩码 M M，防止目标区域的查询关注目标区域中的任何键："
+    }
+   ]
+  },
+  {
+   "en": "This is complementary to RePaint, as the latter enforces conditioning through backwards jumps along the sampling trajectory, stochastic re-noising and context latent replacement at each integration time step, while our attention masking mechanism directly alters information flow during the evaluation of the velocity v ⁡ ( 𝒛 t , t ) v(\\bm{z}^{t},t) . In order to preserve self-consistency within the masked region, we apply this masked self-attention only for later transformer blocks (see Appendix B.1 ) and only for integration steps between t = 1.0 t=1.0 and t = 0.8 t=0.8 (see Figure 2 ). In summary, combining RePaint-like jumps with our masked attention strategy allows us to conditionally sample the unconditional flow model 𝒢 L \\mathcal{G}_{L} and generate latents that are conditioned on, and therefore consistent with, the context region.",
+   "zh": "这与 RePaint 形成了互补，因为后者通过在每个积分时间步长中沿采样轨迹进行反向跳跃、随机重新加噪和上下文潜在变量替换来施加条件约束，而我们的注意力掩码机制则直接在评估速度 v⁡(𝒛t,t) v(\\bm{z}^{t},t) 的过程中改变信息流。 为了在掩码区域内保持自一致性，我们仅对后续的 Transformer 块（参见附录 B.1）以及在 t=1.0 和 t=0.8 之间的积分步长（参见图 2）应用这种掩码自注意力机制。 总而言之，将类 RePaint 的跳跃与我们的掩码注意力策略相结合，使我们能够有条件地采样无条件流模型 𝒢L \\mathcal{G}_{L}，并生成受上下文区域条件约束且与其一致的潜在变量。",
+   "sents": [
+    {
+     "en": "This is complementary to RePaint, as the latter enforces conditioning through backwards jumps along the sampling trajectory, stochastic re-noising and context latent replacement at each integration time step, while our attention masking mechanism directly alters information flow during the evaluation of the velocity v ⁡ ( 𝒛 t , t ) v(\\bm{z}^{t},t) .",
+     "zh": "这与 RePaint 形成了互补，因为后者通过在每个积分时间步长中沿采样轨迹进行反向跳跃、随机重新加噪和上下文潜在变量替换来施加条件约束，而我们的注意力掩码机制则直接在评估速度 v⁡(𝒛t,t) v(\\bm{z}^{t},t) 的过程中改变信息流。"
+    },
+    {
+     "en": "In order to preserve self-consistency within the masked region, we apply this masked self-attention only for later transformer blocks (see Appendix B.1 ) and only for integration steps between t = 1.0 t=1.0 and t = 0.8 t=0.8 (see Figure 2 ).",
+     "zh": "为了在掩码区域内保持自一致性，我们仅对后续的 Transformer 块（参见附录 B.1）以及在 t=1.0 和 t=0.8 之间的积分步长（参见图 2）应用这种掩码自注意力机制。"
+    },
+    {
+     "en": "In summary, combining RePaint-like jumps with our masked attention strategy allows us to conditionally sample the unconditional flow model 𝒢 L \\mathcal{G}_{L} and generate latents that are conditioned on, and therefore consistent with, the context region.",
+     "zh": "总而言之，将类 RePaint 的跳跃与我们的掩码注意力策略相结合，使我们能够有条件地采样无条件流模型 𝒢L \\mathcal{G}_{L}，并生成受上下文区域条件约束且与其一致的潜在变量。"
+    }
+   ]
+  },
+  {
+   "en": "After having obtained structured target latents z m z_{m} via the aforementioned conditional latent sampling stage ( Section 3.3 ), we decode 𝒛 = 𝒛 m ∪ 𝒛 c \\bm{z}=\\bm{z}_{m}\\cup\\bm{z}_{c} into Gaussians using the pre-trained VAE decoder 𝒟 θ \\mathcal{D}_{\\theta} with parameters θ \\theta . However, since 𝒟 θ \\mathcal{D}_{\\theta} was trained on the limited, object-centric dataset of TRELLIS, its induced pushforward measure ( 𝒟 θ ) # ​ ( 𝒫 𝒢 L ​ ( 𝒛 m | 𝒛 c ) ) (\\mathcal{D_{\\theta})}_{\\#}(\\mathcal{P}_{\\mathcal{G}_{L}}(\\bm{z}_{m}|\\bm{z}_{c})) is not guaranteed to match our target 𝒫 ⁡ ( G m | G c ) \\mathcal{P}(G_{m}|G_{c}) . As such, even semantically correct latents can be decoded into perceptually dissimilar Gaussians, resulting in visually unpleasant boundary discontinuities between context G c G_{c} and generated Gaussians 𝒟 θ ​ ( 𝒛 m ) \\mathcal{D}_{\\theta}(\\bm{z}_{m}) .",
+   "zh": "通过前述条件潜在变量采样阶段（第 3.3 节）获得结构化目标潜在变量 z m z_{m} 后，我们使用预训练的 VAE 解码器 𝒟 θ \\mathcal{D}_{\\theta}（参数为 θ \\theta ）将 𝒛 = 𝒛 m ∪ 𝒛 c \\bm{z}=\\bm{z}_{m}\\cup\\bm{z}_{c} 解码为高斯分布。 然而，由于 𝒟 θ \\mathcal{D}_{\\theta} 是在 TRELLIS 有限且以物体为中心的数据集上训练的，其诱导的前推测度（𝒟 θ ) # ​ ( 𝒫 𝒢 L ​ ( 𝒛 m | 𝒛 c ) ) (\\mathcal{D_{\\theta})}_{\\#}(\\mathcal{P}_{\\mathcal{G}_{L}}(\\bm{z}_{m}|\\bm{z}_{c})) 并不保证与我们的目标分布 𝒫 ⁡ ( G m | G c ) \\mathcal{P}(G_{m}|G_{c}) 一致。 因此，即使潜在变量在语义上是正确的，也可能被解码为感知上差异显著的高斯分布，从而导致上下文 G c G_{c} 与生成的高斯分布 𝒟 θ ​ ( 𝒛 m ) \\mathcal{D}_{\\theta}(\\bm{z}_{m}) 之间出现视觉上令人不适的边界不连续性。",
+   "sents": [
+    {
+     "en": "After having obtained structured target latents z m z_{m} via the aforementioned conditional latent sampling stage ( Section 3.3 ), we decode 𝒛 = 𝒛 m ∪ 𝒛 c \\bm{z}=\\bm{z}_{m}\\cup\\bm{z}_{c} into Gaussians using the pre-trained VAE decoder 𝒟 θ \\mathcal{D}_{\\theta} with parameters θ \\theta .",
+     "zh": "通过前述条件潜在变量采样阶段（第 3.3 节）获得结构化目标潜在变量 z m z_{m} 后，我们使用预训练的 VAE 解码器 𝒟 θ \\mathcal{D}_{\\theta}（参数为 θ \\theta ）将 𝒛 = 𝒛 m ∪ 𝒛 c \\bm{z}=\\bm{z}_{m}\\cup\\bm{z}_{c} 解码为高斯分布。"
+    },
+    {
+     "en": "However, since 𝒟 θ \\mathcal{D}_{\\theta} was trained on the limited, object-centric dataset of TRELLIS, its induced pushforward measure ( 𝒟 θ ) # ​ ( 𝒫 𝒢 L ​ ( 𝒛 m | 𝒛 c ) ) (\\mathcal{D_{\\theta})}_{\\#}(\\mathcal{P}_{\\mathcal{G}_{L}}(\\bm{z}_{m}|\\bm{z}_{c})) is not guaranteed to match our target 𝒫 ⁡ ( G m | G c ) \\mathcal{P}(G_{m}|G_{c}) .",
+     "zh": "然而，由于 𝒟 θ \\mathcal{D}_{\\theta} 是在 TRELLIS 有限且以物体为中心的数据集上训练的，其诱导的前推测度（𝒟 θ ) # ​ ( 𝒫 𝒢 L ​ ( 𝒛 m | 𝒛 c ) ) (\\mathcal{D_{\\theta})}_{\\#}(\\mathcal{P}_{\\mathcal{G}_{L}}(\\bm{z}_{m}|\\bm{z}_{c})) 并不保证与我们的目标分布 𝒫 ⁡ ( G m | G c ) \\mathcal{P}(G_{m}|G_{c}) 一致。"
+    },
+    {
+     "en": "As such, even semantically correct latents can be decoded into perceptually dissimilar Gaussians, resulting in visually unpleasant boundary discontinuities between context G c G_{c} and generated Gaussians 𝒟 θ ​ ( 𝒛 m ) \\mathcal{D}_{\\theta}(\\bm{z}_{m}) .",
+     "zh": "因此，即使潜在变量在语义上是正确的，也可能被解码为感知上差异显著的高斯分布，从而导致上下文 G c G_{c} 与生成的高斯分布 𝒟 θ ​ ( 𝒛 m ) \\mathcal{D}_{\\theta}(\\bm{z}_{m}) 之间出现视觉上令人不适的边界不连续性。"
+    }
+   ]
+  },
+  {
+   "en": "We address this distribution mismatch by adapting the decoder to the observed scene’s appearance. Alongside the latent generation process, we augment 𝒟 θ \\mathcal{D}_{\\theta} with a rank-16 LoRA adapter ( Hu et al., 2021 ) for 𝒟 θ \\mathcal{D}_{\\theta} . We unfreeze the final layer of 𝒟 θ \\mathcal{D}_{\\theta} , responsible for generating the Gaussian opacity, scale, and rotation values. The 2.70 M parameters ϕ \\phi of this lightweight adapter are optimized through minimization of a photometric loss on rendered views:",
+   "zh": "我们通过将解码器适配到所观察场景的外观来解决这种分布不匹配问题。 在潜在生成过程的同时，我们为 𝒟 θ \\mathcal{D}_{\\theta} 增加了一个秩为 16 的 LoRA 适配器（Hu et al., 2021）。 我们解冻了 𝒟 θ \\mathcal{D}_{\\theta} 的最终层，该层负责生成高斯不透明度、缩放和旋转值。 这个轻量级适配器的 270 万个参数 ϕ \\phi 通过最小化渲染视图上的光度损失进行优化：",
+   "sents": [
+    {
+     "en": "We address this distribution mismatch by adapting the decoder to the observed scene’s appearance.",
+     "zh": "我们通过将解码器适配到所观察场景的外观来解决这种分布不匹配问题。"
+    },
+    {
+     "en": "Alongside the latent generation process, we augment 𝒟 θ \\mathcal{D}_{\\theta} with a rank-16 LoRA adapter ( Hu et al., 2021 ) for 𝒟 θ \\mathcal{D}_{\\theta} .",
+     "zh": "在潜在生成过程的同时，我们为 𝒟 θ \\mathcal{D}_{\\theta} 增加了一个秩为 16 的 LoRA 适配器（Hu et al., 2021）。"
+    },
+    {
+     "en": "We unfreeze the final layer of 𝒟 θ \\mathcal{D}_{\\theta} , responsible for generating the Gaussian opacity, scale, and rotation values.",
+     "zh": "我们解冻了 𝒟 θ \\mathcal{D}_{\\theta} 的最终层，该层负责生成高斯不透明度、缩放和旋转值。"
+    },
+    {
+     "en": "The 2.70 M parameters ϕ \\phi of this lightweight adapter are optimized through minimization of a photometric loss on rendered views:",
+     "zh": "这个轻量级适配器的 270 万个参数 ϕ \\phi 通过最小化渲染视图上的光度损失进行优化："
+    }
+   ]
+  },
+  {
+   "en": "where ℛ \\mathcal{R} is a differentiable rasterizer and 𝒱 \\mathcal{V} is a collection of 36 anchor viewpoints. Importantly, these renders only provide supervision for adapting the view-independent decoder to the scene; they are never 2D-inpainted or serve as inputs or conditioning for the completion process. The same adapted decoder and latent representation are shared across all viewpoints. We also do not require specific reference views as we sample synthetic viewpoints around the cropped context G c ∗ G_{c^{*}} .",
+   "zh": "其中 ℛ \\mathcal{R} 是一个可微分的栅格化器，而 𝒱 \\mathcal{V} 是 36 个锚定视角的集合。 重要的是，这些渲染结果仅用于监督将不依赖视角的解码器适配到场景；它们绝不会作为 2D 图像修复的输入，也不会作为完成过程的输入或条件。 所有视角都共享同一个适配后的解码器和潜在表示。 我们也不需要特定的参考视角，因为我们会在裁剪后的上下文 G c ∗ G_{c^{*}} 周围采样合成视角。",
+   "sents": [
+    {
+     "en": "where ℛ \\mathcal{R} is a differentiable rasterizer and 𝒱 \\mathcal{V} is a collection of 36 anchor viewpoints.",
+     "zh": "其中 ℛ \\mathcal{R} 是一个可微分的栅格化器，而 𝒱 \\mathcal{V} 是 36 个锚定视角的集合。"
+    },
+    {
+     "en": "Importantly, these renders only provide supervision for adapting the view-independent decoder to the scene; they are never 2D-inpainted or serve as inputs or conditioning for the completion process.",
+     "zh": "重要的是，这些渲染结果仅用于监督将不依赖视角的解码器适配到场景；它们绝不会作为 2D 图像修复的输入，也不会作为完成过程的输入或条件。"
+    },
+    {
+     "en": "The same adapted decoder and latent representation are shared across all viewpoints.",
+     "zh": "所有视角都共享同一个适配后的解码器和潜在表示。"
+    },
+    {
+     "en": "We also do not require specific reference views as we sample synthetic viewpoints around the cropped context G c ∗ G_{c^{*}} .",
+     "zh": "我们也不需要特定的参考视角，因为我们会在裁剪后的上下文 G c ∗ G_{c^{*}} 周围采样合成视角。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate our method across three 360° radiance-field inpainting benchmarks using both quantitative image-quality metrics and a user study, as well as qualitative analysis.",
+   "zh": "我们使用定量图像质量指标和用户研究，以及定性分析，在三个 360° 辐射场修复基准上对我们的方法进行了评估。",
+   "sents": null
+  },
+  {
+   "en": "Baselines and evaluation protocol. We compare against Gaussian Grouping ( Ye et al., 2024 ) , InFusion ( Liu et al., 2024 ) , and Inpaint360GS ( Wang et al., 2026 ) , the latter of which reports strong performance on its proposed Inpaint360 benchmark. For all methods, we use the same input 3DGS scene and pre-defined 3D mask. This differs from evaluation protocols in which scene reconstruction and mask segmentation are performed independently for each method ( Wu et al., 2025a ; Wang et al., 2026 ) , as we intend to isolate differences due to the inpainting method itself. As such, our results also apply to 3DGS scenes that do not result from an optimization-based reconstruction. All experiments run on a single NVIDIA H100 GPU; see Section B.1 for implementation details.",
+   "zh": "基线方法与评估协议。 我们与 Gaussian Grouping（Ye et al., 2024）、InFusion（Liu et al., 2024）以及 Inpaint360GS（Wang et al., 2026）进行了比较，其中后一种方法在其提出的 Inpaint360 基准测试中表现出强劲性能。 对于所有方法，我们都使用相同的输入 3DGS 场景和预定义的 3D 掩码。 这与某些评估协议不同，在这些协议中，场景重建和掩码分割会针对每种方法独立执行（Wu et al., 2025a；Wang et al., 2026），因为我们的目标是孤立出由 inpainting 方法本身引起的差异。 因此，我们的结果也适用于那些并非通过基于优化的重建方式生成的 3DGS 场景。 所有实验均在单块 NVIDIA H100 GPU 上运行；实现细节请参见 B.1 节。",
+   "sents": [
+    {
+     "en": "Baselines and evaluation protocol.",
+     "zh": "基线方法与评估协议。"
+    },
+    {
+     "en": "We compare against Gaussian Grouping ( Ye et al., 2024 ) , InFusion ( Liu et al., 2024 ) , and Inpaint360GS ( Wang et al., 2026 ) , the latter of which reports strong performance on its proposed Inpaint360 benchmark.",
+     "zh": "我们与 Gaussian Grouping（Ye et al., 2024）、InFusion（Liu et al., 2024）以及 Inpaint360GS（Wang et al., 2026）进行了比较，其中后一种方法在其提出的 Inpaint360 基准测试中表现出强劲性能。"
+    },
+    {
+     "en": "For all methods, we use the same input 3DGS scene and pre-defined 3D mask.",
+     "zh": "对于所有方法，我们都使用相同的输入 3DGS 场景和预定义的 3D 掩码。"
+    },
+    {
+     "en": "This differs from evaluation protocols in which scene reconstruction and mask segmentation are performed independently for each method ( Wu et al., 2025a ; Wang et al., 2026 ) , as we intend to isolate differences due to the inpainting method itself.",
+     "zh": "这与某些评估协议不同，在这些协议中，场景重建和掩码分割会针对每种方法独立执行（Wu et al., 2025a；Wang et al., 2026），因为我们的目标是孤立出由 inpainting 方法本身引起的差异。"
+    },
+    {
+     "en": "As such, our results also apply to 3DGS scenes that do not result from an optimization-based reconstruction.",
+     "zh": "因此，我们的结果也适用于那些并非通过基于优化的重建方式生成的 3DGS 场景。"
+    },
+    {
+     "en": "All experiments run on a single NVIDIA H100 GPU; see Section B.1 for implementation details.",
+     "zh": "所有实验均在单块 NVIDIA H100 GPU 上运行；实现细节请参见 B.1 节。"
+    }
+   ]
+  },
+  {
+   "en": "Datasets. We evaluate on three unbounded 360° radiance-field inpainting datasets: (1) COR-NeRF ( Lee et al., 2024 ) , containing 11 diverse indoor and outdoor scenes with objects at different scales; (2) Inpaint360 ( Wang et al., 2026 ) , containing 11 single- and multi-object scenes; and (3) 360-USID ( Wu et al., 2025a ) , containing seven scenes. In total, our evaluation comprises 29 scenes.",
+   "zh": "数据集。 我们在三个无界 360° 辐射场修复数据集上进行评估：(1) COR-NeRF（Lee 等人，2024），包含 11 个多样化的室内和室外场景，其中物体具有不同尺度；(2) Inpaint360（Wang 等人，2026），包含 11 个单物体和多物体场景；以及 (3) 360-USID（Wu 等人，2025a），包含七个场景。 总体而言，我们的评估共包含 29 个场景。",
+   "sents": [
+    {
+     "en": "Datasets.",
+     "zh": "数据集。"
+    },
+    {
+     "en": "We evaluate on three unbounded 360° radiance-field inpainting datasets: (1) COR-NeRF ( Lee et al., 2024 ) , containing 11 diverse indoor and outdoor scenes with objects at different scales; (2) Inpaint360 ( Wang et al., 2026 ) , containing 11 single- and multi-object scenes; and (3) 360-USID ( Wu et al., 2025a ) , containing seven scenes.",
+     "zh": "我们在三个无界 360° 辐射场修复数据集上进行评估：(1) COR-NeRF（Lee 等人，2024），包含 11 个多样化的室内和室外场景，其中物体具有不同尺度；(2) Inpaint360（Wang 等人，2026），包含 11 个单物体和多物体场景；以及 (3) 360-USID（Wu 等人，2025a），包含七个场景。"
+    },
+    {
+     "en": "In total, our evaluation comprises 29 scenes.",
+     "zh": "总体而言，我们的评估共包含 29 个场景。"
+    }
+   ]
+  },
+  {
+   "en": "Automated metrics. We evaluate Wings on a comprehensive collection of quantitative metrics. We employ distributional perceptual metrics as our main quantitative evaluators: for each method, we report the FID ( FID ) ( Heusel et al., 2017 ) and KID ( KID ) ( Bińkowski et al., 2018 ) . As FID resizes images to × 299 299\\!\\times\\!299 to accommodate the Inceptionv3 backbone’s input size, it is poorly suited for evaluating fine detail in the inpainted region ( Xie et al., 2023 ; Pavasovic et al., 2026 ) . To address this, we additionally report Local-FID, obtained by cropping a × 299 299\\!\\times\\!299 region centered on the target region, thus allowing FID to operate at full resolution. We also report LPIPS. As detailed in Appendix A , we set aside PSNR and SSIM since such reference-based metrics do not account for the large number of valid inpainting solutions in the target region.",
+   "zh": "自动化指标。 我们使用一系列全面的定量指标来评估 Wings。 我们将分布感知指标作为主要的定量评估工具：对于每种方法，我们都会报告 FID（FID）（Heusel 等，2017）和 KID（KID）（Bińkowski 等，2018）。 由于 FID 会将图像调整为 ×299 299\\!\\times\\!299 以适应 Inceptionv3 主干网络的输入尺寸，因此它并不适合评估修复区域中的精细细节（Xie 等，2023；Pavasovic 等，2026）。 为了解决这个问题，我们还报告了 Local-FID，它是通过裁剪以目标区域为中心的 ×299 299\\!\\times\\!299 区域获得的，从而让 FID 能够在完整分辨率下运行。此外，我们还报告了 LPIPS。 如附录 A 中所述，我们未将 PSNR 和 SSIM 纳入评估范围，因为这类基于参考的指标无法反映目标区域中存在的大量有效修复方案。",
+   "sents": [
+    {
+     "en": "Automated metrics.",
+     "zh": "自动化指标。"
+    },
+    {
+     "en": "We evaluate Wings on a comprehensive collection of quantitative metrics.",
+     "zh": "我们使用一系列全面的定量指标来评估 Wings。"
+    },
+    {
+     "en": "We employ distributional perceptual metrics as our main quantitative evaluators: for each method, we report the FID ( FID ) ( Heusel et al., 2017 ) and KID ( KID ) ( Bińkowski et al., 2018 ) .",
+     "zh": "我们将分布感知指标作为主要的定量评估工具：对于每种方法，我们都会报告 FID（FID）（Heusel 等，2017）和 KID（KID）（Bińkowski 等，2018）。"
+    },
+    {
+     "en": "As FID resizes images to × 299 299\\!\\times\\!299 to accommodate the Inceptionv3 backbone’s input size, it is poorly suited for evaluating fine detail in the inpainted region ( Xie et al., 2023 ; Pavasovic et al., 2026 ) .",
+     "zh": "由于 FID 会将图像调整为 ×299 299\\!\\times\\!299 以适应 Inceptionv3 主干网络的输入尺寸，因此它并不适合评估修复区域中的精细细节（Xie 等，2023；Pavasovic 等，2026）。"
+    },
+    {
+     "en": "To address this, we additionally report Local-FID, obtained by cropping a × 299 299\\!\\times\\!299 region centered on the target region, thus allowing FID to operate at full resolution. We also report LPIPS.",
+     "zh": "为了解决这个问题，我们还报告了 Local-FID，它是通过裁剪以目标区域为中心的 ×299 299\\!\\times\\!299 区域获得的，从而让 FID 能够在完整分辨率下运行。此外，我们还报告了 LPIPS。"
+    },
+    {
+     "en": "As detailed in Appendix A , we set aside PSNR and SSIM since such reference-based metrics do not account for the large number of valid inpainting solutions in the target region.",
+     "zh": "如附录 A 中所述，我们未将 PSNR 和 SSIM 纳入评估范围，因为这类基于参考的指标无法反映目标区域中存在的大量有效修复方案。"
+    }
+   ]
+  },
+  {
+   "en": "User study. As detailed in Appendix A.1 , automated metrics poorly correlate with human preference in our inpainting setting: we thus further assess the visual quality of our approach via a blind user study. Across the 29 scenes from the COR-NeRF, Inpaint360 and 360-USID datasets, we randomly sample a viewpoint from a held-out set, and render an input view (with the object present) and the inpainted results of two methods, displayed in random left-right order. Users are asked which result looks better, with the options of skipping (e.g., if the region is occluded from this view) or signaling a tie, in case both results look equally good or bad. During the study, 29 participants rated a total of 1401 pairs, an average of 48.3 48.3 per user. Table 1 shows that our method is overwhelmingly preferred by human evaluators, achieving a 75% preference rate against the strongest baseline and attaining an expected rank of 1.48 1.48 .",
+   "zh": "用户研究。 如附录 A.1 中所述，在我们的图像修复场景中，自动化指标与人类偏好之间的相关性较弱；因此，我们通过一项盲测用户研究进一步评估了我们方法在视觉质量上的表现。 我们从 COR-NeRF、Inpaint360 和 360-USID 数据集的 29 个场景中进行测试：从预留的场景集中随机选取一个视角，并渲染输入视图（包含物体）以及两种方法的修复结果，这些结果以随机左右的顺序展示。 我们要求用户判断哪个结果看起来更好，并提供跳过选项（例如，当该区域在此视角中被遮挡时）或标记为平局（当两个结果同样好或同样差时）。 在研究过程中，29 名参与者共评估了 1401 对结果，平均每位用户评估了 48.3 对。 表 1 显示，我们的方法获得了人类评估者压倒性的偏好，与最强的基线方法相比，其偏好率达到了 75%，预期排名为 1.48。",
+   "sents": [
+    {
+     "en": "User study.",
+     "zh": "用户研究。"
+    },
+    {
+     "en": "As detailed in Appendix A.1 , automated metrics poorly correlate with human preference in our inpainting setting: we thus further assess the visual quality of our approach via a blind user study.",
+     "zh": "如附录 A.1 中所述，在我们的图像修复场景中，自动化指标与人类偏好之间的相关性较弱；因此，我们通过一项盲测用户研究进一步评估了我们方法在视觉质量上的表现。"
+    },
+    {
+     "en": "Across the 29 scenes from the COR-NeRF, Inpaint360 and 360-USID datasets, we randomly sample a viewpoint from a held-out set, and render an input view (with the object present) and the inpainted results of two methods, displayed in random left-right order.",
+     "zh": "我们从 COR-NeRF、Inpaint360 和 360-USID 数据集的 29 个场景中进行测试：从预留的场景集中随机选取一个视角，并渲染输入视图（包含物体）以及两种方法的修复结果，这些结果以随机左右的顺序展示。"
+    },
+    {
+     "en": "Users are asked which result looks better, with the options of skipping (e.g., if the region is occluded from this view) or signaling a tie, in case both results look equally good or bad.",
+     "zh": "我们要求用户判断哪个结果看起来更好，并提供跳过选项（例如，当该区域在此视角中被遮挡时）或标记为平局（当两个结果同样好或同样差时）。"
+    },
+    {
+     "en": "During the study, 29 participants rated a total of 1401 pairs, an average of 48.3 48.3 per user.",
+     "zh": "在研究过程中，29 名参与者共评估了 1401 对结果，平均每位用户评估了 48.3 对。"
+    },
+    {
+     "en": "Table 1 shows that our method is overwhelmingly preferred by human evaluators, achieving a 75% preference rate against the strongest baseline and attaining an expected rank of 1.48 1.48 .",
+     "zh": "表 1 显示，我们的方法获得了人类评估者压倒性的偏好，与最强的基线方法相比，其偏好率达到了 75%，预期排名为 1.48。"
+    }
+   ]
+  },
+  {
+   "en": "Qualitative results. Qualitative inspection of our results confirms the quantitative analysis: our method consistently achieves highly plausible and sharp inpainting results that respect well the visual structure of the scene and integrate seamlessly with their surroundings. Other methods often produce blurry and fuzzy regions or show significant color shifts or artifacts. We show a subset of our results in Figure 3 ; for a full gallery and a comparison against baselines on all scenes, please see Appendix E .",
+   "zh": "定性结果。 对我们结果的定性检查证实了定量分析：我们的方法始终能生成高度可信且清晰的图像修复结果，这些结果很好地尊重了场景的视觉结构，并与周围环境无缝融合。 其他方法通常会生成模糊和不清的区域，或出现明显的颜色偏移或伪影。 我们在图 3 中展示了一部分结果；如需查看完整的成果集以及所有场景上与基线方法的对比，请参阅附录 E。",
+   "sents": [
+    {
+     "en": "Qualitative results.",
+     "zh": "定性结果。"
+    },
+    {
+     "en": "Qualitative inspection of our results confirms the quantitative analysis: our method consistently achieves highly plausible and sharp inpainting results that respect well the visual structure of the scene and integrate seamlessly with their surroundings.",
+     "zh": "对我们结果的定性检查证实了定量分析：我们的方法始终能生成高度可信且清晰的图像修复结果，这些结果很好地尊重了场景的视觉结构，并与周围环境无缝融合。"
+    },
+    {
+     "en": "Other methods often produce blurry and fuzzy regions or show significant color shifts or artifacts.",
+     "zh": "其他方法通常会生成模糊和不清的区域，或出现明显的颜色偏移或伪影。"
+    },
+    {
+     "en": "We show a subset of our results in Figure 3 ; for a full gallery and a comparison against baselines on all scenes, please see Appendix E .",
+     "zh": "我们在图 3 中展示了一部分结果；如需查看完整的成果集以及所有场景上与基线方法的对比，请参阅附录 E。"
+    }
+   ]
+  },
+  {
+   "en": "Attention masking. This ablation uses the same encoded context SLAT s 𝒛 c \\bm{z}_{c} and predicted structure O O but removes the attention masking mechanism (see Figure 2 ). The structured latent conditional sampling stage hence decays back to the original conditional sampling of 𝒢 L \\mathcal{G}_{L} used by RePaint, as implemented by Xiang et al. (2025b) . The number of integration steps, backwards jump length and number of jumps is kept identical for both.",
+   "zh": "注意力掩码。 这项消融研究使用了相同的编码上下文 SLAT s 𝒛 c \\bm{z}_{c} 和预测结构 O O，但移除了注意力掩码机制（参见图 2）。 因此，结构化潜在条件采样阶段会回归到 RePaint 使用的 𝒢 L \\mathcal{G}_{L} 的原始条件采样方式，具体实现参见 Xiang et al. (2025b)。 两种方法的积分步数、反向跳跃长度和跳跃次数均保持一致。",
+   "sents": [
+    {
+     "en": "Attention masking.",
+     "zh": "注意力掩码。"
+    },
+    {
+     "en": "This ablation uses the same encoded context SLAT s 𝒛 c \\bm{z}_{c} and predicted structure O O but removes the attention masking mechanism (see Figure 2 ).",
+     "zh": "这项消融研究使用了相同的编码上下文 SLAT s 𝒛 c \\bm{z}_{c} 和预测结构 O O，但移除了注意力掩码机制（参见图 2）。"
+    },
+    {
+     "en": "The structured latent conditional sampling stage hence decays back to the original conditional sampling of 𝒢 L \\mathcal{G}_{L} used by RePaint, as implemented by Xiang et al. (2025b) .",
+     "zh": "因此，结构化潜在条件采样阶段会回归到 RePaint 使用的 𝒢 L \\mathcal{G}_{L} 的原始条件采样方式，具体实现参见 Xiang et al. (2025b)。"
+    },
+    {
+     "en": "The number of integration steps, backwards jump length and number of jumps is kept identical for both.",
+     "zh": "两种方法的积分步数、反向跳跃长度和跳跃次数均保持一致。"
+    }
+   ]
+  },
+  {
+   "en": "Structure completion. We ablate our structure completion U-Net and instead use RePaint sampling of the sparse structure model 𝒢 S \\mathcal{G}_{S} in a way identical to Xiang et al. (2025b) , with 50 integration time steps. After obtaining the completed structure O O , we perform attention-masked SLAT generation with the usual hyperparameters.",
+   "zh": "结构补全。 我们省略了结构补全的 U-Net，转而以与 Xiang 等人（2025b）完全相同的方式，对稀疏结构模型 𝒢 S \\mathcal{G}_{S} 进行 RePaint 采样，并设置 50 个积分时间步。 （2025b），设置 50 个积分时间步。 在获得补全后的结构 O O 后，我们使用常规的超参数执行注意力掩码的 SLAT 生成。",
+   "sents": [
+    {
+     "en": "Structure completion.",
+     "zh": "结构补全。"
+    },
+    {
+     "en": "We ablate our structure completion U-Net and instead use RePaint sampling of the sparse structure model 𝒢 S \\mathcal{G}_{S} in a way identical to Xiang et al.",
+     "zh": "我们省略了结构补全的 U-Net，转而以与 Xiang 等人（2025b）完全相同的方式，对稀疏结构模型 𝒢 S \\mathcal{G}_{S} 进行 RePaint 采样，并设置 50 个积分时间步。"
+    },
+    {
+     "en": "(2025b) , with 50 integration time steps.",
+     "zh": "（2025b），设置 50 个积分时间步。"
+    },
+    {
+     "en": "After obtaining the completed structure O O , we perform attention-masked SLAT generation with the usual hyperparameters.",
+     "zh": "在获得补全后的结构 O O 后，我们使用常规的超参数执行注意力掩码的 SLAT 生成。"
+    }
+   ]
+  },
+  {
+   "en": "Decoder adaptation. For this ablation, we predict structure using our U-Net and run our full latent pipeline (with progressive context conditioning and self-attention masking), and simply refrain from applying the scene-conditioned parameters ϕ ∗ \\phi^{*} to 𝒟 θ \\mathcal{D}_{\\theta} during the final decoding of generated latents.",
+   "zh": "解码器适配。 在此消融实验中，我们使用 U-Net 预测结构，并运行完整的潜在管道（包含渐进式上下文条件约束和自注意力掩码），但在生成潜变量的最终解码阶段，我们仅选择不将场景条件参数 ϕ ∗ \\phi^{*} 应用于 𝒟 θ \\mathcal{D}_{\\theta}。",
+   "sents": [
+    {
+     "en": "Decoder adaptation.",
+     "zh": "解码器适配。"
+    },
+    {
+     "en": "For this ablation, we predict structure using our U-Net and run our full latent pipeline (with progressive context conditioning and self-attention masking), and simply refrain from applying the scene-conditioned parameters ϕ ∗ \\phi^{*} to 𝒟 θ \\mathcal{D}_{\\theta} during the final decoding of generated latents.",
+     "zh": "在此消融实验中，我们使用 U-Net 预测结构，并运行完整的潜在管道（包含渐进式上下文条件约束和自注意力掩码），但在生成潜变量的最终解码阶段，我们仅选择不将场景条件参数 ϕ ∗ \\phi^{*} 应用于 𝒟 θ \\mathcal{D}_{\\theta}。"
+    }
+   ]
+  },
+  {
+   "en": "Table 3 reports perceptual metrics for all ablations. Decoder adaptation has the largest impact on perceptual quality, with its removal substantially degrading all four metrics, while the structure completion model provides the second-largest contribution, particularly for Local-FID. Attention masking yields a smaller albeit consistent improvement, but contributes significantly to seamless blending and overall visual quality, as the qualitative visualizations in Figure 5 show.",
+   "zh": "表 3 报告了所有消融实验的感知指标。 解码器自适应对感知质量的影响最大，移除它会导致全部四个指标显著下降；而结构补全模型则贡献次大，尤其体现在 Local-FID 上。 注意力掩码带来的改进较小但稳定，不过它对无缝融合和整体视觉质量有重要贡献，如图 5 中的定性可视化结果所示。",
+   "sents": [
+    {
+     "en": "Table 3 reports perceptual metrics for all ablations.",
+     "zh": "表 3 报告了所有消融实验的感知指标。"
+    },
+    {
+     "en": "Decoder adaptation has the largest impact on perceptual quality, with its removal substantially degrading all four metrics, while the structure completion model provides the second-largest contribution, particularly for Local-FID.",
+     "zh": "解码器自适应对感知质量的影响最大，移除它会导致全部四个指标显著下降；而结构补全模型则贡献次大，尤其体现在 Local-FID 上。"
+    },
+    {
+     "en": "Attention masking yields a smaller albeit consistent improvement, but contributes significantly to seamless blending and overall visual quality, as the qualitative visualizations in Figure 5 show.",
+     "zh": "注意力掩码带来的改进较小但稳定，不过它对无缝融合和整体视觉质量有重要贡献，如图 5 中的定性可视化结果所示。"
+    }
+   ]
+  },
+  {
+   "en": "We further ablate our structure completion model against the baseline proposed by TRELLIS ( Xiang et al., 2025b ) , applying the RePaint algorithm ( Lugmayr et al., 2022 ) to the sparse structure flow model 𝒢 S \\mathcal{G}_{S} . We evaluate both approaches on a held-out dataset of 3DGS scenes unused during training of our structure completion U-Net, and report their relative performance in Figure 4 . We find the sparse structure completion of the TRELLIS baseline to strongly degrade as the masked region size increases compared to context, while our structure completion model offers both accurate and consistent predictions even at high masked voxel ratios.",
+   "zh": "我们进一步将我们的结构补全模型与 TRELLIS（Xiang 等人，2025b）提出的基线模型进行了对比实验，其中对稀疏结构流模型 𝒢 S \\mathcal{G}_{S} 应用了 RePaint 算法（Lugmayr 等人，2022）。 我们在一个未用于训练我们结构补全 U-Net 的 3DGS 场景预留数据集上评估了这两种方法，并在图 4 中报告了它们的相对性能。 我们发现，与上下文相比，随着掩码区域尺寸的增加，TRELLIS 基线模型的稀疏结构补全效果会显著下降，而我们的结构补全模型即使在较高的掩码体素比例下，也能提供准确且一致的结果。",
+   "sents": [
+    {
+     "en": "We further ablate our structure completion model against the baseline proposed by TRELLIS ( Xiang et al., 2025b ) , applying the RePaint algorithm ( Lugmayr et al., 2022 ) to the sparse structure flow model 𝒢 S \\mathcal{G}_{S} .",
+     "zh": "我们进一步将我们的结构补全模型与 TRELLIS（Xiang 等人，2025b）提出的基线模型进行了对比实验，其中对稀疏结构流模型 𝒢 S \\mathcal{G}_{S} 应用了 RePaint 算法（Lugmayr 等人，2022）。"
+    },
+    {
+     "en": "We evaluate both approaches on a held-out dataset of 3DGS scenes unused during training of our structure completion U-Net, and report their relative performance in Figure 4 .",
+     "zh": "我们在一个未用于训练我们结构补全 U-Net 的 3DGS 场景预留数据集上评估了这两种方法，并在图 4 中报告了它们的相对性能。"
+    },
+    {
+     "en": "We find the sparse structure completion of the TRELLIS baseline to strongly degrade as the masked region size increases compared to context, while our structure completion model offers both accurate and consistent predictions even at high masked voxel ratios.",
+     "zh": "我们发现，与上下文相比，随着掩码区域尺寸的增加，TRELLIS 基线模型的稀疏结构补全效果会显著下降，而我们的结构补全模型即使在较高的掩码体素比例下，也能提供准确且一致的结果。"
+    }
+   ]
+  },
+  {
+   "en": "Limitations. While our method successfully inpaints 3DGS assets in unbounded 360° scenarios and outperforms other current approaches in both perceptual metrics and human preference, it is not free of limitations, which we highlight here as avenues for future work. First, we observe that content generation of complex and intricate patterns in latent space is biased towards axis-aligned patterns, and struggles with misaligned motifs. We devise an axis-alignment heuristic to overcome this, but future research could help mitigate this at a structural level, e.g., inspired by SO(3)-equivariant structure alignment mechanisms ( Ding and Hofmann, 2025 ) or by leveraging recent approaches to equivariant 3D-native priors ( Ji et al., 2026 ) . Moreover, due to architectural limitations of the TRELLIS VAE decoder 𝒟 θ \\mathcal{D}_{\\theta} , our approach does not generate the higher-order spherical harmonic components of the inpainted splats. While we plan to investigate this in future work, our core framework is agnostic to the specific choice of backbone, and thus could accommodate future priors supporting higher-order spherical harmonics.",
+   "zh": "局限性。 尽管我们的方法成功地在无界的 360° 场景中修复了 3DGS 资产，并且在感知指标和人类偏好方面都优于其他现有方法，但它并非没有局限性，我们在此指出这些局限性作为未来工作的方向。 首先，我们观察到，在潜在空间中生成复杂且精细模式的内容时，模型倾向于生成与坐标轴对齐的模式，而对未对齐的图案则难以处理。 我们设计了一种轴对齐启发式方法来解决这个问题，但未来的研究或许能在结构层面缓解这一问题，例如，受 SO(3)-等变结构对齐机制（Ding and Hofmann, 2025）的启发，或利用近期关于等变 3D 原生先验的方法（Ji et al., 2026）。 此外，由于 TRELLIS VAE 解码器 𝒟 θ \\mathcal{D}_{\\theta} 的架构限制，我们的方法无法生成修复后的 splats 的高阶球谐分量。 虽然我们计划在未来工作中研究这一问题，但我们的核心框架与具体选择的骨干网络无关，因此可以兼容未来支持高阶球谐的先验模型。",
+   "sents": [
+    {
+     "en": "Limitations.",
+     "zh": "局限性。"
+    },
+    {
+     "en": "While our method successfully inpaints 3DGS assets in unbounded 360° scenarios and outperforms other current approaches in both perceptual metrics and human preference, it is not free of limitations, which we highlight here as avenues for future work.",
+     "zh": "尽管我们的方法成功地在无界的 360° 场景中修复了 3DGS 资产，并且在感知指标和人类偏好方面都优于其他现有方法，但它并非没有局限性，我们在此指出这些局限性作为未来工作的方向。"
+    },
+    {
+     "en": "First, we observe that content generation of complex and intricate patterns in latent space is biased towards axis-aligned patterns, and struggles with misaligned motifs.",
+     "zh": "首先，我们观察到，在潜在空间中生成复杂且精细模式的内容时，模型倾向于生成与坐标轴对齐的模式，而对未对齐的图案则难以处理。"
+    },
+    {
+     "en": "We devise an axis-alignment heuristic to overcome this, but future research could help mitigate this at a structural level, e.g., inspired by SO(3)-equivariant structure alignment mechanisms ( Ding and Hofmann, 2025 ) or by leveraging recent approaches to equivariant 3D-native priors ( Ji et al., 2026 ) .",
+     "zh": "我们设计了一种轴对齐启发式方法来解决这个问题，但未来的研究或许能在结构层面缓解这一问题，例如，受 SO(3)-等变结构对齐机制（Ding and Hofmann, 2025）的启发，或利用近期关于等变 3D 原生先验的方法（Ji et al., 2026）。"
+    },
+    {
+     "en": "Moreover, due to architectural limitations of the TRELLIS VAE decoder 𝒟 θ \\mathcal{D}_{\\theta} , our approach does not generate the higher-order spherical harmonic components of the inpainted splats.",
+     "zh": "此外，由于 TRELLIS VAE 解码器 𝒟 θ \\mathcal{D}_{\\theta} 的架构限制，我们的方法无法生成修复后的 splats 的高阶球谐分量。"
+    },
+    {
+     "en": "While we plan to investigate this in future work, our core framework is agnostic to the specific choice of backbone, and thus could accommodate future priors supporting higher-order spherical harmonics.",
+     "zh": "虽然我们计划在未来工作中研究这一问题，但我们的核心框架与具体选择的骨干网络无关，因此可以兼容未来支持高阶球谐的先验模型。"
+    }
+   ]
+  },
+  {
+   "en": "Additionally, despite operating with a lower runtime than existing 2D-based approaches, our method requires around three minutes for inpainting. As Table 5 shows, a large fraction of that time is allocated to the decoder adaptation stage. Rather than training a single adapter per scene, future work will focus on training a single multi-scene adapter, which will amortize the training cost over successive interactive edits of the same scene.",
+   "zh": "此外，尽管我们的方法运行时间比现有的基于二维的方法更短，但图像修复仍需大约三分钟。 如表 5 所示，其中大部分时间都分配给了解码器适配阶段。 未来工作将不再为每个场景单独训练适配器，而是专注于训练一个适用于多个场景的通用适配器，从而将训练成本分摊到同一场景的连续交互式编辑中。",
+   "sents": [
+    {
+     "en": "Additionally, despite operating with a lower runtime than existing 2D-based approaches, our method requires around three minutes for inpainting.",
+     "zh": "此外，尽管我们的方法运行时间比现有的基于二维的方法更短，但图像修复仍需大约三分钟。"
+    },
+    {
+     "en": "As Table 5 shows, a large fraction of that time is allocated to the decoder adaptation stage.",
+     "zh": "如表 5 所示，其中大部分时间都分配给了解码器适配阶段。"
+    },
+    {
+     "en": "Rather than training a single adapter per scene, future work will focus on training a single multi-scene adapter, which will amortize the training cost over successive interactive edits of the same scene.",
+     "zh": "未来工作将不再为每个场景单独训练适配器，而是专注于训练一个适用于多个场景的通用适配器，从而将训练成本分摊到同一场景的连续交互式编辑中。"
+    }
+   ]
+  },
+  {
+   "en": "Finally, pixel-reference metrics such as PSNR and SSIM are ill-suited for evaluating the output of a stochastic process such as diffusion-based inpainting, since perceptually plausible variations (e.g., a different realization of the same wood grain) may incur a large pixel-wise error despite being visually convincing (see our discussion in Section 4 and Appendix A ). Extending perceptually motivated, inpainting-specific quality metrics ( Chen et al., 2024a ) to 3DGS inpainting is beyond the scope of this work, but remains an important direction for future research.",
+   "zh": "最后，像 PSNR 和 SSIM 这类以像素为参考的指标并不适合评估基于扩散模型的图像修复等随机过程的输出，因为从感知角度来看合理的差异（例如，同一木纹理的不同呈现方式）尽管在视觉上令人信服，却可能导致较大的逐像素误差（参见我们在第 4 节和附录 A 中的讨论）。 将基于感知且专为图像修复设计的画质指标（Chen et al., 2024a）扩展到 3DGS 图像修复超出了本研究的范围，但这仍然是未来研究的一个重要方向。",
+   "sents": [
+    {
+     "en": "Finally, pixel-reference metrics such as PSNR and SSIM are ill-suited for evaluating the output of a stochastic process such as diffusion-based inpainting, since perceptually plausible variations (e.g., a different realization of the same wood grain) may incur a large pixel-wise error despite being visually convincing (see our discussion in Section 4 and Appendix A ).",
+     "zh": "最后，像 PSNR 和 SSIM 这类以像素为参考的指标并不适合评估基于扩散模型的图像修复等随机过程的输出，因为从感知角度来看合理的差异（例如，同一木纹理的不同呈现方式）尽管在视觉上令人信服，却可能导致较大的逐像素误差（参见我们在第 4 节和附录 A 中的讨论）。"
+    },
+    {
+     "en": "Extending perceptually motivated, inpainting-specific quality metrics ( Chen et al., 2024a ) to 3DGS inpainting is beyond the scope of this work, but remains an important direction for future research.",
+     "zh": "将基于感知且专为图像修复设计的画质指标（Chen et al., 2024a）扩展到 3DGS 图像修复超出了本研究的范围，但这仍然是未来研究的一个重要方向。"
+    }
+   ]
+  },
+  {
+   "en": "Conclusion. We propose a novel, 3D-native framework for inpainting regions of real-world, unbounded Gaussian splatting scenes. Our approach leverages a powerful generative prior to conditionally create plausible content in latent space. We introduce three separate mechanisms improving the quality and faithfulness of inpainting: a learned structure completion network, a self-attention masking strategy to improve information exchange between context and generated latents, and a scene-specific decoder adaptation module. Our method completes in a few minutes, outperforms existing 3DGS inpainting methods, achieves the best aggregate metrics on a variety of scenes from three different datasets, and is consistently ranked highest by human preference. To the best of our knowledge, our method is the first 3DGS inpainting approach to perform content generation in the representation space of a 3D-native prior, opening important future perspectives for interactive 3D scene interaction and editing.",
+   "zh": "结论。 我们提出了一种新颖的、原生支持三维的框架，用于修复真实世界中无边界的高斯泼溅场景中的区域。 我们的方法利用一种强大的生成性先验模型，在潜在空间中条件性地创建合理的内容。 我们引入了三种独立的机制来提升修复内容的质量和保真度：一个学习到的结构补全网络、一种自注意力掩码策略（用于增强上下文与生成的潜在变量之间的信息交换），以及一个针对特定场景的解码器适配模块。 我们的方法可在几分钟内完成修复，性能优于现有的三维高斯泼溅场景修复方法，在来自三个不同数据集的多种场景上取得了最佳的综合指标，并且在人类偏好评估中始终排名第一。 据我们所知，我们的方法是首个在原生三维先验模型的表示空间中进行内容生成的三维高斯泼溅场景修复方案，为交互式三维场景交互与编辑开辟了重要的未来方向。",
+   "sents": [
+    {
+     "en": "Conclusion.",
+     "zh": "结论。"
+    },
+    {
+     "en": "We propose a novel, 3D-native framework for inpainting regions of real-world, unbounded Gaussian splatting scenes.",
+     "zh": "我们提出了一种新颖的、原生支持三维的框架，用于修复真实世界中无边界的高斯泼溅场景中的区域。"
+    },
+    {
+     "en": "Our approach leverages a powerful generative prior to conditionally create plausible content in latent space.",
+     "zh": "我们的方法利用一种强大的生成性先验模型，在潜在空间中条件性地创建合理的内容。"
+    },
+    {
+     "en": "We introduce three separate mechanisms improving the quality and faithfulness of inpainting: a learned structure completion network, a self-attention masking strategy to improve information exchange between context and generated latents, and a scene-specific decoder adaptation module.",
+     "zh": "我们引入了三种独立的机制来提升修复内容的质量和保真度：一个学习到的结构补全网络、一种自注意力掩码策略（用于增强上下文与生成的潜在变量之间的信息交换），以及一个针对特定场景的解码器适配模块。"
+    },
+    {
+     "en": "Our method completes in a few minutes, outperforms existing 3DGS inpainting methods, achieves the best aggregate metrics on a variety of scenes from three different datasets, and is consistently ranked highest by human preference.",
+     "zh": "我们的方法可在几分钟内完成修复，性能优于现有的三维高斯泼溅场景修复方法，在来自三个不同数据集的多种场景上取得了最佳的综合指标，并且在人类偏好评估中始终排名第一。"
+    },
+    {
+     "en": "To the best of our knowledge, our method is the first 3DGS inpainting approach to perform content generation in the representation space of a 3D-native prior, opening important future perspectives for interactive 3D scene interaction and editing.",
+     "zh": "据我们所知，我们的方法是首个在原生三维先验模型的表示空间中进行内容生成的三维高斯泼溅场景修复方案，为交互式三维场景交互与编辑开辟了重要的未来方向。"
+    }
+   ]
+  },
+  {
+   "en": "In addition to the results from Table 2 , we report the reference-based distortion metrics PSNR and SSIM and the reference-based perceptual metric LPIPS in Table 4 . Although very widely used in 3DGS inpainting benchmarks ( Wu et al., 2025a ; Lee and Cho, 2026 ; Chen et al., 2025 ) , we argue that PSNR and SSIM are not satisfactory evaluators of inpainting quality. Indeed, these metrics report fidelity to a reference, which is in the present case a different 3DGS scene with the object removed. This is the source of many possible inconsistencies stemming from light or environment change. Furthermore, these metrics only evaluate the fidelity of inpainting with respect to one ground truth, not accounting for the large number of valid inpainting solutions admitted in the target region. Despite outperforming existing methods on PSNR and being strongly competitive on SSIM, we prefer to rely on distributional perceptual metrics such as the Fréchet Inception Distance (FID, Heusel et al. (2017) ) or the Kernel Inception Distance (KID, Bińkowski et al. (2018) ).",
+   "zh": "除了表 2 中的结果外，我们在表 4 中报告了基于参考的失真指标 PSNR 和 SSIM，以及基于参考的感知指标 LPIPS。 尽管 PSNR 和 SSIM 在 3DGS 修复基准测试中被广泛使用（Wu et al., 2025a；Lee and Cho, 2026；Chen et al., 2025），但我们认为它们并非评估修复质量的理想指标。 实际上，这些指标衡量的是与参考图像的一致性，而在此案例中，该参考图像是一个移除了目标物体的不同 3DGS 场景。 这正是许多可能因光照或环境变化而产生的不一致性的根源。 此外，这些指标仅评估修复结果与单一真实情况的一致性，并未考虑目标区域所允许的大量有效修复方案。 尽管我们在 PSNR 上优于现有方法，并且在 SSIM 上也具有强劲竞争力，但我们更倾向于依赖分布性感知指标，例如 Fréchet Inception Distance（FID, Heusel et al. (2017)）或 Kernel Inception Distance（KID, Bińkowski et al. (2018)）。",
+   "sents": [
+    {
+     "en": "In addition to the results from Table 2 , we report the reference-based distortion metrics PSNR and SSIM and the reference-based perceptual metric LPIPS in Table 4 .",
+     "zh": "除了表 2 中的结果外，我们在表 4 中报告了基于参考的失真指标 PSNR 和 SSIM，以及基于参考的感知指标 LPIPS。"
+    },
+    {
+     "en": "Although very widely used in 3DGS inpainting benchmarks ( Wu et al., 2025a ; Lee and Cho, 2026 ; Chen et al., 2025 ) , we argue that PSNR and SSIM are not satisfactory evaluators of inpainting quality.",
+     "zh": "尽管 PSNR 和 SSIM 在 3DGS 修复基准测试中被广泛使用（Wu et al., 2025a；Lee and Cho, 2026；Chen et al., 2025），但我们认为它们并非评估修复质量的理想指标。"
+    },
+    {
+     "en": "Indeed, these metrics report fidelity to a reference, which is in the present case a different 3DGS scene with the object removed.",
+     "zh": "实际上，这些指标衡量的是与参考图像的一致性，而在此案例中，该参考图像是一个移除了目标物体的不同 3DGS 场景。"
+    },
+    {
+     "en": "This is the source of many possible inconsistencies stemming from light or environment change.",
+     "zh": "这正是许多可能因光照或环境变化而产生的不一致性的根源。"
+    },
+    {
+     "en": "Furthermore, these metrics only evaluate the fidelity of inpainting with respect to one ground truth, not accounting for the large number of valid inpainting solutions admitted in the target region.",
+     "zh": "此外，这些指标仅评估修复结果与单一真实情况的一致性，并未考虑目标区域所允许的大量有效修复方案。"
+    },
+    {
+     "en": "Despite outperforming existing methods on PSNR and being strongly competitive on SSIM, we prefer to rely on distributional perceptual metrics such as the Fréchet Inception Distance (FID, Heusel et al.",
+     "zh": "尽管我们在 PSNR 上优于现有方法，并且在 SSIM 上也具有强劲竞争力，但我们更倾向于依赖分布性感知指标，例如 Fréchet Inception Distance（FID, Heusel et al."
+    },
+    {
+     "en": "(2017) ) or the Kernel Inception Distance (KID, Bińkowski et al. (2018) ).",
+     "zh": "(2017)）或 Kernel Inception Distance（KID, Bińkowski et al. (2018)）。"
+    }
+   ]
+  },
+  {
+   "en": "We observe that FID and its full-resolution variant Local-FID are the second-best correlated metrics with human preference, behind the reference-based LPIPS metric (Appendix A.1 ), while KID only weakly correlates with human judgment. Table 6 proposes a comparative alignment analysis of human preference and quantitative metrics, computed only for Ours-Inpaint360GS duels. The table cells illustrate the relative metric superiority of Ours against Inpaint360GS, colored in green when our method performs better and red when it performs worse. The color shade is proportional to the log-ratio between the two metrics, except for PSNR and the two KID metrics, where we use the difference, as PSNR is already a logarithmic metric and KID can take negative values. Remarkably, even the best-correlated metrics (LPIPS, FID and Local-FID) exhibit a timid Spearman ρ \\rho correlation coefficient with human preference of respectively 0.48, 0.40 and 0.40, indicating only partial agreement with human preference. In contrast, reference-based distortion metrics such as PSNR and SSIM are expectedly poor predictors of human preference, with Spearman ρ \\rho coefficients of 0.14 and 0.21 only. We illustrate these phenomena with qualitative visualizations: Figures 6 and 7 show cases where Inpaint360GS surpasses Wings on metrics despite our method being preferred by humans, and Figure 8 shows a case where humans prefer Inpaint360GS but our result obtains better metrics.",
+   "zh": "我们观察到，FID 及其全分辨率变体 Local-FID 是与人类偏好相关性第二高的指标，仅次于基于参考的 LPIPS 指标（附录 A.1），而 KID 与人类判断的相关性则较弱。 表 6 提出了对人类偏好与定量指标的比较对齐分析，该分析仅针对 Ours-Inpaint360GS 对决进行计算。 表格单元格展示了 Ours 相对于 Inpaint360GS 的指标相对优势：当我们的方法表现更优时，单元格呈绿色；表现较差时则呈红色。 颜色深浅与两个指标之间的对数比成正比，但 PSNR 和两个 KID 指标除外，这些情况下我们使用差值，因为 PSNR 本身已是 logarithmic 指标，而 KID 可能取负值。 值得注意的是，即使相关性最高的指标（LPIPS、FID 和 Local-FID），与人类偏好的 Spearman ρ \\rho 相关系数也仅为 0.48、0.40 和 0.40，表明它们仅与人类偏好存在部分一致。 相比之下，基于参考的失真指标（如 PSNR 和 SSIM）正如预期那样，对预测人类偏好效果不佳，其 Spearman ρ \\rho 系数仅为 0.14 和 0.21。 我们通过定性可视化展示了这些现象：图 6 和图 7 显示了 Inpaint360GS 在指标上优于 Wings 的情况，尽管人类更偏好我们的方法；图 8 则显示了一个人类更偏好 Inpaint360GS，但我们的结果在指标上表现更好的情况。",
+   "sents": [
+    {
+     "en": "We observe that FID and its full-resolution variant Local-FID are the second-best correlated metrics with human preference, behind the reference-based LPIPS metric (Appendix A.1 ), while KID only weakly correlates with human judgment.",
+     "zh": "我们观察到，FID 及其全分辨率变体 Local-FID 是与人类偏好相关性第二高的指标，仅次于基于参考的 LPIPS 指标（附录 A.1），而 KID 与人类判断的相关性则较弱。"
+    },
+    {
+     "en": "Table 6 proposes a comparative alignment analysis of human preference and quantitative metrics, computed only for Ours-Inpaint360GS duels.",
+     "zh": "表 6 提出了对人类偏好与定量指标的比较对齐分析，该分析仅针对 Ours-Inpaint360GS 对决进行计算。"
+    },
+    {
+     "en": "The table cells illustrate the relative metric superiority of Ours against Inpaint360GS, colored in green when our method performs better and red when it performs worse.",
+     "zh": "表格单元格展示了 Ours 相对于 Inpaint360GS 的指标相对优势：当我们的方法表现更优时，单元格呈绿色；表现较差时则呈红色。"
+    },
+    {
+     "en": "The color shade is proportional to the log-ratio between the two metrics, except for PSNR and the two KID metrics, where we use the difference, as PSNR is already a logarithmic metric and KID can take negative values.",
+     "zh": "颜色深浅与两个指标之间的对数比成正比，但 PSNR 和两个 KID 指标除外，这些情况下我们使用差值，因为 PSNR 本身已是 logarithmic 指标，而 KID 可能取负值。"
+    },
+    {
+     "en": "Remarkably, even the best-correlated metrics (LPIPS, FID and Local-FID) exhibit a timid Spearman ρ \\rho correlation coefficient with human preference of respectively 0.48, 0.40 and 0.40, indicating only partial agreement with human preference.",
+     "zh": "值得注意的是，即使相关性最高的指标（LPIPS、FID 和 Local-FID），与人类偏好的 Spearman ρ \\rho 相关系数也仅为 0.48、0.40 和 0.40，表明它们仅与人类偏好存在部分一致。"
+    },
+    {
+     "en": "In contrast, reference-based distortion metrics such as PSNR and SSIM are expectedly poor predictors of human preference, with Spearman ρ \\rho coefficients of 0.14 and 0.21 only.",
+     "zh": "相比之下，基于参考的失真指标（如 PSNR 和 SSIM）正如预期那样，对预测人类偏好效果不佳，其 Spearman ρ \\rho 系数仅为 0.14 和 0.21。"
+    },
+    {
+     "en": "We illustrate these phenomena with qualitative visualizations: Figures 6 and 7 show cases where Inpaint360GS surpasses Wings on metrics despite our method being preferred by humans, and Figure 8 shows a case where humans prefer Inpaint360GS but our result obtains better metrics.",
+     "zh": "我们通过定性可视化展示了这些现象：图 6 和图 7 显示了 Inpaint360GS 在指标上优于 Wings 的情况，尽管人类更偏好我们的方法；图 8 则显示了一个人类更偏好 Inpaint360GS，但我们的结果在指标上表现更好的情况。"
+    }
+   ]
+  },
+  {
+   "en": "In addition to justifying our choice to omit PSNR and SSIM from our quantitative evaluation protocol, these results highlight the lack of 3D-specific metrics able to assess inpainting quality in a way that aligns with human judgment.",
+   "zh": "除了证明我们选择不在定量评估方案中纳入 PSNR 和 SSIM 的合理性之外，这些结果还凸显了目前缺乏能够以符合人类判断的方式评估图像修复质量的三维专用指标。",
+   "sents": null
+  },
+  {
+   "en": "The user study was conducted through an interactive web application, displaying a render of the input scene, containing an object to be removed, and renders of two randomly chosen methods between Gaussian Grouping, InFusion, Inpaint360GS and Wings . The opposing methods are sampled uniformly: in the final study, all method pairs received an average of 233.5 head-to-head comparisons. In particular, Ours and Inpaint360GS were involved in 231 head-to-head comparisons, distributed among 29 participants. In order to avoid bias due to position, the left-right ordering of the methods is chosen at random. Among the 1401 ratings, 111 exact (scene, view, method pair) tuples were shown to at least two different users. In these situations, the human participants agreed on identical ratings in 77.1 % 77.1\\% of observations, with a bootstrap 95% confidence interval of [ 69.7 % , 84.6 % ] [69.7\\%,84.6\\%] . The Krippendorff’s α \\alpha inter-rater reliability computed over these identical tuples is 0.680 0.680 , with a per-duplicate bootstrap 95% confidence interval of [ 0.579 , 0.776 ] [0.579,0.776] . Under the Davidson model, 26 out of 29 participants obtain the same complete ordering of the four methods.",
+   "zh": "用户研究通过一个交互式网页应用进行，该应用显示输入场景的渲染图，其中包含一个需要移除的对象，以及从高斯分组（Gaussian Grouping）、InFusion、Inpaint360GS 和 Wings 中随机选出的两种方法的渲染图。 对比方法采用均匀采样：在最终研究中，所有方法组合平均获得了 233.5 次直接比较。 具体而言，“Ours”和“Inpaint360GS”参与了 231 次直接比较，这些比较分布在 29 名参与者中。 为避免因位置产生的偏差，方法的左右顺序是随机选择的。 在 1401 个评分中，有 111 个完全相同的（场景、视角、方法组合）元组被至少两名不同用户看到。 在这些情况下，人类参与者在 77.1% 的观察中给出了完全相同的评分，其自助法 95% 置信区间为 [69.7%, 84.6%]。 基于这些相同元组计算出的 Krippendorff α 信度系数为 0.680，每个重复样本的自助法 95% 置信区间为 [0.579, 0.776]。 根据 Davidson 模型，29 名参与者中有 26 人得出了对四种方法的完全相同的排序。",
+   "sents": [
+    {
+     "en": "The user study was conducted through an interactive web application, displaying a render of the input scene, containing an object to be removed, and renders of two randomly chosen methods between Gaussian Grouping, InFusion, Inpaint360GS and Wings .",
+     "zh": "用户研究通过一个交互式网页应用进行，该应用显示输入场景的渲染图，其中包含一个需要移除的对象，以及从高斯分组（Gaussian Grouping）、InFusion、Inpaint360GS 和 Wings 中随机选出的两种方法的渲染图。"
+    },
+    {
+     "en": "The opposing methods are sampled uniformly: in the final study, all method pairs received an average of 233.5 head-to-head comparisons.",
+     "zh": "对比方法采用均匀采样：在最终研究中，所有方法组合平均获得了 233.5 次直接比较。"
+    },
+    {
+     "en": "In particular, Ours and Inpaint360GS were involved in 231 head-to-head comparisons, distributed among 29 participants.",
+     "zh": "具体而言，“Ours”和“Inpaint360GS”参与了 231 次直接比较，这些比较分布在 29 名参与者中。"
+    },
+    {
+     "en": "In order to avoid bias due to position, the left-right ordering of the methods is chosen at random.",
+     "zh": "为避免因位置产生的偏差，方法的左右顺序是随机选择的。"
+    },
+    {
+     "en": "Among the 1401 ratings, 111 exact (scene, view, method pair) tuples were shown to at least two different users.",
+     "zh": "在 1401 个评分中，有 111 个完全相同的（场景、视角、方法组合）元组被至少两名不同用户看到。"
+    },
+    {
+     "en": "In these situations, the human participants agreed on identical ratings in 77.1 % 77.1\\% of observations, with a bootstrap 95% confidence interval of [ 69.7 % , 84.6 % ] [69.7\\%,84.6\\%] .",
+     "zh": "在这些情况下，人类参与者在 77.1% 的观察中给出了完全相同的评分，其自助法 95% 置信区间为 [69.7%, 84.6%]。"
+    },
+    {
+     "en": "The Krippendorff’s α \\alpha inter-rater reliability computed over these identical tuples is 0.680 0.680 , with a per-duplicate bootstrap 95% confidence interval of [ 0.579 , 0.776 ] [0.579,0.776] .",
+     "zh": "基于这些相同元组计算出的 Krippendorff α 信度系数为 0.680，每个重复样本的自助法 95% 置信区间为 [0.579, 0.776]。"
+    },
+    {
+     "en": "Under the Davidson model, 26 out of 29 participants obtain the same complete ordering of the four methods.",
+     "zh": "根据 Davidson 模型，29 名参与者中有 26 人得出了对四种方法的完全相同的排序。"
+    }
+   ]
+  },
+  {
+   "en": "The human-preference score reported in Table 2 is computed by fitting a Bradley-Terry-Davidson model ( Bradley and Terry, 1952 ; Davidson and Beaver, 1977 ) to the pairwise preferences registered during the user study. We report the expected tie-adjusted score against an average-skill opponent under this model:",
+   "zh": "表 2 中报告的人类偏好分数是通过将 Bradley-Terry-Davidson 模型（Bradley 和 Terry，1952；Davidson 和 Beaver，1977）拟合到用户研究期间记录的双向偏好来计算得出的。 我们在此模型下报告了与平均技能对手对抗时的预期平局调整分数：",
+   "sents": [
+    {
+     "en": "The human-preference score reported in Table 2 is computed by fitting a Bradley-Terry-Davidson model ( Bradley and Terry, 1952 ; Davidson and Beaver, 1977 ) to the pairwise preferences registered during the user study.",
+     "zh": "表 2 中报告的人类偏好分数是通过将 Bradley-Terry-Davidson 模型（Bradley 和 Terry，1952；Davidson 和 Beaver，1977）拟合到用户研究期间记录的双向偏好来计算得出的。"
+    },
+    {
+     "en": "We report the expected tie-adjusted score against an average-skill opponent under this model:",
+     "zh": "我们在此模型下报告了与平均技能对手对抗时的预期平局调整分数："
+    }
+   ]
+  },
+  {
+   "en": "Under the same model, the expected rank reported in Table 1 is computed as follows:",
+   "zh": "在同一模型下，表 1 中报告的预期排名按以下方式计算：",
+   "sents": null
+  },
+  {
+   "en": "Finally, the human preference score of Ours against Inpaint360GS reported in Table 6 is simply computed using a tie-adjusted preference with two players:",
+   "zh": "最后，表6中报告的“Ours”与“Inpaint360GS”相比的人类偏好分数，是通过两名玩家采用打平调整后的偏好方法直接计算得出的：",
+   "sents": null
+  },
+  {
+   "en": "We describe here in detail the runtime of our method and make its per-stage complexity explicit. Our framework comprises five main stages: (a) context encoding; (b) scene-specific decoder adaptation; (c) sparse structure completion; (d) conditional latent sampling and (e) final decoding and merging. Among these, stages (b) and (d) make up the overwhelming majority of the total inpainting time: the exact average runtimes of each stages are detailed in Table 5 . Even though our method, performing inpainting in under 3 minutes, is suitable for interactive usage, we also benchmark a stripped-down lightweight version (Ours-XS), where we fine-tune the decoder for 100 steps only with a larger learning rate of 5 × 10 − 4 5\\times 10^{-4} and a rank-8 adapter, and generate latent features for the inpainted region with fewer integration steps and a reduced RePaint schedule (50 steps, with 3 resamples and a jump size of 5). This reduced computational complexity allows us to perform inpainting in around 75 seconds with only a limited perceptual fidelity drop: on the three benchmark datasets, we achieve an FID of 57.14 57.14 and a LPIPS of 0.2366 0.2366 , comparable with the existing 2D-based approach of Gaussian Grouping ( Ye et al., 2024 ) at a fraction of the runtime. This proves the ability of our lightweight framework to operate reliably at a reduced runtime, an important step towards real-time radiance field editing applications.",
+   "zh": "我们在本文中详细描述了该方法在执行时的运行时间，并明确指出了其各阶段的复杂度。 我们的框架包含五个主要阶段：(a) 上下文编码；(b) 场景特定的解码器适配；(c) 稀疏结构补全；(d) 条件潜在特征采样；以及 (e) 最终解码与合并。 其中，(b) 和 (d) 两个阶段占据了总修复时间的绝大多数：各阶段的精确平均运行时间详见表 5。 尽管我们的方法能在 3 分钟以内完成图像修复，适合交互式使用，但我们还测试了一个简化后的轻量版本（Ours-XS）：该版本仅对解码器进行 100 步微调，采用更大的学习率 5 × 10⁻⁴ 和秩为 8 的适配器，并以更少的积分步数及缩短的 RePaint 调度方案（50 步，包含 3 次重采样和步长跳跃为 5）生成修复区域的潜在特征。 这种计算复杂度的降低使我们能够在约 75 秒内完成图像修复，同时仅带来有限的主观保真度下降：在三个基准数据集上，我们实现了 57.14 的 FID 和 0.2366 的 LPIPS，与现有的基于 2D 的 Gaussian Grouping 方法（Ye et al., 2024）相当，而运行时间仅为其一小部分。 这证明了我们的轻量框架能够在缩短的运行时间内稳定工作，是迈向实时辐射场编辑应用的重要一步。",
+   "sents": [
+    {
+     "en": "We describe here in detail the runtime of our method and make its per-stage complexity explicit.",
+     "zh": "我们在本文中详细描述了该方法在执行时的运行时间，并明确指出了其各阶段的复杂度。"
+    },
+    {
+     "en": "Our framework comprises five main stages: (a) context encoding; (b) scene-specific decoder adaptation; (c) sparse structure completion; (d) conditional latent sampling and (e) final decoding and merging.",
+     "zh": "我们的框架包含五个主要阶段：(a) 上下文编码；(b) 场景特定的解码器适配；(c) 稀疏结构补全；(d) 条件潜在特征采样；以及 (e) 最终解码与合并。"
+    },
+    {
+     "en": "Among these, stages (b) and (d) make up the overwhelming majority of the total inpainting time: the exact average runtimes of each stages are detailed in Table 5 .",
+     "zh": "其中，(b) 和 (d) 两个阶段占据了总修复时间的绝大多数：各阶段的精确平均运行时间详见表 5。"
+    },
+    {
+     "en": "Even though our method, performing inpainting in under 3 minutes, is suitable for interactive usage, we also benchmark a stripped-down lightweight version (Ours-XS), where we fine-tune the decoder for 100 steps only with a larger learning rate of 5 × 10 − 4 5\\times 10^{-4} and a rank-8 adapter, and generate latent features for the inpainted region with fewer integration steps and a reduced RePaint schedule (50 steps, with 3 resamples and a jump size of 5).",
+     "zh": "尽管我们的方法能在 3 分钟以内完成图像修复，适合交互式使用，但我们还测试了一个简化后的轻量版本（Ours-XS）：该版本仅对解码器进行 100 步微调，采用更大的学习率 5 × 10⁻⁴ 和秩为 8 的适配器，并以更少的积分步数及缩短的 RePaint 调度方案（50 步，包含 3 次重采样和步长跳跃为 5）生成修复区域的潜在特征。"
+    },
+    {
+     "en": "This reduced computational complexity allows us to perform inpainting in around 75 seconds with only a limited perceptual fidelity drop: on the three benchmark datasets, we achieve an FID of 57.14 57.14 and a LPIPS of 0.2366 0.2366 , comparable with the existing 2D-based approach of Gaussian Grouping ( Ye et al., 2024 ) at a fraction of the runtime.",
+     "zh": "这种计算复杂度的降低使我们能够在约 75 秒内完成图像修复，同时仅带来有限的主观保真度下降：在三个基准数据集上，我们实现了 57.14 的 FID 和 0.2366 的 LPIPS，与现有的基于 2D 的 Gaussian Grouping 方法（Ye et al., 2024）相当，而运行时间仅为其一小部分。"
+    },
+    {
+     "en": "This proves the ability of our lightweight framework to operate reliably at a reduced runtime, an important step towards real-time radiance field editing applications.",
+     "zh": "这证明了我们的轻量框架能够在缩短的运行时间内稳定工作，是迈向实时辐射场编辑应用的重要一步。"
+    }
+   ]
+  },
+  {
+   "en": "We use the publicly released TRELLIS model as the generative prior for all experiments in this work. In particular, we use the pre-trained TRELLIS-image-large weights for the SLAT VAE encoder and decoder and for the SLAT flow transformer 𝒢 L \\mathcal{G}_{L} from commit 442aa1e (Nov 5, 2025). For ablation studies implementing the sparse structure flow model, the model weights are also those from TRELLIS-image-large .",
+   "zh": "在本研究的所有实验中，我们都使用公开发布的 TRELLIS 模型作为生成先验。 具体来说，我们使用预训练的 TRELLIS-image-large 权重作为 SLAT VAE 编码器和解码器的权重，以及来自提交 442aa1e（2025 年 11 月 5 日）的 SLAT flow transformer 𝒢 L \\mathcal{G}_{L} 的权重。 在实现稀疏结构流模型的消融研究中，模型权重同样采用 TRELLIS-image-large 的权重。",
+   "sents": [
+    {
+     "en": "We use the publicly released TRELLIS model as the generative prior for all experiments in this work.",
+     "zh": "在本研究的所有实验中，我们都使用公开发布的 TRELLIS 模型作为生成先验。"
+    },
+    {
+     "en": "In particular, we use the pre-trained TRELLIS-image-large weights for the SLAT VAE encoder and decoder and for the SLAT flow transformer 𝒢 L \\mathcal{G}_{L} from commit 442aa1e (Nov 5, 2025).",
+     "zh": "具体来说，我们使用预训练的 TRELLIS-image-large 权重作为 SLAT VAE 编码器和解码器的权重，以及来自提交 442aa1e（2025 年 11 月 5 日）的 SLAT flow transformer 𝒢 L \\mathcal{G}_{L} 的权重。"
+    },
+    {
+     "en": "For ablation studies implementing the sparse structure flow model, the model weights are also those from TRELLIS-image-large .",
+     "zh": "在实现稀疏结构流模型的消融研究中，模型权重同样采用 TRELLIS-image-large 的权重。"
+    }
+   ]
+  },
+  {
+   "en": "As described in Section 3.2 , we encode the original scene to SLAT by selecting a region lying inside a bounding box. The generative prior used in this work, TRELLIS ( Xiang et al., 2025b ) , operates in a latent space with a spatial resolution of 64 64 . However, 3DGS scenes assume widely varying extents, and therefore large scenes cannot always be discretized with minimal information loss in a 64 3 64^{3} space. The size of the context bounding box must be small enough to faithfully encode the appearance of the content, but large enough to provide sufficient information for sampling from the context-conditional distribution 𝒫 𝒢 L ​ ( 𝒛 m | z c ) \\mathcal{P}_{\\mathcal{G}_{L}}(\\bm{z}_{m}|z_{c}) . Although different scenes may naturally admit varying optimal context bounding box sizes, we fix the size of the bounding box in the experiments of this paper to the smallest bounding box where, after voxelization based on Gaussian primitive centers, the ratio of context to target region voxels is greater than 6. The orientation of this bounding box is detailed in Appendix B.3 below. The bounding box, lying in world space, is then normalized to the unit cube [ − 0.5 , 0.5 ] 3 [-0.5,0.5]^{3} , and Gaussian center positions are discretized to voxels lying in a 64 3 64^{3} grid, which is the spatial resolution of the TRELLIS space. The normalization maps the 𝐜 world = ( x , y , z ) \\mathbf{c}_{\\text{world}}=(x,y,z) coordinates to:",
+   "zh": "如第 3.2 节所述，我们通过选择一个位于边界框内部的区域，将原始场景编码为 SLAT。 本工作使用的生成性先验模型 TRELLIS（Xiang et al., 2025b）在一个空间分辨率为 64×64 的潜在空间中运行。 然而，3DGS 场景的规模差异极大，因此大型场景无法始终在 64³ 的空间中以最小的信息损失进行离散化。 上下文边界框的尺寸必须足够小，以忠实地编码内容的外观，但又必须足够大，以便为从上下文条件分布 𝒫 𝒢 L ​ ( 𝒛 m | z c ) \\mathcal{P}_{\\mathcal{G}_{L}}(\\bm{z}_{m}|z_{c}) 中采样提供足够的信息。 尽管不同场景可能自然具有不同的最佳上下文边界框尺寸，但在本论文的实验中，我们将边界框的尺寸固定为最小的边界框，使得基于高斯原始体中心进行体素化后，上下文区域与目标区域体素之比大于 6。 该边界框的方向在下面的附录 B.3 中有详细说明。 该边界框位于世界坐标系中，随后被归一化为单位立方体 [−0.5, 0.5]³，高斯中心位置则被离散化为位于 64³ 网格中的体素，该网格即为 TRELLIS 空间的空间分辨率。 归一化将 𝐜 world = ( x , y , z ) \\mathbf{c}_{\\text{world}}=(x,y,z) 坐标映射到：",
+   "sents": [
+    {
+     "en": "As described in Section 3.2 , we encode the original scene to SLAT by selecting a region lying inside a bounding box.",
+     "zh": "如第 3.2 节所述，我们通过选择一个位于边界框内部的区域，将原始场景编码为 SLAT。"
+    },
+    {
+     "en": "The generative prior used in this work, TRELLIS ( Xiang et al., 2025b ) , operates in a latent space with a spatial resolution of 64 64 .",
+     "zh": "本工作使用的生成性先验模型 TRELLIS（Xiang et al., 2025b）在一个空间分辨率为 64×64 的潜在空间中运行。"
+    },
+    {
+     "en": "However, 3DGS scenes assume widely varying extents, and therefore large scenes cannot always be discretized with minimal information loss in a 64 3 64^{3} space.",
+     "zh": "然而，3DGS 场景的规模差异极大，因此大型场景无法始终在 64³ 的空间中以最小的信息损失进行离散化。"
+    },
+    {
+     "en": "The size of the context bounding box must be small enough to faithfully encode the appearance of the content, but large enough to provide sufficient information for sampling from the context-conditional distribution 𝒫 𝒢 L ​ ( 𝒛 m | z c ) \\mathcal{P}_{\\mathcal{G}_{L}}(\\bm{z}_{m}|z_{c}) .",
+     "zh": "上下文边界框的尺寸必须足够小，以忠实地编码内容的外观，但又必须足够大，以便为从上下文条件分布 𝒫 𝒢 L ​ ( 𝒛 m | z c ) \\mathcal{P}_{\\mathcal{G}_{L}}(\\bm{z}_{m}|z_{c}) 中采样提供足够的信息。"
+    },
+    {
+     "en": "Although different scenes may naturally admit varying optimal context bounding box sizes, we fix the size of the bounding box in the experiments of this paper to the smallest bounding box where, after voxelization based on Gaussian primitive centers, the ratio of context to target region voxels is greater than 6.",
+     "zh": "尽管不同场景可能自然具有不同的最佳上下文边界框尺寸，但在本论文的实验中，我们将边界框的尺寸固定为最小的边界框，使得基于高斯原始体中心进行体素化后，上下文区域与目标区域体素之比大于 6。"
+    },
+    {
+     "en": "The orientation of this bounding box is detailed in Appendix B.3 below.",
+     "zh": "该边界框的方向在下面的附录 B.3 中有详细说明。"
+    },
+    {
+     "en": "The bounding box, lying in world space, is then normalized to the unit cube [ − 0.5 , 0.5 ] 3 [-0.5,0.5]^{3} , and Gaussian center positions are discretized to voxels lying in a 64 3 64^{3} grid, which is the spatial resolution of the TRELLIS space.",
+     "zh": "该边界框位于世界坐标系中，随后被归一化为单位立方体 [−0.5, 0.5]³，高斯中心位置则被离散化为位于 64³ 网格中的体素，该网格即为 TRELLIS 空间的空间分辨率。"
+    },
+    {
+     "en": "The normalization maps the 𝐜 world = ( x , y , z ) \\mathbf{c}_{\\text{world}}=(x,y,z) coordinates to:",
+     "zh": "归一化将 𝐜 world = ( x , y , z ) \\mathbf{c}_{\\text{world}}=(x,y,z) 坐标映射到："
+    }
+   ]
+  },
+  {
+   "en": "where μ \\mu is the position of the bounding box center and s s is the size of the largest bounding box axis.",
+   "zh": "其中 μ \\mu 是边界框中心的位置，而 s s 是最大的边界框轴的尺寸。",
+   "sents": null
+  },
+  {
+   "en": "We then compute the DINOv2 ( Oquab et al., 2023 ) features of 36 views sampled from a virtual orbit rotating around the normalized context, determined in the same way as Xiang et al. (2025b) , with a render size of 518 × 518 518\\times 518 . As 3DGS scenes can contain large, low-opacity unwanted floater artifacts, we additionally drop voxels that are isolated in a 3 × 3 × 3 3\\times 3\\times 3 neighborhood.",
+   "zh": "接着，我们计算从围绕归一化上下文旋转的虚拟轨道中采样的 36 个视图的 DINOv2（Oquab 等人，2023）特征，其确定方式与 Xiang 等人相同。 （2025b），渲染尺寸为 518 × 518 518\\times 518。 由于 3DGS 场景可能包含大型、低不透明度的不希望出现的漂浮物伪影，我们还额外丢弃在 3 × 3 × 3 3\\times 3\\times 3 邻域中孤立的体素。",
+   "sents": [
+    {
+     "en": "We then compute the DINOv2 ( Oquab et al., 2023 ) features of 36 views sampled from a virtual orbit rotating around the normalized context, determined in the same way as Xiang et al.",
+     "zh": "接着，我们计算从围绕归一化上下文旋转的虚拟轨道中采样的 36 个视图的 DINOv2（Oquab 等人，2023）特征，其确定方式与 Xiang 等人相同。"
+    },
+    {
+     "en": "(2025b) , with a render size of 518 × 518 518\\times 518 .",
+     "zh": "（2025b），渲染尺寸为 518 × 518 518\\times 518。"
+    },
+    {
+     "en": "As 3DGS scenes can contain large, low-opacity unwanted floater artifacts, we additionally drop voxels that are isolated in a 3 × 3 × 3 3\\times 3\\times 3 neighborhood.",
+     "zh": "由于 3DGS 场景可能包含大型、低不透明度的不希望出现的漂浮物伪影，我们还额外丢弃在 3 × 3 × 3 3\\times 3\\times 3 邻域中孤立的体素。"
+    }
+   ]
+  },
+  {
+   "en": "After generating the masked region Gaussians G m ∼ 𝒫 𝒢 L ​ ( G m | G c ) G_{m}\\sim\\mathcal{P}_{\\mathcal{G}_{L}}(G_{m}|G_{c}) , we unnormalize their positions 𝐜 slat \\mathbf{c}_{\\text{slat}} back to world space in order to merge generated and context Gaussians: 𝐜 world = 𝐜 slat ⋅ s + μ \\mathbf{c}_{\\text{world}}=\\mathbf{c}_{\\text{slat}}\\cdot s+\\mu . Additionally, we apply a linear opacity ramp to the generated Gaussians lying up to 5 voxels outside of the target region’s boundary, in order to ensure seamless transition between G c G_{c} and G m G_{m} .",
+   "zh": "在生成掩码区域的高斯分布 G m ∼ 𝒫 𝒢 L ​ ( G m | G c ) G_{m}\\sim\\mathcal{P}_{\\mathcal{G}_{L}}(G_{m}|G_{c}) 之后，我们将它们的位置 𝐜 slat \\mathbf{c}_{\\text{slat}} 反归一化回世界坐标系，以便合并生成的高斯分布和上下文高斯分布：𝐜 world = 𝐜 slat ⋅ s + μ \\mathbf{c}_{\\text{world}}=\\mathbf{c}_{\\text{slat}}\\cdot s+\\mu 。 此外，我们对位于目标区域边界最多 5 个体素之外的生成高斯分布应用线性不透明度渐变，以确保 G c G_{c} 和 G m G_{m} 之间的无缝过渡。",
+   "sents": [
+    {
+     "en": "After generating the masked region Gaussians G m ∼ 𝒫 𝒢 L ​ ( G m | G c ) G_{m}\\sim\\mathcal{P}_{\\mathcal{G}_{L}}(G_{m}|G_{c}) , we unnormalize their positions 𝐜 slat \\mathbf{c}_{\\text{slat}} back to world space in order to merge generated and context Gaussians: 𝐜 world = 𝐜 slat ⋅ s + μ \\mathbf{c}_{\\text{world}}=\\mathbf{c}_{\\text{slat}}\\cdot s+\\mu .",
+     "zh": "在生成掩码区域的高斯分布 G m ∼ 𝒫 𝒢 L ​ ( G m | G c ) G_{m}\\sim\\mathcal{P}_{\\mathcal{G}_{L}}(G_{m}|G_{c}) 之后，我们将它们的位置 𝐜 slat \\mathbf{c}_{\\text{slat}} 反归一化回世界坐标系，以便合并生成的高斯分布和上下文高斯分布：𝐜 world = 𝐜 slat ⋅ s + μ \\mathbf{c}_{\\text{world}}=\\mathbf{c}_{\\text{slat}}\\cdot s+\\mu 。"
+    },
+    {
+     "en": "Additionally, we apply a linear opacity ramp to the generated Gaussians lying up to 5 voxels outside of the target region’s boundary, in order to ensure seamless transition between G c G_{c} and G m G_{m} .",
+     "zh": "此外，我们对位于目标区域边界最多 5 个体素之外的生成高斯分布应用线性不透明度渐变，以确保 G c G_{c} 和 G m G_{m} 之间的无缝过渡。"
+    }
+   ]
+  },
+  {
+   "en": "Our structure prediction network implements a 3D residual U-Net architecture with attention in the bottleneck. We instantiate the model with an initial 64 convolutional channels, doubling over each of the three downsampling stages to reach 512 channels in the bottleneck. This results in a model with 49.7M parameters. The training protocol of our proposed sparse structure prediction model is described in Section C.1 .",
+   "zh": "我们的结构预测网络采用了一种在瓶颈处引入注意力机制的三维残差 U-Net 架构。 我们将模型初始化为 64 个卷积通道，并在三个下采样阶段中每个阶段将通道数翻倍，最终在瓶颈处达到 512 个通道。 由此得到的模型包含 4970 万个参数。 我们提出的稀疏结构预测模型的训练流程在 C.1 节中有详细说明。",
+   "sents": [
+    {
+     "en": "Our structure prediction network implements a 3D residual U-Net architecture with attention in the bottleneck.",
+     "zh": "我们的结构预测网络采用了一种在瓶颈处引入注意力机制的三维残差 U-Net 架构。"
+    },
+    {
+     "en": "We instantiate the model with an initial 64 convolutional channels, doubling over each of the three downsampling stages to reach 512 channels in the bottleneck.",
+     "zh": "我们将模型初始化为 64 个卷积通道，并在三个下采样阶段中每个阶段将通道数翻倍，最终在瓶颈处达到 512 个通道。"
+    },
+    {
+     "en": "This results in a model with 49.7M parameters.",
+     "zh": "由此得到的模型包含 4970 万个参数。"
+    },
+    {
+     "en": "The training protocol of our proposed sparse structure prediction model is described in Section C.1 .",
+     "zh": "我们提出的稀疏结构预测模型的训练流程在 C.1 节中有详细说明。"
+    }
+   ]
+  },
+  {
+   "en": "When evaluating the re-noised known context latents 𝒛 ^ \\hat{\\bm{z}} in Equation 1 , we slightly remap the noise level, using ( 10 − 5 + ( 1 − 10 − 5 ) ​ t ) ​ ϵ \\left(10^{-5}+(1-10^{-5})t\\right)\\epsilon rather than t ​ ϵ t\\epsilon . This exactly follows the protocol established by TRELLIS ( Xiang et al., 2025b ) . We apply the RePaint scheme using 100 integration steps and 5 backwards jumps of length 10.",
+   "zh": "在评估方程 1 中重新加噪的已知上下文潜在变量 𝒛 ^ \\hat{\\bm{z}} 时，我们略微重映射了噪声水平，使用 ( 10 − 5 + ( 1 − 10 − 5 ) ​ t ) ​ ϵ \\left(10^{-5}+(1-10^{-5})t\\right)\\epsilon 而非 t ​ ϵ t\\epsilon。 这完全遵循了 TRELLIS（Xiang 等人，2025b）所建立的协议。 我们应用 RePaint 方案，使用 100 个积分步长和 5 次长度为 10 的逆向跳跃。",
+   "sents": [
+    {
+     "en": "When evaluating the re-noised known context latents 𝒛 ^ \\hat{\\bm{z}} in Equation 1 , we slightly remap the noise level, using ( 10 − 5 + ( 1 − 10 − 5 ) ​ t ) ​ ϵ \\left(10^{-5}+(1-10^{-5})t\\right)\\epsilon rather than t ​ ϵ t\\epsilon .",
+     "zh": "在评估方程 1 中重新加噪的已知上下文潜在变量 𝒛 ^ \\hat{\\bm{z}} 时，我们略微重映射了噪声水平，使用 ( 10 − 5 + ( 1 − 10 − 5 ) ​ t ) ​ ϵ \\left(10^{-5}+(1-10^{-5})t\\right)\\epsilon 而非 t ​ ϵ t\\epsilon。"
+    },
+    {
+     "en": "This exactly follows the protocol established by TRELLIS ( Xiang et al., 2025b ) .",
+     "zh": "这完全遵循了 TRELLIS（Xiang 等人，2025b）所建立的协议。"
+    },
+    {
+     "en": "We apply the RePaint scheme using 100 integration steps and 5 backwards jumps of length 10.",
+     "zh": "我们应用 RePaint 方案，使用 100 个积分步长和 5 次长度为 10 的逆向跳跃。"
+    }
+   ]
+  },
+  {
+   "en": "We conduct a hyperparameter grid search to determine the optimal flow transformer layers and integration time steps on which to perform self-attention masking. After a first coarse search, we observe that masking the late layers of the model at high-noise integration time steps is the best performing strategy. We then compare masking layers in range − 24 19\\!-\\!24 , − 23 18\\!-\\!23 and − 23 19\\!-\\!23 while varying from t = 1.0 t=1.0 and t = t stop t=t_{\\text{stop}} with t stop ∈ { 0.55 , 0.6 , 0.65 , 0.7 , 0.75 , 0.8 } t_{\\text{stop}}\\in\\{0.55,0.6,0.65,0.7,0.75,0.8\\} . Hence, we choose to apply self-attention masking to layers − 23 18\\!-\\!23 of the 24-layer 𝒢 L \\mathcal{G}_{L} flow model between t = 1.0 t=1.0 and t = 0.8 t=0.8 . Applying self-attention masking at high-noise time steps allows the flow model to reconcile the trajectories of context and masked latents while the coarse appearance of the structured latents is forming, while unrestricted self-attention at later time steps allows target latents to attend to themselves in order to harmonize fine-grained detail.",
+   "zh": "我们进行超参数网格搜索，以确定在哪些流变换器层和集成时间步上执行自注意力掩码最为合适。 经过初步的粗略搜索后，我们发现，在高噪声集成时间步对模型的后几层进行掩码是性能最佳的策略。 接着，我们在 t = 1.0 和 t = t_{\\text{stop}}（其中 t_{\\text{stop}} ∈ {0.55, 0.6, 0.65, 0.7, 0.75, 0.8}）之间变化时，比较了掩码范围分别为 −24 19\\!-\\!24、−23 18\\!-\\!23 和 −23 19\\!-\\!23 的层。 因此，我们选择在 t = 1.0 到 t = 0.8 之间，对 24 层的 𝒢 L \\mathcal{G}_{L} 流模型中 −23 18\\!-\\!23 的层应用自注意力掩码。 在高噪声时间步应用自注意力掩码，能让流模型在结构化潜变量的粗略外观形成过程中，协调上下文与被掩码潜变量之间的轨迹；而在后续时间步取消自注意力限制，则能让目标潜变量关注自身，从而协调精细的细节。",
+   "sents": [
+    {
+     "en": "We conduct a hyperparameter grid search to determine the optimal flow transformer layers and integration time steps on which to perform self-attention masking.",
+     "zh": "我们进行超参数网格搜索，以确定在哪些流变换器层和集成时间步上执行自注意力掩码最为合适。"
+    },
+    {
+     "en": "After a first coarse search, we observe that masking the late layers of the model at high-noise integration time steps is the best performing strategy.",
+     "zh": "经过初步的粗略搜索后，我们发现，在高噪声集成时间步对模型的后几层进行掩码是性能最佳的策略。"
+    },
+    {
+     "en": "We then compare masking layers in range − 24 19\\!-\\!24 , − 23 18\\!-\\!23 and − 23 19\\!-\\!23 while varying from t = 1.0 t=1.0 and t = t stop t=t_{\\text{stop}} with t stop ∈ { 0.55 , 0.6 , 0.65 , 0.7 , 0.75 , 0.8 } t_{\\text{stop}}\\in\\{0.55,0.6,0.65,0.7,0.75,0.8\\} .",
+     "zh": "接着，我们在 t = 1.0 和 t = t_{\\text{stop}}（其中 t_{\\text{stop}} ∈ {0.55, 0.6, 0.65, 0.7, 0.75, 0.8}）之间变化时，比较了掩码范围分别为 −24 19\\!-\\!24、−23 18\\!-\\!23 和 −23 19\\!-\\!23 的层。"
+    },
+    {
+     "en": "Hence, we choose to apply self-attention masking to layers − 23 18\\!-\\!23 of the 24-layer 𝒢 L \\mathcal{G}_{L} flow model between t = 1.0 t=1.0 and t = 0.8 t=0.8 .",
+     "zh": "因此，我们选择在 t = 1.0 到 t = 0.8 之间，对 24 层的 𝒢 L \\mathcal{G}_{L} 流模型中 −23 18\\!-\\!23 的层应用自注意力掩码。"
+    },
+    {
+     "en": "Applying self-attention masking at high-noise time steps allows the flow model to reconcile the trajectories of context and masked latents while the coarse appearance of the structured latents is forming, while unrestricted self-attention at later time steps allows target latents to attend to themselves in order to harmonize fine-grained detail.",
+     "zh": "在高噪声时间步应用自注意力掩码，能让流模型在结构化潜变量的粗略外观形成过程中，协调上下文与被掩码潜变量之间的轨迹；而在后续时间步取消自注意力限制，则能让目标潜变量关注自身，从而协调精细的细节。"
+    }
+   ]
+  },
+  {
+   "en": "Our scene-conditioned decoder adaptation module consists in a rank-16 LoRA adapter ( Hu et al., 2021 ) attached to every block of the VAE decoder. Adapters are attached to each block’s attention and MLP layers. Additionally, we unfreeze the final linear layer of the decoder, which is responsible for predicting the attributes of the 32 Gaussian primitives predicted for each voxel.",
+   "zh": "我们的场景条件解码器适配模块由一个秩为 16 的 LoRA 适配器（Hu et al., 2021）组成，该适配器附加在 VAE 解码器的每个块上。 适配器被附加到每个块的注意力和 MLP 层上。 此外，我们还解冻了解码器的最后一个线性层，该层负责预测每个体素所预测的 32 个高斯原语的属性。",
+   "sents": [
+    {
+     "en": "Our scene-conditioned decoder adaptation module consists in a rank-16 LoRA adapter ( Hu et al., 2021 ) attached to every block of the VAE decoder.",
+     "zh": "我们的场景条件解码器适配模块由一个秩为 16 的 LoRA 适配器（Hu et al., 2021）组成，该适配器附加在 VAE 解码器的每个块上。"
+    },
+    {
+     "en": "Adapters are attached to each block’s attention and MLP layers.",
+     "zh": "适配器被附加到每个块的注意力和 MLP 层上。"
+    },
+    {
+     "en": "Additionally, we unfreeze the final linear layer of the decoder, which is responsible for predicting the attributes of the 32 Gaussian primitives predicted for each voxel.",
+     "zh": "此外，我们还解冻了解码器的最后一个线性层，该层负责预测每个体素所预测的 32 个高斯原语的属性。"
+    }
+   ]
+  },
+  {
+   "en": "We train the adapter using the AdamW ( Loshchilov and Hutter, 2018 ) optimizer with a learning rate of 10 − 4 10^{-4} for 600 steps. The supervisory renders are obtained by sampling 36 views from a virtual trajectory covering a 360° orbit around the context region, inherited from the virtual trajectory protocol of ( Xiang et al., 2025b ) , which we modify by applying a sinusoidal modulation to the orbit radius, in order to capture range-dependent variations in the appearance of Gaussians. We additionally hold out 6 viewpoints from this trajectory to evaluate unseen viewpoint generalization.",
+   "zh": "我们使用 AdamW (Loshchilov and Hutter, 2018) 优化器对适配器进行训练，学习率为 10⁻⁴，训练步数为 600。 监督渲染图像通过从一条虚拟轨迹中采样 36 个视角获得，该轨迹覆盖围绕上下文区域的 360° 轨道，这一方法继承自 (Xiang et al., 2025b) 的虚拟轨迹协议；我们对轨道半径施加了正弦调制，以捕捉高斯函数外观随距离变化的特性。 此外，我们从这条轨迹中额外保留 6 个视角，用于评估模型在未见过视角上的泛化能力。",
+   "sents": [
+    {
+     "en": "We train the adapter using the AdamW ( Loshchilov and Hutter, 2018 ) optimizer with a learning rate of 10 − 4 10^{-4} for 600 steps.",
+     "zh": "我们使用 AdamW (Loshchilov and Hutter, 2018) 优化器对适配器进行训练，学习率为 10⁻⁴，训练步数为 600。"
+    },
+    {
+     "en": "The supervisory renders are obtained by sampling 36 views from a virtual trajectory covering a 360° orbit around the context region, inherited from the virtual trajectory protocol of ( Xiang et al., 2025b ) , which we modify by applying a sinusoidal modulation to the orbit radius, in order to capture range-dependent variations in the appearance of Gaussians.",
+     "zh": "监督渲染图像通过从一条虚拟轨迹中采样 36 个视角获得，该轨迹覆盖围绕上下文区域的 360° 轨道，这一方法继承自 (Xiang et al., 2025b) 的虚拟轨迹协议；我们对轨道半径施加了正弦调制，以捕捉高斯函数外观随距离变化的特性。"
+    },
+    {
+     "en": "We additionally hold out 6 viewpoints from this trajectory to evaluate unseen viewpoint generalization.",
+     "zh": "此外，我们从这条轨迹中额外保留 6 个视角，用于评估模型在未见过视角上的泛化能力。"
+    }
+   ]
+  },
+  {
+   "en": "The photometric loss ℒ data \\mathcal{L}_{\\text{data}} used to optimize the parameters ϕ \\phi is:",
+   "zh": "用于优化参数 ϕ \\phi 的光度损失 ℒ data \\mathcal{L}_{\\text{data}} 为：",
+   "sents": null
+  },
+  {
+   "en": "We use λ D-SSIM = 0.2 \\lambda_{\\text{D-SSIM}}=0.2 and λ LPIPS = 0.2 \\lambda_{\\text{LPIPS}}=0.2 for all experiments in this paper.",
+   "zh": "在本文的所有实验中，我们使用 λ D-SSIM = 0.2 \\lambda_{\\text{D-SSIM}}=0.2 和 λ LPIPS = 0.2 \\lambda_{\\text{LPIPS}}=0.2。",
+   "sents": null
+  },
+  {
+   "en": "Figure 9 illustrates the impact of changing the number of training cameras for the scene-conditioned decoder adaptation stage. While using 1 to 8 cameras does not result in satisfying reconstruction, 16 or more cameras allow the adapter to faithfully match the original scene’s appearance, with diminishing returns as the number of training cameras increase.",
+   "zh": "图 9 展示了在场景条件解码器适应阶段，改变训练摄像头数量所带来的影响。 虽然使用 1 到 8 个摄像头无法实现令人满意的重建效果，但使用 16 个或更多摄像头则能让适配器忠实地匹配原始场景的外观，尽管随着训练摄像头数量的增加，收益会逐渐递减。",
+   "sents": [
+    {
+     "en": "Figure 9 illustrates the impact of changing the number of training cameras for the scene-conditioned decoder adaptation stage.",
+     "zh": "图 9 展示了在场景条件解码器适应阶段，改变训练摄像头数量所带来的影响。"
+    },
+    {
+     "en": "While using 1 to 8 cameras does not result in satisfying reconstruction, 16 or more cameras allow the adapter to faithfully match the original scene’s appearance, with diminishing returns as the number of training cameras increase.",
+     "zh": "虽然使用 1 到 8 个摄像头无法实现令人满意的重建效果，但使用 16 个或更多摄像头则能让适配器忠实地匹配原始场景的外观，尽管随着训练摄像头数量的增加，收益会逐渐递减。"
+    }
+   ]
+  },
+  {
+   "en": "We benchmark existing 3D Gaussian splatting methods in a controlled environment. All methods, including ours, receive an identical 3DGS scene as input as well as a predefined 3D segmentation mask. The per-Gaussian segmentation mask is created in 3D editing software and encompasses all Gaussians corresponding to the object to remove. The use of an existing 3D mask allows us to bypass the expensive and error-prone Gaussian segmentation stages of existing pipelines, enabling direct comparison of the inpainting mechanism of each.",
+   "zh": "我们在受控环境中对现有的 3D 高斯泼溅方法进行了基准测试。 所有方法（包括我们的方法）都以相同的 3DGS 场景和预定义的 3D 分割掩码作为输入。 每个高斯函数的分割掩码是在 3D 编辑软件中创建的，并涵盖了与待移除对象相关的所有高斯函数。 使用现有的 3D 掩码使我们能够跳过现有流程中昂贵且容易出错的高斯分割阶段，从而可以直接比较各方法的图像修复机制。",
+   "sents": [
+    {
+     "en": "We benchmark existing 3D Gaussian splatting methods in a controlled environment.",
+     "zh": "我们在受控环境中对现有的 3D 高斯泼溅方法进行了基准测试。"
+    },
+    {
+     "en": "All methods, including ours, receive an identical 3DGS scene as input as well as a predefined 3D segmentation mask.",
+     "zh": "所有方法（包括我们的方法）都以相同的 3DGS 场景和预定义的 3D 分割掩码作为输入。"
+    },
+    {
+     "en": "The per-Gaussian segmentation mask is created in 3D editing software and encompasses all Gaussians corresponding to the object to remove.",
+     "zh": "每个高斯函数的分割掩码是在 3D 编辑软件中创建的，并涵盖了与待移除对象相关的所有高斯函数。"
+    },
+    {
+     "en": "The use of an existing 3D mask allows us to bypass the expensive and error-prone Gaussian segmentation stages of existing pipelines, enabling direct comparison of the inpainting mechanism of each.",
+     "zh": "使用现有的 3D 掩码使我们能够跳过现有流程中昂贵且容易出错的高斯分割阶段，从而可以直接比较各方法的图像修复机制。"
+    }
+   ]
+  },
+  {
+   "en": "We follow the official implementation of Gaussian Grouping ( Ye et al., 2024 ) . Instead of optimizing the 3D Gaussian splatting scene from scratch and performing the Gaussian segmentation pipeline, we use the same 3D mask ℳ \\mathcal{M} used by our method (and other implemented baselines), allowing for fair comparison of the inpainting frameworks themselves.",
+   "zh": "我们遵循 Gaussian Grouping（Ye 等人，2024）的官方实现。 我们没有从头优化 3D Gaussian splatting 场景并执行高斯分割流程，而是使用了我们的方法（以及其他已实现的基线方法）所采用的相同 3D 掩码 ℳ \\mathcal{M}，从而能够公平地比较不同图像修复框架本身的表现。",
+   "sents": [
+    {
+     "en": "We follow the official implementation of Gaussian Grouping ( Ye et al., 2024 ) .",
+     "zh": "我们遵循 Gaussian Grouping（Ye 等人，2024）的官方实现。"
+    },
+    {
+     "en": "Instead of optimizing the 3D Gaussian splatting scene from scratch and performing the Gaussian segmentation pipeline, we use the same 3D mask ℳ \\mathcal{M} used by our method (and other implemented baselines), allowing for fair comparison of the inpainting frameworks themselves.",
+     "zh": "我们没有从头优化 3D Gaussian splatting 场景并执行高斯分割流程，而是使用了我们的方法（以及其他已实现的基线方法）所采用的相同 3D 掩码 ℳ \\mathcal{M}，从而能够公平地比较不同图像修复框架本身的表现。"
+    }
+   ]
+  },
+  {
+   "en": "Our experimental protocol, comprising an existing 3D mask, bypasses the object association and ID distillation stages of Inpaint360GS, instead using a known correct 3D segmentation mask identical to other approaches for fair comparison. We otherwise use the authors’ released inpainting pipeline as provided, including virtual view generation, conditional color and depth inpainting, color-depth fusion and 3DGS fine-tuning. As described in the authors’ implementation details, we run the inpainting pipeline with 2000 2000 fine-tuning steps and loss parameters λ D − S ​ S ​ I ​ M = 0.2 \\lambda_{D-SSIM}=0.2 and λ L ​ P ​ I ​ P ​ S = 0.005 \\lambda_{LPIPS}=0.005 . Whilst the authors prescribe running the method at 1 / 4 1/4 resolution, we found that to have adverse effects on datasets where reference images have lower resolution. Instead, we evaluated the render size of the LaMa inpainted views and of the subsequent optimization renders at r = { 256,512 , 1024 , 2048 } r=\\{256,512,1024,2048\\} (clamped at the maximum image resolution), and found a render size of 512 to offer the best results (On the COR-NeRF dataset, r = 512 r=512 obtains an FID of 36.10 36.10 while r = 256 , 1024 r=256,1024 and 2048 2048 attain respectively 44.1 , 39.6 44.1,39.6 and 39.3 39.3 ). Additionally, we were unable to observe the reported 3 minutes inpainting time, instead measuring a slightly higher inpainting time of 202 seconds. Since our input modality does not include per-Gaussian instance identities for non-target objects, we do not use Inpaint360GS’s auxiliary object removal mechanism in the inpainting pipeline, rather evaluating the inpainting and refinement component of the method.",
+   "zh": "我们的实验方案包含一个现有的 3D 掩码，它绕过了 Inpaint360GS 中的对象关联和 ID 蒸馏阶段，而是使用一个已知正确的 3D 分割掩码，该掩码与其他方法相同，以确保公平比较。 除此之外，我们按照作者提供的版本使用其发布的图像修复流程，包括虚拟视角生成、条件颜色和深度修复、颜色-深度融合以及 3DGS 微调。 如作者在实现细节中所述，我们以 2000 次微调步骤运行图像修复流程，并设置损失参数 λ D − S ​ S ​ I ​ M = 0.2 \\lambda_{D-SSIM}=0.2 和 λ L ​ P ​ I ​ P ​ S = 0.005 \\lambda_{LPIPS}=0.005。 尽管作者建议以 1/4 分辨率运行该方法，但我们发现这对参考图像分辨率较低的数据集会产生不利影响。 因此，我们评估了 LaMa 修复视角的渲染尺寸以及后续优化渲染的尺寸，其中 r = {256,512,1024,2048}（限制在最大图像分辨率内），并发现 512 的渲染尺寸能带来最佳效果（在 COR-NeRF 数据集上，r = 512 的 FID 为 36.10，而 r = 256、1024 和 2048 的 FID 分别为 44.1、39.6 和 39.3）。 此外，我们未能观察到报告中的 3 分钟图像修复时间，实际测得的修复时间略长，为 202 秒。 由于我们的输入模态不包含非目标对象的每个高斯实例身份标识，因此我们在图像修复流程中未使用 Inpaint360GS 的辅助对象移除机制，而是仅评估了该方法的图像修复和细化部分。",
+   "sents": [
+    {
+     "en": "Our experimental protocol, comprising an existing 3D mask, bypasses the object association and ID distillation stages of Inpaint360GS, instead using a known correct 3D segmentation mask identical to other approaches for fair comparison.",
+     "zh": "我们的实验方案包含一个现有的 3D 掩码，它绕过了 Inpaint360GS 中的对象关联和 ID 蒸馏阶段，而是使用一个已知正确的 3D 分割掩码，该掩码与其他方法相同，以确保公平比较。"
+    },
+    {
+     "en": "We otherwise use the authors’ released inpainting pipeline as provided, including virtual view generation, conditional color and depth inpainting, color-depth fusion and 3DGS fine-tuning.",
+     "zh": "除此之外，我们按照作者提供的版本使用其发布的图像修复流程，包括虚拟视角生成、条件颜色和深度修复、颜色-深度融合以及 3DGS 微调。"
+    },
+    {
+     "en": "As described in the authors’ implementation details, we run the inpainting pipeline with 2000 2000 fine-tuning steps and loss parameters λ D − S ​ S ​ I ​ M = 0.2 \\lambda_{D-SSIM}=0.2 and λ L ​ P ​ I ​ P ​ S = 0.005 \\lambda_{LPIPS}=0.005 .",
+     "zh": "如作者在实现细节中所述，我们以 2000 次微调步骤运行图像修复流程，并设置损失参数 λ D − S ​ S ​ I ​ M = 0.2 \\lambda_{D-SSIM}=0.2 和 λ L ​ P ​ I ​ P ​ S = 0.005 \\lambda_{LPIPS}=0.005。"
+    },
+    {
+     "en": "Whilst the authors prescribe running the method at 1 / 4 1/4 resolution, we found that to have adverse effects on datasets where reference images have lower resolution.",
+     "zh": "尽管作者建议以 1/4 分辨率运行该方法，但我们发现这对参考图像分辨率较低的数据集会产生不利影响。"
+    },
+    {
+     "en": "Instead, we evaluated the render size of the LaMa inpainted views and of the subsequent optimization renders at r = { 256,512 , 1024 , 2048 } r=\\{256,512,1024,2048\\} (clamped at the maximum image resolution), and found a render size of 512 to offer the best results (On the COR-NeRF dataset, r = 512 r=512 obtains an FID of 36.10 36.10 while r = 256 , 1024 r=256,1024 and 2048 2048 attain respectively 44.1 , 39.6 44.1,39.6 and 39.3 39.3 ).",
+     "zh": "因此，我们评估了 LaMa 修复视角的渲染尺寸以及后续优化渲染的尺寸，其中 r = {256,512,1024,2048}（限制在最大图像分辨率内），并发现 512 的渲染尺寸能带来最佳效果（在 COR-NeRF 数据集上，r = 512 的 FID 为 36.10，而 r = 256、1024 和 2048 的 FID 分别为 44.1、39.6 和 39.3）。"
+    },
+    {
+     "en": "Additionally, we were unable to observe the reported 3 minutes inpainting time, instead measuring a slightly higher inpainting time of 202 seconds.",
+     "zh": "此外，我们未能观察到报告中的 3 分钟图像修复时间，实际测得的修复时间略长，为 202 秒。"
+    },
+    {
+     "en": "Since our input modality does not include per-Gaussian instance identities for non-target objects, we do not use Inpaint360GS’s auxiliary object removal mechanism in the inpainting pipeline, rather evaluating the inpainting and refinement component of the method.",
+     "zh": "由于我们的输入模态不包含非目标对象的每个高斯实例身份标识，因此我们在图像修复流程中未使用 Inpaint360GS 的辅助对象移除机制，而是仅评估了该方法的图像修复和细化部分。"
+    }
+   ]
+  },
+  {
+   "en": "We implement InFusion ( Liu et al., 2024 ) following the official code provided by the authors. We notice that InFusion struggles with 360° unbounded scene inpainting, offering poor depth unprojection and overall inpainting quality on our benchmarked datasets. As the official protocol does not restrict the position of the generated Gaussians, this resulted in large artifacts scattered in the direction of the unprojected depth with respect to the chosen view. Therefore, we decided to discard the generated Gaussians lying outside of the 3D mask ℳ \\mathcal{M} , expanded by 5%, in order to provide a more faithful comparison of target region inpainting quality.",
+   "zh": "我们遵循作者提供的官方代码，实现了 InFusion（Liu 等人，2024）。 我们发现，InFusion 在处理 360° 无边界场景修复时存在困难，在我们基准测试的数据集上，其深度反投影和整体修复质量均表现不佳。 由于官方协议并未限制生成的高斯分布的位置，这导致在与所选视角相对应的未投影深度方向上出现了大量分散的伪影。 因此，我们决定丢弃位于 3D 掩码 ℳ \\mathcal{M}（向外扩展 5%）之外的生成高斯分布，以便更真实地比较目标区域修复质量。",
+   "sents": [
+    {
+     "en": "We implement InFusion ( Liu et al., 2024 ) following the official code provided by the authors.",
+     "zh": "我们遵循作者提供的官方代码，实现了 InFusion（Liu 等人，2024）。"
+    },
+    {
+     "en": "We notice that InFusion struggles with 360° unbounded scene inpainting, offering poor depth unprojection and overall inpainting quality on our benchmarked datasets.",
+     "zh": "我们发现，InFusion 在处理 360° 无边界场景修复时存在困难，在我们基准测试的数据集上，其深度反投影和整体修复质量均表现不佳。"
+    },
+    {
+     "en": "As the official protocol does not restrict the position of the generated Gaussians, this resulted in large artifacts scattered in the direction of the unprojected depth with respect to the chosen view.",
+     "zh": "由于官方协议并未限制生成的高斯分布的位置，这导致在与所选视角相对应的未投影深度方向上出现了大量分散的伪影。"
+    },
+    {
+     "en": "Therefore, we decided to discard the generated Gaussians lying outside of the 3D mask ℳ \\mathcal{M} , expanded by 5%, in order to provide a more faithful comparison of target region inpainting quality.",
+     "zh": "因此，我们决定丢弃位于 3D 掩码 ℳ \\mathcal{M}（向外扩展 5%）之外的生成高斯分布，以便更真实地比较目标区域修复质量。"
+    }
+   ]
+  },
+  {
+   "en": "As mentioned in Section 3.2 , we notice that TRELLIS’ latent generation model 𝒢 L \\mathcal{G}_{L} is more likely to generate lines and boundaries that are aligned with the axes of the voxel grid O O that associate a spatial position to the latent features. In this section, we first analyze that the axis-aligned bias comes from the latent flow model 𝒢 L \\mathcal{G}_{L} rather than other stages of the pipeline. We then describe how we address this issue in practice by fitting the orientation of the voxel grid to visual features of the context G c ∗ G_{c^{*}} .",
+   "zh": "如第 3.2 节所述，我们注意到 TRELLIS 的潜在生成模型 𝒢 L \\mathcal{G}_{L} 更倾向于生成与体素网格 O O 的轴对齐的线条和边界，而该网格将空间位置与潜在特征关联起来。 在本节中，我们首先分析这种与轴对齐的偏差源于潜在流模型 𝒢 L \\mathcal{G}_{L}，而非处理流程中的其他阶段。 接着，我们将描述如何在实践中解决这一问题：通过将体素网格的方向与上下文 G c ∗ G_{c^{*}} 的视觉特征进行拟合。",
+   "sents": [
+    {
+     "en": "As mentioned in Section 3.2 , we notice that TRELLIS’ latent generation model 𝒢 L \\mathcal{G}_{L} is more likely to generate lines and boundaries that are aligned with the axes of the voxel grid O O that associate a spatial position to the latent features.",
+     "zh": "如第 3.2 节所述，我们注意到 TRELLIS 的潜在生成模型 𝒢 L \\mathcal{G}_{L} 更倾向于生成与体素网格 O O 的轴对齐的线条和边界，而该网格将空间位置与潜在特征关联起来。"
+    },
+    {
+     "en": "In this section, we first analyze that the axis-aligned bias comes from the latent flow model 𝒢 L \\mathcal{G}_{L} rather than other stages of the pipeline.",
+     "zh": "在本节中，我们首先分析这种与轴对齐的偏差源于潜在流模型 𝒢 L \\mathcal{G}_{L}，而非处理流程中的其他阶段。"
+    },
+    {
+     "en": "We then describe how we address this issue in practice by fitting the orientation of the voxel grid to visual features of the context G c ∗ G_{c^{*}} .",
+     "zh": "接着，我们将描述如何在实践中解决这一问题：通过将体素网格的方向与上下文 G c ∗ G_{c^{*}} 的视觉特征进行拟合。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 10 highlights and diagnoses the axis alignment bias of TRELLIS. First, we notice that the inpainting quality depends on the orientation of the SLAT grid, which we further illustrate in Figure 11 . We quantify this degradation using LPIPS and show that this loss of quality does not depend on our attention masking (a) . We first rule out the possibility that the VAE (including structure prediction) causes the issue by empirically verifying that its auto-encoding is stable under rotation: we encode and decode the same scene under varying rotations around the vertical axis and measure no significant reconstruction error variation. However, we see in (b) that the latent flow model 𝒢 L \\mathcal{G}_{L} is less reliable at predicting the correct flow velocity when the SLAT grid is misaligned. Future versions of TRELLIS or a prior more robust to orientation changes could mitigate this issue and further improve our results.",
+   "zh": "图 10 突出显示并诊断了 TRELLIS 的轴对齐偏差。 首先，我们注意到图像修复质量取决于 SLAT 网格的方向，这一点我们将在图 11 中进一步说明。 我们使用 LPIPS 量化这种性能下降，并证明这种质量损失与我们的注意力掩码 (a) 无关。 我们首先通过经验验证排除了 VAE（包括结构预测）导致该问题的可能性：我们在围绕垂直轴的不同旋转角度下对同一场景进行编码和解码，并未观察到重建误差的显著变化。 然而，从 (b) 中我们可以看到，当 SLAT 网格未对齐时，潜在流模型 𝒢 L \\mathcal{G}_{L} 在预测正确的流速方面可靠性较低。 TRELLIS 的未来版本或一种对方向变化更具鲁棒性的先验模型可以缓解这一问题，并进一步改进我们的结果。",
+   "sents": [
+    {
+     "en": "Figure 10 highlights and diagnoses the axis alignment bias of TRELLIS.",
+     "zh": "图 10 突出显示并诊断了 TRELLIS 的轴对齐偏差。"
+    },
+    {
+     "en": "First, we notice that the inpainting quality depends on the orientation of the SLAT grid, which we further illustrate in Figure 11 .",
+     "zh": "首先，我们注意到图像修复质量取决于 SLAT 网格的方向，这一点我们将在图 11 中进一步说明。"
+    },
+    {
+     "en": "We quantify this degradation using LPIPS and show that this loss of quality does not depend on our attention masking (a) .",
+     "zh": "我们使用 LPIPS 量化这种性能下降，并证明这种质量损失与我们的注意力掩码 (a) 无关。"
+    },
+    {
+     "en": "We first rule out the possibility that the VAE (including structure prediction) causes the issue by empirically verifying that its auto-encoding is stable under rotation: we encode and decode the same scene under varying rotations around the vertical axis and measure no significant reconstruction error variation.",
+     "zh": "我们首先通过经验验证排除了 VAE（包括结构预测）导致该问题的可能性：我们在围绕垂直轴的不同旋转角度下对同一场景进行编码和解码，并未观察到重建误差的显著变化。"
+    },
+    {
+     "en": "However, we see in (b) that the latent flow model 𝒢 L \\mathcal{G}_{L} is less reliable at predicting the correct flow velocity when the SLAT grid is misaligned.",
+     "zh": "然而，从 (b) 中我们可以看到，当 SLAT 网格未对齐时，潜在流模型 𝒢 L \\mathcal{G}_{L} 在预测正确的流速方面可靠性较低。"
+    },
+    {
+     "en": "Future versions of TRELLIS or a prior more robust to orientation changes could mitigate this issue and further improve our results.",
+     "zh": "TRELLIS 的未来版本或一种对方向变化更具鲁棒性的先验模型可以缓解这一问题，并进一步改进我们的结果。"
+    }
+   ]
+  },
+  {
+   "en": "In practice, we assume that the vertical axis is already correct – a wrong vertical axis causes many other issues, e.g., in terms of user navigation, and the vertical axis is a global reference, so it is usually correct and the assumption holds. The orientation angle around this vertical axis to align with the TRELLIS prior, however, is specific to the local neighborhood, namely the cropped context G c ∗ G_{c^{*}} . We estimate it by analyzing a × 512 512\\!\\times\\!512 top-down view of this context. We first harmonize the rendered image by subtracting its low frequencies (by Gaussian-blurring the image, σ = 41 \\sigma=41 ) and estimate the per-pixel dominant direction via the largest eigenvector of the local structure tensor (i.e., second-moment matrix) using a Sobel filter to estimate gradients. To improve the robustness of our estimation, we split the image into × 8 8\\!\\times\\!8 tiles for which we compute the mean direction, then consider the median tile when sorting them by directional angle. To prevent the mask borders from impacting the orientation estimation, we zero the gradient in all pixels that lie within six pixels of the masked region. We finally rotate voxel grid O O by this found angle around the vertical axis (or, equivalently, rotate the entire scene by the opposite angle).",
+   "zh": "在实践中，我们假设垂直轴已经是正确的——错误的垂直轴会导致许多其他问题，例如影响用户导航；而且垂直轴是一个全局参考，因此通常是正确的，这一假设也成立。 然而，为了与 TRELLIS 先验对齐而围绕该垂直轴旋转的方位角，则取决于局部邻域，即裁剪后的上下文 G c ∗ G_{c^{*}} 。 我们通过分析该上下文的 a × 512 512\\!\\times\\!512 俯视图来估计该角度。 我们首先通过减去渲染图像的低频成分（对图像进行高斯模糊处理，σ = 41 \\sigma=41 ）来对其进行处理，然后利用索贝尔滤波器估计梯度，并通过局部结构张量（即二阶矩矩阵）的最大特征向量来估计每个像素的主导方向。 为了提高估计的鲁棒性，我们将图像分割为 × 8 8\\!\\times\\!8 的图块，并计算每个图块的平均方向，然后在按方向角排序时取其中位数的图块作为参考。 为防止掩码边界影响方位角估计，我们将掩码区域内六像素范围内的所有像素梯度置零。 最后，我们围绕垂直轴根据找到的角度旋转体素网格 O O（或者等效地，将整个场景按相反的角度旋转）。",
+   "sents": [
+    {
+     "en": "In practice, we assume that the vertical axis is already correct – a wrong vertical axis causes many other issues, e.g., in terms of user navigation, and the vertical axis is a global reference, so it is usually correct and the assumption holds.",
+     "zh": "在实践中，我们假设垂直轴已经是正确的——错误的垂直轴会导致许多其他问题，例如影响用户导航；而且垂直轴是一个全局参考，因此通常是正确的，这一假设也成立。"
+    },
+    {
+     "en": "The orientation angle around this vertical axis to align with the TRELLIS prior, however, is specific to the local neighborhood, namely the cropped context G c ∗ G_{c^{*}} .",
+     "zh": "然而，为了与 TRELLIS 先验对齐而围绕该垂直轴旋转的方位角，则取决于局部邻域，即裁剪后的上下文 G c ∗ G_{c^{*}} 。"
+    },
+    {
+     "en": "We estimate it by analyzing a × 512 512\\!\\times\\!512 top-down view of this context.",
+     "zh": "我们通过分析该上下文的 a × 512 512\\!\\times\\!512 俯视图来估计该角度。"
+    },
+    {
+     "en": "We first harmonize the rendered image by subtracting its low frequencies (by Gaussian-blurring the image, σ = 41 \\sigma=41 ) and estimate the per-pixel dominant direction via the largest eigenvector of the local structure tensor (i.e., second-moment matrix) using a Sobel filter to estimate gradients.",
+     "zh": "我们首先通过减去渲染图像的低频成分（对图像进行高斯模糊处理，σ = 41 \\sigma=41 ）来对其进行处理，然后利用索贝尔滤波器估计梯度，并通过局部结构张量（即二阶矩矩阵）的最大特征向量来估计每个像素的主导方向。"
+    },
+    {
+     "en": "To improve the robustness of our estimation, we split the image into × 8 8\\!\\times\\!8 tiles for which we compute the mean direction, then consider the median tile when sorting them by directional angle.",
+     "zh": "为了提高估计的鲁棒性，我们将图像分割为 × 8 8\\!\\times\\!8 的图块，并计算每个图块的平均方向，然后在按方向角排序时取其中位数的图块作为参考。"
+    },
+    {
+     "en": "To prevent the mask borders from impacting the orientation estimation, we zero the gradient in all pixels that lie within six pixels of the masked region.",
+     "zh": "为防止掩码边界影响方位角估计，我们将掩码区域内六像素范围内的所有像素梯度置零。"
+    },
+    {
+     "en": "We finally rotate voxel grid O O by this found angle around the vertical axis (or, equivalently, rotate the entire scene by the opposite angle).",
+     "zh": "最后，我们围绕垂直轴根据找到的角度旋转体素网格 O O（或者等效地，将整个场景按相反的角度旋转）。"
+    }
+   ]
+  },
+  {
+   "en": "We curate an internal dataset of 900 3D Gaussian splatting scenes depicting full 360° environments rather than asset-scale captures. None of the evaluation scenes from COR-NeRF, Inpaint360, or 360-USID are included in this dataset. We select 100 candidate cropped context regions per scene. We sample a context region bounding box with a per-axis extent sampled randomly between 2% and 80% of the original scene’s scale. Inside this context region, we further sample a target region bounding box, whose per-axis extent is randomly sampled between 10% and 80% of the context region. Additionally, we reject context/target region candidate pairs containing less than 20 000 and 5 000 Gaussian primitives respectively. After sampling subscenes and accepting them based on the two criteria defined below, we apply data augmentation by horizontally flipping or rotating the structure by 90° increments, all with probability 0.25 0.25 .",
+   "zh": "我们整理了一个内部数据集，其中包含 900 个 3D 高斯溅射场景，这些场景描绘了完整的 360° 环境，而非仅捕捉单个资产。 COR-NeRF、Inpaint360 或 360-USID 中的任何评估场景均未包含在此数据集中。 我们为每个场景选择 100 个候选裁剪上下文区域。 我们采样一个上下文区域边界框，其各轴范围随机采样于原始场景规模的 2% 到 80% 之间。 在该上下文区域内，我们进一步采样一个目标区域边界框，其各轴范围随机采样于上下文区域的 10% 到 80% 之间。 此外，我们会拒绝那些上下文/目标区域候选对中包含的高斯原始体数量分别少于 20,000 和 5,000 的情况。 在采样子场景并根据以下定义的两个标准接受它们之后，我们通过水平翻转或以 90° 的增量旋转结构来执行数据增强，所有操作的概率均为 0.25 0.25。",
+   "sents": [
+    {
+     "en": "We curate an internal dataset of 900 3D Gaussian splatting scenes depicting full 360° environments rather than asset-scale captures.",
+     "zh": "我们整理了一个内部数据集，其中包含 900 个 3D 高斯溅射场景，这些场景描绘了完整的 360° 环境，而非仅捕捉单个资产。"
+    },
+    {
+     "en": "None of the evaluation scenes from COR-NeRF, Inpaint360, or 360-USID are included in this dataset.",
+     "zh": "COR-NeRF、Inpaint360 或 360-USID 中的任何评估场景均未包含在此数据集中。"
+    },
+    {
+     "en": "We select 100 candidate cropped context regions per scene.",
+     "zh": "我们为每个场景选择 100 个候选裁剪上下文区域。"
+    },
+    {
+     "en": "We sample a context region bounding box with a per-axis extent sampled randomly between 2% and 80% of the original scene’s scale.",
+     "zh": "我们采样一个上下文区域边界框，其各轴范围随机采样于原始场景规模的 2% 到 80% 之间。"
+    },
+    {
+     "en": "Inside this context region, we further sample a target region bounding box, whose per-axis extent is randomly sampled between 10% and 80% of the context region.",
+     "zh": "在该上下文区域内，我们进一步采样一个目标区域边界框，其各轴范围随机采样于上下文区域的 10% 到 80% 之间。"
+    },
+    {
+     "en": "Additionally, we reject context/target region candidate pairs containing less than 20 000 and 5 000 Gaussian primitives respectively.",
+     "zh": "此外，我们会拒绝那些上下文/目标区域候选对中包含的高斯原始体数量分别少于 20,000 和 5,000 的情况。"
+    },
+    {
+     "en": "After sampling subscenes and accepting them based on the two criteria defined below, we apply data augmentation by horizontally flipping or rotating the structure by 90° increments, all with probability 0.25 0.25 .",
+     "zh": "在采样子场景并根据以下定义的两个标准接受它们之后，我们通过水平翻转或以 90° 的增量旋转结构来执行数据增强，所有操作的概率均为 0.25 0.25。"
+    }
+   ]
+  },
+  {
+   "en": "The first criterion used to sample example pairs from the structure dataset depends on the presence or absence of objects in the target region, represented by local structure anomalies inside the masked region. We estimate the 3 × 3 × 3 3\\times 3\\times 3 local covariance of every masked region voxel 𝐩 \\mathbf{p} and approximate the surface variation in the following way: ( Pauly et al., 2002 )",
+   "zh": "用于从结构数据集中采样示例对的第一条标准取决于目标区域中是否存在物体，这由掩码区域内局部结构异常来表示。 我们对每个掩码区域体素 𝐩 \\mathbf{p} 的 3 × 3 × 3 局部协方差进行估计，并以以下方式近似表面变化：(Pauly et al., 2002)",
+   "sents": [
+    {
+     "en": "The first criterion used to sample example pairs from the structure dataset depends on the presence or absence of objects in the target region, represented by local structure anomalies inside the masked region.",
+     "zh": "用于从结构数据集中采样示例对的第一条标准取决于目标区域中是否存在物体，这由掩码区域内局部结构异常来表示。"
+    },
+    {
+     "en": "We estimate the 3 × 3 × 3 3\\times 3\\times 3 local covariance of every masked region voxel 𝐩 \\mathbf{p} and approximate the surface variation in the following way: ( Pauly et al., 2002 )",
+     "zh": "我们对每个掩码区域体素 𝐩 \\mathbf{p} 的 3 × 3 × 3 局部协方差进行估计，并以以下方式近似表面变化：(Pauly et al., 2002)"
+    }
+   ]
+  },
+  {
+   "en": "with λ 1 ≥ λ 2 ≥ λ 3 \\lambda_{1}\\geq\\lambda_{2}\\geq\\lambda_{3} the eigenvalues of the local covariance matrix. Small values of σ \\sigma indicate locally planar structure. We reject a subscene when more than 30% of the target voxels show a variation σ > 0.2 \\sigma>0.2 .",
+   "zh": "其中 λ₁ ≥ λ₂ ≥ λ₃ 是局部协方差矩阵的特征值。 σ 的值较小表示局部具有平面结构。 当超过 30% 的目标体素表现出 σ > 0.2 的变化时，我们拒绝该子场景。",
+   "sents": [
+    {
+     "en": "with λ 1 ≥ λ 2 ≥ λ 3 \\lambda_{1}\\geq\\lambda_{2}\\geq\\lambda_{3} the eigenvalues of the local covariance matrix.",
+     "zh": "其中 λ₁ ≥ λ₂ ≥ λ₃ 是局部协方差矩阵的特征值。"
+    },
+    {
+     "en": "Small values of σ \\sigma indicate locally planar structure.",
+     "zh": "σ 的值较小表示局部具有平面结构。"
+    },
+    {
+     "en": "We reject a subscene when more than 30% of the target voxels show a variation σ > 0.2 \\sigma>0.2 .",
+     "zh": "当超过 30% 的目标体素表现出 σ > 0.2 的变化时，我们拒绝该子场景。"
+    }
+   ]
+  },
+  {
+   "en": "In addition to the local structure covariance metric, we filter training dataset admissibility by computing target region predictability with respect to a quadric extrapolation of context. We partition the context structure C C into connected components and estimate the PCA local tangent frame of the component adjacent to the masked region ( Hoppe et al., 1992 ) . Then, we fit a second-order polynomial height field ( Cazals and Pouget, 2005 ) using context voxels:",
+   "zh": "除了局部结构协方差度量外，我们还通过计算目标区域相对于上下文二次外推的预测性，来筛选训练数据集的可接受性。 我们将上下文结构 C C 划分为连通分量，并估计与掩码区域相邻的分量的 PCA 局部切线框架（Hoppe 等人，1992）。 然后，我们使用上下文体素拟合一个二阶多项式高度场（Cazals 和 Pouget，2005）：",
+   "sents": [
+    {
+     "en": "In addition to the local structure covariance metric, we filter training dataset admissibility by computing target region predictability with respect to a quadric extrapolation of context.",
+     "zh": "除了局部结构协方差度量外，我们还通过计算目标区域相对于上下文二次外推的预测性，来筛选训练数据集的可接受性。"
+    },
+    {
+     "en": "We partition the context structure C C into connected components and estimate the PCA local tangent frame of the component adjacent to the masked region ( Hoppe et al., 1992 ) .",
+     "zh": "我们将上下文结构 C C 划分为连通分量，并估计与掩码区域相邻的分量的 PCA 局部切线框架（Hoppe 等人，1992）。"
+    },
+    {
+     "en": "Then, we fit a second-order polynomial height field ( Cazals and Pouget, 2005 ) using context voxels:",
+     "zh": "然后，我们使用上下文体素拟合一个二阶多项式高度场（Cazals 和 Pouget，2005）："
+    }
+   ]
+  },
+  {
+   "en": "Finally, a target region is deemed admissible if the fraction of target voxels lying close to the extrapolated height field is higher than 0.5. We note that this deliberately permissive admissibility test simply serves as a way to filter target regions unexplainable by context out of the dataset, rather than selecting only target regions predictable by quadric extrapolation of context. The curated dataset contains a large number of non-flat target regions, such as corners or curved surfaces: Figure 12 displays representative examples from the held-out test set, accepted by our data curation process and complex to predict with quadric extrapolation. While classic techniques such as plane fitting with RANSAC ( Fischler and Bolles, 1981 ) could also be used to approximate individual examples, our learned structure prediction network is able to model occupancy completion from arbitrary context, without requiring any assumptions about its underlying structure.",
+   "zh": "最后，如果目标体素中位于外推高度场附近的比例高于 0.5，则认为该目标区域是可接受的。 我们注意到，这种刻意宽松的接受性测试仅用于从数据集中过滤掉无法通过上下文解释的目标区域，而非仅选择能够通过上下文二次曲面外推预测的目标区域。 经过筛选的数据集包含大量非平坦的目标区域，例如角落或曲面：图 12 展示了预留测试集中具有代表性的例子，这些例子通过了我们的数据筛选流程，且难以通过二次曲面外推进行预测。 尽管像 RANSAC 平面拟合（Fischler 和 Bolles, 1981）这样的经典技术也可以用于近似单个示例，但我们学习的结构预测网络能够基于任意上下文对占据情况进行补全建模，而无需对其底层结构做任何假设。",
+   "sents": [
+    {
+     "en": "Finally, a target region is deemed admissible if the fraction of target voxels lying close to the extrapolated height field is higher than 0.5.",
+     "zh": "最后，如果目标体素中位于外推高度场附近的比例高于 0.5，则认为该目标区域是可接受的。"
+    },
+    {
+     "en": "We note that this deliberately permissive admissibility test simply serves as a way to filter target regions unexplainable by context out of the dataset, rather than selecting only target regions predictable by quadric extrapolation of context.",
+     "zh": "我们注意到，这种刻意宽松的接受性测试仅用于从数据集中过滤掉无法通过上下文解释的目标区域，而非仅选择能够通过上下文二次曲面外推预测的目标区域。"
+    },
+    {
+     "en": "The curated dataset contains a large number of non-flat target regions, such as corners or curved surfaces: Figure 12 displays representative examples from the held-out test set, accepted by our data curation process and complex to predict with quadric extrapolation.",
+     "zh": "经过筛选的数据集包含大量非平坦的目标区域，例如角落或曲面：图 12 展示了预留测试集中具有代表性的例子，这些例子通过了我们的数据筛选流程，且难以通过二次曲面外推进行预测。"
+    },
+    {
+     "en": "While classic techniques such as plane fitting with RANSAC ( Fischler and Bolles, 1981 ) could also be used to approximate individual examples, our learned structure prediction network is able to model occupancy completion from arbitrary context, without requiring any assumptions about its underlying structure.",
+     "zh": "尽管像 RANSAC 平面拟合（Fischler 和 Bolles, 1981）这样的经典技术也可以用于近似单个示例，但我们学习的结构预测网络能够基于任意上下文对占据情况进行补全建模，而无需对其底层结构做任何假设。"
+    }
+   ]
+  },
+  {
+   "en": "To verify this, we conduct an ablation study by comparing the respective metrics of our structure completion network and the quadric extrapolation baseline, on both held-out test 3D Gaussian splatting scenes and on the inpainting benchmark datasets. On the structure reconstruction task, our network outperforms quadric extrapolation over Chamfer distance, F-score and IoU metrics, indicating stronger sparse structure prediction capabilities ( Figure 13 ).",
+   "zh": "为了验证这一点，我们对结构补全网络和二次曲面外推基线模型在预留的测试三维高斯泼溅场景以及图像修复基准数据集上的各项指标进行了比较，从而开展了一项消融研究。 在结构重建任务中，我们的网络在Chamfer距离、F-score和IoU指标上均优于二次曲面外推方法，这表明其具有更强的稀疏结构预测能力（图13）。",
+   "sents": [
+    {
+     "en": "To verify this, we conduct an ablation study by comparing the respective metrics of our structure completion network and the quadric extrapolation baseline, on both held-out test 3D Gaussian splatting scenes and on the inpainting benchmark datasets.",
+     "zh": "为了验证这一点，我们对结构补全网络和二次曲面外推基线模型在预留的测试三维高斯泼溅场景以及图像修复基准数据集上的各项指标进行了比较，从而开展了一项消融研究。"
+    },
+    {
+     "en": "On the structure reconstruction task, our network outperforms quadric extrapolation over Chamfer distance, F-score and IoU metrics, indicating stronger sparse structure prediction capabilities ( Figure 13 ).",
+     "zh": "在结构重建任务中，我们的网络在Chamfer距离、F-score和IoU指标上均优于二次曲面外推方法，这表明其具有更强的稀疏结构预测能力（图13）。"
+    }
+   ]
+  },
+  {
+   "en": "We divide the hereby constructed dataset into training, validation and test splits, using 650 scenes for training, 100 scenes for validation and 150 test scenes. Importantly, the train/test split is done at scene level and not at context/target region level, thus preventing data leakage. We train our model on 8 NVIDIA A100 GPUs for 300 epochs. We train using the Adam optimizer ( Kingma and Ba, 2015 ) , a batch size B = 16 B=16 , with a cosine-annealed learning rate between 2 × 10 − 4 2\\times 10^{-4} and 2 × 10 − 6 2\\times 10^{-6} . As mentioned in Section 3.2 , the loss function used for training is a linear combination of weighted cross-entropy and Dice loss: ℒ structure = 0.3 ​ ℒ W-BCE + 0.7 ​ ℒ DICE . \\mathcal{L}_{\\text{structure}}=0.3\\,\\mathcal{L}_{\\text{W-BCE}}+0.7\\,\\mathcal{L}_{\\text{DICE}}. We use a weighted binary cross-entropy positive class weight of 100 during training. We conduct training with L2 weight regularization parameterized by λ = 1 × 10 − 4 \\lambda=1\\times 10^{-4} . After training for the full 300 epochs, the neural network weights achieving the lowest validation set loss are retained.",
+   "zh": "我们将此构建的数据集划分为训练集、验证集和测试集，其中使用 650 个场景进行训练，100 个场景进行验证，以及 150 个测试场景。 重要的是，训练/测试划分是在场景层面进行的，而非在上下文/目标区域层面，从而避免了数据泄露。 我们在 8 块 NVIDIA A100 GPU 上对模型进行了 300 个周期的训练。 我们使用 Adam 优化器（Kingma 和 Ba，2015）进行训练，批量大小为 B = 16，学习率通过余弦退火在 2 × 10⁻⁴ 和 2 × 10⁻⁶ 之间调整。 如第 3.2 节所述，训练时使用的损失函数是加权交叉熵与 Dice 损失的线性组合：ℒ structure = 0.3 ℒ W-BCE + 0.7 ℒ DICE。 在训练过程中，我们使用加权二元交叉熵的正类权重为 100。 我们在 L2 权重正则化参数 λ = 1 × 10⁻⁴ 的设置下进行训练。 在完成全部 300 个周期的训练后，保留在验证集上损失最低的神经网络权重。",
+   "sents": [
+    {
+     "en": "We divide the hereby constructed dataset into training, validation and test splits, using 650 scenes for training, 100 scenes for validation and 150 test scenes.",
+     "zh": "我们将此构建的数据集划分为训练集、验证集和测试集，其中使用 650 个场景进行训练，100 个场景进行验证，以及 150 个测试场景。"
+    },
+    {
+     "en": "Importantly, the train/test split is done at scene level and not at context/target region level, thus preventing data leakage.",
+     "zh": "重要的是，训练/测试划分是在场景层面进行的，而非在上下文/目标区域层面，从而避免了数据泄露。"
+    },
+    {
+     "en": "We train our model on 8 NVIDIA A100 GPUs for 300 epochs.",
+     "zh": "我们在 8 块 NVIDIA A100 GPU 上对模型进行了 300 个周期的训练。"
+    },
+    {
+     "en": "We train using the Adam optimizer ( Kingma and Ba, 2015 ) , a batch size B = 16 B=16 , with a cosine-annealed learning rate between 2 × 10 − 4 2\\times 10^{-4} and 2 × 10 − 6 2\\times 10^{-6} .",
+     "zh": "我们使用 Adam 优化器（Kingma 和 Ba，2015）进行训练，批量大小为 B = 16，学习率通过余弦退火在 2 × 10⁻⁴ 和 2 × 10⁻⁶ 之间调整。"
+    },
+    {
+     "en": "As mentioned in Section 3.2 , the loss function used for training is a linear combination of weighted cross-entropy and Dice loss: ℒ structure = 0.3 ​ ℒ W-BCE + 0.7 ​ ℒ DICE . \\mathcal{L}_{\\text{structure}}=0.3\\,\\mathcal{L}_{\\text{W-BCE}}+0.7\\,\\mathcal{L}_{\\text{DICE}}.",
+     "zh": "如第 3.2 节所述，训练时使用的损失函数是加权交叉熵与 Dice 损失的线性组合：ℒ structure = 0.3 ℒ W-BCE + 0.7 ℒ DICE。"
+    },
+    {
+     "en": "We use a weighted binary cross-entropy positive class weight of 100 during training.",
+     "zh": "在训练过程中，我们使用加权二元交叉熵的正类权重为 100。"
+    },
+    {
+     "en": "We conduct training with L2 weight regularization parameterized by λ = 1 × 10 − 4 \\lambda=1\\times 10^{-4} .",
+     "zh": "我们在 L2 权重正则化参数 λ = 1 × 10⁻⁴ 的设置下进行训练。"
+    },
+    {
+     "en": "After training for the full 300 epochs, the neural network weights achieving the lowest validation set loss are retained.",
+     "zh": "在完成全部 300 个周期的训练后，保留在验证集上损失最低的神经网络权重。"
+    }
+   ]
+  },
+  {
+   "en": "Table 6 reports human preference rating for each scene used in the user study. We then report a per-scene breakdown of perceptual metrics: Tables 7 , 8 and 9 detail the metrics of the four benchmarked methods, respectively on the COR-NeRF, Inpaint360 and 360-USID datasets.",
+   "zh": "表 6 报告了用户研究中每个场景的人类偏好评分。 接着，我们报告了各场景的感知指标细分情况：表 7、表 8 和表 9 分别详细说明了四种基准方法在 COR-NeRF、Inpaint360 和 360-USID 数据集上的指标。",
+   "sents": [
+    {
+     "en": "Table 6 reports human preference rating for each scene used in the user study.",
+     "zh": "表 6 报告了用户研究中每个场景的人类偏好评分。"
+    },
+    {
+     "en": "We then report a per-scene breakdown of perceptual metrics: Tables 7 , 8 and 9 detail the metrics of the four benchmarked methods, respectively on the COR-NeRF, Inpaint360 and 360-USID datasets.",
+     "zh": "接着，我们报告了各场景的感知指标细分情况：表 7、表 8 和表 9 分别详细说明了四种基准方法在 COR-NeRF、Inpaint360 和 360-USID 数据集上的指标。"
+    }
+   ]
+  },
+  {
+   "en": "Finally, Figures 14 , 15 and 16 show qualitative comparison grids of the four benchmarked methods over all scenes in the three evaluated datasets.",
+   "zh": "最后，图14、15和16展示了在三个评估数据集的所有场景中，四种基准方法之间的定性比较网格。",
+   "sents": null
+  }
+ ]
+}

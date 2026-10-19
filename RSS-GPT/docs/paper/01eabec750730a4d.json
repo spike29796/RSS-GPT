@@ -1,0 +1,1347 @@
+{
+ "id": "01eabec750730a4d",
+ "source": "arxiv-t2i",
+ "link": "https://arxiv.org/abs/2610.00930v1",
+ "title": "Joint Branch-Space Transform Coding for Diffusion Activation Quantization with Classifier-Free Guidance",
+ "title_zh": "面向扩散激活量化与无分类器引导的联合分支空间变换编码",
+ "published": "2026-10-01T02:05:37Z",
+ "translated_at": "2026-10-19T06:18:39Z",
+ "paragraphs": [
+  {
+   "en": "Post-training quantization for diffusion models increasingly exploits timestep, feature, and layer structure. While recent work has begun incorporating CFG structure into diffusion quantization, activation quantization still operates independently across conditional and unconditional coordinates, leaving cross-activation structure unexploited. We show that matched CFG activations form a strongly correlated two-dimensional source and that, under a fixed bit budget, the choice of branch coding basis materially affects quantization fidelity. Motivated by this observation, we introduce branch-space transform coding , which rotates matched CFG branches via an offline derived 2 × 2 2\\times 2 orthogonal matrix, requiring minimal modifications to model parameters or the quantization pipeline. We further derive the Guidance-Correlation Branch Transform (GCBT) , which jointly incorporates the CFG guidance direction and cross-branch second moments. Under an equal-rate quantization-noise surrogate, GCBT admits a closed-form per-layer solution without gradient optimization or angle search. Applied on top of existing diffusion PTQ methods, GCBT yields statistically significant fidelity gains in most evaluated comparisons with no statistically significant degradation, while leaving the underlying host quantization pipeline unchanged.",
+   "zh": "扩散模型的训练后量化越来越多地利用了时间步、特征和层结构。 尽管近期研究已开始将 CFG 结构融入扩散量化，但激活量化在条件坐标和无条件坐标之间仍独立进行，导致跨激活结构未被有效利用。 我们证明，匹配的 CFG 激活值构成了一个强相关性的二维源，并且在固定比特预算下，分支编码基的选择会显著影响量化保真度。 基于这一观察，我们提出了分支空间变换编码方法，该方法通过一个离线推导的 2×2 正交矩阵旋转匹配的 CFG 分支，且仅需对模型参数或量化流程进行最小程度的修改。 我们进一步推导出了引导相关性分支变换（GCBT），该方法联合融合了 CFG 引导方向和跨分支二阶矩。 在等速率量化噪声替代模型下，GCBT 能够给出每层的闭式解，无需梯度优化或角度搜索。 GCBT 可叠加应用于现有的扩散模型训练后量化方法中，在多数评估对比中实现了统计显著的保真度提升，且未出现统计显著的性能下降，同时保持底层主量化流程不变。",
+   "sents": [
+    {
+     "en": "Post-training quantization for diffusion models increasingly exploits timestep, feature, and layer structure.",
+     "zh": "扩散模型的训练后量化越来越多地利用了时间步、特征和层结构。"
+    },
+    {
+     "en": "While recent work has begun incorporating CFG structure into diffusion quantization, activation quantization still operates independently across conditional and unconditional coordinates, leaving cross-activation structure unexploited.",
+     "zh": "尽管近期研究已开始将 CFG 结构融入扩散量化，但激活量化在条件坐标和无条件坐标之间仍独立进行，导致跨激活结构未被有效利用。"
+    },
+    {
+     "en": "We show that matched CFG activations form a strongly correlated two-dimensional source and that, under a fixed bit budget, the choice of branch coding basis materially affects quantization fidelity.",
+     "zh": "我们证明，匹配的 CFG 激活值构成了一个强相关性的二维源，并且在固定比特预算下，分支编码基的选择会显著影响量化保真度。"
+    },
+    {
+     "en": "Motivated by this observation, we introduce branch-space transform coding , which rotates matched CFG branches via an offline derived 2 × 2 2\\times 2 orthogonal matrix, requiring minimal modifications to model parameters or the quantization pipeline.",
+     "zh": "基于这一观察，我们提出了分支空间变换编码方法，该方法通过一个离线推导的 2×2 正交矩阵旋转匹配的 CFG 分支，且仅需对模型参数或量化流程进行最小程度的修改。"
+    },
+    {
+     "en": "We further derive the Guidance-Correlation Branch Transform (GCBT) , which jointly incorporates the CFG guidance direction and cross-branch second moments.",
+     "zh": "我们进一步推导出了引导相关性分支变换（GCBT），该方法联合融合了 CFG 引导方向和跨分支二阶矩。"
+    },
+    {
+     "en": "Under an equal-rate quantization-noise surrogate, GCBT admits a closed-form per-layer solution without gradient optimization or angle search.",
+     "zh": "在等速率量化噪声替代模型下，GCBT 能够给出每层的闭式解，无需梯度优化或角度搜索。"
+    },
+    {
+     "en": "Applied on top of existing diffusion PTQ methods, GCBT yields statistically significant fidelity gains in most evaluated comparisons with no statistically significant degradation, while leaving the underlying host quantization pipeline unchanged.",
+     "zh": "GCBT 可叠加应用于现有的扩散模型训练后量化方法中，在多数评估对比中实现了统计显著的保真度提升，且未出现统计显著的性能下降，同时保持底层主量化流程不变。"
+    }
+   ]
+  },
+  {
+   "en": "Diffusion models ( Sohl-Dickstein et al., 2015 ; Ho et al., 2020 ; Song et al., 2021 ; Nichol and Dhariwal, 2021 ) achieve high generation quality at the cost of repeated, computationally heavy denoising steps. This has motivated extensive work on post-training quantization (PTQ) ( Chen et al., 2025 ; Li et al., 2023 ; Shao et al., 2026 ; Li et al., 2025 ; Zhao et al., 2025 ; Shafi and Suma, 2026 ) to reduce inference overhead via low-bit representations of weights and activations. Recent methods increasingly exploit activation structure during diffusion inference, exploiting (i) variation across denoising timesteps ( Chen et al., 2025 ; Zhao et al., 2025 ) , (ii) architectural and feature heterogeneity within the denoising model ( Li et al., 2023 ; Chen et al., 2025 ) , and (iii) activation outliers ( Li et al., 2025 ; Li et al., 2026 ) . These advances raise a natural question: what additional structural information in diffusion inference can be exploited to improve activation quantization?",
+   "zh": "扩散模型（Sohl-Dickstein 等人，2015；Ho 等人，2020；Song 等人，2021；Nichol 和 Dhariwal，2021）实现了高生成质量，但代价是重复且计算量巨大的去噪步骤。 这推动了大量关于训练后量化（PTQ）的研究（Chen 等人，2025；Li 等人，2023；Shao 等人，2026；Li 等人，2025；Zhao 等人，2025；Shafi 和 Suma，2026），旨在通过权重的低比特表示和激活值的低比特表示来减少推理开销。 近期方法越来越多地利用扩散推理过程中的激活结构，具体包括：（i）不同去噪时间步之间的差异（Chen 等人，2025；Zhao 等人，2025），（ii）去噪模型内部的架构和特征异质性（Li 等人，2023；Chen 等人，2025），以及（iii）激活值中的异常值（Li 等人，2025；Li 等人，2026）。 这些进展引出了一个自然的问题：扩散推理中还有哪些额外的结构信息可以被利用来改进激活量化？",
+   "sents": [
+    {
+     "en": "Diffusion models ( Sohl-Dickstein et al., 2015 ; Ho et al., 2020 ; Song et al., 2021 ; Nichol and Dhariwal, 2021 ) achieve high generation quality at the cost of repeated, computationally heavy denoising steps.",
+     "zh": "扩散模型（Sohl-Dickstein 等人，2015；Ho 等人，2020；Song 等人，2021；Nichol 和 Dhariwal，2021）实现了高生成质量，但代价是重复且计算量巨大的去噪步骤。"
+    },
+    {
+     "en": "This has motivated extensive work on post-training quantization (PTQ) ( Chen et al., 2025 ; Li et al., 2023 ; Shao et al., 2026 ; Li et al., 2025 ; Zhao et al., 2025 ; Shafi and Suma, 2026 ) to reduce inference overhead via low-bit representations of weights and activations.",
+     "zh": "这推动了大量关于训练后量化（PTQ）的研究（Chen 等人，2025；Li 等人，2023；Shao 等人，2026；Li 等人，2025；Zhao 等人，2025；Shafi 和 Suma，2026），旨在通过权重的低比特表示和激活值的低比特表示来减少推理开销。"
+    },
+    {
+     "en": "Recent methods increasingly exploit activation structure during diffusion inference, exploiting (i) variation across denoising timesteps ( Chen et al., 2025 ; Zhao et al., 2025 ) , (ii) architectural and feature heterogeneity within the denoising model ( Li et al., 2023 ; Chen et al., 2025 ) , and (iii) activation outliers ( Li et al., 2025 ; Li et al., 2026 ) .",
+     "zh": "近期方法越来越多地利用扩散推理过程中的激活结构，具体包括：（i）不同去噪时间步之间的差异（Chen 等人，2025；Zhao 等人，2025），（ii）去噪模型内部的架构和特征异质性（Li 等人，2023；Chen 等人，2025），以及（iii）激活值中的异常值（Li 等人，2025；Li 等人，2026）。"
+    },
+    {
+     "en": "These advances raise a natural question: what additional structural information in diffusion inference can be exploited to improve activation quantization?",
+     "zh": "这些进展引出了一个自然的问题：扩散推理中还有哪些额外的结构信息可以被利用来改进激活量化？"
+    }
+   ]
+  },
+  {
+   "en": "One such structure is the paired computation in classifier-free guidance (CFG) ( Ho and Salimans, 2022 ) . CFG plays a central role in modern diffusion pipelines by strengthening the influence of the condition on generation. At each denoising step, CFG evaluates the same model weights with and without condition, producing matched predictions p c p_{c} and p u p_{u} and then combining them using a guidance scale s s . We denote the corresponding activations as X c X_{c} and X u X_{u} , and refer to the two-dimensional axis formed by this matched pair as the CFG branch space .",
+   "zh": "其中一种结构是分类器自由引导（CFG）中的成对计算（Ho 和 Salimans，2022）。 CFG 在现代扩散流程中扮演着核心角色，通过增强条件对生成过程的影响来实现这一点。 在每个去噪步骤中，CFG 会分别使用有条件和无条件的情况评估相同的模型权重，从而得到匹配的预测值 p c p_{c} 和 p u p_{u}，然后利用引导系数 s s 将它们组合起来。 我们将相应的激活值表示为 X c X_{c} 和 X u X_{u}，并将由这对匹配值构成的二维轴称为 CFG 分支空间。",
+   "sents": [
+    {
+     "en": "One such structure is the paired computation in classifier-free guidance (CFG) ( Ho and Salimans, 2022 ) .",
+     "zh": "其中一种结构是分类器自由引导（CFG）中的成对计算（Ho 和 Salimans，2022）。"
+    },
+    {
+     "en": "CFG plays a central role in modern diffusion pipelines by strengthening the influence of the condition on generation.",
+     "zh": "CFG 在现代扩散流程中扮演着核心角色，通过增强条件对生成过程的影响来实现这一点。"
+    },
+    {
+     "en": "At each denoising step, CFG evaluates the same model weights with and without condition, producing matched predictions p c p_{c} and p u p_{u} and then combining them using a guidance scale s s .",
+     "zh": "在每个去噪步骤中，CFG 会分别使用有条件和无条件的情况评估相同的模型权重，从而得到匹配的预测值 p c p_{c} 和 p u p_{u}，然后利用引导系数 s s 将它们组合起来。"
+    },
+    {
+     "en": "We denote the corresponding activations as X c X_{c} and X u X_{u} , and refer to the two-dimensional axis formed by this matched pair as the CFG branch space .",
+     "zh": "我们将相应的激活值表示为 X c X_{c} 和 X u X_{u}，并将由这对匹配值构成的二维轴称为 CFG 分支空间。"
+    }
+   ]
+  },
+  {
+   "en": "While recent work has begun incorporating CFG into post-training calibration ( Shao et al., 2026 ; Shafi and Suma, 2026 ) , activation quantization still typically operates on X c X_{c} and X u X_{u} independently in separate branch coordinates. This choice implicitly fixes the branch basis, overlooking the fact that both activations arise from matched CFG passes through the same model weights.",
+   "zh": "尽管近期的研究已开始将 CFG 融入训练后校准（Shao et al., 2026；Shafi and Suma, 2026），但激活量化通常仍对 X c X_{c} 和 X u X_{u} 在独立的分支坐标中分别进行操作。 这种选择隐式地固定了分支基矢，忽略了两个激活值实际上都源于通过相同模型权重的匹配 CFG 流程这一事实。",
+   "sents": [
+    {
+     "en": "While recent work has begun incorporating CFG into post-training calibration ( Shao et al., 2026 ; Shafi and Suma, 2026 ) , activation quantization still typically operates on X c X_{c} and X u X_{u} independently in separate branch coordinates.",
+     "zh": "尽管近期的研究已开始将 CFG 融入训练后校准（Shao et al., 2026；Shafi and Suma, 2026），但激活量化通常仍对 X c X_{c} 和 X u X_{u} 在独立的分支坐标中分别进行操作。"
+    },
+    {
+     "en": "This choice implicitly fixes the branch basis, overlooking the fact that both activations arise from matched CFG passes through the same model weights.",
+     "zh": "这种选择隐式地固定了分支基矢，忽略了两个激活值实际上都源于通过相同模型权重的匹配 CFG 流程这一事实。"
+    }
+   ]
+  },
+  {
+   "en": "We find two properties of this branch space that are relevant to activation quantization. First, matched X c X_{c} and X u X_{u} activations are strongly correlated, exhibiting cross-branch correlation coefficients of a median uncentered correlation of 0.86 (vs. 0.33 for mismatched pairs) across DiT-XL/2 ( Peebles and Xie, 2023 ) layers (Figure 2 ). Second, the two CFG branches are coupled at the model output by the known guidance direction g s = [ s , 1 − s ] ⊤ g_{s}=[s,1-s]^{\\top} , which varies with the guidance scale s s . As illustrated in Figure 3 , standard PTQ quantizes activations independently along native branch axes, imposing a structural mismatch between the quantization grid, principal activation variance, and the guidance vector g s g_{s} . Under a fixed activation-bit budget, this directional mismatch limits quantization fidelity.",
+   "zh": "我们发现该分支空间具有两个与激活量化相关的特性。 首先，匹配的 X c X_{c} 和 X u X_{u} 激活值高度相关，在 DiT-XL/2（Peebles 和 Xie，2023）各层中，其跨分支相关系数的非中心化相关系数中位数为 0.86（而非匹配对为 0.33）（图 2）。 其次，两个 CFG 分支通过已知的引导方向 g s = [ s , 1 − s ] ⊤ g_{s}=[s,1-s]^{\\top} 在模型输出端耦合，该方向随引导尺度 s s 变化。 如图 3 所示，标准的 PTQ 方法沿原始分支轴独立量化激活值，导致量化网格、主要激活方差和引导向量 g s g_{s} 之间出现结构性不匹配。 在固定激活位预算的情况下，这种方向性不匹配会限制量化的保真度。",
+   "sents": [
+    {
+     "en": "We find two properties of this branch space that are relevant to activation quantization.",
+     "zh": "我们发现该分支空间具有两个与激活量化相关的特性。"
+    },
+    {
+     "en": "First, matched X c X_{c} and X u X_{u} activations are strongly correlated, exhibiting cross-branch correlation coefficients of a median uncentered correlation of 0.86 (vs. 0.33 for mismatched pairs) across DiT-XL/2 ( Peebles and Xie, 2023 ) layers (Figure 2 ).",
+     "zh": "首先，匹配的 X c X_{c} 和 X u X_{u} 激活值高度相关，在 DiT-XL/2（Peebles 和 Xie，2023）各层中，其跨分支相关系数的非中心化相关系数中位数为 0.86（而非匹配对为 0.33）（图 2）。"
+    },
+    {
+     "en": "Second, the two CFG branches are coupled at the model output by the known guidance direction g s = [ s , 1 − s ] ⊤ g_{s}=[s,1-s]^{\\top} , which varies with the guidance scale s s .",
+     "zh": "其次，两个 CFG 分支通过已知的引导方向 g s = [ s , 1 − s ] ⊤ g_{s}=[s,1-s]^{\\top} 在模型输出端耦合，该方向随引导尺度 s s 变化。"
+    },
+    {
+     "en": "As illustrated in Figure 3 , standard PTQ quantizes activations independently along native branch axes, imposing a structural mismatch between the quantization grid, principal activation variance, and the guidance vector g s g_{s} .",
+     "zh": "如图 3 所示，标准的 PTQ 方法沿原始分支轴独立量化激活值，导致量化网格、主要激活方差和引导向量 g s g_{s} 之间出现结构性不匹配。"
+    },
+    {
+     "en": "Under a fixed activation-bit budget, this directional mismatch limits quantization fidelity.",
+     "zh": "在固定激活位预算的情况下，这种方向性不匹配会限制量化的保真度。"
+    }
+   ]
+  },
+  {
+   "en": "Motivated by these observations, we introduce branch-space transform coding . Before activation quantization, we apply a 2 × 2 2\\times 2 orthogonal branch rotation matrix ( R R ) across each matched conditional/unconditional pair, quantize the transformed activations on top of the existing low-bit quantizer, and invert the transform afterward. The procedure does not change model parameters, nominal activation precision, or the number of quantized values; it changes only the branch coordinates in which activation quantization is performed. Branch-space coding is therefore complementary to existing timestep-, feature-, layer-, and precision-aware diffusion PTQ methods.",
+   "zh": "基于这些观察，我们提出了分支空间变换编码。 在激活量化之前，我们对每个匹配的有/无条件对应用一个 2×2 正交分支旋转矩阵（R），在现有的低比特量化器基础上对变换后的激活值进行量化，并在之后对变换进行逆变换。 该过程不会改变模型参数、名义上的激活精度或量化值的数量；它仅改变执行激活量化的分支坐标。 因此，分支空间编码与现有的基于时间步、特征、层和精度的扩散 PTQ 方法互为补充。",
+   "sents": [
+    {
+     "en": "Motivated by these observations, we introduce branch-space transform coding .",
+     "zh": "基于这些观察，我们提出了分支空间变换编码。"
+    },
+    {
+     "en": "Before activation quantization, we apply a 2 × 2 2\\times 2 orthogonal branch rotation matrix ( R R ) across each matched conditional/unconditional pair, quantize the transformed activations on top of the existing low-bit quantizer, and invert the transform afterward.",
+     "zh": "在激活量化之前，我们对每个匹配的有/无条件对应用一个 2×2 正交分支旋转矩阵（R），在现有的低比特量化器基础上对变换后的激活值进行量化，并在之后对变换进行逆变换。"
+    },
+    {
+     "en": "The procedure does not change model parameters, nominal activation precision, or the number of quantized values; it changes only the branch coordinates in which activation quantization is performed.",
+     "zh": "该过程不会改变模型参数、名义上的激活精度或量化值的数量；它仅改变执行激活量化的分支坐标。"
+    },
+    {
+     "en": "Branch-space coding is therefore complementary to existing timestep-, feature-, layer-, and precision-aware diffusion PTQ methods.",
+     "zh": "因此，分支空间编码与现有的基于时间步、特征、层和精度的扩散 PTQ 方法互为补充。"
+    }
+   ]
+  },
+  {
+   "en": "To determine the optimal rotation matrix R R , we derive the Guidance-Correlation Branch Transform (GCBT) , which jointly incorporates the CFG guidance direction and per-layer cross-branch second moments. Under an equal-rate quantization-noise surrogate, this formulation yields a closed-form per-layer solution without gradient optimization or angle search. Across diverse diffusion PTQ backbones, models, and datasets, GCBT consistently improves reconstruction and perceptual fidelity, establishing CFG branch space as a complementary axis for activation quantization.",
+   "zh": "为了确定最优的旋转矩阵 R R，我们推导出了引导-相关分支变换（GCBT），该变换联合融合了 CFG 引导方向以及各层的跨分支二阶矩。 在等速率量化噪声代理模型下，该公式无需梯度优化或角度搜索，即可得出每层的闭式解。 在各种扩散 PTQ 骨干网络、模型和数据集上，GCBT 始终能够提升重建质量和感知保真度，确立了 CFG 分支空间作为激活量化的补充维度。",
+   "sents": [
+    {
+     "en": "To determine the optimal rotation matrix R R , we derive the Guidance-Correlation Branch Transform (GCBT) , which jointly incorporates the CFG guidance direction and per-layer cross-branch second moments.",
+     "zh": "为了确定最优的旋转矩阵 R R，我们推导出了引导-相关分支变换（GCBT），该变换联合融合了 CFG 引导方向以及各层的跨分支二阶矩。"
+    },
+    {
+     "en": "Under an equal-rate quantization-noise surrogate, this formulation yields a closed-form per-layer solution without gradient optimization or angle search.",
+     "zh": "在等速率量化噪声代理模型下，该公式无需梯度优化或角度搜索，即可得出每层的闭式解。"
+    },
+    {
+     "en": "Across diverse diffusion PTQ backbones, models, and datasets, GCBT consistently improves reconstruction and perceptual fidelity, establishing CFG branch space as a complementary axis for activation quantization.",
+     "zh": "在各种扩散 PTQ 骨干网络、模型和数据集上，GCBT 始终能够提升重建质量和感知保真度，确立了 CFG 分支空间作为激活量化的补充维度。"
+    }
+   ]
+  },
+  {
+   "en": "Our work makes the following contributions:",
+   "zh": "我们的工作做出了以下贡献：",
+   "sents": null
+  },
+  {
+   "en": "CFG Branch Space as a Design Axis. To our knowledge, we are the first to treat the CFG branch axis as an explicit coding space, demonstrating that cross-branch structure between matched activations directly governs quantization fidelity.",
+   "zh": "CFG 分支空间作为设计轴。 据我们所知，我们是首次将 CFG 分支轴视为一个显式的编码空间，这表明匹配激活之间的跨分支结构直接决定了量化保真度。",
+   "sents": [
+    {
+     "en": "CFG Branch Space as a Design Axis.",
+     "zh": "CFG 分支空间作为设计轴。"
+    },
+    {
+     "en": "To our knowledge, we are the first to treat the CFG branch axis as an explicit coding space, demonstrating that cross-branch structure between matched activations directly governs quantization fidelity.",
+     "zh": "据我们所知，我们是首次将 CFG 分支轴视为一个显式的编码空间，这表明匹配激活之间的跨分支结构直接决定了量化保真度。"
+    }
+   ]
+  },
+  {
+   "en": "Branch-Space Transform Coding & GCBT. We introduce a lightweight branch-space transform coding framework that incorporates the CFG guidance direction and cross-branch second moments into the coding basis.",
+   "zh": "分支空间变换编码与GCBT。 我们提出了一种轻量级的分支空间变换编码框架，该框架将CFG引导方向和跨分支二阶矩整合到编码基中。",
+   "sents": [
+    {
+     "en": "Branch-Space Transform Coding & GCBT.",
+     "zh": "分支空间变换编码与GCBT。"
+    },
+    {
+     "en": "We introduce a lightweight branch-space transform coding framework that incorporates the CFG guidance direction and cross-branch second moments into the coding basis.",
+     "zh": "我们提出了一种轻量级的分支空间变换编码框架，该框架将CFG引导方向和跨分支二阶矩整合到编码基中。"
+    }
+   ]
+  },
+  {
+   "en": "Closed-Form Global Optimum. We derive a guidance-weighted distortion objective over 2 × 2 2\\times 2 orthogonal rotations and prove that its global optimum admits a closed-form per-layer solution under an equal-rate quantization-noise surrogate.",
+   "zh": "闭式全局最优解。 我们在 2×2 正交旋转空间上推导出一个带有引导权重的失真目标函数，并证明在等速率量化噪声代理模型下，其全局最优解存在逐层的闭式解。",
+   "sents": [
+    {
+     "en": "Closed-Form Global Optimum.",
+     "zh": "闭式全局最优解。"
+    },
+    {
+     "en": "We derive a guidance-weighted distortion objective over 2 × 2 2\\times 2 orthogonal rotations and prove that its global optimum admits a closed-form per-layer solution under an equal-rate quantization-noise surrogate.",
+     "zh": "我们在 2×2 正交旋转空间上推导出一个带有引导权重的失真目标函数，并证明在等速率量化噪声代理模型下，其全局最优解存在逐层的闭式解。"
+    }
+   ]
+  },
+  {
+   "en": "Broad PTQ Compatibility. We apply GCBT on top of existing activation quantizers without modifying the underlying quantization method, achieving consistent improvements in reconstruction and perceptual fidelity.",
+   "zh": "广泛的 PTQ 兼容性。 我们在现有的激活量化器基础上应用 GCBT，而无需修改底层的量化方法，从而在重建和感知保真度方面实现了持续改进。",
+   "sents": [
+    {
+     "en": "Broad PTQ Compatibility.",
+     "zh": "广泛的 PTQ 兼容性。"
+    },
+    {
+     "en": "We apply GCBT on top of existing activation quantizers without modifying the underlying quantization method, achieving consistent improvements in reconstruction and perceptual fidelity.",
+     "zh": "我们在现有的激活量化器基础上应用 GCBT，而无需修改底层的量化方法，从而在重建和感知保真度方面实现了持续改进。"
+    }
+   ]
+  },
+  {
+   "en": "Diffusion PTQ increasingly exploits structure specific to iterative generation. Q-Diffusion ( Li et al., 2023 ) addresses timestep-dependent activation distributions and architectural outliers, while Q-DiT ( Chen et al., 2025 ) and ViDiT-Q ( Zhao et al., 2025 ) further account for spatial, temporal, layer, and channel variation in Diffusion Transformers. SVDQuant ( Li et al., 2025 ) handles activation outliers through smoothing and low-rank compensation, and DeltaQuant ( Li et al., 2026 ) exploits spatiotemporal activation structure for low-bit video diffusion. These methods adapt quantization to diffusion-specific activation structure, but retain the native conditional/unconditional branch coordinates during activation quantization.",
+   "zh": "扩散 PTQ 越来越多地利用迭代生成特有的结构。 Q-Diffusion（Li 等人，2023）解决了与时间步相关的激活分布和架构异常值问题，而 Q-DiT（Chen 等人，2025）和 ViDiT-Q（Zhao 等人，2025）则进一步考虑了扩散 Transformer 中的空间、时间、层和通道变化。 SVDQuant（Li 等人，2025）通过平滑和低秩补偿处理激活异常值，而 DeltaQuant（Li 等人，2026）则利用时空激活结构实现低比特视频扩散。 这些方法将量化适配于扩散特有的激活结构，但在激活量化过程中保留了原始的有条件/无条件分支坐标。",
+   "sents": [
+    {
+     "en": "Diffusion PTQ increasingly exploits structure specific to iterative generation.",
+     "zh": "扩散 PTQ 越来越多地利用迭代生成特有的结构。"
+    },
+    {
+     "en": "Q-Diffusion ( Li et al., 2023 ) addresses timestep-dependent activation distributions and architectural outliers, while Q-DiT ( Chen et al., 2025 ) and ViDiT-Q ( Zhao et al., 2025 ) further account for spatial, temporal, layer, and channel variation in Diffusion Transformers.",
+     "zh": "Q-Diffusion（Li 等人，2023）解决了与时间步相关的激活分布和架构异常值问题，而 Q-DiT（Chen 等人，2025）和 ViDiT-Q（Zhao 等人，2025）则进一步考虑了扩散 Transformer 中的空间、时间、层和通道变化。"
+    },
+    {
+     "en": "SVDQuant ( Li et al., 2025 ) handles activation outliers through smoothing and low-rank compensation, and DeltaQuant ( Li et al., 2026 ) exploits spatiotemporal activation structure for low-bit video diffusion.",
+     "zh": "SVDQuant（Li 等人，2025）通过平滑和低秩补偿处理激活异常值，而 DeltaQuant（Li 等人，2026）则利用时空激活结构实现低比特视频扩散。"
+    },
+    {
+     "en": "These methods adapt quantization to diffusion-specific activation structure, but retain the native conditional/unconditional branch coordinates during activation quantization.",
+     "zh": "这些方法将量化适配于扩散特有的激活结构，但在激活量化过程中保留了原始的有条件/无条件分支坐标。"
+    }
+   ]
+  },
+  {
+   "en": "Rotary quantization has been widely studied beyond diffusion models. QuaRot ( Ashkboos et al., 2024 ) applies orthogonal rotations to reduce activation outliers, while SpinQuant ( Liu et al., 2025 ) learns rotation matrices for improved low-bit quantization. Related methods use Hadamard-based incoherence processing ( Tseng et al., 2024 ) or learnable linear transformations ( Sun et al., 2025 ; Hu et al., 2025 ) to improve the quantizability of weights and activations. In diffusion models, TR-DQ ( Shao et al., 2026 ) introduces timestep-dependent feature rotations, while OrbitQuant ( Lee et al., 2026 ) quantizes in a normalized rotated basis. These approaches transform feature or hidden-state coordinates; in contrast, our transform acts across the two-dimensional CFG branch axis while leaving token and feature coordinates unchanged.",
+   "zh": "旋转量化在扩散模型之外的领域也得到了广泛研究。 QuaRot（Ashkboos 等人，2024）通过应用正交旋转来减少激活值中的异常值，而 SpinQuant（Liu 等人，2025）则学习旋转矩阵以实现更优的低位量化。 相关方法采用基于哈达玛矩阵的非相干性处理（Tseng 等人，2024），或使用可学习的线性变换（Sun 等人，2025；Hu 等人，2025），以提升权值和激活值的可量化性。 在扩散模型中，TR-DQ（Shao 等人，2026）引入了与时间步相关的特征旋转，而 OrbitQuant（Lee 等人，2026）则在归一化的旋转基下执行量化。 这些方法会改变特征或隐藏状态的坐标；相比之下，我们的变换作用于二维 CFG 分支轴，同时保持标记和特征坐标不变。",
+   "sents": [
+    {
+     "en": "Rotary quantization has been widely studied beyond diffusion models.",
+     "zh": "旋转量化在扩散模型之外的领域也得到了广泛研究。"
+    },
+    {
+     "en": "QuaRot ( Ashkboos et al., 2024 ) applies orthogonal rotations to reduce activation outliers, while SpinQuant ( Liu et al., 2025 ) learns rotation matrices for improved low-bit quantization.",
+     "zh": "QuaRot（Ashkboos 等人，2024）通过应用正交旋转来减少激活值中的异常值，而 SpinQuant（Liu 等人，2025）则学习旋转矩阵以实现更优的低位量化。"
+    },
+    {
+     "en": "Related methods use Hadamard-based incoherence processing ( Tseng et al., 2024 ) or learnable linear transformations ( Sun et al., 2025 ; Hu et al., 2025 ) to improve the quantizability of weights and activations.",
+     "zh": "相关方法采用基于哈达玛矩阵的非相干性处理（Tseng 等人，2024），或使用可学习的线性变换（Sun 等人，2025；Hu 等人，2025），以提升权值和激活值的可量化性。"
+    },
+    {
+     "en": "In diffusion models, TR-DQ ( Shao et al., 2026 ) introduces timestep-dependent feature rotations, while OrbitQuant ( Lee et al., 2026 ) quantizes in a normalized rotated basis.",
+     "zh": "在扩散模型中，TR-DQ（Shao 等人，2026）引入了与时间步相关的特征旋转，而 OrbitQuant（Lee 等人，2026）则在归一化的旋转基下执行量化。"
+    },
+    {
+     "en": "These approaches transform feature or hidden-state coordinates; in contrast, our transform acts across the two-dimensional CFG branch axis while leaving token and feature coordinates unchanged.",
+     "zh": "这些方法会改变特征或隐藏状态的坐标；相比之下，我们的变换作用于二维 CFG 分支轴，同时保持标记和特征坐标不变。"
+    }
+   ]
+  },
+  {
+   "en": "Recent diffusion PTQ methods have also begun to exploit the relation between CFG branches. TR-DQ ( Shao et al., 2026 ) uses redundancy across CFG executions, while guidance-aware methods such as GAMP ( Shafi and Suma, 2026 ) calibrate quantization with respect to the guided prediction and CFG sensitivity. These methods incorporate CFG structure while retaining the native conditional/unconditional branch basis. Our work studies a complementary variable: the branch coding basis itself. We treat the CFG branch axis as an explicit quantization space and select its basis from the CFG branch direction and cross-branch second moments.",
+   "zh": "近期的扩散 PTQ 方法也开始利用 CFG 分支之间的关系。 TR-DQ（Shao 等人，2026）利用了 CFG 执行中的冗余信息，而像 GAMP（Shafi 和 Suma，2026）这样的引导感知方法则根据引导预测和 CFG 敏感度来校准量化。 这些方法在保留原有的条件/无条件分支基础的同时，也融入了 CFG 结构。 我们的工作研究了一个互补的变量：分支编码基础本身。 我们将 CFG 分支轴视为一个显式的量化空间，并从 CFG 分支方向和跨分支二阶矩中选择其基础。",
+   "sents": [
+    {
+     "en": "Recent diffusion PTQ methods have also begun to exploit the relation between CFG branches.",
+     "zh": "近期的扩散 PTQ 方法也开始利用 CFG 分支之间的关系。"
+    },
+    {
+     "en": "TR-DQ ( Shao et al., 2026 ) uses redundancy across CFG executions, while guidance-aware methods such as GAMP ( Shafi and Suma, 2026 ) calibrate quantization with respect to the guided prediction and CFG sensitivity.",
+     "zh": "TR-DQ（Shao 等人，2026）利用了 CFG 执行中的冗余信息，而像 GAMP（Shafi 和 Suma，2026）这样的引导感知方法则根据引导预测和 CFG 敏感度来校准量化。"
+    },
+    {
+     "en": "These methods incorporate CFG structure while retaining the native conditional/unconditional branch basis.",
+     "zh": "这些方法在保留原有的条件/无条件分支基础的同时，也融入了 CFG 结构。"
+    },
+    {
+     "en": "Our work studies a complementary variable: the branch coding basis itself.",
+     "zh": "我们的工作研究了一个互补的变量：分支编码基础本身。"
+    },
+    {
+     "en": "We treat the CFG branch axis as an explicit quantization space and select its basis from the CFG branch direction and cross-branch second moments.",
+     "zh": "我们将 CFG 分支轴视为一个显式的量化空间，并从 CFG 分支方向和跨分支二阶矩中选择其基础。"
+    }
+   ]
+  },
+  {
+   "en": "Classifier-free guidance (CFG) ( Ho and Salimans, 2022 ) combines the conditional and unconditional branch predictions as",
+   "zh": "无分类器引导（Classifier-free guidance，CFG）（Ho 和 Salimans，2022）将条件分支和无条件分支的预测结果相结合，作为",
+   "sents": null
+  },
+  {
+   "en": "At a given denoising step and activation-quantization site, let X c , X u ∈ ℝ N × d X_{c},X_{u}\\in\\mathbb{R}^{N\\times d} denote the matched conditional and unconditional branch activations, where N N indexes token or spatial positions and d d is the feature dimension. We stack them along the CFG branch axis as",
+   "zh": "在给定的去噪步骤和激活量化位置处，令 X c , X u ∈ ℝ N × d X_{c},X_{u}\\in\\mathbb{R}^{N\\times d} 表示匹配的有条件和无条件分支激活值，其中 N N 索引标记或空间位置，d d 是特征维度。 我们沿着 CFG 分支轴将它们堆叠为",
+   "sents": [
+    {
+     "en": "At a given denoising step and activation-quantization site, let X c , X u ∈ ℝ N × d X_{c},X_{u}\\in\\mathbb{R}^{N\\times d} denote the matched conditional and unconditional branch activations, where N N indexes token or spatial positions and d d is the feature dimension.",
+     "zh": "在给定的去噪步骤和激活量化位置处，令 X c , X u ∈ ℝ N × d X_{c},X_{u}\\in\\mathbb{R}^{N\\times d} 表示匹配的有条件和无条件分支激活值，其中 N N 索引标记或空间位置，d d 是特征维度。"
+    },
+    {
+     "en": "We stack them along the CFG branch axis as",
+     "zh": "我们沿着 CFG 分支轴将它们堆叠为"
+    }
+   ]
+  },
+  {
+   "en": "whose leading dimension defines the CFG branch space with native coordinates ( c , u ) (c,u) . At each token–feature coordinate ( n , j ) (n,j) , the corresponding matched branch-activation pair is x n , j = [ x c , n , j , x u , n , j ] ⊤ ∈ ℝ 2 x_{n,j}=[x_{c,n,j},x_{u,n,j}]^{\\top}\\in\\mathbb{R}^{2} .",
+   "zh": "其首维定义了具有原生坐标 (c, u) 的 CFG 分支空间。 在每个词元–特征坐标 (n, j) 处，对应的匹配分支激活对为 x_{n,j}=[x_{c,n,j},x_{u,n,j}]^{\\top}\\in\\mathbb{R}^{2}。",
+   "sents": [
+    {
+     "en": "whose leading dimension defines the CFG branch space with native coordinates ( c , u ) (c,u) .",
+     "zh": "其首维定义了具有原生坐标 (c, u) 的 CFG 分支空间。"
+    },
+    {
+     "en": "At each token–feature coordinate ( n , j ) (n,j) , the corresponding matched branch-activation pair is x n , j = [ x c , n , j , x u , n , j ] ⊤ ∈ ℝ 2 x_{n,j}=[x_{c,n,j},x_{u,n,j}]^{\\top}\\in\\mathbb{R}^{2} .",
+     "zh": "在每个词元–特征坐标 (n, j) 处，对应的匹配分支激活对为 x_{n,j}=[x_{c,n,j},x_{u,n,j}]^{\\top}\\in\\mathbb{R}^{2}。"
+    }
+   ]
+  },
+  {
+   "en": "Let 𝒬 A \\mathcal{Q}_{A} denote the host A A -bit activation quantizer. Standard PTQ quantizes the two branch activations in the native basis: X ^ nat = [ 𝒬 A ​ ( X c ) 𝒬 A ​ ( X u ) ] \\widehat{X}_{\\mathrm{nat}}=\\begin{bmatrix}\\mathcal{Q}_{A}(X_{c})\\\\ \\mathcal{Q}_{A}(X_{u})\\end{bmatrix} .",
+   "zh": "令 𝒬 A \\mathcal{Q}_{A} 表示主机 A 的 A 位激活量化器。 标准的 PTQ 在原生基底下对两个分支的激活值进行量化：X ^ nat = [ 𝒬 A ​ ( X c ) 𝒬 A ​ ( X u ) ] \\widehat{X}_{\\mathrm{nat}}=\\begin{bmatrix}\\mathcal{Q}_{A}(X_{c})\\\\ \\mathcal{Q}_{A}(X_{u})\\end{bmatrix}。",
+   "sents": [
+    {
+     "en": "Let 𝒬 A \\mathcal{Q}_{A} denote the host A A -bit activation quantizer.",
+     "zh": "令 𝒬 A \\mathcal{Q}_{A} 表示主机 A 的 A 位激活量化器。"
+    },
+    {
+     "en": "Standard PTQ quantizes the two branch activations in the native basis: X ^ nat = [ 𝒬 A ​ ( X c ) 𝒬 A ​ ( X u ) ] \\widehat{X}_{\\mathrm{nat}}=\\begin{bmatrix}\\mathcal{Q}_{A}(X_{c})\\\\ \\mathcal{Q}_{A}(X_{u})\\end{bmatrix} .",
+     "zh": "标准的 PTQ 在原生基底下对两个分支的激活值进行量化：X ^ nat = [ 𝒬 A ​ ( X c ) 𝒬 A ​ ( X u ) ] \\widehat{X}_{\\mathrm{nat}}=\\begin{bmatrix}\\mathcal{Q}_{A}(X_{c})\\\\ \\mathcal{Q}_{A}(X_{u})\\end{bmatrix}。"
+    }
+   ]
+  },
+  {
+   "en": "Standard diffusion PTQ ( Chen et al., 2025 ; Li et al., 2023 ; Li et al., 2025 ; Li et al., 2026 ; Lee et al., 2026 ; Zhao et al., 2025 ) quantizes CFG activations directly in the native ( c , u ) (c,u) branch coordinates. To determine whether activation quantization can benefit from a different branch coding basis, we examine whether matched CFG activations exhibit cross-branch structure and whether changing only the branch coding basis affects quantization fidelity under a fixed activation-bit budget.",
+   "zh": "标准扩散 PTQ（Chen 等人，2025；Li 等人，2023；Li 等人，2025；Li 等人，2026；Lee 等人，2026；Zhao 等人，2025）直接在原生 (c, u) 分支坐标中对 CFG 激活值进行量化。 为了确定激活值量化是否可以从不同的分支编码基中受益，我们研究了匹配的 CFG 激活值是否存在跨分支结构，以及在固定激活位预算的情况下，仅改变分支编码基是否会影响量化保真度。",
+   "sents": [
+    {
+     "en": "Standard diffusion PTQ ( Chen et al., 2025 ; Li et al., 2023 ; Li et al., 2025 ; Li et al., 2026 ; Lee et al., 2026 ; Zhao et al., 2025 ) quantizes CFG activations directly in the native ( c , u ) (c,u) branch coordinates.",
+     "zh": "标准扩散 PTQ（Chen 等人，2025；Li 等人，2023；Li 等人，2025；Li 等人，2026；Lee 等人，2026；Zhao 等人，2025）直接在原生 (c, u) 分支坐标中对 CFG 激活值进行量化。"
+    },
+    {
+     "en": "To determine whether activation quantization can benefit from a different branch coding basis, we examine whether matched CFG activations exhibit cross-branch structure and whether changing only the branch coding basis affects quantization fidelity under a fixed activation-bit budget.",
+     "zh": "为了确定激活值量化是否可以从不同的分支编码基中受益，我们研究了匹配的 CFG 激活值是否存在跨分支结构，以及在固定激活位预算的情况下，仅改变分支编码基是否会影响量化保真度。"
+    }
+   ]
+  },
+  {
+   "en": "Observation I: CFG branches form a structured matched source. On DiT-XL/2 with W4A4 SVDQuant (CFG = 2 =2 , 64 trajectories), the median correlation between matched branch activations across all linear sites in DiT-XL/2 is 0.859 0.859 , compared with 0.328 0.328 for deliberately mismatched pairs (Figure 2 , Table 6 ). The matched activations are also highly directional: their dominant axis lies at a median 42.71 ∘ 42.71^{\\circ} from the conditional axis, close to the diagonal c = u c=u . Figure 3 (a) illustrates this structure schematically. These measurements motivate considering the matched activations jointly when choosing a quantization basis.",
+   "zh": "观察 I：CFG 分支构成一个结构化的匹配源。 在 DiT-XL/2 上使用 W4A4 SVDQuant（CFG = 2 =2，64 条轨迹）时，DiT-XL/2 中所有线性站点上匹配分支激活值之间的中位数相关性为 0.859 0.859，而故意不匹配的配对相关性则为 0.328 0.328（图 2，表 6）。 这些匹配激活值也具有高度方向性：其主导轴与条件轴之间的中位夹角为 42.71 ∘ 42.71^{\\circ}，接近对角线 c = u c=u。 图 3 (a) 以示意图形式展示了这种结构。 这些测量结果促使我们在选择量化基时，将匹配激活值作为整体进行考虑。",
+   "sents": [
+    {
+     "en": "Observation I: CFG branches form a structured matched source.",
+     "zh": "观察 I：CFG 分支构成一个结构化的匹配源。"
+    },
+    {
+     "en": "On DiT-XL/2 with W4A4 SVDQuant (CFG = 2 =2 , 64 trajectories), the median correlation between matched branch activations across all linear sites in DiT-XL/2 is 0.859 0.859 , compared with 0.328 0.328 for deliberately mismatched pairs (Figure 2 , Table 6 ).",
+     "zh": "在 DiT-XL/2 上使用 W4A4 SVDQuant（CFG = 2 =2，64 条轨迹）时，DiT-XL/2 中所有线性站点上匹配分支激活值之间的中位数相关性为 0.859 0.859，而故意不匹配的配对相关性则为 0.328 0.328（图 2，表 6）。"
+    },
+    {
+     "en": "The matched activations are also highly directional: their dominant axis lies at a median 42.71 ∘ 42.71^{\\circ} from the conditional axis, close to the diagonal c = u c=u .",
+     "zh": "这些匹配激活值也具有高度方向性：其主导轴与条件轴之间的中位夹角为 42.71 ∘ 42.71^{\\circ}，接近对角线 c = u c=u。"
+    },
+    {
+     "en": "Figure 3 (a) illustrates this structure schematically.",
+     "zh": "图 3 (a) 以示意图形式展示了这种结构。"
+    },
+    {
+     "en": "These measurements motivate considering the matched activations jointly when choosing a quantization basis.",
+     "zh": "这些测量结果促使我们在选择量化基时，将匹配激活值作为整体进行考虑。"
+    }
+   ]
+  },
+  {
+   "en": "Observation II: Activation-quantization fidelity depends on the branch basis. Under the same activation-bit budget and host activation quantizer, changing only the branch coding basis produces measurable differences in generation fidelity. At CFG = 4.5 =4.5 , a guidance-aligned rotation improves PSNR and SSIM while reducing LPIPS under the same host quantizer and activation-bit budget; see Table 4 .",
+   "zh": "观察 II：激活-量化保真度取决于分支基。 在相同的激活位预算和主机激活量化器的条件下，仅改变分支编码基即可产生可测量的生成保真度差异。 在 CFG = 4.5 =4.5 时，与引导对齐的旋转可在相同主机量化器和激活位预算下提升 PSNR 和 SSIM，同时降低 LPIPS；参见表 4。",
+   "sents": [
+    {
+     "en": "Observation II: Activation-quantization fidelity depends on the branch basis.",
+     "zh": "观察 II：激活-量化保真度取决于分支基。"
+    },
+    {
+     "en": "Under the same activation-bit budget and host activation quantizer, changing only the branch coding basis produces measurable differences in generation fidelity.",
+     "zh": "在相同的激活位预算和主机激活量化器的条件下，仅改变分支编码基即可产生可测量的生成保真度差异。"
+    },
+    {
+     "en": "At CFG = 4.5 =4.5 , a guidance-aligned rotation improves PSNR and SSIM while reducing LPIPS under the same host quantizer and activation-bit budget; see Table 4 .",
+     "zh": "在 CFG = 4.5 =4.5 时，与引导对齐的旋转可在相同主机量化器和激活位预算下提升 PSNR 和 SSIM，同时降低 LPIPS；参见表 4。"
+    }
+   ]
+  },
+  {
+   "en": "These observations motivate treating the branch coding basis as an explicit degree of freedom in activation quantization, rather than inheriting the native ( c , u ) (c,u) execution coordinates. This leads to the following general formulation.",
+   "zh": "这些观察结果促使我们将分支编码基视为激活量化中的一个显式自由度，而不是继承固有的 (c, u) 执行坐标。 这引出了以下通用公式。",
+   "sents": [
+    {
+     "en": "These observations motivate treating the branch coding basis as an explicit degree of freedom in activation quantization, rather than inheriting the native ( c , u ) (c,u) execution coordinates.",
+     "zh": "这些观察结果促使我们将分支编码基视为激活量化中的一个显式自由度，而不是继承固有的 (c, u) 执行坐标。"
+    },
+    {
+     "en": "This leads to the following general formulation.",
+     "zh": "这引出了以下通用公式。"
+    }
+   ]
+  },
+  {
+   "en": "Let R ∈ ℝ 2 × 2 R\\in\\mathbb{R}^{2\\times 2} be an orthogonal matrix, whose rows define an orthonormal coding basis. Given a host activation quantizer 𝒬 A \\mathcal{Q}_{A} , we quantize matched CFG activations in the transformed branch basis as",
+   "zh": "设 R ∈ ℝ²×² 为一个正交矩阵，其行向量定义了一个标准正交编码基。 给定一个主机激活量化器 𝒬_A，我们在变换后的分支基中量化匹配的 CFG 激活值如下：",
+   "sents": [
+    {
+     "en": "Let R ∈ ℝ 2 × 2 R\\in\\mathbb{R}^{2\\times 2} be an orthogonal matrix, whose rows define an orthonormal coding basis.",
+     "zh": "设 R ∈ ℝ²×² 为一个正交矩阵，其行向量定义了一个标准正交编码基。"
+    },
+    {
+     "en": "Given a host activation quantizer 𝒬 A \\mathcal{Q}_{A} , we quantize matched CFG activations in the transformed branch basis as",
+     "zh": "给定一个主机激活量化器 𝒬_A，我们在变换后的分支基中量化匹配的 CFG 激活值如下："
+    }
+   ]
+  },
+  {
+   "en": "The transform acts only across matched conditional/unconditional pairs, leaving token and feature coordinates unchanged. Setting R = I R=I recovers native branchwise activation quantization.",
+   "zh": "该变换仅作用于匹配的有条件/无条件对之间，而保留标记和特征坐标不变。 设置 R = I 可恢复原始的按分支进行的激活量化。",
+   "sents": [
+    {
+     "en": "The transform acts only across matched conditional/unconditional pairs, leaving token and feature coordinates unchanged.",
+     "zh": "该变换仅作用于匹配的有条件/无条件对之间，而保留标记和特征坐标不变。"
+    },
+    {
+     "en": "Setting R = I R=I recovers native branchwise activation quantization.",
+     "zh": "设置 R = I 可恢复原始的按分支进行的激活量化。"
+    }
+   ]
+  },
+  {
+   "en": "Branch-space coding leaves one question: which basis should be used? We choose the basis jointly from the geometry of matched CFG activations and the CFG branch direction.",
+   "zh": "分支空间编码留下了一个问题：应该使用哪种基？ 我们从匹配 CFG 激活的几何形状和 CFG 分支方向中共同选择该基。",
+   "sents": [
+    {
+     "en": "Branch-space coding leaves one question: which basis should be used?",
+     "zh": "分支空间编码留下了一个问题：应该使用哪种基？"
+    },
+    {
+     "en": "We choose the basis jointly from the geometry of matched CFG activations and the CFG branch direction.",
+     "zh": "我们从匹配 CFG 激活的几何形状和 CFG 分支方向中共同选择该基。"
+    }
+   ]
+  },
+  {
+   "en": "At layer ℓ \\ell , for each matched token–feature coordinate ( n , j ) (n,j) , define",
+   "zh": "在第 ℓ \\ell 层中，对于每个匹配的词元–特征坐标 ( n , j ) (n,j)，定义",
+   "sents": null
+  },
+  {
+   "en": "Suppressing ( n , j ) (n,j) for brevity, we write a generic matched branch-activation pair as x ( ℓ ) = [ x c ( ℓ ) , x u ( ℓ ) ] ⊤ x^{(\\ell)}=[x_{c}^{(\\ell)},x_{u}^{(\\ell)}]^{\\top} . The branch-space geometry at layer ℓ \\ell is summarized by",
+   "zh": "为简洁起见，我们省略 ( n , j ) (n,j)，将通用的匹配分支激活对写作 x ( ℓ ) = [ x c ( ℓ ) , x u ( ℓ ) ] ⊤ x^{(\\ell)}=[x_{c}^{(\\ell)},x_{u}^{(\\ell)}]^{\\top}。 第 ℓ \\ell 层的分支空间几何结构可概括为",
+   "sents": [
+    {
+     "en": "Suppressing ( n , j ) (n,j) for brevity, we write a generic matched branch-activation pair as x ( ℓ ) = [ x c ( ℓ ) , x u ( ℓ ) ] ⊤ x^{(\\ell)}=[x_{c}^{(\\ell)},x_{u}^{(\\ell)}]^{\\top} .",
+     "zh": "为简洁起见，我们省略 ( n , j ) (n,j)，将通用的匹配分支激活对写作 x ( ℓ ) = [ x c ( ℓ ) , x u ( ℓ ) ] ⊤ x^{(\\ell)}=[x_{c}^{(\\ell)},x_{u}^{(\\ell)}]^{\\top}。"
+    },
+    {
+     "en": "The branch-space geometry at layer ℓ \\ell is summarized by",
+     "zh": "第 ℓ \\ell 层的分支空间几何结构可概括为"
+    }
+   ]
+  },
+  {
+   "en": "where the expectation is taken over calibrated matched branch-activation pairs. Thus, Σ ℓ \\Sigma_{\\ell} is the uncentered second-moment matrix describing the two-dimensional branch geometry at layer ℓ \\ell .",
+   "zh": "其中期望值是对经过校准的匹配分支激活对计算的。 因此，Σ ℓ \\Sigma_{\\ell} 是描述第 ℓ \\ell 层二维分支几何结构的非中心化二阶矩矩阵。",
+   "sents": [
+    {
+     "en": "where the expectation is taken over calibrated matched branch-activation pairs.",
+     "zh": "其中期望值是对经过校准的匹配分支激活对计算的。"
+    },
+    {
+     "en": "Thus, Σ ℓ \\Sigma_{\\ell} is the uncentered second-moment matrix describing the two-dimensional branch geometry at layer ℓ \\ell .",
+     "zh": "因此，Σ ℓ \\Sigma_{\\ell} 是描述第 ℓ \\ell 层二维分支几何结构的非中心化二阶矩矩阵。"
+    }
+   ]
+  },
+  {
+   "en": "For the remainder of this derivation, we fix layer ℓ \\ell and suppress the layer superscript on local branch-space quantities. Let R = [ r 1 ⊤ ; r 2 ⊤ ] ∈ ℝ 2 × 2 R=[r_{1}^{\\top};r_{2}^{\\top}]\\in\\mathbb{R}^{2\\times 2} be an orthogonal rotation matrix, where r 1 , r 2 ∈ ℝ 2 r_{1},r_{2}\\in\\mathbb{R}^{2} define the coding basis. For a matched pair x x , the transformed coordinates are z = R ​ x z=Rx , with z i = r i ⊤ ​ x z_{i}=r_{i}^{\\top}x .",
+   "zh": "在后续推导中，我们将固定层 ℓ \\ell，并省略局部分支空间量上的层上标。 令 R = [ r 1 ⊤ ; r 2 ⊤ ] ∈ ℝ 2 × 2 R=[r_{1}^{\\top};r_{2}^{\\top}]\\in\\mathbb{R}^{2\\times 2} 为一个正交旋转矩阵，其中 r 1 , r 2 ∈ ℝ 2 r_{1},r_{2}\\in\\mathbb{R}^{2} 定义了编码基。 对于匹配对 x x ，变换后的坐标为 z = R ​ x z=Rx ，其中 z i = r i ⊤ ​ x z_{i}=r_{i}^{\\top}x 。",
+   "sents": [
+    {
+     "en": "For the remainder of this derivation, we fix layer ℓ \\ell and suppress the layer superscript on local branch-space quantities.",
+     "zh": "在后续推导中，我们将固定层 ℓ \\ell，并省略局部分支空间量上的层上标。"
+    },
+    {
+     "en": "Let R = [ r 1 ⊤ ; r 2 ⊤ ] ∈ ℝ 2 × 2 R=[r_{1}^{\\top};r_{2}^{\\top}]\\in\\mathbb{R}^{2\\times 2} be an orthogonal rotation matrix, where r 1 , r 2 ∈ ℝ 2 r_{1},r_{2}\\in\\mathbb{R}^{2} define the coding basis.",
+     "zh": "令 R = [ r 1 ⊤ ; r 2 ⊤ ] ∈ ℝ 2 × 2 R=[r_{1}^{\\top};r_{2}^{\\top}]\\in\\mathbb{R}^{2\\times 2} 为一个正交旋转矩阵，其中 r 1 , r 2 ∈ ℝ 2 r_{1},r_{2}\\in\\mathbb{R}^{2} 定义了编码基。"
+    },
+    {
+     "en": "For a matched pair x x , the transformed coordinates are z = R ​ x z=Rx , with z i = r i ⊤ ​ x z_{i}=r_{i}^{\\top}x .",
+     "zh": "对于匹配对 x x ，变换后的坐标为 z = R ​ x z=Rx ，其中 z i = r i ⊤ ​ x z_{i}=r_{i}^{\\top}x 。"
+    }
+   ]
+  },
+  {
+   "en": "Design principle: Couple activation geometry with guidance sensitivity. Let z ^ i \\hat{z}_{i} denote the quantized value of transformed coordinate z i z_{i} . We approximate the quantization distortion of each transformed coordinate as proportional to its projected second moment,",
+   "zh": "设计原则：将激活几何结构与引导灵敏度相结合。 令 z ^ i \\hat{z}_{i} 表示变换后坐标 z i z_{i} 的量化值。 我们将每个变换后坐标的量化失真近似为与其投影二阶矩成正比，",
+   "sents": [
+    {
+     "en": "Design principle: Couple activation geometry with guidance sensitivity.",
+     "zh": "设计原则：将激活几何结构与引导灵敏度相结合。"
+    },
+    {
+     "en": "Let z ^ i \\hat{z}_{i} denote the quantized value of transformed coordinate z i z_{i} .",
+     "zh": "令 z ^ i \\hat{z}_{i} 表示变换后坐标 z i z_{i} 的量化值。"
+    },
+    {
+     "en": "We approximate the quantization distortion of each transformed coordinate as proportional to its projected second moment,",
+     "zh": "我们将每个变换后坐标的量化失真近似为与其投影二阶矩成正比，"
+    }
+   ]
+  },
+  {
+   "en": "where κ ℓ \\kappa_{\\ell} is shared by the two coordinates, and cross-coordinate quantization-error terms are neglected.",
+   "zh": "其中 κ ℓ \\kappa_{\\ell} 由两个坐标共享，且跨坐标的量化误差项被忽略。",
+   "sents": null
+  },
+  {
+   "en": "Under this approximation, the expected squared branch-space distortion along the CFG direction is proportional to",
+   "zh": "在此近似下，沿 CFG 方向的预期分支空间平方畸变与……成正比。",
+   "sents": null
+  },
+  {
+   "en": "The objective therefore favors a branch basis that jointly accounts for how strongly each coding direction is represented in the activations and how strongly it contributes to the CFG.",
+   "zh": "因此，该目标更倾向于一种分支基础，这种基础能够同时考虑每种编码方向在激活中的表示强度及其对 CFG 的贡献强度。",
+   "sents": null
+  },
+  {
+   "en": "Because the branch space is two-dimensional, the rotation can be parameterized by a single angle θ \\theta . We measure all angles relative to the native conditional axis and write",
+   "zh": "由于分支空间是二维的，旋转可以通过单个角度 θ \\theta 进行参数化。 我们将所有角度相对于原始条件轴进行测量，并写作",
+   "sents": [
+    {
+     "en": "Because the branch space is two-dimensional, the rotation can be parameterized by a single angle θ \\theta .",
+     "zh": "由于分支空间是二维的，旋转可以通过单个角度 θ \\theta 进行参数化。"
+    },
+    {
+     "en": "We measure all angles relative to the native conditional axis and write",
+     "zh": "我们将所有角度相对于原始条件轴进行测量，并写作"
+    }
+   ]
+  },
+  {
+   "en": "Let ψ ℓ \\psi_{\\ell} denote the angle of the dominant eigenvector of Σ ℓ \\Sigma_{\\ell} , and let ϕ s = arctan2 ⁡ ( 1 − s , s ) \\phi_{s}=\\operatorname{arctan2}(1-s,s) denote the angle of the CFG direction g s g_{s} .",
+   "zh": "令 ψ ℓ \\psi_{\\ell} 表示 Σ ℓ \\Sigma_{\\ell} 的主特征向量的角度，并令 ϕ s = arctan2 ⁡ ( 1 − s , s ) \\phi_{s}=\\operatorname{arctan2}(1-s,s) 表示 CFG 方向 g s g_{s} 的角度。",
+   "sents": null
+  },
+  {
+   "en": "Let λ 1 , ℓ > λ 2 , ℓ \\lambda_{1,\\ell}>\\lambda_{2,\\ell} be the eigenvalues of Σ ℓ \\Sigma_{\\ell} . The global minimizers of Eq. 7 over two-dimensional orthogonal rotations are",
+   "zh": "令 λ₁,ℓ > λ₂,ℓ 为 Σₙ 的特征值。 方程 7 在二维正交旋转上的全局最小化子是",
+   "sents": [
+    {
+     "en": "Let λ 1 , ℓ > λ 2 , ℓ \\lambda_{1,\\ell}>\\lambda_{2,\\ell} be the eigenvalues of Σ ℓ \\Sigma_{\\ell} .",
+     "zh": "令 λ₁,ℓ > λ₂,ℓ 为 Σₙ 的特征值。"
+    },
+    {
+     "en": "The global minimizers of Eq. 7 over two-dimensional orthogonal rotations are",
+     "zh": "方程 7 在二维正交旋转上的全局最小化子是"
+    }
+   ]
+  },
+  {
+   "en": "If λ 1 , ℓ = λ 2 , ℓ \\lambda_{1,\\ell}=\\lambda_{2,\\ell} , the surrogate is rotationally invariant.",
+   "zh": "如果 λ₁,ℓ = λ₂,ℓ，则代理函数具有旋转不变性。",
+   "sents": null
+  },
+  {
+   "en": "We call R ⁡ ( θ ℓ ⋆ ) R(\\theta_{\\ell}^{\\star}) the Guidance-Correlation Branch Transform (GCBT). A guidance-aligned basis depends only on g s g_{s} , while the principal-axis basis of Σ ℓ \\Sigma_{\\ell} depends only on activation geometry. GCBT combines both quantities in a single coding basis. Calibration requires only the three distinct entries of the 2 × 2 2\\times 2 matrix Σ ℓ \\Sigma_{\\ell} per layer; no gradient optimization or angle search is required. The derivation and proof are given in Appendix A.1 and A.2 .",
+   "zh": "我们将 R ⁡ ( θ ℓ ⋆ ) R(\\theta_{\\ell}^{\\star}) 称为引导相关性分支变换（GCBT）。 与引导对齐的基仅取决于 g s g_{s}，而 Σ ℓ \\Sigma_{\\ell} 的主轴基仅取决于激活几何结构。 GCBT 将这两个量整合到单一的编码基中。 校准每层仅需 2 × 2 矩阵 Σ ℓ \\Sigma_{\\ell} 的三个不同元素；无需梯度优化或角度搜索。 推导和证明见附录 A.1 和 A.2。",
+   "sents": [
+    {
+     "en": "We call R ⁡ ( θ ℓ ⋆ ) R(\\theta_{\\ell}^{\\star}) the Guidance-Correlation Branch Transform (GCBT).",
+     "zh": "我们将 R ⁡ ( θ ℓ ⋆ ) R(\\theta_{\\ell}^{\\star}) 称为引导相关性分支变换（GCBT）。"
+    },
+    {
+     "en": "A guidance-aligned basis depends only on g s g_{s} , while the principal-axis basis of Σ ℓ \\Sigma_{\\ell} depends only on activation geometry.",
+     "zh": "与引导对齐的基仅取决于 g s g_{s}，而 Σ ℓ \\Sigma_{\\ell} 的主轴基仅取决于激活几何结构。"
+    },
+    {
+     "en": "GCBT combines both quantities in a single coding basis.",
+     "zh": "GCBT 将这两个量整合到单一的编码基中。"
+    },
+    {
+     "en": "Calibration requires only the three distinct entries of the 2 × 2 2\\times 2 matrix Σ ℓ \\Sigma_{\\ell} per layer; no gradient optimization or angle search is required.",
+     "zh": "校准每层仅需 2 × 2 矩阵 Σ ℓ \\Sigma_{\\ell} 的三个不同元素；无需梯度优化或角度搜索。"
+    },
+    {
+     "en": "The derivation and proof are given in Appendix A.1 and A.2 .",
+     "zh": "推导和证明见附录 A.1 和 A.2。"
+    }
+   ]
+  },
+  {
+   "en": "Some diffusion PTQ backbones apply a shared feature-space rotation or linear transform before activation quantization. Let U ℓ ∈ ℝ d × d U_{\\ell}\\in\\mathbb{R}^{d\\times d} denote such a transform at layer ℓ \\ell , shared by the conditional and unconditional branches, and let R ℓ ∈ ℝ 2 × 2 R_{\\ell}\\in\\mathbb{R}^{2\\times 2} denote the GCBT branch transform. Because U ℓ U_{\\ell} acts on the feature dimension whereas R ℓ R_{\\ell} acts on the CFG branch dimension, the two operations commute exactly.",
+   "zh": "一些扩散 PTQ 主干网络在激活量化之前会应用一个共享的特征空间旋转或线性变换。 令 U ℓ ∈ ℝ d × d U_{\\ell}\\in\\mathbb{R}^{d\\times d} 表示第 ℓ \\ell 层处的此类变换，该变换由条件分支和无条件分支共享；并令 R ℓ ∈ ℝ 2 × 2 R_{\\ell}\\in\\mathbb{R}^{2\\times 2} 表示 GCBT 分支的变换。 由于 U ℓ U_{\\ell} 作用于特征维度，而 R ℓ R_{\\ell} 作用于 CFG 分支维度，因此这两个操作完全可交换。",
+   "sents": [
+    {
+     "en": "Some diffusion PTQ backbones apply a shared feature-space rotation or linear transform before activation quantization.",
+     "zh": "一些扩散 PTQ 主干网络在激活量化之前会应用一个共享的特征空间旋转或线性变换。"
+    },
+    {
+     "en": "Let U ℓ ∈ ℝ d × d U_{\\ell}\\in\\mathbb{R}^{d\\times d} denote such a transform at layer ℓ \\ell , shared by the conditional and unconditional branches, and let R ℓ ∈ ℝ 2 × 2 R_{\\ell}\\in\\mathbb{R}^{2\\times 2} denote the GCBT branch transform.",
+     "zh": "令 U ℓ ∈ ℝ d × d U_{\\ell}\\in\\mathbb{R}^{d\\times d} 表示第 ℓ \\ell 层处的此类变换，该变换由条件分支和无条件分支共享；并令 R ℓ ∈ ℝ 2 × 2 R_{\\ell}\\in\\mathbb{R}^{2\\times 2} 表示 GCBT 分支的变换。"
+    },
+    {
+     "en": "Because U ℓ U_{\\ell} acts on the feature dimension whereas R ℓ R_{\\ell} acts on the CFG branch dimension, the two operations commute exactly.",
+     "zh": "由于 U ℓ U_{\\ell} 作用于特征维度，而 R ℓ R_{\\ell} 作用于 CFG 分支维度，因此这两个操作完全可交换。"
+    }
+   ]
+  },
+  {
+   "en": "For branch activations X ∈ ℝ 2 × N × d X\\in\\mathbb{R}^{2\\times N\\times d} , a shared feature-space transform U ℓ ∈ ℝ d × d U_{\\ell}\\in\\mathbb{R}^{d\\times d} , and a branch-space transform R ℓ ∈ ℝ 2 × 2 R_{\\ell}\\in\\mathbb{R}^{2\\times 2} ,",
+   "zh": "对于分支激活 X ∈ ℝ 2 × N × d X\\in\\mathbb{R}^{2\\times N\\times d}、共享特征空间变换 U ℓ ∈ ℝ d × d U_{\\ell}\\in\\mathbb{R}^{d\\times d}，以及分支空间变换 R ℓ ∈ ℝ 2 × 2 R_{\\ell}\\in\\mathbb{R}^{2\\times 2}，",
+   "sents": null
+  },
+  {
+   "en": "Consequently, a host activation quantizer that operates on X ​ U ℓ XU_{\\ell} can be combined with GCBT without changing the transformed activation seen by the quantizer:",
+   "zh": "因此，一个对 X ​ U ℓ XU_{\\ell} 进行操作的宿主激活量化器可以与 GCBT 结合使用，而不会改变量化器所观察到的变换后的激活值：",
+   "sents": null
+  },
+  {
+   "en": "Thus, GCBT is algebraically compatible with host PTQ methods that already use shared feature-space rotations: branch-space and feature-space transforms are strictly composable rather than competing for the same degree of freedom.",
+   "zh": "因此，GCBT 与那些已经使用共享特征空间旋转的主 PTQ 方法在代数上是兼容的：分支空间变换和特征空间变换是严格可组合的，而不是相互竞争相同的自由度。",
+   "sents": null
+  },
+  {
+   "en": "CFG-aware calibration and GCBT act on distinct quantization variables: a guidance-aware host optimizes quantization parameters against guided-output error while retaining the native ( c , u ) (c,u) coordinates, whereas GCBT changes the branch basis in which quantization is performed. For a matched branch-activation pair x x with z = R ℓ ​ x z=R_{\\ell}x ,",
+   "zh": "CFG-aware 校准和 GCBT 作用于不同的量化变量：一个具备引导感知能力的主体会根据引导输出误差优化量化参数，同时保留原始的 (c, u) 坐标；而 GCBT 则会改变执行量化操作时所采用的分支基。 对于一个匹配的分支-激活对 x x，其中 z = R ℓ ​ x z=R_{\\ell}x，",
+   "sents": [
+    {
+     "en": "CFG-aware calibration and GCBT act on distinct quantization variables: a guidance-aware host optimizes quantization parameters against guided-output error while retaining the native ( c , u ) (c,u) coordinates, whereas GCBT changes the branch basis in which quantization is performed.",
+     "zh": "CFG-aware 校准和 GCBT 作用于不同的量化变量：一个具备引导感知能力的主体会根据引导输出误差优化量化参数，同时保留原始的 (c, u) 坐标；而 GCBT 则会改变执行量化操作时所采用的分支基。"
+    },
+    {
+     "en": "For a matched branch-activation pair x x with z = R ℓ ​ x z=R_{\\ell}x ,",
+     "zh": "对于一个匹配的分支-激活对 x x，其中 z = R ℓ ​ x z=R_{\\ell}x，"
+    }
+   ]
+  },
+  {
+   "en": "Thus, the CFG branch information is preserved exactly under the basis change, so guided-output calibration does not determine the branch coding basis.",
+   "zh": "因此，在基变换下，CFG 分支信息被完全保留，所以引导输出校准不会决定分支编码的基底。",
+   "sents": null
+  },
+  {
+   "en": "We test this complementarity by applying GCBT to a fixed CFG-aware W4A4 PixArt- Σ \\Sigma host on MJHQ and sDCI, holding the calibrated host parameters, quantization configuration, and generation seeds fixed. Table 1 shows consistent LPIPS and SSIM gains on both datasets, while the smaller yet positive PSNR changes are not statistically conclusive. The gains therefore persist after guided-output calibration, supporting branch-basis selection as a complementary quantization variable. Full calibration details and paired confidence intervals are reported in Appendix B.2 .",
+   "zh": "我们通过将 GCBT 应用于一个固定的、具备 CFG 感知能力的 W4A4 PixArt-Σ Σ 主机模型，并在 MJHQ 和 sDCI 数据集上进行测试来验证这种互补性，同时保持校准后的主机参数、量化配置和生成种子不变。 表 1 显示，在两个数据集上 LPIPS 和 SSIM 指标均有稳定提升，而 PSNR 的较小但正向的变化在统计学上尚未具有显著性。 因此，即使在经过引导输出校准后，这些增益仍然存在，这支持将分支基础选择视为一种互补的量化变量。 完整的校准细节及配对的置信区间已报告在附录 B.2 中。",
+   "sents": [
+    {
+     "en": "We test this complementarity by applying GCBT to a fixed CFG-aware W4A4 PixArt- Σ \\Sigma host on MJHQ and sDCI, holding the calibrated host parameters, quantization configuration, and generation seeds fixed.",
+     "zh": "我们通过将 GCBT 应用于一个固定的、具备 CFG 感知能力的 W4A4 PixArt-Σ Σ 主机模型，并在 MJHQ 和 sDCI 数据集上进行测试来验证这种互补性，同时保持校准后的主机参数、量化配置和生成种子不变。"
+    },
+    {
+     "en": "Table 1 shows consistent LPIPS and SSIM gains on both datasets, while the smaller yet positive PSNR changes are not statistically conclusive.",
+     "zh": "表 1 显示，在两个数据集上 LPIPS 和 SSIM 指标均有稳定提升，而 PSNR 的较小但正向的变化在统计学上尚未具有显著性。"
+    },
+    {
+     "en": "The gains therefore persist after guided-output calibration, supporting branch-basis selection as a complementary quantization variable.",
+     "zh": "因此，即使在经过引导输出校准后，这些增益仍然存在，这支持将分支基础选择视为一种互补的量化变量。"
+    },
+    {
+     "en": "Full calibration details and paired confidence intervals are reported in Appendix B.2 .",
+     "zh": "完整的校准细节及配对的置信区间已报告在附录 B.2 中。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate GCBT across image and video diffusion models with multiple activation-quantization hosts. For image generation, the main evaluation includes PixArt- Σ \\Sigma ( Chen et al., 2024 ) and SANA-1.6B ( Xie et al., 2024 ) with SVDQuant ( Li et al., 2025 ) (W4A4) and Q-DiT ( Chen et al., 2025 ) (W4A8), with SD3.5-Large ( Esser et al., 2024 ) included for large-scale validation. All host precision settings strictly follow the default evaluation protocols established in their respective original works. For video generation, we evaluate Wan2.1-T2V-1.3B and Wan2.1-T2V-14B ( Wan et al., 2025 ) , CogVideoX-2B ( Yang et al., 2025 ) , and OpenSora v1.2 ( Zheng et al., 2024 ) with OrbitQuant ( Lee et al., 2026 ) (W4A4) or ViDiT-Q ( Zhao et al., 2025 ) (W4A8-MP). GCBT uses 64 calibration samples disjoint from evaluation. Full model-specific generation and calibration settings are provided in Appendix B.4 .",
+   "zh": "我们在多种激活-量化主机上，针对图像和视频扩散模型对 GCBT 进行了评估。 在图像生成方面，主要评估包括 PixArt-Σ Σ（Chen 等人，2024）和 SANA-1.6B（Xie 等人，2024），分别搭配 SVDQuant（Li 等人，2025）（W4A4）和 Q-DiT（Chen 等人，2025）（W4A8），同时纳入 SD3.5-Large（Esser 等人，2024）以进行大规模验证。 所有主机的精度设置均严格遵循其各自原始研究中所确立的默认评估协议。 在视频生成方面，我们评估了 Wan2.1-T2V-1.3B 和 Wan2.1-T2V-14B（Wan 等人，2025）、CogVideoX-2B（Yang 等人，2025）以及 OpenSora v1.2（Zheng 等人，2024），分别搭配 OrbitQuant（Lee 等人，2026）（W4A4）或 ViDiT-Q（Zhao 等人，2025）（W4A8-MP）。 GCBT 使用 64 个与评估样本分离的校准样本。 完整的模型特定生成和校准设置见附录 B.4。",
+   "sents": [
+    {
+     "en": "We evaluate GCBT across image and video diffusion models with multiple activation-quantization hosts.",
+     "zh": "我们在多种激活-量化主机上，针对图像和视频扩散模型对 GCBT 进行了评估。"
+    },
+    {
+     "en": "For image generation, the main evaluation includes PixArt- Σ \\Sigma ( Chen et al., 2024 ) and SANA-1.6B ( Xie et al., 2024 ) with SVDQuant ( Li et al., 2025 ) (W4A4) and Q-DiT ( Chen et al., 2025 ) (W4A8), with SD3.5-Large ( Esser et al., 2024 ) included for large-scale validation.",
+     "zh": "在图像生成方面，主要评估包括 PixArt-Σ Σ（Chen 等人，2024）和 SANA-1.6B（Xie 等人，2024），分别搭配 SVDQuant（Li 等人，2025）（W4A4）和 Q-DiT（Chen 等人，2025）（W4A8），同时纳入 SD3.5-Large（Esser 等人，2024）以进行大规模验证。"
+    },
+    {
+     "en": "All host precision settings strictly follow the default evaluation protocols established in their respective original works.",
+     "zh": "所有主机的精度设置均严格遵循其各自原始研究中所确立的默认评估协议。"
+    },
+    {
+     "en": "For video generation, we evaluate Wan2.1-T2V-1.3B and Wan2.1-T2V-14B ( Wan et al., 2025 ) , CogVideoX-2B ( Yang et al., 2025 ) , and OpenSora v1.2 ( Zheng et al., 2024 ) with OrbitQuant ( Lee et al., 2026 ) (W4A4) or ViDiT-Q ( Zhao et al., 2025 ) (W4A8-MP).",
+     "zh": "在视频生成方面，我们评估了 Wan2.1-T2V-1.3B 和 Wan2.1-T2V-14B（Wan 等人，2025）、CogVideoX-2B（Yang 等人，2025）以及 OpenSora v1.2（Zheng 等人，2024），分别搭配 OrbitQuant（Lee 等人，2026）（W4A4）或 ViDiT-Q（Zhao 等人，2025）（W4A8-MP）。"
+    },
+    {
+     "en": "GCBT uses 64 calibration samples disjoint from evaluation.",
+     "zh": "GCBT 使用 64 个与评估样本分离的校准样本。"
+    },
+    {
+     "en": "Full model-specific generation and calibration settings are provided in Appendix B.4 .",
+     "zh": "完整的模型特定生成和校准设置见附录 B.4。"
+    }
+   ]
+  },
+  {
+   "en": "We measure FP-reference fidelity using LPIPS ( Zhang et al., 2018 ) , SSIM ( Wang et al., 2004 ) , and PSNR ( Huynh-Thu and Ghanbari, 2008 ) . For video, we additionally report VBench subject consistency (S.C.), aesthetic quality (A.Q.), and imaging quality (I.Q.) ( Huang et al., 2024 ) . Evaluation uses fixed paired prompt sets ( n = 256 n=256 ), and statistical significance is determined from paired 95% confidence intervals; full effect sizes and intervals are reported in the Appendix B.4 .",
+   "zh": "我们使用 LPIPS（Zhang 等人，2018）、SSIM（Wang 等人，2004）和 PSNR（Huynh-Thu 和 Ghanbari，2008）来衡量 FP-reference 保真度。 对于视频，我们还报告了 VBench 主体一致性（S.C.）、美学质量（A.Q.）和成像质量（I.Q.）（Huang 等人，2024）。 评估使用固定的成对提示集（n = 256 n=256），统计显著性通过成对的 95% 置信区间确定；完整的效果量和置信区间在附录 B.4 中报告。",
+   "sents": [
+    {
+     "en": "We measure FP-reference fidelity using LPIPS ( Zhang et al., 2018 ) , SSIM ( Wang et al., 2004 ) , and PSNR ( Huynh-Thu and Ghanbari, 2008 ) .",
+     "zh": "我们使用 LPIPS（Zhang 等人，2018）、SSIM（Wang 等人，2004）和 PSNR（Huynh-Thu 和 Ghanbari，2008）来衡量 FP-reference 保真度。"
+    },
+    {
+     "en": "For video, we additionally report VBench subject consistency (S.C.), aesthetic quality (A.Q.), and imaging quality (I.Q.) ( Huang et al., 2024 ) .",
+     "zh": "对于视频，我们还报告了 VBench 主体一致性（S.C.）、美学质量（A.Q.）和成像质量（I.Q.）（Huang 等人，2024）。"
+    },
+    {
+     "en": "Evaluation uses fixed paired prompt sets ( n = 256 n=256 ), and statistical significance is determined from paired 95% confidence intervals; full effect sizes and intervals are reported in the Appendix B.4 .",
+     "zh": "评估使用固定的成对提示集（n = 256 n=256），统计显著性通过成对的 95% 置信区间确定；完整的效果量和置信区间在附录 B.4 中报告。"
+    }
+   ]
+  },
+  {
+   "en": "Across the full image-generation matrix, GCBT yields statistically significant gains in most paired metric comparisons, while no comparison shows a statistically significant degradation. All statistically resolved effects therefore favor GCBT. The significant gains span both SVDQuant models, Q-DiT on PixArt- Σ \\Sigma , and the larger SD3.5-Large model, consistently across MJHQ and sDCI. The remaining comparisons are statistically inconclusive, with no evidence of a systematic regression. Overall, these results show that the benefits of GCBT transfer across architectures, PTQ hosts, datasets, and model scales.",
+   "zh": "在整个图像生成矩阵中，GCBT 在大多数成对指标比较中均展现出具有统计学意义的提升，而没有任何比较显示出具有统计学意义的性能下降。 因此，所有经统计学方法确认的效应都支持 GCBT。 这些显著提升涵盖了 SVDQuant 模型、PixArt-Σ Σ 上的 Q-DiT 以及更大的 SD3.5-Large 模型，并且在 MJHQ 和 sDCI 数据集上表现一致。 其余比较在统计学上尚无定论，且没有证据表明存在系统性的性能倒退。 总体而言，这些结果表明 GCBT 的优势能够跨架构、PTQ 宿主、数据集和模型规模有效迁移。",
+   "sents": [
+    {
+     "en": "Across the full image-generation matrix, GCBT yields statistically significant gains in most paired metric comparisons, while no comparison shows a statistically significant degradation.",
+     "zh": "在整个图像生成矩阵中，GCBT 在大多数成对指标比较中均展现出具有统计学意义的提升，而没有任何比较显示出具有统计学意义的性能下降。"
+    },
+    {
+     "en": "All statistically resolved effects therefore favor GCBT.",
+     "zh": "因此，所有经统计学方法确认的效应都支持 GCBT。"
+    },
+    {
+     "en": "The significant gains span both SVDQuant models, Q-DiT on PixArt- Σ \\Sigma , and the larger SD3.5-Large model, consistently across MJHQ and sDCI.",
+     "zh": "这些显著提升涵盖了 SVDQuant 模型、PixArt-Σ Σ 上的 Q-DiT 以及更大的 SD3.5-Large 模型，并且在 MJHQ 和 sDCI 数据集上表现一致。"
+    },
+    {
+     "en": "The remaining comparisons are statistically inconclusive, with no evidence of a systematic regression.",
+     "zh": "其余比较在统计学上尚无定论，且没有证据表明存在系统性的性能倒退。"
+    },
+    {
+     "en": "Overall, these results show that the benefits of GCBT transfer across architectures, PTQ hosts, datasets, and model scales.",
+     "zh": "总体而言，这些结果表明 GCBT 的优势能够跨架构、PTQ 宿主、数据集和模型规模有效迁移。"
+    }
+   ]
+  },
+  {
+   "en": "The video experiments extend this pattern beyond image generation and, more importantly, beyond teacher-referenced reconstruction alone. Across Wan2.1, CogVideoX, and OpenSora, GCBT improves both FP-referenced fidelity and VBench generation-quality metrics. LPIPS and SSIM improve significantly for every evaluated video model, while subject consistency and aesthetic quality also improve significantly throughout. The effect persists on the larger Wan2.1-T2V-14B model, showing that the branch-space benefit transfers across video architectures, PTQ hosts, and model scales. These results indicate that the fidelity gains from GCBT are accompanied by improvements in generation-level quality, rather than being confined to closer reconstruction of the full-precision reference.",
+   "zh": "视频实验将这一模式扩展到了图像生成之外，更重要的是，也超越了仅依赖教师参考的重建范畴。 在 Wan2.1、CogVideoX 和 OpenSora 中，GCBT 提升了基于 FP 的保真度以及 VBench 生成的质量指标。 对于所有评估的视频模型，LPIPS 和 SSIM 均有显著提升，同时主观一致性和美学质量也全程得到明显改善。 这一效果在更大的 Wan2.1-T2V-14B 模型上依然存在，表明分支空间的优势能够跨视频架构、PTQ 宿主和模型规模迁移。 这些结果表明，GCBT 带来的保真度提升伴随着生成层面质量的改善，而并非仅限于对全精度参考的更精确重建。",
+   "sents": [
+    {
+     "en": "The video experiments extend this pattern beyond image generation and, more importantly, beyond teacher-referenced reconstruction alone.",
+     "zh": "视频实验将这一模式扩展到了图像生成之外，更重要的是，也超越了仅依赖教师参考的重建范畴。"
+    },
+    {
+     "en": "Across Wan2.1, CogVideoX, and OpenSora, GCBT improves both FP-referenced fidelity and VBench generation-quality metrics.",
+     "zh": "在 Wan2.1、CogVideoX 和 OpenSora 中，GCBT 提升了基于 FP 的保真度以及 VBench 生成的质量指标。"
+    },
+    {
+     "en": "LPIPS and SSIM improve significantly for every evaluated video model, while subject consistency and aesthetic quality also improve significantly throughout.",
+     "zh": "对于所有评估的视频模型，LPIPS 和 SSIM 均有显著提升，同时主观一致性和美学质量也全程得到明显改善。"
+    },
+    {
+     "en": "The effect persists on the larger Wan2.1-T2V-14B model, showing that the branch-space benefit transfers across video architectures, PTQ hosts, and model scales.",
+     "zh": "这一效果在更大的 Wan2.1-T2V-14B 模型上依然存在，表明分支空间的优势能够跨视频架构、PTQ 宿主和模型规模迁移。"
+    },
+    {
+     "en": "These results indicate that the fidelity gains from GCBT are accompanied by improvements in generation-level quality, rather than being confined to closer reconstruction of the full-precision reference.",
+     "zh": "这些结果表明，GCBT 带来的保真度提升伴随着生成层面质量的改善，而并非仅限于对全精度参考的更精确重建。"
+    }
+   ]
+  },
+  {
+   "en": "We isolate the design choices underlying GCBT and examine its robustness and systems cost. Unless stated otherwise, ablations use PixArt- Σ \\Sigma with SVDQuant W4A4 on the fixed n = 256 n=256 MJHQ subset at CFG = 4.5 =4.5 , with 64 calibration samples disjoint from evaluation.",
+   "zh": "我们分离出 GCBT 所依赖的设计选择，并检验其鲁棒性和系统成本。 除非另有说明，消融实验均使用 PixArt- Σ \\Sigma，并在固定 n = 256 n=256 的 MJHQ 子集上应用 SVDQuant W4A4，设置 CFG = 4.5 =4.5，同时使用 64 个与评估数据分离的校准样本。",
+   "sents": [
+    {
+     "en": "We isolate the design choices underlying GCBT and examine its robustness and systems cost.",
+     "zh": "我们分离出 GCBT 所依赖的设计选择，并检验其鲁棒性和系统成本。"
+    },
+    {
+     "en": "Unless stated otherwise, ablations use PixArt- Σ \\Sigma with SVDQuant W4A4 on the fixed n = 256 n=256 MJHQ subset at CFG = 4.5 =4.5 , with 64 calibration samples disjoint from evaluation.",
+     "zh": "除非另有说明，消融实验均使用 PixArt- Σ \\Sigma，并在固定 n = 256 n=256 的 MJHQ 子集上应用 SVDQuant W4A4，设置 CFG = 4.5 =4.5，同时使用 64 个与评估数据分离的校准样本。"
+    }
+   ]
+  },
+  {
+   "en": "GCBT selects the coding basis jointly from the branch geometry Σ ℓ \\Sigma_{\\ell} and the CFG readout direction g s g_{s} . We first compare the native basis, a guidance-aligned basis using only g s g_{s} , and GCBT using both quantities under the same quantization and generation settings.",
+   "zh": "GCBT 从分支几何 Σ ℓ \\Sigma_{\\ell} 和 CFG 读出方向 g s g_{s} 中联合选择编码基。 我们首先在相同的量化和生成设置下，比较了原生基（仅使用 g s g_{s} 的与引导对齐的基）和 GCBT（同时使用这两个量）。",
+   "sents": [
+    {
+     "en": "GCBT selects the coding basis jointly from the branch geometry Σ ℓ \\Sigma_{\\ell} and the CFG readout direction g s g_{s} .",
+     "zh": "GCBT 从分支几何 Σ ℓ \\Sigma_{\\ell} 和 CFG 读出方向 g s g_{s} 中联合选择编码基。"
+    },
+    {
+     "en": "We first compare the native basis, a guidance-aligned basis using only g s g_{s} , and GCBT using both quantities under the same quantization and generation settings.",
+     "zh": "我们首先在相同的量化和生成设置下，比较了原生基（仅使用 g s g_{s} 的与引导对齐的基）和 GCBT（同时使用这两个量）。"
+    }
+   ]
+  },
+  {
+   "en": "Table 4 shows a clear progression: aligning the basis with the CFG readout already improves over native branch coding, while incorporating the measured branch geometry yields a further gain across all three fidelity metrics. This indicates that guidance information alone does not account for the benefit of GCBT; the coding basis benefits from coupling CFG sensitivity with the geometry of the matched activations. Full statistics are reported in Appendix B.3 .",
+   "zh": "表4显示了一个清晰的进展：将基矢与CFG读出对齐，就已经优于原生分支编码；而将测得的分支几何结构纳入其中，则在三项保真度指标上进一步提升了性能。 这表明，仅靠引导信息本身并不能解释GCBT带来的优势；编码基矢通过将CFG敏感性与匹配激活的几何结构耦合而获益。 完整的统计数据报告见附录B.3。",
+   "sents": [
+    {
+     "en": "Table 4 shows a clear progression: aligning the basis with the CFG readout already improves over native branch coding, while incorporating the measured branch geometry yields a further gain across all three fidelity metrics.",
+     "zh": "表4显示了一个清晰的进展：将基矢与CFG读出对齐，就已经优于原生分支编码；而将测得的分支几何结构纳入其中，则在三项保真度指标上进一步提升了性能。"
+    },
+    {
+     "en": "This indicates that guidance information alone does not account for the benefit of GCBT; the coding basis benefits from coupling CFG sensitivity with the geometry of the matched activations.",
+     "zh": "这表明，仅靠引导信息本身并不能解释GCBT带来的优势；编码基矢通过将CFG敏感性与匹配激活的几何结构耦合而获益。"
+    },
+    {
+     "en": "Full statistics are reported in Appendix B.3 .",
+     "zh": "完整的统计数据报告见附录B.3。"
+    }
+   ]
+  },
+  {
+   "en": "Because GCBT optimizes its basis using the CFG branch direction g s g_{s} , we evaluate its behavior across varying guidance scales while holding all other configurations fixed. As illustrated in Figure 5 , GCBT exhibits a clear scale-dependent pattern: its fidelity gains over the host quantizer grow monotonically as guidance becomes stronger. At weak guidance ( s = 2 s=2 ), the perceptual improvement is marginal; however, from s = 3 s=3 onward, GCBT consistently strengthens performance across LPIPS, SSIM, and PSNR. This trend directly reflects the role of g s g_{s} in our objective function: as stronger CFG alters the guidance readout orientation, adapting the branch coding basis becomes increasingly consequential for preserving activation fidelity.",
+   "zh": "由于 GCBT 使用 CFG 分支方向 g s g_{s} 来优化其基矢，我们在保持所有其他配置不变的同时，评估了其在不同引导尺度下的表现。 如图 5 所示，GCBT 表现出明显的尺度依赖模式：随着引导强度的增强，其相对于主机量化器的保真度增益单调增长。 在弱引导（s = 2 s=2）条件下，感知上的提升微乎其微；然而从 s = 3 s=3 开始，GCBT 在 LPIPS、SSIM 和 PSNR 指标上持续提升了性能。 这一趋势直接反映了 g s g_{s} 在我们目标函数中的作用：随着更强的 CFG 改变引导读出的方向，调整分支编码基矢对于保持激活保真度变得愈发重要。",
+   "sents": [
+    {
+     "en": "Because GCBT optimizes its basis using the CFG branch direction g s g_{s} , we evaluate its behavior across varying guidance scales while holding all other configurations fixed.",
+     "zh": "由于 GCBT 使用 CFG 分支方向 g s g_{s} 来优化其基矢，我们在保持所有其他配置不变的同时，评估了其在不同引导尺度下的表现。"
+    },
+    {
+     "en": "As illustrated in Figure 5 , GCBT exhibits a clear scale-dependent pattern: its fidelity gains over the host quantizer grow monotonically as guidance becomes stronger.",
+     "zh": "如图 5 所示，GCBT 表现出明显的尺度依赖模式：随着引导强度的增强，其相对于主机量化器的保真度增益单调增长。"
+    },
+    {
+     "en": "At weak guidance ( s = 2 s=2 ), the perceptual improvement is marginal; however, from s = 3 s=3 onward, GCBT consistently strengthens performance across LPIPS, SSIM, and PSNR.",
+     "zh": "在弱引导（s = 2 s=2）条件下，感知上的提升微乎其微；然而从 s = 3 s=3 开始，GCBT 在 LPIPS、SSIM 和 PSNR 指标上持续提升了性能。"
+    },
+    {
+     "en": "This trend directly reflects the role of g s g_{s} in our objective function: as stronger CFG alters the guidance readout orientation, adapting the branch coding basis becomes increasingly consequential for preserving activation fidelity.",
+     "zh": "这一趋势直接反映了 g s g_{s} 在我们目标函数中的作用：随着更强的 CFG 改变引导读出的方向，调整分支编码基矢对于保持激活保真度变得愈发重要。"
+    }
+   ]
+  },
+  {
+   "en": "To evaluate GCBT’s practical system cost, we measure end-to-end generation latency and peak GPU memory footprint on representative SVDQuant and OrbitQuant deployments, with SVDQuant evaluated using the Nunchaku inference engine (offline calibration excluded). As shown in Figure 6 , adding GCBT leaves the memory footprint unchanged and introduces only negligible runtime overhead (1–2%) relative to the corresponding host implementations. Thus, the fidelity gains of GCBT do not require a materially more expensive inference pipeline.",
+   "zh": "为评估 GCBT 的实际系统成本，我们在具有代表性的 SVDQuant 和 OrbitQuant 部署环境中测量了端到端生成延迟和峰值 GPU 内存占用量；其中，SVDQuant 的评估使用了 Nunchaku 推理引擎（不包括离线校准）。 如图 6 所示，添加 GCBT 后内存占用量保持不变，且相较于对应的主机实现，仅引入了可忽略不计的运行时间开销（1–2%）。 因此，GCBT 带来的保真度提升并不需要明显更昂贵的推理流程。",
+   "sents": [
+    {
+     "en": "To evaluate GCBT’s practical system cost, we measure end-to-end generation latency and peak GPU memory footprint on representative SVDQuant and OrbitQuant deployments, with SVDQuant evaluated using the Nunchaku inference engine (offline calibration excluded).",
+     "zh": "为评估 GCBT 的实际系统成本，我们在具有代表性的 SVDQuant 和 OrbitQuant 部署环境中测量了端到端生成延迟和峰值 GPU 内存占用量；其中，SVDQuant 的评估使用了 Nunchaku 推理引擎（不包括离线校准）。"
+    },
+    {
+     "en": "As shown in Figure 6 , adding GCBT leaves the memory footprint unchanged and introduces only negligible runtime overhead (1–2%) relative to the corresponding host implementations.",
+     "zh": "如图 6 所示，添加 GCBT 后内存占用量保持不变，且相较于对应的主机实现，仅引入了可忽略不计的运行时间开销（1–2%）。"
+    },
+    {
+     "en": "Thus, the fidelity gains of GCBT do not require a materially more expensive inference pipeline.",
+     "zh": "因此，GCBT 带来的保真度提升并不需要明显更昂贵的推理流程。"
+    }
+   ]
+  },
+  {
+   "en": "GCBT depends only on the 2 × 2 2\\times 2 branch second-moment matrix at each layer, so the required branch geometry can be estimated from a modest measurement pool. As shown in Table 5 (full results in Table 6 ), the measured geometry is already stable by n geom = 64 n_{\\rm geom}=64 : increasing the pool to 128 changes the median principal-axis orientation by only 0.04 ∘ 0.04^{\\circ} , while the matched-branch correlation remains approximately 0.86 0.86 and the source remains strongly anisotropic. We therefore use 64 samples for GCBT calibration throughout. Full results are reported in Appendix B.1 .",
+   "zh": "GCBT 在每个层仅依赖于 2 × 2 分支二阶矩矩阵，因此所需的分支几何结构可以从一个中等规模的测量池中估算出来。 如表 5 所示（完整结果见表 6），当 n geom = 64 时，测得的几何结构已经稳定：将测量池扩大到 128 时，主轴方向的中位数仅变化 0.04°，而匹配分支的相关性仍约为 0.86，且源仍然具有强烈的各向异性。 因此，我们在整个 GCBT 校准过程中均使用 64 个样本。 完整结果报告在附录 B.1 中。",
+   "sents": [
+    {
+     "en": "GCBT depends only on the 2 × 2 2\\times 2 branch second-moment matrix at each layer, so the required branch geometry can be estimated from a modest measurement pool.",
+     "zh": "GCBT 在每个层仅依赖于 2 × 2 分支二阶矩矩阵，因此所需的分支几何结构可以从一个中等规模的测量池中估算出来。"
+    },
+    {
+     "en": "As shown in Table 5 (full results in Table 6 ), the measured geometry is already stable by n geom = 64 n_{\\rm geom}=64 : increasing the pool to 128 changes the median principal-axis orientation by only 0.04 ∘ 0.04^{\\circ} , while the matched-branch correlation remains approximately 0.86 0.86 and the source remains strongly anisotropic.",
+     "zh": "如表 5 所示（完整结果见表 6），当 n geom = 64 时，测得的几何结构已经稳定：将测量池扩大到 128 时，主轴方向的中位数仅变化 0.04°，而匹配分支的相关性仍约为 0.86，且源仍然具有强烈的各向异性。"
+    },
+    {
+     "en": "We therefore use 64 samples for GCBT calibration throughout.",
+     "zh": "因此，我们在整个 GCBT 校准过程中均使用 64 个样本。"
+    },
+    {
+     "en": "Full results are reported in Appendix B.1 .",
+     "zh": "完整结果报告在附录 B.1 中。"
+    }
+   ]
+  },
+  {
+   "en": "We identify CFG branch space as an overlooked coding dimension for diffusion activation quantization and introduce GCBT, a closed-form transform that jointly exploits matched-branch geometry and guidance sensitivity. Across many settings, GCBT consistently yields favorable fidelity and generation-quality improvements without modifying model parameters or the underlying quantization pipeline. These results establish branch-space coding as a lightweight and complementary design axis for diffusion PTQ, with negligible runtime and memory overhead.",
+   "zh": "我们将 CFG 分支空间视为扩散激活量化中被忽视的一种编码维度，并提出了 GCBT——一种闭式变换方法，该方法联合利用了匹配分支的几何特性与引导敏感性。 在许多设置中，GCBT 始终能带来良好的保真度和生成质量提升，而无需修改模型参数或底层的量化流程。 这些结果表明，分支空间编码是一种轻量且互补的扩散 PTQ 设计维度，运行时和内存开销极小。",
+   "sents": [
+    {
+     "en": "We identify CFG branch space as an overlooked coding dimension for diffusion activation quantization and introduce GCBT, a closed-form transform that jointly exploits matched-branch geometry and guidance sensitivity.",
+     "zh": "我们将 CFG 分支空间视为扩散激活量化中被忽视的一种编码维度，并提出了 GCBT——一种闭式变换方法，该方法联合利用了匹配分支的几何特性与引导敏感性。"
+    },
+    {
+     "en": "Across many settings, GCBT consistently yields favorable fidelity and generation-quality improvements without modifying model parameters or the underlying quantization pipeline.",
+     "zh": "在许多设置中，GCBT 始终能带来良好的保真度和生成质量提升，而无需修改模型参数或底层的量化流程。"
+    },
+    {
+     "en": "These results establish branch-space coding as a lightweight and complementary design axis for diffusion PTQ, with negligible runtime and memory overhead.",
+     "zh": "这些结果表明，分支空间编码是一种轻量且互补的扩散 PTQ 设计维度，运行时和内存开销极小。"
+    }
+   ]
+  },
+  {
+   "en": "Fix a layer ℓ \\ell and suppress the layer superscript on local branch-space quantities. Let R = [ r 1 ⊤ r 2 ⊤ ] ∈ ℝ 2 × 2 R=\\begin{bmatrix}r_{1}^{\\top}\\\\ r_{2}^{\\top}\\end{bmatrix}\\in\\mathbb{R}^{2\\times 2} be an orthogonal branch rotation, and let z = R ​ x z=Rx denote the transformed coordinates of a matched branch-activation pair x x . Define the transformed-coordinate quantization error as δ = z ^ − z = [ δ 1 δ 2 ] , \\delta=\\widehat{z}-z=\\begin{bmatrix}\\delta_{1}\\\\ \\delta_{2}\\end{bmatrix}, with δ i = z ^ i − z i . \\delta_{i}=\\widehat{z}_{i}-z_{i}.",
+   "zh": "固定一个层 ℓ，并省略局部分支空间量中的层上标。 令 R = [ r 1 ⊤ r 2 ⊤ ] ∈ ℝ 2 × 2 为一个正交分支旋转，并令 z = R ​ x 表示匹配分支激活对 x 的变换坐标。 将变换坐标的量化误差定义为 δ = z ^ − z = [ δ 1 δ 2 ]，其中 δ i = z ^ i − z i。",
+   "sents": [
+    {
+     "en": "Fix a layer ℓ \\ell and suppress the layer superscript on local branch-space quantities.",
+     "zh": "固定一个层 ℓ，并省略局部分支空间量中的层上标。"
+    },
+    {
+     "en": "Let R = [ r 1 ⊤ r 2 ⊤ ] ∈ ℝ 2 × 2 R=\\begin{bmatrix}r_{1}^{\\top}\\\\ r_{2}^{\\top}\\end{bmatrix}\\in\\mathbb{R}^{2\\times 2} be an orthogonal branch rotation, and let z = R ​ x z=Rx denote the transformed coordinates of a matched branch-activation pair x x .",
+     "zh": "令 R = [ r 1 ⊤ r 2 ⊤ ] ∈ ℝ 2 × 2 为一个正交分支旋转，并令 z = R ​ x 表示匹配分支激活对 x 的变换坐标。"
+    },
+    {
+     "en": "Define the transformed-coordinate quantization error as δ = z ^ − z = [ δ 1 δ 2 ] , \\delta=\\widehat{z}-z=\\begin{bmatrix}\\delta_{1}\\\\ \\delta_{2}\\end{bmatrix}, with δ i = z ^ i − z i . \\delta_{i}=\\widehat{z}_{i}-z_{i}.",
+     "zh": "将变换坐标的量化误差定义为 δ = z ^ − z = [ δ 1 δ 2 ]，其中 δ i = z ^ i − z i。"
+    }
+   ]
+  },
+  {
+   "en": "Following the distortion surrogate in Eq. 6 , we assume",
+   "zh": "遵循公式 6 中的失真代理，我们假设",
+   "sents": null
+  },
+  {
+   "en": "where the same κ ℓ \\kappa_{\\ell} is used for both transformed coordinates. No zero-mean assumption on the quantization error is required.",
+   "zh": "其中，相同的 κ ℓ \\kappa_{\\ell} 被用于两种变换后的坐标。 对量化误差无需零均值假设。",
+   "sents": [
+    {
+     "en": "where the same κ ℓ \\kappa_{\\ell} is used for both transformed coordinates.",
+     "zh": "其中，相同的 κ ℓ \\kappa_{\\ell} 被用于两种变换后的坐标。"
+    },
+    {
+     "en": "No zero-mean assumption on the quantization error is required.",
+     "zh": "对量化误差无需零均值假设。"
+    }
+   ]
+  },
+  {
+   "en": "After inversion of the branch rotation, the local branch-space error is R ⊤ ​ δ R^{\\top}\\delta . Its component along the CFG readout direction g s g_{s} is",
+   "zh": "在分支旋转反转之后，局部分支空间误差为 R ⊤ ​ δ R^{\\top}\\delta 。 其沿 CFG 读出方向 g s g_{s} 的分量为",
+   "sents": [
+    {
+     "en": "After inversion of the branch rotation, the local branch-space error is R ⊤ ​ δ R^{\\top}\\delta .",
+     "zh": "在分支旋转反转之后，局部分支空间误差为 R ⊤ ​ δ R^{\\top}\\delta 。"
+    },
+    {
+     "en": "Its component along the CFG readout direction g s g_{s} is",
+     "zh": "其沿 CFG 读出方向 g s g_{s} 的分量为"
+    }
+   ]
+  },
+  {
+   "en": "Because κ ℓ > 0 \\kappa_{\\ell}>0 is independent of the branch basis, minimizing this expected squared distortion is equivalent to minimizing D sur ​ ( R ) D_{\\mathrm{sur}}(R) in Eq. 7 .",
+   "zh": "由于 κ ℓ > 0 \\kappa_{\\ell}>0 与分支基无关，因此最小化该期望平方失真等价于最小化公式 7 中的 D sur ​ ( R ) D_{\\mathrm{sur}}(R)。",
+   "sents": null
+  },
+  {
+   "en": "Because the branch space is two-dimensional, any rotation can be parameterized by a single angle θ \\theta . Measuring angles relative to the native conditional axis, write",
+   "zh": "由于分支空间是二维的，任何旋转都可以通过单个角度 θ \\theta 进行参数化。 将角度相对于原始条件轴进行测量，写出",
+   "sents": [
+    {
+     "en": "Because the branch space is two-dimensional, any rotation can be parameterized by a single angle θ \\theta .",
+     "zh": "由于分支空间是二维的，任何旋转都可以通过单个角度 θ \\theta 进行参数化。"
+    },
+    {
+     "en": "Measuring angles relative to the native conditional axis, write",
+     "zh": "将角度相对于原始条件轴进行测量，写出"
+    }
+   ]
+  },
+  {
+   "en": "and let ψ ℓ \\psi_{\\ell} denote the angle of the dominant eigenvector of Σ ℓ \\Sigma_{\\ell} and let ϕ s \\phi_{s} denote the angle of g s g_{s} , both measured relative to the native conditional axis. Then",
+   "zh": "并令 ψ ℓ \\psi_{\\ell} 表示 Σ ℓ \\Sigma_{\\ell} 的主特征向量的角度，并令 ϕ s \\phi_{s} 表示 g s g_{s} 的角度，两者均相对于原生条件轴进行测量。那么",
+   "sents": null
+  },
+  {
+   "en": "Substituting these expressions into Eq. 7 gives",
+   "zh": "将这些表达式代入方程 7，可得",
+   "sents": null
+  },
+  {
+   "en": "For Δ ℓ > 0 \\Delta_{\\ell}>0 , the minimum is attained when",
+   "zh": "对于 Δ ℓ > 0 \\Delta_{\\ell}>0，当……时取得最小值。",
+   "sents": null
+  },
+  {
+   "en": "This is Eq. 9 . For Δ ℓ = 0 \\Delta_{\\ell}=0 , equivalently λ 1 , ℓ = λ 2 , ℓ \\lambda_{1,\\ell}=\\lambda_{2,\\ell} , the objective is independent of θ \\theta , and the surrogate is rotationally invariant.",
+   "zh": "这是公式 9。 当 Δℓ = 0，即 λ₁,ℓ = λ₂,ℓ 时，目标函数与 θ 无关，且代理函数具有旋转不变性。",
+   "sents": [
+    {
+     "en": "This is Eq. 9 .",
+     "zh": "这是公式 9。"
+    },
+    {
+     "en": "For Δ ℓ = 0 \\Delta_{\\ell}=0 , equivalently λ 1 , ℓ = λ 2 , ℓ \\lambda_{1,\\ell}=\\lambda_{2,\\ell} , the objective is independent of θ \\theta , and the surrogate is rotationally invariant.",
+     "zh": "当 Δℓ = 0，即 λ₁,ℓ = λ₂,ℓ 时，目标函数与 θ 无关，且代理函数具有旋转不变性。"
+    }
+   ]
+  },
+  {
+   "en": "Let ℒ ⁡ ( X ) = X ​ W \\mathcal{L}(X)=XW be a linear operator shared by the two CFG branches. Since R R acts along the branch dimension while W W acts along the feature dimension,",
+   "zh": "令 ℒ ⁡ ( X ) = X ​ W \\mathcal{L}(X)=XW 为一个由两个 CFG 分支共享的线性算子。 由于 R R 沿分支维度作用，而 W W 沿特征维度作用，",
+   "sents": [
+    {
+     "en": "Let ℒ ⁡ ( X ) = X ​ W \\mathcal{L}(X)=XW be a linear operator shared by the two CFG branches.",
+     "zh": "令 ℒ ⁡ ( X ) = X ​ W \\mathcal{L}(X)=XW 为一个由两个 CFG 分支共享的线性算子。"
+    },
+    {
+     "en": "Since R R acts along the branch dimension while W W acts along the feature dimension,",
+     "zh": "由于 R R 沿分支维度作用，而 W W 沿特征维度作用，"
+    }
+   ]
+  },
+  {
+   "en": "Let Z ^ = 𝒬 A ​ ( R ​ X ) \\widehat{Z}=\\mathcal{Q}_{A}(RX) denote the quantized activation in transformed branch coordinates. Equation 27 allows the shared linear operator to act directly on Z ^ \\widehat{Z} ,",
+   "zh": "令 Z ^ = 𝒬 A ​ ( R ​ X ) \\widehat{Z}=\\mathcal{Q}_{A}(RX) 表示在变换后的分支坐标中的量化激活值。 方程 27 允许共享的线性算子直接作用于 Z ^ \\widehat{Z}，",
+   "sents": [
+    {
+     "en": "Let Z ^ = 𝒬 A ​ ( R ​ X ) \\widehat{Z}=\\mathcal{Q}_{A}(RX) denote the quantized activation in transformed branch coordinates.",
+     "zh": "令 Z ^ = 𝒬 A ​ ( R ​ X ) \\widehat{Z}=\\mathcal{Q}_{A}(RX) 表示在变换后的分支坐标中的量化激活值。"
+    },
+    {
+     "en": "Equation 27 allows the shared linear operator to act directly on Z ^ \\widehat{Z} ,",
+     "zh": "方程 27 允许共享的线性算子直接作用于 Z ^ \\widehat{Z}，"
+    }
+   ]
+  },
+  {
+   "en": "rather than first reconstructing the quantized activation in the native branch basis.",
+   "zh": "而不是首先在本征分支基中重构量化后的激活值。",
+   "sents": null
+  },
+  {
+   "en": "For an affine operator with a bias shared by the two CFG branches, the bias is added after the inverse branch transform. Thus, branch-space coding does not require reconstruction of the full native-basis activation before the shared quantized linear operation.",
+   "zh": "对于两个 CFG 分支共享偏置的仿射算子，该偏置是在逆分支变换之后添加的。 因此，分支空间编码无需在共享的量化线性操作之前重建完整的原生基激活。",
+   "sents": [
+    {
+     "en": "For an affine operator with a bias shared by the two CFG branches, the bias is added after the inverse branch transform.",
+     "zh": "对于两个 CFG 分支共享偏置的仿射算子，该偏置是在逆分支变换之后添加的。"
+    },
+    {
+     "en": "Thus, branch-space coding does not require reconstruction of the full native-basis activation before the shared quantized linear operation.",
+     "zh": "因此，分支空间编码无需在共享的量化线性操作之前重建完整的原生基激活。"
+    }
+   ]
+  },
+  {
+   "en": "GCBT estimates the three distinct entries of the 2 × 2 2\\times 2 second-moment matrix Σ ℓ \\Sigma_{\\ell} at each layer. To assess how much calibration data is required for these statistics to stabilize, we vary the calibration-set size on DiT-XL/2 with SVDQuant W4A4 and report layerwise median branch-space statistics. The mismatched correlation is computed by deliberately pairing conditional and unconditional activations from different samples, providing a reference for the matched-branch structure.",
+   "zh": "GCBT 在每一层估算 2×2 二阶矩矩阵 Σℓ 的三个不同条目。 为了评估需要多少校准数据才能使这些统计量稳定下来，我们在 DiT-XL/2 上调整校准集的大小（使用 SVDQuant W4A4），并报告各层的分支空间统计量的中位数。 不匹配的相关性通过故意将来自不同样本的条件激活和无条件激活进行配对来计算，从而为匹配分支结构提供参考。",
+   "sents": [
+    {
+     "en": "GCBT estimates the three distinct entries of the 2 × 2 2\\times 2 second-moment matrix Σ ℓ \\Sigma_{\\ell} at each layer.",
+     "zh": "GCBT 在每一层估算 2×2 二阶矩矩阵 Σℓ 的三个不同条目。"
+    },
+    {
+     "en": "To assess how much calibration data is required for these statistics to stabilize, we vary the calibration-set size on DiT-XL/2 with SVDQuant W4A4 and report layerwise median branch-space statistics.",
+     "zh": "为了评估需要多少校准数据才能使这些统计量稳定下来，我们在 DiT-XL/2 上调整校准集的大小（使用 SVDQuant W4A4），并报告各层的分支空间统计量的中位数。"
+    },
+    {
+     "en": "The mismatched correlation is computed by deliberately pairing conditional and unconditional activations from different samples, providing a reference for the matched-branch structure.",
+     "zh": "不匹配的相关性通过故意将来自不同样本的条件激活和无条件激活进行配对来计算，从而为匹配分支结构提供参考。"
+    }
+   ]
+  },
+  {
+   "en": "The estimated branch geometry is already stable at modest calibration sizes. In particular, beyond n cal = 64 n_{\\mathrm{cal}}=64 , the principal-axis orientation changes negligibly, while matched-branch correlation remains close to 0.855 0.855 and consistently exceeds the mismatched reference. The source also remains strongly anisotropic throughout the sweep. We therefore use 64 calibration samples in the main experiments.",
+   "zh": "在中等规模的校准下，估计的分支几何结构已经稳定。 特别是，当 n cal = 64 n_{\\mathrm{cal}}=64 时，主轴方向的变化可以忽略不计，而匹配分支的相关性仍接近 0.855 0.855，并且始终高于不匹配参考值。 在整个扫描过程中，该源也始终保持强各向异性。 因此，我们在主要实验中使用 64 个校准样本。",
+   "sents": [
+    {
+     "en": "The estimated branch geometry is already stable at modest calibration sizes.",
+     "zh": "在中等规模的校准下，估计的分支几何结构已经稳定。"
+    },
+    {
+     "en": "In particular, beyond n cal = 64 n_{\\mathrm{cal}}=64 , the principal-axis orientation changes negligibly, while matched-branch correlation remains close to 0.855 0.855 and consistently exceeds the mismatched reference.",
+     "zh": "特别是，当 n cal = 64 n_{\\mathrm{cal}}=64 时，主轴方向的变化可以忽略不计，而匹配分支的相关性仍接近 0.855 0.855，并且始终高于不匹配参考值。"
+    },
+    {
+     "en": "The source also remains strongly anisotropic throughout the sweep.",
+     "zh": "在整个扫描过程中，该源也始终保持强各向异性。"
+    },
+    {
+     "en": "We therefore use 64 calibration samples in the main experiments.",
+     "zh": "因此，我们在主要实验中使用 64 个校准样本。"
+    }
+   ]
+  },
+  {
+   "en": "GAMP ( Shafi and Suma, 2026 ) has no public implementation, so we implement a GAMP-inspired guided-output calibration on the official SVDQuant W4A4 PixArt- Σ \\Sigma host. This is not an official GAMP reproduction. The W4 GPTQ residual weights, smoothing, and FP rank-32 branch are frozen. For each of the 168 activation quantizers (dynamic group-64 A4), we fit one positive clipping multiplier in [ 0.1 , 2.0 ] [0.1,2.0] by minimizing the MSE between the quantized and full-precision guided noise predictions, ϵ u + s ⁡ ( ϵ c − ϵ u ) \\epsilon_{u}+s(\\epsilon_{c}-\\epsilon_{u}) with s = 4.5 s=4.5 . We use 1,024 paired states from 64 training prompts and 256 states from 16 validation prompts, 800 Adam updates (learning rate 0.01 0.01 , batch size one), and keep the checkpoint with the lowest validation error. The calibrated host is then frozen, and GCBT angles are computed from 64 complete Native trajectories on this host. Host-training, validation, GCBT-calibration, and evaluation prompts are disjoint.",
+   "zh": "GAMP（Shafi 和 Suma，2026）没有公开的实现，因此我们在官方的 SVDQuant W4A4 PixArt-Σ\\Sigma 宿主上实现了一种受 GAMP 启发的引导输出校准。 这并不是对 GAMP 的官方复现。 W4 GPTQ 的残差权重、平滑处理以及 FP rank-32 分支被冻结。 对于每个 168 个激活量化器（动态 group-64 A4），我们通过最小化量化结果与全精度引导噪声预测值之间的 MSE，来拟合一个位于 [0.1, 2.0] 范围内的正向截断乘数；其中噪声预测值为 ϵ_u + s(\\epsilon_c - ϵ_u)，且 s = 4.5。 我们使用来自 64 个训练提示的 1,024 个成对状态和来自 16 个验证提示的 256 个状态，进行 800 次 Adam 更新（学习率 0.01，批量大小为 1），并保留验证误差最低的检查点。 随后，校准后的宿主被冻结，并基于该宿主上 64 条完整的 Native 轨迹计算 GCBT 角度。 宿主训练、验证、GCBT 校准和评估所用的提示互不重叠。",
+   "sents": [
+    {
+     "en": "GAMP ( Shafi and Suma, 2026 ) has no public implementation, so we implement a GAMP-inspired guided-output calibration on the official SVDQuant W4A4 PixArt- Σ \\Sigma host.",
+     "zh": "GAMP（Shafi 和 Suma，2026）没有公开的实现，因此我们在官方的 SVDQuant W4A4 PixArt-Σ\\Sigma 宿主上实现了一种受 GAMP 启发的引导输出校准。"
+    },
+    {
+     "en": "This is not an official GAMP reproduction.",
+     "zh": "这并不是对 GAMP 的官方复现。"
+    },
+    {
+     "en": "The W4 GPTQ residual weights, smoothing, and FP rank-32 branch are frozen.",
+     "zh": "W4 GPTQ 的残差权重、平滑处理以及 FP rank-32 分支被冻结。"
+    },
+    {
+     "en": "For each of the 168 activation quantizers (dynamic group-64 A4), we fit one positive clipping multiplier in [ 0.1 , 2.0 ] [0.1,2.0] by minimizing the MSE between the quantized and full-precision guided noise predictions, ϵ u + s ⁡ ( ϵ c − ϵ u ) \\epsilon_{u}+s(\\epsilon_{c}-\\epsilon_{u}) with s = 4.5 s=4.5 .",
+     "zh": "对于每个 168 个激活量化器（动态 group-64 A4），我们通过最小化量化结果与全精度引导噪声预测值之间的 MSE，来拟合一个位于 [0.1, 2.0] 范围内的正向截断乘数；其中噪声预测值为 ϵ_u + s(\\epsilon_c - ϵ_u)，且 s = 4.5。"
+    },
+    {
+     "en": "We use 1,024 paired states from 64 training prompts and 256 states from 16 validation prompts, 800 Adam updates (learning rate 0.01 0.01 , batch size one), and keep the checkpoint with the lowest validation error.",
+     "zh": "我们使用来自 64 个训练提示的 1,024 个成对状态和来自 16 个验证提示的 256 个状态，进行 800 次 Adam 更新（学习率 0.01，批量大小为 1），并保留验证误差最低的检查点。"
+    },
+    {
+     "en": "The calibrated host is then frozen, and GCBT angles are computed from 64 complete Native trajectories on this host.",
+     "zh": "随后，校准后的宿主被冻结，并基于该宿主上 64 条完整的 Native 轨迹计算 GCBT 角度。"
+    },
+    {
+     "en": "Host-training, validation, GCBT-calibration, and evaluation prompts are disjoint.",
+     "zh": "宿主训练、验证、GCBT 校准和评估所用的提示互不重叠。"
+    }
+   ]
+  },
+  {
+   "en": "This study uses a separate execution setup from Table 2 : BF16 execution and a BF16 teacher, with initial noise drawn from a CPU generator. Evaluation uses the same 256 MJHQ and 256 sDCI prompts and seeds (1024 × \\times 1024, 20 DPM-Solver++ steps), but the different dtype and noise generator yield different teacher images. Absolute values are therefore not comparable across the two tables; the evidence is the paired Host versus +GCBT comparison under an identical host, prompts, seeds, and teacher.",
+   "zh": "本研究采用与表 2 不同的执行配置：BF16 执行和 BF16 教师智能体，初始噪声由 CPU 生成器生成。 评估使用相同的 256 MJHQ 和 256 sDCI 提示词与种子（1024 × \\times 1024，20 步 DPM-Solver++），但不同的 dtype 和噪声生成器会产生不同的教师图像。 因此，两个表格中的绝对值不可比较；其证据在于，在相同的主机、提示词、种子和教师智能体条件下，Host 与 +GCBT 的对比结果。",
+   "sents": [
+    {
+     "en": "This study uses a separate execution setup from Table 2 : BF16 execution and a BF16 teacher, with initial noise drawn from a CPU generator.",
+     "zh": "本研究采用与表 2 不同的执行配置：BF16 执行和 BF16 教师智能体，初始噪声由 CPU 生成器生成。"
+    },
+    {
+     "en": "Evaluation uses the same 256 MJHQ and 256 sDCI prompts and seeds (1024 × \\times 1024, 20 DPM-Solver++ steps), but the different dtype and noise generator yield different teacher images.",
+     "zh": "评估使用相同的 256 MJHQ 和 256 sDCI 提示词与种子（1024 × \\times 1024，20 步 DPM-Solver++），但不同的 dtype 和噪声生成器会产生不同的教师图像。"
+    },
+    {
+     "en": "Absolute values are therefore not comparable across the two tables; the evidence is the paired Host versus +GCBT comparison under an identical host, prompts, seeds, and teacher.",
+     "zh": "因此，两个表格中的绝对值不可比较；其证据在于，在相同的主机、提示词、种子和教师智能体条件下，Host 与 +GCBT 的对比结果。"
+    }
+   ]
+  },
+  {
+   "en": "As shown in Table 7 , the paired intervals are entirely favorable for LPIPS and SSIM on both datasets, whereas the PSNR intervals overlap zero. These statistics provide the paired uncertainty estimates underlying the significance annotations in Table 1 .",
+   "zh": "如表 7 所示，在两个数据集上，成对区间对于 LPIPS 和 SSIM 而言完全有利，而 PSNR 区间则与零重叠。 这些统计数据提供了表 1 中显著性标注所依据的成对不确定性估计值。",
+   "sents": [
+    {
+     "en": "As shown in Table 7 , the paired intervals are entirely favorable for LPIPS and SSIM on both datasets, whereas the PSNR intervals overlap zero.",
+     "zh": "如表 7 所示，在两个数据集上，成对区间对于 LPIPS 和 SSIM 而言完全有利，而 PSNR 区间则与零重叠。"
+    },
+    {
+     "en": "These statistics provide the paired uncertainty estimates underlying the significance annotations in Table 1 .",
+     "zh": "这些统计数据提供了表 1 中显著性标注所依据的成对不确定性估计值。"
+    }
+   ]
+  },
+  {
+   "en": "Table 8 provides the statistical details underlying the branch-basis ablation in Table 4 . All variants are evaluated on the same 256 MJHQ prompts with identical generation seeds, enabling paired prompt-level comparisons. We report bootstrap 95% confidence intervals from 10,000 prompt-level resamples for both the absolute metric means and the paired improvements between basis choices.",
+   "zh": "表 8 提供了表 4 中基于分支的消融分析所依据的统计细节。 所有变体均在相同的 256 个 MJHQ 提示词和一致的生成种子上进行评估，从而支持在提示词层面对比。 我们对绝对指标均值以及不同基础选择之间的成对改进，报告了基于 10,000 次提示词层面重采样得到的 95% 自助置信区间。",
+   "sents": [
+    {
+     "en": "Table 8 provides the statistical details underlying the branch-basis ablation in Table 4 .",
+     "zh": "表 8 提供了表 4 中基于分支的消融分析所依据的统计细节。"
+    },
+    {
+     "en": "All variants are evaluated on the same 256 MJHQ prompts with identical generation seeds, enabling paired prompt-level comparisons.",
+     "zh": "所有变体均在相同的 256 个 MJHQ 提示词和一致的生成种子上进行评估，从而支持在提示词层面对比。"
+    },
+    {
+     "en": "We report bootstrap 95% confidence intervals from 10,000 prompt-level resamples for both the absolute metric means and the paired improvements between basis choices.",
+     "zh": "我们对绝对指标均值以及不同基础选择之间的成对改进，报告了基于 10,000 次提示词层面重采样得到的 95% 自助置信区间。"
+    }
+   ]
+  },
+  {
+   "en": "The paired analysis supports the stepwise pattern observed in the main text. Guidance alignment significantly improves over Native in LPIPS, SSIM, and PSNR, and GCBT provides a further statistically supported improvement over the guidance-aligned basis on all three metrics. Consequently, the full GCBT–Native comparison is also favorable throughout. We base these comparisons on the paired intervals in Table 8 (b), rather than overlap between the marginal confidence intervals of the absolute means in panel (a).",
+   "zh": "配对分析支持正文中观察到的分步模式。 在 LPIPS、SSIM 和 PSNR 指标上，引导对齐相较于 Native 有显著提升，而 GCBT 在这三项指标上均进一步实现了具有统计学意义的改进，优于经过引导对齐的基础模型。 因此，完整的 GCBT–Native 对比结果在整个范围内也呈现出优势。 这些比较基于表 8 (b) 中的配对区间，而非图 (a) 中绝对均值边缘置信区间的重叠部分。",
+   "sents": [
+    {
+     "en": "The paired analysis supports the stepwise pattern observed in the main text.",
+     "zh": "配对分析支持正文中观察到的分步模式。"
+    },
+    {
+     "en": "Guidance alignment significantly improves over Native in LPIPS, SSIM, and PSNR, and GCBT provides a further statistically supported improvement over the guidance-aligned basis on all three metrics.",
+     "zh": "在 LPIPS、SSIM 和 PSNR 指标上，引导对齐相较于 Native 有显著提升，而 GCBT 在这三项指标上均进一步实现了具有统计学意义的改进，优于经过引导对齐的基础模型。"
+    },
+    {
+     "en": "Consequently, the full GCBT–Native comparison is also favorable throughout.",
+     "zh": "因此，完整的 GCBT–Native 对比结果在整个范围内也呈现出优势。"
+    },
+    {
+     "en": "We base these comparisons on the paired intervals in Table 8 (b), rather than overlap between the marginal confidence intervals of the absolute means in panel (a).",
+     "zh": "这些比较基于表 8 (b) 中的配对区间，而非图 (a) 中绝对均值边缘置信区间的重叠部分。"
+    }
+   ]
+  },
+  {
+   "en": "PixArt- Σ \\Sigma and SANA-1.6B are evaluated at 1024 × 1024 1024\\times 1024 resolution with 20 sampling steps and CFG = 4.5 =4.5 . Both use the second-order DPM-Solver++ scheduler packaged with their respective checkpoints; PixArt- Σ \\Sigma uses epsilon prediction, whereas SANA uses flow prediction. SD3.5-Large is evaluated at 1024 × 1024 1024\\times 1024 resolution with 28 steps and CFG = 4.5 =4.5 , using its checkpoint-provided FlowMatch Euler scheduler with shift = 3 =3 . We use the official non-distilled checkpoints and fixed, empty negative prompts. Within each model, the full-precision reference, native quantized host, and GCBT use identical prompts, generation seeds, samplers, and generation settings.",
+   "zh": "PixArt- Σ \\Sigma 和 SANA-1.6B 在 1024 × 1024 1024\\times 1024 分辨率下进行评估，采样步数为 20，CFG = 4.5 =4.5。 两者均使用各自检查点中封装的二阶 DPM-Solver++ 调度器；PixArt- Σ \\Sigma 使用 epsilon 预测，而 SANA 使用流预测。 SD3.5-Large 在 1024 × 1024 1024\\times 1024 分辨率下进行评估，采样步数为 28，CFG = 4.5 =4.5，并使用其检查点提供的 FlowMatch Euler 调度器，其中 shift = 3 =3。 我们使用官方的非蒸馏检查点以及固定且为空的反向提示。 在每个模型中，全精度参考、原生量化主机和 GCBT 均使用相同的提示、生成种子、采样器和生成设置。",
+   "sents": [
+    {
+     "en": "PixArt- Σ \\Sigma and SANA-1.6B are evaluated at 1024 × 1024 1024\\times 1024 resolution with 20 sampling steps and CFG = 4.5 =4.5 .",
+     "zh": "PixArt- Σ \\Sigma 和 SANA-1.6B 在 1024 × 1024 1024\\times 1024 分辨率下进行评估，采样步数为 20，CFG = 4.5 =4.5。"
+    },
+    {
+     "en": "Both use the second-order DPM-Solver++ scheduler packaged with their respective checkpoints; PixArt- Σ \\Sigma uses epsilon prediction, whereas SANA uses flow prediction.",
+     "zh": "两者均使用各自检查点中封装的二阶 DPM-Solver++ 调度器；PixArt- Σ \\Sigma 使用 epsilon 预测，而 SANA 使用流预测。"
+    },
+    {
+     "en": "SD3.5-Large is evaluated at 1024 × 1024 1024\\times 1024 resolution with 28 steps and CFG = 4.5 =4.5 , using its checkpoint-provided FlowMatch Euler scheduler with shift = 3 =3 .",
+     "zh": "SD3.5-Large 在 1024 × 1024 1024\\times 1024 分辨率下进行评估，采样步数为 28，CFG = 4.5 =4.5，并使用其检查点提供的 FlowMatch Euler 调度器，其中 shift = 3 =3。"
+    },
+    {
+     "en": "We use the official non-distilled checkpoints and fixed, empty negative prompts.",
+     "zh": "我们使用官方的非蒸馏检查点以及固定且为空的反向提示。"
+    },
+    {
+     "en": "Within each model, the full-precision reference, native quantized host, and GCBT use identical prompts, generation seeds, samplers, and generation settings.",
+     "zh": "在每个模型中，全精度参考、原生量化主机和 GCBT 均使用相同的提示、生成种子、采样器和生成设置。"
+    }
+   ]
+  },
+  {
+   "en": "Wan2.1-T2V-1.3B and Wan2.1-T2V-14B generate 832 × 480 832\\times 480 videos with 81 frames at 16 FPS, using 50 FlowUniPC steps and CFG = 5 =5 ; their flow shifts are 8 and 5, respectively. CogVideoX-2B generates 720 × 480 720\\times 480 videos with 49 frames at 8 FPS, using 50 steps of its checkpoint-provided CogVideoX DDIM scheduler and CFG = 6 =6 , with dynamic CFG disabled. OpenSora v1.2 generates 512 × 512 512\\times 512 videos with 64 frames at 24 FPS, using 30 rectified-flow steps, timestep transformation, and CFG = 7 =7 ; its text preprocessing uses an AES score of 6.5. We use non-distilled checkpoints with active two-branch CFG throughout. For each model, the full-precision reference and both quantized variants share the prompt, generation seed, resolution, frame count, frame rate, and sampling configuration.",
+   "zh": "Wan2.1-T2V-1.3B 和 Wan2.1-T2V-14B 使用 50 步 FlowUniPC 和 CFG = 5，生成分辨率为 832 × 480、帧数为 81、帧率为 16 FPS 的视频；它们的流偏移分别为 8 和 5。 CogVideoX-2B 使用其检查点提供的 CogVideoX DDIM 调度器执行 50 步操作，并设置 CFG = 6，在动态 CFG 禁用的情况下生成分辨率为 720 × 480、帧数为 49、帧率为 8 FPS 的视频。 OpenSora v1.2 使用 30 步修正流、时间步转换和 CFG = 7，生成分辨率为 512 × 512、帧数为 64、帧率为 24 FPS 的视频；其文本预处理使用 AES 分数为 6.5。 我们在整个过程中均使用未经蒸馏的检查点，并启用双分支 CFG。 对于每个模型，全精度参考版本和两种量化版本共享相同的提示词、生成种子、分辨率、帧数、帧率和采样配置。",
+   "sents": [
+    {
+     "en": "Wan2.1-T2V-1.3B and Wan2.1-T2V-14B generate 832 × 480 832\\times 480 videos with 81 frames at 16 FPS, using 50 FlowUniPC steps and CFG = 5 =5 ; their flow shifts are 8 and 5, respectively.",
+     "zh": "Wan2.1-T2V-1.3B 和 Wan2.1-T2V-14B 使用 50 步 FlowUniPC 和 CFG = 5，生成分辨率为 832 × 480、帧数为 81、帧率为 16 FPS 的视频；它们的流偏移分别为 8 和 5。"
+    },
+    {
+     "en": "CogVideoX-2B generates 720 × 480 720\\times 480 videos with 49 frames at 8 FPS, using 50 steps of its checkpoint-provided CogVideoX DDIM scheduler and CFG = 6 =6 , with dynamic CFG disabled.",
+     "zh": "CogVideoX-2B 使用其检查点提供的 CogVideoX DDIM 调度器执行 50 步操作，并设置 CFG = 6，在动态 CFG 禁用的情况下生成分辨率为 720 × 480、帧数为 49、帧率为 8 FPS 的视频。"
+    },
+    {
+     "en": "OpenSora v1.2 generates 512 × 512 512\\times 512 videos with 64 frames at 24 FPS, using 30 rectified-flow steps, timestep transformation, and CFG = 7 =7 ; its text preprocessing uses an AES score of 6.5.",
+     "zh": "OpenSora v1.2 使用 30 步修正流、时间步转换和 CFG = 7，生成分辨率为 512 × 512、帧数为 64、帧率为 24 FPS 的视频；其文本预处理使用 AES 分数为 6.5。"
+    },
+    {
+     "en": "We use non-distilled checkpoints with active two-branch CFG throughout.",
+     "zh": "我们在整个过程中均使用未经蒸馏的检查点，并启用双分支 CFG。"
+    },
+    {
+     "en": "For each model, the full-precision reference and both quantized variants share the prompt, generation seed, resolution, frame count, frame rate, and sampling configuration.",
+     "zh": "对于每个模型，全精度参考版本和两种量化版本共享相同的提示词、生成种子、分辨率、帧数、帧率和采样配置。"
+    }
+   ]
+  },
+  {
+   "en": "For video, we use a fixed n = 256 n=256 subset of VBench ( Huang et al., 2024 ) , stratified by category. Prompt subsets and generation seeds are fixed once and reused for the full-precision reference, Host PTQ, and Host+GCBT. Within each paired comparison, the checkpoint, host configuration, bitwidth, CFG scale, sampling steps, resolution, and generation seed are identical; only GCBT is changed. Framewise fidelity metrics are averaged within each clip, with prompts treated as the paired statistical units.",
+   "zh": "对于视频，我们使用 VBench（Huang 等人，2024）中一个固定的 n = 256 n=256 子集，并按类别进行分层。 提示子集和生成种子一经确定即保持不变，并用于全精度参考、Host PTQ 以及 Host+GCBT。 在每一对比较中，检查点、主机配置、位宽、CFG 比例、采样步数、分辨率和生成种子均相同；仅 GCBT 被改变。 帧级保真度指标在每个片段内取平均值，其中提示被视为配对的统计单元。",
+   "sents": [
+    {
+     "en": "For video, we use a fixed n = 256 n=256 subset of VBench ( Huang et al., 2024 ) , stratified by category.",
+     "zh": "对于视频，我们使用 VBench（Huang 等人，2024）中一个固定的 n = 256 n=256 子集，并按类别进行分层。"
+    },
+    {
+     "en": "Prompt subsets and generation seeds are fixed once and reused for the full-precision reference, Host PTQ, and Host+GCBT.",
+     "zh": "提示子集和生成种子一经确定即保持不变，并用于全精度参考、Host PTQ 以及 Host+GCBT。"
+    },
+    {
+     "en": "Within each paired comparison, the checkpoint, host configuration, bitwidth, CFG scale, sampling steps, resolution, and generation seed are identical; only GCBT is changed.",
+     "zh": "在每一对比较中，检查点、主机配置、位宽、CFG 比例、采样步数、分辨率和生成种子均相同；仅 GCBT 被改变。"
+    },
+    {
+     "en": "Framewise fidelity metrics are averaged within each clip, with prompts treated as the paired statistical units.",
+     "zh": "帧级保真度指标在每个片段内取平均值，其中提示被视为配对的统计单元。"
+    }
+   ]
+  },
+  {
+   "en": "The relatively high BF16-referenced LPIPS on Wan is not specific to GCBT: it is already present in the OrbitQuant baseline. In video diffusion, quantization can shift the sampling trajectory enough to produce a different yet still prompt-consistent realization, making frame-aligned distance to a single BF16 sample large even when visual quality remains good. Figure 7 illustrates this behavior. Accordingly, we interpret LPIPS here as BF16-reference fidelity rather than standalone generation quality, and report VBench metrics alongside it.",
+   "zh": "Wan 模型在 BF16 参考下的 LPIPS 值相对较高，但这并非 GCBT 所独有：OrbitQuant 基线模型中已经存在这一现象。 在视频扩散过程中，量化可能会使采样轨迹发生足够大的偏移，从而生成一个不同但依然与提示一致的输出结果，这会导致即使视觉质量良好，与单个 BF16 样本的帧对齐距离仍然很大。 图 7 展示了这种行为。 因此，我们将此处的 LPIPS 解释为相对于 BF16 参考的保真度，而非独立的生成质量，并同时将 VBench 指标一并报告。",
+   "sents": [
+    {
+     "en": "The relatively high BF16-referenced LPIPS on Wan is not specific to GCBT: it is already present in the OrbitQuant baseline.",
+     "zh": "Wan 模型在 BF16 参考下的 LPIPS 值相对较高，但这并非 GCBT 所独有：OrbitQuant 基线模型中已经存在这一现象。"
+    },
+    {
+     "en": "In video diffusion, quantization can shift the sampling trajectory enough to produce a different yet still prompt-consistent realization, making frame-aligned distance to a single BF16 sample large even when visual quality remains good.",
+     "zh": "在视频扩散过程中，量化可能会使采样轨迹发生足够大的偏移，从而生成一个不同但依然与提示一致的输出结果，这会导致即使视觉质量良好，与单个 BF16 样本的帧对齐距离仍然很大。"
+    },
+    {
+     "en": "Figure 7 illustrates this behavior.",
+     "zh": "图 7 展示了这种行为。"
+    },
+    {
+     "en": "Accordingly, we interpret LPIPS here as BF16-reference fidelity rather than standalone generation quality, and report VBench metrics alongside it.",
+     "zh": "因此，我们将此处的 LPIPS 解释为相对于 BF16 参考的保真度，而非独立的生成质量，并同时将 VBench 指标一并报告。"
+    }
+   ]
+  },
+  {
+   "en": "GCBT has several scope limitations. First, its closed-form optimality is derived under the equal-rate quantization-noise surrogate in Sec. 3.3, which assumes that transformed-coordinate quantization error scales with projected second moments and neglects cross-coordinate error terms. The resulting rotation is therefore optimal for this surrogate, rather than being guaranteed to minimize the exact distortion of every host quantizer or end-to-end generation error.",
+   "zh": "GCBT 存在若干范围限制。 首先，其闭式最优性是在第 3.3 节中基于等速率量化噪声代理模型推导得出的，该模型假设变换坐标的量化误差与投影二阶矩成比例，并忽略了跨坐标的误差项。 因此，由此得到的旋转是针对该代理模型的最优解，而非保证能够最小化每个主量化器或端到端生成过程的精确失真。",
+   "sents": [
+    {
+     "en": "GCBT has several scope limitations.",
+     "zh": "GCBT 存在若干范围限制。"
+    },
+    {
+     "en": "First, its closed-form optimality is derived under the equal-rate quantization-noise surrogate in Sec. 3.3, which assumes that transformed-coordinate quantization error scales with projected second moments and neglects cross-coordinate error terms.",
+     "zh": "首先，其闭式最优性是在第 3.3 节中基于等速率量化噪声代理模型推导得出的，该模型假设变换坐标的量化误差与投影二阶矩成比例，并忽略了跨坐标的误差项。"
+    },
+    {
+     "en": "The resulting rotation is therefore optimal for this surrogate, rather than being guaranteed to minimize the exact distortion of every host quantizer or end-to-end generation error.",
+     "zh": "因此，由此得到的旋转是针对该代理模型的最优解，而非保证能够最小化每个主量化器或端到端生成过程的精确失真。"
+    }
+   ]
+  },
+  {
+   "en": "Second, GCBT requires an explicit matched conditional–unconditional branch pair and is therefore directly applicable to inference pipelines with active two-branch CFG. We do not study distilled or single-pass guidance schemes, nor timestep-varying or dynamic CFG schedules.",
+   "zh": "其次，GCBT 需要一个明确的匹配的条件–无条件分支对，因此可以直接应用于具有活跃双分支 CFG 的推理流程。 我们不研究蒸馏或单通引导方案，也不研究随时间步变化或动态的 CFG 调度方案。",
+   "sents": [
+    {
+     "en": "Second, GCBT requires an explicit matched conditional–unconditional branch pair and is therefore directly applicable to inference pipelines with active two-branch CFG.",
+     "zh": "其次，GCBT 需要一个明确的匹配的条件–无条件分支对，因此可以直接应用于具有活跃双分支 CFG 的推理流程。"
+    },
+    {
+     "en": "We do not study distilled or single-pass guidance schemes, nor timestep-varying or dynamic CFG schedules.",
+     "zh": "我们不研究蒸馏或单通引导方案，也不研究随时间步变化或动态的 CFG 调度方案。"
+    }
+   ]
+  },
+  {
+   "en": "Finally, our CFG-aware comparison uses a GAMP-inspired calibration that we implemented ourselves because no public implementation of GAMP is available. This experiment should therefore be interpreted as evidence that GCBT remains complementary to guided-output calibration, rather than as an official reproduction of GAMP; results with the original implementation may differ.",
+   "zh": "最后，我们的 CFG 感知比较方法使用了一种受 GAMP 启发的校准机制，该机制由我们自己实现，因为目前还没有可用的公开 GAMP 实现。 因此，这项实验应被解释为证据，表明 GCBT 仍然是引导输出校准的补充方法，而非对 GAMP 的官方复现；使用原始实现得到的结果可能会有所不同。",
+   "sents": [
+    {
+     "en": "Finally, our CFG-aware comparison uses a GAMP-inspired calibration that we implemented ourselves because no public implementation of GAMP is available.",
+     "zh": "最后，我们的 CFG 感知比较方法使用了一种受 GAMP 启发的校准机制，该机制由我们自己实现，因为目前还没有可用的公开 GAMP 实现。"
+    },
+    {
+     "en": "This experiment should therefore be interpreted as evidence that GCBT remains complementary to guided-output calibration, rather than as an official reproduction of GAMP; results with the original implementation may differ.",
+     "zh": "因此，这项实验应被解释为证据，表明 GCBT 仍然是引导输出校准的补充方法，而非对 GAMP 的官方复现；使用原始实现得到的结果可能会有所不同。"
+    }
+   ]
+  }
+ ]
+}
