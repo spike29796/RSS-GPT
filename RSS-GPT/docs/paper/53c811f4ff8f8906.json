@@ -1,0 +1,1037 @@
+{
+ "id": "53c811f4ff8f8906",
+ "source": "arxiv-agent",
+ "link": "https://arxiv.org/abs/2610.22017v1",
+ "title": "CARA: Causally Guided Retrieval Agent for Question Answering",
+ "title_zh": "CARA：用于问答的因果引导检索智能体",
+ "published": "2026-10-15T14:57:14Z",
+ "translated_at": "2026-10-18T20:40:43Z",
+ "paragraphs": [
+  {
+   "en": "Retrieval-augmented generation over text-rich knowledge graphs requires identifying evidence that contributes to answering a question, rather than merely matching its textual content. Existing agentic retrievers adaptively balance global search and multi-hop exploration but primarily rely on textual similarity to guide retrieval. We propose CARA, a training-free, CA usally guided R etrieval A gent that explicitly evaluates the causal relevance of retrieved evidence through two complementary criteria: consequentiality, measuring whether adding evidence improves answerability, and essentiality, assessing whether removing evidence weakens answerability. CARA integrates these assessments with path consistency to guide graph exploration and employs reciprocal rank fusion to aggregate evidence from multiple agents. We evaluate CARA on three STaRK datasets and augment STaRK with ground-truth answers to enable downstream question answering evaluation. Experimental results demonstrate that CARA consistently outperforms existing retrievers. CARA also improves answer quality and faithfulness while examining fewer graph nodes and requiring fewer retrieval operations. These findings demonstrate that causal relevance assessment enables more focused and effective agentic graph retrieval, improving both retrieval performance and downstream question answering.",
+   "zh": "在文本丰富的知识图谱中，检索增强生成需要识别有助于回答问题的证据，而不仅仅是匹配其文本内容。 现有的智能体式检索器能够自适应地平衡全局搜索和多跳探索，但主要依赖文本相似度来指导检索。 我们提出了 CARA：一种无需训练、由因果推理引导的检索智能体，它通过两个互补的标准明确评估所检索证据的因果相关性——结果性（衡量添加证据是否提升可回答性）和必要性（衡量移除证据是否削弱可回答性）。 CARA 将这些评估与路径一致性相结合以指导图谱探索，并采用互惠排名融合来聚合来自多个智能体的证据。 我们在三个 STaRK 数据集上对 CARA 进行了评估，并通过为 STaRK 添加真实答案，使其支持下游问题回答的评估。 实验结果表明，CARA 在性能上持续优于现有的检索器。 CARA 还能提升答案的质量和忠实度，同时需要检查更少的图谱节点和更少的检索操作。 这些发现表明，因果相关性评估能够实现更具针对性和有效性的智能体式图谱检索，从而提升检索性能和下游问题回答效果。",
+   "sents": [
+    {
+     "en": "Retrieval-augmented generation over text-rich knowledge graphs requires identifying evidence that contributes to answering a question, rather than merely matching its textual content.",
+     "zh": "在文本丰富的知识图谱中，检索增强生成需要识别有助于回答问题的证据，而不仅仅是匹配其文本内容。"
+    },
+    {
+     "en": "Existing agentic retrievers adaptively balance global search and multi-hop exploration but primarily rely on textual similarity to guide retrieval.",
+     "zh": "现有的智能体式检索器能够自适应地平衡全局搜索和多跳探索，但主要依赖文本相似度来指导检索。"
+    },
+    {
+     "en": "We propose CARA, a training-free, CA usally guided R etrieval A gent that explicitly evaluates the causal relevance of retrieved evidence through two complementary criteria: consequentiality, measuring whether adding evidence improves answerability, and essentiality, assessing whether removing evidence weakens answerability.",
+     "zh": "我们提出了 CARA：一种无需训练、由因果推理引导的检索智能体，它通过两个互补的标准明确评估所检索证据的因果相关性——结果性（衡量添加证据是否提升可回答性）和必要性（衡量移除证据是否削弱可回答性）。"
+    },
+    {
+     "en": "CARA integrates these assessments with path consistency to guide graph exploration and employs reciprocal rank fusion to aggregate evidence from multiple agents.",
+     "zh": "CARA 将这些评估与路径一致性相结合以指导图谱探索，并采用互惠排名融合来聚合来自多个智能体的证据。"
+    },
+    {
+     "en": "We evaluate CARA on three STaRK datasets and augment STaRK with ground-truth answers to enable downstream question answering evaluation.",
+     "zh": "我们在三个 STaRK 数据集上对 CARA 进行了评估，并通过为 STaRK 添加真实答案，使其支持下游问题回答的评估。"
+    },
+    {
+     "en": "Experimental results demonstrate that CARA consistently outperforms existing retrievers.",
+     "zh": "实验结果表明，CARA 在性能上持续优于现有的检索器。"
+    },
+    {
+     "en": "CARA also improves answer quality and faithfulness while examining fewer graph nodes and requiring fewer retrieval operations.",
+     "zh": "CARA 还能提升答案的质量和忠实度，同时需要检查更少的图谱节点和更少的检索操作。"
+    },
+    {
+     "en": "These findings demonstrate that causal relevance assessment enables more focused and effective agentic graph retrieval, improving both retrieval performance and downstream question answering.",
+     "zh": "这些发现表明，因果相关性评估能够实现更具针对性和有效性的智能体式图谱检索，从而提升检索性能和下游问题回答效果。"
+    }
+   ]
+  },
+  {
+   "en": "As a promising direction in retrieval-augmented generation (RAG), retrieval over text-rich knowledge graphs (KGs) rather than flat documents is increasingly used to help large language models (LLMs) answer questions and ground answers in evidence. Unlike flat document retrieval, KG retrieval must jointly exploit nodes (breadth-oriented) and traverse along relations (depth-oriented). Balancing between the search breadth and depth is a long standing challenge for KG retrieval ( Polonuer et al., 2026 ) . With the advances of agents, several recent studies ( Sun et al., 2024 ; Yu et al., 2025 ) delegate such tasks to retrieval agents which have autonomy to balance search breadth and depth without a pre-specified number of node searches or hops. However, these agents’ retrieval process is driven primarily by textual similarity and graph structure, which can still favor evidence that is only associated with the query but not necessary for answering it. For example, consider the question, “Which medicine should this patient avoid?” A similarity-based retriever may return a clinical note stating, “The patient currently takes several medicines, including aspirin and metformin,” because it contains many words similar to the query. However, this information does not answer the question. Another record may simply state, “Allergy: amoxicillin.” Although this short record has no textual overlap with the question, it provides the key evidence needed to answer the question. This illustrates why textual similarity alone is not enough to make a substantive contribution to the answer.",
+   "zh": "作为检索增强生成（RAG）领域一个充满前景的方向，从富含文本的知识图谱（KG）中进行检索，而非从扁平文档中检索，正被越来越多地用于帮助大型语言模型（LLM）回答问题并将答案与证据关联起来。 与扁平文档检索不同，知识图谱检索必须同时利用节点（广度导向）并沿关系进行遍历（深度导向）。 在搜索的广度与深度之间取得平衡，一直是知识图谱检索领域一个长期存在的挑战（Polonuer 等，2026）。 随着智能体的发展，近期的一些研究（Sun 等，2024；Yu 等，2025）将此类任务委托给检索智能体，这些智能体能够自主平衡搜索的广度与深度，而无需预先指定节点搜索次数或跳跃次数。 然而，这些智能体的检索过程主要由文本相似性和图谱结构驱动，这仍可能导致其优先选择那些仅与查询相关、但对回答问题并非必需的证据。 例如，考虑这个问题：“这位患者应避免服用哪种药物？”基于相似性的检索器可能会返回一份临床记录，其中写道：“该患者目前正在服用多种药物，包括阿司匹林和二甲双胍”，因为这段文字包含许多与查询相似的词语。 然而，这些信息并未回答该问题。 另一条记录可能仅简单陈述：“过敏：阿莫西林。”尽管这条简短的记录与问题在文本上没有任何重叠，但它提供了回答问题所需的关键证据。 这说明为何仅凭文本相似性不足以对答案产生实质性的帮助。",
+   "sents": [
+    {
+     "en": "As a promising direction in retrieval-augmented generation (RAG), retrieval over text-rich knowledge graphs (KGs) rather than flat documents is increasingly used to help large language models (LLMs) answer questions and ground answers in evidence.",
+     "zh": "作为检索增强生成（RAG）领域一个充满前景的方向，从富含文本的知识图谱（KG）中进行检索，而非从扁平文档中检索，正被越来越多地用于帮助大型语言模型（LLM）回答问题并将答案与证据关联起来。"
+    },
+    {
+     "en": "Unlike flat document retrieval, KG retrieval must jointly exploit nodes (breadth-oriented) and traverse along relations (depth-oriented).",
+     "zh": "与扁平文档检索不同，知识图谱检索必须同时利用节点（广度导向）并沿关系进行遍历（深度导向）。"
+    },
+    {
+     "en": "Balancing between the search breadth and depth is a long standing challenge for KG retrieval ( Polonuer et al., 2026 ) .",
+     "zh": "在搜索的广度与深度之间取得平衡，一直是知识图谱检索领域一个长期存在的挑战（Polonuer 等，2026）。"
+    },
+    {
+     "en": "With the advances of agents, several recent studies ( Sun et al., 2024 ; Yu et al., 2025 ) delegate such tasks to retrieval agents which have autonomy to balance search breadth and depth without a pre-specified number of node searches or hops.",
+     "zh": "随着智能体的发展，近期的一些研究（Sun 等，2024；Yu 等，2025）将此类任务委托给检索智能体，这些智能体能够自主平衡搜索的广度与深度，而无需预先指定节点搜索次数或跳跃次数。"
+    },
+    {
+     "en": "However, these agents’ retrieval process is driven primarily by textual similarity and graph structure, which can still favor evidence that is only associated with the query but not necessary for answering it.",
+     "zh": "然而，这些智能体的检索过程主要由文本相似性和图谱结构驱动，这仍可能导致其优先选择那些仅与查询相关、但对回答问题并非必需的证据。"
+    },
+    {
+     "en": "For example, consider the question, “Which medicine should this patient avoid?” A similarity-based retriever may return a clinical note stating, “The patient currently takes several medicines, including aspirin and metformin,” because it contains many words similar to the query.",
+     "zh": "例如，考虑这个问题：“这位患者应避免服用哪种药物？”基于相似性的检索器可能会返回一份临床记录，其中写道：“该患者目前正在服用多种药物，包括阿司匹林和二甲双胍”，因为这段文字包含许多与查询相似的词语。"
+    },
+    {
+     "en": "However, this information does not answer the question.",
+     "zh": "然而，这些信息并未回答该问题。"
+    },
+    {
+     "en": "Another record may simply state, “Allergy: amoxicillin.” Although this short record has no textual overlap with the question, it provides the key evidence needed to answer the question.",
+     "zh": "另一条记录可能仅简单陈述：“过敏：阿莫西林。”尽管这条简短的记录与问题在文本上没有任何重叠，但它提供了回答问题所需的关键证据。"
+    },
+    {
+     "en": "This illustrates why textual similarity alone is not enough to make a substantive contribution to the answer.",
+     "zh": "这说明为何仅凭文本相似性不足以对答案产生实质性的帮助。"
+    }
+   ]
+  },
+  {
+   "en": "In this study, we advocate for a causal retrieval agent, which has autonomy, but more importantly, is able to retrieve evidence that is “causally relevant” to answering the query, rather than merely textually similar. In this study, we operationalize the causal relevance using two complementary criteria:",
+   "zh": "在本研究中，我们倡导一种因果检索智能体：它不仅具备自主性，更重要的是，能够检索出与回答查询“具有因果相关性”的证据，而不仅仅是文本相似的证据。 在本研究中，我们通过两个互补的标准来具体化这种因果相关性：",
+   "sents": [
+    {
+     "en": "In this study, we advocate for a causal retrieval agent, which has autonomy, but more importantly, is able to retrieve evidence that is “causally relevant” to answering the query, rather than merely textually similar.",
+     "zh": "在本研究中，我们倡导一种因果检索智能体：它不仅具备自主性，更重要的是，能够检索出与回答查询“具有因果相关性”的证据，而不仅仅是文本相似的证据。"
+    },
+    {
+     "en": "In this study, we operationalize the causal relevance using two complementary criteria:",
+     "zh": "在本研究中，我们通过两个互补的标准来具体化这种因果相关性："
+    }
+   ]
+  },
+  {
+   "en": "Consequential : does adding the retrieved evidence materially increase answerability?",
+   "zh": "后果导向性：添加检索到的证据是否实质性地提高了可问责性？",
+   "sents": null
+  },
+  {
+   "en": "Essential : does removing the retrieved evidence materially reduce answerability?",
+   "zh": "关键问题：移除检索到的证据是否实质上降低了可问责性？",
+   "sents": null
+  },
+  {
+   "en": "This operationalization is inspired by recent work on faithful rationale evaluation ( DeYoung et al., 2020 ; Yu et al., 2019 ) . It worthwhile to note that this causal relevance does not focus on the literal “cause-effect” relations, which is only one special case of this broader notion.",
+   "zh": "这种操作化方法受到近期关于忠实推理评估的研究启发（DeYoung 等人，2020；Yu 等人，2019）。 值得注意的是，这种因果相关性并不聚焦于字面意义上的“因果”关系，而后者只是这一更广泛概念的一个特例。",
+   "sents": [
+    {
+     "en": "This operationalization is inspired by recent work on faithful rationale evaluation ( DeYoung et al., 2020 ; Yu et al., 2019 ) .",
+     "zh": "这种操作化方法受到近期关于忠实推理评估的研究启发（DeYoung 等人，2020；Yu 等人，2019）。"
+    },
+    {
+     "en": "It worthwhile to note that this causal relevance does not focus on the literal “cause-effect” relations, which is only one special case of this broader notion.",
+     "zh": "值得注意的是，这种因果相关性并不聚焦于字面意义上的“因果”关系，而后者只是这一更广泛概念的一个特例。"
+    }
+   ]
+  },
+  {
+   "en": "In this paper, we design and implement a CA usally guided R etrieval A gent for question answering, named CARA , by retrieving causally relevant evidence, defined as consequential and essential evidence that is directly helpful to answer a query. After global anchoring and during neighborhood hop, the retrieval agent invokes a causal reasoning module, asking whether the current hop is consequential and essential for resolving the information need. This reasoning guides the agent’s next decision on whether to continue hopping, to re-anchor globally, or to finish when sufficient support has been found.",
+   "zh": "在本文中，我们设计并实现了一种通常由因果关系引导的检索智能体，用于问答任务，并将其命名为 CARA。该智能体通过检索因果相关的证据来完成任务，这些证据被定义为对回答查询直接有帮助的关键且必要的证据。 在全局锚定之后以及邻域跳跃过程中，检索智能体会调用一个因果推理模块，判断当前这一步骤对于解决信息需求是否关键且必要。 这种推理会引导智能体做出下一步决策：是继续跳跃、重新进行全局锚定，还是在找到足够支持时停止。",
+   "sents": [
+    {
+     "en": "In this paper, we design and implement a CA usally guided R etrieval A gent for question answering, named CARA , by retrieving causally relevant evidence, defined as consequential and essential evidence that is directly helpful to answer a query.",
+     "zh": "在本文中，我们设计并实现了一种通常由因果关系引导的检索智能体，用于问答任务，并将其命名为 CARA。该智能体通过检索因果相关的证据来完成任务，这些证据被定义为对回答查询直接有帮助的关键且必要的证据。"
+    },
+    {
+     "en": "After global anchoring and during neighborhood hop, the retrieval agent invokes a causal reasoning module, asking whether the current hop is consequential and essential for resolving the information need.",
+     "zh": "在全局锚定之后以及邻域跳跃过程中，检索智能体会调用一个因果推理模块，判断当前这一步骤对于解决信息需求是否关键且必要。"
+    },
+    {
+     "en": "This reasoning guides the agent’s next decision on whether to continue hopping, to re-anchor globally, or to finish when sufficient support has been found.",
+     "zh": "这种推理会引导智能体做出下一步决策：是继续跳跃、重新进行全局锚定，还是在找到足够支持时停止。"
+    }
+   ]
+  },
+  {
+   "en": "Our contributions are threefold: (1) we formulate causal relevance as being consequential and essential, distinguishing answer-bearing evidence from merely textually similar evidence; (2) we introduce a training-free prompt-based causal reasoning module that evaluates the causal relevance from the perspectives of both the current hop and the accumulated path developed so far; and (3) we augment the well-known STaRK benchmark dataset with ground truth answers to the queries (questions), expanding its utility from only evaluating retrieval performance to evaluating both retrieval and question answering performance.",
+   "zh": "我们的贡献有三方面：（1）我们将因果相关性定义为具有结果导向性和必要性，从而将能够承载答案的证据与仅文本相似的证据区分开来；（2）我们引入了一种无需训练的基于提示的因果推理模块，该模块从当前跳跃和迄今为止已构建的累积路径两个角度评估因果相关性；以及（3）我们为广为人知的 STaRK 基准数据集补充了查询（问题）的真实答案，使其用途从仅评估检索性能扩展到同时评估检索和问答性能。",
+   "sents": null
+  },
+  {
+   "en": "Recent work on retrieval-augmented generation has increasingly moved beyond flat passage retrieval toward structured knowledge, multi-hop reasoning, and autonomous search. Three lines of research are particularly relevant to our work: knowledge-graph retrieval for question answering, causal retrieval and reasoning, and agentic retrieval.",
+   "zh": "近期关于检索增强生成的研究日益超越了简单的段落检索，转向结构化知识、多跳推理和自主搜索。 有三条研究路线与我们的工作尤为相关：用于问答的知识图谱检索、因果检索与推理，以及智能体式检索。",
+   "sents": [
+    {
+     "en": "Recent work on retrieval-augmented generation has increasingly moved beyond flat passage retrieval toward structured knowledge, multi-hop reasoning, and autonomous search.",
+     "zh": "近期关于检索增强生成的研究日益超越了简单的段落检索，转向结构化知识、多跳推理和自主搜索。"
+    },
+    {
+     "en": "Three lines of research are particularly relevant to our work: knowledge-graph retrieval for question answering, causal retrieval and reasoning, and agentic retrieval.",
+     "zh": "有三条研究路线与我们的工作尤为相关：用于问答的知识图谱检索、因果检索与推理，以及智能体式检索。"
+    }
+   ]
+  },
+  {
+   "en": "Knowledge-graph retrieval represents entities and their relations explicitly, enabling LLMs to access evidence that is distributed across multiple connected pieces of information. Representative works include GraphRAG ( Edge et al., 2024 ) , KG2RAG ( Zhu et al., 2025 ) , GRAG ( Hu et al., 2025 ) , G-Retriever ( He et al., 2024 ) , SubgraphRAG ( Li et al., 2025a ) , KAR ( Xia et al., 2025 ) , GraphSearch ( Yang et al., 2025 ) , HybGRAG ( Lee et al., 2025 ) , CoRAG ( Zheng et al., 2025 ) , and MoR ( Lei et al., 2025 ) .",
+   "zh": "知识图谱检索以显式方式表示实体及其关系，使大型语言模型能够访问分布在多个相互关联的信息片段中的证据。 代表性成果包括 GraphRAG（Edge 等，2024）、KG2RAG（Zhu 等，2025）、GRAG（Hu 等，2025）、G-Retriever（He 等，2024）、SubgraphRAG（Li 等，2025a）、KAR（Xia 等，2025）、GraphSearch（Yang 等，2025）、HybGRAG（Lee 等，2025）、CoRAG（Zheng 等，2025）和 MoR（Lei 等，2025）。",
+   "sents": [
+    {
+     "en": "Knowledge-graph retrieval represents entities and their relations explicitly, enabling LLMs to access evidence that is distributed across multiple connected pieces of information.",
+     "zh": "知识图谱检索以显式方式表示实体及其关系，使大型语言模型能够访问分布在多个相互关联的信息片段中的证据。"
+    },
+    {
+     "en": "Representative works include GraphRAG ( Edge et al., 2024 ) , KG2RAG ( Zhu et al., 2025 ) , GRAG ( Hu et al., 2025 ) , G-Retriever ( He et al., 2024 ) , SubgraphRAG ( Li et al., 2025a ) , KAR ( Xia et al., 2025 ) , GraphSearch ( Yang et al., 2025 ) , HybGRAG ( Lee et al., 2025 ) , CoRAG ( Zheng et al., 2025 ) , and MoR ( Lei et al., 2025 ) .",
+     "zh": "代表性成果包括 GraphRAG（Edge 等，2024）、KG2RAG（Zhu 等，2025）、GRAG（Hu 等，2025）、G-Retriever（He 等，2024）、SubgraphRAG（Li 等，2025a）、KAR（Xia 等，2025）、GraphSearch（Yang 等，2025）、HybGRAG（Lee 等，2025）、CoRAG（Zheng 等，2025）和 MoR（Lei 等，2025）。"
+    }
+   ]
+  },
+  {
+   "en": "These approaches demonstrate the value of combining search with graph structure, but they primarily determine relevance through textual, relational, or structural compatibility. They do not explicitly ask whether a retrieved piece of evidence is consequential or essential to answering the query, which motivates our causal relevance formulation.",
+   "zh": "这些方法展示了将搜索与图结构相结合的价值，但它们主要通过文本、关系或结构上的兼容性来确定相关性。 它们并未明确判断检索到的证据片段对于回答查询是否具有关键性或必要性，这促使我们提出了因果相关性的表述方法。",
+   "sents": [
+    {
+     "en": "These approaches demonstrate the value of combining search with graph structure, but they primarily determine relevance through textual, relational, or structural compatibility.",
+     "zh": "这些方法展示了将搜索与图结构相结合的价值，但它们主要通过文本、关系或结构上的兼容性来确定相关性。"
+    },
+    {
+     "en": "They do not explicitly ask whether a retrieved piece of evidence is consequential or essential to answering the query, which motivates our causal relevance formulation.",
+     "zh": "它们并未明确判断检索到的证据片段对于回答查询是否具有关键性或必要性，这促使我们提出了因果相关性的表述方法。"
+    }
+   ]
+  },
+  {
+   "en": "A growing body of work incorporates causal relations into retrieval and reasoning. Representative works include CDF-RAG ( Khatibi et al., 2025 ) , HCG-RAG ( Saouda et al., 2026 ) , CausalAgent ( Wang et al., 2026 ) , and CausalRAG ( Wang et al., 2025 ) .",
+   "zh": "越来越多的研究将因果关系整合到检索和推理中。 代表性成果包括 CDF-RAG（Khatibi 等人，2025）、HCG-RAG（Saouda 等人，2026）、CausalAgent（Wang 等人，2026）以及 CausalRAG（Wang 等人，2025）。",
+   "sents": [
+    {
+     "en": "A growing body of work incorporates causal relations into retrieval and reasoning.",
+     "zh": "越来越多的研究将因果关系整合到检索和推理中。"
+    },
+    {
+     "en": "Representative works include CDF-RAG ( Khatibi et al., 2025 ) , HCG-RAG ( Saouda et al., 2026 ) , CausalAgent ( Wang et al., 2026 ) , and CausalRAG ( Wang et al., 2025 ) .",
+     "zh": "代表性成果包括 CDF-RAG（Khatibi 等人，2025）、HCG-RAG（Saouda 等人，2026）、CausalAgent（Wang 等人，2026）以及 CausalRAG（Wang 等人，2025）。"
+    }
+   ]
+  },
+  {
+   "en": "Although these approaches differ in implementation, they generally associate causality with cause-effect relations, dependency structures, or causal mechanisms represented in the underlying knowledge. Our notion is different. CARA does not require a retrieved edge or node to represent a literal cause-effect relation. Instead, we define causal relevance at retrieval time in terms of whether evidence is consequential and essential for answering the query. Thus, our focus is not causal structure in the world being described, but the causal contribution of retrieved evidence to the answering process.",
+   "zh": "尽管这些方法在实现上有所不同，但它们通常将因果性关联到基础知识中体现的因果关系、依赖结构或因果机制。而我们的概念则有所不同。 CARA 并不要求检索到的边或节点必须表示字面意义上的因果关系。 相反，我们在检索时从证据是否对回答查询具有结果性和必要性出发，来定义因果相关性。 因此，我们的关注点并非所描述世界中的因果结构，而是检索到的证据对回答过程所做的因果贡献。",
+   "sents": [
+    {
+     "en": "Although these approaches differ in implementation, they generally associate causality with cause-effect relations, dependency structures, or causal mechanisms represented in the underlying knowledge. Our notion is different.",
+     "zh": "尽管这些方法在实现上有所不同，但它们通常将因果性关联到基础知识中体现的因果关系、依赖结构或因果机制。而我们的概念则有所不同。"
+    },
+    {
+     "en": "CARA does not require a retrieved edge or node to represent a literal cause-effect relation.",
+     "zh": "CARA 并不要求检索到的边或节点必须表示字面意义上的因果关系。"
+    },
+    {
+     "en": "Instead, we define causal relevance at retrieval time in terms of whether evidence is consequential and essential for answering the query.",
+     "zh": "相反，我们在检索时从证据是否对回答查询具有结果性和必要性出发，来定义因果相关性。"
+    },
+    {
+     "en": "Thus, our focus is not causal structure in the world being described, but the causal contribution of retrieved evidence to the answering process.",
+     "zh": "因此，我们的关注点并非所描述世界中的因果结构，而是检索到的证据对回答过程所做的因果贡献。"
+    }
+   ]
+  },
+  {
+   "en": "Agentic retrieval turns retrieval from a fixed pipeline into an adaptive decision process. Represented works include ReAct ( Yao et al., 2023 ) , AvaTaR ( Wu et al., 2024a ) , MA-RAG ( Kumar and Jain, 2025 ) , SEMA-RAG ( Huang et al., 2026 ) , and OmniSearch ( Li et al., 2025b ) . Several recent methods extend agentic retrieval to knowledge graphs, including Tree-of-Traversals ( Markowitz et al., 2024 ) , Think-on-Graph ( Sun et al., 2024 ) , Think-on-Graph 2.0 ( Ma et al., 2025 ) , RoG ( Luo et al., 2024 ) , Search-on-Graph ( Sun et al., 2026 ) , and Explore-on-Graph ( Yan et al., 2026 ) . Together, these methods establish graph retrieval as an adaptive search process in which an agent can decide where and how far to traverse.",
+   "zh": "智能体式检索将检索从固定流程转变为自适应决策过程。 代表性工作包括 ReAct（Yao 等，2023）、AvaTaR（Wu 等，2024a）、MA-RAG（Kumar 和 Jain，2025）、SEMA-RAG（Huang 等，2026）以及 OmniSearch（Li 等，2025b）。 近期多种方法将智能体式检索扩展到知识图谱，包括 Tree-of-Traversals（Markowitz 等，2024）、Think-on-Graph（Sun 等，2024）、Think-on-Graph 2.0（Ma 等，2025）、RoG（Luo 等，2024）、Search-on-Graph（Sun 等，2026）以及 Explore-on-Graph（Yan 等，2026）。 这些方法共同确立了图谱检索作为一种自适应搜索过程，其中智能体可以决定在何处以及遍历多远。",
+   "sents": [
+    {
+     "en": "Agentic retrieval turns retrieval from a fixed pipeline into an adaptive decision process.",
+     "zh": "智能体式检索将检索从固定流程转变为自适应决策过程。"
+    },
+    {
+     "en": "Represented works include ReAct ( Yao et al., 2023 ) , AvaTaR ( Wu et al., 2024a ) , MA-RAG ( Kumar and Jain, 2025 ) , SEMA-RAG ( Huang et al., 2026 ) , and OmniSearch ( Li et al., 2025b ) .",
+     "zh": "代表性工作包括 ReAct（Yao 等，2023）、AvaTaR（Wu 等，2024a）、MA-RAG（Kumar 和 Jain，2025）、SEMA-RAG（Huang 等，2026）以及 OmniSearch（Li 等，2025b）。"
+    },
+    {
+     "en": "Several recent methods extend agentic retrieval to knowledge graphs, including Tree-of-Traversals ( Markowitz et al., 2024 ) , Think-on-Graph ( Sun et al., 2024 ) , Think-on-Graph 2.0 ( Ma et al., 2025 ) , RoG ( Luo et al., 2024 ) , Search-on-Graph ( Sun et al., 2026 ) , and Explore-on-Graph ( Yan et al., 2026 ) .",
+     "zh": "近期多种方法将智能体式检索扩展到知识图谱，包括 Tree-of-Traversals（Markowitz 等，2024）、Think-on-Graph（Sun 等，2024）、Think-on-Graph 2.0（Ma 等，2025）、RoG（Luo 等，2024）、Search-on-Graph（Sun 等，2026）以及 Explore-on-Graph（Yan 等，2026）。"
+    },
+    {
+     "en": "Together, these methods establish graph retrieval as an adaptive search process in which an agent can decide where and how far to traverse.",
+     "zh": "这些方法共同确立了图谱检索作为一种自适应搜索过程，其中智能体可以决定在何处以及遍历多远。"
+    }
+   ]
+  },
+  {
+   "en": "However, existing agentic retrieval approaches are primarily based on textual similarity instead of causal retrieval we advocate for. Our work addresses this gap by introducing causal retrieval to agents in the broader sense of identifying evidence whose presence and absence materially contributes to resolving the information need.",
+   "zh": "然而，现有的智能体检索方法主要基于文本相似性，而非我们所倡导的因果检索。 我们的研究通过以更广泛的意义将因果检索引入智能体，从而填补了这一空白，即识别那些存在或缺失对解决信息需求具有实质性影响的证据。",
+   "sents": [
+    {
+     "en": "However, existing agentic retrieval approaches are primarily based on textual similarity instead of causal retrieval we advocate for.",
+     "zh": "然而，现有的智能体检索方法主要基于文本相似性，而非我们所倡导的因果检索。"
+    },
+    {
+     "en": "Our work addresses this gap by introducing causal retrieval to agents in the broader sense of identifying evidence whose presence and absence materially contributes to resolving the information need.",
+     "zh": "我们的研究通过以更广泛的意义将因果检索引入智能体，从而填补了这一空白，即识别那些存在或缺失对解决信息需求具有实质性影响的证据。"
+    }
+   ]
+  },
+  {
+   "en": "The overview of CARA ( CA usally guided R etrieval A gent) is in Figure 1 . We study agentic retrieval over a knowledge graph G = ⟨ V , E , ϕ V , ϕ E , d V ⟩ G=\\langle V,E,\\phi_{V},\\phi_{E},d_{V}\\rangle , where V V and E E denote entities and edges, ϕ V \\phi_{V} and ϕ E \\phi_{E} assign a type to each node and relation, and d V ​ ( v ) d_{V}(v) denotes the text attributes associated with node v v , such as titles, descriptions, or other metadata. Given a natural language query (or question) Q Q , retrieval is formulated as a process in which an agent A = ⟨ LLM , 𝒯 , 𝒞 ⟩ A=\\langle\\mathrm{LLM},\\mathcal{T},\\mathcal{C}\\rangle interacts with the graph through two retrieval tools 𝒯 \\mathcal{T} and a causal reasoning module 𝒞 \\mathcal{C} . The retrieval tools include: 1) GlobalSearch that conducts global node search and 2) Neighbors that conducts one-hop neighborhood exploration. The causal module 𝒞 \\mathcal{C} is neither an independent agent nor a tool. It is an LLM-based reasoning and assessment module embedded within an agent. It analyzes the candidate nodes returned by the Neighbors tool and provides causal assessments that inform the agent’s subsequent decisions and actions.",
+   "zh": "CARA（CA usally guided R etrieval A gent，通常译为“引导式检索智能体”）的概述见图 1。 我们在知识图谱 G = ⟨ V , E , ϕ V , ϕ E , d V ⟩ G=\\langle V,E,\\phi_{V},\\phi_{E},d_{V}\\rangle 上研究智能体式检索，其中 V V 和 E E 分别表示实体和边，ϕ V \\phi_{V} 和 ϕ E \\phi_{E} 为每个节点和关系分配类型，而 d V ​ ( v ) d_{V}(v) 表示与节点 v v 相关的文本属性，例如标题、描述或其他元数据。 给定一个自然语言查询（或问题）Q Q ，检索被定义为一个过程：智能体 A = ⟨ LLM , 𝒯 , 𝒞 ⟩ A=\\langle\\mathrm{LLM},\\mathcal{T},\\mathcal{C}\\rangle 通过两个检索工具 𝒯 \\mathcal{T} 和一个因果推理模块 𝒞 \\mathcal{C} 与图谱进行交互。 检索工具包括：1) GlobalSearch，用于执行全局节点搜索；2) Neighbors，用于执行一跳邻域探索。 因果模块 𝒞 \\mathcal{C} 既不是独立的智能体，也不是一个工具。 它是一个基于 LLM 的推理与评估模块，嵌入在智能体内部。 它分析 Neighbors 工具返回的候选节点，并提供因果评估，以指导智能体的后续决策和行动。",
+   "sents": [
+    {
+     "en": "The overview of CARA ( CA usally guided R etrieval A gent) is in Figure 1 .",
+     "zh": "CARA（CA usally guided R etrieval A gent，通常译为“引导式检索智能体”）的概述见图 1。"
+    },
+    {
+     "en": "We study agentic retrieval over a knowledge graph G = ⟨ V , E , ϕ V , ϕ E , d V ⟩ G=\\langle V,E,\\phi_{V},\\phi_{E},d_{V}\\rangle , where V V and E E denote entities and edges, ϕ V \\phi_{V} and ϕ E \\phi_{E} assign a type to each node and relation, and d V ​ ( v ) d_{V}(v) denotes the text attributes associated with node v v , such as titles, descriptions, or other metadata.",
+     "zh": "我们在知识图谱 G = ⟨ V , E , ϕ V , ϕ E , d V ⟩ G=\\langle V,E,\\phi_{V},\\phi_{E},d_{V}\\rangle 上研究智能体式检索，其中 V V 和 E E 分别表示实体和边，ϕ V \\phi_{V} 和 ϕ E \\phi_{E} 为每个节点和关系分配类型，而 d V ​ ( v ) d_{V}(v) 表示与节点 v v 相关的文本属性，例如标题、描述或其他元数据。"
+    },
+    {
+     "en": "Given a natural language query (or question) Q Q , retrieval is formulated as a process in which an agent A = ⟨ LLM , 𝒯 , 𝒞 ⟩ A=\\langle\\mathrm{LLM},\\mathcal{T},\\mathcal{C}\\rangle interacts with the graph through two retrieval tools 𝒯 \\mathcal{T} and a causal reasoning module 𝒞 \\mathcal{C} .",
+     "zh": "给定一个自然语言查询（或问题）Q Q ，检索被定义为一个过程：智能体 A = ⟨ LLM , 𝒯 , 𝒞 ⟩ A=\\langle\\mathrm{LLM},\\mathcal{T},\\mathcal{C}\\rangle 通过两个检索工具 𝒯 \\mathcal{T} 和一个因果推理模块 𝒞 \\mathcal{C} 与图谱进行交互。"
+    },
+    {
+     "en": "The retrieval tools include: 1) GlobalSearch that conducts global node search and 2) Neighbors that conducts one-hop neighborhood exploration.",
+     "zh": "检索工具包括：1) GlobalSearch，用于执行全局节点搜索；2) Neighbors，用于执行一跳邻域探索。"
+    },
+    {
+     "en": "The causal module 𝒞 \\mathcal{C} is neither an independent agent nor a tool.",
+     "zh": "因果模块 𝒞 \\mathcal{C} 既不是独立的智能体，也不是一个工具。"
+    },
+    {
+     "en": "It is an LLM-based reasoning and assessment module embedded within an agent.",
+     "zh": "它是一个基于 LLM 的推理与评估模块，嵌入在智能体内部。"
+    },
+    {
+     "en": "It analyzes the candidate nodes returned by the Neighbors tool and provides causal assessments that inform the agent’s subsequent decisions and actions.",
+     "zh": "它分析 Neighbors 工具返回的候选节点，并提供因果评估，以指导智能体的后续决策和行动。"
+    }
+   ]
+  },
+  {
+   "en": "The agent produces an interaction trajectory τ = ( ( s 1 , A 1 , o 1 ) , … , ( s T , A T , o T ) ) , \\tau=\\big((s_{1},A_{1},o_{1}),\\ldots,(s_{T},A_{T},o_{T})\\big), where at step t t , s t s_{t} contains 1) the original query Q Q , 2) the agent interaction history I t I_{t} , and 3) the current paths P t P_{t} that records one or multiple traversed paths so far. A t A_{t} denotes the agent’s actions such as calling a retrieval tool, terminate, etc. o t o_{t} is the output (a set of retrieved nodes R t R_{t} and the corresponding paths P t + 1 P_{t+1} leading to those nodes). At each step, the agent may Append the newly retrieved nodes to R t R_{t} , perform additional global or neighborhood retrieval, or terminate by issuing Finish . Execution ends when the agent calls Finish or when the maximum trajectory length T max T_{\\max} is reached.",
+   "zh": "智能体生成一个交互轨迹 τ = ( ( s 1 , A 1 , o 1 ) , … , ( s T , A T , o T ) ) , \\tau=\\big((s_{1},A_{1},o_{1}),\\ldots,(s_{T},A_{T},o_{T})\\big)，其中在步骤 t t 时，s t s_{t} 包含：1) 原始查询 Q Q ，2) 智能体的交互历史 I t I_{t} ，以及 3) 当前路径 P t P_{t}，用于记录迄今为止已遍历的一条或多条路径。 A t A_{t} 表示智能体的动作，例如调用检索工具、终止等。o t o_{t} 是输出（一组检索到的节点 R t R_{t} 以及通往这些节点的相应路径 P t + 1 P_{t+1}）。 在每个步骤中，智能体可以将新检索到的节点追加到 R t R_{t} 中，执行额外的全局或邻域检索，或者通过发出 Finish 命令来终止。 当智能体调用 Finish 或达到最大轨迹长度 T max T_{\\max} 时，执行过程结束。",
+   "sents": [
+    {
+     "en": "The agent produces an interaction trajectory τ = ( ( s 1 , A 1 , o 1 ) , … , ( s T , A T , o T ) ) , \\tau=\\big((s_{1},A_{1},o_{1}),\\ldots,(s_{T},A_{T},o_{T})\\big), where at step t t , s t s_{t} contains 1) the original query Q Q , 2) the agent interaction history I t I_{t} , and 3) the current paths P t P_{t} that records one or multiple traversed paths so far.",
+     "zh": "智能体生成一个交互轨迹 τ = ( ( s 1 , A 1 , o 1 ) , … , ( s T , A T , o T ) ) , \\tau=\\big((s_{1},A_{1},o_{1}),\\ldots,(s_{T},A_{T},o_{T})\\big)，其中在步骤 t t 时，s t s_{t} 包含：1) 原始查询 Q Q ，2) 智能体的交互历史 I t I_{t} ，以及 3) 当前路径 P t P_{t}，用于记录迄今为止已遍历的一条或多条路径。"
+    },
+    {
+     "en": "A t A_{t} denotes the agent’s actions such as calling a retrieval tool, terminate, etc. o t o_{t} is the output (a set of retrieved nodes R t R_{t} and the corresponding paths P t + 1 P_{t+1} leading to those nodes).",
+     "zh": "A t A_{t} 表示智能体的动作，例如调用检索工具、终止等。o t o_{t} 是输出（一组检索到的节点 R t R_{t} 以及通往这些节点的相应路径 P t + 1 P_{t+1}）。"
+    },
+    {
+     "en": "At each step, the agent may Append the newly retrieved nodes to R t R_{t} , perform additional global or neighborhood retrieval, or terminate by issuing Finish .",
+     "zh": "在每个步骤中，智能体可以将新检索到的节点追加到 R t R_{t} 中，执行额外的全局或邻域检索，或者通过发出 Finish 命令来终止。"
+    },
+    {
+     "en": "Execution ends when the agent calls Finish or when the maximum trajectory length T max T_{\\max} is reached.",
+     "zh": "当智能体调用 Finish 或达到最大轨迹长度 T max T_{\\max} 时，执行过程结束。"
+    }
+   ]
+  },
+  {
+   "en": "For an agent, there are two retrieval tools: 1) GlobalSearch for seed nodes search (breadth-oriented search) and 2) Neighbors for one-step hopping along the relations (depth-oriented search).",
+   "zh": "对于一个智能体而言，有两种检索工具：1) GlobalSearch，用于种子节点搜索（广度导向搜索）；2) Neighbors，用于沿关系进行单步跳跃（深度导向搜索）。",
+   "sents": null
+  },
+  {
+   "en": "GlobalSearch retrieves the k k highest-scoring nodes in the entire graph for an agent-generated subquery q q based on the original Q Q :",
+   "zh": "GlobalSearch 根据原始 Q Q，为智能体生成的子查询 q q 在整个图中检索出得分最高的 k 个节点：",
+   "sents": null
+  },
+  {
+   "en": "We implement r ​ e ​ l ​ ( ) rel() using BM25 ( Robertson and Zaragoza, 2009 ) over an inverted index of node text attributes d V ​ ( v ) d_{V}(v) . The agent-generated subquery q q can evolve throughout exploration, allowing the agent to issue focused retrieval requests based on the trajectory state s t s_{t} . Global search is a breadth oriented search over KG, providing broad entry points into the graph or re-anchoring points when a local path becomes unproductive.",
+   "zh": "我们使用 BM25（Robertson 和 Zaragoza，2009）在节点文本属性 d V ​ ( v ) d_{V}(v) 的倒排索引上实现 r ​ e ​ l ​ ( ) rel()。 智能体生成的子查询 q q 可以在探索过程中不断演化，使智能体能够根据轨迹状态 s t s_{t} 发出有针对性的检索请求。 全局搜索是一种面向广度知识的图（KG）搜索，它提供了进入图的广泛入口点，或在局部路径变得无效时提供重新锚定的节点。",
+   "sents": [
+    {
+     "en": "We implement r ​ e ​ l ​ ( ) rel() using BM25 ( Robertson and Zaragoza, 2009 ) over an inverted index of node text attributes d V ​ ( v ) d_{V}(v) .",
+     "zh": "我们使用 BM25（Robertson 和 Zaragoza，2009）在节点文本属性 d V ​ ( v ) d_{V}(v) 的倒排索引上实现 r ​ e ​ l ​ ( ) rel()。"
+    },
+    {
+     "en": "The agent-generated subquery q q can evolve throughout exploration, allowing the agent to issue focused retrieval requests based on the trajectory state s t s_{t} .",
+     "zh": "智能体生成的子查询 q q 可以在探索过程中不断演化，使智能体能够根据轨迹状态 s t s_{t} 发出有针对性的检索请求。"
+    },
+    {
+     "en": "Global search is a breadth oriented search over KG, providing broad entry points into the graph or re-anchoring points when a local path becomes unproductive.",
+     "zh": "全局搜索是一种面向广度知识的图（KG）搜索，它提供了进入图的广泛入口点，或在局部路径变得无效时提供重新锚定的节点。"
+    }
+   ]
+  },
+  {
+   "en": "Neighbors retrieves adjacent (one-hop neighbor) nodes subject to optional node- and edge-type constraints F t = ( F V , t , F E , t ) F_{t}=(F_{V,t},F_{E,t}) selected by the agent. The result is a filtered set N F t ​ ( v t ) N_{F_{t}}(v_{t}) of one-hop neighborhood of the current node v t v_{t} . To further trim this filtered set, this Neighbors tool conducts another BM25 search to keep the top k k from this filtered set:",
+   "zh": "邻居工具会获取相邻（一跳邻居）节点，这些节点受可选的节点和边类型约束 F t = ( F V , t , F E , t ) F_{t}=(F_{V,t},F_{E,t}) 的限制，由智能体选择。 结果是一个经过过滤的集合 N F t ​ ( v t ) N_{F_{t}}(v_{t})，表示当前节点 v t v_{t} 的一跳邻域。 为了进一步精简这个过滤后的集合，该邻居工具会执行另一次 BM25 搜索，从中保留排名靠前的 k k 个元素：",
+   "sents": [
+    {
+     "en": "Neighbors retrieves adjacent (one-hop neighbor) nodes subject to optional node- and edge-type constraints F t = ( F V , t , F E , t ) F_{t}=(F_{V,t},F_{E,t}) selected by the agent.",
+     "zh": "邻居工具会获取相邻（一跳邻居）节点，这些节点受可选的节点和边类型约束 F t = ( F V , t , F E , t ) F_{t}=(F_{V,t},F_{E,t}) 的限制，由智能体选择。"
+    },
+    {
+     "en": "The result is a filtered set N F t ​ ( v t ) N_{F_{t}}(v_{t}) of one-hop neighborhood of the current node v t v_{t} .",
+     "zh": "结果是一个经过过滤的集合 N F t ​ ( v t ) N_{F_{t}}(v_{t})，表示当前节点 v t v_{t} 的一跳邻域。"
+    },
+    {
+     "en": "To further trim this filtered set, this Neighbors tool conducts another BM25 search to keep the top k k from this filtered set:",
+     "zh": "为了进一步精简这个过滤后的集合，该邻居工具会执行另一次 BM25 搜索，从中保留排名靠前的 k k 个元素："
+    }
+   ]
+  },
+  {
+   "en": "Here 𝒩 t = { u 1 , … , u k } \\mathcal{N}_{t}=\\{u_{1},\\ldots,u_{k}\\} denotes the candidate neighbors retrieved at hop t t . The repeated applications of the Neighbors tool compose into multi-hop traversal. GlobalSearch remains available along the way for re-anchoring. Unlike traditional non-agentic retrieval, the number of hops is not specified in advance. Instead, the agent decides whether to continue hopping, re-anchor globally, or finish based on the accumulated evidence. It is noteworthy that each candidate neighborhood node u i u_{i} , will further be passed through the causal reasoning module 𝒞 \\mathcal{C} before the agent chooses its next action.",
+   "zh": "此处 𝒩 t = { u 1 , … , u k } \\mathcal{N}_{t}=\\{u_{1},\\ldots,u_{k}\\} 表示在第 t 次跳跃中检索到的候选邻居。 对“邻居”工具的重复应用可组合成多跳遍历。 GlobalSearch 在此过程中始终可用，用于重新锚定。 与传统非智能体式检索不同，跳跃次数并非预先指定。 相反，智能体会根据累积的证据决定是继续跳跃、全局重新锚定还是结束任务。 值得注意的是，每个候选邻域节点 u i u_{i} 在智能体选择下一步行动之前，还会被传入因果推理模块 𝒞 \\mathcal{C}。",
+   "sents": [
+    {
+     "en": "Here 𝒩 t = { u 1 , … , u k } \\mathcal{N}_{t}=\\{u_{1},\\ldots,u_{k}\\} denotes the candidate neighbors retrieved at hop t t .",
+     "zh": "此处 𝒩 t = { u 1 , … , u k } \\mathcal{N}_{t}=\\{u_{1},\\ldots,u_{k}\\} 表示在第 t 次跳跃中检索到的候选邻居。"
+    },
+    {
+     "en": "The repeated applications of the Neighbors tool compose into multi-hop traversal.",
+     "zh": "对“邻居”工具的重复应用可组合成多跳遍历。"
+    },
+    {
+     "en": "GlobalSearch remains available along the way for re-anchoring.",
+     "zh": "GlobalSearch 在此过程中始终可用，用于重新锚定。"
+    },
+    {
+     "en": "Unlike traditional non-agentic retrieval, the number of hops is not specified in advance.",
+     "zh": "与传统非智能体式检索不同，跳跃次数并非预先指定。"
+    },
+    {
+     "en": "Instead, the agent decides whether to continue hopping, re-anchor globally, or finish based on the accumulated evidence.",
+     "zh": "相反，智能体会根据累积的证据决定是继续跳跃、全局重新锚定还是结束任务。"
+    },
+    {
+     "en": "It is noteworthy that each candidate neighborhood node u i u_{i} , will further be passed through the causal reasoning module 𝒞 \\mathcal{C} before the agent chooses its next action.",
+     "zh": "值得注意的是，每个候选邻域节点 u i u_{i} 在智能体选择下一步行动之前，还会被传入因果推理模块 𝒞 \\mathcal{C}。"
+    }
+   ]
+  },
+  {
+   "en": "Neighbors retrieval identifies nodes that are structurally adjacent and textually similar to the current exploration state. However, neither graph adjacency nor textual similarity guarantees that a candidate node provides evidence that materially contributes to answering the query. Therefore we introduce a causal reasoning module 𝒞 \\mathcal{C} that evaluates each candidate according to its consequentiality and essentiality for resolving the information need.",
+   "zh": "邻居检索会识别出在结构上与当前探索状态相邻、在文本上与其相似的节点。 然而，无论是图结构上的相邻性还是文本相似性，都无法保证候选节点所提供的证据能实质性有助于回答查询。 因此，我们引入一个因果推理模块 𝒞 \\mathcal{C}，用于根据每个候选节点在满足信息需求方面的后果性和必要性对其进行评估。",
+   "sents": [
+    {
+     "en": "Neighbors retrieval identifies nodes that are structurally adjacent and textually similar to the current exploration state.",
+     "zh": "邻居检索会识别出在结构上与当前探索状态相邻、在文本上与其相似的节点。"
+    },
+    {
+     "en": "However, neither graph adjacency nor textual similarity guarantees that a candidate node provides evidence that materially contributes to answering the query.",
+     "zh": "然而，无论是图结构上的相邻性还是文本相似性，都无法保证候选节点所提供的证据能实质性有助于回答查询。"
+    },
+    {
+     "en": "Therefore we introduce a causal reasoning module 𝒞 \\mathcal{C} that evaluates each candidate according to its consequentiality and essentiality for resolving the information need.",
+     "zh": "因此，我们引入一个因果推理模块 𝒞 \\mathcal{C}，用于根据每个候选节点在满足信息需求方面的后果性和必要性对其进行评估。"
+    }
+   ]
+  },
+  {
+   "en": "Given the candidate set 𝒩 t = { u 1 , … , u k } \\mathcal{N}_{t}=\\{u_{1},\\ldots,u_{k}\\} returned by the Neighbors tool, the module receives the query Q Q , the current node v t v_{t} , the candidate nodes 𝒩 t \\mathcal{N}_{t} , their connecting relations, and the accumulated paths P t + 1 P_{t+1} . Unlike literal causal reasoning that seeks cause-effect relations in the underlying domain, our notion of causal relevance is retrieval-oriented: evidence is considered causally relevant when its presence or absence materially affects the ability to support an answer to Q Q . This operationalization is motivated by two complementary properties: consequentiality and essentiality.",
+   "zh": "鉴于 Neighbors 工具返回的候选集 𝒩 t = { u 1 , … , u k } \\mathcal{N}_{t}=\\{u_{1},\\ldots,u_{k}\\}，该模块接收查询 Q Q 、当前节点 v t v_{t}、候选节点 𝒩 t \\mathcal{N}_{t}、它们的连接关系以及累积路径 P t + 1 P_{t+1}。 与在底层领域寻求因果关系的字面因果推理不同，我们对因果相关性的理解是检索导向的：当证据的存在或缺失实质性影响对 Q Q 的回答支持能力时，该证据就被视为具有因果相关性。 这种操作化方法源于两种互补的特性：结果性和必要性。",
+   "sents": [
+    {
+     "en": "Given the candidate set 𝒩 t = { u 1 , … , u k } \\mathcal{N}_{t}=\\{u_{1},\\ldots,u_{k}\\} returned by the Neighbors tool, the module receives the query Q Q , the current node v t v_{t} , the candidate nodes 𝒩 t \\mathcal{N}_{t} , their connecting relations, and the accumulated paths P t + 1 P_{t+1} .",
+     "zh": "鉴于 Neighbors 工具返回的候选集 𝒩 t = { u 1 , … , u k } \\mathcal{N}_{t}=\\{u_{1},\\ldots,u_{k}\\}，该模块接收查询 Q Q 、当前节点 v t v_{t}、候选节点 𝒩 t \\mathcal{N}_{t}、它们的连接关系以及累积路径 P t + 1 P_{t+1}。"
+    },
+    {
+     "en": "Unlike literal causal reasoning that seeks cause-effect relations in the underlying domain, our notion of causal relevance is retrieval-oriented: evidence is considered causally relevant when its presence or absence materially affects the ability to support an answer to Q Q .",
+     "zh": "与在底层领域寻求因果关系的字面因果推理不同，我们对因果相关性的理解是检索导向的：当证据的存在或缺失实质性影响对 Q Q 的回答支持能力时，该证据就被视为具有因果相关性。"
+    },
+    {
+     "en": "This operationalization is motivated by two complementary properties: consequentiality and essentiality.",
+     "zh": "这种操作化方法源于两种互补的特性：结果性和必要性。"
+    }
+   ]
+  },
+  {
+   "en": "For each candidate u i u_{i} , the module 𝒞 \\mathcal{C} estimates a consequentiality score c i ∈ [ 0 , 1 ] c_{i}\\in[0,1] and an essentiality score e i ∈ [ 0 , 1 ] e_{i}\\in[0,1] . Consequentiality asks whether incorporating the candidate node and its associated hop materially changes the evidence available for answering the query. It captures the candidate’s incremental answer contribution, rather than simply its textual similarity.",
+   "zh": "对于每个候选项 u i u_{i}，模块 𝒞 \\mathcal{C} 会估算一个后果性得分 c i ∈ [ 0 , 1 ] c_{i}\\in[0,1] 和一个必要性得分 e i ∈ [ 0 , 1 ] e_{i}\\in[0,1]。 后果性旨在判断：纳入该候选节点及其相关的跳转，是否会对用于回答查询的证据产生实质性影响。 它衡量的是该候选项对答案的增量贡献，而不仅仅是其文本相似度。",
+   "sents": [
+    {
+     "en": "For each candidate u i u_{i} , the module 𝒞 \\mathcal{C} estimates a consequentiality score c i ∈ [ 0 , 1 ] c_{i}\\in[0,1] and an essentiality score e i ∈ [ 0 , 1 ] e_{i}\\in[0,1] .",
+     "zh": "对于每个候选项 u i u_{i}，模块 𝒞 \\mathcal{C} 会估算一个后果性得分 c i ∈ [ 0 , 1 ] c_{i}\\in[0,1] 和一个必要性得分 e i ∈ [ 0 , 1 ] e_{i}\\in[0,1]。"
+    },
+    {
+     "en": "Consequentiality asks whether incorporating the candidate node and its associated hop materially changes the evidence available for answering the query.",
+     "zh": "后果性旨在判断：纳入该候选节点及其相关的跳转，是否会对用于回答查询的证据产生实质性影响。"
+    },
+    {
+     "en": "It captures the candidate’s incremental answer contribution, rather than simply its textual similarity.",
+     "zh": "它衡量的是该候选项对答案的增量贡献，而不仅仅是其文本相似度。"
+    }
+   ]
+  },
+  {
+   "en": "The LLM is therefore asked whether adding u i u_{i} , together with its relation to v t v_{t} , introduces information that substantially strengthens or advances the answer.",
+   "zh": "因此，需要询问该大型语言模型（LLM）：添加 u i u_{i} 及其与 v t v_{t} 的关系，是否引入了能够显著加强或推进答案的信息。",
+   "sents": null
+  },
+  {
+   "en": "Essentiality instead asks whether removing the candidate evidence from the currently available evidence would materially reduce the ability to justify an answer.",
+   "zh": "必要性原则则提出一个问题：如果从当前可用的证据中移除候选证据，是否会导致论证答案合理性的能力出现实质性下降。",
+   "sents": null
+  },
+  {
+   "en": "More directly, the LLM is prompted to reason counterfactually: if this candidate node and its connecting relation were unavailable, would an important part of the evidence needed to answer the query be lost? A high e i e_{i} therefore indicates that the candidate carries information that is difficult to replace with evidence already contained in the current trajectory.",
+   "zh": "更直接地说，我们会提示大型语言模型进行反事实推理：如果这个候选节点及其连接关系不可用，那么回答该查询所需的关键证据是否会因此缺失？ 因此，较高的 e_i（即 e_{i}）表明该候选节点携带的信息难以通过当前轨迹中已有的证据来替代。",
+   "sents": [
+    {
+     "en": "More directly, the LLM is prompted to reason counterfactually: if this candidate node and its connecting relation were unavailable, would an important part of the evidence needed to answer the query be lost?",
+     "zh": "更直接地说，我们会提示大型语言模型进行反事实推理：如果这个候选节点及其连接关系不可用，那么回答该查询所需的关键证据是否会因此缺失？"
+    },
+    {
+     "en": "A high e i e_{i} therefore indicates that the candidate carries information that is difficult to replace with evidence already contained in the current trajectory.",
+     "zh": "因此，较高的 e_i（即 e_{i}）表明该候选节点携带的信息难以通过当前轨迹中已有的证据来替代。"
+    }
+   ]
+  },
+  {
+   "en": "We combine these two judgments into a node-level causal relevance score:",
+   "zh": "我们将这两种判断结合为一个节点级别的因果相关性得分：",
+   "sents": null
+  },
+  {
+   "en": "where λ ∈ [ 0 , 1 ] \\lambda\\in[0,1] controls the relative emphasis on consequentiality and essentiality. Importantly, c ​ a ​ u i cau_{i} should not be interpreted as a probability that a literal causal relationship exists between v t v_{t} and u i u_{i} . Rather, it measures whether the candidate evidence has a materially incremental and counterfactual contribution to answering Q Q .",
+   "zh": "其中 λ ∈ [0,1] 控制了对后果性和必要性的相对重视程度。 重要的是，c ​ a ​ u i cau_{i} 不应被解释为 v t v_{t} 和 u i u_{i} 之间存在字面因果关系的可能性。 相反，它衡量的是候选证据在回答 Q Q 时是否具有实质性的增量和反事实贡献。",
+   "sents": [
+    {
+     "en": "where λ ∈ [ 0 , 1 ] \\lambda\\in[0,1] controls the relative emphasis on consequentiality and essentiality.",
+     "zh": "其中 λ ∈ [0,1] 控制了对后果性和必要性的相对重视程度。"
+    },
+    {
+     "en": "Importantly, c ​ a ​ u i cau_{i} should not be interpreted as a probability that a literal causal relationship exists between v t v_{t} and u i u_{i} .",
+     "zh": "重要的是，c ​ a ​ u i cau_{i} 不应被解释为 v t v_{t} 和 u i u_{i} 之间存在字面因果关系的可能性。"
+    },
+    {
+     "en": "Rather, it measures whether the candidate evidence has a materially incremental and counterfactual contribution to answering Q Q .",
+     "zh": "相反，它衡量的是候选证据在回答 Q Q 时是否具有实质性的增量和反事实贡献。"
+    }
+   ]
+  },
+  {
+   "en": "Causal relevance alone, however, evaluates a candidate primarily with respect to the query and the evidence currently available. In multi-hop retrieval, a locally useful candidate may still lead the agent away from the reasoning trajectory developed so far. We therefore introduce a separate path consistency score p i ∈ [ 0 , 1 ] p_{i}\\in[0,1] . Unlike c ​ a ​ u i cau_{i} , which measures the node-level contribution to answering the query, p i p_{i} evaluates whether the transition v t → u i v_{t}\\rightarrow u_{i} forms a coherent continuation of the accumulated path developed so far. In particular, the module examines whether the relation connecting v t v_{t} and u i u_{i} is compatible with the information need represented by the current trajectory and whether following this candidate preserves a plausible chain of evidence toward the answer.",
+   "zh": "然而，仅凭因果相关性主要从查询和当前可用证据的角度来评估候选项。 在多跳检索中，一个局部有用的候选项仍可能使智能体偏离迄今为止形成的推理路径。 因此，我们引入一个独立的路径一致性得分 p i ∈ [ 0 , 1 ] p_{i}\\in[0,1]。 与衡量节点层面对回答查询贡献的 c ​ a ​ u i cau_{i} 不同，p i p_{i} 评估的是过渡 v t → u i v_{t}\\rightarrow u_{i} 是否构成迄今为止积累路径的连贯延续。 具体而言，该模块会检查连接 v t v_{t} 和 u i u_{i} 的关系是否与当前路径所代表的信息需求兼容，以及遵循该候选项是否能维持一条通向答案的合理证据链。",
+   "sents": [
+    {
+     "en": "Causal relevance alone, however, evaluates a candidate primarily with respect to the query and the evidence currently available.",
+     "zh": "然而，仅凭因果相关性主要从查询和当前可用证据的角度来评估候选项。"
+    },
+    {
+     "en": "In multi-hop retrieval, a locally useful candidate may still lead the agent away from the reasoning trajectory developed so far.",
+     "zh": "在多跳检索中，一个局部有用的候选项仍可能使智能体偏离迄今为止形成的推理路径。"
+    },
+    {
+     "en": "We therefore introduce a separate path consistency score p i ∈ [ 0 , 1 ] p_{i}\\in[0,1] .",
+     "zh": "因此，我们引入一个独立的路径一致性得分 p i ∈ [ 0 , 1 ] p_{i}\\in[0,1]。"
+    },
+    {
+     "en": "Unlike c ​ a ​ u i cau_{i} , which measures the node-level contribution to answering the query, p i p_{i} evaluates whether the transition v t → u i v_{t}\\rightarrow u_{i} forms a coherent continuation of the accumulated path developed so far.",
+     "zh": "与衡量节点层面对回答查询贡献的 c ​ a ​ u i cau_{i} 不同，p i p_{i} 评估的是过渡 v t → u i v_{t}\\rightarrow u_{i} 是否构成迄今为止积累路径的连贯延续。"
+    },
+    {
+     "en": "In particular, the module examines whether the relation connecting v t v_{t} and u i u_{i} is compatible with the information need represented by the current trajectory and whether following this candidate preserves a plausible chain of evidence toward the answer.",
+     "zh": "具体而言，该模块会检查连接 v t v_{t} 和 u i u_{i} 的关系是否与当前路径所代表的信息需求兼容，以及遵循该候选项是否能维持一条通向答案的合理证据链。"
+    }
+   ]
+  },
+  {
+   "en": "The final score for candidate node u i u_{i} is:",
+   "zh": "候选节点 u i u_{i} 的最终得分为：",
+   "sents": null
+  },
+  {
+   "en": "where α ∈ [ 0 , 1 ] \\alpha\\in[0,1] controls the relative importance of node-level causal relevance and the trajectory-level consistency. The highest-scoring candidates are returned to the retrieval agent.",
+   "zh": "其中 α ∈ [0,1] 控制着节点级因果相关性与轨迹级一致性之间的相对重要性。 得分最高的候选项将被返回给检索智能体。",
+   "sents": [
+    {
+     "en": "where α ∈ [ 0 , 1 ] \\alpha\\in[0,1] controls the relative importance of node-level causal relevance and the trajectory-level consistency.",
+     "zh": "其中 α ∈ [0,1] 控制着节点级因果相关性与轨迹级一致性之间的相对重要性。"
+    },
+    {
+     "en": "The highest-scoring candidates are returned to the retrieval agent.",
+     "zh": "得分最高的候选项将被返回给检索智能体。"
+    }
+   ]
+  },
+  {
+   "en": "Importantly, the causal reasoning module 𝒞 \\mathcal{C} is an assessment module rather than an autonomous agent. It does not independently invoke GlobalSearch or Neighbors . Instead, its assessments enhance the information presented to the retrieval agent and therefore influence subsequent search decisions. Based on the causal and path-consistency assessments, the agent may continue along a promising neighborhood path with Neighbors , reformulate the subquery, modify node or relation filters, re-anchor through GlobalSearch , Append nodes to the retrieved set, or terminate with Finish when additional exploration is unlikely to provide consequential evidence. In this way, causal reasoning affects not merely the reranking of already retrieved nodes, but the direction and termination of the retrieval process itself.",
+   "zh": "重要的是，因果推理模块 𝒞 \\mathcal{C} 是一个评估模块，而非一个自主智能体。 它不会独立调用 GlobalSearch 或 Neighbors。 相反，其评估结果会增强提供给检索智能体的信息，从而影响后续的搜索决策。 基于因果一致性和路径一致性评估，该智能体可能会通过 Neighbors 沿着一条有前景的邻域路径继续探索、重新构建子查询、修改节点或关系过滤器、通过 GlobalSearch 重新锚定、向已检索集合中追加节点，或者在进一步探索不太可能提供关键证据时通过 Finish 终止。 通过这种方式，因果推理不仅影响已检索节点的重新排序，还影响检索过程本身的方向和终止。",
+   "sents": [
+    {
+     "en": "Importantly, the causal reasoning module 𝒞 \\mathcal{C} is an assessment module rather than an autonomous agent.",
+     "zh": "重要的是，因果推理模块 𝒞 \\mathcal{C} 是一个评估模块，而非一个自主智能体。"
+    },
+    {
+     "en": "It does not independently invoke GlobalSearch or Neighbors .",
+     "zh": "它不会独立调用 GlobalSearch 或 Neighbors。"
+    },
+    {
+     "en": "Instead, its assessments enhance the information presented to the retrieval agent and therefore influence subsequent search decisions.",
+     "zh": "相反，其评估结果会增强提供给检索智能体的信息，从而影响后续的搜索决策。"
+    },
+    {
+     "en": "Based on the causal and path-consistency assessments, the agent may continue along a promising neighborhood path with Neighbors , reformulate the subquery, modify node or relation filters, re-anchor through GlobalSearch , Append nodes to the retrieved set, or terminate with Finish when additional exploration is unlikely to provide consequential evidence.",
+     "zh": "基于因果一致性和路径一致性评估，该智能体可能会通过 Neighbors 沿着一条有前景的邻域路径继续探索、重新构建子查询、修改节点或关系过滤器、通过 GlobalSearch 重新锚定、向已检索集合中追加节点，或者在进一步探索不太可能提供关键证据时通过 Finish 终止。"
+    },
+    {
+     "en": "In this way, causal reasoning affects not merely the reranking of already retrieved nodes, but the direction and termination of the retrieval process itself.",
+     "zh": "通过这种方式，因果推理不仅影响已检索节点的重新排序，还影响检索过程本身的方向和终止。"
+    }
+   ]
+  },
+  {
+   "en": "To improve robustness and reduce dependence on a single retrieval trajectory, we run multiple agents in parallel. Each agent j j independently interacts with the knowledge graph, producing a retrieval trajectory τ ( j ) \\tau^{(j)} and an ordered list of retrieved nodes R ( j ) R^{(j)} . Independent trajectories may differ in their initial anchors, generated subqueries, neighborhood expansions, and traversal decisions. Such diversity allows different agents to explore alternative paths through the graph and reduces sensitivity to any single search trajectory.",
+   "zh": "为了提高鲁棒性并减少对单一检索路径的依赖，我们并行运行多个智能体。 每个智能体 j 都独立地与知识图谱进行交互，生成一条检索路径 τ ( j ) 和一组按顺序排列的已检索节点 R ( j ) 。 独立的检索路径可能在初始锚点、生成的子查询、邻域扩展和遍历决策上存在差异。 这种多样性使得不同的智能体能够探索图谱中的替代路径，并降低对任何单一搜索路径的敏感度。",
+   "sents": [
+    {
+     "en": "To improve robustness and reduce dependence on a single retrieval trajectory, we run multiple agents in parallel.",
+     "zh": "为了提高鲁棒性并减少对单一检索路径的依赖，我们并行运行多个智能体。"
+    },
+    {
+     "en": "Each agent j j independently interacts with the knowledge graph, producing a retrieval trajectory τ ( j ) \\tau^{(j)} and an ordered list of retrieved nodes R ( j ) R^{(j)} .",
+     "zh": "每个智能体 j 都独立地与知识图谱进行交互，生成一条检索路径 τ ( j ) 和一组按顺序排列的已检索节点 R ( j ) 。"
+    },
+    {
+     "en": "Independent trajectories may differ in their initial anchors, generated subqueries, neighborhood expansions, and traversal decisions.",
+     "zh": "独立的检索路径可能在初始锚点、生成的子查询、邻域扩展和遍历决策上存在差异。"
+    },
+    {
+     "en": "Such diversity allows different agents to explore alternative paths through the graph and reduces sensitivity to any single search trajectory.",
+     "zh": "这种多样性使得不同的智能体能够探索图谱中的替代路径，并降低对任何单一搜索路径的敏感度。"
+    }
+   ]
+  },
+  {
+   "en": "Rather than directly concatenating the node lists from different agents, inspired by the classic idea of reciprocal rank fusion (RRF) ( Cormack et al., 2009 ) , we aggregate them in the following way. For a candidate node u u , its cross-agent fusion score is:",
+   "zh": "我们并未直接将不同智能体的节点列表进行拼接，而是受经典的双向排名融合（RRF）思想（Cormack 等人，2009）启发，采用以下方式进行聚合。 对于候选节点 u，其跨智能体融合分数为：",
+   "sents": [
+    {
+     "en": "Rather than directly concatenating the node lists from different agents, inspired by the classic idea of reciprocal rank fusion (RRF) ( Cormack et al., 2009 ) , we aggregate them in the following way.",
+     "zh": "我们并未直接将不同智能体的节点列表进行拼接，而是受经典的双向排名融合（RRF）思想（Cormack 等人，2009）启发，采用以下方式进行聚合。"
+    },
+    {
+     "en": "For a candidate node u u , its cross-agent fusion score is:",
+     "zh": "对于候选节点 u，其跨智能体融合分数为："
+    }
+   ]
+  },
+  {
+   "en": "where rank j ​ ( u ) \\mathrm{rank}_{j}(u) denotes the position of node u u in the ranked evidence list R ( j ) R^{(j)} returned by agent j j . In this new context, RRF captures two complementary properties of the retrieved evidence. First, it rewards high within-agent rank. Second, it rewards cross-agent consensus. Thus, evidence that is repeatedly identified across different trajectories receives stronger aggregate support than evidence found by only one trajectory. The final candidate set is formed from the union of the nodes retrieved by all agents,",
+   "zh": "其中 rank j ( u ) \\mathrm{rank}_{j}(u) 表示节点 u 在智能体 j 返回的排序证据列表 R ( j ) R^{(j)} 中的位置。 在此新背景下，RRF 捕捉了检索到的证据的两个互补特性。 首先，它奖励高智能体内排名。 其次，它奖励跨智能体的共识。 因此，在不同轨迹中被反复识别的证据比仅由单一轨迹找到的证据获得更强的综合支持。 最终候选集由所有智能体检索到的节点的并集构成，",
+   "sents": [
+    {
+     "en": "where rank j ​ ( u ) \\mathrm{rank}_{j}(u) denotes the position of node u u in the ranked evidence list R ( j ) R^{(j)} returned by agent j j .",
+     "zh": "其中 rank j ( u ) \\mathrm{rank}_{j}(u) 表示节点 u 在智能体 j 返回的排序证据列表 R ( j ) R^{(j)} 中的位置。"
+    },
+    {
+     "en": "In this new context, RRF captures two complementary properties of the retrieved evidence.",
+     "zh": "在此新背景下，RRF 捕捉了检索到的证据的两个互补特性。"
+    },
+    {
+     "en": "First, it rewards high within-agent rank.",
+     "zh": "首先，它奖励高智能体内排名。"
+    },
+    {
+     "en": "Second, it rewards cross-agent consensus.",
+     "zh": "其次，它奖励跨智能体的共识。"
+    },
+    {
+     "en": "Thus, evidence that is repeatedly identified across different trajectories receives stronger aggregate support than evidence found by only one trajectory.",
+     "zh": "因此，在不同轨迹中被反复识别的证据比仅由单一轨迹找到的证据获得更强的综合支持。"
+    },
+    {
+     "en": "The final candidate set is formed from the union of the nodes retrieved by all agents,",
+     "zh": "最终候选集由所有智能体检索到的节点的并集构成，"
+    }
+   ]
+  },
+  {
+   "en": "ranked in descending order of their RRF scores. In the rare case that two nodes receive identical RRF scores, the node with the better best rank across agents is placed first.",
+   "zh": "按 RRF 分数降序排列。 在极少数情况下，若两个节点的 RRF 分数相同，则跨智能体的最佳排名更优的节点将排在首位。",
+   "sents": [
+    {
+     "en": "ranked in descending order of their RRF scores.",
+     "zh": "按 RRF 分数降序排列。"
+    },
+    {
+     "en": "In the rare case that two nodes receive identical RRF scores, the node with the better best rank across agents is placed first.",
+     "zh": "在极少数情况下，若两个节点的 RRF 分数相同，则跨智能体的最佳排名更优的节点将排在首位。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate CARA from two complementary perspectives: retrieval performance and question answering performance.",
+   "zh": "我们从两个相互补充的视角对 CARA 进行评估：检索性能和问答性能。",
+   "sents": null
+  },
+  {
+   "en": "We evaluate on the three text-rich knowledge graphs in the well-known benchmark STaRK ( Wu et al., 2024b ) . It contains three datasets: AMAZON, MAG, and PRIME. AMAZON represents an e-commerce domain, MAG a scholarly domain, and PRIME a biomedical domain. STaRK provides natural-language queries Q Q together with ground-truth entities relevant to answer Q Q , allowing retrieval systems to be evaluated against known nodes. However, it does not provide a ground truth for evaluating generated answers. We therefore augment STaRK with ground-truth answers. For each query Q Q , we use the ground truth entities’ text attributes d V ​ ( v ) d_{V}(v) and related relations as the source information and employ Qwen3.8-27B to generate answers. We instruct the model in the prompt to satisfy four requirements: Relevance , ensuring that the answer directly addresses Q Q ; Faithfulness , ensuring that all factual claims are supported by the provided entity information; Coverage , ensuring that the names of all ground-truth entities are explicitly mentioned; and Naturalness , ensuring that the answer is fluent and natural rather than enumerating a list of retrieved entities. After answer generation, we took two extra steps to validate the answers. First, we validate the answer using an automatically calculated indicator Completeness defined as the proportion of ground-truth entities whose complete names are explicitly mentioned in the generated answer. If Completeness is below a threshold, we prompt the model to regenerate a new version of answer until it reaches the threshold. We repeat this generation-and-validation process, resulting in more complete ground truth answers. Second, we manually inspect stratified samples (approximately 10% of the generated answers) across AMAZON, MAG, and PRIME to validate that the resulting ground truth answers are appropriate across different domains and query types.",
+   "zh": "我们在著名的基准数据集 STaRK（Wu 等人，2024b）中的三个文本丰富的知识图谱上进行评估。 它包含三个数据集：AMAZON、MAG 和 PRIME。 AMAZON 代表一个电子商务领域，MAG 代表一个学术领域，而 PRIME 代表一个生物医学领域。 STaRK 提供了自然语言查询 Q Q 以及回答 Q Q 所需的相关真实实体，使得检索系统能够基于已知节点进行评估。 然而，它并未提供用于评估生成答案的真实答案。 因此，我们对 STaRK 进行了扩展，加入了真实答案。 对于每个查询 Q Q ，我们使用真实实体的文本属性 d V ​ ( v ) d_{V}(v) 及相关关系作为源信息，并采用 Qwen3.8-27B 生成答案。 我们在提示中指导模型满足四个要求：相关性（Relevance），确保答案直接回应 Q Q ；忠实性（Faithfulness），确保所有事实性陈述都有提供的实体信息支持；覆盖性（Coverage），确保所有真实实体的名称都被明确提及；以及自然性（Naturalness），确保答案流畅自然，而非简单罗列检索到的实体。 在生成答案后，我们采取了两个额外步骤来验证这些答案。 首先，我们通过一个自动计算的指标“完整性”（Completeness）来验证答案，该指标定义为在生成答案中明确提及完整名称的真实实体的比例。 如果完整性低于某个阈值，我们会提示模型重新生成新版本的答案，直到达到该阈值。 我们重复这一生成与验证过程，从而得到更完整的真实答案。 其次，我们对 AMAZON、MAG 和 PRIME 中分层抽样（约占生成答案的 10%）进行人工检查，以验证生成的真实答案在不同领域和查询类型下的适用性。",
+   "sents": [
+    {
+     "en": "We evaluate on the three text-rich knowledge graphs in the well-known benchmark STaRK ( Wu et al., 2024b ) .",
+     "zh": "我们在著名的基准数据集 STaRK（Wu 等人，2024b）中的三个文本丰富的知识图谱上进行评估。"
+    },
+    {
+     "en": "It contains three datasets: AMAZON, MAG, and PRIME.",
+     "zh": "它包含三个数据集：AMAZON、MAG 和 PRIME。"
+    },
+    {
+     "en": "AMAZON represents an e-commerce domain, MAG a scholarly domain, and PRIME a biomedical domain.",
+     "zh": "AMAZON 代表一个电子商务领域，MAG 代表一个学术领域，而 PRIME 代表一个生物医学领域。"
+    },
+    {
+     "en": "STaRK provides natural-language queries Q Q together with ground-truth entities relevant to answer Q Q , allowing retrieval systems to be evaluated against known nodes.",
+     "zh": "STaRK 提供了自然语言查询 Q Q 以及回答 Q Q 所需的相关真实实体，使得检索系统能够基于已知节点进行评估。"
+    },
+    {
+     "en": "However, it does not provide a ground truth for evaluating generated answers.",
+     "zh": "然而，它并未提供用于评估生成答案的真实答案。"
+    },
+    {
+     "en": "We therefore augment STaRK with ground-truth answers.",
+     "zh": "因此，我们对 STaRK 进行了扩展，加入了真实答案。"
+    },
+    {
+     "en": "For each query Q Q , we use the ground truth entities’ text attributes d V ​ ( v ) d_{V}(v) and related relations as the source information and employ Qwen3.8-27B to generate answers.",
+     "zh": "对于每个查询 Q Q ，我们使用真实实体的文本属性 d V ​ ( v ) d_{V}(v) 及相关关系作为源信息，并采用 Qwen3.8-27B 生成答案。"
+    },
+    {
+     "en": "We instruct the model in the prompt to satisfy four requirements: Relevance , ensuring that the answer directly addresses Q Q ; Faithfulness , ensuring that all factual claims are supported by the provided entity information; Coverage , ensuring that the names of all ground-truth entities are explicitly mentioned; and Naturalness , ensuring that the answer is fluent and natural rather than enumerating a list of retrieved entities.",
+     "zh": "我们在提示中指导模型满足四个要求：相关性（Relevance），确保答案直接回应 Q Q ；忠实性（Faithfulness），确保所有事实性陈述都有提供的实体信息支持；覆盖性（Coverage），确保所有真实实体的名称都被明确提及；以及自然性（Naturalness），确保答案流畅自然，而非简单罗列检索到的实体。"
+    },
+    {
+     "en": "After answer generation, we took two extra steps to validate the answers.",
+     "zh": "在生成答案后，我们采取了两个额外步骤来验证这些答案。"
+    },
+    {
+     "en": "First, we validate the answer using an automatically calculated indicator Completeness defined as the proportion of ground-truth entities whose complete names are explicitly mentioned in the generated answer.",
+     "zh": "首先，我们通过一个自动计算的指标“完整性”（Completeness）来验证答案，该指标定义为在生成答案中明确提及完整名称的真实实体的比例。"
+    },
+    {
+     "en": "If Completeness is below a threshold, we prompt the model to regenerate a new version of answer until it reaches the threshold.",
+     "zh": "如果完整性低于某个阈值，我们会提示模型重新生成新版本的答案，直到达到该阈值。"
+    },
+    {
+     "en": "We repeat this generation-and-validation process, resulting in more complete ground truth answers.",
+     "zh": "我们重复这一生成与验证过程，从而得到更完整的真实答案。"
+    },
+    {
+     "en": "Second, we manually inspect stratified samples (approximately 10% of the generated answers) across AMAZON, MAG, and PRIME to validate that the resulting ground truth answers are appropriate across different domains and query types.",
+     "zh": "其次，我们对 AMAZON、MAG 和 PRIME 中分层抽样（约占生成答案的 10%）进行人工检查，以验证生成的真实答案在不同领域和查询类型下的适用性。"
+    }
+   ]
+  },
+  {
+   "en": "We compare CARA with conventional retrievers and agentic retrievers used in prior work. The conventional retrievers include the classic sparse retrieval, BM25 ( Robertson and Zaragoza, 2009 ) ; dense embedding retrieval that rank nodes by cosine similarity, ada-002 ( OpenAI, 2022 ) and GritLM-7B ( Muennighoff et al., 2025 ) ; knowledge-aware retrieval KAR ( Xia et al., 2025 ) that conducts query expansion and applies relation type constraints during retrieval. Agentic retrievers include Think-on-Graph ( Sun et al., 2024 ) , which is a training-free LLM agent that iteratively expands paths in the graph using beam search; GraphFlow ( Yu et al., 2025 ) , which learns to generate multi-hop retrieval trajectories using GFlowNets ( Bengio et al., 2021 ) ; and ARK ( Polonuer et al., 2026 ) , which has adaptive use of global search and neighborhood exploration but without causal reasoning during graph traversal.",
+   "zh": "我们将 CARA 与以往研究中使用的传统检索器和智能体检索器进行比较。 传统检索器包括经典的稀疏检索 BM25（Robertson 和 Zaragoza，2009）；通过余弦相似度对节点进行排序的密集嵌入检索 ada-002（OpenAI，2022）和 GritLM-7B（Muennighoff 等，2025）；以及能够执行查询扩展并在检索过程中应用关系类型约束的知识感知检索 KAR（Xia 等，2025）。 智能体检索器包括 Think-on-Graph（Sun 等，2024），这是一种无需训练的 LLM 智能体，它通过束搜索在图中迭代扩展路径；GraphFlow（Yu 等，2025），它利用 GFlowNets（Bengio 等，2021）学习生成多跳检索轨迹；以及 ARK（Polonuer 等，2026），它在图遍历过程中能够自适应地使用全局搜索和邻域探索，但缺乏因果推理能力。",
+   "sents": [
+    {
+     "en": "We compare CARA with conventional retrievers and agentic retrievers used in prior work.",
+     "zh": "我们将 CARA 与以往研究中使用的传统检索器和智能体检索器进行比较。"
+    },
+    {
+     "en": "The conventional retrievers include the classic sparse retrieval, BM25 ( Robertson and Zaragoza, 2009 ) ; dense embedding retrieval that rank nodes by cosine similarity, ada-002 ( OpenAI, 2022 ) and GritLM-7B ( Muennighoff et al., 2025 ) ; knowledge-aware retrieval KAR ( Xia et al., 2025 ) that conducts query expansion and applies relation type constraints during retrieval.",
+     "zh": "传统检索器包括经典的稀疏检索 BM25（Robertson 和 Zaragoza，2009）；通过余弦相似度对节点进行排序的密集嵌入检索 ada-002（OpenAI，2022）和 GritLM-7B（Muennighoff 等，2025）；以及能够执行查询扩展并在检索过程中应用关系类型约束的知识感知检索 KAR（Xia 等，2025）。"
+    },
+    {
+     "en": "Agentic retrievers include Think-on-Graph ( Sun et al., 2024 ) , which is a training-free LLM agent that iteratively expands paths in the graph using beam search; GraphFlow ( Yu et al., 2025 ) , which learns to generate multi-hop retrieval trajectories using GFlowNets ( Bengio et al., 2021 ) ; and ARK ( Polonuer et al., 2026 ) , which has adaptive use of global search and neighborhood exploration but without causal reasoning during graph traversal.",
+     "zh": "智能体检索器包括 Think-on-Graph（Sun 等，2024），这是一种无需训练的 LLM 智能体，它通过束搜索在图中迭代扩展路径；GraphFlow（Yu 等，2025），它利用 GFlowNets（Bengio 等，2021）学习生成多跳检索轨迹；以及 ARK（Polonuer 等，2026），它在图遍历过程中能够自适应地使用全局搜索和邻域探索，但缺乏因果推理能力。"
+    }
+   ]
+  },
+  {
+   "en": "All agentic systems (CARA and agentic baselines), the causal module, the common answer generator use the same open-weight backbone, Qwen3.8-27B, served with vLLM with thinking disabled. The agents’ LLM calls sample with temperature 1.0, and all other calls decode greedily. CARA runs m = 3 m=3 agents per query (question) with T max = 150 T_{\\max}=150 steps each; GlobalSearch returns k = 30 k=30 candidates and Neighbors returns k = 20 k=20 .",
+   "zh": "所有智能体系统（CARA 和智能体基线模型）、因果模块以及通用答案生成器均使用相同的开放权重基础模型 Qwen3.8-27B，并通过 vLLM 提供服务，同时禁用思考功能。 智能体的 LLM 调用以温度 1.0 进行采样，而所有其他调用均采用贪心解码方式。 CARA 每次查询（问题）运行 m = 3 个智能体，每个智能体的最大步数 T_{\\max}=150；GlobalSearch 返回 k = 30 个候选答案，Neighbors 返回 k = 20 个候选答案。",
+   "sents": [
+    {
+     "en": "All agentic systems (CARA and agentic baselines), the causal module, the common answer generator use the same open-weight backbone, Qwen3.8-27B, served with vLLM with thinking disabled.",
+     "zh": "所有智能体系统（CARA 和智能体基线模型）、因果模块以及通用答案生成器均使用相同的开放权重基础模型 Qwen3.8-27B，并通过 vLLM 提供服务，同时禁用思考功能。"
+    },
+    {
+     "en": "The agents’ LLM calls sample with temperature 1.0, and all other calls decode greedily.",
+     "zh": "智能体的 LLM 调用以温度 1.0 进行采样，而所有其他调用均采用贪心解码方式。"
+    },
+    {
+     "en": "CARA runs m = 3 m=3 agents per query (question) with T max = 150 T_{\\max}=150 steps each; GlobalSearch returns k = 30 k=30 candidates and Neighbors returns k = 20 k=20 .",
+     "zh": "CARA 每次查询（问题）运行 m = 3 个智能体，每个智能体的最大步数 T_{\\max}=150；GlobalSearch 返回 k = 30 个候选答案，Neighbors 返回 k = 20 个候选答案。"
+    }
+   ]
+  },
+  {
+   "en": "We first evaluate the performance of the entity-retrieval task. We report Hit@1, Recall@20, and Mean Reciprocal Rank (MRR). These metrics capture complementary aspects of retrieval performance: the proportion of a correct entity ranked first, the proportion of ground truth entities successfully retrieved among the top 20 ranked results, and how highly the first correct entity is ranked overall.",
+   "zh": "我们首先评估实体检索任务的性能。 我们报告了 Hit@1、Recall@20 和平均倒数排名（MRR）。 这些指标涵盖了检索性能的不同互补方面：正确实体排在首位的比例、前 20 个排名结果中成功检索到的真实实体的比例，以及第一个正确实体在整体排名中的位置高低。",
+   "sents": [
+    {
+     "en": "We first evaluate the performance of the entity-retrieval task.",
+     "zh": "我们首先评估实体检索任务的性能。"
+    },
+    {
+     "en": "We report Hit@1, Recall@20, and Mean Reciprocal Rank (MRR).",
+     "zh": "我们报告了 Hit@1、Recall@20 和平均倒数排名（MRR）。"
+    },
+    {
+     "en": "These metrics capture complementary aspects of retrieval performance: the proportion of a correct entity ranked first, the proportion of ground truth entities successfully retrieved among the top 20 ranked results, and how highly the first correct entity is ranked overall.",
+     "zh": "这些指标涵盖了检索性能的不同互补方面：正确实体排在首位的比例、前 20 个排名结果中成功检索到的真实实体的比例，以及第一个正确实体在整体排名中的位置高低。"
+    }
+   ]
+  },
+  {
+   "en": "We next evaluate whether the retrieved evidence improves downstream question answering. To isolate the effect of retrieval, all retrieval systems use the same answer generator (LLM, Qwen3.8-27B), prompt, decoding configuration, and context budget. The only difference between systems is the retrieved evidence supplied to the answer generator. In this end-to-end setting, each retriever produces its own ranked evidence set, and the common generator answers the question using that evidence. To test whether better retrieval leads to better answers, we evaluate answer correctness using BERTScore ( Zhang et al., 2020 ) between the generated answer and the ground truth answer. We also evaluate answer faithfulness using the Ragas framework ( Es et al., 2024 ) , measuring whether factual claims in the generated answer are supported by the retrieved context.",
+   "zh": "接下来，我们评估检索到的证据是否提升了下游的问答性能。 为了单独分析检索的影响，所有检索系统均使用相同的回答生成器（LLM，Qwen3.8-27B）、提示、解码配置和上下文预算。 各系统之间的唯一差异在于提供给回答生成器的检索证据。 在这种端到端的设置中，每个检索器都会生成自己的排序证据集，而共同的生成器则基于这些证据回答问题。 为了检验更优的检索是否能带来更好的答案，我们通过 BERTScore（Zhang et al., 2020）评估生成答案与标准答案之间的正确性。 我们还使用 Ragas 框架（Es et al., 2024）评估答案的忠实度，即衡量生成答案中的事实性陈述是否得到了检索上下文的支持。",
+   "sents": [
+    {
+     "en": "We next evaluate whether the retrieved evidence improves downstream question answering.",
+     "zh": "接下来，我们评估检索到的证据是否提升了下游的问答性能。"
+    },
+    {
+     "en": "To isolate the effect of retrieval, all retrieval systems use the same answer generator (LLM, Qwen3.8-27B), prompt, decoding configuration, and context budget.",
+     "zh": "为了单独分析检索的影响，所有检索系统均使用相同的回答生成器（LLM，Qwen3.8-27B）、提示、解码配置和上下文预算。"
+    },
+    {
+     "en": "The only difference between systems is the retrieved evidence supplied to the answer generator.",
+     "zh": "各系统之间的唯一差异在于提供给回答生成器的检索证据。"
+    },
+    {
+     "en": "In this end-to-end setting, each retriever produces its own ranked evidence set, and the common generator answers the question using that evidence.",
+     "zh": "在这种端到端的设置中，每个检索器都会生成自己的排序证据集，而共同的生成器则基于这些证据回答问题。"
+    },
+    {
+     "en": "To test whether better retrieval leads to better answers, we evaluate answer correctness using BERTScore ( Zhang et al., 2020 ) between the generated answer and the ground truth answer.",
+     "zh": "为了检验更优的检索是否能带来更好的答案，我们通过 BERTScore（Zhang et al., 2020）评估生成答案与标准答案之间的正确性。"
+    },
+    {
+     "en": "We also evaluate answer faithfulness using the Ragas framework ( Es et al., 2024 ) , measuring whether factual claims in the generated answer are supported by the retrieved context.",
+     "zh": "我们还使用 Ragas 框架（Es et al., 2024）评估答案的忠实度，即衡量生成答案中的事实性陈述是否得到了检索上下文的支持。"
+    }
+   ]
+  },
+  {
+   "en": "As the first step of experiment, we tried different λ \\lambda values from 0 to 1 (in Equation 3, balancing consequentiality and essentiality) and α \\alpha values from 0 to 1 (in Equation 4, balancing node-level causal relevance and path consistency). It is worthnoting that the setting of λ = 0 ​ o ​ r ​ 1 \\lambda=0\\ or\\ 1 or α = 0 ​ o ​ r ​ 1 \\alpha=0\\ or\\ 1 is equivalent to a component-level ablation study. Averaged across datasets and metrics, λ = 0.5 \\lambda=0.5 and α = 0.5 \\alpha=0.5 achieve the highest performance, supporting the selection of these values.",
+   "zh": "作为实验的第一步，我们尝试了从 0 到 1 的不同 λ \\lambda 值（在方程 3 中，用于平衡后果性和必要性）以及从 0 到 1 的不同 α \\alpha 值（在方程 4 中，用于平衡节点级别的因果相关性和路径一致性）。值得注意的是，设置 λ = 0 ​ o ​ r ​ 1 \\lambda=0\\ or\\ 1 或 α = 0 ​ o ​ r ​ 1 \\alpha=0\\ or\\ 1 等同于组件级别的消融研究。在不同数据集和指标上的平均结果显示，λ = 0.5 \\lambda=0.5 和 α = 0.5 \\alpha=0.5 实现了最高的性能，这支持了选择这些值的合理性。",
+   "sents": null
+  },
+  {
+   "en": "Table 1 compares CARA ( λ = 0.5 \\lambda=0.5 , α = 0.5 \\alpha=0.5 ) with conventional and agentic retrievers on the three STaRK datasets. CARA achieves the highest Hit@1 and MRR across AMAZON, MAG, and PRIME, demonstrating its effectiveness in ranking relevant entities. Compared with ARK, its closest agentic baseline, CARA’s improvements are particularly pronounced on MAG, whose questions tend to be relation-heavy. These findings suggest that incorporating causal relevance assessment and the rank-based aggregation into adaptive graph exploration improves retrieval effectiveness across diverse knowledge domains, especially in relation-heavy domains.",
+   "zh": "表1在三个STaRK数据集上比较了CARA（λ = 0.5 \\lambda=0.5，α = 0.5 \\alpha=0.5）与传统检索器和智能体检索器。 CARA在AMAZON、MAG和PRIME数据集上均实现了最高的Hit@1和MRR，证明了其在排序相关实体方面的有效性。 与最接近的智能体基线方法ARK相比，CARA的改进在MAG数据集上尤为显著，因为该数据集的问题往往涉及大量关系。 这些发现表明，将因果相关性评估和基于排名的聚合方法融入自适应图探索中，能够提升跨不同知识领域的检索效果，尤其是在关系密集型领域。",
+   "sents": [
+    {
+     "en": "Table 1 compares CARA ( λ = 0.5 \\lambda=0.5 , α = 0.5 \\alpha=0.5 ) with conventional and agentic retrievers on the three STaRK datasets.",
+     "zh": "表1在三个STaRK数据集上比较了CARA（λ = 0.5 \\lambda=0.5，α = 0.5 \\alpha=0.5）与传统检索器和智能体检索器。"
+    },
+    {
+     "en": "CARA achieves the highest Hit@1 and MRR across AMAZON, MAG, and PRIME, demonstrating its effectiveness in ranking relevant entities.",
+     "zh": "CARA在AMAZON、MAG和PRIME数据集上均实现了最高的Hit@1和MRR，证明了其在排序相关实体方面的有效性。"
+    },
+    {
+     "en": "Compared with ARK, its closest agentic baseline, CARA’s improvements are particularly pronounced on MAG, whose questions tend to be relation-heavy.",
+     "zh": "与最接近的智能体基线方法ARK相比，CARA的改进在MAG数据集上尤为显著，因为该数据集的问题往往涉及大量关系。"
+    },
+    {
+     "en": "These findings suggest that incorporating causal relevance assessment and the rank-based aggregation into adaptive graph exploration improves retrieval effectiveness across diverse knowledge domains, especially in relation-heavy domains.",
+     "zh": "这些发现表明，将因果相关性评估和基于排名的聚合方法融入自适应图探索中，能够提升跨不同知识领域的检索效果，尤其是在关系密集型领域。"
+    }
+   ]
+  },
+  {
+   "en": "Table 2 evaluates the downstream question answering performance of CARA against KAR and ARK using BERTScore and the RAGAS faithfulness. CARA achieves the highest BERTScore across all three datasets, demonstrating that improved retrieval effectiveness translates into better answer quality. CARA also consistently improves faithfulness over ARK, with particularly notable gains on MAG and PRIME. Interestingly, KAR achieves the highest faithfulness across all datasets despite substantially lower BERTScore values. This suggests that generating answers closely grounded in retrieved evidence does not necessarily guarantee their correctness or completeness relative to ground-truth answers. Overall, these findings highlight the importance of evaluating both answer quality and faithfulness, and demonstrate that causal-guided retrieval improves downstream question answering while maintaining strong evidence grounding.",
+   "zh": "表2使用BERTScore和RAGAS忠实度指标，评估了CARA与KAR及ARK在下游问答任务中的表现。 CARA在三组数据集中均获得了最高的BERTScore，表明检索效果的提升能够带来更高质量的回答。 CARA在忠实度方面也持续优于ARK，尤其是在MAG和PRIME数据集上取得了显著进步。 有趣的是，尽管KAR的BERTScore值明显较低，但在所有数据集中却实现了最高的忠实度。 这说明，生成与检索证据紧密相关的回答，并不一定意味着这些回答相对于真实答案更正确或更完整。 总体而言，这些结果凸显了同时评估回答质量和忠实度的重要性，并表明因果引导的检索方法在保持强证据关联性的同时，能够提升下游问答任务的表现。",
+   "sents": [
+    {
+     "en": "Table 2 evaluates the downstream question answering performance of CARA against KAR and ARK using BERTScore and the RAGAS faithfulness.",
+     "zh": "表2使用BERTScore和RAGAS忠实度指标，评估了CARA与KAR及ARK在下游问答任务中的表现。"
+    },
+    {
+     "en": "CARA achieves the highest BERTScore across all three datasets, demonstrating that improved retrieval effectiveness translates into better answer quality.",
+     "zh": "CARA在三组数据集中均获得了最高的BERTScore，表明检索效果的提升能够带来更高质量的回答。"
+    },
+    {
+     "en": "CARA also consistently improves faithfulness over ARK, with particularly notable gains on MAG and PRIME.",
+     "zh": "CARA在忠实度方面也持续优于ARK，尤其是在MAG和PRIME数据集上取得了显著进步。"
+    },
+    {
+     "en": "Interestingly, KAR achieves the highest faithfulness across all datasets despite substantially lower BERTScore values.",
+     "zh": "有趣的是，尽管KAR的BERTScore值明显较低，但在所有数据集中却实现了最高的忠实度。"
+    },
+    {
+     "en": "This suggests that generating answers closely grounded in retrieved evidence does not necessarily guarantee their correctness or completeness relative to ground-truth answers.",
+     "zh": "这说明，生成与检索证据紧密相关的回答，并不一定意味着这些回答相对于真实答案更正确或更完整。"
+    },
+    {
+     "en": "Overall, these findings highlight the importance of evaluating both answer quality and faithfulness, and demonstrate that causal-guided retrieval improves downstream question answering while maintaining strong evidence grounding.",
+     "zh": "总体而言，这些结果凸显了同时评估回答质量和忠实度的重要性，并表明因果引导的检索方法在保持强证据关联性的同时，能够提升下游问答任务的表现。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 2 investigates how CARA’s retrieval and question answering performance varies with the exploration budget, controlled by the number of agents (1–3) and maximum exploration steps ( T max T_{\\max} ), ranging from 5 to 150. Overall, both Recall@20 and BERTScore improve substantially as the exploration budget increases, but exhibit diminishing returns beyond a certain point. Increasing the number of agents consistently improves Recall@20 for both AMAZON and PRIME datasets, highlighting the benefits of exploring diverse retrieval trajectories. However, further increasing T max T_{\\max} to 150 produces only marginal improvements, suggesting that most relevant evidence is discovered relatively early during exploration.",
+   "zh": "图 2 研究了 CARA 的检索和问答性能如何随探索预算而变化，该预算由智能体数量（1–3）和最大探索步数（ T max T_{\\max} ）控制，范围从 5 到 150。 总体而言，随着探索预算的增加，Recall@20 和 BERTScore 都有显著提升，但超过某个点后，收益会逐渐递减。 增加智能体数量能持续提高 AMAZON 和 PRIME 数据集上的 Recall@20，凸显了探索多样化检索路径的优势。 然而，将 T max T_{\\max} 进一步增加到 150 仅带来微小的改进，这表明大多数相关证据在探索过程中相对较早就被发现。",
+   "sents": [
+    {
+     "en": "Figure 2 investigates how CARA’s retrieval and question answering performance varies with the exploration budget, controlled by the number of agents (1–3) and maximum exploration steps ( T max T_{\\max} ), ranging from 5 to 150.",
+     "zh": "图 2 研究了 CARA 的检索和问答性能如何随探索预算而变化，该预算由智能体数量（1–3）和最大探索步数（ T max T_{\\max} ）控制，范围从 5 到 150。"
+    },
+    {
+     "en": "Overall, both Recall@20 and BERTScore improve substantially as the exploration budget increases, but exhibit diminishing returns beyond a certain point.",
+     "zh": "总体而言，随着探索预算的增加，Recall@20 和 BERTScore 都有显著提升，但超过某个点后，收益会逐渐递减。"
+    },
+    {
+     "en": "Increasing the number of agents consistently improves Recall@20 for both AMAZON and PRIME datasets, highlighting the benefits of exploring diverse retrieval trajectories.",
+     "zh": "增加智能体数量能持续提高 AMAZON 和 PRIME 数据集上的 Recall@20，凸显了探索多样化检索路径的优势。"
+    },
+    {
+     "en": "However, further increasing T max T_{\\max} to 150 produces only marginal improvements, suggesting that most relevant evidence is discovered relatively early during exploration.",
+     "zh": "然而，将 T max T_{\\max} 进一步增加到 150 仅带来微小的改进，这表明大多数相关证据在探索过程中相对较早就被发现。"
+    }
+   ]
+  },
+  {
+   "en": "Interestingly, question answering performance exhibits a similar but less consistent trend. With three agents, BERTScore improves rapidly at smaller exploration budgets and largely stabilizes beyond T max = 30 T_{\\max}=30 . On PRIME, BERTScore even decreases slightly from 42.1 at T max = 30 T_{\\max}=30 to 41.6 at T max = 150 T_{\\max}=150 , suggesting that retrieving additional evidence does not necessarily improve answer quality.",
+   "zh": "有趣的是，问答性能呈现出类似但一致性较弱的趋势。 当使用三个智能体时，在较小的探索预算下，BERTScore 会迅速提升，并在 T_{\\max}=30 之后基本保持稳定。 在 PRIME 数据集上，BERTScore 甚至从 T_{\\max}=30 时的 42.1 轻微下降至 T_{\\max}=150 时的 41.6，这表明检索更多证据并不一定能提升答案质量。",
+   "sents": [
+    {
+     "en": "Interestingly, question answering performance exhibits a similar but less consistent trend.",
+     "zh": "有趣的是，问答性能呈现出类似但一致性较弱的趋势。"
+    },
+    {
+     "en": "With three agents, BERTScore improves rapidly at smaller exploration budgets and largely stabilizes beyond T max = 30 T_{\\max}=30 .",
+     "zh": "当使用三个智能体时，在较小的探索预算下，BERTScore 会迅速提升，并在 T_{\\max}=30 之后基本保持稳定。"
+    },
+    {
+     "en": "On PRIME, BERTScore even decreases slightly from 42.1 at T max = 30 T_{\\max}=30 to 41.6 at T max = 150 T_{\\max}=150 , suggesting that retrieving additional evidence does not necessarily improve answer quality.",
+     "zh": "在 PRIME 数据集上，BERTScore 甚至从 T_{\\max}=30 时的 42.1 轻微下降至 T_{\\max}=150 时的 41.6，这表明检索更多证据并不一定能提升答案质量。"
+    }
+   ]
+  },
+  {
+   "en": "Table 3 investigates the contributions of the causal reasoning module ( 𝒞 \\mathcal{C} ) and reciprocal rank fusion (RRF), compared with the count-based aggregation used by ARK. Removing 𝒞 \\mathcal{C} consistently degrades retrieval and question answering performance. Replacing RRF with ARK’s count-based aggregation yields smaller performance differences. However, count-based aggregation achieves marginally higher Hit@1 on PRIME and faithfulness on MAG and PRIME. Overall, these results demonstrate that causal reasoning provides the primary performance gains, while RRF offers additional improvements in evidence ranking and answer quality.",
+   "zh": "表3研究了因果推理模块（𝒞 \\mathcal{C}）和互惠排名融合（RRF）的贡献，并与ARK使用的计数聚合方法进行了比较。 移除𝒞 \\mathcal{C}会持续降低信息检索和问答性能。 将RRF替换为ARK的计数聚合方法所带来的性能差异较小。 然而，计数聚合方法在PRIME数据集上的Hit@1指标略高，在MAG和PRIME数据集上的忠实度也更高。 总体而言，这些结果表明因果推理是性能提升的主要来源，而RRF则在证据排序和答案质量方面提供了额外的改进。",
+   "sents": [
+    {
+     "en": "Table 3 investigates the contributions of the causal reasoning module ( 𝒞 \\mathcal{C} ) and reciprocal rank fusion (RRF), compared with the count-based aggregation used by ARK.",
+     "zh": "表3研究了因果推理模块（𝒞 \\mathcal{C}）和互惠排名融合（RRF）的贡献，并与ARK使用的计数聚合方法进行了比较。"
+    },
+    {
+     "en": "Removing 𝒞 \\mathcal{C} consistently degrades retrieval and question answering performance.",
+     "zh": "移除𝒞 \\mathcal{C}会持续降低信息检索和问答性能。"
+    },
+    {
+     "en": "Replacing RRF with ARK’s count-based aggregation yields smaller performance differences.",
+     "zh": "将RRF替换为ARK的计数聚合方法所带来的性能差异较小。"
+    },
+    {
+     "en": "However, count-based aggregation achieves marginally higher Hit@1 on PRIME and faithfulness on MAG and PRIME.",
+     "zh": "然而，计数聚合方法在PRIME数据集上的Hit@1指标略高，在MAG和PRIME数据集上的忠实度也更高。"
+    },
+    {
+     "en": "Overall, these results demonstrate that causal reasoning provides the primary performance gains, while RRF offers additional improvements in evidence ranking and answer quality.",
+     "zh": "总体而言，这些结果表明因果推理是性能提升的主要来源，而RRF则在证据排序和答案质量方面提供了额外的改进。"
+    }
+   ]
+  },
+  {
+   "en": "Table 4 compares the computational efficiency and exploration behavior of CARA and ARK across three datasets. Interestingly, CARA achieves more focused graph exploration despite introducing an additional causal reasoning module. Compared with ARK (the closest agentic baseline), CARA reduces GlobalSearch calls as well as Neighbors calls across the datasets. The number of examined nodes also decreases for the three datasets. These results suggest that causal relevance assessment helps agents identify promising evidence paths while avoiding unnecessary exploration.",
+   "zh": "表 4 比较了 CARA 和 ARK 在三个数据集上的计算效率和探索行为。 有趣的是，尽管引入了额外的因果推理模块，CARA 仍然实现了更聚焦的图探索。 与 ARK（最接近的智能体基线模型）相比，CARA 在所有数据集中都减少了 GlobalSearch 调用和 Neighbors 调用的次数。 在三个数据集中，被检查的节点数量也减少了。 这些结果表明，对因果相关性的评估有助于智能体识别有前景的证据路径，同时避免不必要的探索。",
+   "sents": [
+    {
+     "en": "Table 4 compares the computational efficiency and exploration behavior of CARA and ARK across three datasets.",
+     "zh": "表 4 比较了 CARA 和 ARK 在三个数据集上的计算效率和探索行为。"
+    },
+    {
+     "en": "Interestingly, CARA achieves more focused graph exploration despite introducing an additional causal reasoning module.",
+     "zh": "有趣的是，尽管引入了额外的因果推理模块，CARA 仍然实现了更聚焦的图探索。"
+    },
+    {
+     "en": "Compared with ARK (the closest agentic baseline), CARA reduces GlobalSearch calls as well as Neighbors calls across the datasets.",
+     "zh": "与 ARK（最接近的智能体基线模型）相比，CARA 在所有数据集中都减少了 GlobalSearch 调用和 Neighbors 调用的次数。"
+    },
+    {
+     "en": "The number of examined nodes also decreases for the three datasets.",
+     "zh": "在三个数据集中，被检查的节点数量也减少了。"
+    },
+    {
+     "en": "These results suggest that causal relevance assessment helps agents identify promising evidence paths while avoiding unnecessary exploration.",
+     "zh": "这些结果表明，对因果相关性的评估有助于智能体识别有前景的证据路径，同时避免不必要的探索。"
+    }
+   ]
+  },
+  {
+   "en": "Compared with AMAZON whose questions are more entity-oriented, MAG and PRIME involve more relation-intensive biomedical questions that require deeper multi-hop exploration. This difference is reflected in CARA’s substantially higher number of Neighbors calls and therefore causal reasoning calls per query, suggesting that causal guidance is particularly important for navigating complex relational structures. However, the additional causal reasoning introduces latency overhead. The particularly pronounced overhead on MAG and PRIME highlights a trade-off between retrieval effectiveness and computational efficiency, suggesting opportunities for reducing latency through parallel or batched causal assessments.",
+   "zh": "与问题更偏向实体的 AMAZON 相比，MAG 和 PRIME 涉及更多关系密集的生物医学问题，这些问题需要更深入的跨步探索。 这种差异体现在 CARA 每次查询中调用的“邻居”次数显著更高，进而导致因果推理调用次数更多，这表明因果引导在导航复杂关系结构时尤为重要。 然而，额外的因果推理会引入延迟开销。 MAG 和 PRIME 上尤为显著的开销凸显了信息检索有效性与计算效率之间的权衡，也提示了通过并行或批量因果评估来减少延迟的可能性。",
+   "sents": [
+    {
+     "en": "Compared with AMAZON whose questions are more entity-oriented, MAG and PRIME involve more relation-intensive biomedical questions that require deeper multi-hop exploration.",
+     "zh": "与问题更偏向实体的 AMAZON 相比，MAG 和 PRIME 涉及更多关系密集的生物医学问题，这些问题需要更深入的跨步探索。"
+    },
+    {
+     "en": "This difference is reflected in CARA’s substantially higher number of Neighbors calls and therefore causal reasoning calls per query, suggesting that causal guidance is particularly important for navigating complex relational structures.",
+     "zh": "这种差异体现在 CARA 每次查询中调用的“邻居”次数显著更高，进而导致因果推理调用次数更多，这表明因果引导在导航复杂关系结构时尤为重要。"
+    },
+    {
+     "en": "However, the additional causal reasoning introduces latency overhead.",
+     "zh": "然而，额外的因果推理会引入延迟开销。"
+    },
+    {
+     "en": "The particularly pronounced overhead on MAG and PRIME highlights a trade-off between retrieval effectiveness and computational efficiency, suggesting opportunities for reducing latency through parallel or batched causal assessments.",
+     "zh": "MAG 和 PRIME 上尤为显著的开销凸显了信息检索有效性与计算效率之间的权衡，也提示了通过并行或批量因果评估来减少延迟的可能性。"
+    }
+   ]
+  },
+  {
+   "en": "In this paper, we proposed CARA, a training-free causally guided retrieval agent for question answering over text-rich knowledge graphs. Unlike existing agentic retrievers that primarily rely on textual similarity, CARA evaluates retrieved evidence through consequentiality and essentiality, together with path consistency, to guide graph exploration. Reciprocal rank fusion further aggregates evidence from multiple independent agents. We also augmented the STaRK benchmark with ground-truth answers to enable downstream question answering evaluation. Experiments on three datasets demonstrate that CARA consistently improves retrieval effectiveness, while also improving answer quality and faithfulness compared with ARK. Moreover, CARA achieves more focused exploration by examining fewer nodes and requiring fewer retrieval operations. However, the additional causal reasoning introduces inference latency overhead, particularly for relation-intensive questions.",
+   "zh": "在本文中，我们提出了 CARA——一种无需训练、基于因果推理的检索智能体，用于在文本丰富的知识图谱中回答问题。 与主要依赖文本相似性的现有智能体检索器不同，CARA 通过评估检索证据的因果相关性和必要性，并结合路径一致性，来指导图谱探索。 互惠排名融合进一步整合了来自多个独立智能体的证据。 我们还为 STaRK 基准测试补充了真实答案，以便进行下游的问题回答评估。 在三个数据集上进行的实验表明，与 ARK 相比，CARA 能够持续提升检索效果，同时改善答案的质量和忠实度。 此外，CARA 通过检查更少的节点和减少检索操作，实现了更具针对性的探索。 然而，额外的因果推理会引入推理延迟开销，尤其是在处理关系密集型问题时。",
+   "sents": [
+    {
+     "en": "In this paper, we proposed CARA, a training-free causally guided retrieval agent for question answering over text-rich knowledge graphs.",
+     "zh": "在本文中，我们提出了 CARA——一种无需训练、基于因果推理的检索智能体，用于在文本丰富的知识图谱中回答问题。"
+    },
+    {
+     "en": "Unlike existing agentic retrievers that primarily rely on textual similarity, CARA evaluates retrieved evidence through consequentiality and essentiality, together with path consistency, to guide graph exploration.",
+     "zh": "与主要依赖文本相似性的现有智能体检索器不同，CARA 通过评估检索证据的因果相关性和必要性，并结合路径一致性，来指导图谱探索。"
+    },
+    {
+     "en": "Reciprocal rank fusion further aggregates evidence from multiple independent agents.",
+     "zh": "互惠排名融合进一步整合了来自多个独立智能体的证据。"
+    },
+    {
+     "en": "We also augmented the STaRK benchmark with ground-truth answers to enable downstream question answering evaluation.",
+     "zh": "我们还为 STaRK 基准测试补充了真实答案，以便进行下游的问题回答评估。"
+    },
+    {
+     "en": "Experiments on three datasets demonstrate that CARA consistently improves retrieval effectiveness, while also improving answer quality and faithfulness compared with ARK.",
+     "zh": "在三个数据集上进行的实验表明，与 ARK 相比，CARA 能够持续提升检索效果，同时改善答案的质量和忠实度。"
+    },
+    {
+     "en": "Moreover, CARA achieves more focused exploration by examining fewer nodes and requiring fewer retrieval operations.",
+     "zh": "此外，CARA 通过检查更少的节点和减少检索操作，实现了更具针对性的探索。"
+    },
+    {
+     "en": "However, the additional causal reasoning introduces inference latency overhead, particularly for relation-intensive questions.",
+     "zh": "然而，额外的因果推理会引入推理延迟开销，尤其是在处理关系密集型问题时。"
+    }
+   ]
+  },
+  {
+   "en": "Despite its promising results, CARA has several limitations. First, causal relevance is operationalized through LLM-based assessments of consequentiality and essentiality rather than formal inference. These assessments may be sensitive to model biases, prompting strategies, and errors in evaluating evidence contributions. Second, although CARA reduces retrieval operations and examined nodes, the additional causal reasoning module increases computational overhead and inference latency, particularly for relation-intensive questions. Third, downstream question answering evaluation relies on automatically constructed ground-truth answers and LLM-based faithfulness assessments, which may introduce evaluation noise. Future work will explore more efficient causal assessments and alternative evaluations.",
+   "zh": "尽管 CARA 取得了令人鼓舞的结果，但它仍然存在一些局限性。 首先，因果相关性是通过基于大语言模型（LLM）的后果性和必要性评估来操作的，而非通过形式化推理。 这些评估可能对模型偏见、提示策略以及证据贡献评估中的错误较为敏感。 其次，尽管 CARA 减少了检索操作和需要检查的节点，但其新增的因果推理模块却增加了计算开销和推理延迟，尤其是在处理关系密集型问题时。 第三，下游问答评估依赖于自动构建的真实答案和基于大语言模型（LLM）的忠实度评估，这可能会引入评估噪声。 未来的工作将探索更高效的因果评估方法和替代性评估方案。",
+   "sents": [
+    {
+     "en": "Despite its promising results, CARA has several limitations.",
+     "zh": "尽管 CARA 取得了令人鼓舞的结果，但它仍然存在一些局限性。"
+    },
+    {
+     "en": "First, causal relevance is operationalized through LLM-based assessments of consequentiality and essentiality rather than formal inference.",
+     "zh": "首先，因果相关性是通过基于大语言模型（LLM）的后果性和必要性评估来操作的，而非通过形式化推理。"
+    },
+    {
+     "en": "These assessments may be sensitive to model biases, prompting strategies, and errors in evaluating evidence contributions.",
+     "zh": "这些评估可能对模型偏见、提示策略以及证据贡献评估中的错误较为敏感。"
+    },
+    {
+     "en": "Second, although CARA reduces retrieval operations and examined nodes, the additional causal reasoning module increases computational overhead and inference latency, particularly for relation-intensive questions.",
+     "zh": "其次，尽管 CARA 减少了检索操作和需要检查的节点，但其新增的因果推理模块却增加了计算开销和推理延迟，尤其是在处理关系密集型问题时。"
+    },
+    {
+     "en": "Third, downstream question answering evaluation relies on automatically constructed ground-truth answers and LLM-based faithfulness assessments, which may introduce evaluation noise.",
+     "zh": "第三，下游问答评估依赖于自动构建的真实答案和基于大语言模型（LLM）的忠实度评估，这可能会引入评估噪声。"
+    },
+    {
+     "en": "Future work will explore more efficient causal assessments and alternative evaluations.",
+     "zh": "未来的工作将探索更高效的因果评估方法和替代性评估方案。"
+    }
+   ]
+  },
+  {
+   "en": "Table 5 lists the settings of the implementation.",
+   "zh": "表 5 列出了实现的设置。",
+   "sents": null
+  }
+ ]
+}
