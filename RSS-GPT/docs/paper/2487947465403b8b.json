@@ -1,0 +1,992 @@
+{
+ "id": "2487947465403b8b",
+ "source": "arxiv-video",
+ "link": "https://arxiv.org/abs/2610.20089v1",
+ "title": "When Pairwise Preferences Cycle: A Reliability-Anchored Preference Walk for Video GRPO",
+ "title_zh": "当对偏好出现循环时：一种基于可靠性的偏好游走方法，用于视频 GRPO",
+ "published": "2026-10-14T12:30:39Z",
+ "translated_at": "2026-10-20T02:38:10Z",
+ "paragraphs": [
+  {
+   "en": "Pairwise preference feedback has become a widely adopted supervision signal for reinforcement learning in video generation models, as pairwise comparisons provide a more reliable alternative than pointwise scalar ratings for evaluating the quality of generated videos. Specifically, we define a preference graph for each GRPO group under a pairwise evaluator, where nodes represent sampled rollouts and edges encode pairwise preferences. Auditing 6,976 on-policy comparison graphs, we find that cyclic preferences are prevalent and persist throughout training. Naive pairwise reward aggregation based on average win rates discards the underlying comparison structures and treats each rollout independently, which may introduce unreliable advantage estimates for certain rollouts and consequently affect reinforcement learning optimization. Therefore, we propose the Reliability-Anchored Preference Walk (RAP-Walk), a graph-aware advantage aggregation method that strengthens the global preference signal from win rates with reliable relational evidence from cyclic preference graphs through a reliability-guided preference walk. Under matched evaluator, comparison protocol, group size, prompt schedule, and query budget, RAP-Walk requires no additional evaluator queries beyond the observed comparisons within each rollout group and improves over Pairwise-GRPO across controlled comparisons, transfer settings, and blind human evaluations.",
+   "zh": "成对偏好反馈已成为视频生成模型中强化学习广泛采用的监督信号，因为与点式标量评分相比，成对比较为评估生成视频的质量提供了更可靠的替代方案。 具体而言，我们在每个成对评估器下的 GRPO 组中定义一个偏好图，其中节点代表采样出的 rollout，边则编码了成对偏好关系。 通过对 6,976 个在线策略比较图进行审计，我们发现循环偏好普遍存在，并且在整个训练过程中持续出现。 基于平均胜率的天真成对奖励聚合方法会忽略底层的比较结构，并将每个 rollout 独立处理，这可能会为某些 rollout 引入不可靠的优势估计，进而影响强化学习的优化过程。 因此，我们提出了可靠性锚定偏好游走（RAP-Walk）——一种图感知的优势聚合方法，该方法通过可靠性引导的偏好游走，利用循环偏好图中的可靠关系证据来增强来自胜率的全局偏好信号。 在评估器、比较协议、组大小、提示调度和查询预算均匹配的情况下，RAP-Walk 无需在每个 rollout 组内观察到的比较之外发起额外的评估器查询，并且在受控比较、迁移设置和盲测人类评估中均优于 Pairwise-GRPO。",
+   "sents": [
+    {
+     "en": "Pairwise preference feedback has become a widely adopted supervision signal for reinforcement learning in video generation models, as pairwise comparisons provide a more reliable alternative than pointwise scalar ratings for evaluating the quality of generated videos.",
+     "zh": "成对偏好反馈已成为视频生成模型中强化学习广泛采用的监督信号，因为与点式标量评分相比，成对比较为评估生成视频的质量提供了更可靠的替代方案。"
+    },
+    {
+     "en": "Specifically, we define a preference graph for each GRPO group under a pairwise evaluator, where nodes represent sampled rollouts and edges encode pairwise preferences.",
+     "zh": "具体而言，我们在每个成对评估器下的 GRPO 组中定义一个偏好图，其中节点代表采样出的 rollout，边则编码了成对偏好关系。"
+    },
+    {
+     "en": "Auditing 6,976 on-policy comparison graphs, we find that cyclic preferences are prevalent and persist throughout training.",
+     "zh": "通过对 6,976 个在线策略比较图进行审计，我们发现循环偏好普遍存在，并且在整个训练过程中持续出现。"
+    },
+    {
+     "en": "Naive pairwise reward aggregation based on average win rates discards the underlying comparison structures and treats each rollout independently, which may introduce unreliable advantage estimates for certain rollouts and consequently affect reinforcement learning optimization.",
+     "zh": "基于平均胜率的天真成对奖励聚合方法会忽略底层的比较结构，并将每个 rollout 独立处理，这可能会为某些 rollout 引入不可靠的优势估计，进而影响强化学习的优化过程。"
+    },
+    {
+     "en": "Therefore, we propose the Reliability-Anchored Preference Walk (RAP-Walk), a graph-aware advantage aggregation method that strengthens the global preference signal from win rates with reliable relational evidence from cyclic preference graphs through a reliability-guided preference walk.",
+     "zh": "因此，我们提出了可靠性锚定偏好游走（RAP-Walk）——一种图感知的优势聚合方法，该方法通过可靠性引导的偏好游走，利用循环偏好图中的可靠关系证据来增强来自胜率的全局偏好信号。"
+    },
+    {
+     "en": "Under matched evaluator, comparison protocol, group size, prompt schedule, and query budget, RAP-Walk requires no additional evaluator queries beyond the observed comparisons within each rollout group and improves over Pairwise-GRPO across controlled comparisons, transfer settings, and blind human evaluations.",
+     "zh": "在评估器、比较协议、组大小、提示调度和查询预算均匹配的情况下，RAP-Walk 无需在每个 rollout 组内观察到的比较之外发起额外的评估器查询，并且在受控比较、迁移设置和盲测人类评估中均优于 Pairwise-GRPO。"
+    }
+   ]
+  },
+  {
+   "en": "1 University of Science and Technology of China, Hefei, China",
+   "zh": "1 中国科学技术大学，合肥，中国",
+   "sents": null
+  },
+  {
+   "en": "Reinforcement learning based methods such as Flow-GRPO and DanceGRPO ( Liu et al. 2025a ; Xue et al. 2025 ) have become important techniques for optimizing video generation models. Early approaches commonly adopt pointwise rewards, which assign an independent scalar score to each generated video. However, video quality is jointly determined by multiple dimensions, including prompt fidelity, visual appearance, motion quality, and temporal consistency, making absolute scores difficult to estimate and calibrate reliably. Pairwise rewards ( Wang et al. 2025c ; Wang et al. 2025a ; Wang et al. 2026c ) instead evaluate the relative quality of two candidate videos, avoiding the need to define a consistent absolute scoring scale. Consequently, they have recently gained widespread popularity for their improved robustness and interpretability.",
+   "zh": "基于强化学习的方法，例如 Flow-GRPO 和 DanceGRPO（Liu 等人，2025a；Xue 等人，2025），已成为优化视频生成模型的重要技术。 早期的方法通常采用逐点奖励，即为每个生成的视频分配一个独立的标量分数。 然而，视频质量是由多个维度共同决定的，包括提示保真度、视觉外观、运动质量和时间一致性，这使得绝对分数的估计和可靠校准变得困难。 相比之下，成对奖励（Wang 等人，2025c；Wang 等人，2025a；Wang 等人，2026c）会评估两个候选视频的相对质量，从而无需定义一个一致的绝对评分标准。 因此，由于它们具有更强的鲁棒性和可解释性，这些方法近来获得了广泛应用。",
+   "sents": [
+    {
+     "en": "Reinforcement learning based methods such as Flow-GRPO and DanceGRPO ( Liu et al. 2025a ; Xue et al. 2025 ) have become important techniques for optimizing video generation models.",
+     "zh": "基于强化学习的方法，例如 Flow-GRPO 和 DanceGRPO（Liu 等人，2025a；Xue 等人，2025），已成为优化视频生成模型的重要技术。"
+    },
+    {
+     "en": "Early approaches commonly adopt pointwise rewards, which assign an independent scalar score to each generated video.",
+     "zh": "早期的方法通常采用逐点奖励，即为每个生成的视频分配一个独立的标量分数。"
+    },
+    {
+     "en": "However, video quality is jointly determined by multiple dimensions, including prompt fidelity, visual appearance, motion quality, and temporal consistency, making absolute scores difficult to estimate and calibrate reliably.",
+     "zh": "然而，视频质量是由多个维度共同决定的，包括提示保真度、视觉外观、运动质量和时间一致性，这使得绝对分数的估计和可靠校准变得困难。"
+    },
+    {
+     "en": "Pairwise rewards ( Wang et al. 2025c ; Wang et al. 2025a ; Wang et al. 2026c ) instead evaluate the relative quality of two candidate videos, avoiding the need to define a consistent absolute scoring scale.",
+     "zh": "相比之下，成对奖励（Wang 等人，2025c；Wang 等人，2025a；Wang 等人，2026c）会评估两个候选视频的相对质量，从而无需定义一个一致的绝对评分标准。"
+    },
+    {
+     "en": "Consequently, they have recently gained widespread popularity for their improved robustness and interpretability.",
+     "zh": "因此，由于它们具有更强的鲁棒性和可解释性，这些方法近来获得了广泛应用。"
+    }
+   ]
+  },
+  {
+   "en": "Pairwise reward naturally induces a preference graph, where each rollout is represented as a node and each directed edge encodes both the preference direction and confidence between two videos. Unlike pointwise rewards, this graph representation preserves rich relational information beyond individual scores. However, GRPO ultimately requires a scalar advantage for each rollout, creating a fundamental graph-to-advantage mapping challenge:",
+   "zh": "成对奖励天然会生成一个偏好图，其中每次展开表示为一个节点，每条有向边则同时编码了两个视频之间的偏好方向与置信度。 与点式奖励不同，这种图表示方式保留了超越单个分数的丰富关系信息。 然而，GRPO 最终仍需要为每次展开计算一个标量优势值，这带来了一个根本性的图到优势的映射挑战：",
+   "sents": [
+    {
+     "en": "Pairwise reward naturally induces a preference graph, where each rollout is represented as a node and each directed edge encodes both the preference direction and confidence between two videos.",
+     "zh": "成对奖励天然会生成一个偏好图，其中每次展开表示为一个节点，每条有向边则同时编码了两个视频之间的偏好方向与置信度。"
+    },
+    {
+     "en": "Unlike pointwise rewards, this graph representation preserves rich relational information beyond individual scores.",
+     "zh": "与点式奖励不同，这种图表示方式保留了超越单个分数的丰富关系信息。"
+    },
+    {
+     "en": "However, GRPO ultimately requires a scalar advantage for each rollout, creating a fundamental graph-to-advantage mapping challenge:",
+     "zh": "然而，GRPO 最终仍需要为每次展开计算一个标量优势值，这带来了一个根本性的图到优势的映射挑战："
+    }
+   ]
+  },
+  {
+   "en": "How can we reliably reduce a structured preference graph into the scalar advantages required by GRPO while preserving its relational information?",
+   "zh": "我们如何才能在可靠地将结构化偏好图简化为 GRPO 所需的标量优势的同时，保留其关系信息？",
+   "sents": null
+  },
+  {
+   "en": "A naive implementation of Pairwise-GRPO ( Wang et al. 2025b ) addresses this challenge by assigning each rollout a normalized average win rate against the other rollouts. While this aggregation is simple and stable, it projects the entire preference graph onto one scalar per rollout, implicitly treating pairwise outcomes as if they could be adequately summarized by a globally consistent ordering. In practice, however, video quality is jointly determined by multiple factors, including prompt fidelity, visual appearance, motion quality, and temporal consistency, and pairwise judgments need not be transitive. For example, an evaluator may prefer video 1 over video 2, video 2 over video 3, and video 3 over video 1. Such preference cycles should not necessarily be interpreted as evaluator failures; instead, they may reflect meaningful trade-offs among different quality dimensions. Naive win-rate aggregation cannot preserve this structure: comparison graphs with different opponent relationships and cyclic patterns may collapse to identical scalar advantages.",
+   "zh": "Pairwise-GRPO（Wang 等人，2025b）的一种朴素实现通过为每次展开分配一个相对于其他展开的归一化平均胜率来解决这一挑战。 尽管这种聚合方法简单且稳定，但它将整个偏好图投影到每次展开的一个标量值上，隐式地将成对结果视为可以通过全局一致的排序充分概括。 然而在实践中，视频质量由多个因素共同决定，包括提示保真度、视觉外观、运动质量和时间一致性，而成对判断未必具有传递性。 例如，一位评估者可能偏好视频 1 而非视频 2，偏好视频 2 而非视频 3，以及偏好视频 3 而非视频 1。 这类偏好循环不必被解释为评估者的失误；相反，它们可能反映了不同质量维度之间的有意义的权衡。 朴素的胜率聚合无法保留这种结构：具有不同对手关系和循环模式的比较图可能会坍缩为相同的标量优势。",
+   "sents": [
+    {
+     "en": "A naive implementation of Pairwise-GRPO ( Wang et al. 2025b ) addresses this challenge by assigning each rollout a normalized average win rate against the other rollouts.",
+     "zh": "Pairwise-GRPO（Wang 等人，2025b）的一种朴素实现通过为每次展开分配一个相对于其他展开的归一化平均胜率来解决这一挑战。"
+    },
+    {
+     "en": "While this aggregation is simple and stable, it projects the entire preference graph onto one scalar per rollout, implicitly treating pairwise outcomes as if they could be adequately summarized by a globally consistent ordering.",
+     "zh": "尽管这种聚合方法简单且稳定，但它将整个偏好图投影到每次展开的一个标量值上，隐式地将成对结果视为可以通过全局一致的排序充分概括。"
+    },
+    {
+     "en": "In practice, however, video quality is jointly determined by multiple factors, including prompt fidelity, visual appearance, motion quality, and temporal consistency, and pairwise judgments need not be transitive.",
+     "zh": "然而在实践中，视频质量由多个因素共同决定，包括提示保真度、视觉外观、运动质量和时间一致性，而成对判断未必具有传递性。"
+    },
+    {
+     "en": "For example, an evaluator may prefer video 1 over video 2, video 2 over video 3, and video 3 over video 1.",
+     "zh": "例如，一位评估者可能偏好视频 1 而非视频 2，偏好视频 2 而非视频 3，以及偏好视频 3 而非视频 1。"
+    },
+    {
+     "en": "Such preference cycles should not necessarily be interpreted as evaluator failures; instead, they may reflect meaningful trade-offs among different quality dimensions.",
+     "zh": "这类偏好循环不必被解释为评估者的失误；相反，它们可能反映了不同质量维度之间的有意义的权衡。"
+    },
+    {
+     "en": "Naive win-rate aggregation cannot preserve this structure: comparison graphs with different opponent relationships and cyclic patterns may collapse to identical scalar advantages.",
+     "zh": "朴素的胜率聚合无法保留这种结构：具有不同对手关系和循环模式的比较图可能会坍缩为相同的标量优势。"
+    }
+   ]
+  },
+  {
+   "en": "This phenomenon is substantial in practice. We audit 6,976 complete on-policy comparison graphs and find that the proportion of cyclic groups under the zero-margin definition increases from 79.7% in the early stage of training to 89.0% in the late stage (Table 1 ), while edge clarity simultaneously decreases. These observations show that preference cycles are not rare anomalies but a persistent structure in online video preference optimization.",
+   "zh": "这一现象在实践中具有显著意义。 我们审计了 6,976 张完整的策略内对比图，发现采用零余度定义时，循环群的比例从训练初期阶段的 79.7% 上升至末期阶段的 89.0%（表 1），而边的清晰度则同步下降。 这些观察结果表明，偏好循环并非罕见的异常现象，而是在线视频偏好优化中持续存在的结构。",
+   "sents": [
+    {
+     "en": "This phenomenon is substantial in practice.",
+     "zh": "这一现象在实践中具有显著意义。"
+    },
+    {
+     "en": "We audit 6,976 complete on-policy comparison graphs and find that the proportion of cyclic groups under the zero-margin definition increases from 79.7% in the early stage of training to 89.0% in the late stage (Table 1 ), while edge clarity simultaneously decreases.",
+     "zh": "我们审计了 6,976 张完整的策略内对比图，发现采用零余度定义时，循环群的比例从训练初期阶段的 79.7% 上升至末期阶段的 89.0%（表 1），而边的清晰度则同步下降。"
+    },
+    {
+     "en": "These observations show that preference cycles are not rare anomalies but a persistent structure in online video preference optimization.",
+     "zh": "这些观察结果表明，偏好循环并非罕见的异常现象，而是在线视频偏好优化中持续存在的结构。"
+    }
+   ]
+  },
+  {
+   "en": "To address this graph-to-advantage bottleneck, we propose the Reliability-Anchored Preference Walk (RAP-Walk), a graph-aware advantage aggregation method for Pairwise-GRPO. Rather than replacing average win rate, RAP-Walk preserves its standardized advantage as a stable optimization anchor and uses the preference graph to construct a controlled structural correction. Specifically, preference evidence is propagated from defeated videos to preferred videos, allowing each video’s advantage to depend not only on its direct outcomes but also on opponent strength and multi-hop comparison paths. To avoid amplifying ambiguous or strongly non-transitive evidence, the propagation is modulated by edge reliability and local cyclic inconsistency. The resulting graph proposal is then combined with the original win-rate advantage according to the overall reliability of the comparison graph.",
+   "zh": "为了解决这一图到优势的瓶颈问题，我们提出了可靠性锚定的偏好行走（RAP-Walk），这是一种面向成对-GRPO的图感知优势聚合方法。 RAP-Walk并未替代平均胜率，而是保留其标准化优势作为稳定的优化锚点，并利用偏好图构建受控的结构修正。 具体而言，偏好证据会从失败的视频传播到被偏好的视频，使得每个视频的优势不仅取决于其直接结果，还取决于对手强度和多跳比较路径。 为避免放大模糊或强烈非传递性的证据，该传播过程会通过边可靠性和局部循环不一致性进行调节。 最终得到的图提案将根据比较图的整体可靠性与原始胜率优势相结合。",
+   "sents": [
+    {
+     "en": "To address this graph-to-advantage bottleneck, we propose the Reliability-Anchored Preference Walk (RAP-Walk), a graph-aware advantage aggregation method for Pairwise-GRPO.",
+     "zh": "为了解决这一图到优势的瓶颈问题，我们提出了可靠性锚定的偏好行走（RAP-Walk），这是一种面向成对-GRPO的图感知优势聚合方法。"
+    },
+    {
+     "en": "Rather than replacing average win rate, RAP-Walk preserves its standardized advantage as a stable optimization anchor and uses the preference graph to construct a controlled structural correction.",
+     "zh": "RAP-Walk并未替代平均胜率，而是保留其标准化优势作为稳定的优化锚点，并利用偏好图构建受控的结构修正。"
+    },
+    {
+     "en": "Specifically, preference evidence is propagated from defeated videos to preferred videos, allowing each video’s advantage to depend not only on its direct outcomes but also on opponent strength and multi-hop comparison paths.",
+     "zh": "具体而言，偏好证据会从失败的视频传播到被偏好的视频，使得每个视频的优势不仅取决于其直接结果，还取决于对手强度和多跳比较路径。"
+    },
+    {
+     "en": "To avoid amplifying ambiguous or strongly non-transitive evidence, the propagation is modulated by edge reliability and local cyclic inconsistency.",
+     "zh": "为避免放大模糊或强烈非传递性的证据，该传播过程会通过边可靠性和局部循环不一致性进行调节。"
+    },
+    {
+     "en": "The resulting graph proposal is then combined with the original win-rate advantage according to the overall reliability of the comparison graph.",
+     "zh": "最终得到的图提案将根据比较图的整体可靠性与原始胜率优势相结合。"
+    }
+   ]
+  },
+  {
+   "en": "In this way, RAP-Walk treats preference cycles as informative relational structure rather than errors to be removed, while incorporating graph information only to the extent supported by edge- and group-level reliability. Our contributions are as follows:",
+   "zh": "通过这种方式，RAP-Walk将偏好循环视为具有信息价值的关系结构，而非需要消除的错误，同时仅在边和组级别可靠性所允许的程度内引入图信息。 我们的贡献如下：",
+   "sents": [
+    {
+     "en": "In this way, RAP-Walk treats preference cycles as informative relational structure rather than errors to be removed, while incorporating graph information only to the extent supported by edge- and group-level reliability.",
+     "zh": "通过这种方式，RAP-Walk将偏好循环视为具有信息价值的关系结构，而非需要消除的错误，同时仅在边和组级别可靠性所允许的程度内引入图信息。"
+    },
+    {
+     "en": "Our contributions are as follows:",
+     "zh": "我们的贡献如下："
+    }
+   ]
+  },
+  {
+   "en": "We reveal that cyclic preference structures naturally emerge in Pairwise-GRPO for video generation and show that win-rate aggregation collapses structurally different preference graphs into identical scalar advantages.",
+   "zh": "我们发现，循环偏好结构在视频生成的 Pairwise-GRPO 中会自然出现，并证明了胜率聚合会将结构不同的偏好图坍缩为完全相同的标量优势。",
+   "sents": null
+  },
+  {
+   "en": "We propose RAP-Walk, a reliability-aware graph aggregation method that preserves the stable win-rate advantage while recovering trustworthy edge and path information from cyclic preference graphs.",
+   "zh": "我们提出了 RAP-Walk，一种可靠性感知的图聚合方法，该方法在恢复循环偏好图中可信的边和路径信息的同时，保留了稳定的胜率优势。",
+   "sents": null
+  },
+  {
+   "en": "We validate RAP-Walk through matched training comparisons, component ablations, transfer across video-generation backbones, and blind human preference evaluations.",
+   "zh": "我们通过匹配的训练对比、组件消融分析、跨视频生成主干网络的迁移测试以及盲测人类偏好评估，对 RAP-Walk 进行了验证。",
+   "sents": null
+  },
+  {
+   "en": "GRPO was introduced for group-relative policy optimization and later adapted to flow and diffusion generators by Flow-GRPO and DanceGRPO ( Shao et al. 2024 ; Liu et al. 2025a ; Xue et al. 2025 ) . Recent video methods study exploration, trust regions, and trajectory-level alignment ( Zheng et al. 2026 ; Wang et al. 2026b ) . These works assume that evaluator feedback has been reduced to scalar rewards or advantages; we study the underexplored mapping from a prompt-local pairwise graph to GRPO advantages.",
+   "zh": "GRPO 最初是为群体相对策略优化而提出的，后来通过 Flow-GRPO 和 DanceGRPO（Shao 等人，2024；Liu 等人，2025a；Xue 等人，2025）被应用于流生成器和扩散生成器。 近期的视频相关方法研究了探索、信任区域以及轨迹层面的对齐问题（Zheng 等人，2026；Wang 等人，2026b）。 这些工作假设评估器反馈已被简化为标量奖励或优势值；而我们则研究了一个尚未充分探索的映射问题：即从提示局部成对图到 GRPO 优势的映射。",
+   "sents": [
+    {
+     "en": "GRPO was introduced for group-relative policy optimization and later adapted to flow and diffusion generators by Flow-GRPO and DanceGRPO ( Shao et al. 2024 ; Liu et al. 2025a ; Xue et al. 2025 ) .",
+     "zh": "GRPO 最初是为群体相对策略优化而提出的，后来通过 Flow-GRPO 和 DanceGRPO（Shao 等人，2024；Liu 等人，2025a；Xue 等人，2025）被应用于流生成器和扩散生成器。"
+    },
+    {
+     "en": "Recent video methods study exploration, trust regions, and trajectory-level alignment ( Zheng et al. 2026 ; Wang et al. 2026b ) .",
+     "zh": "近期的视频相关方法研究了探索、信任区域以及轨迹层面的对齐问题（Zheng 等人，2026；Wang 等人，2026b）。"
+    },
+    {
+     "en": "These works assume that evaluator feedback has been reduced to scalar rewards or advantages; we study the underexplored mapping from a prompt-local pairwise graph to GRPO advantages.",
+     "zh": "这些工作假设评估器反馈已被简化为标量奖励或优势值；而我们则研究了一个尚未充分探索的映射问题：即从提示局部成对图到 GRPO 优势的映射。"
+    }
+   ]
+  },
+  {
+   "en": "Visual generators now span controllable editing and interleaved synthesis ( Li et al. 2024 ; Wang et al. 2026a ) . Preference alignment includes DPO variants for image and video generation ( Wallace et al. 2023 ; Li et al. 2026a ; Liu et al. 2024 ; Zhang et al. 2024 ; Wu et al. 2025b ) and scorer-driven GRPO for image editing ( Li et al. 2026b ) , while UnifiedReward supplies pointwise and pairwise evaluation ( Wang et al. 2025c ; Wang et al. 2025a ; Wang et al. 2026c ) . RewardDance selects a reference by pairwise win counts and evaluates new samples against it during ReFL ( Wu et al. 2025a ) . Closest to our setting, Pref-GRPO uses each sample’s within-group win rate as reward ( Wang et al. 2025b ) , discarding opponent relations, paths, and cycles. Classical methods use win counts, graph decompositions, or random walks ( Shah and Wainwright 2015 ; Jiang et al. 2011 ; Negahban et al. 2012 ) ; GPM and NLHF/SPO model cycles with richer representations or game-theoretic objectives ( Zhang et al. 2025 ; Munos et al. 2024 ; Swamy et al. 2024 ) . We instead keep the evaluator and standard GRPO objective fixed, studying only the preference-graph-to-advantage mapping , whose magnitudes and reliability directly shape policy updates.",
+   "zh": "视觉生成器现已涵盖可控编辑与交错合成（Li et al. 2024；Wang et al. 2026a）。 偏好对齐包括用于图像和视频生成的 DPO 变体（Wallace et al. 2023；Li et al. 2026a；Liu et al. 2024；Zhang et al. 2024；Wu et al. 2025b），以及用于图像编辑的评分器驱动 GRPO（Li et al. 2026b）；而 UnifiedReward 提供了点式与成对评估（Wang et al. 2025c；Wang et al. 2025a；Wang et al. 2026c）。 RewardDance 通过成对获胜次数选择参考样本，并在 ReFL 过程中以此评估新样本（Wu et al. 2025a）。 与我们的设定最接近的是 Pref-GRPO，它将每个样本在组内的获胜率用作奖励（Wang et al. 2025b），并舍弃对手关系、路径和循环。 经典方法使用获胜次数、图分解或随机游走（Shah and Wainwright 2015；Jiang et al. 2011；Negahban et al. 2012）；GPM 和 NLHF/SPO 则通过更丰富的表示或博弈论目标来建模循环（Zhang et al. 2025；Munos et al. 2024；Swamy et al. 2024）。 我们则保持评估器和标准 GRPO 目标不变，仅研究偏好图到优势的映射关系，因为其幅值和可靠性会直接影响策略更新。",
+   "sents": [
+    {
+     "en": "Visual generators now span controllable editing and interleaved synthesis ( Li et al. 2024 ; Wang et al. 2026a ) .",
+     "zh": "视觉生成器现已涵盖可控编辑与交错合成（Li et al. 2024；Wang et al. 2026a）。"
+    },
+    {
+     "en": "Preference alignment includes DPO variants for image and video generation ( Wallace et al. 2023 ; Li et al. 2026a ; Liu et al. 2024 ; Zhang et al. 2024 ; Wu et al. 2025b ) and scorer-driven GRPO for image editing ( Li et al. 2026b ) , while UnifiedReward supplies pointwise and pairwise evaluation ( Wang et al. 2025c ; Wang et al. 2025a ; Wang et al. 2026c ) .",
+     "zh": "偏好对齐包括用于图像和视频生成的 DPO 变体（Wallace et al. 2023；Li et al. 2026a；Liu et al. 2024；Zhang et al. 2024；Wu et al. 2025b），以及用于图像编辑的评分器驱动 GRPO（Li et al. 2026b）；而 UnifiedReward 提供了点式与成对评估（Wang et al. 2025c；Wang et al. 2025a；Wang et al. 2026c）。"
+    },
+    {
+     "en": "RewardDance selects a reference by pairwise win counts and evaluates new samples against it during ReFL ( Wu et al. 2025a ) .",
+     "zh": "RewardDance 通过成对获胜次数选择参考样本，并在 ReFL 过程中以此评估新样本（Wu et al. 2025a）。"
+    },
+    {
+     "en": "Closest to our setting, Pref-GRPO uses each sample’s within-group win rate as reward ( Wang et al. 2025b ) , discarding opponent relations, paths, and cycles.",
+     "zh": "与我们的设定最接近的是 Pref-GRPO，它将每个样本在组内的获胜率用作奖励（Wang et al. 2025b），并舍弃对手关系、路径和循环。"
+    },
+    {
+     "en": "Classical methods use win counts, graph decompositions, or random walks ( Shah and Wainwright 2015 ; Jiang et al. 2011 ; Negahban et al. 2012 ) ; GPM and NLHF/SPO model cycles with richer representations or game-theoretic objectives ( Zhang et al. 2025 ; Munos et al. 2024 ; Swamy et al. 2024 ) .",
+     "zh": "经典方法使用获胜次数、图分解或随机游走（Shah and Wainwright 2015；Jiang et al. 2011；Negahban et al. 2012）；GPM 和 NLHF/SPO 则通过更丰富的表示或博弈论目标来建模循环（Zhang et al. 2025；Munos et al. 2024；Swamy et al. 2024）。"
+    },
+    {
+     "en": "We instead keep the evaluator and standard GRPO objective fixed, studying only the preference-graph-to-advantage mapping , whose magnitudes and reliability directly shape policy updates.",
+     "zh": "我们则保持评估器和标准 GRPO 目标不变，仅研究偏好图到优势的映射关系，因为其幅值和可靠性会直接影响策略更新。"
+    }
+   ]
+  },
+  {
+   "en": "We first review Pairwise-GRPO, which provides the baseline formulation and notation used throughout this work. Given a text prompt c c , the current policy samples a group of G G videos, denoted by X = { x i } i = 1 G X=\\{x_{i}\\}_{i=1}^{G} . A fixed pairwise evaluator compares every unordered pair { x i , x j } \\{x_{i},x_{j}\\} in the group. Throughout this work, we query each pair in both presentation orders, align the resulting predictions, and average their soft preference scores. This produces a reciprocal soft preference matrix 𝐖 ∈ [ 0 , 1 ] G × G \\mathbf{W}\\in[0,1]^{G\\times G} :",
+   "zh": "我们首先回顾 Pairwise-GRPO，它提供了本文全程使用的基准公式和符号表示。 给定一个文本提示 c，当前策略会采样一组 G 个视频，表示为 X = { x i } i = 1 G X=\\{x_{i}\\}_{i=1}^{G}。 一个固定的成对评估器会比较该组中每一对无序的 { x i , x j } \\{x_{i},x_{j}\\}。 在本文的整个过程中，我们对每对视频以两种呈现顺序进行查询，对齐所得预测结果，并对它们的软偏好分数取平均值。 由此生成一个互逆的软偏好矩阵 𝐖 ∈ [ 0 , 1 ] G × G \\mathbf{W}\\in[0,1]^{G\\times G}：",
+   "sents": [
+    {
+     "en": "We first review Pairwise-GRPO, which provides the baseline formulation and notation used throughout this work.",
+     "zh": "我们首先回顾 Pairwise-GRPO，它提供了本文全程使用的基准公式和符号表示。"
+    },
+    {
+     "en": "Given a text prompt c c , the current policy samples a group of G G videos, denoted by X = { x i } i = 1 G X=\\{x_{i}\\}_{i=1}^{G} .",
+     "zh": "给定一个文本提示 c，当前策略会采样一组 G 个视频，表示为 X = { x i } i = 1 G X=\\{x_{i}\\}_{i=1}^{G}。"
+    },
+    {
+     "en": "A fixed pairwise evaluator compares every unordered pair { x i , x j } \\{x_{i},x_{j}\\} in the group.",
+     "zh": "一个固定的成对评估器会比较该组中每一对无序的 { x i , x j } \\{x_{i},x_{j}\\}。"
+    },
+    {
+     "en": "Throughout this work, we query each pair in both presentation orders, align the resulting predictions, and average their soft preference scores.",
+     "zh": "在本文的整个过程中，我们对每对视频以两种呈现顺序进行查询，对齐所得预测结果，并对它们的软偏好分数取平均值。"
+    },
+    {
+     "en": "This produces a reciprocal soft preference matrix 𝐖 ∈ [ 0 , 1 ] G × G \\mathbf{W}\\in[0,1]^{G\\times G} :",
+     "zh": "由此生成一个互逆的软偏好矩阵 𝐖 ∈ [ 0 , 1 ] G × G \\mathbf{W}\\in[0,1]^{G\\times G}："
+    }
+   ]
+  },
+  {
+   "en": "with W i ​ i = 0 W_{ii}=0 . Here, W i ​ j W_{ij} quantifies the evaluator’s support for x i x_{i} over x j x_{j} . Accordingly, 𝐖 \\mathbf{W} can be viewed as a weighted directed comparison graph whose nodes are the sampled videos; under the loser-to-winner convention used later, W i ​ j W_{ij} represents soft preference evidence directed from x j x_{j} to x i x_{i} . Bidirectional querying is used to mitigate presentation-order bias, but it does not impose transitivity on the resulting comparison graph.",
+   "zh": "其中 W i ​ i = 0 W_{ii}=0。 此处，W i ​ j W_{ij} 量化了评估者对 x i x_{i} 相对于 x j x_{j} 的支持程度。 因此，𝐖 \\mathbf{W} 可被视为一个加权有向比较图，其节点为采样视频；在后续使用的“败者对胜者”约定下，W i ​ j W_{ij} 表示从 x j x_{j} 指向 x i x_{i} 的软偏好证据。 双向查询用于缓解呈现顺序偏差，但它并未对由此产生的比较图施加传递性约束。",
+   "sents": [
+    {
+     "en": "with W i ​ i = 0 W_{ii}=0 .",
+     "zh": "其中 W i ​ i = 0 W_{ii}=0。"
+    },
+    {
+     "en": "Here, W i ​ j W_{ij} quantifies the evaluator’s support for x i x_{i} over x j x_{j} .",
+     "zh": "此处，W i ​ j W_{ij} 量化了评估者对 x i x_{i} 相对于 x j x_{j} 的支持程度。"
+    },
+    {
+     "en": "Accordingly, 𝐖 \\mathbf{W} can be viewed as a weighted directed comparison graph whose nodes are the sampled videos; under the loser-to-winner convention used later, W i ​ j W_{ij} represents soft preference evidence directed from x j x_{j} to x i x_{i} .",
+     "zh": "因此，𝐖 \\mathbf{W} 可被视为一个加权有向比较图，其节点为采样视频；在后续使用的“败者对胜者”约定下，W i ​ j W_{ij} 表示从 x j x_{j} 指向 x i x_{i} 的软偏好证据。"
+    },
+    {
+     "en": "Bidirectional querying is used to mitigate presentation-order bias, but it does not impose transitivity on the resulting comparison graph.",
+     "zh": "双向查询用于缓解呈现顺序偏差，但它并未对由此产生的比较图施加传递性约束。"
+    }
+   ]
+  },
+  {
+   "en": "Although the evaluator produces relational feedback, the GRPO update requires one scalar advantage for each rollout. Pairwise-GRPO performs this graph-to-scalar reduction by averaging the off-diagonal entries in each row of 𝐖 \\mathbf{W} and standardizing the resulting win rates within the group:",
+   "zh": "尽管评估器会生成关系性反馈，但 GRPO 更新需要为每次展开计算一个标量优势值。 Pairwise-GRPO 通过对 𝐖 \\mathbf{W} 每一行中非对角线元素求平均，并对组内由此得到的胜率进行标准化，从而实现从图到标量的降维：",
+   "sents": [
+    {
+     "en": "Although the evaluator produces relational feedback, the GRPO update requires one scalar advantage for each rollout.",
+     "zh": "尽管评估器会生成关系性反馈，但 GRPO 更新需要为每次展开计算一个标量优势值。"
+    },
+    {
+     "en": "Pairwise-GRPO performs this graph-to-scalar reduction by averaging the off-diagonal entries in each row of 𝐖 \\mathbf{W} and standardizing the resulting win rates within the group:",
+     "zh": "Pairwise-GRPO 通过对 𝐖 \\mathbf{W} 每一行中非对角线元素求平均，并对组内由此得到的胜率进行标准化，从而实现从图到标量的降维："
+    }
+   ]
+  },
+  {
+   "en": "where 𝐑 = { R i } i = 1 G \\mathbf{R}=\\{R_{i}\\}_{i=1}^{G} denotes the win-rate-based rewards, and 𝐀 = { A i } i = 1 G \\mathbf{A}=\\{A_{i}\\}_{i=1}^{G} denotes the corresponding standardized advantages. The resulting advantages are used in the standard GRPO objective; the only modification introduced by RAP-Walk is the construction of the advantage signal.",
+   "zh": "其中 𝐑 = { R i } i = 1 G \\mathbf{R}=\\{R_{i}\\}_{i=1}^{G} 表示基于胜率的奖励，而 𝐀 = { A i } i = 1 G \\mathbf{A}=\\{A_{i}\\}_{i=1}^{G} 表示相应的标准化优势。 由此得到的优势将用于标准的 GRPO 目标函数；RAP-Walk 引入的唯一修改是对优势信号的构建方式。",
+   "sents": [
+    {
+     "en": "where 𝐑 = { R i } i = 1 G \\mathbf{R}=\\{R_{i}\\}_{i=1}^{G} denotes the win-rate-based rewards, and 𝐀 = { A i } i = 1 G \\mathbf{A}=\\{A_{i}\\}_{i=1}^{G} denotes the corresponding standardized advantages.",
+     "zh": "其中 𝐑 = { R i } i = 1 G \\mathbf{R}=\\{R_{i}\\}_{i=1}^{G} 表示基于胜率的奖励，而 𝐀 = { A i } i = 1 G \\mathbf{A}=\\{A_{i}\\}_{i=1}^{G} 表示相应的标准化优势。"
+    },
+    {
+     "en": "The resulting advantages are used in the standard GRPO objective; the only modification introduced by RAP-Walk is the construction of the advantage signal.",
+     "zh": "由此得到的优势将用于标准的 GRPO 目标函数；RAP-Walk 引入的唯一修改是对优势信号的构建方式。"
+    }
+   ]
+  },
+  {
+   "en": "This row-mean reduction is simple and incorporates every direct comparison, but only through the row sums of 𝐖 \\mathbf{W} . Consequently, it discards opponent identities and higher-order relational structure, including comparison paths and preference cycles.",
+   "zh": "这种行均值归约方法简单且包含了所有直接比较，但仅通过 𝐖 \\mathbf{W} 的行和来实现。 因此，它会丢弃对手身份以及更高阶的关系结构，包括比较路径和偏好循环。",
+   "sents": [
+    {
+     "en": "This row-mean reduction is simple and incorporates every direct comparison, but only through the row sums of 𝐖 \\mathbf{W} .",
+     "zh": "这种行均值归约方法简单且包含了所有直接比较，但仅通过 𝐖 \\mathbf{W} 的行和来实现。"
+    },
+    {
+     "en": "Consequently, it discards opponent identities and higher-order relational structure, including comparison paths and preference cycles.",
+     "zh": "因此，它会丢弃对手身份以及更高阶的关系结构，包括比较路径和偏好循环。"
+    }
+   ]
+  },
+  {
+   "en": "Reliability-Anchored Preference Walk (RAP-Walk) augments the standard Pairwise-GRPO advantage by constructing a reliability-controlled graph proposal from the preference graph. The key idea of RAP-Walk is to treat graph propagation as a controlled correction rather than a replacement of the standard GRPO signal:",
+   "zh": "可靠性锚定偏好行走（RAP-Walk）通过从偏好图中构建一个受可靠性控制的图提案，来增强标准的成对 GRPO 优势。 RAP-Walk 的核心思想是将图传播视为一种受控的修正，而非对标准 GRPO 信号的替代：",
+   "sents": [
+    {
+     "en": "Reliability-Anchored Preference Walk (RAP-Walk) augments the standard Pairwise-GRPO advantage by constructing a reliability-controlled graph proposal from the preference graph.",
+     "zh": "可靠性锚定偏好行走（RAP-Walk）通过从偏好图中构建一个受可靠性控制的图提案，来增强标准的成对 GRPO 优势。"
+    },
+    {
+     "en": "The key idea of RAP-Walk is to treat graph propagation as a controlled correction rather than a replacement of the standard GRPO signal:",
+     "zh": "RAP-Walk 的核心思想是将图传播视为一种受控的修正，而非对标准 GRPO 信号的替代："
+    }
+   ]
+  },
+  {
+   "en": "Here, 𝐀 \\mathbf{A} preserves the stable win-rate based optimization signal, while 𝐠 \\mathbf{g} injects relational information recovered from the preference graph.",
+   "zh": "此处，𝐀 \\mathbf{A} 保留了基于稳定胜率的最优化信号，而 𝐠 \\mathbf{g} 则注入了从偏好图中恢复的关系信息。",
+   "sents": null
+  },
+  {
+   "en": "RAP-Walk views the sampled videos as states of a random walk. The walk propagates preference mass over the pairwise comparison graph. The walk moves toward a video x j x_{j} when the evaluator prefers x j x_{j} over x i x_{i} . Through repeated propagation, a video receives more credit when it defeats opponents that themselves receive strong support. The walk therefore captures opponent strength and multi-step preference paths that are discarded by row-wise win-rate aggregation.",
+   "zh": "RAP-Walk 将采样视频视为随机游走的状态。 该游走在成对比较图中传播偏好质量。 当评估者更偏好 x j x_{j} 而非 x i x_{i} 时，游走会向视频 x j x_{j} 移动。 通过反复传播，一个视频在击败自身获得强支持的对手时会获得更多认可。 因此，该游走能够捕捉到对手强度以及被逐行胜率聚合所忽略的多步偏好路径。",
+   "sents": [
+    {
+     "en": "RAP-Walk views the sampled videos as states of a random walk.",
+     "zh": "RAP-Walk 将采样视频视为随机游走的状态。"
+    },
+    {
+     "en": "The walk propagates preference mass over the pairwise comparison graph.",
+     "zh": "该游走在成对比较图中传播偏好质量。"
+    },
+    {
+     "en": "The walk moves toward a video x j x_{j} when the evaluator prefers x j x_{j} over x i x_{i} .",
+     "zh": "当评估者更偏好 x j x_{j} 而非 x i x_{i} 时，游走会向视频 x j x_{j} 移动。"
+    },
+    {
+     "en": "Through repeated propagation, a video receives more credit when it defeats opponents that themselves receive strong support.",
+     "zh": "通过反复传播，一个视频在击败自身获得强支持的对手时会获得更多认可。"
+    },
+    {
+     "en": "The walk therefore captures opponent strength and multi-step preference paths that are discarded by row-wise win-rate aggregation.",
+     "zh": "因此，该游走能够捕捉到对手强度以及被逐行胜率聚合所忽略的多步偏好路径。"
+    }
+   ]
+  },
+  {
+   "en": "This propagation is specified by a row-stochastic transition matrix T T . In the simplest form, the transition from video x i x_{i} to video x j x_{j} is proportional to the probability that x j x_{j} is preferred over x i x_{i} :",
+   "zh": "这种传播由一个行随机转移矩阵 T T 指定。 在最简单的形式中，从视频 x i x_{i} 到视频 x j x_{j} 的转移与 x j x_{j} 相对于 x i x_{i} 被偏好的概率成正比：",
+   "sents": [
+    {
+     "en": "This propagation is specified by a row-stochastic transition matrix T T .",
+     "zh": "这种传播由一个行随机转移矩阵 T T 指定。"
+    },
+    {
+     "en": "In the simplest form, the transition from video x i x_{i} to video x j x_{j} is proportional to the probability that x j x_{j} is preferred over x i x_{i} :",
+     "zh": "在最简单的形式中，从视频 x i x_{i} 到视频 x j x_{j} 的转移与 x j x_{j} 相对于 x i x_{i} 被偏好的概率成正比："
+    }
+   ]
+  },
+  {
+   "en": "The use of W j ​ i W_{ji} establishes a loser-to-winner direction: preference mass leaves the current video x i x_{i} and flows toward videos that are more likely to defeat it.",
+   "zh": "W j ​ i W_{ji} 的使用确立了一种从失败者到成功者的方向：偏好质量会离开当前视频 x i x_{i}，并流向那些更有可能击败它的视频。",
+   "sents": null
+  },
+  {
+   "en": "However, direct preference probabilities may be unreliable: a near-tie comparison can be ambiguous, and clear individual comparisons can form cyclically inconsistent structures. We therefore introduce a transition-reliability factor r i ​ j r_{ij} that modulates the base transition using edge clarity and local cyclic inconsistency. We next define these reliability signals before giving the complete transition matrix.",
+   "zh": "然而，直接偏好概率可能并不可靠：近乎平局的比较可能存在歧义，而明确的个体比较也可能形成循环不一致的结构。 因此，我们引入一个转移可靠性因子 r i ​ j r_{ij}，该因子利用边的清晰度和局部循环不一致性来调整基础转移概率。 接下来，在给出完整的转移矩阵之前，我们先定义这些可靠性信号。",
+   "sents": [
+    {
+     "en": "However, direct preference probabilities may be unreliable: a near-tie comparison can be ambiguous, and clear individual comparisons can form cyclically inconsistent structures.",
+     "zh": "然而，直接偏好概率可能并不可靠：近乎平局的比较可能存在歧义，而明确的个体比较也可能形成循环不一致的结构。"
+    },
+    {
+     "en": "We therefore introduce a transition-reliability factor r i ​ j r_{ij} that modulates the base transition using edge clarity and local cyclic inconsistency.",
+     "zh": "因此，我们引入一个转移可靠性因子 r i ​ j r_{ij}，该因子利用边的清晰度和局部循环不一致性来调整基础转移概率。"
+    },
+    {
+     "en": "We next define these reliability signals before giving the complete transition matrix.",
+     "zh": "接下来，在给出完整的转移矩阵之前，我们先定义这些可靠性信号。"
+    }
+   ]
+  },
+  {
+   "en": "We measure the clarity of each pairwise comparison using normalized Bernoulli entropy:",
+   "zh": "我们使用归一化伯努利熵来衡量每对比较的清晰度：",
+   "sents": null
+  },
+  {
+   "en": "The clarity c i ​ j c_{ij} approaches zero when W i ​ j W_{ij} is close to 0.5 0.5 and increases as W i ​ j W_{ij} approaches either 0 0 or 1 1 , measuring the decisiveness of a comparison rather than calibrated correctness.",
+   "zh": "当 W i ​ j W_{ij} 接近 0.5 时，清晰度 c i ​ j c_{ij} 趋近于零；而当 W i ​ j W_{ij} 接近 0 或 1 时，清晰度则随之增加。该指标衡量的是比较的决断性，而非校准后的正确性。",
+   "sents": null
+  },
+  {
+   "en": "Edge clarity evaluates individual comparisons but cannot detect inconsistency that emerges jointly along preference cycles. We first write the antisymmetric log-odds of each comparison as l i ​ j = log ⁡ W i ​ j 1 − W i ​ j l_{ij}=\\log\\frac{W_{ij}}{1-W_{ij}} , where l j ​ i = − l i ​ j l_{ji}=-l_{ij} . Since the comparison graph is complete, its shortest nontrivial cycles are triangles. For a triangle ( i , j , k ) (i,j,k) , we define its short-cycle log-odds as",
+   "zh": "边缘清晰度评估的是个体比较，但无法检测出在偏好循环中共同出现的不一致性。 我们首先将每次比较的反对称对数赔率写为 l_{ij}=\\log\\frac{W_{ij}}{1-W_{ij}}，其中 l_{ji}=-l_{ij}。 由于比较图是完整的，其最短的非平凡循环就是三角形。 对于一个三角形 (i,j,k)，我们将其短循环对数赔率定义为",
+   "sents": [
+    {
+     "en": "Edge clarity evaluates individual comparisons but cannot detect inconsistency that emerges jointly along preference cycles.",
+     "zh": "边缘清晰度评估的是个体比较，但无法检测出在偏好循环中共同出现的不一致性。"
+    },
+    {
+     "en": "We first write the antisymmetric log-odds of each comparison as l i ​ j = log ⁡ W i ​ j 1 − W i ​ j l_{ij}=\\log\\frac{W_{ij}}{1-W_{ij}} , where l j ​ i = − l i ​ j l_{ji}=-l_{ij} .",
+     "zh": "我们首先将每次比较的反对称对数赔率写为 l_{ij}=\\log\\frac{W_{ij}}{1-W_{ij}}，其中 l_{ji}=-l_{ij}。"
+    },
+    {
+     "en": "Since the comparison graph is complete, its shortest nontrivial cycles are triangles.",
+     "zh": "由于比较图是完整的，其最短的非平凡循环就是三角形。"
+    },
+    {
+     "en": "For a triangle ( i , j , k ) (i,j,k) , we define its short-cycle log-odds as",
+     "zh": "对于一个三角形 (i,j,k)，我们将其短循环对数赔率定义为"
+    }
+   ]
+  },
+  {
+   "en": "If comparisons are induced by scalar utilities, l i ​ j = u i − u j l_{ij}=u_{i}-u_{j} , then L i ​ j ​ k = 0 L_{ijk}=0 ; nonzero value indicates local preference structure beyond a single scalar ranking. We summarize the cyclic inconsistency around video x i x_{i} by",
+   "zh": "如果比较是由标量效用引起的，即 l i ​ j = u i − u j l_{ij}=u_{i}-u_{j}，那么 L i ​ j ​ k = 0 L_{ijk}=0；非零值表示存在超出单一标量排序的局部偏好结构。 我们通过以下方式总结围绕视频 x i x_{i} 的循环不一致性：",
+   "sents": [
+    {
+     "en": "If comparisons are induced by scalar utilities, l i ​ j = u i − u j l_{ij}=u_{i}-u_{j} , then L i ​ j ​ k = 0 L_{ijk}=0 ; nonzero value indicates local preference structure beyond a single scalar ranking.",
+     "zh": "如果比较是由标量效用引起的，即 l i ​ j = u i − u j l_{ij}=u_{i}-u_{j}，那么 L i ​ j ​ k = 0 L_{ijk}=0；非零值表示存在超出单一标量排序的局部偏好结构。"
+    },
+    {
+     "en": "We summarize the cyclic inconsistency around video x i x_{i} by",
+     "zh": "我们通过以下方式总结围绕视频 x i x_{i} 的循环不一致性："
+    }
+   ]
+  },
+  {
+   "en": "We standardize { L i } i = 1 G \\{L_{i}\\}_{i=1}^{G} across the group in the same manner as Eq. ( 2 ) and, for notational simplicity, reuse L i L_{i} for the standardized score. A larger L i L_{i} therefore indicates stronger cyclic inconsistency around video x i x_{i} relative to the other videos in the group.",
+   "zh": "我们以与公式 (2) 相同的方式，在整个组内对 { L i } i = 1 G \\{L_{i}\\}_{i=1}^{G} 进行标准化。 为简化表示，我们复用 L i L_{i} 来表示标准化后的得分。 因此，较大的 L i L_{i} 值表明，相对于组内其他视频，视频 x i x_{i} 周围的循环不一致性更强。",
+   "sents": [
+    {
+     "en": "We standardize { L i } i = 1 G \\{L_{i}\\}_{i=1}^{G} across the group in the same manner as Eq.",
+     "zh": "我们以与公式 (2) 相同的方式，在整个组内对 { L i } i = 1 G \\{L_{i}\\}_{i=1}^{G} 进行标准化。"
+    },
+    {
+     "en": "( 2 ) and, for notational simplicity, reuse L i L_{i} for the standardized score.",
+     "zh": "为简化表示，我们复用 L i L_{i} 来表示标准化后的得分。"
+    },
+    {
+     "en": "A larger L i L_{i} therefore indicates stronger cyclic inconsistency around video x i x_{i} relative to the other videos in the group.",
+     "zh": "因此，较大的 L i L_{i} 值表明，相对于组内其他视频，视频 x i x_{i} 周围的循环不一致性更强。"
+    }
+   ]
+  },
+  {
+   "en": "Although cyclic structures contain useful relational information, high local inconsistency indicates that preference credit should be propagated more cautiously through that region.",
+   "zh": "尽管循环结构包含有用的关系信息，但高度的局部不一致性表明，偏好信用应更谨慎地通过该区域传播。",
+   "sents": null
+  },
+  {
+   "en": "We combine edge clarity and local cyclic inconsistency through the transition-reliability factor",
+   "zh": "我们通过转换可靠性因子，将边缘清晰性与局部循环不一致性相结合。",
+   "sents": null
+  },
+  {
+   "en": "The factor exp ⁡ ( − L j ) \\exp(-L_{j}) down-weights nodes in highly non-transitive local structures, preventing over-amplification of preference credit supported by conflicting relations while retaining the cyclic evidence.",
+   "zh": "因子 exp ⁡ ( − L j ) \\exp(-L_{j}) 会降低高度非传递性局部结构中节点的权重，从而防止由冲突关系所支持的选择性信用被过度放大，同时保留循环证据。",
+   "sents": null
+  },
+  {
+   "en": "The fractional power of c i ​ j c_{ij} softly discounts ambiguous comparisons without suppressing them completely.",
+   "zh": "c_{ij} 的分数次幂会温和地降低模糊比较的重要性，而不会完全抑制它们。",
+   "sents": null
+  },
+  {
+   "en": "To retain the strong first-order signal of Pairwise-GRPO, we use the standardized win-rate advantage A j A_{j} from Eq. ( 2 ) as a direct-support prior for each destination node. The row-stochastic transition matrix is then",
+   "zh": "为了保留 Pairwise-GRPO 的强一阶信号，我们使用公式 (2) 中的标准化胜率优势 A j A_{j}。 作为每个目标节点的直接支持先验。 然后，行随机转移矩阵是",
+   "sents": [
+    {
+     "en": "To retain the strong first-order signal of Pairwise-GRPO, we use the standardized win-rate advantage A j A_{j} from Eq.",
+     "zh": "为了保留 Pairwise-GRPO 的强一阶信号，我们使用公式 (2) 中的标准化胜率优势 A j A_{j}。"
+    },
+    {
+     "en": "( 2 ) as a direct-support prior for each destination node.",
+     "zh": "作为每个目标节点的直接支持先验。"
+    },
+    {
+     "en": "The row-stochastic transition matrix is then",
+     "zh": "然后，行随机转移矩阵是"
+    }
+   ]
+  },
+  {
+   "en": "The exponential prior provides a first-order preference orientation for propagation rather than fixing the stationary ranking. The resulting stationary credit still depends on opponent identities, edge reliability, and multi-hop paths, which row-wise aggregation does not represent. Therefore, 𝐠 \\mathbf{g} is not a reparameterization of 𝐀 \\mathbf{A} ; it incorporates relational information that is invariant under row-sum-preserving changes of the preference graph. Under this construction, preference mass flows toward videos that are more likely to defeat the current video, while ambiguous comparisons and locally inconsistent regions contribute less strongly. Preference cycles are not removed or directly converted into negative rewards; instead, they reduce the confidence with which preference credit is propagated through the corresponding regions.",
+   "zh": "指数先验为传播过程提供了一阶的偏好方向，而非固定静态排名。 由此产生的静态信用仍然依赖于对手身份、边的可靠性以及多跳路径，而这些是逐行聚合无法体现的。 因此，𝐠 \\mathbf{g} 并非 𝐀 \\mathbf{A} 的重参数化；它包含了在保持偏好图行和不变的变化下仍保持不变的关联信息。 在此构造下，偏好质量会流向更有可能击败当前视频的视频，而模糊比较和局部不一致区域则贡献较弱。 偏好循环既未被移除，也未直接转化为负奖励；相反，它们降低了偏好信用在相应区域中传播时的置信度。",
+   "sents": [
+    {
+     "en": "The exponential prior provides a first-order preference orientation for propagation rather than fixing the stationary ranking.",
+     "zh": "指数先验为传播过程提供了一阶的偏好方向，而非固定静态排名。"
+    },
+    {
+     "en": "The resulting stationary credit still depends on opponent identities, edge reliability, and multi-hop paths, which row-wise aggregation does not represent.",
+     "zh": "由此产生的静态信用仍然依赖于对手身份、边的可靠性以及多跳路径，而这些是逐行聚合无法体现的。"
+    },
+    {
+     "en": "Therefore, 𝐠 \\mathbf{g} is not a reparameterization of 𝐀 \\mathbf{A} ; it incorporates relational information that is invariant under row-sum-preserving changes of the preference graph.",
+     "zh": "因此，𝐠 \\mathbf{g} 并非 𝐀 \\mathbf{A} 的重参数化；它包含了在保持偏好图行和不变的变化下仍保持不变的关联信息。"
+    },
+    {
+     "en": "Under this construction, preference mass flows toward videos that are more likely to defeat the current video, while ambiguous comparisons and locally inconsistent regions contribute less strongly.",
+     "zh": "在此构造下，偏好质量会流向更有可能击败当前视频的视频，而模糊比较和局部不一致区域则贡献较弱。"
+    },
+    {
+     "en": "Preference cycles are not removed or directly converted into negative rewards; instead, they reduce the confidence with which preference credit is propagated through the corresponding regions.",
+     "zh": "偏好循环既未被移除，也未直接转化为负奖励；相反，它们降低了偏好信用在相应区域中传播时的置信度。"
+    }
+   ]
+  },
+  {
+   "en": "We initialize the preference mass uniformly over the sampled videos and propagate it using the transition matrix:",
+   "zh": "我们在采样视频上均匀初始化偏好质量，并使用转移矩阵进行传播：",
+   "sents": null
+  },
+  {
+   "en": "Repeated propagation approaches a stationary support distribution satisfying",
+   "zh": "重复传播将趋近于一个满足以下条件的稳态支撑分布：",
+   "sents": null
+  },
+  {
+   "en": "The stationary mass π i \\pi_{i} represents the long-run preference credit assigned to video i i . Unlike the row-mean win rate, this credit depends not only on how often i i is preferred, but also on which opponents it defeats and whether reliable multi-step preference paths lead to it.",
+   "zh": "静态质量 π i \\pi_{i} 表示分配给视频 i i 的长期偏好信用。 与行均胜率不同，这种信用不仅取决于 i i 被偏好的频率，还取决于它击败了哪些对手，以及是否存在可靠的多步偏好路径指向它。",
+   "sents": [
+    {
+     "en": "The stationary mass π i \\pi_{i} represents the long-run preference credit assigned to video i i .",
+     "zh": "静态质量 π i \\pi_{i} 表示分配给视频 i i 的长期偏好信用。"
+    },
+    {
+     "en": "Unlike the row-mean win rate, this credit depends not only on how often i i is preferred, but also on which opponents it defeats and whether reliable multi-step preference paths lead to it.",
+     "zh": "与行均胜率不同，这种信用不仅取决于 i i 被偏好的频率，还取决于它击败了哪些对手，以及是否存在可靠的多步偏好路径指向它。"
+    }
+   ]
+  },
+  {
+   "en": "A finite comparison graph can produce an overly concentrated stationary distribution. To prevent excessively sharp graph corrections, we define the normalized entropy",
+   "zh": "有限的比较图可能会产生过度集中的稳态分布。 为防止图修正过于剧烈，我们定义归一化熵。",
+   "sents": [
+    {
+     "en": "A finite comparison graph can produce an overly concentrated stationary distribution.",
+     "zh": "有限的比较图可能会产生过度集中的稳态分布。"
+    },
+    {
+     "en": "To prevent excessively sharp graph corrections, we define the normalized entropy",
+     "zh": "为防止图修正过于剧烈，我们定义归一化熵。"
+    }
+   ]
+  },
+  {
+   "en": "We then apply the minimum power-tempering calibration required to satisfy the entropy floor:",
+   "zh": "然后，我们应用满足熵下限所需的最小功率调节校准：",
+   "sents": null
+  },
+  {
+   "en": "Specifically, 𝒫 ξ \\mathcal{P}_{\\xi} applies power tempering: q i ∝ π i a q_{i}\\propto\\pi_{i}^{a} with a ∈ [ 0 , 1 ] a\\in[0,1] , where the largest exponent satisfying ℋ norm ​ ( q ) ≥ ξ \\mathcal{H}_{\\mathrm{norm}}(q)\\geq\\xi is selected. When the stationary distribution already satisfies the entropy floor, a = 1 a=1 and no calibration is applied.",
+   "zh": "具体而言，𝒫 ξ \\mathcal{P}_{\\xi} 应用了功率调校：q i ∝ π i a q_{i}\\propto\\pi_{i}^{a}，其中 a ∈ [ 0 , 1 ] a\\in[0,1]，并选择满足 ℋ norm ​ ( q ) ≥ ξ \\mathcal{H}_{\\mathrm{norm}}(q)\\geq\\xi 的最大指数。 当稳态分布已经满足熵下限时，a = 1 a=1，且不会应用任何校准。",
+   "sents": [
+    {
+     "en": "Specifically, 𝒫 ξ \\mathcal{P}_{\\xi} applies power tempering: q i ∝ π i a q_{i}\\propto\\pi_{i}^{a} with a ∈ [ 0 , 1 ] a\\in[0,1] , where the largest exponent satisfying ℋ norm ​ ( q ) ≥ ξ \\mathcal{H}_{\\mathrm{norm}}(q)\\geq\\xi is selected.",
+     "zh": "具体而言，𝒫 ξ \\mathcal{P}_{\\xi} 应用了功率调校：q i ∝ π i a q_{i}\\propto\\pi_{i}^{a}，其中 a ∈ [ 0 , 1 ] a\\in[0,1]，并选择满足 ℋ norm ​ ( q ) ≥ ξ \\mathcal{H}_{\\mathrm{norm}}(q)\\geq\\xi 的最大指数。"
+    },
+    {
+     "en": "When the stationary distribution already satisfies the entropy floor, a = 1 a=1 and no calibration is applied.",
+     "zh": "当稳态分布已经满足熵下限时，a = 1 a=1，且不会应用任何校准。"
+    }
+   ]
+  },
+  {
+   "en": "Finally, we express the calibrated preference credit relative to the uniform level:",
+   "zh": "最后，我们将校准后的偏好信用与均匀水平进行比较：",
+   "sents": null
+  },
+  {
+   "en": "Because ∑ i q i = 1 \\sum_{i}q_{i}=1 , the resulting graph proposal satisfies ∑ i g i = 0 \\sum_{i}g_{i}=0 , with positive (negative) g i g_{i} indicating above (below) uniform graph support. The proposal 𝐠 = { g i } i = 1 G \\mathbf{g}=\\{g_{i}\\}_{i=1}^{G} is not used directly as a rollout reward; it provides a graph-aware correction to the Pairwise-GRPO advantage.",
+   "zh": "由于 ∑ i q i = 1 \\sum_{i}q_{i}=1，因此得到的图提议满足 ∑ i g i = 0 \\sum_{i}g_{i}=0，其中正的（负的）g i g_{i}表示高于（低于）均匀图支持。 提议 𝐠 = { g i } i = 1 G \\mathbf{g}=\\{g_{i}\\}_{i=1}^{G} 不会直接用作展开奖励；它为 Pairwise-GRPO 优势提供图相关的修正。",
+   "sents": [
+    {
+     "en": "Because ∑ i q i = 1 \\sum_{i}q_{i}=1 , the resulting graph proposal satisfies ∑ i g i = 0 \\sum_{i}g_{i}=0 , with positive (negative) g i g_{i} indicating above (below) uniform graph support.",
+     "zh": "由于 ∑ i q i = 1 \\sum_{i}q_{i}=1，因此得到的图提议满足 ∑ i g i = 0 \\sum_{i}g_{i}=0，其中正的（负的）g i g_{i}表示高于（低于）均匀图支持。"
+    },
+    {
+     "en": "The proposal 𝐠 = { g i } i = 1 G \\mathbf{g}=\\{g_{i}\\}_{i=1}^{G} is not used directly as a rollout reward; it provides a graph-aware correction to the Pairwise-GRPO advantage.",
+     "zh": "提议 𝐠 = { g i } i = 1 G \\mathbf{g}=\\{g_{i}\\}_{i=1}^{G} 不会直接用作展开奖励；它为 Pairwise-GRPO 优势提供图相关的修正。"
+    }
+   ]
+  },
+  {
+   "en": "The reliability of the graph proposal varies across rollout groups. We summarize the overall clarity of a comparison graph by averaging its edge clarity:",
+   "zh": "图提案的可靠性在不同展开组之间存在差异。 我们通过对其边清晰度取平均值来总结比较图的整体清晰度：",
+   "sents": [
+    {
+     "en": "The reliability of the graph proposal varies across rollout groups.",
+     "zh": "图提案的可靠性在不同展开组之间存在差异。"
+    },
+    {
+     "en": "We summarize the overall clarity of a comparison graph by averaging its edge clarity:",
+     "zh": "我们通过对其边清晰度取平均值来总结比较图的整体清晰度："
+    }
+   ]
+  },
+  {
+   "en": "We then map this quantity to a group-level reliability coefficient:",
+   "zh": "随后，我们将该量映射到群体层面的可靠性系数：",
+   "sents": null
+  },
+  {
+   "en": "where [ α − , α + ] ⊆ [ 0 , 1 ] [\\alpha_{-},\\alpha_{+}]\\subseteq[0,1] is a fixed trust interval. When most comparisons are near ties, α g \\alpha_{g} is small and limits the graph proposal’s influence; clearer comparisons increase α g \\alpha_{g} , with α + \\alpha_{+} bounding its maximum contribution.",
+   "zh": "其中 [ α − , α + ] ⊆ [ 0 , 1 ] [\\alpha_{-},\\alpha_{+}]\\subseteq[0,1] 是一个固定的信任区间。 当大多数比较接近平局时，α g \\alpha_{g} 很小，从而限制了图提案的影响；而更明确的比较会增加 α g \\alpha_{g} ，其中 α + \\alpha_{+} 对其最大贡献设置了上限。",
+   "sents": [
+    {
+     "en": "where [ α − , α + ] ⊆ [ 0 , 1 ] [\\alpha_{-},\\alpha_{+}]\\subseteq[0,1] is a fixed trust interval.",
+     "zh": "其中 [ α − , α + ] ⊆ [ 0 , 1 ] [\\alpha_{-},\\alpha_{+}]\\subseteq[0,1] 是一个固定的信任区间。"
+    },
+    {
+     "en": "When most comparisons are near ties, α g \\alpha_{g} is small and limits the graph proposal’s influence; clearer comparisons increase α g \\alpha_{g} , with α + \\alpha_{+} bounding its maximum contribution.",
+     "zh": "当大多数比较接近平局时，α g \\alpha_{g} 很小，从而限制了图提案的影响；而更明确的比较会增加 α g \\alpha_{g} ，其中 α + \\alpha_{+} 对其最大贡献设置了上限。"
+    }
+   ]
+  },
+  {
+   "en": "Using the standardized Pairwise-GRPO advantage 𝐀 \\mathbf{A} as the optimization anchor, we define the corrected advantage as",
+   "zh": "以标准化的 Pairwise-GRPO 优势 𝐀 \\mathbf{A} 作为优化锚点，我们将修正后的优势定义为",
+   "sents": null
+  },
+  {
+   "en": "The corrected advantage is then standardized within the rollout group (Eq. ( 2 )) before being passed to the standard GRPO objective. All compared aggregation methods use the same standardization; policy-ratio, clipping, and regularization remain unchanged.",
+   "zh": "随后，修正后的优势值会在 rollout 组内（公式 (2)）进行标准化，然后再传入标准的 GRPO 目标函数。 （公式 (2)） 所有被比较的聚合方法都使用相同的标准化方式；策略比率、裁剪和正则化部分保持不变。",
+   "sents": [
+    {
+     "en": "The corrected advantage is then standardized within the rollout group (Eq.",
+     "zh": "随后，修正后的优势值会在 rollout 组内（公式 (2)）进行标准化，然后再传入标准的 GRPO 目标函数。"
+    },
+    {
+     "en": "( 2 )) before being passed to the standard GRPO objective.",
+     "zh": "（公式 (2)）"
+    },
+    {
+     "en": "All compared aggregation methods use the same standardization; policy-ratio, clipping, and regularization remain unchanged.",
+     "zh": "所有被比较的聚合方法都使用相同的标准化方式；策略比率、裁剪和正则化部分保持不变。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 2 contrasts RAP-Walk with row-wise win-rate aggregation on a five-node cyclic graph.",
+   "zh": "图 2 将 RAP-Walk 与在五节点循环图上按行聚合的胜率进行了对比。",
+   "sents": null
+  },
+  {
+   "en": "Following the data protocol of DanceGRPO ( Xue et al. 2025 ) , we curate 10,000 training prompts and an additional disjoint set of 1,000 evaluation prompts from VidProM ( Wang and Yang 2024 ) . The same training and test splits are used for all methods. We employ the Wan family ( Wan et al. 2025 ; Wan Team 2025 ) as our foundation models, validating our method on the 1.3B and 14B variants of Wan2.1, as well as Wan2.2-TI2V-5B. We instantiate the reward evaluator with frozen Qwen3-VL models (30B and 235B) ( Bai et al. 2025 ) .",
+   "zh": "遵循 DanceGRPO（Xue 等人，2025）的数据协议，我们从 VidProM（Wang 和 Yang，2024）中整理出 10,000 条训练提示词以及另外一组互斥的 1,000 条评估提示词。 所有方法均使用相同的训练集与测试集划分方式。 我们采用 Wan 系列模型（Wan 等人，2025；Wan Team，2025）作为基础模型，并在 Wan2.1 的 1.3B 和 14B 版本以及 Wan2.2-TI2V-5B 上验证了我们的方法。 我们使用冻结的 Qwen3-VL 模型（30B 和 235B）（Bai 等人，2025）来实现奖励评估器。",
+   "sents": [
+    {
+     "en": "Following the data protocol of DanceGRPO ( Xue et al. 2025 ) , we curate 10,000 training prompts and an additional disjoint set of 1,000 evaluation prompts from VidProM ( Wang and Yang 2024 ) .",
+     "zh": "遵循 DanceGRPO（Xue 等人，2025）的数据协议，我们从 VidProM（Wang 和 Yang，2024）中整理出 10,000 条训练提示词以及另外一组互斥的 1,000 条评估提示词。"
+    },
+    {
+     "en": "The same training and test splits are used for all methods.",
+     "zh": "所有方法均使用相同的训练集与测试集划分方式。"
+    },
+    {
+     "en": "We employ the Wan family ( Wan et al. 2025 ; Wan Team 2025 ) as our foundation models, validating our method on the 1.3B and 14B variants of Wan2.1, as well as Wan2.2-TI2V-5B.",
+     "zh": "我们采用 Wan 系列模型（Wan 等人，2025；Wan Team，2025）作为基础模型，并在 Wan2.1 的 1.3B 和 14B 版本以及 Wan2.2-TI2V-5B 上验证了我们的方法。"
+    },
+    {
+     "en": "We instantiate the reward evaluator with frozen Qwen3-VL models (30B and 235B) ( Bai et al. 2025 ) .",
+     "zh": "我们使用冻结的 Qwen3-VL 模型（30B 和 235B）（Bai 等人，2025）来实现奖励评估器。"
+    }
+   ]
+  },
+  {
+   "en": "We train all models for 200 steps using LoRA and AdamW with a learning rate of 3 × 10 − 4 3\\times 10^{-4} and group size G = 12 G=12 . We generate 41-frame videos at 480p for Wan2.1 and 720p for Wan2.2, using 30 denoising steps and a guidance scale of 3. Each evaluator uniformly samples 10 frames from every video. Within each generator, all compared methods share the initialization and training budget. For Wan2.2-TI2V-5B, we use the TI2V checkpoint in text-to-video mode.",
+   "zh": "我们使用 LoRA 和 AdamW，以 3 × 10⁻⁴ 的学习率和 G = 12 的分组大小，对所有模型进行 200 步的训练。 我们为 Wan2.1 生成 480p 分辨率的 41 帧视频，为 Wan2.2 生成 720p 分辨率的视频，使用 30 步降噪和 3 的指导尺度。 每个评估者从每段视频中均匀采样 10 帧。 在每个生成器内部，所有对比方法共享相同的初始化和训练预算。 对于 Wan2.2-TI2V-5B，我们使用 TI2V 检查点在文本到视频模式下运行。",
+   "sents": [
+    {
+     "en": "We train all models for 200 steps using LoRA and AdamW with a learning rate of 3 × 10 − 4 3\\times 10^{-4} and group size G = 12 G=12 .",
+     "zh": "我们使用 LoRA 和 AdamW，以 3 × 10⁻⁴ 的学习率和 G = 12 的分组大小，对所有模型进行 200 步的训练。"
+    },
+    {
+     "en": "We generate 41-frame videos at 480p for Wan2.1 and 720p for Wan2.2, using 30 denoising steps and a guidance scale of 3.",
+     "zh": "我们为 Wan2.1 生成 480p 分辨率的 41 帧视频，为 Wan2.2 生成 720p 分辨率的视频，使用 30 步降噪和 3 的指导尺度。"
+    },
+    {
+     "en": "Each evaluator uniformly samples 10 frames from every video.",
+     "zh": "每个评估者从每段视频中均匀采样 10 帧。"
+    },
+    {
+     "en": "Within each generator, all compared methods share the initialization and training budget.",
+     "zh": "在每个生成器内部，所有对比方法共享相同的初始化和训练预算。"
+    },
+    {
+     "en": "For Wan2.2-TI2V-5B, we use the TI2V checkpoint in text-to-video mode.",
+     "zh": "对于 Wan2.2-TI2V-5B，我们使用 TI2V 检查点在文本到视频模式下运行。"
+    }
+   ]
+  },
+  {
+   "en": "For quantitative evaluation, we report six VBench dimensions ( Huang et al. 2023 ) : subject consistency (Subj.), background consistency (Back.), motion smoothness (Smooth.), aesthetic quality (Aesth.), imaging quality (Image), and dynamic degree (Dyn.). We additionally use VideoReward ( Liu et al. 2025b ) , an evaluation model independent of the Qwen3-VL evaluator used during training, to measure visual quality (VQ), motion quality (MQ), and text alignment (TA); higher scores indicate better performance. Dynamic degree measures motion magnitude rather than perceptual motion quality.",
+   "zh": "在定量评估中，我们报告了 VBench 的六个维度（Huang et al. 2023）：主体一致性（Subj.）、背景一致性（Back.）、动作流畅度（Smooth.）、美学质量（Aesth.）、成像质量（Image）和动态程度（Dyn.）。 我们还使用了 VideoReward（Liu et al. 2025b），这是一个独立于训练期间使用的 Qwen3-VL 评估模型的评估模型，用于衡量视觉质量（VQ）、动作质量（MQ）和文本对齐（TA）；分数越高表示性能越好。 动态程度衡量的是动作的幅度，而非感知上的动作质量。",
+   "sents": [
+    {
+     "en": "For quantitative evaluation, we report six VBench dimensions ( Huang et al. 2023 ) : subject consistency (Subj.), background consistency (Back.), motion smoothness (Smooth.), aesthetic quality (Aesth.), imaging quality (Image), and dynamic degree (Dyn.).",
+     "zh": "在定量评估中，我们报告了 VBench 的六个维度（Huang et al. 2023）：主体一致性（Subj.）、背景一致性（Back.）、动作流畅度（Smooth.）、美学质量（Aesth.）、成像质量（Image）和动态程度（Dyn.）。"
+    },
+    {
+     "en": "We additionally use VideoReward ( Liu et al. 2025b ) , an evaluation model independent of the Qwen3-VL evaluator used during training, to measure visual quality (VQ), motion quality (MQ), and text alignment (TA); higher scores indicate better performance.",
+     "zh": "我们还使用了 VideoReward（Liu et al. 2025b），这是一个独立于训练期间使用的 Qwen3-VL 评估模型的评估模型，用于衡量视觉质量（VQ）、动作质量（MQ）和文本对齐（TA）；分数越高表示性能越好。"
+    },
+    {
+     "en": "Dynamic degree measures motion magnitude rather than perceptual motion quality.",
+     "zh": "动态程度衡量的是动作的幅度，而非感知上的动作质量。"
+    }
+   ]
+  },
+  {
+   "en": "Table 1 summarizes 6,976 on-policy preference graphs logged during Pairwise-GRPO training over three stages. Cycle statistics at margin m m retain directed edges with W i ​ j > .5 + m W_{ij}>.5+m ; near ties satisfy | W i ​ j − .5 | ≤ .1 |W_{ij}-.5|\\leq.1 .",
+   "zh": "表 1 总结了在 Pairwise-GRPO 训练的三个阶段中记录的 6,976 个在线策略偏好图。 在余量 m 处的循环统计量保留了满足 W_{ij}>.5+m 的有向边；接近平局的情况满足 |W_{ij}-.5|\\leq.1。",
+   "sents": [
+    {
+     "en": "Table 1 summarizes 6,976 on-policy preference graphs logged during Pairwise-GRPO training over three stages.",
+     "zh": "表 1 总结了在 Pairwise-GRPO 训练的三个阶段中记录的 6,976 个在线策略偏好图。"
+    },
+    {
+     "en": "Cycle statistics at margin m m retain directed edges with W i ​ j > .5 + m W_{ij}>.5+m ; near ties satisfy | W i ​ j − .5 | ≤ .1 |W_{ij}-.5|\\leq.1 .",
+     "zh": "在余量 m 处的循环统计量保留了满足 W_{ij}>.5+m 的有向边；接近平局的情况满足 |W_{ij}-.5|\\leq.1。"
+    }
+   ]
+  },
+  {
+   "en": "At m = 0 m=0 , the any-cycle rate rises from 79.7% to 89.0%, while cyclic-triangle density remains near 5%. At m = .05 m=.05 , the rates are 24.8/18.0/19.3%; meanwhile, clarity falls from 0.261 to 0.132 as the near-tie share rises from 52.6% to 67.3%. In fixed-graph replay, holding W W fixed and toggling cycle modulation shifts the lowest- L i L_{i} third by + 0.616 +0.616 and the highest by − 0.544 -0.544 , isolating its effect from on-policy policy drift.",
+   "zh": "当 m = 0 m=0 时，任意循环率从 79.7% 上升到 89.0%，而循环三角密度则保持在 5% 附近。 当 m = .05 m=.05 时，各项比率分别为 24.8/18.0/19.3%；与此同时，清晰度从 0.261 下降到 0.132，而接近打平的比例则从 52.6% 上升到 67.3%。 在固定图重播中，保持 W W 不变并切换循环调制，会使最低 L i L_{i} 值偏移 +0.616 +0.616，最高值偏移 −0.544 -0.544，从而将其效应与在线策略的漂移区分开来。",
+   "sents": [
+    {
+     "en": "At m = 0 m=0 , the any-cycle rate rises from 79.7% to 89.0%, while cyclic-triangle density remains near 5%.",
+     "zh": "当 m = 0 m=0 时，任意循环率从 79.7% 上升到 89.0%，而循环三角密度则保持在 5% 附近。"
+    },
+    {
+     "en": "At m = .05 m=.05 , the rates are 24.8/18.0/19.3%; meanwhile, clarity falls from 0.261 to 0.132 as the near-tie share rises from 52.6% to 67.3%.",
+     "zh": "当 m = .05 m=.05 时，各项比率分别为 24.8/18.0/19.3%；与此同时，清晰度从 0.261 下降到 0.132，而接近打平的比例则从 52.6% 上升到 67.3%。"
+    },
+    {
+     "en": "In fixed-graph replay, holding W W fixed and toggling cycle modulation shifts the lowest- L i L_{i} third by + 0.616 +0.616 and the highest by − 0.544 -0.544 , isolating its effect from on-policy policy drift.",
+     "zh": "在固定图重播中，保持 W W 不变并切换循环调制，会使最低 L i L_{i} 值偏移 +0.616 +0.616，最高值偏移 −0.544 -0.544，从而将其效应与在线策略的漂移区分开来。"
+    }
+   ]
+  },
+  {
+   "en": "Table 2 compares pointwise GRPO ( Liu et al. 2025a ; Xue et al. 2025 ) with four pairwise aggregators: win rate ( Wang et al. 2025b ) , Bradley–Terry ( Bradley and Terry 1952 ) , Rank Centrality ( Negahban et al. 2012 ) , and RAP-Walk. All trained methods share the evaluator, group size, prompt schedule, and training budget; pairwise methods also share the comparison protocol and query count. RAP-Walk adds no queries beyond the observed graph.",
+   "zh": "表 2 将逐点 GRPO（Liu et al. 2025a；Xue et al. 2025）与四种成对聚合方法进行了比较：胜率（Wang et al. 2025b）、Bradley–Terry（Bradley and Terry 1952）、Rank Centrality（Negahban et al. 2012）以及 RAP-Walk。 所有训练方法均共享评估器、组大小、提示调度方案及训练预算；成对方法还共享比较协议和查询次数。 RAP-Walk 不会在已观察图之外增加任何查询。",
+   "sents": [
+    {
+     "en": "Table 2 compares pointwise GRPO ( Liu et al. 2025a ; Xue et al. 2025 ) with four pairwise aggregators: win rate ( Wang et al. 2025b ) , Bradley–Terry ( Bradley and Terry 1952 ) , Rank Centrality ( Negahban et al. 2012 ) , and RAP-Walk.",
+     "zh": "表 2 将逐点 GRPO（Liu et al. 2025a；Xue et al. 2025）与四种成对聚合方法进行了比较：胜率（Wang et al. 2025b）、Bradley–Terry（Bradley and Terry 1952）、Rank Centrality（Negahban et al. 2012）以及 RAP-Walk。"
+    },
+    {
+     "en": "All trained methods share the evaluator, group size, prompt schedule, and training budget; pairwise methods also share the comparison protocol and query count.",
+     "zh": "所有训练方法均共享评估器、组大小、提示调度方案及训练预算；成对方法还共享比较协议和查询次数。"
+    },
+    {
+     "en": "RAP-Walk adds no queries beyond the observed graph.",
+     "zh": "RAP-Walk 不会在已观察图之外增加任何查询。"
+    }
+   ]
+  },
+  {
+   "en": "Relative to win rate, RAP-Walk improves eight of nine metrics with both evaluators; only smoothness regresses marginally. Independent VideoReward gains are + 0.199 / + 0.294 / + 0.147 +0.199/+0.294/+0.147 (VQ/MQ/TA, 30B) and + 0.267 / + 0.366 / + 0.065 +0.267/+0.366/+0.065 (235B). Meanwhile, dynamic degree recovers from 10.00/28.60 to 27.60/29.80, with first- or second-place results on every non-dynamic VBench metric. Rank Centrality and Bradley–Terry can retain more motion but lose perceptual quality, suggesting that global graph ranking alone is insufficient without reliability control and anchoring.",
+   "zh": "相对于胜率而言，RAP-Walk 在两位评估者中提升了九项指标中的八项；只有流畅性略有下降。 Independent VideoReward 的增益为 +0.199 / +0.294 / +0.147（VQ/MQ/TA，30B）以及 +0.267 / +0.366 / +0.065（235B）。 与此同时，动态度从 10.00/28.60 恢复至 27.60/29.80，并在所有非动态的 VBench 指标中取得第一或第二名的成绩。 Rank Centrality 和 Bradley–Terry 能够保留更多运动信息，但会损失感知质量，这表明仅靠全局图排名，在缺乏可靠性控制和锚定机制的情况下是不足够的。",
+   "sents": [
+    {
+     "en": "Relative to win rate, RAP-Walk improves eight of nine metrics with both evaluators; only smoothness regresses marginally.",
+     "zh": "相对于胜率而言，RAP-Walk 在两位评估者中提升了九项指标中的八项；只有流畅性略有下降。"
+    },
+    {
+     "en": "Independent VideoReward gains are + 0.199 / + 0.294 / + 0.147 +0.199/+0.294/+0.147 (VQ/MQ/TA, 30B) and + 0.267 / + 0.366 / + 0.065 +0.267/+0.366/+0.065 (235B).",
+     "zh": "Independent VideoReward 的增益为 +0.199 / +0.294 / +0.147（VQ/MQ/TA，30B）以及 +0.267 / +0.366 / +0.065（235B）。"
+    },
+    {
+     "en": "Meanwhile, dynamic degree recovers from 10.00/28.60 to 27.60/29.80, with first- or second-place results on every non-dynamic VBench metric.",
+     "zh": "与此同时，动态度从 10.00/28.60 恢复至 27.60/29.80，并在所有非动态的 VBench 指标中取得第一或第二名的成绩。"
+    },
+    {
+     "en": "Rank Centrality and Bradley–Terry can retain more motion but lose perceptual quality, suggesting that global graph ranking alone is insufficient without reliability control and anchoring.",
+     "zh": "Rank Centrality 和 Bradley–Terry 能够保留更多运动信息，但会损失感知质量，这表明仅靠全局图排名，在缺乏可靠性控制和锚定机制的情况下是不足够的。"
+    }
+   ]
+  },
+  {
+   "en": "With matched schedules and budgets, Table 3 extends the 1.3B setting in Table 2 (b) to two additional generators. Against win rate, RAP-Walk improves eight of nine metrics on both, with only background consistency (Wan2.1-14B) or smoothness (Wan2.2-TI2V-5B) regressing. The former gains 10.00 dynamic-degree points and 0.238 TA; the latter gains 1.43 aesthetic points and 0.300/0.079/0.135 VQ/MQ/TA. With the evaluator fixed, this repeated pattern supports a backbone-agnostic mapping.",
+   "zh": "在日程和预算匹配的情况下，表 3 将表 2 (b) 中的 1.3B 设置扩展到了另外两个生成器。 就胜率而言，RAP-Walk 在这两种情况下都提升了九项指标中的八项，仅背景一致性（Wan2.1-14B）或平滑度（Wan2.2-TI2V-5B）有所下降。 前者获得了 10.00 个动态度分数和 0.238 的 TA；后者获得了 1.43 个美学分数以及 0.300/0.079/0.135 的 VQ/MQ/TA。 在评估器固定的情况下，这种重复的模式支持了一种与骨干网络无关的映射方式。",
+   "sents": [
+    {
+     "en": "With matched schedules and budgets, Table 3 extends the 1.3B setting in Table 2 (b) to two additional generators.",
+     "zh": "在日程和预算匹配的情况下，表 3 将表 2 (b) 中的 1.3B 设置扩展到了另外两个生成器。"
+    },
+    {
+     "en": "Against win rate, RAP-Walk improves eight of nine metrics on both, with only background consistency (Wan2.1-14B) or smoothness (Wan2.2-TI2V-5B) regressing.",
+     "zh": "就胜率而言，RAP-Walk 在这两种情况下都提升了九项指标中的八项，仅背景一致性（Wan2.1-14B）或平滑度（Wan2.2-TI2V-5B）有所下降。"
+    },
+    {
+     "en": "The former gains 10.00 dynamic-degree points and 0.238 TA; the latter gains 1.43 aesthetic points and 0.300/0.079/0.135 VQ/MQ/TA.",
+     "zh": "前者获得了 10.00 个动态度分数和 0.238 的 TA；后者获得了 1.43 个美学分数以及 0.300/0.079/0.135 的 VQ/MQ/TA。"
+    },
+    {
+     "en": "With the evaluator fixed, this repeated pattern supports a backbone-agnostic mapping.",
+     "zh": "在评估器固定的情况下，这种重复的模式支持了一种与骨干网络无关的映射方式。"
+    }
+   ]
+  },
+  {
+   "en": "Table 4 ablates graph-proposal construction and reliability anchoring. Graph proposal only standardizes 𝐠 \\mathbf{g} directly instead of using Eq. ( 16 ). Fixed group reliability sets α g \\alpha_{g} to its full-model mean, preserving average correction strength while removing group adaptivity. Zero reliability floor sets α − = 0 \\alpha_{-}=0 ; w/o entropy floor additionally sets q = π q=\\pi in this matched zero-floor setting.",
+   "zh": "表 4 对图提案构建和可靠性锚定进行了消融分析。 图提案仅直接标准化 𝐠 \\mathbf{g}，而非使用公式 (16)。 固定组可靠性将 α g \\alpha_{g} 设为其全模型均值，从而保留平均校正强度，同时去除组自适应能力。 零可靠性下限将 α − = 0 \\alpha_{-}=0；在没有熵值下限的情况下，在此匹配的零下限设置中还会额外设定 q = π q=\\pi。",
+   "sents": [
+    {
+     "en": "Table 4 ablates graph-proposal construction and reliability anchoring.",
+     "zh": "表 4 对图提案构建和可靠性锚定进行了消融分析。"
+    },
+    {
+     "en": "Graph proposal only standardizes 𝐠 \\mathbf{g} directly instead of using Eq. ( 16 ).",
+     "zh": "图提案仅直接标准化 𝐠 \\mathbf{g}，而非使用公式 (16)。"
+    },
+    {
+     "en": "Fixed group reliability sets α g \\alpha_{g} to its full-model mean, preserving average correction strength while removing group adaptivity.",
+     "zh": "固定组可靠性将 α g \\alpha_{g} 设为其全模型均值，从而保留平均校正强度，同时去除组自适应能力。"
+    },
+    {
+     "en": "Zero reliability floor sets α − = 0 \\alpha_{-}=0 ; w/o entropy floor additionally sets q = π q=\\pi in this matched zero-floor setting.",
+     "zh": "零可靠性下限将 α − = 0 \\alpha_{-}=0；在没有熵值下限的情况下，在此匹配的零下限设置中还会额外设定 q = π q=\\pi。"
+    }
+   ]
+  },
+  {
+   "en": "Graph proposal and anchoring. Used alone, 𝐠 \\mathbf{g} ranks first or second on all five non-dynamic VBench dimensions, yet trails the full model by 12.60 dynamic-degree points and 0.262/0.137/0.243 VQ/MQ/TA. Thus, graph propagation provides useful relational signal but is better used to correct than replace win rate. Mean-matched fixed reliability gains 3.40 dynamic-degree points but lowers every non-dynamic VBench and VideoReward metric, supporting group-adaptive correction strength.",
+   "zh": "图提案与锚定。 单独使用时，𝐠 \\mathbf{g} 在所有五个非动态 VBench 维度上排名第一或第二，但在动态度方面落后完整模型 12.60 分，在 VQ/MQ/TA 方面则分别落后 0.262/0.137/0.243。 因此，图传播提供了有用的关系信号，但更适合用于修正胜率，而非替代胜率。 均值匹配固定可靠性获得了 3.40 个动态度分数，但降低了所有非动态 VBench 和 VideoReward 指标，从而支持了群体自适应的修正强度。",
+   "sents": [
+    {
+     "en": "Graph proposal and anchoring.",
+     "zh": "图提案与锚定。"
+    },
+    {
+     "en": "Used alone, 𝐠 \\mathbf{g} ranks first or second on all five non-dynamic VBench dimensions, yet trails the full model by 12.60 dynamic-degree points and 0.262/0.137/0.243 VQ/MQ/TA.",
+     "zh": "单独使用时，𝐠 \\mathbf{g} 在所有五个非动态 VBench 维度上排名第一或第二，但在动态度方面落后完整模型 12.60 分，在 VQ/MQ/TA 方面则分别落后 0.262/0.137/0.243。"
+    },
+    {
+     "en": "Thus, graph propagation provides useful relational signal but is better used to correct than replace win rate.",
+     "zh": "因此，图传播提供了有用的关系信号，但更适合用于修正胜率，而非替代胜率。"
+    },
+    {
+     "en": "Mean-matched fixed reliability gains 3.40 dynamic-degree points but lowers every non-dynamic VBench and VideoReward metric, supporting group-adaptive correction strength.",
+     "zh": "均值匹配固定可靠性获得了 3.40 个动态度分数，但降低了所有非动态 VBench 和 VideoReward 指标，从而支持了群体自适应的修正强度。"
+    }
+   ]
+  },
+  {
+   "en": "Transition terms and calibration. Removing the win-rate prior lowers dynamic degree by 8.60 points and all three VideoReward metrics; removing edge clarity lowers aesthetics and imaging by 1.76 and 3.33 points; removing cycle modulation lowers dynamic degree by 9.20 points and all three VideoReward metrics. These changes support the direct-support prior, ambiguity discount, and L i L_{i} modulation in Eq. ( 8 ). With a zero reliability floor, dynamic degree and all three VideoReward metrics decline despite a 0.27 imaging gain. Relative to this matched variant, removing entropy calibration trades + 5.80 +5.80 dynamic degree and + 0.067 +0.067 TA for losses on all five non-dynamic VBench dimensions plus VQ and MQ. The full configuration therefore gives the strongest VQ/MQ balance, whereas individual ablations can improve dynamic degree or imaging at the expense of broader quality.",
+   "zh": "过渡项与校准。 移除胜率先验会使动态度下降 8.60 点，同时使所有三项 VideoReward 指标下降；移除边缘清晰度会使美学和成像分别下降 1.76 点和 3.33 点；移除周期调制会使动态度下降 9.20 点，同时使所有三项 VideoReward 指标下降。 这些变化支持公式 (8) 中的直接支持先验、模糊性折扣和 L i L_{i} 调制。 在可靠性下限为零的情况下，尽管成像增益为 0.27，动态度和所有三项 VideoReward 指标仍会下降。 与这一匹配变体相比，移除熵校准会以牺牲所有五个非动态 VBench 维度以及 VQ 和 MQ 为代价，换取 +5.80 的动态度和 +0.067 的 TA。 因此，完整配置能实现最强的 VQ/MQ 平衡，而单独进行消融分析则可能以牺牲更广泛的质量为代价，提升动态度或成像效果。",
+   "sents": [
+    {
+     "en": "Transition terms and calibration.",
+     "zh": "过渡项与校准。"
+    },
+    {
+     "en": "Removing the win-rate prior lowers dynamic degree by 8.60 points and all three VideoReward metrics; removing edge clarity lowers aesthetics and imaging by 1.76 and 3.33 points; removing cycle modulation lowers dynamic degree by 9.20 points and all three VideoReward metrics.",
+     "zh": "移除胜率先验会使动态度下降 8.60 点，同时使所有三项 VideoReward 指标下降；移除边缘清晰度会使美学和成像分别下降 1.76 点和 3.33 点；移除周期调制会使动态度下降 9.20 点，同时使所有三项 VideoReward 指标下降。"
+    },
+    {
+     "en": "These changes support the direct-support prior, ambiguity discount, and L i L_{i} modulation in Eq. ( 8 ).",
+     "zh": "这些变化支持公式 (8) 中的直接支持先验、模糊性折扣和 L i L_{i} 调制。"
+    },
+    {
+     "en": "With a zero reliability floor, dynamic degree and all three VideoReward metrics decline despite a 0.27 imaging gain.",
+     "zh": "在可靠性下限为零的情况下，尽管成像增益为 0.27，动态度和所有三项 VideoReward 指标仍会下降。"
+    },
+    {
+     "en": "Relative to this matched variant, removing entropy calibration trades + 5.80 +5.80 dynamic degree and + 0.067 +0.067 TA for losses on all five non-dynamic VBench dimensions plus VQ and MQ.",
+     "zh": "与这一匹配变体相比，移除熵校准会以牺牲所有五个非动态 VBench 维度以及 VQ 和 MQ 为代价，换取 +5.80 的动态度和 +0.067 的 TA。"
+    },
+    {
+     "en": "The full configuration therefore gives the strongest VQ/MQ balance, whereas individual ablations can improve dynamic degree or imaging at the expense of broader quality.",
+     "zh": "因此，完整配置能实现最强的 VQ/MQ 平衡，而单独进行消融分析则可能以牺牲更广泛的质量为代价，提升动态度或成像效果。"
+    }
+   ]
+  },
+  {
+   "en": "We finally test whether evaluator-independent human judgments corroborate the automatic metrics. In a blind study, 10 raters each evaluated 50 matched-prompt pairs for each baseline comparison on visual quality, motion quality, and text alignment; method identities were hidden and display order was randomized. Against Pairwise/Pointwise GRPO, RAP-Walk achieves win rates of 64.6%/78.2% for visual quality, 49.6%/59.0% for motion quality, and 53.4%/64.2% for text alignment. Motion is the closest comparison, yet its win–loss margin over win-rate Pairwise-GRPO remains positive at 13.4 points.",
+   "zh": "我们最终检验了独立于评估器的判断是否证实了自动指标。 在一项盲测研究中，10名评分员每人针对每次基准比较的50对匹配提示，从视觉质量、运动质量和文本对齐三个维度进行了评估；方法身份被隐藏，且显示顺序被随机化。 在与成对/点对点GRPO的对比中，RAP-Walk在视觉质量上的胜率分别为64.6%/78.2%，在运动质量上为49.6%/59.0%，在文本对齐上为53.4%/64.2%。 运动质量的对比结果最为接近，但其与成对GRPO的胜率相比，净胜分仍保持13.4分的正值。",
+   "sents": [
+    {
+     "en": "We finally test whether evaluator-independent human judgments corroborate the automatic metrics.",
+     "zh": "我们最终检验了独立于评估器的判断是否证实了自动指标。"
+    },
+    {
+     "en": "In a blind study, 10 raters each evaluated 50 matched-prompt pairs for each baseline comparison on visual quality, motion quality, and text alignment; method identities were hidden and display order was randomized.",
+     "zh": "在一项盲测研究中，10名评分员每人针对每次基准比较的50对匹配提示，从视觉质量、运动质量和文本对齐三个维度进行了评估；方法身份被隐藏，且显示顺序被随机化。"
+    },
+    {
+     "en": "Against Pairwise/Pointwise GRPO, RAP-Walk achieves win rates of 64.6%/78.2% for visual quality, 49.6%/59.0% for motion quality, and 53.4%/64.2% for text alignment.",
+     "zh": "在与成对/点对点GRPO的对比中，RAP-Walk在视觉质量上的胜率分别为64.6%/78.2%，在运动质量上为49.6%/59.0%，在文本对齐上为53.4%/64.2%。"
+    },
+    {
+     "en": "Motion is the closest comparison, yet its win–loss margin over win-rate Pairwise-GRPO remains positive at 13.4 points.",
+     "zh": "运动质量的对比结果最为接近，但其与成对GRPO的胜率相比，净胜分仍保持13.4分的正值。"
+    }
+   ]
+  },
+  {
+   "en": "These preferences suggest that the gains are not specific to the Qwen evaluator or the reported automatic metrics; the more moderate motion margin also matches the intended conservative correction to the win-rate anchor.",
+   "zh": "这些偏好表明，所获得的增益并非特定于 Qwen 评估器或所报告的自动指标；更为适度的运动余量也与对胜率基准所计划的保守修正相一致。",
+   "sents": null
+  },
+  {
+   "en": "Figure 3 compares Pretrained, Pairwise-GRPO, and RAP-Walk across eight prompts. The baselines show temporal artifacts such as inconsistent dog, child geometry, distorted wine-glass structure, deformed birds, and unstable human or vehicle shapes (red boxes). In contrast, RAP-Walk preserves object identity and spatial layout across frames while maintaining coherent interactions and motion in the climber, campsite, and ballerina sequences. These results demonstrate improved visual fidelity and temporal consistency without sacrificing scene dynamics or stylistic diversity.",
+   "zh": "图3在八个提示词上比较了 Pretrained、Pairwise-GRPO 和 RAP-Walk。 基线模型出现了时间上的伪影，例如不一致的狗、儿童几何结构、变形的酒杯结构、畸形的鸟类，以及不稳定的人或车辆形状（红色框）。 相比之下，RAP-Walk 在不同帧中保留了物体的身份和空间布局，同时保持了登山者、露营地和芭蕾舞演员序列中连贯的互动和运动。 这些结果表明，在保持场景动态和风格多样性的同时，视觉保真度和时间一致性得到了提升。",
+   "sents": [
+    {
+     "en": "Figure 3 compares Pretrained, Pairwise-GRPO, and RAP-Walk across eight prompts.",
+     "zh": "图3在八个提示词上比较了 Pretrained、Pairwise-GRPO 和 RAP-Walk。"
+    },
+    {
+     "en": "The baselines show temporal artifacts such as inconsistent dog, child geometry, distorted wine-glass structure, deformed birds, and unstable human or vehicle shapes (red boxes).",
+     "zh": "基线模型出现了时间上的伪影，例如不一致的狗、儿童几何结构、变形的酒杯结构、畸形的鸟类，以及不稳定的人或车辆形状（红色框）。"
+    },
+    {
+     "en": "In contrast, RAP-Walk preserves object identity and spatial layout across frames while maintaining coherent interactions and motion in the climber, campsite, and ballerina sequences.",
+     "zh": "相比之下，RAP-Walk 在不同帧中保留了物体的身份和空间布局，同时保持了登山者、露营地和芭蕾舞演员序列中连贯的互动和运动。"
+    },
+    {
+     "en": "These results demonstrate improved visual fidelity and temporal consistency without sacrificing scene dynamics or stylistic diversity.",
+     "zh": "这些结果表明，在保持场景动态和风格多样性的同时，视觉保真度和时间一致性得到了提升。"
+    }
+   ]
+  },
+  {
+   "en": "Pairwise feedback avoids calibrating absolute video-quality scores, yet converting structured preference relations into scalar advantages remains challenging. Our audit of 6,976 on-policy comparison graphs shows that cyclic preference structures emerge during training, indicating that opponent relationships and comparison paths provide information beyond win rates. We introduced RAP-Walk, a reliability-anchored graph aggregation method that preserves win-rate advantages as anchors while recovering relational evidence through graph correction. Across matched comparisons, evaluators, backbones, ablations, and blind human evaluations, RAP-Walk improves over win-rate Pairwise-GRPO without additional evaluator queries. These results highlight the importance of preserving relational structure when transforming pairwise feedback into optimization signals.",
+   "zh": "成对反馈无需校准绝对的视频质量分数，但将结构化的偏好关系转化为标量优势仍然具有挑战性。 我们对 6,976 个策略内比较图的审计显示，训练过程中会出现循环偏好结构，这表明对手关系和比较路径提供的信息超出了胜率本身。 我们提出了 RAP-Walk——一种以可靠性为锚点的图聚合方法，它在保留胜率优势作为锚点的同时，通过图修正恢复了关系证据。 在匹配比较、评估者、骨干模型、消融实验以及盲测人类评估中，RAP-Walk 无需额外查询评估者即可优于基于胜率的 Pairwise-GRPO。 这些结果凸显了将成对反馈转化为优化信号时，保留关系结构的重要性。",
+   "sents": [
+    {
+     "en": "Pairwise feedback avoids calibrating absolute video-quality scores, yet converting structured preference relations into scalar advantages remains challenging.",
+     "zh": "成对反馈无需校准绝对的视频质量分数，但将结构化的偏好关系转化为标量优势仍然具有挑战性。"
+    },
+    {
+     "en": "Our audit of 6,976 on-policy comparison graphs shows that cyclic preference structures emerge during training, indicating that opponent relationships and comparison paths provide information beyond win rates.",
+     "zh": "我们对 6,976 个策略内比较图的审计显示，训练过程中会出现循环偏好结构，这表明对手关系和比较路径提供的信息超出了胜率本身。"
+    },
+    {
+     "en": "We introduced RAP-Walk, a reliability-anchored graph aggregation method that preserves win-rate advantages as anchors while recovering relational evidence through graph correction.",
+     "zh": "我们提出了 RAP-Walk——一种以可靠性为锚点的图聚合方法，它在保留胜率优势作为锚点的同时，通过图修正恢复了关系证据。"
+    },
+    {
+     "en": "Across matched comparisons, evaluators, backbones, ablations, and blind human evaluations, RAP-Walk improves over win-rate Pairwise-GRPO without additional evaluator queries.",
+     "zh": "在匹配比较、评估者、骨干模型、消融实验以及盲测人类评估中，RAP-Walk 无需额外查询评估者即可优于基于胜率的 Pairwise-GRPO。"
+    },
+    {
+     "en": "These results highlight the importance of preserving relational structure when transforming pairwise feedback into optimization signals.",
+     "zh": "这些结果凸显了将成对反馈转化为优化信号时，保留关系结构的重要性。"
+    }
+   ]
+  }
+ ]
+}

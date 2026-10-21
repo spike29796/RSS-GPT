@@ -48,7 +48,7 @@ ENV_FILE = os.path.join(HERE, '.env')
 
 MIN_PARA_CHARS = 40      # 过短的段（标题、小标签、"GitHub"）丢掉
 MAX_PARA_CHARS = 2500    # 超长的段切开，保证单段翻译长度安全
-DEFAULT_TRANSLATE_URL = 'http://127.0.0.1:11434'
+DEFAULT_TRANSLATE_URL = 'http://192.168.1.18:8788/v1'    # WB 反代（OpenAI 兼容），2026-10-22 起
 
 # 这两个 jsonl 不是资讯源：recommended 是打分器产物、bilibili 是视频，不进阅读页
 SKIP_FILES = {'recommended', 'bilibili'}
@@ -116,12 +116,13 @@ if HERE not in sys.path:
 import translate_step  # noqa: E402  只 import，不改它
 
 TRANSLATE_URL = (os.environ.get('TRANSLATE_URL') or DEFAULT_TRANSLATE_URL).strip().rstrip('/')
-TRANSLATE_MODEL = os.environ.get('TRANSLATE_MODEL', 'index-translate').strip()
+TRANSLATE_MODEL = os.environ.get('TRANSLATE_MODEL', 'glm-5.3-flash').strip()
 TRANSLATE_TIMEOUT = float(os.environ.get('TRANSLATE_TIMEOUT', '180'))
+TRANSLATE_API_KEY = os.environ.get('OPENAI_API_KEY', '').strip()
 
-# index-translate 的 Modelfile 没写 num_predict，Ollama 用默认上限截断长输出。
-# 句级翻译的输出比整段翻译长（多了换行和逐句之间的冗余），必须显式抬高上限，
+# 句级翻译的输出比整段翻译长（多了换行和逐句之间的冗余），上限必须显式抬高，
 # 否则 JSON 少半个大括号 / 中文断在半句，而且是静默的 —— 不报错，直接写坏文件。
+# 2026-10-22 起这映射到 OpenAI 兼容端点的 max_tokens（原先映射 Ollama 的 num_predict）。
 TRANSLATE_NUM_PREDICT = int(os.environ.get('TRANSLATE_NUM_PREDICT', '4096'))
 
 
@@ -150,25 +151,35 @@ def strip_tags(fragment):
 # ---------------------------------------------------------------- 翻译
 
 def _post_generate(prompt, num_predict, timeout):
-    """调 Ollama 生成，返回剥掉思考链前缀的纯文本。
+    """调 OpenAI 兼容端点（WB 反代）生成，返回剥掉思考链前缀的纯文本。
 
-    num_predict 必须显式给：index-translate 的 Modelfile 没设这个参数，
-    长输出会被默认上限静默截断 —— 表现为 JSON 少半个大括号、译文断在半句。
+    num_predict 映射到 max_tokens，必须显式给：长输出会被默认上限静默截断
+    —— 表现为 JSON 少半个大括号、译文断在半句。
+
+    2026-10-22 从 Ollama 原生 /api/generate 改到这里：那个接口与 OpenAI 格式
+    不通用（prompt/options/response 三处都不同），换地址不改请求体会直接 404。
     """
     body = json.dumps({
         'model': TRANSLATE_MODEL,
-        'prompt': prompt,
+        'messages': [{'role': 'user', 'content': prompt}],
         'stream': False,
-        'think': False,
-        'options': {'temperature': 0, 'num_ctx': 8192, 'num_predict': num_predict},
+        'temperature': 0,
+        'max_tokens': num_predict,
     }).encode('utf-8')
+    headers = {'Content-Type': 'application/json'}
+    if TRANSLATE_API_KEY:
+        headers['Authorization'] = 'Bearer ' + TRANSLATE_API_KEY
     req = urllib.request.Request(
-        TRANSLATE_URL + '/api/generate',
+        TRANSLATE_URL + '/chat/completions',
         data=body,
-        headers={'Content-Type': 'application/json'},
+        headers=headers,
     )
-    resp = json.loads(urllib.request.urlopen(req, timeout=timeout).read())
-    out = (resp.get('response') or '').strip()
+    payload = json.loads(urllib.request.urlopen(req, timeout=timeout).read())
+    choice = (payload.get('choices') or [{}])[0]
+    msg = choice.get('message') or {}
+    # content 空时回落 reasoning_content：推理型模型把正文放那里
+    out = ((msg.get('content') or '').strip()
+           or (msg.get('reasoning_content') or '').strip())
     # 实测响应会带一段思考链前缀（think:false 不总是生效），解析前统一剥掉
     out = re.sub(r'^[\s\S]*?<｜end▁of▁thinking｜>', '', out, count=1).strip()
     return out

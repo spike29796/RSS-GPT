@@ -1,0 +1,1912 @@
+{
+ "id": "2978db87bb8bab03",
+ "source": "arxiv-video",
+ "link": "https://arxiv.org/abs/2610.12156v1",
+ "title": "Connected Self Forcing: Beyond Local Learning in Video Autoregression",
+ "title_zh": "Connected Self Forcing：超越视频自回归中的局部学习",
+ "published": "2026-10-08T15:36:56Z",
+ "translated_at": "2026-10-20T10:38:21Z",
+ "paragraphs": [
+  {
+   "en": "To stream long videos while maintaining visual quality and temporal consistency, Self Forcing mitigates exposure bias through self-rollout training on self-generated histories with key-value (KV) caching. To keep memory manageable, it detaches historical caches, preserving forward dependencies between chunks but severing the backward gradient paths. We introduce Connected Self Forcing, a training framework that reconnects gradient paths across autoregressive chunks, allowing feedback from later predictions to guide how earlier context is generated. These connections go beyond historical KV-writing: gradients pass through generated latents into the computations that produced them, linking the generation of earlier context to its use in later predictions. To make this connected training memory-efficient, we develop shortcut gradient replay, which recovers cross-chunk gradients without retaining the full rollout computation graph. Integrated with distribution matching distillation, Connected Self Forcing trains historical chunks according to both their direct supervision and their contribution to subsequent generation. Experiments on autoregressive video generation show improvements in long-horizon visual quality and temporal consistency, without changing the inference procedure. Additional materials on the project page .",
+   "zh": "为了在保持视觉质量和时间一致性的同时流式传输长视频，Self Forcing 通过在自生成的历史数据上进行自展开训练，并结合键值（KV）缓存来缓解暴露偏差。 为保持内存可控，该方法会分离历史缓存，保留各片段之间的前向依赖关系，但切断后向梯度路径。 我们提出了 Connected Self Forcing，一种训练框架，它重新连接自回归片段之间的梯度路径，使后续预测的反馈能够指导早期上下文的生成方式。 这些连接超越了历史 KV 的写入：梯度通过生成的潜在变量传递至产生这些变量的计算过程，从而将早期上下文的生成与其在后续预测中的使用联系起来。 为使这种关联训练具备内存效率，我们开发了快捷梯度重播方法，它无需保留完整的展开计算图即可恢复跨片段的梯度。 Connected Self Forcing 与分布匹配蒸馏相结合，使历史片段既能根据直接监督进行训练，也能根据其后续生成中的贡献度进行训练。 在自回归视频生成上的实验表明，该方法提升了长时程的视觉质量和时间一致性，且无需改变推理流程。 项目页面提供补充材料。",
+   "sents": [
+    {
+     "en": "To stream long videos while maintaining visual quality and temporal consistency, Self Forcing mitigates exposure bias through self-rollout training on self-generated histories with key-value (KV) caching.",
+     "zh": "为了在保持视觉质量和时间一致性的同时流式传输长视频，Self Forcing 通过在自生成的历史数据上进行自展开训练，并结合键值（KV）缓存来缓解暴露偏差。"
+    },
+    {
+     "en": "To keep memory manageable, it detaches historical caches, preserving forward dependencies between chunks but severing the backward gradient paths.",
+     "zh": "为保持内存可控，该方法会分离历史缓存，保留各片段之间的前向依赖关系，但切断后向梯度路径。"
+    },
+    {
+     "en": "We introduce Connected Self Forcing, a training framework that reconnects gradient paths across autoregressive chunks, allowing feedback from later predictions to guide how earlier context is generated.",
+     "zh": "我们提出了 Connected Self Forcing，一种训练框架，它重新连接自回归片段之间的梯度路径，使后续预测的反馈能够指导早期上下文的生成方式。"
+    },
+    {
+     "en": "These connections go beyond historical KV-writing: gradients pass through generated latents into the computations that produced them, linking the generation of earlier context to its use in later predictions.",
+     "zh": "这些连接超越了历史 KV 的写入：梯度通过生成的潜在变量传递至产生这些变量的计算过程，从而将早期上下文的生成与其在后续预测中的使用联系起来。"
+    },
+    {
+     "en": "To make this connected training memory-efficient, we develop shortcut gradient replay, which recovers cross-chunk gradients without retaining the full rollout computation graph.",
+     "zh": "为使这种关联训练具备内存效率，我们开发了快捷梯度重播方法，它无需保留完整的展开计算图即可恢复跨片段的梯度。"
+    },
+    {
+     "en": "Integrated with distribution matching distillation, Connected Self Forcing trains historical chunks according to both their direct supervision and their contribution to subsequent generation.",
+     "zh": "Connected Self Forcing 与分布匹配蒸馏相结合，使历史片段既能根据直接监督进行训练，也能根据其后续生成中的贡献度进行训练。"
+    },
+    {
+     "en": "Experiments on autoregressive video generation show improvements in long-horizon visual quality and temporal consistency, without changing the inference procedure.",
+     "zh": "在自回归视频生成上的实验表明，该方法提升了长时程的视觉质量和时间一致性，且无需改变推理流程。"
+    },
+    {
+     "en": "Additional materials on the project page .",
+     "zh": "项目页面提供补充材料。"
+    }
+   ]
+  },
+  {
+   "en": "Recent video generation has advanced rapidly in visual fidelity, motion realism, and text–video alignment ( Team et al., 2025 ; Seedance et al., 2026 ; MiniMax, 2026 ) , with growing applications ( Liang et al., 2025 ; Zhang et al., 2026a ; Jiang et al., 2025 ) . Yet many high-quality models still rely on finite-window bidirectional processing, making them less suitable for streaming, interactive, and long-horizon generation. Causal autoregressive generation offers a natural alternative by generating frames or chunks sequentially from previously generated context, and has therefore been increasingly explored for long-form video generation and interactive world modeling ( Yin et al., 2025 ; Valevski et al., 2025 ; Huang et al., 2025b ; Zheng et al., 2026 ) .",
+   "zh": "近期的视频生成技术在视觉保真度、动作真实感以及文本与视频的同步性方面取得了快速进步（Team 等，2025；Seedance 等，2026；MiniMax，2026），其应用也日益广泛（Liang 等，2025；Zhang 等，2026a；Jiang 等，2025）。 然而，许多高质量模型仍然依赖有限窗口的双向处理机制，这使得它们不太适合流式、交互式以及长时程的生成任务。 因果自回归生成提供了一种自然的替代方案：它基于先前生成的上下文依次生成帧或片段，因此被越来越多地用于长视频生成和交互式世界建模（Yin 等，2025；Valevski 等，2025；Huang 等，2025b；Zheng 等，2026）。",
+   "sents": [
+    {
+     "en": "Recent video generation has advanced rapidly in visual fidelity, motion realism, and text–video alignment ( Team et al., 2025 ; Seedance et al., 2026 ; MiniMax, 2026 ) , with growing applications ( Liang et al., 2025 ; Zhang et al., 2026a ; Jiang et al., 2025 ) .",
+     "zh": "近期的视频生成技术在视觉保真度、动作真实感以及文本与视频的同步性方面取得了快速进步（Team 等，2025；Seedance 等，2026；MiniMax，2026），其应用也日益广泛（Liang 等，2025；Zhang 等，2026a；Jiang 等，2025）。"
+    },
+    {
+     "en": "Yet many high-quality models still rely on finite-window bidirectional processing, making them less suitable for streaming, interactive, and long-horizon generation.",
+     "zh": "然而，许多高质量模型仍然依赖有限窗口的双向处理机制，这使得它们不太适合流式、交互式以及长时程的生成任务。"
+    },
+    {
+     "en": "Causal autoregressive generation offers a natural alternative by generating frames or chunks sequentially from previously generated context, and has therefore been increasingly explored for long-form video generation and interactive world modeling ( Yin et al., 2025 ; Valevski et al., 2025 ; Huang et al., 2025b ; Zheng et al., 2026 ) .",
+     "zh": "因果自回归生成提供了一种自然的替代方案：它基于先前生成的上下文依次生成帧或片段，因此被越来越多地用于长视频生成和交互式世界建模（Yin 等，2025；Valevski 等，2025；Huang 等，2025b；Zheng 等，2026）。"
+    }
+   ]
+  },
+  {
+   "en": "Training causal video generators, however, faces a mismatch between training and inference: teacher forcing relies on ground-truth history, while Diffusion Forcing improves robustness by exposing the model to noisy histories ( Chen et al., 2024a ) . Self Forcing ( Huang et al., 2025c ) goes further by directly training on the model’s own autoregressive rollouts, better aligning training with inference. To keep such sequential self-rollout tractable, however, previously generated history is detached when reused by later chunks.",
+   "zh": "然而，训练因果视频生成器面临着训练与推理之间的不匹配问题：教师强制依赖真实历史数据，而扩散强制则通过让模型接触含噪声的历史数据来提高其鲁棒性（Chen 等人，2024a）。 自我强制（Huang 等人，2025c）更进一步，直接以模型自身的自回归生成序列作为训练数据，从而更好地使训练与推理保持一致。 然而，为了使这种顺序的自我生成过程具有可行性，先前生成的历史数据在后续片段中重复使用时会被解耦。",
+   "sents": [
+    {
+     "en": "Training causal video generators, however, faces a mismatch between training and inference: teacher forcing relies on ground-truth history, while Diffusion Forcing improves robustness by exposing the model to noisy histories ( Chen et al., 2024a ) .",
+     "zh": "然而，训练因果视频生成器面临着训练与推理之间的不匹配问题：教师强制依赖真实历史数据，而扩散强制则通过让模型接触含噪声的历史数据来提高其鲁棒性（Chen 等人，2024a）。"
+    },
+    {
+     "en": "Self Forcing ( Huang et al., 2025c ) goes further by directly training on the model’s own autoregressive rollouts, better aligning training with inference.",
+     "zh": "自我强制（Huang 等人，2025c）更进一步，直接以模型自身的自回归生成序列作为训练数据，从而更好地使训练与推理保持一致。"
+    },
+    {
+     "en": "To keep such sequential self-rollout tractable, however, previously generated history is detached when reused by later chunks.",
+     "zh": "然而，为了使这种顺序的自我生成过程具有可行性，先前生成的历史数据在后续片段中重复使用时会被解耦。"
+    }
+   ]
+  },
+  {
+   "en": "Each generated chunk in an autoregressive rollout serves as both an output and causal context for later predictions. Self Forcing applies a video-level DMD objective to the generated rollout, giving every chunk a direct output gradient ( Yin et al., 2024b ; Yin et al., 2024a ) . However, detaching reused history blocks gradients from later predictions through historical KV states to the computation that generated earlier chunks. The forward dependency remains, but this backward path is absent (Fig. 1 ). To isolate this effect, we use a simplified 1D Gaussian autoregressive toy experiment (Fig. 2 ). Although far simpler than video generation, it shows SF’s long-horizon validation error leveling off while CSF continues improving toward Full BPTT. CSF also approaches Full BPTT’s final rollout accuracy beyond the training horizon. These observations motivate the use of future-to-history gradients without retaining the full rollout graph.",
+   "zh": "自回归展开中生成的每个片段既是输出，也是后续预测的因果上下文。 自我强制（Self Forcing）将视频级别的 DMD 目标应用于生成的展开序列，使每个片段都获得直接的输出梯度（Yin et al., 2024b；Yin et al., 2024a）。 然而，通过历史 KV 状态将重复使用的历史块与后续预测的梯度从生成早期片段的计算过程中分离开来。 前向依赖仍然存在，但这一反向路径并不存在（图 1）。 为了隔离这种效应，我们使用一个简化的单维高斯自回归玩具实验（图 2）。 尽管比视频生成简单得多，但该实验表明：自我强制（SF）的长期验证误差趋于稳定，而连续自我强制（CSF）则持续改进，最终接近完整 BPTT（Full BPTT）的表现。 CSF 在超出训练时间范围后，其最终展开准确率也接近完整 BPTT 的水平。 这些观察结果促使我们在不保留完整展开图的情况下，使用从未来到历史的梯度。",
+   "sents": [
+    {
+     "en": "Each generated chunk in an autoregressive rollout serves as both an output and causal context for later predictions.",
+     "zh": "自回归展开中生成的每个片段既是输出，也是后续预测的因果上下文。"
+    },
+    {
+     "en": "Self Forcing applies a video-level DMD objective to the generated rollout, giving every chunk a direct output gradient ( Yin et al., 2024b ; Yin et al., 2024a ) .",
+     "zh": "自我强制（Self Forcing）将视频级别的 DMD 目标应用于生成的展开序列，使每个片段都获得直接的输出梯度（Yin et al., 2024b；Yin et al., 2024a）。"
+    },
+    {
+     "en": "However, detaching reused history blocks gradients from later predictions through historical KV states to the computation that generated earlier chunks.",
+     "zh": "然而，通过历史 KV 状态将重复使用的历史块与后续预测的梯度从生成早期片段的计算过程中分离开来。"
+    },
+    {
+     "en": "The forward dependency remains, but this backward path is absent (Fig. 1 ).",
+     "zh": "前向依赖仍然存在，但这一反向路径并不存在（图 1）。"
+    },
+    {
+     "en": "To isolate this effect, we use a simplified 1D Gaussian autoregressive toy experiment (Fig. 2 ).",
+     "zh": "为了隔离这种效应，我们使用一个简化的单维高斯自回归玩具实验（图 2）。"
+    },
+    {
+     "en": "Although far simpler than video generation, it shows SF’s long-horizon validation error leveling off while CSF continues improving toward Full BPTT.",
+     "zh": "尽管比视频生成简单得多，但该实验表明：自我强制（SF）的长期验证误差趋于稳定，而连续自我强制（CSF）则持续改进，最终接近完整 BPTT（Full BPTT）的表现。"
+    },
+    {
+     "en": "CSF also approaches Full BPTT’s final rollout accuracy beyond the training horizon.",
+     "zh": "CSF 在超出训练时间范围后，其最终展开准确率也接近完整 BPTT 的水平。"
+    },
+    {
+     "en": "These observations motivate the use of future-to-history gradients without retaining the full rollout graph.",
+     "zh": "这些观察结果促使我们在不保留完整展开图的情况下，使用从未来到历史的梯度。"
+    }
+   ]
+  },
+  {
+   "en": "Motivated by these observations, we introduce Connected Self Forcing (CSF), which restores future-to-history gradient flow without retaining the full autoregressive computation graph. CSF retains the detached self-rollout of Self Forcing and introduces Shortcut Gradient Replay. CSF recovers selected cross-chunk derivative paths rather than the full-sequence gradient. Specifically, a later chunk is replayed with its historical KV states treated as differentiable, allowing the downstream gradient to propagate through the KV-writing process and back to the earlier chunk that produced those states. By replaying only the required computations rather than backpropagating through the entire rollout, CSF trades recomputation for substantially lower activation memory. Importantly, CSF adds no model parameters and leaves inference unchanged.",
+   "zh": "受这些观察的启发，我们提出了“连接自强化”（Connected Self Forcing，CSF），它无需保留完整的自回归计算图，即可恢复从未来到历史的梯度流。 CSF保留了“自强化”中解耦的自我展开机制，并引入了“捷径梯度重播”。 CSF恢复的是选定的跨块导数路径，而非整个序列的梯度。 具体来说，一个较晚的块会与其历史KV状态一起被重播，而这些历史KV状态被视为可微的，从而使得下游梯度能够通过KV写入过程反向传播到生成这些状态的早期块。 由于CSF仅重播必要的计算，而非在整个展开过程中进行反向传播，因此它以重新计算为代价，显著降低了激活内存的占用。 重要的是，CSF不会增加任何模型参数，也不会改变推理过程。",
+   "sents": [
+    {
+     "en": "Motivated by these observations, we introduce Connected Self Forcing (CSF), which restores future-to-history gradient flow without retaining the full autoregressive computation graph.",
+     "zh": "受这些观察的启发，我们提出了“连接自强化”（Connected Self Forcing，CSF），它无需保留完整的自回归计算图，即可恢复从未来到历史的梯度流。"
+    },
+    {
+     "en": "CSF retains the detached self-rollout of Self Forcing and introduces Shortcut Gradient Replay.",
+     "zh": "CSF保留了“自强化”中解耦的自我展开机制，并引入了“捷径梯度重播”。"
+    },
+    {
+     "en": "CSF recovers selected cross-chunk derivative paths rather than the full-sequence gradient.",
+     "zh": "CSF恢复的是选定的跨块导数路径，而非整个序列的梯度。"
+    },
+    {
+     "en": "Specifically, a later chunk is replayed with its historical KV states treated as differentiable, allowing the downstream gradient to propagate through the KV-writing process and back to the earlier chunk that produced those states.",
+     "zh": "具体来说，一个较晚的块会与其历史KV状态一起被重播，而这些历史KV状态被视为可微的，从而使得下游梯度能够通过KV写入过程反向传播到生成这些状态的早期块。"
+    },
+    {
+     "en": "By replaying only the required computations rather than backpropagating through the entire rollout, CSF trades recomputation for substantially lower activation memory.",
+     "zh": "由于CSF仅重播必要的计算，而非在整个展开过程中进行反向传播，因此它以重新计算为代价，显著降低了激活内存的占用。"
+    },
+    {
+     "en": "Importantly, CSF adds no model parameters and leaves inference unchanged.",
+     "zh": "重要的是，CSF不会增加任何模型参数，也不会改变推理过程。"
+    }
+   ]
+  },
+  {
+   "en": "Experiments show that CSF improves long-horizon visual quality and temporal consistency. The improvements are reflected in better imaging quality and stronger background and subject consistency, while qualitative results show reduced subject and scene drift over extended rollouts (Fig. 1 ).",
+   "zh": "实验表明，CSF 能够提升长期视觉质量与时间一致性。 这些改进体现在更优的成像质量以及更强的背景和主体一致性上，而定性结果则显示，在长时间运行过程中，主体和场景的漂移得到了减少（图 1）。",
+   "sents": [
+    {
+     "en": "Experiments show that CSF improves long-horizon visual quality and temporal consistency.",
+     "zh": "实验表明，CSF 能够提升长期视觉质量与时间一致性。"
+    },
+    {
+     "en": "The improvements are reflected in better imaging quality and stronger background and subject consistency, while qualitative results show reduced subject and scene drift over extended rollouts (Fig. 1 ).",
+     "zh": "这些改进体现在更优的成像质量以及更强的背景和主体一致性上，而定性结果则显示，在长时间运行过程中，主体和场景的漂移得到了减少（图 1）。"
+    }
+   ]
+  },
+  {
+   "en": "Our contributions are as follows: 1) We identify a forward–backward gap in Self Forcing: generated chunks affect future predictions in the forward rollout, while detachment blocks gradient paths from later generation computations into earlier context generation. 2) We propose Connected Self Forcing (CSF) with Shortcut Gradient Replay, reconnecting cross-chunk gradient paths beyond the direct output gradients of DMD, without retaining the full computation graph or changing inference. 3) We demonstrate improved long-horizon generation across 60- and 240-second evaluations, with stronger visual quality and temporal consistency.",
+   "zh": "我们的贡献如下：1）我们发现了自我强制（Self Forcing）中存在的前向–后向差异：生成的片段会影响前向展开中的未来预测，而解耦则阻断了后续生成计算与早期上下文生成之间的梯度路径。2）我们提出了带快捷梯度重放的连接自我强制（Connected Self Forcing, CSF），该方法在无需保留完整计算图或改变推理过程的前提下，重新连接了 DMD 直接输出梯度之外的跨片段梯度路径。3）我们在 60 秒和 240 秒的评估中展示了更优的长时程生成效果，包括更强的视觉质量和时间一致性。",
+   "sents": null
+  },
+  {
+   "en": "Bidirectional video generation. Video generation has evolved from early diffusion extensions of image models to large-scale foundation models ( Ho et al., 2022b ; Blattmann et al., 2023b ; Polyak et al., 2024 ; Team et al., 2025 ) . VideoLDM ( Blattmann et al., 2023b ) extends pretrained latent diffusion with temporal modeling for video generation. Other early works explore image–video priors, motion modules, and decomposed noise modeling ( Ho et al., 2022b ; Singer et al., 2022 ; Guo et al., 2023 ; Luo et al., 2023 ) , while hierarchical and cascaded designs extend temporal range and spatial resolution ( Ho et al., 2022a ; He et al., 2022 ; Wang et al., 2025 ; Zhang et al., 2025a ) . Lumiere ( Bar-Tal et al., 2024 ) instead generates the full temporal duration in a single Space-Time U-Net pass. More recent systems explore improved conditioning, transformer architectures, and large-scale data and model scaling ( Chen et al., 2023 ; Chen et al., 2024b ; Blattmann et al., 2023a ; Ma et al., 2024 ; Gupta et al., 2024 ; Zheng et al., 2024 ; Yang et al., 2025 ; Kong et al., 2024 ; Polyak et al., 2024 ; Team et al., 2025 ) . Such bidirectional computation remains less suitable for low-latency streaming ( Yin et al., 2025 ) .",
+   "zh": "双向视频生成。 视频生成已从早期图像模型的扩散模型扩展，发展为大规模基础模型（Ho et al., 2022b；Blattmann et al., 2023b；Polyak et al., 2024；Team et al., 2025）。 VideoLDM（Blattmann et al., 2023b）通过引入时间建模，将预训练的潜在扩散模型扩展至视频生成领域。 其他早期研究探索了图像-视频先验、运动模块和分解噪声建模（Ho et al., 2022b；Singer et al., 2022；Guo et al., 2023；Luo et al., 2023），而分层和级联设计则扩展了时间范围和空间分辨率（Ho et al., 2022a；He et al., 2022；Wang et al., 2025；Zhang et al., 2025a）。 相比之下，Lumiere（Bar-Tal et al., 2024）通过单次时空U-Net处理生成完整的时间序列。 更近期的系统则探索了改进的条件输入、Transformer架构以及大规模数据和模型扩展（Chen et al., 2023；Chen et al., 2024b；Blattmann et al., 2023a；Ma et al., 2024；Gupta et al., 2024；Zheng et al., 2024；Yang et al., 2025；Kong et al., 2024；Polyak et al., 2024；Team et al., 2025）。 此类双向计算在低延迟流媒体场景中仍不太适用（Yin et al., 2025）。",
+   "sents": [
+    {
+     "en": "Bidirectional video generation.",
+     "zh": "双向视频生成。"
+    },
+    {
+     "en": "Video generation has evolved from early diffusion extensions of image models to large-scale foundation models ( Ho et al., 2022b ; Blattmann et al., 2023b ; Polyak et al., 2024 ; Team et al., 2025 ) .",
+     "zh": "视频生成已从早期图像模型的扩散模型扩展，发展为大规模基础模型（Ho et al., 2022b；Blattmann et al., 2023b；Polyak et al., 2024；Team et al., 2025）。"
+    },
+    {
+     "en": "VideoLDM ( Blattmann et al., 2023b ) extends pretrained latent diffusion with temporal modeling for video generation.",
+     "zh": "VideoLDM（Blattmann et al., 2023b）通过引入时间建模，将预训练的潜在扩散模型扩展至视频生成领域。"
+    },
+    {
+     "en": "Other early works explore image–video priors, motion modules, and decomposed noise modeling ( Ho et al., 2022b ; Singer et al., 2022 ; Guo et al., 2023 ; Luo et al., 2023 ) , while hierarchical and cascaded designs extend temporal range and spatial resolution ( Ho et al., 2022a ; He et al., 2022 ; Wang et al., 2025 ; Zhang et al., 2025a ) .",
+     "zh": "其他早期研究探索了图像-视频先验、运动模块和分解噪声建模（Ho et al., 2022b；Singer et al., 2022；Guo et al., 2023；Luo et al., 2023），而分层和级联设计则扩展了时间范围和空间分辨率（Ho et al., 2022a；He et al., 2022；Wang et al., 2025；Zhang et al., 2025a）。"
+    },
+    {
+     "en": "Lumiere ( Bar-Tal et al., 2024 ) instead generates the full temporal duration in a single Space-Time U-Net pass.",
+     "zh": "相比之下，Lumiere（Bar-Tal et al., 2024）通过单次时空U-Net处理生成完整的时间序列。"
+    },
+    {
+     "en": "More recent systems explore improved conditioning, transformer architectures, and large-scale data and model scaling ( Chen et al., 2023 ; Chen et al., 2024b ; Blattmann et al., 2023a ; Ma et al., 2024 ; Gupta et al., 2024 ; Zheng et al., 2024 ; Yang et al., 2025 ; Kong et al., 2024 ; Polyak et al., 2024 ; Team et al., 2025 ) .",
+     "zh": "更近期的系统则探索了改进的条件输入、Transformer架构以及大规模数据和模型扩展（Chen et al., 2023；Chen et al., 2024b；Blattmann et al., 2023a；Ma et al., 2024；Gupta et al., 2024；Zheng et al., 2024；Yang et al., 2025；Kong et al., 2024；Polyak et al., 2024；Team et al., 2025）。"
+    },
+    {
+     "en": "Such bidirectional computation remains less suitable for low-latency streaming ( Yin et al., 2025 ) .",
+     "zh": "此类双向计算在低延迟流媒体场景中仍不太适用（Yin et al., 2025）。"
+    }
+   ]
+  },
+  {
+   "en": "Autoregressive video generation. Autoregressive models generate frames or chunks from prior generated content ( Huang et al., 2025c ; Teng et al., 2025 ; Yang et al., 2026 ) . Earlier approaches model tokenized video with transformers ( Yan et al., 2021 ; Ge et al., 2022 ; Hong et al., 2022 ) ; VideoPoet ( Kondratyuk et al., 2023 ) extends decoder-only autoregression to multimodal generation, while Phenaki ( Villegas et al., 2022 ) combines a causal tokenizer with masked-token prediction. Diffusion Forcing ( Chen et al., 2024a ) generalizes causal sequence modeling to independently noised continuous tokens. Recent approaches use increasing per-chunk noise ( Teng et al., 2025 ) , Diffusion Forcing ( Chen et al., 2025a ) , or temporal-pyramid history compression ( Jin et al., 2025 ) . Few-step generation builds on progressive distillation, consistency models, and distribution matching ( Salimans and Ho, 2022 ; Song et al., 2023 ; Yin et al., 2024b ; Yin et al., 2024a ) ; CausVid ( Yin et al., 2025 ) extends distribution matching to few-step causal video generation.",
+   "zh": "自回归视频生成。 自回归模型根据先前生成的内容生成帧或片段（Huang 等，2025c；Teng 等，2025；Yang 等，2026）。 早期的方法使用变换器对分词后的视频进行建模（Yan 等，2021；Ge 等，2022；Hong 等，2022）；VideoPoet（Kondratyuk 等，2023）将仅解码器的自回归扩展到多模态生成，而 Phenaki（Villegas 等，2022）则将因果分词器与掩码标记预测相结合。 扩散强迫法（Chen 等，2024a）将因果序列建模推广到独立添加噪声的连续标记上。 近期的方法使用了逐片段噪声强度的逐步增加（Teng 等，2025）、扩散强迫法（Chen 等，2025a），或时间金字塔历史压缩（Jin 等，2025）。 少步生成基于渐进式蒸馏、一致性模型和分布匹配（Salimans 和 Ho，2022；Song 等，2023；Yin 等，2024b；Yin 等，2024a）；CausVid（Yin 等，2025）将分布匹配扩展到了少步因果视频生成。",
+   "sents": [
+    {
+     "en": "Autoregressive video generation.",
+     "zh": "自回归视频生成。"
+    },
+    {
+     "en": "Autoregressive models generate frames or chunks from prior generated content ( Huang et al., 2025c ; Teng et al., 2025 ; Yang et al., 2026 ) .",
+     "zh": "自回归模型根据先前生成的内容生成帧或片段（Huang 等，2025c；Teng 等，2025；Yang 等，2026）。"
+    },
+    {
+     "en": "Earlier approaches model tokenized video with transformers ( Yan et al., 2021 ; Ge et al., 2022 ; Hong et al., 2022 ) ; VideoPoet ( Kondratyuk et al., 2023 ) extends decoder-only autoregression to multimodal generation, while Phenaki ( Villegas et al., 2022 ) combines a causal tokenizer with masked-token prediction.",
+     "zh": "早期的方法使用变换器对分词后的视频进行建模（Yan 等，2021；Ge 等，2022；Hong 等，2022）；VideoPoet（Kondratyuk 等，2023）将仅解码器的自回归扩展到多模态生成，而 Phenaki（Villegas 等，2022）则将因果分词器与掩码标记预测相结合。"
+    },
+    {
+     "en": "Diffusion Forcing ( Chen et al., 2024a ) generalizes causal sequence modeling to independently noised continuous tokens.",
+     "zh": "扩散强迫法（Chen 等，2024a）将因果序列建模推广到独立添加噪声的连续标记上。"
+    },
+    {
+     "en": "Recent approaches use increasing per-chunk noise ( Teng et al., 2025 ) , Diffusion Forcing ( Chen et al., 2025a ) , or temporal-pyramid history compression ( Jin et al., 2025 ) .",
+     "zh": "近期的方法使用了逐片段噪声强度的逐步增加（Teng 等，2025）、扩散强迫法（Chen 等，2025a），或时间金字塔历史压缩（Jin 等，2025）。"
+    },
+    {
+     "en": "Few-step generation builds on progressive distillation, consistency models, and distribution matching ( Salimans and Ho, 2022 ; Song et al., 2023 ; Yin et al., 2024b ; Yin et al., 2024a ) ; CausVid ( Yin et al., 2025 ) extends distribution matching to few-step causal video generation.",
+     "zh": "少步生成基于渐进式蒸馏、一致性模型和分布匹配（Salimans 和 Ho，2022；Song 等，2023；Yin 等，2024b；Yin 等，2024a）；CausVid（Yin 等，2025）将分布匹配扩展到了少步因果视频生成。"
+    }
+   ]
+  },
+  {
+   "en": "Train–test mismatch has motivated scheduled sampling and Professor Forcing ( Bengio et al., 2015 ; Lamb et al., 2016 ) . Self Forcing ( Huang et al., 2025c ) directly trains on self-generated history with a video-level objective, while gradient truncation keeps training tractable. Subsequent works improve few-step causal initialization ( Zhu et al., 2026 ; Zhao et al., 2026a ) and long-horizon training ( Liu et al., 2026 ; Cui et al., 2026 ) .",
+   "zh": "训练与测试之间的不匹配问题推动了计划采样和教授强制法（Bengio 等人，2015；Lamb 等人，2016）的发展。 自我强制法（Huang 等人，2025c）直接在自生成的历史数据上进行训练，并使用视频级目标函数，而梯度截断则使训练过程保持可行。 后续研究改进了少数步因果初始化（Zhu 等人，2026；Zhao 等人，2026a）和长时程训练（Liu 等人，2026；Cui 等人，2026）。",
+   "sents": [
+    {
+     "en": "Train–test mismatch has motivated scheduled sampling and Professor Forcing ( Bengio et al., 2015 ; Lamb et al., 2016 ) .",
+     "zh": "训练与测试之间的不匹配问题推动了计划采样和教授强制法（Bengio 等人，2015；Lamb 等人，2016）的发展。"
+    },
+    {
+     "en": "Self Forcing ( Huang et al., 2025c ) directly trains on self-generated history with a video-level objective, while gradient truncation keeps training tractable.",
+     "zh": "自我强制法（Huang 等人，2025c）直接在自生成的历史数据上进行训练，并使用视频级目标函数，而梯度截断则使训练过程保持可行。"
+    },
+    {
+     "en": "Subsequent works improve few-step causal initialization ( Zhu et al., 2026 ; Zhao et al., 2026a ) and long-horizon training ( Liu et al., 2026 ; Cui et al., 2026 ) .",
+     "zh": "后续研究改进了少数步因果初始化（Zhu 等人，2026；Zhao 等人，2026a）和长时程训练（Liu 等人，2026；Cui 等人，2026）。"
+    }
+   ]
+  },
+  {
+   "en": "Concurrent with our work, Self Gradient Forcing ( Zhuang et al., 2026 ) uses future losses to train context KV memory writing while keeping generated context stop-gradient, whereas Vidu S2’s Self-Replay Forcing ( Zhang et al., 2026b ) enables cross-block gradients within a differentiable replay of re-noised self-generated trajectories. Our method instead reconnects cross-chunk gradient paths through historical KV writing and earlier-chunk generation via Shortcut Gradient Replay.",
+   "zh": "与我们的研究同步，Self Gradient Forcing（Zhuang 等人，2026）利用未来损失来训练上下文 KV 内存的写入过程，同时保持生成上下文的梯度停止；而 Vidu S2 的 Self-Replay Forcing（Zhang 等人，2026b）则在一个可微分的重噪声自生成轨迹的重播过程中实现了跨块的梯度传播。 相比之下，我们的方法通过历史 KV 写入和早期块生成，借助 Shortcut Gradient Replay 重新连接了跨分块的梯度路径。",
+   "sents": [
+    {
+     "en": "Concurrent with our work, Self Gradient Forcing ( Zhuang et al., 2026 ) uses future losses to train context KV memory writing while keeping generated context stop-gradient, whereas Vidu S2’s Self-Replay Forcing ( Zhang et al., 2026b ) enables cross-block gradients within a differentiable replay of re-noised self-generated trajectories.",
+     "zh": "与我们的研究同步，Self Gradient Forcing（Zhuang 等人，2026）利用未来损失来训练上下文 KV 内存的写入过程，同时保持生成上下文的梯度停止；而 Vidu S2 的 Self-Replay Forcing（Zhang 等人，2026b）则在一个可微分的重噪声自生成轨迹的重播过程中实现了跨块的梯度传播。"
+    },
+    {
+     "en": "Our method instead reconnects cross-chunk gradient paths through historical KV writing and earlier-chunk generation via Shortcut Gradient Replay.",
+     "zh": "相比之下，我们的方法通过历史 KV 写入和早期块生成，借助 Shortcut Gradient Replay 重新连接了跨分块的梯度路径。"
+    }
+   ]
+  },
+  {
+   "en": "History modeling for long video generation. Long-video generation also requires useful history under bounded context. Training-free extensions use temporal co-denoising, noise rescheduling with windowed attention, and global/local spectral blending ( Wang et al., 2023 ; Qiu et al., 2024 ; Lu et al., 2024 ) . FIFO-Diffusion ( Kim et al., 2024 ) performs diagonal queue-based denoising, RIFLEx ( Zhao et al., 2025 ) adjusts positional-embedding frequency to suppress repetition, and Ouroboros-Diffusion ( Chen et al., 2025b ) combines cross-frame attention and recurrent guidance.",
+   "zh": "长视频生成的历史建模。 长视频生成在上下文受限的情况下也需要有用的历史信息。 无需训练的扩展方法利用时间协同去噪、基于窗口注意力的噪声重调度，以及全局/局部频谱混合（Wang 等，2023；Qiu 等，2024；Lu 等，2024）。 FIFO-Diffusion（Kim 等，2024）采用对角队列式去噪，RIFLEx（Zhao 等，2025）通过调整位置嵌入频率来抑制重复，而 Ouroboros-Diffusion（Chen 等，2025b）则结合了跨帧注意力和循环引导。",
+   "sents": [
+    {
+     "en": "History modeling for long video generation.",
+     "zh": "长视频生成的历史建模。"
+    },
+    {
+     "en": "Long-video generation also requires useful history under bounded context.",
+     "zh": "长视频生成在上下文受限的情况下也需要有用的历史信息。"
+    },
+    {
+     "en": "Training-free extensions use temporal co-denoising, noise rescheduling with windowed attention, and global/local spectral blending ( Wang et al., 2023 ; Qiu et al., 2024 ; Lu et al., 2024 ) .",
+     "zh": "无需训练的扩展方法利用时间协同去噪、基于窗口注意力的噪声重调度，以及全局/局部频谱混合（Wang 等，2023；Qiu 等，2024；Lu 等，2024）。"
+    },
+    {
+     "en": "FIFO-Diffusion ( Kim et al., 2024 ) performs diagonal queue-based denoising, RIFLEx ( Zhao et al., 2025 ) adjusts positional-embedding frequency to suppress repetition, and Ouroboros-Diffusion ( Chen et al., 2025b ) combines cross-frame attention and recurrent guidance.",
+     "zh": "FIFO-Diffusion（Kim 等，2024）采用对角队列式去噪，RIFLEx（Zhao 等，2025）通过调整位置嵌入频率来抑制重复，而 Ouroboros-Diffusion（Chen 等，2025b）则结合了跨帧注意力和循环引导。"
+    }
+   ]
+  },
+  {
+   "en": "Memory mechanisms preserve or retrieve context through previous-chunk attention, frame sinks with KV recaching, importance-based allocation, and long-context teacher supervision ( Henschel et al., 2025 ; Yang et al., 2026 ; Zhang et al., 2025b ; Chen et al., 2026 ) . More structured designs include geometry-indexed memory, role-based memory decomposition, distant-history retrieval, and gated recall ( Huang et al., 2025a ; Zhao et al., 2026b ; Xue et al., 2026 ; Meng et al., 2026 ) . Ring Forcing ( Xue et al., 2026 ) enforces distant-history retrieval via ring training and scales memory with compression and sparse RoPE.",
+   "zh": "记忆机制通过前一个分块的注意力、带 KV 重新缓存的帧存储、基于重要性的分配以及长上下文教师监督来保留或检索上下文（Henschel 等，2025；Yang 等，2026；Zhang 等，2025b；Chen 等，2026）。 更具结构化的设计包括几何索引记忆、基于角色的记忆分解、远端历史检索和门控回忆（Huang 等，2025a；Zhao 等，2026b；Xue 等，2026；Meng 等，2026）。 环强迫（Xue 等，2026）通过环形训练强制进行远端历史检索，并借助压缩和稀疏 RoPE 扩展记忆容量。",
+   "sents": [
+    {
+     "en": "Memory mechanisms preserve or retrieve context through previous-chunk attention, frame sinks with KV recaching, importance-based allocation, and long-context teacher supervision ( Henschel et al., 2025 ; Yang et al., 2026 ; Zhang et al., 2025b ; Chen et al., 2026 ) .",
+     "zh": "记忆机制通过前一个分块的注意力、带 KV 重新缓存的帧存储、基于重要性的分配以及长上下文教师监督来保留或检索上下文（Henschel 等，2025；Yang 等，2026；Zhang 等，2025b；Chen 等，2026）。"
+    },
+    {
+     "en": "More structured designs include geometry-indexed memory, role-based memory decomposition, distant-history retrieval, and gated recall ( Huang et al., 2025a ; Zhao et al., 2026b ; Xue et al., 2026 ; Meng et al., 2026 ) .",
+     "zh": "更具结构化的设计包括几何索引记忆、基于角色的记忆分解、远端历史检索和门控回忆（Huang 等，2025a；Zhao 等，2026b；Xue 等，2026；Meng 等，2026）。"
+    },
+    {
+     "en": "Ring Forcing ( Xue et al., 2026 ) enforces distant-history retrieval via ring training and scales memory with compression and sparse RoPE.",
+     "zh": "环强迫（Xue 等，2026）通过环形训练强制进行远端历史检索，并借助压缩和稀疏 RoPE 扩展记忆容量。"
+    }
+   ]
+  },
+  {
+   "en": "Other methods modify temporal supervision and guidance. History-Guided Video Diffusion ( Song et al., 2025 ) supports flexible history conditioning; LongVie ( Gao et al., 2025a ) improves cross-clip control and consistency, with LongVie 2 ( Gao et al., 2025b ) adding history-context guidance. Video-Mirai ( Yu et al., 2026 ) distills future-aware features from a frozen non-causal foresight encoder into causal states, whereas Next Forcing ( Xu et al., 2026 ) adds predictors over multiple future horizons. CSF instead propagates gradients from later-chunk losses into earlier context generation.",
+   "zh": "其他方法则修改了时间维度的监督与引导机制。 History-Guided Video Diffusion（Song 等人，2025）支持灵活的历史条件约束；LongVie（Gao 等人，2025a）提升了跨剪辑片段的控制能力与一致性，而 LongVie 2（Gao 等人，2025b）则进一步加入了历史上下文引导。 Video-Mirai（Yu 等人，2026）将来自冻结的非因果性前瞻编码器的未来感知特征蒸馏为因果状态，而 Next Forcing（Xu 等人，2026）则在多个未来时间步上增加了预测模块。 CSF 方法则通过从后续片段损失中反向传播梯度，影响早期上下文的生成过程。",
+   "sents": [
+    {
+     "en": "Other methods modify temporal supervision and guidance.",
+     "zh": "其他方法则修改了时间维度的监督与引导机制。"
+    },
+    {
+     "en": "History-Guided Video Diffusion ( Song et al., 2025 ) supports flexible history conditioning; LongVie ( Gao et al., 2025a ) improves cross-clip control and consistency, with LongVie 2 ( Gao et al., 2025b ) adding history-context guidance.",
+     "zh": "History-Guided Video Diffusion（Song 等人，2025）支持灵活的历史条件约束；LongVie（Gao 等人，2025a）提升了跨剪辑片段的控制能力与一致性，而 LongVie 2（Gao 等人，2025b）则进一步加入了历史上下文引导。"
+    },
+    {
+     "en": "Video-Mirai ( Yu et al., 2026 ) distills future-aware features from a frozen non-causal foresight encoder into causal states, whereas Next Forcing ( Xu et al., 2026 ) adds predictors over multiple future horizons.",
+     "zh": "Video-Mirai（Yu 等人，2026）将来自冻结的非因果性前瞻编码器的未来感知特征蒸馏为因果状态，而 Next Forcing（Xu 等人，2026）则在多个未来时间步上增加了预测模块。"
+    },
+    {
+     "en": "CSF instead propagates gradients from later-chunk losses into earlier context generation.",
+     "zh": "CSF 方法则通过从后续片段损失中反向传播梯度，影响早期上下文的生成过程。"
+    }
+   ]
+  },
+  {
+   "en": "In this section, we present Connected Self Forcing (CSF), illustrated in Fig. 3 . We first review Self Forcing in Sec. 3.1 and formulate the cross-chunk gradient assignment problem under detached autoregressive training in Sec. 3.2 . We then introduce Shortcut Gradient Replay (Sec. 3.3 ), our mechanism for recovering this missing training signal, and finally describe the complete CSF training procedure (Sec. 3.4 ), summarized in Algorithm 3.4 .",
+   "zh": "在本节中，我们介绍连接自强化（Connected Self Forcing，CSF），如图 3 所示。 我们首先在 3.1 节回顾自强化方法，并在 3.2 节阐述在解耦自回归训练框架下跨分块梯度分配问题。 接着，我们引入快捷梯度重放（Shortcut Gradient Replay，见 3.3 节），这是用于恢复缺失训练信号的机制；最后，我们将描述完整的 CSF 训练流程（见 3.4 节），该流程在算法 3.4 中进行了总结。",
+   "sents": [
+    {
+     "en": "In this section, we present Connected Self Forcing (CSF), illustrated in Fig. 3 .",
+     "zh": "在本节中，我们介绍连接自强化（Connected Self Forcing，CSF），如图 3 所示。"
+    },
+    {
+     "en": "We first review Self Forcing in Sec. 3.1 and formulate the cross-chunk gradient assignment problem under detached autoregressive training in Sec. 3.2 .",
+     "zh": "我们首先在 3.1 节回顾自强化方法，并在 3.2 节阐述在解耦自回归训练框架下跨分块梯度分配问题。"
+    },
+    {
+     "en": "We then introduce Shortcut Gradient Replay (Sec. 3.3 ), our mechanism for recovering this missing training signal, and finally describe the complete CSF training procedure (Sec. 3.4 ), summarized in Algorithm 3.4 .",
+     "zh": "接着，我们引入快捷梯度重放（Shortcut Gradient Replay，见 3.3 节），这是用于恢复缺失训练信号的机制；最后，我们将描述完整的 CSF 训练流程（见 3.4 节），该流程在算法 3.4 中进行了总结。"
+    }
+   ]
+  },
+  {
+   "en": "In autoregressive video generation, each chunk is generated conditioned on previously generated history. Self Forcing ( Huang et al., 2025c ) matches this inference-time conditioning during training by rolling out on the model’s own generated history. Let G θ G_{\\theta} generate chunk i i , and let G θ KV G_{\\theta}^{\\mathrm{KV}} denote the KV-writing computation of the same generator:",
+   "zh": "在自回归视频生成中，每个片段都是在先前生成的历史基础上生成的。 自我强制（Huang 等人，2025c）通过在模型自身生成的历史上进行展开，在训练阶段匹配了这种推理时的条件约束。 令 G θ G_{\\theta} 生成片段 i i ，并令 G θ KV G_{\\theta}^{\\mathrm{KV}} 表示同一生成器的 KV 写入计算：",
+   "sents": [
+    {
+     "en": "In autoregressive video generation, each chunk is generated conditioned on previously generated history.",
+     "zh": "在自回归视频生成中，每个片段都是在先前生成的历史基础上生成的。"
+    },
+    {
+     "en": "Self Forcing ( Huang et al., 2025c ) matches this inference-time conditioning during training by rolling out on the model’s own generated history.",
+     "zh": "自我强制（Huang 等人，2025c）通过在模型自身生成的历史上进行展开，在训练阶段匹配了这种推理时的条件约束。"
+    },
+    {
+     "en": "Let G θ G_{\\theta} generate chunk i i , and let G θ KV G_{\\theta}^{\\mathrm{KV}} denote the KV-writing computation of the same generator:",
+     "zh": "令 G θ G_{\\theta} 生成片段 i i ，并令 G θ KV G_{\\theta}^{\\mathrm{KV}} 表示同一生成器的 KV 写入计算："
+    }
+   ]
+  },
+  {
+   "en": "Here, 𝐳 i \\mathbf{z}_{i} is the noisy latent, 𝐜 \\mathbf{c} the text condition, and 𝒞 < i \\mathcal{C}_{<i} the KV cache from preceding generated chunks. The second line re-encodes 𝐱 ^ i \\hat{\\mathbf{x}}_{i} at the clean context timestep to update the causal cache, yielding the causal rollout 𝐱 ^ 1 → 𝒞 1 → 𝐱 ^ 2 → 𝒞 2 → ⋯ \\hat{\\mathbf{x}}_{1}\\rightarrow\\mathcal{C}_{1}\\rightarrow\\hat{\\mathbf{x}}_{2}\\rightarrow\\mathcal{C}_{2}\\rightarrow\\cdots . To keep the sequential rollout tractable, reused history and its KV cache are detached, so only each chunk’s local computation graph is retained.",
+   "zh": "此处，𝐳 i \\mathbf{z}_{i} 是含噪声的潜在变量，𝐜 \\mathbf{c} 是文本条件，而 𝒞 < i \\mathcal{C}_{<i} 则是先前生成片段的关键值缓存。 第二行在干净上下文的时间步上重新编码 𝐱 ^ i \\hat{\\mathbf{x}}_{i}，以更新因果缓存，从而得到因果展开序列 𝐱 ^ 1 → 𝒞 1 → 𝐱 ^ 2 → 𝒞 2 → ⋯ \\hat{\\mathbf{x}}_{1}\\rightarrow\\mathcal{C}_{1}\\rightarrow\\hat{\\mathbf{x}}_{2}\\rightarrow\\mathcal{C}_{2}\\rightarrow\\cdots。 为了保持序列展开的可处理性，重复使用的历史及其关键值缓存会被解耦，因此仅保留每个片段的局部计算图。",
+   "sents": [
+    {
+     "en": "Here, 𝐳 i \\mathbf{z}_{i} is the noisy latent, 𝐜 \\mathbf{c} the text condition, and 𝒞 < i \\mathcal{C}_{<i} the KV cache from preceding generated chunks.",
+     "zh": "此处，𝐳 i \\mathbf{z}_{i} 是含噪声的潜在变量，𝐜 \\mathbf{c} 是文本条件，而 𝒞 < i \\mathcal{C}_{<i} 则是先前生成片段的关键值缓存。"
+    },
+    {
+     "en": "The second line re-encodes 𝐱 ^ i \\hat{\\mathbf{x}}_{i} at the clean context timestep to update the causal cache, yielding the causal rollout 𝐱 ^ 1 → 𝒞 1 → 𝐱 ^ 2 → 𝒞 2 → ⋯ \\hat{\\mathbf{x}}_{1}\\rightarrow\\mathcal{C}_{1}\\rightarrow\\hat{\\mathbf{x}}_{2}\\rightarrow\\mathcal{C}_{2}\\rightarrow\\cdots .",
+     "zh": "第二行在干净上下文的时间步上重新编码 𝐱 ^ i \\hat{\\mathbf{x}}_{i}，以更新因果缓存，从而得到因果展开序列 𝐱 ^ 1 → 𝒞 1 → 𝐱 ^ 2 → 𝒞 2 → ⋯ \\hat{\\mathbf{x}}_{1}\\rightarrow\\mathcal{C}_{1}\\rightarrow\\hat{\\mathbf{x}}_{2}\\rightarrow\\mathcal{C}_{2}\\rightarrow\\cdots。"
+    },
+    {
+     "en": "To keep the sequential rollout tractable, reused history and its KV cache are detached, so only each chunk’s local computation graph is retained.",
+     "zh": "为了保持序列展开的可处理性，重复使用的历史及其关键值缓存会被解耦，因此仅保留每个片段的局部计算图。"
+    }
+   ]
+  },
+  {
+   "en": "Following prior autoregressive distillation methods ( Yin et al., 2025 ; Huang et al., 2025c ) , the self-generated rollout 𝐗 ^ = [ 𝐱 ^ 1 , … , 𝐱 ^ N ] \\hat{\\mathbf{X}}=[\\hat{\\mathbf{x}}_{1},\\ldots,\\hat{\\mathbf{x}}_{N}] is optimized with Distribution Matching Distillation (DMD) ( Yin et al., 2024b ; Yin et al., 2024a ) . DMD evaluates re-noised generated samples using a pretrained real-score model and an online fake-score model that tracks the generator distribution, yielding the direct output gradient",
+   "zh": "遵循先前的自回归蒸馏方法（Yin 等人，2025；Huang 等人，2025c），通过分布匹配蒸馏（DMD）（Yin 等人，2024b；Yin 等人，2024a）对自生成的展开序列 𝐗 ^ = [ 𝐱 ^ 1 , … , 𝐱 ^ N ] \\hat{\\mathbf{X}}=[\\hat{\\mathbf{x}}_{1},\\ldots,\\hat{\\mathbf{x}}_{N}] 进行优化。 DMD 使用一个预训练的真实样本评分模型和一个跟踪生成器分布的在线虚假样本评分模型，对经过重新加噪的生成样本进行评估，从而得到直接的输出梯度。",
+   "sents": [
+    {
+     "en": "Following prior autoregressive distillation methods ( Yin et al., 2025 ; Huang et al., 2025c ) , the self-generated rollout 𝐗 ^ = [ 𝐱 ^ 1 , … , 𝐱 ^ N ] \\hat{\\mathbf{X}}=[\\hat{\\mathbf{x}}_{1},\\ldots,\\hat{\\mathbf{x}}_{N}] is optimized with Distribution Matching Distillation (DMD) ( Yin et al., 2024b ; Yin et al., 2024a ) .",
+     "zh": "遵循先前的自回归蒸馏方法（Yin 等人，2025；Huang 等人，2025c），通过分布匹配蒸馏（DMD）（Yin 等人，2024b；Yin 等人，2024a）对自生成的展开序列 𝐗 ^ = [ 𝐱 ^ 1 , … , 𝐱 ^ N ] \\hat{\\mathbf{X}}=[\\hat{\\mathbf{x}}_{1},\\ldots,\\hat{\\mathbf{x}}_{N}] 进行优化。"
+    },
+    {
+     "en": "DMD evaluates re-noised generated samples using a pretrained real-score model and an online fake-score model that tracks the generator distribution, yielding the direct output gradient",
+     "zh": "DMD 使用一个预训练的真实样本评分模型和一个跟踪生成器分布的在线虚假样本评分模型，对经过重新加噪的生成样本进行评估，从而得到直接的输出梯度。"
+    }
+   ]
+  },
+  {
+   "en": "Thus, every generated chunk receives direct DMD supervision, while the limitation we study arises from the detached dependencies between chunks.",
+   "zh": "因此，每个生成的片段都受到直接的 DMD 监督，而我们所研究的局限性则源于片段之间的独立依赖关系。",
+   "sents": null
+  },
+  {
+   "en": "In autoregressive generation, each historical chunk plays two roles: it is both a generated output and part of the causal context for subsequent predictions. Distribution matching directly supervises the former by providing a gradient to every generated chunk. However, once a generated chunk is reused as detached history, its downstream influence on later predictions no longer contributes to its own supervision. This creates an asymmetry: the dependency is present during the forward rollout, but absent from the backward learning signal.",
+   "zh": "在自回归生成中，每个历史片段都扮演着两种角色：它既是已生成的输出，也是后续预测因果上下文的一部分。 分布匹配通过为每个生成的片段提供梯度，直接对前者进行监督。 然而，一旦某个生成的片段被重新用作独立的历史信息，它对后续预测的下游影响就不再对其自身的监督产生作用。 这造成了一种不对称性：在正向展开过程中存在这种依赖关系，但在反向学习信号中却不存在。",
+   "sents": [
+    {
+     "en": "In autoregressive generation, each historical chunk plays two roles: it is both a generated output and part of the causal context for subsequent predictions.",
+     "zh": "在自回归生成中，每个历史片段都扮演着两种角色：它既是已生成的输出，也是后续预测因果上下文的一部分。"
+    },
+    {
+     "en": "Distribution matching directly supervises the former by providing a gradient to every generated chunk.",
+     "zh": "分布匹配通过为每个生成的片段提供梯度，直接对前者进行监督。"
+    },
+    {
+     "en": "However, once a generated chunk is reused as detached history, its downstream influence on later predictions no longer contributes to its own supervision.",
+     "zh": "然而，一旦某个生成的片段被重新用作独立的历史信息，它对后续预测的下游影响就不再对其自身的监督产生作用。"
+    },
+    {
+     "en": "This creates an asymmetry: the dependency is present during the forward rollout, but absent from the backward learning signal.",
+     "zh": "这造成了一种不对称性：在正向展开过程中存在这种依赖关系，但在反向学习信号中却不存在。"
+    }
+   ]
+  },
+  {
+   "en": "Consider a historical chunk 𝐱 ^ j \\hat{\\mathbf{x}}_{j} and a later chunk 𝐱 ^ i \\hat{\\mathbf{x}}_{i} , where j < i j<i . When a causal path exists, their computational dependency is",
+   "zh": "考虑一个历史片段 𝐱 ^ j \\hat{\\mathbf{x}}_{j} 和一个较晚的片段 𝐱 ^ i \\hat{\\mathbf{x}}_{i}，其中 j < i。 当存在一条因果路径时，它们之间的计算依赖关系是",
+   "sents": [
+    {
+     "en": "Consider a historical chunk 𝐱 ^ j \\hat{\\mathbf{x}}_{j} and a later chunk 𝐱 ^ i \\hat{\\mathbf{x}}_{i} , where j < i j<i .",
+     "zh": "考虑一个历史片段 𝐱 ^ j \\hat{\\mathbf{x}}_{j} 和一个较晚的片段 𝐱 ^ i \\hat{\\mathbf{x}}_{i}，其中 j < i。"
+    },
+    {
+     "en": "When a causal path exists, their computational dependency is",
+     "zh": "当存在一条因果路径时，它们之间的计算依赖关系是"
+    }
+   ]
+  },
+  {
+   "en": "where 𝒫 j → i \\mathcal{P}_{j\\rightarrow i} collectively represents all differentiable causal paths from 𝐱 ^ j \\hat{\\mathbf{x}}_{j} to 𝐱 ^ i \\hat{\\mathbf{x}}_{i} . These paths may involve intermediate generated chunks, direct access to historical representations, or successive updates of a persistent memory state. This formulation does not assume a particular history representation or propagation mechanism.",
+   "zh": "其中 𝒫 j → i \\mathcal{P}_{j\\rightarrow i} 共同表示从 𝐱 ^ j \\hat{\\mathbf{x}}_{j} 到 𝐱 ^ i \\hat{\\mathbf{x}}_{i} 的所有可微分因果路径。 这些路径可能涉及中间生成的片段、对历史表示的直接访问，或对持久记忆状态的连续更新。 该公式并未假设特定的历史表示或传播机制。",
+   "sents": [
+    {
+     "en": "where 𝒫 j → i \\mathcal{P}_{j\\rightarrow i} collectively represents all differentiable causal paths from 𝐱 ^ j \\hat{\\mathbf{x}}_{j} to 𝐱 ^ i \\hat{\\mathbf{x}}_{i} .",
+     "zh": "其中 𝒫 j → i \\mathcal{P}_{j\\rightarrow i} 共同表示从 𝐱 ^ j \\hat{\\mathbf{x}}_{j} 到 𝐱 ^ i \\hat{\\mathbf{x}}_{i} 的所有可微分因果路径。"
+    },
+    {
+     "en": "These paths may involve intermediate generated chunks, direct access to historical representations, or successive updates of a persistent memory state.",
+     "zh": "这些路径可能涉及中间生成的片段、对历史表示的直接访问，或对持久记忆状态的连续更新。"
+    },
+    {
+     "en": "This formulation does not assume a particular history representation or propagation mechanism.",
+     "zh": "该公式并未假设特定的历史表示或传播机制。"
+    }
+   ]
+  },
+  {
+   "en": "Although 𝐱 ^ j \\hat{\\mathbf{x}}_{j} already receives its direct DMD gradient, gradient truncation removes the additional supervision induced by its effect on later predictions. We refer to this missing backward dependency as the cross-chunk gradient gap . With model parameters and rollout randomness held fixed, the total Jacobian over these paths before cross-chunk gradient truncation and the resulting cross-chunk gradient are",
+   "zh": "尽管 𝐱 ^ j \\hat{\\mathbf{x}}_{j} 已经获得了其直接的 DMD 梯度，但梯度截断会消除由其后续预测影响所引发的额外监督。 我们将这种缺失的向后依赖关系称为跨块梯度间隙。 在模型参数和展开随机性保持不变的情况下，这些路径在跨块梯度截断之前的总雅可比矩阵以及由此产生的跨块梯度是",
+   "sents": [
+    {
+     "en": "Although 𝐱 ^ j \\hat{\\mathbf{x}}_{j} already receives its direct DMD gradient, gradient truncation removes the additional supervision induced by its effect on later predictions.",
+     "zh": "尽管 𝐱 ^ j \\hat{\\mathbf{x}}_{j} 已经获得了其直接的 DMD 梯度，但梯度截断会消除由其后续预测影响所引发的额外监督。"
+    },
+    {
+     "en": "We refer to this missing backward dependency as the cross-chunk gradient gap .",
+     "zh": "我们将这种缺失的向后依赖关系称为跨块梯度间隙。"
+    },
+    {
+     "en": "With model parameters and rollout randomness held fixed, the total Jacobian over these paths before cross-chunk gradient truncation and the resulting cross-chunk gradient are",
+     "zh": "在模型参数和展开随机性保持不变的情况下，这些路径在跨块梯度截断之前的总雅可比矩阵以及由此产生的跨块梯度是"
+    }
+   ]
+  },
+  {
+   "en": "This term assigns later supervision to an earlier generated chunk according to its downstream influence. It is a retrospective training signal defined on the same self-generated rollout: later predictions only determine how gradient is assigned to earlier generated context. Consequently, historical chunks should be optimized both for their own generation quality and for their role as causal context for subsequent predictions.",
+   "zh": "该术语根据下游影响，将后续的监督分配给更早生成的片段。 这是一种回顾性训练信号，定义在同一个自我生成的展开序列上：后续预测仅决定梯度如何分配给更早生成的上下文。 因此，历史片段既应优化其自身的生成质量，也应优化其作为后续预测因果上下文的作用。",
+   "sents": [
+    {
+     "en": "This term assigns later supervision to an earlier generated chunk according to its downstream influence.",
+     "zh": "该术语根据下游影响，将后续的监督分配给更早生成的片段。"
+    },
+    {
+     "en": "It is a retrospective training signal defined on the same self-generated rollout: later predictions only determine how gradient is assigned to earlier generated context.",
+     "zh": "这是一种回顾性训练信号，定义在同一个自我生成的展开序列上：后续预测仅决定梯度如何分配给更早生成的上下文。"
+    },
+    {
+     "en": "Consequently, historical chunks should be optimized both for their own generation quality and for their role as causal context for subsequent predictions.",
+     "zh": "因此，历史片段既应优化其自身的生成质量，也应优化其作为后续预测因果上下文的作用。"
+    }
+   ]
+  },
+  {
+   "en": "A straightforward way to obtain the cross-chunk gradient in Sec. 3.2 is to keep the autoregressive computation graph connected across the entire self-rollout and directly backpropagate through it. However, each chunk involves multiple denoising and context-writing forwards of a large video generator. Retaining all intermediate activations across a long rollout therefore incurs prohibitive memory cost. We instead trade activation memory for recomputation through gradient replay. During the forward rollout, we discard the serial computation graph and retain only the states required to reproduce each chunk.",
+   "zh": "在 3.2 节中，获取跨分块梯度的一个直接方法是在整个自展开过程中保持自回归计算图连通，并直接通过它进行反向传播。 然而，每个分块都涉及大型视频生成器的多次去噪和上下文写入前向计算。 因此，在整个长展开过程中保留所有中间激活值会产生高昂的内存成本。 我们转而通过梯度重播以重新计算来换取激活值的内存节省。 在前向展开期间，我们丢弃串行计算图，仅保留重现每个分块所需的中间状态。",
+   "sents": [
+    {
+     "en": "A straightforward way to obtain the cross-chunk gradient in Sec. 3.2 is to keep the autoregressive computation graph connected across the entire self-rollout and directly backpropagate through it.",
+     "zh": "在 3.2 节中，获取跨分块梯度的一个直接方法是在整个自展开过程中保持自回归计算图连通，并直接通过它进行反向传播。"
+    },
+    {
+     "en": "However, each chunk involves multiple denoising and context-writing forwards of a large video generator.",
+     "zh": "然而，每个分块都涉及大型视频生成器的多次去噪和上下文写入前向计算。"
+    },
+    {
+     "en": "Retaining all intermediate activations across a long rollout therefore incurs prohibitive memory cost.",
+     "zh": "因此，在整个长展开过程中保留所有中间激活值会产生高昂的内存成本。"
+    },
+    {
+     "en": "We instead trade activation memory for recomputation through gradient replay.",
+     "zh": "我们转而通过梯度重播以重新计算来换取激活值的内存节省。"
+    },
+    {
+     "en": "During the forward rollout, we discard the serial computation graph and retain only the states required to reproduce each chunk.",
+     "zh": "在前向展开期间，我们丢弃串行计算图，仅保留重现每个分块所需的中间状态。"
+    }
+   ]
+  },
+  {
+   "en": "A natural replay strategy is to propagate the future gradient backward one chunk at a time along the autoregressive dependencies: each chunk is replayed to obtain a gradient for its preceding history, which is then recursively relayed toward earlier chunks. While this avoids retaining the full graph, the number of replayed transitions grows with the gradient distance. Moreover, long-range gradient is repeatedly transformed by the Jacobians of intervening chunks, making the resulting signal increasingly dependent on the intermediate dynamics.",
+   "zh": "一种自然的回放策略是沿着自回归依赖关系，每次向后传播一个分块的未来梯度：每个分块都会被重新播放，以获取其先前历史对应的梯度，然后该梯度会递归地传递到更早的分块。 虽然这种方法避免了保留完整的图结构，但被回放的状态转移数量会随着梯度距离的增加而增长。 此外，长程梯度会经过中间各分块的雅可比矩阵的反复变换，导致最终产生的信号越来越依赖于中间的动力学过程。",
+   "sents": [
+    {
+     "en": "A natural replay strategy is to propagate the future gradient backward one chunk at a time along the autoregressive dependencies: each chunk is replayed to obtain a gradient for its preceding history, which is then recursively relayed toward earlier chunks.",
+     "zh": "一种自然的回放策略是沿着自回归依赖关系，每次向后传播一个分块的未来梯度：每个分块都会被重新播放，以获取其先前历史对应的梯度，然后该梯度会递归地传递到更早的分块。"
+    },
+    {
+     "en": "While this avoids retaining the full graph, the number of replayed transitions grows with the gradient distance.",
+     "zh": "虽然这种方法避免了保留完整的图结构，但被回放的状态转移数量会随着梯度距离的增加而增长。"
+    },
+    {
+     "en": "Moreover, long-range gradient is repeatedly transformed by the Jacobians of intervening chunks, making the resulting signal increasingly dependent on the intermediate dynamics.",
+     "zh": "此外，长程梯度会经过中间各分块的雅可比矩阵的反复变换，导致最终产生的信号越来越依赖于中间的动力学过程。"
+    }
+   ]
+  },
+  {
+   "en": "Our key observation is that the causal attention structure already provides a direct dependency to retained historical KV states: a later chunk directly reads the cached keys and values written by preceding chunks. We therefore recover selected path contributions to Eq. ( 4 ) through retained historical KV states, bypassing intervening generation transitions without backpropagating through the full rollout graph. Specifically, we replay chunk i i while treating the selected historical cache 𝒞 j \\mathcal{C}_{j} as a differentiable leaf and keeping the remaining history detached. Given the direct DMD gradient 𝐠 i DMD \\mathbf{g}_{i}^{\\mathrm{DMD}} , this replay yields",
+   "zh": "我们的关键观察是，因果注意力结构已经为保留的历史 KV 状态提供了直接的依赖关系：后续的一个片段可以直接读取先前片段写入的缓存键值对。 因此，我们通过保留的历史 KV 状态，将选定的路径贡献恢复至方程 (4) 中，从而绕过了中间的生成分支转换，而无需在整个展开图上反向传播。 具体来说，我们在重播片段 i 时，将选定的历史缓存 𝒞 j \\mathcal{C}_{j} 视为一个可微的叶节点，并保持其余历史部分脱离。 鉴于直接的 DMD 梯度 𝐠 i DMD \\mathbf{g}_{i}^{\\mathrm{DMD}}，这种重播会产生",
+   "sents": [
+    {
+     "en": "Our key observation is that the causal attention structure already provides a direct dependency to retained historical KV states: a later chunk directly reads the cached keys and values written by preceding chunks.",
+     "zh": "我们的关键观察是，因果注意力结构已经为保留的历史 KV 状态提供了直接的依赖关系：后续的一个片段可以直接读取先前片段写入的缓存键值对。"
+    },
+    {
+     "en": "We therefore recover selected path contributions to Eq.",
+     "zh": "因此，我们通过保留的历史 KV 状态，将选定的路径贡献恢复至方程"
+    },
+    {
+     "en": "( 4 ) through retained historical KV states, bypassing intervening generation transitions without backpropagating through the full rollout graph.",
+     "zh": "(4) 中，从而绕过了中间的生成分支转换，而无需在整个展开图上反向传播。"
+    },
+    {
+     "en": "Specifically, we replay chunk i i while treating the selected historical cache 𝒞 j \\mathcal{C}_{j} as a differentiable leaf and keeping the remaining history detached.",
+     "zh": "具体来说，我们在重播片段 i 时，将选定的历史缓存 𝒞 j \\mathcal{C}_{j} 视为一个可微的叶节点，并保持其余历史部分脱离。"
+    },
+    {
+     "en": "Given the direct DMD gradient 𝐠 i DMD \\mathbf{g}_{i}^{\\mathrm{DMD}} , this replay yields",
+     "zh": "鉴于直接的 DMD 梯度 𝐠 i DMD \\mathbf{g}_{i}^{\\mathrm{DMD}}，这种重播会产生"
+    }
+   ]
+  },
+  {
+   "en": "This establishes a direct shortcut from the later prediction to the historical KV state without propagating the gradient through the intervening chunks. The resulting gradient on 𝒞 j \\mathcal{C}_{j} is then backpropagated through the context-writing computation of chunk j j . This replay both updates the context-writing parameters and produces a gradient on the recorded historical output,",
+   "zh": "这为后续预测与历史 KV 状态之间建立了一条直接捷径，而无需将梯度通过中间的数据块传播。 随后，对 𝒞 j \\mathcal{C}_{j} 产生的梯度会通过数据块 j j 的上下文写入计算反向传播。 这种重播既会更新上下文写入参数，也会对记录的历史输出产生梯度，",
+   "sents": [
+    {
+     "en": "This establishes a direct shortcut from the later prediction to the historical KV state without propagating the gradient through the intervening chunks.",
+     "zh": "这为后续预测与历史 KV 状态之间建立了一条直接捷径，而无需将梯度通过中间的数据块传播。"
+    },
+    {
+     "en": "The resulting gradient on 𝒞 j \\mathcal{C}_{j} is then backpropagated through the context-writing computation of chunk j j .",
+     "zh": "随后，对 𝒞 j \\mathcal{C}_{j} 产生的梯度会通过数据块 j j 的上下文写入计算反向传播。"
+    },
+    {
+     "en": "This replay both updates the context-writing parameters and produces a gradient on the recorded historical output,",
+     "zh": "这种重播既会更新上下文写入参数，也会对记录的历史输出产生梯度，"
+    }
+   ]
+  },
+  {
+   "en": "We then replay the primary generation of chunk j j using 𝐠 𝐱 ^ j cross \\mathbf{g}_{\\hat{\\mathbf{x}}_{j}}^{\\mathrm{cross}} as its output gradient, allowing the cross-chunk feedback to update the computation that produced the historical chunk. This generation feedback terminates at the targeted chunk: earlier generated outputs are not recursively replayed through their generation branches. In parallel, the KV-writing replay can propagate its incoming KV gradient to earlier KV writers while keeping each writer’s generated-latent input detached, preventing this writer-only feedback from re-entering earlier generation branches. We call this procedure Shortcut Gradient Replay , as it directly connects later predictions to selected historical chunks without recursively replaying the intervening generation trajectory.",
+   "zh": "接着，我们使用 𝐠 𝐱 ^ j cross \\mathbf{g}_{\\hat{\\mathbf{x}}_{j}}^{\\mathrm{cross}} 作为其输出梯度，重演 chunk j j 的主要生成过程，从而让跨 chunk 的反馈能够更新生成该历史 chunk 的计算。 这种生成反馈以目标 chunk 为终点：早期生成的输出不会通过其生成分支被递归重演。 与此同时，KV 写入重演过程可以将传入的 KV 梯度传播至早期的 KV 写入器，同时保持每个写入器所生成的潜在输入相互独立，防止这种仅针对写入器的反馈重新进入早期的生成分支。 我们将这一过程称为“快捷梯度重演”，因为它直接连接了后续预测与选定的历史 chunk，而无需递归重演中间的所有生成轨迹。",
+   "sents": [
+    {
+     "en": "We then replay the primary generation of chunk j j using 𝐠 𝐱 ^ j cross \\mathbf{g}_{\\hat{\\mathbf{x}}_{j}}^{\\mathrm{cross}} as its output gradient, allowing the cross-chunk feedback to update the computation that produced the historical chunk.",
+     "zh": "接着，我们使用 𝐠 𝐱 ^ j cross \\mathbf{g}_{\\hat{\\mathbf{x}}_{j}}^{\\mathrm{cross}} 作为其输出梯度，重演 chunk j j 的主要生成过程，从而让跨 chunk 的反馈能够更新生成该历史 chunk 的计算。"
+    },
+    {
+     "en": "This generation feedback terminates at the targeted chunk: earlier generated outputs are not recursively replayed through their generation branches.",
+     "zh": "这种生成反馈以目标 chunk 为终点：早期生成的输出不会通过其生成分支被递归重演。"
+    },
+    {
+     "en": "In parallel, the KV-writing replay can propagate its incoming KV gradient to earlier KV writers while keeping each writer’s generated-latent input detached, preventing this writer-only feedback from re-entering earlier generation branches.",
+     "zh": "与此同时，KV 写入重演过程可以将传入的 KV 梯度传播至早期的 KV 写入器，同时保持每个写入器所生成的潜在输入相互独立，防止这种仅针对写入器的反馈重新进入早期的生成分支。"
+    },
+    {
+     "en": "We call this procedure Shortcut Gradient Replay , as it directly connects later predictions to selected historical chunks without recursively replaying the intervening generation trajectory.",
+     "zh": "我们将这一过程称为“快捷梯度重演”，因为它直接连接了后续预测与选定的历史 chunk，而无需递归重演中间的所有生成轨迹。"
+    }
+   ]
+  },
+  {
+   "en": "Algorithm 1: Connected Self Forcing Training Procedure",
+   "zh": "算法 1：连通自强化训练流程",
+   "sents": null
+  },
+  {
+   "en": "During training, the gradient assigned to each historical chunk j j combines its direct DMD gradient with cross-chunk feedback from later chunks influenced by its KV state:",
+   "zh": "在训练过程中，分配给每个历史片段 j 的梯度会将该片段直接的 DMD 梯度与受其 KV 状态影响的后续片段提供的跨片段反馈相结合：",
+   "sents": null
+  },
+  {
+   "en": "where 𝐠 ^ i → j cross \\widehat{\\mathbf{g}}_{i\\rightarrow j}^{\\mathrm{cross}} denotes the contribution of chunk i i to the replayed output gradient in Eq. ( 6 ), ℱ ⁡ ( j ) \\mathcal{F}(j) contains later chunks that directly read 𝒞 j \\mathcal{C}_{j} within the considered history range, and λ cross = 1 \\lambda_{\\mathrm{cross}}=1 by default scales added feedback to both KV-writing and historical-generation parameter gradients.",
+   "zh": "其中 𝐠 ^ i → j cross \\widehat{\\mathbf{g}}_{i\\rightarrow j}^{\\mathrm{cross}} 表示第 i 个片段对公式 (6) 中重播输出梯度的贡献。 ℱ ⁡ ( j ) \\mathcal{F}(j) 包含在所考虑的历史范围内直接读取 𝒞 j \\mathcal{C}_{j} 的后续片段，而默认情况下 λ cross = 1 \\lambda_{\\mathrm{cross}}=1 会将附加反馈同时缩放至 KV 写入和历史生成参数梯度。",
+   "sents": [
+    {
+     "en": "where 𝐠 ^ i → j cross \\widehat{\\mathbf{g}}_{i\\rightarrow j}^{\\mathrm{cross}} denotes the contribution of chunk i i to the replayed output gradient in Eq.",
+     "zh": "其中 𝐠 ^ i → j cross \\widehat{\\mathbf{g}}_{i\\rightarrow j}^{\\mathrm{cross}} 表示第 i 个片段对公式 (6) 中重播输出梯度的贡献。"
+    },
+    {
+     "en": "( 6 ), ℱ ⁡ ( j ) \\mathcal{F}(j) contains later chunks that directly read 𝒞 j \\mathcal{C}_{j} within the considered history range, and λ cross = 1 \\lambda_{\\mathrm{cross}}=1 by default scales added feedback to both KV-writing and historical-generation parameter gradients.",
+     "zh": "ℱ ⁡ ( j ) \\mathcal{F}(j) 包含在所考虑的历史范围内直接读取 𝒞 j \\mathcal{C}_{j} 的后续片段，而默认情况下 λ cross = 1 \\lambda_{\\mathrm{cross}}=1 会将附加反馈同时缩放至 KV 写入和历史生成参数梯度。"
+    }
+   ]
+  },
+  {
+   "en": "Algorithm 3.4 summarizes the resulting procedure. For each generator update, we first perform a detached autoregressive self-rollout and record the states required for replay. The generated video is then evaluated with the standard DMD objective to obtain chunk-wise output gradients. Shortcut Gradient Replay reconstructs the corresponding cross-chunk feedback, which is accumulated together with the direct DMD gradients on the shared generator parameters before a single optimizer update. We use DMD here; CSF’s replay can also use output gradients from other differentiable losses.",
+   "zh": "算法 3.4 总结了由此产生的流程。 对于每次生成器更新，我们首先执行一次独立的自回归自我展开，并记录重播所需的狀態。 随后，使用标准的 DMD 目标函数对生成的视频进行评估，以获得按片段划分的输出梯度。 捷径梯度重播会重建相应的跨片段反馈，并在单次优化器更新前，将其与共享生成器参数上的直接 DMD 梯度一同累积。 此处我们使用的是 DMD；CSF 的重播也可以使用其他可微损失函数产生的输出梯度。",
+   "sents": [
+    {
+     "en": "Algorithm 3.4 summarizes the resulting procedure.",
+     "zh": "算法 3.4 总结了由此产生的流程。"
+    },
+    {
+     "en": "For each generator update, we first perform a detached autoregressive self-rollout and record the states required for replay.",
+     "zh": "对于每次生成器更新，我们首先执行一次独立的自回归自我展开，并记录重播所需的狀態。"
+    },
+    {
+     "en": "The generated video is then evaluated with the standard DMD objective to obtain chunk-wise output gradients.",
+     "zh": "随后，使用标准的 DMD 目标函数对生成的视频进行评估，以获得按片段划分的输出梯度。"
+    },
+    {
+     "en": "Shortcut Gradient Replay reconstructs the corresponding cross-chunk feedback, which is accumulated together with the direct DMD gradients on the shared generator parameters before a single optimizer update.",
+     "zh": "捷径梯度重播会重建相应的跨片段反馈，并在单次优化器更新前，将其与共享生成器参数上的直接 DMD 梯度一同累积。"
+    },
+    {
+     "en": "We use DMD here; CSF’s replay can also use output gradients from other differentiable losses.",
+     "zh": "此处我们使用的是 DMD；CSF 的重播也可以使用其他可微损失函数产生的输出梯度。"
+    }
+   ]
+  },
+  {
+   "en": "Connected Self Forcing modifies only the generator-side gradient propagation during training. The real-score model remains fixed, while the fake-score model is updated with the standard DMD denoising objective and does not require gradient replay. The method introduces no additional model parameters. At inference time, all replay operations are removed, and the generator follows the same causal autoregressive rollout and KV-cache mechanism as the original Self Forcing model.",
+   "zh": "Connected Self Forcing 仅在训练期间修改生成器侧的梯度传播。 真实得分模型保持固定，而虚假得分模型则使用标准的 DMD 去噪目标进行更新，且无需梯度重播。 该方法不会引入任何额外的模型参数。 在推理阶段，所有重播操作都会被移除，生成器遵循与原始 Self Forcing 模型相同的因果自回归展开和 KV-cache 机制。",
+   "sents": [
+    {
+     "en": "Connected Self Forcing modifies only the generator-side gradient propagation during training.",
+     "zh": "Connected Self Forcing 仅在训练期间修改生成器侧的梯度传播。"
+    },
+    {
+     "en": "The real-score model remains fixed, while the fake-score model is updated with the standard DMD denoising objective and does not require gradient replay.",
+     "zh": "真实得分模型保持固定，而虚假得分模型则使用标准的 DMD 去噪目标进行更新，且无需梯度重播。"
+    },
+    {
+     "en": "The method introduces no additional model parameters.",
+     "zh": "该方法不会引入任何额外的模型参数。"
+    },
+    {
+     "en": "At inference time, all replay operations are removed, and the generator follows the same causal autoregressive rollout and KV-cache mechanism as the original Self Forcing model.",
+     "zh": "在推理阶段，所有重播操作都会被移除，生成器遵循与原始 Self Forcing 模型相同的因果自回归展开和 KV-cache 机制。"
+    }
+   ]
+  },
+  {
+   "en": "Training Details. We perform text-to-video DMD post-training using the released filtered and extended VidProM prompt set ( Wang and Yang, 2024 ) , without loading additional real videos during this stage. Our main experiments use Wan2.1-T2V-1.3B ( Team et al., 2025 ) as the causal generator. Following Self Forcing ( Huang et al., 2025c ) , we optimize the generator with DMD ( Yin et al., 2024b ; Yin et al., 2024a ) , using a frozen Wan2.1-T2V-14B real-score model and a trainable Wan2.1-T2V-1.3B fake-score model. We use four denoising steps and primarily study chunk-wise generation, where each 21-latent-frame training sequence is divided into seven chunks. Training uses AdamW with a global batch size of 8 for 1,200 iterations.",
+   "zh": "训练细节。 我们使用已发布的过滤并扩展的 VidProM 提示词集（Wang and Yang, 2024），在文本到视频 DMD 后训练阶段执行训练，且在此阶段不加载额外的真实视频。 我们的主要实验使用 Wan2.1-T2V-1.3B（Team et al., 2025）作为因果生成器。 遵循 Self Forcing（Huang et al., 2025c），我们使用 DMD（Yin et al., 2024b; Yin et al., 2024a）优化生成器，其中采用一个冻结的 Wan2.1-T2V-14B 真实评分模型和一个可训练的 Wan2.1-T2V-1.3B 虚假评分模型。 我们使用四个去噪步骤，并主要研究分块生成方法，其中每个包含 21 个潜在帧的训练序列被划分为七个块。 训练过程中使用 AdamW 优化器，全局批量大小为 8，迭代次数为 1,200 次。",
+   "sents": [
+    {
+     "en": "Training Details.",
+     "zh": "训练细节。"
+    },
+    {
+     "en": "We perform text-to-video DMD post-training using the released filtered and extended VidProM prompt set ( Wang and Yang, 2024 ) , without loading additional real videos during this stage.",
+     "zh": "我们使用已发布的过滤并扩展的 VidProM 提示词集（Wang and Yang, 2024），在文本到视频 DMD 后训练阶段执行训练，且在此阶段不加载额外的真实视频。"
+    },
+    {
+     "en": "Our main experiments use Wan2.1-T2V-1.3B ( Team et al., 2025 ) as the causal generator.",
+     "zh": "我们的主要实验使用 Wan2.1-T2V-1.3B（Team et al., 2025）作为因果生成器。"
+    },
+    {
+     "en": "Following Self Forcing ( Huang et al., 2025c ) , we optimize the generator with DMD ( Yin et al., 2024b ; Yin et al., 2024a ) , using a frozen Wan2.1-T2V-14B real-score model and a trainable Wan2.1-T2V-1.3B fake-score model.",
+     "zh": "遵循 Self Forcing（Huang et al., 2025c），我们使用 DMD（Yin et al., 2024b; Yin et al., 2024a）优化生成器，其中采用一个冻结的 Wan2.1-T2V-14B 真实评分模型和一个可训练的 Wan2.1-T2V-1.3B 虚假评分模型。"
+    },
+    {
+     "en": "We use four denoising steps and primarily study chunk-wise generation, where each 21-latent-frame training sequence is divided into seven chunks.",
+     "zh": "我们使用四个去噪步骤，并主要研究分块生成方法，其中每个包含 21 个潜在帧的训练序列被划分为七个块。"
+    },
+    {
+     "en": "Training uses AdamW with a global batch size of 8 for 1,200 iterations.",
+     "zh": "训练过程中使用 AdamW 优化器，全局批量大小为 8，迭代次数为 1,200 次。"
+    }
+   ]
+  },
+  {
+   "en": "Baselines. We primarily compare Connected Self Forcing (CSF) with Self Forcing (SF) ( Huang et al., 2025c ) and the concurrent Self Gradient Forcing (SGF) ( Zhuang et al., 2026 ) . For paired comparison, we train both baselines following their released implementations and training recipes. Within each controlled comparison, methods use matched backbones, causal initialization, training prompts, training budgets, and inference configurations. This allows us to focus the comparison on how self-generated history is optimized during autoregressive training.",
+   "zh": "基线模型。 我们主要将 Connected Self Forcing (CSF) 与 Self Forcing (SF)（Huang 等人，2025c）以及同期的 Self Gradient Forcing (SGF)（Zhuang 等人，2026）进行比较。 在成对比较中，我们按照其发布的实现和训练方案来训练这两种基线模型。 在每次受控比较中，各方法均使用匹配的骨干网络、因果初始化、训练提示、训练预算和推理配置。 这使我们能够将比较的重点放在自生成历史在自回归训练过程中如何被优化上。",
+   "sents": [
+    {
+     "en": "Baselines.",
+     "zh": "基线模型。"
+    },
+    {
+     "en": "We primarily compare Connected Self Forcing (CSF) with Self Forcing (SF) ( Huang et al., 2025c ) and the concurrent Self Gradient Forcing (SGF) ( Zhuang et al., 2026 ) .",
+     "zh": "我们主要将 Connected Self Forcing (CSF) 与 Self Forcing (SF)（Huang 等人，2025c）以及同期的 Self Gradient Forcing (SGF)（Zhuang 等人，2026）进行比较。"
+    },
+    {
+     "en": "For paired comparison, we train both baselines following their released implementations and training recipes.",
+     "zh": "在成对比较中，我们按照其发布的实现和训练方案来训练这两种基线模型。"
+    },
+    {
+     "en": "Within each controlled comparison, methods use matched backbones, causal initialization, training prompts, training budgets, and inference configurations.",
+     "zh": "在每次受控比较中，各方法均使用匹配的骨干网络、因果初始化、训练提示、训练预算和推理配置。"
+    },
+    {
+     "en": "This allows us to focus the comparison on how self-generated history is optimized during autoregressive training.",
+     "zh": "这使我们能够将比较的重点放在自生成历史在自回归训练过程中如何被优化上。"
+    }
+   ]
+  },
+  {
+   "en": "Evaluation Protocol. For long-horizon evaluation, we generate approximately 60-second videos from 40 VBench-Long prompts ( Huang et al., 2025d ) and approximately 240-second videos from a fixed 128-prompt subset of Movie Gen Video Bench ( Polyak et al., 2024 ) . We evaluate the EMA generator checkpoints with matched four-step causal sampling, inference seeds, resolution, and KV-cache configurations. Following VBench-Long ( Huang et al., 2025d ) , we report seven quality and temporal dimensions: aesthetic quality, background consistency, dynamic degree, imaging quality, motion smoothness, subject consistency, and temporal flickering. Further implementation and evaluation details are provided in the supplementary material.",
+   "zh": "评估协议。 对于长期评估，我们从 40 个 VBench-Long 提示（Huang et al., 2025d）生成约 60 秒的视频，并从 Movie Gen Video Bench（Polyak et al., 2024）的一个固定 128 提示子集中生成约 240 秒的视频。 我们使用匹配的四步因果采样、推理种子、分辨率和 KV-cache 配置来评估 EMA 生成器检查点。 遵循 VBench-Long（Huang et al., 2025d），我们报告了七个质量和时间维度：美学质量、背景一致性、动态程度、成像质量、运动平滑度、主体一致性和时间闪烁。 更多实现和评估细节在补充材料中提供。",
+   "sents": [
+    {
+     "en": "Evaluation Protocol.",
+     "zh": "评估协议。"
+    },
+    {
+     "en": "For long-horizon evaluation, we generate approximately 60-second videos from 40 VBench-Long prompts ( Huang et al., 2025d ) and approximately 240-second videos from a fixed 128-prompt subset of Movie Gen Video Bench ( Polyak et al., 2024 ) .",
+     "zh": "对于长期评估，我们从 40 个 VBench-Long 提示（Huang et al., 2025d）生成约 60 秒的视频，并从 Movie Gen Video Bench（Polyak et al., 2024）的一个固定 128 提示子集中生成约 240 秒的视频。"
+    },
+    {
+     "en": "We evaluate the EMA generator checkpoints with matched four-step causal sampling, inference seeds, resolution, and KV-cache configurations.",
+     "zh": "我们使用匹配的四步因果采样、推理种子、分辨率和 KV-cache 配置来评估 EMA 生成器检查点。"
+    },
+    {
+     "en": "Following VBench-Long ( Huang et al., 2025d ) , we report seven quality and temporal dimensions: aesthetic quality, background consistency, dynamic degree, imaging quality, motion smoothness, subject consistency, and temporal flickering.",
+     "zh": "遵循 VBench-Long（Huang et al., 2025d），我们报告了七个质量和时间维度：美学质量、背景一致性、动态程度、成像质量、运动平滑度、主体一致性和时间闪烁。"
+    },
+    {
+     "en": "Further implementation and evaluation details are provided in the supplementary material.",
+     "zh": "更多实现和评估细节在补充材料中提供。"
+    }
+   ]
+  },
+  {
+   "en": "Tables 1 and 2 report long-horizon chunk-wise generation results at 60 and 240 seconds. We report Avg.(6) , our mean of six quality and consistency metrics, excluding Dynamic Degree.",
+   "zh": "表1和表2报告了60秒和240秒时长的长时段分块生成结果。 我们报告了Avg.(6)，即六个质量和一致性指标的平均值，不包括动态程度。",
+   "sents": [
+    {
+     "en": "Tables 1 and 2 report long-horizon chunk-wise generation results at 60 and 240 seconds.",
+     "zh": "表1和表2报告了60秒和240秒时长的长时段分块生成结果。"
+    },
+    {
+     "en": "We report Avg.(6) , our mean of six quality and consistency metrics, excluding Dynamic Degree.",
+     "zh": "我们报告了Avg.(6)，即六个质量和一致性指标的平均值，不包括动态程度。"
+    }
+   ]
+  },
+  {
+   "en": "CSF achieves the highest Avg.(6) point estimate in all six chunk-wise settings. At 240 seconds, paired bootstrap intervals lie above zero against SF under all three initializations, and against SGF under Causal CD and TF (Appendix D.5 ). Because prompt sets differ, we compare methods within each duration rather than scores across durations.",
+   "zh": "在所有六种分块设置中，CSF 的 Avg.(6) 点估计值最高。 在 240 秒时，在所有三种初始化条件下，与 SF 相比，成对自助置信区间均高于零；在与 SGF 的比较中，Causal CD 和 TF 的情况也是如此（附录 D.5）。 由于提示集不同，我们按每个持续时间内部比较方法，而不是跨不同持续时间比较分数。",
+   "sents": [
+    {
+     "en": "CSF achieves the highest Avg.(6) point estimate in all six chunk-wise settings.",
+     "zh": "在所有六种分块设置中，CSF 的 Avg.(6) 点估计值最高。"
+    },
+    {
+     "en": "At 240 seconds, paired bootstrap intervals lie above zero against SF under all three initializations, and against SGF under Causal CD and TF (Appendix D.5 ).",
+     "zh": "在 240 秒时，在所有三种初始化条件下，与 SF 相比，成对自助置信区间均高于零；在与 SGF 的比较中，Causal CD 和 TF 的情况也是如此（附录 D.5）。"
+    },
+    {
+     "en": "Because prompt sets differ, we compare methods within each duration rather than scores across durations.",
+     "zh": "由于提示集不同，我们按每个持续时间内部比较方法，而不是跨不同持续时间比较分数。"
+    }
+   ]
+  },
+  {
+   "en": "The component metrics further show where the improvements arise. At 60 seconds, CSF achieves the best Aesthetic Quality and Background Consistency under all three initializations. At 240 seconds, CSF ranks first in Background Consistency, Imaging Quality, and Subject Consistency under all three initializations. These improvements are particularly relevant to long-horizon autoregressive generation, where subject and scene drift can accumulate throughout the rollout, and are consistent with the goal of propagating downstream supervision back to historical generation.",
+   "zh": "组件指标进一步揭示了改进的来源。 在 60 秒时，CSF 在所有三种初始化条件下都实现了最佳的美学质量和背景一致性。 在 240 秒时，CSF 在所有三种初始化条件下，背景一致性、成像质量和主体一致性均排名第一。 这些改进对于长时程自回归生成尤为重要，因为在整个生成过程中，主体和场景的偏移可能会逐渐累积；同时，这些改进也与将下游监督反向传播至历史生成的目标一致。",
+   "sents": [
+    {
+     "en": "The component metrics further show where the improvements arise.",
+     "zh": "组件指标进一步揭示了改进的来源。"
+    },
+    {
+     "en": "At 60 seconds, CSF achieves the best Aesthetic Quality and Background Consistency under all three initializations.",
+     "zh": "在 60 秒时，CSF 在所有三种初始化条件下都实现了最佳的美学质量和背景一致性。"
+    },
+    {
+     "en": "At 240 seconds, CSF ranks first in Background Consistency, Imaging Quality, and Subject Consistency under all three initializations.",
+     "zh": "在 240 秒时，CSF 在所有三种初始化条件下，背景一致性、成像质量和主体一致性均排名第一。"
+    },
+    {
+     "en": "These improvements are particularly relevant to long-horizon autoregressive generation, where subject and scene drift can accumulate throughout the rollout, and are consistent with the goal of propagating downstream supervision back to historical generation.",
+     "zh": "这些改进对于长时程自回归生成尤为重要，因为在整个生成过程中，主体和场景的偏移可能会逐渐累积；同时，这些改进也与将下游监督反向传播至历史生成的目标一致。"
+    }
+   ]
+  },
+  {
+   "en": "CSF’s balance of quality, consistency, and dynamics depends on initialization: under Causal CD, it improves Avg.(6) with Dynamic Degree near SGF and above SF at both horizons; under TF and Causal ODE, dynamics are below both baselines. Thus, we interpret Avg.(6) alongside Dynamic Degree without claiming uniform improvement. Efficiency and memory are reported in Appendix D.1 .",
+   "zh": "CSF 在质量、一致性和动态性之间的平衡取决于初始化：在因果 CD 下，当动态度接近 SGF 且高于 SF 时，它在两个时间范围内都能提升 Avg.(6)；而在 TF 和因果 ODE 下，其动态性则低于两种基线模型。 因此，我们将 Avg.(6) 与动态度结合进行解读，但并未声称存在一致的提升。 效率和内存相关结果报告在附录 D.1 中。",
+   "sents": [
+    {
+     "en": "CSF’s balance of quality, consistency, and dynamics depends on initialization: under Causal CD, it improves Avg.(6) with Dynamic Degree near SGF and above SF at both horizons; under TF and Causal ODE, dynamics are below both baselines.",
+     "zh": "CSF 在质量、一致性和动态性之间的平衡取决于初始化：在因果 CD 下，当动态度接近 SGF 且高于 SF 时，它在两个时间范围内都能提升 Avg.(6)；而在 TF 和因果 ODE 下，其动态性则低于两种基线模型。"
+    },
+    {
+     "en": "Thus, we interpret Avg.(6) alongside Dynamic Degree without claiming uniform improvement.",
+     "zh": "因此，我们将 Avg.(6) 与动态度结合进行解读，但并未声称存在一致的提升。"
+    },
+    {
+     "en": "Efficiency and memory are reported in Appendix D.1 .",
+     "zh": "效率和内存相关结果报告在附录 D.1 中。"
+    }
+   ]
+  },
+  {
+   "en": "We further compare long-horizon visual consistency by tracking how subjects and scenes evolve throughout autoregressive rollouts. Figures 4 and 5 show uniformly spaced snapshots from 60-second and 240-second generations, respectively.",
+   "zh": "我们通过追踪主体和场景在自回归生成过程中的演变，进一步比较了长期视觉一致性。 图 4 和图 5 分别展示了 60 秒和 240 秒生成过程中均匀间隔的快照。",
+   "sents": [
+    {
+     "en": "We further compare long-horizon visual consistency by tracking how subjects and scenes evolve throughout autoregressive rollouts.",
+     "zh": "我们通过追踪主体和场景在自回归生成过程中的演变，进一步比较了长期视觉一致性。"
+    },
+    {
+     "en": "Figures 4 and 5 show uniformly spaced snapshots from 60-second and 240-second generations, respectively.",
+     "zh": "图 4 和图 5 分别展示了 60 秒和 240 秒生成过程中均匀间隔的快照。"
+    }
+   ]
+  },
+  {
+   "en": "For the 60-second examples, CSF shows relatively stable subject appearance and scene composition under both Causal CD and TF initialization. In the Tokyo-street example, SF gradually shifts toward closer views of the subject, while SGF shows changes in both the subject and background. CSF retains a similar subject appearance and neon-street setting across the sampled timestamps. In the cloud-reading example, SF and SGF show larger changes in the surrounding scene over time, whereas the CSF sample remains closer to the initial subject and cloud setting.",
+   "zh": "在 60 秒的示例中，CSF 在因果 CD 和 TF 初始化两种条件下都表现出相对稳定的主体外观和场景构图。 在东京街道的示例中，SF 逐渐转向更靠近主体的视角，而 SGF 则同时表现出主体和背景的变化。 CSF 在所有采样时间戳中都保持了相似的主体外观和霓虹街道的场景设定。 在云层阅读的示例中，SF 和 SGF 随时间推移显示出周围场景更大的变化，而 CSF 样本则更接近初始的主体和云层设定。",
+   "sents": [
+    {
+     "en": "For the 60-second examples, CSF shows relatively stable subject appearance and scene composition under both Causal CD and TF initialization.",
+     "zh": "在 60 秒的示例中，CSF 在因果 CD 和 TF 初始化两种条件下都表现出相对稳定的主体外观和场景构图。"
+    },
+    {
+     "en": "In the Tokyo-street example, SF gradually shifts toward closer views of the subject, while SGF shows changes in both the subject and background.",
+     "zh": "在东京街道的示例中，SF 逐渐转向更靠近主体的视角，而 SGF 则同时表现出主体和背景的变化。"
+    },
+    {
+     "en": "CSF retains a similar subject appearance and neon-street setting across the sampled timestamps.",
+     "zh": "CSF 在所有采样时间戳中都保持了相似的主体外观和霓虹街道的场景设定。"
+    },
+    {
+     "en": "In the cloud-reading example, SF and SGF show larger changes in the surrounding scene over time, whereas the CSF sample remains closer to the initial subject and cloud setting.",
+     "zh": "在云层阅读的示例中，SF 和 SGF 随时间推移显示出周围场景更大的变化，而 CSF 样本则更接近初始的主体和云层设定。"
+    }
+   ]
+  },
+  {
+   "en": "Likewise, in the 240-second Antarctica example, SF and SGF change subject scale, appearance, and background; CSF stays closer to the initial kangaroo and snowy setting. For the pianist, CSF keeps subject, piano, and indoor composition similar across sampled timestamps; SF and SGF show larger scene and appearance changes. In both long rollouts, CSF shows less visible subject and scene drift, consistent with the motivation to reconnect downstream supervision to historical generation.",
+   "zh": "同样地，在持续 240 秒的南极洲示例中，SF 和 SGF 改变了主体尺度、外观和背景；而 CSF 则更贴近最初的袋鼠和雪地场景。 对于钢琴家场景，CSF 在各个采样时间戳中保持了主体、钢琴和室内构图的一致性；而 SF 和 SGF 则表现出更大的场景和外观变化。 在这两次长时间的生成过程中，CSF 展现出更少的主体和场景可见漂移，这与将下游监督重新连接到历史生成过程的初衷一致。",
+   "sents": [
+    {
+     "en": "Likewise, in the 240-second Antarctica example, SF and SGF change subject scale, appearance, and background; CSF stays closer to the initial kangaroo and snowy setting.",
+     "zh": "同样地，在持续 240 秒的南极洲示例中，SF 和 SGF 改变了主体尺度、外观和背景；而 CSF 则更贴近最初的袋鼠和雪地场景。"
+    },
+    {
+     "en": "For the pianist, CSF keeps subject, piano, and indoor composition similar across sampled timestamps; SF and SGF show larger scene and appearance changes.",
+     "zh": "对于钢琴家场景，CSF 在各个采样时间戳中保持了主体、钢琴和室内构图的一致性；而 SF 和 SGF 则表现出更大的场景和外观变化。"
+    },
+    {
+     "en": "In both long rollouts, CSF shows less visible subject and scene drift, consistent with the motivation to reconnect downstream supervision to historical generation.",
+     "zh": "在这两次长时间的生成过程中，CSF 展现出更少的主体和场景可见漂移，这与将下游监督重新连接到历史生成过程的初衷一致。"
+    }
+   ]
+  },
+  {
+   "en": "We ablate cross-chunk gradient propagation in the 60-second chunk-wise Causal CD setting. Serial recursion recursively propagates accumulated future gradients backward, one adjacent chunk at a time. Full BPTT replays the selected denoising exit with a connected graph across the autoregressive history. CSF (Ours) instead uses shortcut replay and terminates feedback at the targeted historical chunk. We also evaluate CSF ( λ = 0.5 \\lambda=0.5 ) , halving the added cross-chunk feedback.",
+   "zh": "我们在 60 秒的按块处理的因果 CD 设置中，消除了跨块的梯度传播。 串行递归以每次一个相邻块的速度，将累积的未来梯度逐一反向传播。 完整的 BPTT 通过自回归历史中的连通图，重播所选的去噪退出点。 CSF（我们的方法）则使用快捷重播，并在目标历史块处终止反馈。 我们还评估了 CSF（λ = 0.5 \\lambda=0.5），将添加的跨块反馈减半。",
+   "sents": [
+    {
+     "en": "We ablate cross-chunk gradient propagation in the 60-second chunk-wise Causal CD setting.",
+     "zh": "我们在 60 秒的按块处理的因果 CD 设置中，消除了跨块的梯度传播。"
+    },
+    {
+     "en": "Serial recursion recursively propagates accumulated future gradients backward, one adjacent chunk at a time.",
+     "zh": "串行递归以每次一个相邻块的速度，将累积的未来梯度逐一反向传播。"
+    },
+    {
+     "en": "Full BPTT replays the selected denoising exit with a connected graph across the autoregressive history.",
+     "zh": "完整的 BPTT 通过自回归历史中的连通图，重播所选的去噪退出点。"
+    },
+    {
+     "en": "CSF (Ours) instead uses shortcut replay and terminates feedback at the targeted historical chunk.",
+     "zh": "CSF（我们的方法）则使用快捷重播，并在目标历史块处终止反馈。"
+    },
+    {
+     "en": "We also evaluate CSF ( λ = 0.5 \\lambda=0.5 ) , halving the added cross-chunk feedback.",
+     "zh": "我们还评估了 CSF（λ = 0.5 \\lambda=0.5），将添加的跨块反馈减半。"
+    }
+   ]
+  },
+  {
+   "en": "As shown in Table 3 , Serial recursion remains close to CSF in quality and consistency metrics, but yields substantially lower Dynamic Degree. Reducing λ \\lambda to 0.5 substantially increases Dynamic Degree, while degrading several quality and consistency metrics. Here, Full BPTT does not outperform CSF on Avg.(6) or Dynamic Degree. CSF shows a favorable balance of long-horizon quality, consistency, and motion in this setting. The qualitative comparison in Fig. 6 shows a similar pattern over the rollout.",
+   "zh": "如表3所示，串行递归在质量和一致性指标上仍与CSF接近，但动态度显著更低。 将λ \\lambda降至0.5会显著提升动态度，但同时也会降低多项质量和一致性指标。 在此情况下，完整BPTT在Avg.(6)或动态度方面并未优于CSF。 在此设定中，CSF在长期质量、一致性和运动性之间展现出良好的平衡。 图6中的定性比较显示，在整个展开过程中呈现出类似的模式。",
+   "sents": [
+    {
+     "en": "As shown in Table 3 , Serial recursion remains close to CSF in quality and consistency metrics, but yields substantially lower Dynamic Degree.",
+     "zh": "如表3所示，串行递归在质量和一致性指标上仍与CSF接近，但动态度显著更低。"
+    },
+    {
+     "en": "Reducing λ \\lambda to 0.5 substantially increases Dynamic Degree, while degrading several quality and consistency metrics.",
+     "zh": "将λ \\lambda降至0.5会显著提升动态度，但同时也会降低多项质量和一致性指标。"
+    },
+    {
+     "en": "Here, Full BPTT does not outperform CSF on Avg.(6) or Dynamic Degree.",
+     "zh": "在此情况下，完整BPTT在Avg.(6)或动态度方面并未优于CSF。"
+    },
+    {
+     "en": "CSF shows a favorable balance of long-horizon quality, consistency, and motion in this setting.",
+     "zh": "在此设定中，CSF在长期质量、一致性和运动性之间展现出良好的平衡。"
+    },
+    {
+     "en": "The qualitative comparison in Fig. 6 shows a similar pattern over the rollout.",
+     "zh": "图6中的定性比较显示，在整个展开过程中呈现出类似的模式。"
+    }
+   ]
+  },
+  {
+   "en": "We introduced Connected Self Forcing (CSF) to address missing future-to-history gradient flow in autoregressive self-rollout training. Its Shortcut Gradient Replay reconnects downstream supervision to historical generation without retaining the full autoregressive computation graph or changing inference. Across several initializations, CSF consistently improves long-horizon visual quality and temporal consistency in 60- and 240-second autoregressive videos. By extending gradient flow beyond detached chunk boundaries, CSF highlights the potential of future-aware training for autoregressive video generation.",
+   "zh": "我们引入了“连通自我强制”（Connected Self Forcing，CSF）方法，以解决自回归自我展开训练中未来到历史的梯度流缺失问题。 其“捷径梯度重播”机制无需保留完整的自回归计算图或改变推理过程，即可将下游的监督信号重新连接到历史生成过程。 在多种初始化设置下，CSF 始终能提升 60 秒和 240 秒自回归视频中长时段的视觉质量与时间一致性。 通过将梯度流延伸至脱离的片段边界之外，CSF 凸显了未来感知训练在自回归视频生成中的潜力。",
+   "sents": [
+    {
+     "en": "We introduced Connected Self Forcing (CSF) to address missing future-to-history gradient flow in autoregressive self-rollout training.",
+     "zh": "我们引入了“连通自我强制”（Connected Self Forcing，CSF）方法，以解决自回归自我展开训练中未来到历史的梯度流缺失问题。"
+    },
+    {
+     "en": "Its Shortcut Gradient Replay reconnects downstream supervision to historical generation without retaining the full autoregressive computation graph or changing inference.",
+     "zh": "其“捷径梯度重播”机制无需保留完整的自回归计算图或改变推理过程，即可将下游的监督信号重新连接到历史生成过程。"
+    },
+    {
+     "en": "Across several initializations, CSF consistently improves long-horizon visual quality and temporal consistency in 60- and 240-second autoregressive videos.",
+     "zh": "在多种初始化设置下，CSF 始终能提升 60 秒和 240 秒自回归视频中长时段的视觉质量与时间一致性。"
+    },
+    {
+     "en": "By extending gradient flow beyond detached chunk boundaries, CSF highlights the potential of future-aware training for autoregressive video generation.",
+     "zh": "通过将梯度流延伸至脱离的片段边界之外，CSF 凸显了未来感知训练在自回归视频生成中的潜力。"
+    }
+   ]
+  },
+  {
+   "en": "Supplementary Material for Connected Self Forcing",
+   "zh": "《Connected Self Forcing》补充材料",
+   "sents": null
+  },
+  {
+   "en": "This supplementary material provides additional details, experiments, qualitative results, and discussion that complement the main paper. It is organized as follows:",
+   "zh": "这份补充材料提供了更多细节、实验、定性结果和讨论，以补充主论文的内容。 其组织方式如下：",
+   "sents": [
+    {
+     "en": "This supplementary material provides additional details, experiments, qualitative results, and discussion that complement the main paper.",
+     "zh": "这份补充材料提供了更多细节、实验、定性结果和讨论，以补充主论文的内容。"
+    },
+    {
+     "en": "It is organized as follows:",
+     "zh": "其组织方式如下："
+    }
+   ]
+  },
+  {
+   "en": "A supplementary video demo , with long-horizon chunk-wise and frame-wise comparisons, in Appendix A .",
+   "zh": "补充视频演示（见附录 A），其中包含长期规划下的分块对比与逐帧对比。",
+   "sents": null
+  },
+  {
+   "en": "Additional implementation and training details in Appendix B .",
+   "zh": "更多实现和训练细节见附录 B。",
+   "sents": null
+  },
+  {
+   "en": "A controlled Gaussian time-series toy experiment providing additional details and analysis for the motivating study in Appendix C .",
+   "zh": "一个受控的高斯时间序列玩具实验，为附录 C 中的启发研究提供了更多细节和分析。",
+   "sents": null
+  },
+  {
+   "en": "Further experiments, including training efficiency and memory, short-horizon chunk-wise evaluation, additional qualitative results, frame-wise experiments, paired bootstrap uncertainty analysis, and gradient-conflict analysis, in Appendix D .",
+   "zh": "更多实验，包括训练效率和内存、短视程分块评估、额外的定性结果、逐帧实验、成对自助不确定性分析以及梯度冲突分析，见附录D。",
+   "sents": null
+  },
+  {
+   "en": "Limitations and further discussion in Appendix E .",
+   "zh": "局限性及进一步讨论见附录 E。",
+   "sents": null
+  },
+  {
+   "en": "We encourage readers to watch the supplementary video demo , which complements the sampled frames in the paper with synchronized excerpts from 60- and 240-second autoregressive generations. The demo compares Connected Self Forcing (CSF) with Self Forcing (SF) ( Huang et al., 2025c ) and Self Gradient Forcing (SGF) ( Zhuang et al., 2026 ) under matched prompts and inference settings, covering both chunk-wise and frame-wise generation. Side-by-side clips illustrate how subject appearance, scene composition, and motion evolve over time, while source-time indicators explicitly mark the temporal locations of the selected excerpts. The video also includes a brief four-way qualitative ablation of cross-chunk gradient propagation under Causal CD initialization. These moving comparisons provide temporal information that is difficult to capture from isolated frames alone.",
+   "zh": "我们鼓励读者观看补充视频演示，该演示通过同步展示 60 秒和 240 秒自回归生成过程的片段，对论文中采样的帧内容进行了补充。 在匹配的提示词和推理设置下，该演示对比了 Connected Self Forcing (CSF) 与 Self Forcing (SF)（Huang 等人，2025c）以及 Self Gradient Forcing (SGF)（Zhuang 等人，2026），涵盖分块生成和逐帧生成两种模式。 并列的视频片段展示了主体外观、场景构图和运动随时间的演变过程，同时源时间指示器明确标注了所选片段的时间位置。 视频还包含在 Causal CD 初始化条件下，对跨分块梯度传播进行的简要四者定性消融分析。 这些动态对比提供了仅从孤立帧中难以捕捉的时间维度信息。",
+   "sents": [
+    {
+     "en": "We encourage readers to watch the supplementary video demo , which complements the sampled frames in the paper with synchronized excerpts from 60- and 240-second autoregressive generations.",
+     "zh": "我们鼓励读者观看补充视频演示，该演示通过同步展示 60 秒和 240 秒自回归生成过程的片段，对论文中采样的帧内容进行了补充。"
+    },
+    {
+     "en": "The demo compares Connected Self Forcing (CSF) with Self Forcing (SF) ( Huang et al., 2025c ) and Self Gradient Forcing (SGF) ( Zhuang et al., 2026 ) under matched prompts and inference settings, covering both chunk-wise and frame-wise generation.",
+     "zh": "在匹配的提示词和推理设置下，该演示对比了 Connected Self Forcing (CSF) 与 Self Forcing (SF)（Huang 等人，2025c）以及 Self Gradient Forcing (SGF)（Zhuang 等人，2026），涵盖分块生成和逐帧生成两种模式。"
+    },
+    {
+     "en": "Side-by-side clips illustrate how subject appearance, scene composition, and motion evolve over time, while source-time indicators explicitly mark the temporal locations of the selected excerpts.",
+     "zh": "并列的视频片段展示了主体外观、场景构图和运动随时间的演变过程，同时源时间指示器明确标注了所选片段的时间位置。"
+    },
+    {
+     "en": "The video also includes a brief four-way qualitative ablation of cross-chunk gradient propagation under Causal CD initialization.",
+     "zh": "视频还包含在 Causal CD 初始化条件下，对跨分块梯度传播进行的简要四者定性消融分析。"
+    },
+    {
+     "en": "These moving comparisons provide temporal information that is difficult to capture from isolated frames alone.",
+     "zh": "这些动态对比提供了仅从孤立帧中难以捕捉的时间维度信息。"
+    }
+   ]
+  },
+  {
+   "en": "We use the same filtered and extended VidProM-derived prompt set used by SGF ( Zhuang et al., 2026 ) , containing approximately 250K prompts, for all post-training experiments. For chunk-wise training, the 21 latent frames are divided into seven three-frame chunks. We use a bounded causal context consisting of a three-latent-frame persistent sink and the six most recent latent frames, corresponding to one sink chunk and two recent chunks.",
+   "zh": "在所有后训练实验中，我们使用了与 SGF（Zhuang 等人，2026）相同的、经过过滤和扩展的 VidProM 提示词集，该集合包含约 25 万个提示词。 对于按分块进行的训练，21 个潜在帧被划分为七个三帧分块。 我们使用一个有界因果上下文，它由一个包含三个潜在帧的持久化接收器和六个最近的潜在帧组成，对应于一个接收器分块和两个最近的分块。",
+   "sents": [
+    {
+     "en": "We use the same filtered and extended VidProM-derived prompt set used by SGF ( Zhuang et al., 2026 ) , containing approximately 250K prompts, for all post-training experiments.",
+     "zh": "在所有后训练实验中，我们使用了与 SGF（Zhuang 等人，2026）相同的、经过过滤和扩展的 VidProM 提示词集，该集合包含约 25 万个提示词。"
+    },
+    {
+     "en": "For chunk-wise training, the 21 latent frames are divided into seven three-frame chunks.",
+     "zh": "对于按分块进行的训练，21 个潜在帧被划分为七个三帧分块。"
+    },
+    {
+     "en": "We use a bounded causal context consisting of a three-latent-frame persistent sink and the six most recent latent frames, corresponding to one sink chunk and two recent chunks.",
+     "zh": "我们使用一个有界因果上下文，它由一个包含三个潜在帧的持久化接收器和六个最近的潜在帧组成，对应于一个接收器分块和两个最近的分块。"
+    }
+   ]
+  },
+  {
+   "en": "Following SGF ( Zhuang et al., 2026 ) , we adopt a stochastic exit strategy: one of the four denoising steps is sampled independently for each training video and shared across all autoregressive chunks in the rollout. The prediction at the sampled exit, rather than the final clean prediction, is used to construct the causal history.",
+   "zh": "遵循 SGF（Zhuang 等人，2026），我们采用一种随机退出策略：在每次训练视频中，四个降噪步骤之一会被独立采样，并在整个展开过程中的所有自回归片段中共享。 在采样退出点处的预测结果，而非最终的干净预测结果，将用于构建因果历史。",
+   "sents": [
+    {
+     "en": "Following SGF ( Zhuang et al., 2026 ) , we adopt a stochastic exit strategy: one of the four denoising steps is sampled independently for each training video and shared across all autoregressive chunks in the rollout.",
+     "zh": "遵循 SGF（Zhuang 等人，2026），我们采用一种随机退出策略：在每次训练视频中，四个降噪步骤之一会被独立采样，并在整个展开过程中的所有自回归片段中共享。"
+    },
+    {
+     "en": "The prediction at the sampled exit, rather than the final clean prediction, is used to construct the causal history.",
+     "zh": "在采样退出点处的预测结果，而非最终的干净预测结果，将用于构建因果历史。"
+    }
+   ]
+  },
+  {
+   "en": "We use AdamW with generator and fake-score learning rates of 2 × 10 − 6 2\\times 10^{-6} and 4 × 10 − 7 4\\times 10^{-7} , respectively, β = ( 0 , 0.999 ) \\beta=(0,0.999) , and weight decay 0.01 0.01 . The fake-score model is updated every iteration, while the generator is updated once every five iterations. We maintain an EMA of the generator with decay 0.99 0.99 and use the EMA weights for evaluation. Chunk-wise experiments are trained for 1,200 iterations with a nominal training seed of 42. These are 1,200 fake-score and 239 generator optimizer steps; the first iteration updates only the fake-score model. Quality comparisons use matched update budgets, not matched GPU time.",
+   "zh": "我们使用 AdamW，其中生成器和假分数学习率分别为 2 × 10⁻⁶ 和 4 × 10⁻⁷，β = (0, 0.999)，权重衰减为 0.01。 假分数模型在每个迭代中更新，而生成器每五个迭代更新一次。 我们使用衰减率为 0.99 的 EMA 对生成器进行维护，并在评估时使用 EMA 权重。 分块实验以 1,200 次迭代进行训练，名义训练种子为 42。 这包括 1,200 步假分数优化器和 239 步生成器优化器；第一次迭代仅更新假分数模型。 质量比较使用匹配的更新预算，而非匹配的 GPU 时间。",
+   "sents": [
+    {
+     "en": "We use AdamW with generator and fake-score learning rates of 2 × 10 − 6 2\\times 10^{-6} and 4 × 10 − 7 4\\times 10^{-7} , respectively, β = ( 0 , 0.999 ) \\beta=(0,0.999) , and weight decay 0.01 0.01 .",
+     "zh": "我们使用 AdamW，其中生成器和假分数学习率分别为 2 × 10⁻⁶ 和 4 × 10⁻⁷，β = (0, 0.999)，权重衰减为 0.01。"
+    },
+    {
+     "en": "The fake-score model is updated every iteration, while the generator is updated once every five iterations.",
+     "zh": "假分数模型在每个迭代中更新，而生成器每五个迭代更新一次。"
+    },
+    {
+     "en": "We maintain an EMA of the generator with decay 0.99 0.99 and use the EMA weights for evaluation.",
+     "zh": "我们使用衰减率为 0.99 的 EMA 对生成器进行维护，并在评估时使用 EMA 权重。"
+    },
+    {
+     "en": "Chunk-wise experiments are trained for 1,200 iterations with a nominal training seed of 42.",
+     "zh": "分块实验以 1,200 次迭代进行训练，名义训练种子为 42。"
+    },
+    {
+     "en": "These are 1,200 fake-score and 239 generator optimizer steps; the first iteration updates only the fake-score model.",
+     "zh": "这包括 1,200 步假分数优化器和 239 步生成器优化器；第一次迭代仅更新假分数模型。"
+    },
+    {
+     "en": "Quality comparisons use matched update budgets, not matched GPU time.",
+     "zh": "质量比较使用匹配的更新预算，而非匹配的 GPU 时间。"
+    }
+   ]
+  },
+  {
+   "en": "All reported results are generated using the EMA checkpoints with the same four-step causal sampling procedure across SF, SGF, and CSF. CSF does not perform Shortcut Gradient Replay at inference and introduces no additional inference-time network or forward pass. Videos are generated at 832 × 480 832\\times 480 resolution and 16 fps. We use 21, 243, and 963 latent frames for the approximately 5-second, 60-second, and 240-second settings, respectively, which decode to 81, 969, and 3,849 video frames.",
+   "zh": "所有报告的结果均使用 EMA 检查点，并通过 SF、SGF 和 CSF 采用相同的四步因果采样流程生成。 CSF 在推理阶段不会执行捷径梯度重放，也不会引入任何额外的推理时网络或前向传播。 视频以 832 × 480 分辨率和 16 fps 的帧率生成。 对于大约 5 秒、60 秒和 240 秒的设置，我们分别使用 21、243 和 963 个潜在帧，这些帧解码后分别得到 81、969 和 3,849 个视频帧。",
+   "sents": [
+    {
+     "en": "All reported results are generated using the EMA checkpoints with the same four-step causal sampling procedure across SF, SGF, and CSF.",
+     "zh": "所有报告的结果均使用 EMA 检查点，并通过 SF、SGF 和 CSF 采用相同的四步因果采样流程生成。"
+    },
+    {
+     "en": "CSF does not perform Shortcut Gradient Replay at inference and introduces no additional inference-time network or forward pass.",
+     "zh": "CSF 在推理阶段不会执行捷径梯度重放，也不会引入任何额外的推理时网络或前向传播。"
+    },
+    {
+     "en": "Videos are generated at 832 × 480 832\\times 480 resolution and 16 fps.",
+     "zh": "视频以 832 × 480 分辨率和 16 fps 的帧率生成。"
+    },
+    {
+     "en": "We use 21, 243, and 963 latent frames for the approximately 5-second, 60-second, and 240-second settings, respectively, which decode to 81, 969, and 3,849 video frames.",
+     "zh": "对于大约 5 秒、60 秒和 240 秒的设置，我们分别使用 21、243 和 963 个潜在帧，这些帧解码后分别得到 81、969 和 3,849 个视频帧。"
+    }
+   ]
+  },
+  {
+   "en": "For long-video generation, we use a bounded streaming KV cache and keep the temporal positions within the 21-latent-frame range used during training. In the chunk-wise setting, the cache contains a three-frame persistent sink, six recent historical latent frames, and the current three-frame chunk, for a maximum of 12 latent frames. Temporal positions are assigned using the top-aligned cache layout. All compared methods use identical cache geometry and generation seeds. We use a base seed of 42 and assign each generated sample a deterministic seed according to its prompt/sample ordinal.",
+   "zh": "对于长视频生成，我们使用有界流式 KV 缓存，并将时间位置限制在训练期间使用的 21 个潜在帧范围内。 在分块设置中，缓存包含一个三帧的持久化接收器、六个最近的过往潜在帧以及当前的三帧块，最多可容纳 12 个潜在帧。 时间位置通过顶部对齐的缓存布局进行分配。 所有对比方法均使用相同的缓存结构和生成种子。 我们使用基础种子 42，并根据每个样本的提示/样本序号为其分配一个确定性种子。",
+   "sents": [
+    {
+     "en": "For long-video generation, we use a bounded streaming KV cache and keep the temporal positions within the 21-latent-frame range used during training.",
+     "zh": "对于长视频生成，我们使用有界流式 KV 缓存，并将时间位置限制在训练期间使用的 21 个潜在帧范围内。"
+    },
+    {
+     "en": "In the chunk-wise setting, the cache contains a three-frame persistent sink, six recent historical latent frames, and the current three-frame chunk, for a maximum of 12 latent frames.",
+     "zh": "在分块设置中，缓存包含一个三帧的持久化接收器、六个最近的过往潜在帧以及当前的三帧块，最多可容纳 12 个潜在帧。"
+    },
+    {
+     "en": "Temporal positions are assigned using the top-aligned cache layout.",
+     "zh": "时间位置通过顶部对齐的缓存布局进行分配。"
+    },
+    {
+     "en": "All compared methods use identical cache geometry and generation seeds.",
+     "zh": "所有对比方法均使用相同的缓存结构和生成种子。"
+    },
+    {
+     "en": "We use a base seed of 42 and assign each generated sample a deterministic seed according to its prompt/sample ordinal.",
+     "zh": "我们使用基础种子 42，并根据每个样本的提示/样本序号为其分配一个确定性种子。"
+    }
+   ]
+  },
+  {
+   "en": "Short-video evaluation. For approximately 5-second generation, we use the standard VBench evaluation pipeline ( Huang et al., 2024 ) . We generate five samples for each of the 944 unique prompts in the official metadata, resulting in 4,720 videos. A frozen manifest explicitly maps each generated video back to the corresponding VBench metadata entry, resolving duplicated prompts and filename ambiguity without modifying the underlying VBench scorers. For consistency with our long-horizon evaluation, we primarily report the same seven dimensions used for 60-second and 240-second videos.",
+   "zh": "短视频评估。 对于约 5 秒的生成，我们使用标准的 VBench 评估流程（Huang 等人，2024）。 我们为官方元数据中 944 个唯一提示中的每一个生成五个样本，从而得到 4,720 个视频。 一个固定的清单明确地将每个生成的视频映射回对应的 VBench 元数据条目，从而在不修改底层 VBench 评分器的情况下解决了重复提示和文件名歧义的问题。 为了与我们的长期评估保持一致，我们主要报告与 60 秒和 240 秒视频所用相同的七个维度。",
+   "sents": [
+    {
+     "en": "Short-video evaluation.",
+     "zh": "短视频评估。"
+    },
+    {
+     "en": "For approximately 5-second generation, we use the standard VBench evaluation pipeline ( Huang et al., 2024 ) .",
+     "zh": "对于约 5 秒的生成，我们使用标准的 VBench 评估流程（Huang 等人，2024）。"
+    },
+    {
+     "en": "We generate five samples for each of the 944 unique prompts in the official metadata, resulting in 4,720 videos.",
+     "zh": "我们为官方元数据中 944 个唯一提示中的每一个生成五个样本，从而得到 4,720 个视频。"
+    },
+    {
+     "en": "A frozen manifest explicitly maps each generated video back to the corresponding VBench metadata entry, resolving duplicated prompts and filename ambiguity without modifying the underlying VBench scorers.",
+     "zh": "一个固定的清单明确地将每个生成的视频映射回对应的 VBench 元数据条目，从而在不修改底层 VBench 评分器的情况下解决了重复提示和文件名歧义的问题。"
+    },
+    {
+     "en": "For consistency with our long-horizon evaluation, we primarily report the same seven dimensions used for 60-second and 240-second videos.",
+     "zh": "为了与我们的长期评估保持一致，我们主要报告与 60 秒和 240 秒视频所用相同的七个维度。"
+    }
+   ]
+  },
+  {
+   "en": "Long-video evaluation. For approximately 60-second and 240-second generation, we use the VBench-Long implementation in VBench++ ( Huang et al., 2025d ) under a controlled custom-input protocol. We disable semantic scene splitting and divide every generated video into fixed 2-second clips. We report seven dimensions: aesthetic quality, background consistency, dynamic degree, imaging quality, motion smoothness, subject consistency, and temporal flickering. Temporal flickering is evaluated over all clips without static filtering. An explicit manifest maps every clip to its source video, and clip-level scores are aggregated within each source video before averaging across videos, following the VBench-Long aggregation. Subject and background consistency retain the VBench-Long cross-clip comparisons and fuse them with within-clip scores by source video.",
+   "zh": "长视频评估。 对于约 60 秒和 240 秒的视频生成，我们在受控的自定义输入协议下使用 VBench++ 中的 VBench-Long 实现（Huang 等人，2025d）。 我们禁用语义场景分割，并将每个生成的视频划分为固定的 2 秒片段。 我们报告七个维度：美学质量、背景一致性、动态程度、成像质量、运动流畅性、主体一致性和时间闪烁。 时间闪烁在所有片段上进行评估，且不使用静态过滤。 一个显式映射表将每个片段与其源视频关联，并遵循 VBench-Long 的聚合方式，先在各源视频内对片段级分数进行汇总，再跨视频计算平均值。 主体和背景一致性保留 VBench-Long 的跨片段比较，并通过源视频将其与片段内分数融合。",
+   "sents": [
+    {
+     "en": "Long-video evaluation.",
+     "zh": "长视频评估。"
+    },
+    {
+     "en": "For approximately 60-second and 240-second generation, we use the VBench-Long implementation in VBench++ ( Huang et al., 2025d ) under a controlled custom-input protocol.",
+     "zh": "对于约 60 秒和 240 秒的视频生成，我们在受控的自定义输入协议下使用 VBench++ 中的 VBench-Long 实现（Huang 等人，2025d）。"
+    },
+    {
+     "en": "We disable semantic scene splitting and divide every generated video into fixed 2-second clips.",
+     "zh": "我们禁用语义场景分割，并将每个生成的视频划分为固定的 2 秒片段。"
+    },
+    {
+     "en": "We report seven dimensions: aesthetic quality, background consistency, dynamic degree, imaging quality, motion smoothness, subject consistency, and temporal flickering.",
+     "zh": "我们报告七个维度：美学质量、背景一致性、动态程度、成像质量、运动流畅性、主体一致性和时间闪烁。"
+    },
+    {
+     "en": "Temporal flickering is evaluated over all clips without static filtering.",
+     "zh": "时间闪烁在所有片段上进行评估，且不使用静态过滤。"
+    },
+    {
+     "en": "An explicit manifest maps every clip to its source video, and clip-level scores are aggregated within each source video before averaging across videos, following the VBench-Long aggregation.",
+     "zh": "一个显式映射表将每个片段与其源视频关联，并遵循 VBench-Long 的聚合方式，先在各源视频内对片段级分数进行汇总，再跨视频计算平均值。"
+    },
+    {
+     "en": "Subject and background consistency retain the VBench-Long cross-clip comparisons and fuse them with within-clip scores by source video.",
+     "zh": "主体和背景一致性保留 VBench-Long 的跨片段比较，并通过源视频将其与片段内分数融合。"
+    }
+   ]
+  },
+  {
+   "en": "The 60-second evaluation uses the official 40 VBench-Long prompts, with one video generated per prompt. For the 240-second evaluation, we use a fixed set of 128 prompts sampled without replacement from the 1,003 Movie Gen Video Bench prompts using a fixed random seed of 42; the sampled prompts are then restored to their original dataset order. The same frozen prompt sets, generation settings, clip assignments, and aggregation rules are used for all compared methods.",
+   "zh": "60秒评估使用官方提供的40个VBench-Long提示，每个提示生成一个视频。 在240秒评估中，我们使用一个固定的128个提示集合，这些提示是从1,003个Movie Gen Video Bench提示中通过固定随机种子42无放回采样得到的；采样后的提示随后被恢复为它们在原始数据集中的原始顺序。 所有对比方法均使用相同的冻结提示集、生成设置、片段分配和聚合规则。",
+   "sents": [
+    {
+     "en": "The 60-second evaluation uses the official 40 VBench-Long prompts, with one video generated per prompt.",
+     "zh": "60秒评估使用官方提供的40个VBench-Long提示，每个提示生成一个视频。"
+    },
+    {
+     "en": "For the 240-second evaluation, we use a fixed set of 128 prompts sampled without replacement from the 1,003 Movie Gen Video Bench prompts using a fixed random seed of 42; the sampled prompts are then restored to their original dataset order.",
+     "zh": "在240秒评估中，我们使用一个固定的128个提示集合，这些提示是从1,003个Movie Gen Video Bench提示中通过固定随机种子42无放回采样得到的；采样后的提示随后被恢复为它们在原始数据集中的原始顺序。"
+    },
+    {
+     "en": "The same frozen prompt sets, generation settings, clip assignments, and aggregation rules are used for all compared methods.",
+     "zh": "所有对比方法均使用相同的冻结提示集、生成设置、片段分配和聚合规则。"
+    }
+   ]
+  },
+  {
+   "en": "To reduce dependence on a particular initialization, we evaluate three initialization schemes: teacher forcing (TF init), causal consistency distillation (Causal CD) ( Zhao et al., 2026a ) , and Causal ODE ( Zhu et al., 2026 ) . These settings cover different causal starting points and allow us to examine whether the gains of CSF persist across initialization schemes.",
+   "zh": "为了减少对特定初始化的依赖，我们评估了三种初始化方案：教师强制（TF init）、因果一致性蒸馏（Causal CD）（Zhao 等人，2026a）以及因果 ODE（Zhu 等人，2026）。 这些设置涵盖了不同的因果起点，使我们能够检验 CSF 的优势是否在不同初始化方案中保持一致。",
+   "sents": [
+    {
+     "en": "To reduce dependence on a particular initialization, we evaluate three initialization schemes: teacher forcing (TF init), causal consistency distillation (Causal CD) ( Zhao et al., 2026a ) , and Causal ODE ( Zhu et al., 2026 ) .",
+     "zh": "为了减少对特定初始化的依赖，我们评估了三种初始化方案：教师强制（TF init）、因果一致性蒸馏（Causal CD）（Zhao 等人，2026a）以及因果 ODE（Zhu 等人，2026）。"
+    },
+    {
+     "en": "These settings cover different causal starting points and allow us to examine whether the gains of CSF persist across initialization schemes.",
+     "zh": "这些设置涵盖了不同的因果起点，使我们能够检验 CSF 的优势是否在不同初始化方案中保持一致。"
+    }
+   ]
+  },
+  {
+   "en": "We retrain SF ( Huang et al., 2025c ) and SGF ( Zhuang et al., 2026 ) based on their released implementations. Within each initialization setting, SF, SGF, and CSF are independently trained from the same initialization checkpoint, using the same training prompt set, nominal seed, training budget, and inference configuration. We otherwise preserve the method-specific training procedure of each baseline. The chunk-wise 60-second and 240-second comparisons constitute our main results.",
+   "zh": "我们基于其发布的实现，对 SF（Huang 等人，2025c）和 SGF（Zhuang 等人，2026）进行了重新训练。 在每个初始化设置中，SF、SGF 和 CSF 均从相同的初始化检查点开始独立训练，并使用相同的训练提示集、名义种子、训练预算和推理配置。 除此之外，我们保留了每个基线方法特定的训练流程。 按片段划分的 60 秒和 240 秒比较构成了我们的主要结果。",
+   "sents": [
+    {
+     "en": "We retrain SF ( Huang et al., 2025c ) and SGF ( Zhuang et al., 2026 ) based on their released implementations.",
+     "zh": "我们基于其发布的实现，对 SF（Huang 等人，2025c）和 SGF（Zhuang 等人，2026）进行了重新训练。"
+    },
+    {
+     "en": "Within each initialization setting, SF, SGF, and CSF are independently trained from the same initialization checkpoint, using the same training prompt set, nominal seed, training budget, and inference configuration.",
+     "zh": "在每个初始化设置中，SF、SGF 和 CSF 均从相同的初始化检查点开始独立训练，并使用相同的训练提示集、名义种子、训练预算和推理配置。"
+    },
+    {
+     "en": "We otherwise preserve the method-specific training procedure of each baseline.",
+     "zh": "除此之外，我们保留了每个基线方法特定的训练流程。"
+    },
+    {
+     "en": "The chunk-wise 60-second and 240-second comparisons constitute our main results.",
+     "zh": "按片段划分的 60 秒和 240 秒比较构成了我们的主要结果。"
+    }
+   ]
+  },
+  {
+   "en": "We further detail the practical implementation of Shortcut Gradient Replay beyond the algorithmic description in the main paper. During the detached self-rollout, we store only the states required to reconstruct the local generation and KV-writing computations, including the sampled exit input and timestep, generated latent, and corresponding causal cache states. The DMD output gradients are computed once after the rollout and reused throughout replay; the recorded stochastic-exit states are also reused rather than resampled.",
+   "zh": "我们在主论文中的算法描述之外，进一步详细说明了 Shortcut Gradient Replay 的实际实现。 在分离式自我展开过程中，我们仅存储用于重建局部生成和 KV 写入计算所需的状态，包括采样出的退出输入和时间步长、生成的潜在变量以及对应的因果缓存状态。 DMD 输出梯度在展开后计算一次，并在整个重播过程中重复使用；记录下来的随机退出状态也重复使用，而非重新采样。",
+   "sents": [
+    {
+     "en": "We further detail the practical implementation of Shortcut Gradient Replay beyond the algorithmic description in the main paper.",
+     "zh": "我们在主论文中的算法描述之外，进一步详细说明了 Shortcut Gradient Replay 的实际实现。"
+    },
+    {
+     "en": "During the detached self-rollout, we store only the states required to reconstruct the local generation and KV-writing computations, including the sampled exit input and timestep, generated latent, and corresponding causal cache states.",
+     "zh": "在分离式自我展开过程中，我们仅存储用于重建局部生成和 KV 写入计算所需的状态，包括采样出的退出输入和时间步长、生成的潜在变量以及对应的因果缓存状态。"
+    },
+    {
+     "en": "The DMD output gradients are computed once after the rollout and reused throughout replay; the recorded stochastic-exit states are also reused rather than resampled.",
+     "zh": "DMD 输出梯度在展开后计算一次，并在整个重播过程中重复使用；记录下来的随机退出状态也重复使用，而非重新采样。"
+    }
+   ]
+  },
+  {
+   "en": "Replay is implemented as a single reverse traversal over the autoregressive chunks. When processing chunk i i , gradients contributed by later chunks to its KV state have already been accumulated. The required generation and KV-writing VJPs are evaluated through separate forward–backward calls, with each temporary computation graph released immediately after gradient accumulation. Thus, CSF reconstructs only the required local gradient paths without materializing the full autoregressive computation graph.",
+   "zh": "重播通过一次对自回归分块的逆向遍历来实现。 在处理分块 i 时，后续分块对其 KV 状态所贡献的梯度已经累积完毕。 所需的生成和 KV 写入 VJP 通过独立的正向-反向调用进行评估，每次临时计算图在梯度累积后立即释放。 因此，CSF 仅重建所需的局部梯度路径，而无需显式构建完整的自回归计算图。",
+   "sents": [
+    {
+     "en": "Replay is implemented as a single reverse traversal over the autoregressive chunks.",
+     "zh": "重播通过一次对自回归分块的逆向遍历来实现。"
+    },
+    {
+     "en": "When processing chunk i i , gradients contributed by later chunks to its KV state have already been accumulated.",
+     "zh": "在处理分块 i 时，后续分块对其 KV 状态所贡献的梯度已经累积完毕。"
+    },
+    {
+     "en": "The required generation and KV-writing VJPs are evaluated through separate forward–backward calls, with each temporary computation graph released immediately after gradient accumulation.",
+     "zh": "所需的生成和 KV 写入 VJP 通过独立的正向-反向调用进行评估，每次临时计算图在梯度累积后立即释放。"
+    },
+    {
+     "en": "Thus, CSF reconstructs only the required local gradient paths without materializing the full autoregressive computation graph.",
+     "zh": "因此，CSF 仅重建所需的局部梯度路径，而无需显式构建完整的自回归计算图。"
+    }
+   ]
+  },
+  {
+   "en": "We present a simple toy experiment to motivate our study of cross-step gradient propagation. This simplified setting provides intuition about its potential benefits, but the observed behavior need not carry over to real-world video generation. We compare SF, CSF, and Full BPTT under matched architectures, initialization, sampling, and neural DMD training, varying the backward paths through generated history.",
+   "zh": "我们提出一个简单的玩具实验，以说明我们对跨步梯度传播的研究动机。 这种简化设定有助于直观理解其潜在优势，但观察到的行为未必能直接迁移到真实世界的视频生成中。 我们在架构、初始化、采样和神经 DMD 训练均保持一致的条件下，比较了 SF、CSF 和 Full BPTT 在通过生成历史进行反向传播时的表现差异。",
+   "sents": [
+    {
+     "en": "We present a simple toy experiment to motivate our study of cross-step gradient propagation.",
+     "zh": "我们提出一个简单的玩具实验，以说明我们对跨步梯度传播的研究动机。"
+    },
+    {
+     "en": "This simplified setting provides intuition about its potential benefits, but the observed behavior need not carry over to real-world video generation.",
+     "zh": "这种简化设定有助于直观理解其潜在优势，但观察到的行为未必能直接迁移到真实世界的视频生成中。"
+    },
+    {
+     "en": "We compare SF, CSF, and Full BPTT under matched architectures, initialization, sampling, and neural DMD training, varying the backward paths through generated history.",
+     "zh": "我们在架构、初始化、采样和神经 DMD 训练均保持一致的条件下，比较了 SF、CSF 和 Full BPTT 在通过生成历史进行反向传播时的表现差异。"
+    }
+   ]
+  },
+  {
+   "en": "Task. For independent external inputs u j ∼ 𝒩 ⁡ ( 0 , 1 ) u_{j}\\sim\\mathcal{N}(0,1) , we generate",
+   "zh": "任务。 对于独立的外部输入 u j ∼ 𝒩 ⁡ ( 0 , 1 ) u_{j}\\sim\\mathcal{N}(0,1) ，我们生成",
+   "sents": [
+    {
+     "en": "Task.",
+     "zh": "任务。"
+    },
+    {
+     "en": "For independent external inputs u j ∼ 𝒩 ⁡ ( 0 , 1 ) u_{j}\\sim\\mathcal{N}(0,1) , we generate",
+     "zh": "对于独立的外部输入 u j ∼ 𝒩 ⁡ ( 0 , 1 ) u_{j}\\sim\\mathcal{N}(0,1) ，我们生成"
+    }
+   ]
+  },
+  {
+   "en": "States start at zero, followed by a 96-step burn-in. We retain 2,400 training sequences of length 128 and standardize observations using statistics from their first 24 positions. Each rollout starts from four observed positions and their external inputs. At step j j , the generator receives the current u j u_{j} , generated history, and fresh sampling noise, without future target observations or later external inputs. Given the observed context and subsequent external inputs, the target continuation is deterministic, making paired rollout MSE a direct prediction-error metric.",
+   "zh": "状态从零开始，随后进行 96 步的预热。 我们保留 2400 个长度为 128 的训练序列，并使用其前 24 个位置的数据统计量对观测值进行标准化。 每次展开都从四个已观测的位置及其外部输入开始。 在第 j 步时，生成器接收当前的 u_j、生成的历史以及新的采样噪声，但不包含未来的目标观测值或后续的外部输入。 在给定观测上下文和后续外部输入的情况下，目标延续是确定性的，这使得配对展开的均方误差成为直接的预测误差指标。",
+   "sents": [
+    {
+     "en": "States start at zero, followed by a 96-step burn-in.",
+     "zh": "状态从零开始，随后进行 96 步的预热。"
+    },
+    {
+     "en": "We retain 2,400 training sequences of length 128 and standardize observations using statistics from their first 24 positions.",
+     "zh": "我们保留 2400 个长度为 128 的训练序列，并使用其前 24 个位置的数据统计量对观测值进行标准化。"
+    },
+    {
+     "en": "Each rollout starts from four observed positions and their external inputs.",
+     "zh": "每次展开都从四个已观测的位置及其外部输入开始。"
+    },
+    {
+     "en": "At step j j , the generator receives the current u j u_{j} , generated history, and fresh sampling noise, without future target observations or later external inputs.",
+     "zh": "在第 j 步时，生成器接收当前的 u_j、生成的历史以及新的采样噪声，但不包含未来的目标观测值或后续的外部输入。"
+    },
+    {
+     "en": "Given the observed context and subsequent external inputs, the target continuation is deterministic, making paired rollout MSE a direct prediction-error metric.",
+     "zh": "在给定观测上下文和后续外部输入的情况下，目标延续是确定性的，这使得配对展开的均方误差成为直接的预测误差指标。"
+    }
+   ]
+  },
+  {
+   "en": "Training. Training proceeds in four stages. We first pretrain a bidirectional flow-matching teacher for 12,000 updates and freeze it. We initialize the causal generator with 5,000 updates of teacher-forcing flow matching using ground-truth history. With the generator fixed, we warm up a bidirectional fake model for 3,000 updates on generated samples. From these shared states, SF, CSF, and Full BPTT each receive 500 neural DMD generator updates, each preceded by five fake-model updates; MSE is reserved for evaluation.",
+   "zh": "训练。 训练分为四个阶段进行。 我们首先对双向流匹配教师模型进行 12,000 次更新的前训练，然后将其冻结。 我们使用真实历史数据，通过教师强制流匹配对因果生成器进行 5,000 次初始化更新。 在固定生成器后，我们对双向虚假模型在生成的样本上进行 3,000 次预热更新。 基于这些共享状态，SF、CSF 和 Full BPTT 各自接收 500 次神经 DMD 生成器更新，每次更新前均进行五次虚假模型更新；MSE 则保留用于评估。",
+   "sents": [
+    {
+     "en": "Training.",
+     "zh": "训练。"
+    },
+    {
+     "en": "Training proceeds in four stages.",
+     "zh": "训练分为四个阶段进行。"
+    },
+    {
+     "en": "We first pretrain a bidirectional flow-matching teacher for 12,000 updates and freeze it.",
+     "zh": "我们首先对双向流匹配教师模型进行 12,000 次更新的前训练，然后将其冻结。"
+    },
+    {
+     "en": "We initialize the causal generator with 5,000 updates of teacher-forcing flow matching using ground-truth history.",
+     "zh": "我们使用真实历史数据，通过教师强制流匹配对因果生成器进行 5,000 次初始化更新。"
+    },
+    {
+     "en": "With the generator fixed, we warm up a bidirectional fake model for 3,000 updates on generated samples.",
+     "zh": "在固定生成器后，我们对双向虚假模型在生成的样本上进行 3,000 次预热更新。"
+    },
+    {
+     "en": "From these shared states, SF, CSF, and Full BPTT each receive 500 neural DMD generator updates, each preceded by five fake-model updates; MSE is reserved for evaluation.",
+     "zh": "基于这些共享状态，SF、CSF 和 Full BPTT 各自接收 500 次神经 DMD 生成器更新，每次更新前均进行五次虚假模型更新；MSE 则保留用于评估。"
+    }
+   ]
+  },
+  {
+   "en": "The generator shares parameters between velocity prediction and clean KV writing, using one denoising step per autoregressive position in training and inference. To reduce gradient variance from random re-noising, we average the DMD update signal over eight independent re-noising draws of the same generated sequence. SF detaches generated history; CSF reconnects selected history paths through shortcut replay; Full BPTT backpropagates through all 20 autoregressive positions. All methods detach the observed context. We evaluate every endpoint checkpoint across ten paired seeds with shared minibatch and noise streams. Table 4 lists the configuration.",
+   "zh": "该生成器在速度预测和干净 KV 写入之间共享参数，在训练和推理阶段，每个自回归位置仅使用一次去噪步骤。 为减少随机重新去噪带来的梯度方差，我们对同一生成序列的八次独立重新去噪采样结果进行 DMD 更新信号的平均。 SF 会断开生成的历史；CSF 通过捷径重播重新连接选定的历史路径；Full BPTT 则通过全部 20 个自回归位置进行反向传播。 所有方法都会断开观测到的上下文。 我们在共享的小批量和噪声流上，使用十个成对的种子对每个终点检查点进行评估。 表 4 列出了相关配置。",
+   "sents": [
+    {
+     "en": "The generator shares parameters between velocity prediction and clean KV writing, using one denoising step per autoregressive position in training and inference.",
+     "zh": "该生成器在速度预测和干净 KV 写入之间共享参数，在训练和推理阶段，每个自回归位置仅使用一次去噪步骤。"
+    },
+    {
+     "en": "To reduce gradient variance from random re-noising, we average the DMD update signal over eight independent re-noising draws of the same generated sequence.",
+     "zh": "为减少随机重新去噪带来的梯度方差，我们对同一生成序列的八次独立重新去噪采样结果进行 DMD 更新信号的平均。"
+    },
+    {
+     "en": "SF detaches generated history; CSF reconnects selected history paths through shortcut replay; Full BPTT backpropagates through all 20 autoregressive positions.",
+     "zh": "SF 会断开生成的历史；CSF 通过捷径重播重新连接选定的历史路径；Full BPTT 则通过全部 20 个自回归位置进行反向传播。"
+    },
+    {
+     "en": "All methods detach the observed context.",
+     "zh": "所有方法都会断开观测到的上下文。"
+    },
+    {
+     "en": "We evaluate every endpoint checkpoint across ten paired seeds with shared minibatch and noise streams.",
+     "zh": "我们在共享的小批量和噪声流上，使用十个成对的种子对每个终点检查点进行评估。"
+    },
+    {
+     "en": "Table 4 lists the configuration.",
+     "zh": "表 4 列出了相关配置。"
+    }
+   ]
+  },
+  {
+   "en": "Evaluation. In Fig. 2 , panel (a) tracks validation MSE averaged over positions 21–124 every 25 generator updates on 256 fixed conditions. Panel (b) reports per-position rollout MSE at update 500 on 8,192 held-out conditions. The larger evaluation followed a sample-size diagnostic, without retraining or checkpoint selection. Both use two shared sampling-noise draws. MSE first averages over conditions and draws, then across ten paired seeds; bands are pointwise 95% Student- t t intervals over seed means, conditional on shared data and initialization. The unsmoothed curve uses a quadratic y-axis: vertical position is proportional to MSE squared, with ticks labeled in MSE units; gray shading marks positions 1–20.",
+   "zh": "评估。 在图 2 中，子图 (a) 追踪了每 25 次生成器更新时，在 256 个固定条件下对位置 21–124 求平均的验证 MSE。 子图 (b) 报告了在更新第 500 次时，8,192 个保留条件下的每个位置的展开 MSE。 较大的评估遵循了样本量诊断，且未进行重新训练或检查点选择。 两者均使用两次共享的采样噪声抽取。 MSE 首先对条件和抽取求平均，然后跨十个配对的种子计算；带状区域是基于共享数据和初始化的种子均值计算的逐点 95% Student-t 置信区间。 未平滑的曲线采用二次 y 轴：垂直位置与 MSE 的平方成正比，刻度以 MSE 单位为标记；灰色阴影表示位置 1–20。",
+   "sents": [
+    {
+     "en": "Evaluation.",
+     "zh": "评估。"
+    },
+    {
+     "en": "In Fig. 2 , panel (a) tracks validation MSE averaged over positions 21–124 every 25 generator updates on 256 fixed conditions.",
+     "zh": "在图 2 中，子图 (a) 追踪了每 25 次生成器更新时，在 256 个固定条件下对位置 21–124 求平均的验证 MSE。"
+    },
+    {
+     "en": "Panel (b) reports per-position rollout MSE at update 500 on 8,192 held-out conditions.",
+     "zh": "子图 (b) 报告了在更新第 500 次时，8,192 个保留条件下的每个位置的展开 MSE。"
+    },
+    {
+     "en": "The larger evaluation followed a sample-size diagnostic, without retraining or checkpoint selection.",
+     "zh": "较大的评估遵循了样本量诊断，且未进行重新训练或检查点选择。"
+    },
+    {
+     "en": "Both use two shared sampling-noise draws.",
+     "zh": "两者均使用两次共享的采样噪声抽取。"
+    },
+    {
+     "en": "MSE first averages over conditions and draws, then across ten paired seeds; bands are pointwise 95% Student- t t intervals over seed means, conditional on shared data and initialization.",
+     "zh": "MSE 首先对条件和抽取求平均，然后跨十个配对的种子计算；带状区域是基于共享数据和初始化的种子均值计算的逐点 95% Student-t 置信区间。"
+    },
+    {
+     "en": "The unsmoothed curve uses a quadratic y-axis: vertical position is proportional to MSE squared, with ticks labeled in MSE units; gray shading marks positions 1–20.",
+     "zh": "未平滑的曲线采用二次 y 轴：垂直位置与 MSE 的平方成正比，刻度以 MSE 单位为标记；灰色阴影表示位置 1–20。"
+    }
+   ]
+  },
+  {
+   "en": "Results. As shown in Fig. 2 , CSF improves prediction beyond the training horizon. Over positions 21–124, mean MSE is 0.03088 for SF, 0.02709 for CSF, and 0.02625 for Full BPTT. CSF reduces MSE by 12.27% relative to SF, improving in all ten paired seeds, while remaining 3.21% above Full BPTT. These results provide intuition within this simplified setting; whether the same behavior holds in real-world video generation requires separate evaluation.",
+   "zh": "结果。 如图 2 所示，CSF 的预测效果优于训练时域之外的情形。 在位置 21–124 范围内，SF 的平均 MSE 为 0.03088，CSF 为 0.02709，Full BPTT 为 0.02625。 与 SF 相比，CSF 将 MSE 降低了 12.27%，在全部十个配对种子中均有所改善，但仍比 Full BPTT 高 3.21%。 这些结果为我们在此简化设定下提供了直观理解；但相同行为是否适用于真实世界的视频生成，仍需另行评估。",
+   "sents": [
+    {
+     "en": "Results.",
+     "zh": "结果。"
+    },
+    {
+     "en": "As shown in Fig. 2 , CSF improves prediction beyond the training horizon.",
+     "zh": "如图 2 所示，CSF 的预测效果优于训练时域之外的情形。"
+    },
+    {
+     "en": "Over positions 21–124, mean MSE is 0.03088 for SF, 0.02709 for CSF, and 0.02625 for Full BPTT.",
+     "zh": "在位置 21–124 范围内，SF 的平均 MSE 为 0.03088，CSF 为 0.02709，Full BPTT 为 0.02625。"
+    },
+    {
+     "en": "CSF reduces MSE by 12.27% relative to SF, improving in all ten paired seeds, while remaining 3.21% above Full BPTT.",
+     "zh": "与 SF 相比，CSF 将 MSE 降低了 12.27%，在全部十个配对种子中均有所改善，但仍比 Full BPTT 高 3.21%。"
+    },
+    {
+     "en": "These results provide intuition within this simplified setting; whether the same behavior holds in real-world video generation requires separate evaluation.",
+     "zh": "这些结果为我们在此简化设定下提供了直观理解；但相同行为是否适用于真实世界的视频生成，仍需另行评估。"
+    }
+   ]
+  },
+  {
+   "en": "We profile SF, replay-based full backpropagation through the autoregressive rollout (Full BPTT), and CSF. Each uses eight processes (one GPU and batch size one per process), BF16, hybrid-full FSDP, gradient checkpointing, and matched allocator and cache-release settings. The chunk-wise test follows our main rollout configuration; the frame-wise stress test uses 21 autoregressive latent steps with a nine-latent local history.",
+   "zh": "我们对 SF、基于重放的完整反向传播通过自回归展开（Full BPTT）以及 CSF 进行了剖析。 每种方法均使用八个进程（每个进程一个 GPU 和一批大小为 1 的数据）、BF16、混合完整 FSDP、梯度检查点机制，以及匹配的分配器和缓存释放设置。 按分块进行的测试遵循我们的主要展开配置；按帧进行的压力测试则使用 21 个自回归潜在步长和包含九个潜在值的局部历史。",
+   "sents": [
+    {
+     "en": "We profile SF, replay-based full backpropagation through the autoregressive rollout (Full BPTT), and CSF.",
+     "zh": "我们对 SF、基于重放的完整反向传播通过自回归展开（Full BPTT）以及 CSF 进行了剖析。"
+    },
+    {
+     "en": "Each uses eight processes (one GPU and batch size one per process), BF16, hybrid-full FSDP, gradient checkpointing, and matched allocator and cache-release settings.",
+     "zh": "每种方法均使用八个进程（每个进程一个 GPU 和一批大小为 1 的数据）、BF16、混合完整 FSDP、梯度检查点机制，以及匹配的分配器和缓存释放设置。"
+    },
+    {
+     "en": "The chunk-wise test follows our main rollout configuration; the frame-wise stress test uses 21 autoregressive latent steps with a nine-latent local history.",
+     "zh": "按分块进行的测试遵循我们的主要展开配置；按帧进行的压力测试则使用 21 个自回归潜在步长和包含九个潜在值的局部历史。"
+    }
+   ]
+  },
+  {
+   "en": "For a controlled comparison, all methods execute the complete four-step denoising rollout. For each video on each GPU, we independently sample one denoising step as the gradient-enabled exit step and use the same exit step for all autoregressive units in that video; the remaining denoising steps do not contribute generator gradients. For Full BPTT, we first record the complete rollout without autograd, and then replay the selected denoising step together with the KV-writing transition for each autoregressive unit under autograd, while retaining the full historical computation graph across the rollout. This allows the gradient signals from later autoregressive units to propagate through the connected historical KV states in a single backward pass.",
+   "zh": "为了进行受控比较，所有方法都会执行完整的四步去噪流程。 对于每个 GPU 上的每个视频，我们独立地采样一个去噪步骤作为启用梯度的退出步骤，并在该视频的所有自回归单元中使用相同的退出步骤；其余的去噪步骤不会为生成器贡献梯度。 对于完整 BPTT，我们首先在没有自动微分的情况下记录完整的流程，然后在自动微分下重播选定的去噪步骤以及每个自回归单元的 KV 写入转换，同时保留整个流程中的完整历史计算图。 这使得来自后续自回归单元的梯度信号能够通过相连的历史 KV 状态在一次反向传播中传递。",
+   "sents": [
+    {
+     "en": "For a controlled comparison, all methods execute the complete four-step denoising rollout.",
+     "zh": "为了进行受控比较，所有方法都会执行完整的四步去噪流程。"
+    },
+    {
+     "en": "For each video on each GPU, we independently sample one denoising step as the gradient-enabled exit step and use the same exit step for all autoregressive units in that video; the remaining denoising steps do not contribute generator gradients.",
+     "zh": "对于每个 GPU 上的每个视频，我们独立地采样一个去噪步骤作为启用梯度的退出步骤，并在该视频的所有自回归单元中使用相同的退出步骤；其余的去噪步骤不会为生成器贡献梯度。"
+    },
+    {
+     "en": "For Full BPTT, we first record the complete rollout without autograd, and then replay the selected denoising step together with the KV-writing transition for each autoregressive unit under autograd, while retaining the full historical computation graph across the rollout.",
+     "zh": "对于完整 BPTT，我们首先在没有自动微分的情况下记录完整的流程，然后在自动微分下重播选定的去噪步骤以及每个自回归单元的 KV 写入转换，同时保留整个流程中的完整历史计算图。"
+    },
+    {
+     "en": "This allows the gradient signals from later autoregressive units to propagate through the connected historical KV states in a single backward pass.",
+     "zh": "这使得来自后续自回归单元的梯度信号能够通过相连的历史 KV 状态在一次反向传播中传递。"
+    }
+   ]
+  },
+  {
+   "en": "For completed runs, peak device memory is the maximum sampled device-wide NVML memory.used on any GPU across all 50 iterations; allocated and reserved are maxima of per-step PyTorch peaks. Time is the slowest rank’s elapsed time from the end of iteration 5 through the end of iteration 50, divided by nine. Each five-iteration unit includes one generator and five fake-score updates. Table 5 reports the resulting single-GPU memory and per-five-iteration time, normalized to SF within each setting.",
+   "zh": "对于已完成运行的实验，峰值设备内存是指所有 50 次迭代中任意 GPU 上采样得到的 NVML memory.used 的最大值；而分配和保留内存则是每一步 PyTorch 峰值中的最大值。 时间是指最慢进程从第 5 次迭代结束到第 50 次迭代结束所经历的时间，再除以九。 每个包含五次迭代的单元包括一个生成器和五个虚假分数更新。 表 5 报告了由此得到的单 GPU 内存和每五次迭代的时间，并在每种设置中将其归一化为 SF。",
+   "sents": [
+    {
+     "en": "For completed runs, peak device memory is the maximum sampled device-wide NVML memory.used on any GPU across all 50 iterations; allocated and reserved are maxima of per-step PyTorch peaks.",
+     "zh": "对于已完成运行的实验，峰值设备内存是指所有 50 次迭代中任意 GPU 上采样得到的 NVML memory.used 的最大值；而分配和保留内存则是每一步 PyTorch 峰值中的最大值。"
+    },
+    {
+     "en": "Time is the slowest rank’s elapsed time from the end of iteration 5 through the end of iteration 50, divided by nine.",
+     "zh": "时间是指最慢进程从第 5 次迭代结束到第 50 次迭代结束所经历的时间，再除以九。"
+    },
+    {
+     "en": "Each five-iteration unit includes one generator and five fake-score updates.",
+     "zh": "每个包含五次迭代的单元包括一个生成器和五个虚假分数更新。"
+    },
+    {
+     "en": "Table 5 reports the resulting single-GPU memory and per-five-iteration time, normalized to SF within each setting.",
+     "zh": "表 5 报告了由此得到的单 GPU 内存和每五次迭代的时间，并在每种设置中将其归一化为 SF。"
+    }
+   ]
+  },
+  {
+   "en": "In the chunk-wise setting, replay-based Full BPTT reaches 1.43 × \\times the SF peak device memory. CSF uses 0.85 × \\times the measured SF peak at 1.27 × \\times the time. In the frame-wise stress test, Full BPTT runs out of memory on its first generator update; CSF completes 50 iterations at 0.48 × \\times the measured SF peak and 1.41 × \\times the time. The reported memory and time ratios are specific to the standardized full-four-step profiling configuration.",
+   "zh": "在分块设置中，基于重放的完整 BPTT 达到了 SF 峰值设备内存的 1.43 × \\times。 CSF 使用的内存为测得 SF 峰值的 0.85 × \\times，所需时间为其 1.27 × \\times。 在逐帧压力测试中，完整 BPTT 在其首次生成器更新时出现内存不足；CSF 在测得 SF 峰值的 0.48 × \\times 和时间的 1.41 × \\times 内完成了 50 次迭代。 所报告的内存和时间比率均针对标准化的完整四步配置。",
+   "sents": [
+    {
+     "en": "In the chunk-wise setting, replay-based Full BPTT reaches 1.43 × \\times the SF peak device memory.",
+     "zh": "在分块设置中，基于重放的完整 BPTT 达到了 SF 峰值设备内存的 1.43 × \\times。"
+    },
+    {
+     "en": "CSF uses 0.85 × \\times the measured SF peak at 1.27 × \\times the time.",
+     "zh": "CSF 使用的内存为测得 SF 峰值的 0.85 × \\times，所需时间为其 1.27 × \\times。"
+    },
+    {
+     "en": "In the frame-wise stress test, Full BPTT runs out of memory on its first generator update; CSF completes 50 iterations at 0.48 × \\times the measured SF peak and 1.41 × \\times the time.",
+     "zh": "在逐帧压力测试中，完整 BPTT 在其首次生成器更新时出现内存不足；CSF 在测得 SF 峰值的 0.48 × \\times 和时间的 1.41 × \\times 内完成了 50 次迭代。"
+    },
+    {
+     "en": "The reported memory and time ratios are specific to the standardized full-four-step profiling configuration.",
+     "zh": "所报告的内存和时间比率均针对标准化的完整四步配置。"
+    }
+   ]
+  },
+  {
+   "en": "Full BPTT reconstructs and retains the connected computation graph across the autoregressive history. CSF instead replays selected paths and releases each local graph after backward. CSF’s lower measured peak memory is consistent with its replay schedule and early release of local graphs. It does not imply that adding cross-chunk gradients intrinsically reduces memory.",
+   "zh": "完整的 BPTT 在整个自回归历史中重建并保留了连接的计算图。 CSF 则重新播放选定的路径，并在反向传播后释放每个局部图。 CSF 测得的较低峰值内存与其重播机制以及局部图的早期释放是一致的。 这并不意味着添加跨分块梯度本身就能减少内存使用。",
+   "sents": [
+    {
+     "en": "Full BPTT reconstructs and retains the connected computation graph across the autoregressive history.",
+     "zh": "完整的 BPTT 在整个自回归历史中重建并保留了连接的计算图。"
+    },
+    {
+     "en": "CSF instead replays selected paths and releases each local graph after backward.",
+     "zh": "CSF 则重新播放选定的路径，并在反向传播后释放每个局部图。"
+    },
+    {
+     "en": "CSF’s lower measured peak memory is consistent with its replay schedule and early release of local graphs.",
+     "zh": "CSF 测得的较低峰值内存与其重播机制以及局部图的早期释放是一致的。"
+    },
+    {
+     "en": "It does not imply that adding cross-chunk gradients intrinsically reduces memory.",
+     "zh": "这并不意味着添加跨分块梯度本身就能减少内存使用。"
+    }
+   ]
+  },
+  {
+   "en": "In a separate chunk-wise diagnostic, direct Full BPTT with autograd enabled throughout the forward rollout reached 192.50 GiB. We therefore use replay-based Full BPTT as the more memory-efficient control in Table 5 : it shares the detached four-step rollout and selected-exit reconstruction with the other methods, yet retains all reconstructed historical connections until a single backward pass. The explicit replay cost is included in the reported time; gradient checkpointing is applied separately to all methods.",
+   "zh": "在另一个分块诊断中，在整个前向展开过程中启用 autograd 的直接完整 BPTT 达到了 192.50 GiB。 因此，我们在表 5 中使用基于重放的完整 BPTT 作为更节省内存的对照方法：它与其他方法共享解耦的四步展开和选中标记退出点的重建过程，但会将所有重建的历史连接保留到单次反向传播为止。 显式重放成本已包含在报告的时间中；梯度检查点则单独应用于所有方法。",
+   "sents": [
+    {
+     "en": "In a separate chunk-wise diagnostic, direct Full BPTT with autograd enabled throughout the forward rollout reached 192.50 GiB.",
+     "zh": "在另一个分块诊断中，在整个前向展开过程中启用 autograd 的直接完整 BPTT 达到了 192.50 GiB。"
+    },
+    {
+     "en": "We therefore use replay-based Full BPTT as the more memory-efficient control in Table 5 : it shares the detached four-step rollout and selected-exit reconstruction with the other methods, yet retains all reconstructed historical connections until a single backward pass.",
+     "zh": "因此，我们在表 5 中使用基于重放的完整 BPTT 作为更节省内存的对照方法：它与其他方法共享解耦的四步展开和选中标记退出点的重建过程，但会将所有重建的历史连接保留到单次反向传播为止。"
+    },
+    {
+     "en": "The explicit replay cost is included in the reported time; gradient checkpointing is applied separately to all methods.",
+     "zh": "显式重放成本已包含在报告的时间中；梯度检查点则单独应用于所有方法。"
+    }
+   ]
+  },
+  {
+   "en": "To complement the long-horizon evaluations in the main paper, we further provide the full 16-dimensional VBench results (Table 6 ) for approximately 5-second chunk-wise generation under the same three initialization settings: Causal CD, TF, and Causal ODE. We additionally report Avg.(6), defined as the unweighted average of Aesthetic Quality, Background Consistency, Imaging Quality, Motion Smoothness, Subject Consistency, and Flickering.",
+   "zh": "为了补充主论文中的长期评估，我们还进一步提供了完整的 16 维 VBench 结果（表 6），该结果基于约 5 秒的逐片段生成，并采用了相同的三种初始化设置：Causal CD、TF 和 Causal ODE。 此外，我们还报告了 Avg.(6)，其定义为美学质量、背景一致性、成像质量、运动流畅性、主体一致性和闪烁度的非加权平均值。",
+   "sents": [
+    {
+     "en": "To complement the long-horizon evaluations in the main paper, we further provide the full 16-dimensional VBench results (Table 6 ) for approximately 5-second chunk-wise generation under the same three initialization settings: Causal CD, TF, and Causal ODE.",
+     "zh": "为了补充主论文中的长期评估，我们还进一步提供了完整的 16 维 VBench 结果（表 6），该结果基于约 5 秒的逐片段生成，并采用了相同的三种初始化设置：Causal CD、TF 和 Causal ODE。"
+    },
+    {
+     "en": "We additionally report Avg.(6), defined as the unweighted average of Aesthetic Quality, Background Consistency, Imaging Quality, Motion Smoothness, Subject Consistency, and Flickering.",
+     "zh": "此外，我们还报告了 Avg.(6)，其定义为美学质量、背景一致性、成像质量、运动流畅性、主体一致性和闪烁度的非加权平均值。"
+    }
+   ]
+  },
+  {
+   "en": "Overall, SF, SGF, and CSF remain broadly comparable at this short horizon. CSF achieves the highest Avg.(6) under Causal CD and TF. Under Causal ODE, CSF remains closely matched with SF in Avg.(6). The individual VBench dimensions exhibit mixed rankings across methods rather than a uniform advantage for any single method. The six-metric average remains broadly comparable at short horizons, while individual semantic and compositional dimensions show setting-dependent trade-offs.",
+   "zh": "总体而言，在短期预测范围内，SF、SGF 和 CSF 的表现大致相当。 在因果 CD 和 TF 条件下，CSF 的 Avg.(6) 最高。 在因果 ODE 条件下，CSF 的 Avg.(6) 与 SF 仍十分接近。 各个 VBench 维度在不同方法中的排名呈现多样化，而非任何单一方法都具有统一的优势。 在短期预测范围内，六个指标的平均值大致相当，而单个语义和组合维度则表现出因设定而异的权衡关系。",
+   "sents": [
+    {
+     "en": "Overall, SF, SGF, and CSF remain broadly comparable at this short horizon.",
+     "zh": "总体而言，在短期预测范围内，SF、SGF 和 CSF 的表现大致相当。"
+    },
+    {
+     "en": "CSF achieves the highest Avg.(6) under Causal CD and TF.",
+     "zh": "在因果 CD 和 TF 条件下，CSF 的 Avg.(6) 最高。"
+    },
+    {
+     "en": "Under Causal ODE, CSF remains closely matched with SF in Avg.(6).",
+     "zh": "在因果 ODE 条件下，CSF 的 Avg.(6) 与 SF 仍十分接近。"
+    },
+    {
+     "en": "The individual VBench dimensions exhibit mixed rankings across methods rather than a uniform advantage for any single method.",
+     "zh": "各个 VBench 维度在不同方法中的排名呈现多样化，而非任何单一方法都具有统一的优势。"
+    },
+    {
+     "en": "The six-metric average remains broadly comparable at short horizons, while individual semantic and compositional dimensions show setting-dependent trade-offs.",
+     "zh": "在短期预测范围内，六个指标的平均值大致相当，而单个语义和组合维度则表现出因设定而异的权衡关系。"
+    }
+   ]
+  },
+  {
+   "en": "We provide additional qualitative comparisons for chunk-wise autoregressive generation at 5, 60, and 240 seconds. These examples complement the quantitative results in the main paper and the short-horizon evaluation above, covering both standard short-video generation and substantially longer autoregressive rollouts. We use the same initialization settings and evaluation prompts as in the corresponding quantitative experiments.",
+   "zh": "我们在 5、60 和 240 秒时，提供了针对分块自回归生成的额外定性比较。 这些示例补充了主论文中的定量结果以及上述短期评估，涵盖了标准短视频生成以及时间跨度明显更长的自回归展开过程。 我们采用了与相应定量实验相同的初始化设置和评估提示。",
+   "sents": [
+    {
+     "en": "We provide additional qualitative comparisons for chunk-wise autoregressive generation at 5, 60, and 240 seconds.",
+     "zh": "我们在 5、60 和 240 秒时，提供了针对分块自回归生成的额外定性比较。"
+    },
+    {
+     "en": "These examples complement the quantitative results in the main paper and the short-horizon evaluation above, covering both standard short-video generation and substantially longer autoregressive rollouts.",
+     "zh": "这些示例补充了主论文中的定量结果以及上述短期评估，涵盖了标准短视频生成以及时间跨度明显更长的自回归展开过程。"
+    },
+    {
+     "en": "We use the same initialization settings and evaluation prompts as in the corresponding quantitative experiments.",
+     "zh": "我们采用了与相应定量实验相同的初始化设置和评估提示。"
+    }
+   ]
+  },
+  {
+   "en": "Figures 7 – 9 present additional comparisons among SF, SGF, and CSF. At 5 seconds, the three methods generally produce comparable visual quality, with only modest variations in subject appearance and local scene details. As the rollout extends to 60 seconds, longer-term drift becomes easier to observe: the appearance and composition of the subjects may gradually change, and in some cases the generated content departs more noticeably from the earlier part of the sequence. At 240 seconds, these effects become more apparent in examples involving articulated characters, human subjects, and animals, where subject identity, scale, and surrounding scene structure can evolve over time. In the examples shown, CSF tends to preserve the defining visual characteristics of the subject and the overall composition more steadily across the rollout. These qualitative results are intended to complement the long-horizon quantitative evaluation in the main paper.",
+   "zh": "图 7–9 展示了 SF、SGF 和 CSF 之间的额外对比。 在 5 秒时，三种方法通常能产生相当接近的视觉质量，主体外观和局部场景细节仅有轻微差异。 随着模拟过程延长至 60 秒，长期漂移现象更容易被观察到：主体的外观和构图可能会逐渐变化，在某些情况下，生成的内容会明显偏离序列的早期部分。 在 240 秒时，这些效应在涉及可动角色、人类主体和动物的示例中变得更加明显，因为主体的身份、比例以及周围场景的结构都可能随时间演变。 在所示示例中，CSF 倾向于在整个模拟过程中更稳定地保留主体的关键视觉特征和整体构图。 这些定性结果旨在补充主论文中的长期定量评估。",
+   "sents": [
+    {
+     "en": "Figures 7 – 9 present additional comparisons among SF, SGF, and CSF.",
+     "zh": "图 7–9 展示了 SF、SGF 和 CSF 之间的额外对比。"
+    },
+    {
+     "en": "At 5 seconds, the three methods generally produce comparable visual quality, with only modest variations in subject appearance and local scene details.",
+     "zh": "在 5 秒时，三种方法通常能产生相当接近的视觉质量，主体外观和局部场景细节仅有轻微差异。"
+    },
+    {
+     "en": "As the rollout extends to 60 seconds, longer-term drift becomes easier to observe: the appearance and composition of the subjects may gradually change, and in some cases the generated content departs more noticeably from the earlier part of the sequence.",
+     "zh": "随着模拟过程延长至 60 秒，长期漂移现象更容易被观察到：主体的外观和构图可能会逐渐变化，在某些情况下，生成的内容会明显偏离序列的早期部分。"
+    },
+    {
+     "en": "At 240 seconds, these effects become more apparent in examples involving articulated characters, human subjects, and animals, where subject identity, scale, and surrounding scene structure can evolve over time.",
+     "zh": "在 240 秒时，这些效应在涉及可动角色、人类主体和动物的示例中变得更加明显，因为主体的身份、比例以及周围场景的结构都可能随时间演变。"
+    },
+    {
+     "en": "In the examples shown, CSF tends to preserve the defining visual characteristics of the subject and the overall composition more steadily across the rollout.",
+     "zh": "在所示示例中，CSF 倾向于在整个模拟过程中更稳定地保留主体的关键视觉特征和整体构图。"
+    },
+    {
+     "en": "These qualitative results are intended to complement the long-horizon quantitative evaluation in the main paper.",
+     "zh": "这些定性结果旨在补充主论文中的长期定量评估。"
+    }
+   ]
+  },
+  {
+   "en": "To further evaluate CSF beyond chunk-wise autoregressive generation, we conduct additional frame-wise experiments. All methods are trained and evaluated with a matched nine-latent history window, consisting of three sink and six recent latents, comparable in scale to the chunk-wise setting. Training lasts 1,500 iterations, corresponding to 1,500 fake-score and 299 generator optimizer steps. The results therefore reflect this matched-cache setting rather than each baseline’s native configuration. All other settings follow the corresponding chunk-wise experiments unless otherwise specified.",
+   "zh": "为了进一步评估 CSF 在基于分块的自回归生成之外的表现，我们进行了额外的逐帧实验。 所有方法均使用匹配的九层历史窗口进行训练和评估，该窗口包含三个沉没潜变量和六个近期潜变量，其规模与基于分块的设置相当。 训练持续 1,500 次迭代，相当于 1,500 次假分数步和 299 次生成器优化器步。 因此，这些结果反映的是这种匹配缓存的设置，而非每个基线方法的原生配置。 除非另有说明，所有其他设置均遵循相应的基于分块的实验。",
+   "sents": [
+    {
+     "en": "To further evaluate CSF beyond chunk-wise autoregressive generation, we conduct additional frame-wise experiments.",
+     "zh": "为了进一步评估 CSF 在基于分块的自回归生成之外的表现，我们进行了额外的逐帧实验。"
+    },
+    {
+     "en": "All methods are trained and evaluated with a matched nine-latent history window, consisting of three sink and six recent latents, comparable in scale to the chunk-wise setting.",
+     "zh": "所有方法均使用匹配的九层历史窗口进行训练和评估，该窗口包含三个沉没潜变量和六个近期潜变量，其规模与基于分块的设置相当。"
+    },
+    {
+     "en": "Training lasts 1,500 iterations, corresponding to 1,500 fake-score and 299 generator optimizer steps.",
+     "zh": "训练持续 1,500 次迭代，相当于 1,500 次假分数步和 299 次生成器优化器步。"
+    },
+    {
+     "en": "The results therefore reflect this matched-cache setting rather than each baseline’s native configuration.",
+     "zh": "因此，这些结果反映的是这种匹配缓存的设置，而非每个基线方法的原生配置。"
+    },
+    {
+     "en": "All other settings follow the corresponding chunk-wise experiments unless otherwise specified.",
+     "zh": "除非另有说明，所有其他设置均遵循相应的基于分块的实验。"
+    }
+   ]
+  },
+  {
+   "en": "Table 7 reports the 60- and 240-second results under Causal CD and TF initialization. Under Causal CD, CSF achieves the highest Avg.(6) at both horizons. Under TF, CSF slightly improves over SF at 60 seconds and remains closely matched at 240 seconds; the paired bootstrap intervals include zero at both horizons (Appendix D.5 ). Overall, these results support the applicability of CSF to finer-grained frame-wise autoregression, while indicating that the gains depend on the initialization setting.",
+   "zh": "表 7 报告了因果 CD 和 TF 初始化下 60 秒和 240 秒的结果。 在因果 CD 设置下，CSF 在两个时间跨度中都实现了最高的 Avg.(6)。 在 TF 设置下，CSF 在 60 秒时略优于 SF，而在 240 秒时两者表现接近；配对自助区间在两个时间跨度中均包含零（附录 D.5）。 总体而言，这些结果支持将 CSF 应用于更精细的逐帧自回归，同时也表明其性能提升取决于初始化设置。",
+   "sents": [
+    {
+     "en": "Table 7 reports the 60- and 240-second results under Causal CD and TF initialization.",
+     "zh": "表 7 报告了因果 CD 和 TF 初始化下 60 秒和 240 秒的结果。"
+    },
+    {
+     "en": "Under Causal CD, CSF achieves the highest Avg.(6) at both horizons.",
+     "zh": "在因果 CD 设置下，CSF 在两个时间跨度中都实现了最高的 Avg.(6)。"
+    },
+    {
+     "en": "Under TF, CSF slightly improves over SF at 60 seconds and remains closely matched at 240 seconds; the paired bootstrap intervals include zero at both horizons (Appendix D.5 ).",
+     "zh": "在 TF 设置下，CSF 在 60 秒时略优于 SF，而在 240 秒时两者表现接近；配对自助区间在两个时间跨度中均包含零（附录 D.5）。"
+    },
+    {
+     "en": "Overall, these results support the applicability of CSF to finer-grained frame-wise autoregression, while indicating that the gains depend on the initialization setting.",
+     "zh": "总体而言，这些结果支持将 CSF 应用于更精细的逐帧自回归，同时也表明其性能提升取决于初始化设置。"
+    }
+   ]
+  },
+  {
+   "en": "Figures 10 and 11 provide additional qualitative comparisons at 60 and 240 seconds. As the autoregressive rollout becomes longer, variations in subject appearance, composition, and scene content become increasingly visible in some examples. In the examples shown, CSF tends to maintain the key visual characteristics of the subject and the overall scene structure more steadily over time, complementing the quantitative results above.",
+   "zh": "图 10 和图 11 提供了在 60 秒和 240 秒时的额外定性比较。 随着自回归展开过程变长，在某些示例中，主体外观、构图和场景内容的差异变得愈发明显。 在所示的示例中，CSF 倾向于随着时间的推移更稳定地保持主体的关键视觉特征和整体场景结构，从而补充了上述定量结果。",
+   "sents": [
+    {
+     "en": "Figures 10 and 11 provide additional qualitative comparisons at 60 and 240 seconds.",
+     "zh": "图 10 和图 11 提供了在 60 秒和 240 秒时的额外定性比较。"
+    },
+    {
+     "en": "As the autoregressive rollout becomes longer, variations in subject appearance, composition, and scene content become increasingly visible in some examples.",
+     "zh": "随着自回归展开过程变长，在某些示例中，主体外观、构图和场景内容的差异变得愈发明显。"
+    },
+    {
+     "en": "In the examples shown, CSF tends to maintain the key visual characteristics of the subject and the overall scene structure more steadily over time, complementing the quantitative results above.",
+     "zh": "在所示的示例中，CSF 倾向于随着时间的推移更稳定地保持主体的关键视觉特征和整体场景结构，从而补充了上述定量结果。"
+    }
+   ]
+  },
+  {
+   "en": "We assess evaluation-sample uncertainty in Avg.(6) for the chunk-wise and frame-wise long-video settings reported above. The resampling unit is a matched prompt and its original full-length video; clip-level scores are first aggregated within that video, and its six dimension scores are averaged to obtain Avg.(6). Within each initialization and duration, we resample the same video identities for CSF and each baseline with replacement 20,000 times ( N = 40 N=40 at 60 seconds and N = 128 N=128 at 240 seconds). We report CSF-minus-baseline mean differences with 95% percentile intervals from the 2.5th and 97.5th bootstrap percentiles. These comparison-wise intervals describe evaluation-sample uncertainty conditional on fixed checkpoints, not variation across training seeds.",
+   "zh": "我们评估了上述按片段和按帧处理的长视频设置中 Avg.(6) 的评估样本不确定性。 重采样单元由一个匹配的提示及其原始完整长度视频组成；首先在该视频内聚合剪辑级别的分数，然后对其六个维度的分数取平均，得到 Avg.(6)。 在每个初始化和持续时间内，我们对 CSF 和每个基线方法使用相同视频身份进行有放回重采样 20,000 次（在 60 秒时 N = 40，在 240 秒时 N = 128）。 我们报告了 CSF 减去基线方法的平均差异及其 95% 百分位区间，该区间由第 2.5 和第 97.5 百分位数的自助法结果得出。 这些针对每次比较的区间描述了在固定检查点条件下的评估样本不确定性，而非训练种子之间的差异。",
+   "sents": [
+    {
+     "en": "We assess evaluation-sample uncertainty in Avg.(6) for the chunk-wise and frame-wise long-video settings reported above.",
+     "zh": "我们评估了上述按片段和按帧处理的长视频设置中 Avg.(6) 的评估样本不确定性。"
+    },
+    {
+     "en": "The resampling unit is a matched prompt and its original full-length video; clip-level scores are first aggregated within that video, and its six dimension scores are averaged to obtain Avg.(6).",
+     "zh": "重采样单元由一个匹配的提示及其原始完整长度视频组成；首先在该视频内聚合剪辑级别的分数，然后对其六个维度的分数取平均，得到 Avg.(6)。"
+    },
+    {
+     "en": "Within each initialization and duration, we resample the same video identities for CSF and each baseline with replacement 20,000 times ( N = 40 N=40 at 60 seconds and N = 128 N=128 at 240 seconds).",
+     "zh": "在每个初始化和持续时间内，我们对 CSF 和每个基线方法使用相同视频身份进行有放回重采样 20,000 次（在 60 秒时 N = 40，在 240 秒时 N = 128）。"
+    },
+    {
+     "en": "We report CSF-minus-baseline mean differences with 95% percentile intervals from the 2.5th and 97.5th bootstrap percentiles.",
+     "zh": "我们报告了 CSF 减去基线方法的平均差异及其 95% 百分位区间，该区间由第 2.5 和第 97.5 百分位数的自助法结果得出。"
+    },
+    {
+     "en": "These comparison-wise intervals describe evaluation-sample uncertainty conditional on fixed checkpoints, not variation across training seeds.",
+     "zh": "这些针对每次比较的区间描述了在固定检查点条件下的评估样本不确定性，而非训练种子之间的差异。"
+    }
+   ]
+  },
+  {
+   "en": "CSF combines the direct DMD gradient g DMD g_{\\mathrm{DMD}} with cross-chunk gradient feedback g cross g_{\\mathrm{cross}} propagated from future blocks. In practice, g cross g_{\\mathrm{cross}} can contain components that are negatively aligned with g DMD g_{\\mathrm{DMD}} . To examine whether such conflicts should be explicitly suppressed, we consider a simple conflict-aware variant that projects out the opposing component whenever g cross ⊤ ​ g DMD < 0 g_{\\mathrm{cross}}^{\\top}g_{\\mathrm{DMD}}<0 :",
+   "zh": "CSF 将直接的 DMD 梯度 g DMD g_{\\mathrm{DMD}} 与从未来块传播而来的跨片段梯度反馈 g cross g_{\\mathrm{cross}} 相结合。 在实践中，g cross g_{\\mathrm{cross}} 可能包含与 g DMD g_{\\mathrm{DMD}} 方向相反的组成部分。 为了检验是否应显式抑制此类冲突，我们考虑了一种简单的冲突感知变体：当 g cross ⊤ ​ g DMD < 0 g_{\\mathrm{cross}}^{\\top}g_{\\mathrm{DMD}}<0 时，它会投影掉相反方向的成分。",
+   "sents": [
+    {
+     "en": "CSF combines the direct DMD gradient g DMD g_{\\mathrm{DMD}} with cross-chunk gradient feedback g cross g_{\\mathrm{cross}} propagated from future blocks.",
+     "zh": "CSF 将直接的 DMD 梯度 g DMD g_{\\mathrm{DMD}} 与从未来块传播而来的跨片段梯度反馈 g cross g_{\\mathrm{cross}} 相结合。"
+    },
+    {
+     "en": "In practice, g cross g_{\\mathrm{cross}} can contain components that are negatively aligned with g DMD g_{\\mathrm{DMD}} .",
+     "zh": "在实践中，g cross g_{\\mathrm{cross}} 可能包含与 g DMD g_{\\mathrm{DMD}} 方向相反的组成部分。"
+    },
+    {
+     "en": "To examine whether such conflicts should be explicitly suppressed, we consider a simple conflict-aware variant that projects out the opposing component whenever g cross ⊤ ​ g DMD < 0 g_{\\mathrm{cross}}^{\\top}g_{\\mathrm{DMD}}<0 :",
+     "zh": "为了检验是否应显式抑制此类冲突，我们考虑了一种简单的冲突感知变体：当 g cross ⊤ ​ g DMD < 0 g_{\\mathrm{cross}}^{\\top}g_{\\mathrm{DMD}}<0 时，它会投影掉相反方向的成分。"
+    }
+   ]
+  },
+  {
+   "en": "This variant is used only for analysis and is not part of the default CSF formulation.",
+   "zh": "此变体仅用于分析，并非默认 CSF 公式的一部分。",
+   "sents": null
+  },
+  {
+   "en": "Table 9 compares the default CSF with this projected variant at 5, 60, and 240 seconds. Removing the negatively aligned component consistently increases Dynamic Degree, while Avg.(6) decreases slightly across all three horizons. This suggests that gradient components opposing the direct DMD objective are not necessarily purely detrimental. One possible interpretation is that part of the negative-direction feedback from g cross g_{\\mathrm{cross}} acts as a damping signal, encouraging more conservative temporal evolution and thereby reducing motion dynamics. Removing this component shifts the generation toward stronger temporal activity, but does not yield a consistent improvement in visual quality or long-term consistency. We therefore retain the original, unprojected cross-chunk gradient feedback in the default CSF formulation.",
+   "zh": "表9比较了默认CSF与此投影变体在5秒、60秒和240秒时的表现。 移除负向对齐的组件会持续提高动态度，而Avg.(6)在所有三个时间跨度中均略有下降。 这表明与直接DMD目标相反的梯度分量并不一定完全是有害的。 一种可能的解释是，来自g与g_{\\mathrm{cross}}的负方向反馈的一部分起到了阻尼信号的作用，促使更保守的时间演化，从而减少了运动动态性。 移除该组件会使生成结果偏向更强的时间活动性，但并未在视觉质量或长期一致性方面带来一致的提升。 因此，我们在默认CSF公式中保留了原始、未经投影的跨块梯度反馈。",
+   "sents": [
+    {
+     "en": "Table 9 compares the default CSF with this projected variant at 5, 60, and 240 seconds.",
+     "zh": "表9比较了默认CSF与此投影变体在5秒、60秒和240秒时的表现。"
+    },
+    {
+     "en": "Removing the negatively aligned component consistently increases Dynamic Degree, while Avg.(6) decreases slightly across all three horizons.",
+     "zh": "移除负向对齐的组件会持续提高动态度，而Avg.(6)在所有三个时间跨度中均略有下降。"
+    },
+    {
+     "en": "This suggests that gradient components opposing the direct DMD objective are not necessarily purely detrimental.",
+     "zh": "这表明与直接DMD目标相反的梯度分量并不一定完全是有害的。"
+    },
+    {
+     "en": "One possible interpretation is that part of the negative-direction feedback from g cross g_{\\mathrm{cross}} acts as a damping signal, encouraging more conservative temporal evolution and thereby reducing motion dynamics.",
+     "zh": "一种可能的解释是，来自g与g_{\\mathrm{cross}}的负方向反馈的一部分起到了阻尼信号的作用，促使更保守的时间演化，从而减少了运动动态性。"
+    },
+    {
+     "en": "Removing this component shifts the generation toward stronger temporal activity, but does not yield a consistent improvement in visual quality or long-term consistency.",
+     "zh": "移除该组件会使生成结果偏向更强的时间活动性，但并未在视觉质量或长期一致性方面带来一致的提升。"
+    },
+    {
+     "en": "We therefore retain the original, unprojected cross-chunk gradient feedback in the default CSF formulation.",
+     "zh": "因此，我们在默认CSF公式中保留了原始、未经投影的跨块梯度反馈。"
+    }
+   ]
+  },
+  {
+   "en": "CSF restores future-to-history gradient feedback without retaining the full autoregressive computation graph, but it does not aim to reproduce exact full-sequence backpropagation. In particular, Shortcut Gradient Replay selectively reconstructs paths to historical chunks, whereas Full BPTT connects the replayed computation across the autoregressive history. Its additional paths may give early chunks too much future feedback relative to direct DMD supervision. This suggests that the goal is not necessarily to propagate gradients through as much history as possible, but rather to provide useful future feedback while preserving a sufficiently strong local learning signal. This controlled comparison does not establish that full-history backpropagation is generally worse; further study is needed to understand when it helps. How to determine which historical states should receive gradient feedback, and from which future states, remains an open question.",
+   "zh": "CSF 无需保留完整的自回归计算图即可恢复未来到历史的梯度反馈，但它并不旨在完全重现完整的序列反向传播。 具体来说，Shortcut Gradient Replay 会选择性地重建通往历史分块的路径，而 Full BPTT 则会将重播的计算与自回归历史连接起来。 其额外的路径可能会使早期分块相对于直接的 DMD 监督获得过多的未来反馈。 这表明目标并不一定是要尽可能通过更长的历史传播梯度，而是提供有用的未来反馈，同时保留足够强的局部学习信号。 这种受控的比较并未证明完整历史反向传播总体上更差；需要进一步研究以了解它在何种情况下会有帮助。 如何确定哪些历史状态应接收梯度反馈，以及这些反馈来自哪些未来状态，仍然是一个开放性问题。",
+   "sents": [
+    {
+     "en": "CSF restores future-to-history gradient feedback without retaining the full autoregressive computation graph, but it does not aim to reproduce exact full-sequence backpropagation.",
+     "zh": "CSF 无需保留完整的自回归计算图即可恢复未来到历史的梯度反馈，但它并不旨在完全重现完整的序列反向传播。"
+    },
+    {
+     "en": "In particular, Shortcut Gradient Replay selectively reconstructs paths to historical chunks, whereas Full BPTT connects the replayed computation across the autoregressive history.",
+     "zh": "具体来说，Shortcut Gradient Replay 会选择性地重建通往历史分块的路径，而 Full BPTT 则会将重播的计算与自回归历史连接起来。"
+    },
+    {
+     "en": "Its additional paths may give early chunks too much future feedback relative to direct DMD supervision.",
+     "zh": "其额外的路径可能会使早期分块相对于直接的 DMD 监督获得过多的未来反馈。"
+    },
+    {
+     "en": "This suggests that the goal is not necessarily to propagate gradients through as much history as possible, but rather to provide useful future feedback while preserving a sufficiently strong local learning signal.",
+     "zh": "这表明目标并不一定是要尽可能通过更长的历史传播梯度，而是提供有用的未来反馈，同时保留足够强的局部学习信号。"
+    },
+    {
+     "en": "This controlled comparison does not establish that full-history backpropagation is generally worse; further study is needed to understand when it helps.",
+     "zh": "这种受控的比较并未证明完整历史反向传播总体上更差；需要进一步研究以了解它在何种情况下会有帮助。"
+    },
+    {
+     "en": "How to determine which historical states should receive gradient feedback, and from which future states, remains an open question.",
+     "zh": "如何确定哪些历史状态应接收梯度反馈，以及这些反馈来自哪些未来状态，仍然是一个开放性问题。"
+    }
+   ]
+  },
+  {
+   "en": "CSF trades memory consumption for additional computation through replay. Although the resulting training overhead remains practical in our post-training setting, replay becomes more expensive as the number of replayed historical states or writer dependencies grows. This may become more relevant for larger models or substantially longer autoregressive sequences. A natural direction is therefore to make historical gradient propagation more selective, for example through selective replay or sparse historical gradient assignment, so that gradients are propagated only through historical states that are most relevant to future generation. Such mechanisms could potentially retain the benefit of future-to-history feedback while reducing unnecessary recomputation and gradient interference.",
+   "zh": "CSF 通过重播以额外的计算换取更高的内存消耗。 尽管在我们后训练设置中，由此产生的训练开销仍然在实际可接受范围内，但随着重播的历史状态数量或写入依赖项的增加，重播的成本也会随之上升。 对于更大的模型或明显更长的自回归序列而言，这一点可能变得更加重要。 因此，一个自然的思路是使历史梯度的传播更具选择性，例如通过选择性重播或稀疏的历史梯度分配，从而仅通过那些对未来生成最相关的历史状态来传播梯度。 这类机制有可能在保留从未来到历史的反馈优势的同时，减少不必要的重新计算和梯度干扰。",
+   "sents": [
+    {
+     "en": "CSF trades memory consumption for additional computation through replay.",
+     "zh": "CSF 通过重播以额外的计算换取更高的内存消耗。"
+    },
+    {
+     "en": "Although the resulting training overhead remains practical in our post-training setting, replay becomes more expensive as the number of replayed historical states or writer dependencies grows.",
+     "zh": "尽管在我们后训练设置中，由此产生的训练开销仍然在实际可接受范围内，但随着重播的历史状态数量或写入依赖项的增加，重播的成本也会随之上升。"
+    },
+    {
+     "en": "This may become more relevant for larger models or substantially longer autoregressive sequences.",
+     "zh": "对于更大的模型或明显更长的自回归序列而言，这一点可能变得更加重要。"
+    },
+    {
+     "en": "A natural direction is therefore to make historical gradient propagation more selective, for example through selective replay or sparse historical gradient assignment, so that gradients are propagated only through historical states that are most relevant to future generation.",
+     "zh": "因此，一个自然的思路是使历史梯度的传播更具选择性，例如通过选择性重播或稀疏的历史梯度分配，从而仅通过那些对未来生成最相关的历史状态来传播梯度。"
+    },
+    {
+     "en": "Such mechanisms could potentially retain the benefit of future-to-history feedback while reducing unnecessary recomputation and gradient interference.",
+     "zh": "这类机制有可能在保留从未来到历史的反馈优势的同时，减少不必要的重新计算和梯度干扰。"
+    }
+   ]
+  },
+  {
+   "en": "Our experiments also suggest a possible interaction between long-term consistency and temporal dynamics. In particular, removing components of the cross-chunk gradient that oppose the direct DMD gradient increases Dynamic Degree, while slightly reducing the aggregated quality and consistency metrics. This indicates that some future-to-history feedback may encourage more conservative temporal evolution rather than simply acting as harmful gradient conflict. Although CSF does not always achieve the highest Dynamic Degree in the current unconstrained generation setting, this trade-off may become less limiting in controllable generation or world-model settings, where motion and scene evolution are driven more explicitly by control signals, actions, or other external conditions. In such settings, CSF may be particularly useful for further reducing autoregressive error accumulation and preserving visual or state consistency over long horizons, while the desired dynamics are governed by the control input itself. Better understanding how future-to-history feedback should interact with controllable dynamics is therefore an interesting direction for future work.",
+   "zh": "我们的实验还表明，长期一致性与时间动态之间可能存在相互作用。 具体来说，移除跨分块梯度中那些与直接 DMD 梯度相反的成分，会提高动态程度，同时略微降低聚合质量与一致性指标。 这表明，某些从未来到历史的反馈可能更倾向于促进保守的时间演化，而不仅仅是产生有害的梯度冲突。 尽管在当前无约束的生成设置中，CSF 并不总能实现最高的动态程度，但在可控生成或世界模型设置中，这种权衡可能变得不那么限制；在这些场景中，运动和场景演化更多由控制信号、动作或其他外部条件显式驱动。 在这样的设置中，CSF 可能特别有助于进一步减少自回归误差的累积，并在较长时间跨度内保持视觉或状态的一致性，而所需的动态特性则由控制输入本身决定。 因此，更好地理解未来到历史的反馈应当如何与可控动态相互作用，是未来研究的一个有趣方向。",
+   "sents": [
+    {
+     "en": "Our experiments also suggest a possible interaction between long-term consistency and temporal dynamics.",
+     "zh": "我们的实验还表明，长期一致性与时间动态之间可能存在相互作用。"
+    },
+    {
+     "en": "In particular, removing components of the cross-chunk gradient that oppose the direct DMD gradient increases Dynamic Degree, while slightly reducing the aggregated quality and consistency metrics.",
+     "zh": "具体来说，移除跨分块梯度中那些与直接 DMD 梯度相反的成分，会提高动态程度，同时略微降低聚合质量与一致性指标。"
+    },
+    {
+     "en": "This indicates that some future-to-history feedback may encourage more conservative temporal evolution rather than simply acting as harmful gradient conflict.",
+     "zh": "这表明，某些从未来到历史的反馈可能更倾向于促进保守的时间演化，而不仅仅是产生有害的梯度冲突。"
+    },
+    {
+     "en": "Although CSF does not always achieve the highest Dynamic Degree in the current unconstrained generation setting, this trade-off may become less limiting in controllable generation or world-model settings, where motion and scene evolution are driven more explicitly by control signals, actions, or other external conditions.",
+     "zh": "尽管在当前无约束的生成设置中，CSF 并不总能实现最高的动态程度，但在可控生成或世界模型设置中，这种权衡可能变得不那么限制；在这些场景中，运动和场景演化更多由控制信号、动作或其他外部条件显式驱动。"
+    },
+    {
+     "en": "In such settings, CSF may be particularly useful for further reducing autoregressive error accumulation and preserving visual or state consistency over long horizons, while the desired dynamics are governed by the control input itself.",
+     "zh": "在这样的设置中，CSF 可能特别有助于进一步减少自回归误差的累积，并在较长时间跨度内保持视觉或状态的一致性，而所需的动态特性则由控制输入本身决定。"
+    },
+    {
+     "en": "Better understanding how future-to-history feedback should interact with controllable dynamics is therefore an interesting direction for future work.",
+     "zh": "因此，更好地理解未来到历史的反馈应当如何与可控动态相互作用，是未来研究的一个有趣方向。"
+    }
+   ]
+  }
+ ]
+}
