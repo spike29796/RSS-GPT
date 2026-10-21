@@ -1,0 +1,2579 @@
+{
+ "id": "b835baf8c02fa531",
+ "source": "arxiv-video",
+ "link": "https://arxiv.org/abs/2610.03202v1",
+ "title": "Contextual Flow Matching: Adaptive Step Selection in Flow Models for Efficient Visual Generation",
+ "title_zh": "上下文流匹配：流模型中自适应步数选择的高效视觉生成方法",
+ "published": "2026-10-02T12:19:49Z",
+ "translated_at": "2026-10-21T06:50:31Z",
+ "paragraphs": [
+  {
+   "en": "Flow Matching enables high-quality visual generation via continuous-time dynamics, but inference remains costly due to multiple sequential function evaluations. Existing acceleration methods reduce the number of function evaluations but often introduce additional training overhead, degrade quality, or fail to account for input-dependent variability. We propose CoFlow , an inference-time method that adaptively selects the step counts each generation based on the prompt features. Our context-aware CoFlow is trained online with an unsupervised reward that balances inference efficiency and generation fidelity. Our method is plug-and-play, requiring no retraining of the underlying generative model. It generalizes to image and video generation, achieving over 2.5 × 2.5\\times speedup while preserving perceptual and semantic quality. We further provide a theoretical analysis establishing an O ⁡ ( 1 / K ) O(1/K) forward-Euler discretization error bound under standard regularity conditions.",
+   "zh": "流匹配通过连续时间动态过程实现了高质量的视觉生成，但由于需要多次顺序执行函数评估，其推理过程仍然成本高昂。 现有的加速方法虽然减少了函数评估次数，但通常会带来额外的训练开销、降低生成质量，或无法处理与输入相关的变异性。 我们提出了 CoFlow——一种在推理阶段运行的方法，它会根据提示特征自适应地选择每次生成的步数。 我们的上下文感知型 CoFlow 采用在线训练方式，并使用一种无监督奖励机制来平衡推理效率与生成保真度。 我们的方法支持即插即用，无需对底层的生成模型进行重新训练。 该方法可推广至图像和视频生成领域，在保持感知和语义质量的同时，实现了超过 2.5 × 2.5\\times 的速度提升。 我们还提供了理论分析，在标准的正则性条件下，确立了前向欧拉离散化误差的 O ⁡ ( 1 / K ) O(1/K) 界。",
+   "sents": [
+    {
+     "en": "Flow Matching enables high-quality visual generation via continuous-time dynamics, but inference remains costly due to multiple sequential function evaluations.",
+     "zh": "流匹配通过连续时间动态过程实现了高质量的视觉生成，但由于需要多次顺序执行函数评估，其推理过程仍然成本高昂。"
+    },
+    {
+     "en": "Existing acceleration methods reduce the number of function evaluations but often introduce additional training overhead, degrade quality, or fail to account for input-dependent variability.",
+     "zh": "现有的加速方法虽然减少了函数评估次数，但通常会带来额外的训练开销、降低生成质量，或无法处理与输入相关的变异性。"
+    },
+    {
+     "en": "We propose CoFlow , an inference-time method that adaptively selects the step counts each generation based on the prompt features.",
+     "zh": "我们提出了 CoFlow——一种在推理阶段运行的方法，它会根据提示特征自适应地选择每次生成的步数。"
+    },
+    {
+     "en": "Our context-aware CoFlow is trained online with an unsupervised reward that balances inference efficiency and generation fidelity.",
+     "zh": "我们的上下文感知型 CoFlow 采用在线训练方式，并使用一种无监督奖励机制来平衡推理效率与生成保真度。"
+    },
+    {
+     "en": "Our method is plug-and-play, requiring no retraining of the underlying generative model.",
+     "zh": "我们的方法支持即插即用，无需对底层的生成模型进行重新训练。"
+    },
+    {
+     "en": "It generalizes to image and video generation, achieving over 2.5 × 2.5\\times speedup while preserving perceptual and semantic quality.",
+     "zh": "该方法可推广至图像和视频生成领域，在保持感知和语义质量的同时，实现了超过 2.5 × 2.5\\times 的速度提升。"
+    },
+    {
+     "en": "We further provide a theoretical analysis establishing an O ⁡ ( 1 / K ) O(1/K) forward-Euler discretization error bound under standard regularity conditions.",
+     "zh": "我们还提供了理论分析，在标准的正则性条件下，确立了前向欧拉离散化误差的 O ⁡ ( 1 / K ) O(1/K) 界。"
+    }
+   ]
+  },
+  {
+   "en": "Flow Matching (FM) ( 1 ) has recently emerged as a powerful paradigm for visual generation ( 2 ) . In this framework, a time-dependent vector field governs the evolution of samples, and integrating this dynamics produces high-quality outputs along smooth trajectories. Compared to diffusion-based approaches ( 3 ) , FM can achieve comparable or superior perceptual fidelity with fewer function evaluations (steps), making it an attractive alternative for both image and video generation. Despite these advantages, inference efficiency remains a central challenge ( 4 , 5 , 6 ) . Generating a single sample requires sequential numerical integration of the learned dynamics, which involves multiple forward passes of the model over time. This inherent serial processing becomes increasingly expensive as model capacity scales and tasks demand higher spatial resolutions or longer temporal horizons, resulting in substantial inference latency in practical deployments.",
+   "zh": "流匹配（FM）（ 1 ）最近已成为视觉生成（ 2 ）的一种强大范式。 在该框架中，一个随时间变化的向量场控制着样本的演化，而对该动态过程进行积分则能沿着平滑的轨迹生成高质量输出。 与基于扩散的方法（ 3 ）相比，FM 能以更少的函数评估（步数）实现相当甚至更高的感知保真度，因此成为图像和视频生成领域一种极具吸引力的替代方案。 尽管存在这些优势，推理效率仍然是一个核心挑战（ 4 , 5 , 6 ）。 生成单个样本需要对学习到的动态过程进行顺序数值积分，这涉及模型在时间维度上的多次前向传播。 随着模型容量扩大以及任务对更高空间分辨率或更长时间跨度需求的增加，这种固有的串行处理成本会越来越高，导致在实际部署中出现显著的推理延迟。",
+   "sents": [
+    {
+     "en": "Flow Matching (FM) ( 1 ) has recently emerged as a powerful paradigm for visual generation ( 2 ) .",
+     "zh": "流匹配（FM）（ 1 ）最近已成为视觉生成（ 2 ）的一种强大范式。"
+    },
+    {
+     "en": "In this framework, a time-dependent vector field governs the evolution of samples, and integrating this dynamics produces high-quality outputs along smooth trajectories.",
+     "zh": "在该框架中，一个随时间变化的向量场控制着样本的演化，而对该动态过程进行积分则能沿着平滑的轨迹生成高质量输出。"
+    },
+    {
+     "en": "Compared to diffusion-based approaches ( 3 ) , FM can achieve comparable or superior perceptual fidelity with fewer function evaluations (steps), making it an attractive alternative for both image and video generation.",
+     "zh": "与基于扩散的方法（ 3 ）相比，FM 能以更少的函数评估（步数）实现相当甚至更高的感知保真度，因此成为图像和视频生成领域一种极具吸引力的替代方案。"
+    },
+    {
+     "en": "Despite these advantages, inference efficiency remains a central challenge ( 4 , 5 , 6 ) .",
+     "zh": "尽管存在这些优势，推理效率仍然是一个核心挑战（ 4 , 5 , 6 ）。"
+    },
+    {
+     "en": "Generating a single sample requires sequential numerical integration of the learned dynamics, which involves multiple forward passes of the model over time.",
+     "zh": "生成单个样本需要对学习到的动态过程进行顺序数值积分，这涉及模型在时间维度上的多次前向传播。"
+    },
+    {
+     "en": "This inherent serial processing becomes increasingly expensive as model capacity scales and tasks demand higher spatial resolutions or longer temporal horizons, resulting in substantial inference latency in practical deployments.",
+     "zh": "随着模型容量扩大以及任务对更高空间分辨率或更长时间跨度需求的增加，这种固有的串行处理成本会越来越高，导致在实际部署中出现显著的推理延迟。"
+    }
+   ]
+  },
+  {
+   "en": "A range of methods have been proposed to reduce inference latency in visual generations. These methods include distillation ( 4 , 5 , 7 ) , step truncation ( 8 , 9 ) , and consistency-based training ( 10 , 11 , 12 ) . While these approaches effectively reduce the number of function evaluations, they introduce non-trivial trade-offs, including additional training costs and reliance on teacher models or large-scale datasets. Such training overhead can offset the computational benefits gained at inference time. Several training-free methods have also been proposed that rely on heuristic step-skipping ( 13 , 14 , 15 ) based on intermediate signals. However, these training-free methods require accurate, expensive estimates of step importance, and any estimation errors can accumulate over time, irreversibly degrading generation quality.",
+   "zh": "已有多种方法被提出，用于降低视觉生成中的推理延迟。 这些方法包括蒸馏（4、5、7）、步骤截断（8、9）以及基于一致性的训练（10、11、12）。 尽管这些方法能有效减少函数评估次数，但它们也带来了非微不足道的权衡，包括额外的训练成本以及对教师模型或大规模数据集的依赖。 这类训练开销可能会抵消推理阶段所获得的计算效益。 此外，还提出了一些无需训练的方法，它们基于中间信号通过启发式步骤跳过（13、14、15）来实现优化。 然而，这些无需训练的方法需要准确且代价高昂的步骤重要性估计，任何估计误差都可能随时间累积，从而不可逆转地降低生成质量。",
+   "sents": [
+    {
+     "en": "A range of methods have been proposed to reduce inference latency in visual generations.",
+     "zh": "已有多种方法被提出，用于降低视觉生成中的推理延迟。"
+    },
+    {
+     "en": "These methods include distillation ( 4 , 5 , 7 ) , step truncation ( 8 , 9 ) , and consistency-based training ( 10 , 11 , 12 ) .",
+     "zh": "这些方法包括蒸馏（4、5、7）、步骤截断（8、9）以及基于一致性的训练（10、11、12）。"
+    },
+    {
+     "en": "While these approaches effectively reduce the number of function evaluations, they introduce non-trivial trade-offs, including additional training costs and reliance on teacher models or large-scale datasets.",
+     "zh": "尽管这些方法能有效减少函数评估次数，但它们也带来了非微不足道的权衡，包括额外的训练成本以及对教师模型或大规模数据集的依赖。"
+    },
+    {
+     "en": "Such training overhead can offset the computational benefits gained at inference time.",
+     "zh": "这类训练开销可能会抵消推理阶段所获得的计算效益。"
+    },
+    {
+     "en": "Several training-free methods have also been proposed that rely on heuristic step-skipping ( 13 , 14 , 15 ) based on intermediate signals.",
+     "zh": "此外，还提出了一些无需训练的方法，它们基于中间信号通过启发式步骤跳过（13、14、15）来实现优化。"
+    },
+    {
+     "en": "However, these training-free methods require accurate, expensive estimates of step importance, and any estimation errors can accumulate over time, irreversibly degrading generation quality.",
+     "zh": "然而，这些无需训练的方法需要准确且代价高昂的步骤重要性估计，任何估计误差都可能随时间累积，从而不可逆转地降低生成质量。"
+    }
+   ]
+  },
+  {
+   "en": "The difficulty of a generative task and associated computational requirements can vary substantially. For example, a simple prompt “A photo of a cat\" requires less computation than a prompt like “A photo of a cat traveling to the moon in a UFO\" (see Fig. 1 ) due to the need for fine-grained and prolonged trajectory refinement of the generative process. The complexity of prompts can then influence the number of steps. AdaDiff [ 16 ] adapts to such input-dependent complexity by using a pre-trained policy that decides the number of steps required to complete the generative task. However, pre-training such a policy is expensive, and the trained policy can be sensitive to distribution shifts at inference time. Our goal in this work is to develop an input-adaptive online strategy that eliminates the need for pre-training.",
+   "zh": "生成任务的难度及其相关的计算需求可能存在显著差异。 例如，一个简单的提示“一张猫的照片”所需的计算量少于像“一只乘坐UFO前往月球的猫的照片”这样的提示（参见图1），因为后者需要更精细且更长时间的生成过程轨迹优化。 提示的复杂程度进而会影响步骤的数量。 AdaDiff [16] 通过采用一个预训练的策略模型来适应这种依赖输入的复杂性，该策略模型能够决定完成生成任务所需的步骤数量。 然而，对这样一个策略模型进行预训练成本高昂，且训练后的策略在推理阶段可能对分布偏移较为敏感。 我们这项工作的目标是开发一种能够自适应输入的在线策略，从而无需进行预训练。",
+   "sents": [
+    {
+     "en": "The difficulty of a generative task and associated computational requirements can vary substantially.",
+     "zh": "生成任务的难度及其相关的计算需求可能存在显著差异。"
+    },
+    {
+     "en": "For example, a simple prompt “A photo of a cat\" requires less computation than a prompt like “A photo of a cat traveling to the moon in a UFO\" (see Fig. 1 ) due to the need for fine-grained and prolonged trajectory refinement of the generative process.",
+     "zh": "例如，一个简单的提示“一张猫的照片”所需的计算量少于像“一只乘坐UFO前往月球的猫的照片”这样的提示（参见图1），因为后者需要更精细且更长时间的生成过程轨迹优化。"
+    },
+    {
+     "en": "The complexity of prompts can then influence the number of steps.",
+     "zh": "提示的复杂程度进而会影响步骤的数量。"
+    },
+    {
+     "en": "AdaDiff [ 16 ] adapts to such input-dependent complexity by using a pre-trained policy that decides the number of steps required to complete the generative task.",
+     "zh": "AdaDiff [16] 通过采用一个预训练的策略模型来适应这种依赖输入的复杂性，该策略模型能够决定完成生成任务所需的步骤数量。"
+    },
+    {
+     "en": "However, pre-training such a policy is expensive, and the trained policy can be sensitive to distribution shifts at inference time.",
+     "zh": "然而，对这样一个策略模型进行预训练成本高昂，且训练后的策略在推理阶段可能对分布偏移较为敏感。"
+    },
+    {
+     "en": "Our goal in this work is to develop an input-adaptive online strategy that eliminates the need for pre-training.",
+     "zh": "我们这项工作的目标是开发一种能够自适应输入的在线策略，从而无需进行预训练。"
+    }
+   ]
+  },
+  {
+   "en": "We introduce CoFlow : Co ntextual Flow Matching, an inference-time input-adaptive step selection method for Flow Models, thereby reducing inference cost. CoFlow uses the contextual bandit ( 17 ) framework to learn the optimal number of steps for each generation task in an online fashion. It treats prompt-specific features, like semantic embeddings, complexity cues, and prior observations from similar inputs as context, and uses a neural network to predict the number of steps required. Once the number of steps is decided, it executes the corresponding full generation trajectory. The neural network is trained on the fly by optimizing a reward that balances computational cost and trajectory refinement. The reward is motivated by the observation that complex prompts induce larger variations in the velocity field across timesteps (see Fig 1 and 6 ).",
+   "zh": "我们提出 CoFlow：上下文流匹配（Contextual Flow Matching），这是一种在推理阶段能够自适应输入的智能体步数选择方法，从而降低推理成本。 CoFlow 采用上下文多臂老虎机（17）框架，以在线方式学习每个生成任务的最优步数。 它将提示特定的特征（如语义嵌入、复杂度线索以及来自相似输入的先前观察结果）视为上下文，并利用神经网络预测所需的步数。 一旦确定步数，系统便会执行相应的完整生成轨迹。 该神经网络通过优化一个平衡计算成本与轨迹精度的奖励函数来实现在线训练。 这一奖励函数的设计灵感源于以下观察：复杂的提示会导致不同时间步长之间的速度场产生更大的变化（参见图 1 和图 6）。",
+   "sents": [
+    {
+     "en": "We introduce CoFlow : Co ntextual Flow Matching, an inference-time input-adaptive step selection method for Flow Models, thereby reducing inference cost.",
+     "zh": "我们提出 CoFlow：上下文流匹配（Contextual Flow Matching），这是一种在推理阶段能够自适应输入的智能体步数选择方法，从而降低推理成本。"
+    },
+    {
+     "en": "CoFlow uses the contextual bandit ( 17 ) framework to learn the optimal number of steps for each generation task in an online fashion.",
+     "zh": "CoFlow 采用上下文多臂老虎机（17）框架，以在线方式学习每个生成任务的最优步数。"
+    },
+    {
+     "en": "It treats prompt-specific features, like semantic embeddings, complexity cues, and prior observations from similar inputs as context, and uses a neural network to predict the number of steps required.",
+     "zh": "它将提示特定的特征（如语义嵌入、复杂度线索以及来自相似输入的先前观察结果）视为上下文，并利用神经网络预测所需的步数。"
+    },
+    {
+     "en": "Once the number of steps is decided, it executes the corresponding full generation trajectory.",
+     "zh": "一旦确定步数，系统便会执行相应的完整生成轨迹。"
+    },
+    {
+     "en": "The neural network is trained on the fly by optimizing a reward that balances computational cost and trajectory refinement.",
+     "zh": "该神经网络通过优化一个平衡计算成本与轨迹精度的奖励函数来实现在线训练。"
+    },
+    {
+     "en": "The reward is motivated by the observation that complex prompts induce larger variations in the velocity field across timesteps (see Fig 1 and 6 ).",
+     "zh": "这一奖励函数的设计灵感源于以下观察：复杂的提示会导致不同时间步长之间的速度场产生更大的变化（参见图 1 和图 6）。"
+    }
+   ]
+  },
+  {
+   "en": "CoFlow is fully task-agnostic, adapts to multiple existing solvers (see Appendix A.9 ), and applies seamlessly to image generation, image editing, and video generation while maintaining high-fidelity outputs. We further provide theoretical grounding by deriving an upper bound on the discretization error induced by suboptimal step selection. Together, these components establish a principled adaptive inference framework that reduces unnecessary computation while preserving generation quality.",
+   "zh": "CoFlow 完全与具体任务无关，能够适应多种现有求解器（参见附录 A.9），并且可以无缝应用于图像生成、图像编辑和视频生成，同时保持高保真度的输出。 我们还通过推导由次优步长选择所导致的离散化误差的上界，为其提供了理论依据。 这些组件共同构建了一个基于原则的自适应推理框架，能够在保持生成质量的同时减少不必要的计算。",
+   "sents": [
+    {
+     "en": "CoFlow is fully task-agnostic, adapts to multiple existing solvers (see Appendix A.9 ), and applies seamlessly to image generation, image editing, and video generation while maintaining high-fidelity outputs.",
+     "zh": "CoFlow 完全与具体任务无关，能够适应多种现有求解器（参见附录 A.9），并且可以无缝应用于图像生成、图像编辑和视频生成，同时保持高保真度的输出。"
+    },
+    {
+     "en": "We further provide theoretical grounding by deriving an upper bound on the discretization error induced by suboptimal step selection.",
+     "zh": "我们还通过推导由次优步长选择所导致的离散化误差的上界，为其提供了理论依据。"
+    },
+    {
+     "en": "Together, these components establish a principled adaptive inference framework that reduces unnecessary computation while preserving generation quality.",
+     "zh": "这些组件共同构建了一个基于原则的自适应推理框架，能够在保持生成质量的同时减少不必要的计算。"
+    }
+   ]
+  },
+  {
+   "en": "We summarize the key contributions of this paper as follows:",
+   "zh": "我们将本文的主要贡献总结如下：",
+   "sents": null
+  },
+  {
+   "en": "We propose a novel adaptive inference paradigm that predicts an input-dependent step budget using a neural contextual bandits algorithm, conditioned solely on prompt-specific features.",
+   "zh": "我们提出了一种新颖的自适应推理范式，该范式利用神经上下文多臂老虎机算法预测与输入相关的步数预算，且仅以提示特定的特征为条件。",
+   "sents": null
+  },
+  {
+   "en": "We design an unsupervised reward mechanism based on trajectory dynamics, leveraging variations in the learned velocity field to balance computational cost and generation fidelity.",
+   "zh": "我们设计了一种基于轨迹动态的无监督奖励机制，利用所学习速度场的变化来平衡计算成本与生成保真度。",
+   "sents": null
+  },
+  {
+   "en": "We provide a theoretical analysis establishing an O ⁡ ( 1 / K ) O(1/K) discretization-error bound, highlighting the role of input-dependent flow dynamics in adaptive inference.",
+   "zh": "我们提供了一项理论分析，确立了 O ⁡ ( 1 / K ) O(1/K) 的离散化误差界限，并阐明了输入相关的流动态在自适应推理中的作用。",
+   "sents": null
+  },
+  {
+   "en": "Experimental results across image and video benchmarks show that our method achieves inference acceleration ( > 2.5 × >2.5\\times ) while maintaining quality and outperforming baselines.",
+   "zh": "在图像和视频基准测试中的实验结果表明，我们的方法在保持质量的同时实现了推理加速（>2.5 × >2.5\\times），并且优于基线模型。",
+   "sents": null
+  },
+  {
+   "en": "Flow Matching (FM) ( 1 , 18 , 19 , 20 ) has emerged as a strong alternative to diffusion models ( 3 , 21 , 22 , 23 ) . FM achieves high-quality generation enabling applications such as image inversion ( 20 ) , editing ( 24 ) , and video synthesis ( 25 , 26 ) . Recent advances further improves scalability and performance through multimodal extensions ( 27 , 28 ) , large-scale flow models such as FLUX ( 19 ) , and hierarchical approaches such as pyramidal flow matching ( 29 ) for video generation.",
+   "zh": "流匹配（FM）（1, 18, 19, 20）已成为扩散模型（3, 21, 22, 23）的有力替代方案。 FM 能够生成高质量内容，支持图像反演（20）、编辑（24）和视频合成（25, 26）等应用。 近期的进展通过多模态扩展（27, 28）、大型流模型（如 FLUX（19））以及用于视频生成的分层方法（如金字塔流匹配（29）），进一步提升了其可扩展性和性能。",
+   "sents": [
+    {
+     "en": "Flow Matching (FM) ( 1 , 18 , 19 , 20 ) has emerged as a strong alternative to diffusion models ( 3 , 21 , 22 , 23 ) .",
+     "zh": "流匹配（FM）（1, 18, 19, 20）已成为扩散模型（3, 21, 22, 23）的有力替代方案。"
+    },
+    {
+     "en": "FM achieves high-quality generation enabling applications such as image inversion ( 20 ) , editing ( 24 ) , and video synthesis ( 25 , 26 ) .",
+     "zh": "FM 能够生成高质量内容，支持图像反演（20）、编辑（24）和视频合成（25, 26）等应用。"
+    },
+    {
+     "en": "Recent advances further improves scalability and performance through multimodal extensions ( 27 , 28 ) , large-scale flow models such as FLUX ( 19 ) , and hierarchical approaches such as pyramidal flow matching ( 29 ) for video generation.",
+     "zh": "近期的进展通过多模态扩展（27, 28）、大型流模型（如 FLUX（19））以及用于视频生成的分层方法（如金字塔流匹配（29）），进一步提升了其可扩展性和性能。"
+    }
+   ]
+  },
+  {
+   "en": "Despite these advances, iterative integration remains a fundamental bottleneck, limiting real-time and interactive deployment. Existing acceleration methods can be broadly categorized into retraining-based and inference-time approaches ( 30 ) . Retraining-based methods, including distillation approaches such as InstaFlow ( 31 ) , LeDiFlow ( 32 ) , and Diff2Flow ( 33 ) , compress multi-step generation into one or a few steps by transferring knowledge from pretrained models. Other methods, such as PeRFlow ( 5 ) , instead modify the training objective to produce straighter transport trajectories. Although effective, these approaches require additional training, large-scale data, or specialized objectives, resulting in substantial computational overhead. Recent works further combine adversarial and consistency objectives to improve high-quality few-step generation ( 10 , 11 , 34 ) .",
+   "zh": "尽管取得了这些进展，迭代集成仍然是一个根本性的瓶颈，限制了实时和交互式部署。 现有的加速方法大致可分为基于重训练的方法和推理时方法（30）。 基于重训练的方法，包括蒸馏方法，如 InstaFlow（31）、LeDiFlow（32）和 Diff2Flow（33），通过将知识从预训练模型中迁移，将多步生成压缩到一步或少数几步。 其他方法，如 PeRFlow（5），则通过修改训练目标来产生更直的传输轨迹。 尽管这些方法有效，但它们需要额外的训练、大规模数据或专门的目标，从而带来巨大的计算开销。 近期的研究进一步结合了对抗性和一致性目标，以提高高质量少步生成的效果（10、11、34）。",
+   "sents": [
+    {
+     "en": "Despite these advances, iterative integration remains a fundamental bottleneck, limiting real-time and interactive deployment.",
+     "zh": "尽管取得了这些进展，迭代集成仍然是一个根本性的瓶颈，限制了实时和交互式部署。"
+    },
+    {
+     "en": "Existing acceleration methods can be broadly categorized into retraining-based and inference-time approaches ( 30 ) .",
+     "zh": "现有的加速方法大致可分为基于重训练的方法和推理时方法（30）。"
+    },
+    {
+     "en": "Retraining-based methods, including distillation approaches such as InstaFlow ( 31 ) , LeDiFlow ( 32 ) , and Diff2Flow ( 33 ) , compress multi-step generation into one or a few steps by transferring knowledge from pretrained models.",
+     "zh": "基于重训练的方法，包括蒸馏方法，如 InstaFlow（31）、LeDiFlow（32）和 Diff2Flow（33），通过将知识从预训练模型中迁移，将多步生成压缩到一步或少数几步。"
+    },
+    {
+     "en": "Other methods, such as PeRFlow ( 5 ) , instead modify the training objective to produce straighter transport trajectories.",
+     "zh": "其他方法，如 PeRFlow（5），则通过修改训练目标来产生更直的传输轨迹。"
+    },
+    {
+     "en": "Although effective, these approaches require additional training, large-scale data, or specialized objectives, resulting in substantial computational overhead.",
+     "zh": "尽管这些方法有效，但它们需要额外的训练、大规模数据或专门的目标，从而带来巨大的计算开销。"
+    },
+    {
+     "en": "Recent works further combine adversarial and consistency objectives to improve high-quality few-step generation ( 10 , 11 , 34 ) .",
+     "zh": "近期的研究进一步结合了对抗性和一致性目标，以提高高质量少步生成的效果（10、11、34）。"
+    }
+   ]
+  },
+  {
+   "en": "Inference-time methods reduce computation by modifying the sampling procedure. Techniques such as TeaCache ( 13 ) and FastFlow ( 15 ) skip redundant evaluations using trajectory-based signals, while FlowCast ( 14 ) adapts speculative decoding to flow matching models. While effective, these approaches typically rely on heuristic signals or alter trajectories designed for fixed discretization schedules, which can introduce inconsistencies and degrade generation quality.",
+   "zh": "推理时的方法通过修改采样过程来减少计算量。 像 TeaCache ( 13 ) 和 FastFlow ( 15 ) 这样的技术利用基于轨迹的信号跳过冗余评估，而 FlowCast ( 14 ) 则将推测性解码适配到流匹配模型中。 尽管这些方法有效，但它们通常依赖启发式信号或改变为固定离散化时间表设计的轨迹，这可能会引入不一致性并降低生成质量。",
+   "sents": [
+    {
+     "en": "Inference-time methods reduce computation by modifying the sampling procedure.",
+     "zh": "推理时的方法通过修改采样过程来减少计算量。"
+    },
+    {
+     "en": "Techniques such as TeaCache ( 13 ) and FastFlow ( 15 ) skip redundant evaluations using trajectory-based signals, while FlowCast ( 14 ) adapts speculative decoding to flow matching models.",
+     "zh": "像 TeaCache ( 13 ) 和 FastFlow ( 15 ) 这样的技术利用基于轨迹的信号跳过冗余评估，而 FlowCast ( 14 ) 则将推测性解码适配到流匹配模型中。"
+    },
+    {
+     "en": "While effective, these approaches typically rely on heuristic signals or alter trajectories designed for fixed discretization schedules, which can introduce inconsistencies and degrade generation quality.",
+     "zh": "尽管这些方法有效，但它们通常依赖启发式信号或改变为固定离散化时间表设计的轨迹，这可能会引入不一致性并降低生成质量。"
+    }
+   ]
+  },
+  {
+   "en": "Our setup is closely related to AdaDiff ( 16 ) , but the solution approach differs in several fundamental aspects. The policy training in AdaDiff requires generating multiple images at various step budgets and assess their quality in each round of training, which require offline-data and introduces overheads. In contrast, our method is fully online and leverages intrinsic model dynamics (trajectory-level signals) as a proxy for generation complexity, thereby avoiding any additional generations and external evaluation. This yields a plug-and-play framework that preserves the consistency of the underlying discretization schdules of flow models resulting in efficient and high-quality visual outputs.",
+   "zh": "我们的设置与 AdaDiff (16) 密切相关，但解决方案在几个基本方面有所不同。 AdaDiff 中的策略训练需要在每一轮训练中以不同的步数预算生成多张图片并评估其质量，这需要离线数据并会产生额外开销。 相比之下，我们的方法完全在线运行，并利用模型内在的动态特性（轨迹级信号）作为生成复杂度的代理，从而避免任何额外的生成和外部评估。 这产生了一个即插即用的框架，能够保持流模型底层离散化调度的一致性，从而实现高效且高质量的视觉输出。",
+   "sents": [
+    {
+     "en": "Our setup is closely related to AdaDiff ( 16 ) , but the solution approach differs in several fundamental aspects.",
+     "zh": "我们的设置与 AdaDiff (16) 密切相关，但解决方案在几个基本方面有所不同。"
+    },
+    {
+     "en": "The policy training in AdaDiff requires generating multiple images at various step budgets and assess their quality in each round of training, which require offline-data and introduces overheads.",
+     "zh": "AdaDiff 中的策略训练需要在每一轮训练中以不同的步数预算生成多张图片并评估其质量，这需要离线数据并会产生额外开销。"
+    },
+    {
+     "en": "In contrast, our method is fully online and leverages intrinsic model dynamics (trajectory-level signals) as a proxy for generation complexity, thereby avoiding any additional generations and external evaluation.",
+     "zh": "相比之下，我们的方法完全在线运行，并利用模型内在的动态特性（轨迹级信号）作为生成复杂度的代理，从而避免任何额外的生成和外部评估。"
+    },
+    {
+     "en": "This yields a plug-and-play framework that preserves the consistency of the underlying discretization schdules of flow models resulting in efficient and high-quality visual outputs.",
+     "zh": "这产生了一个即插即用的框架，能够保持流模型底层离散化调度的一致性，从而实现高效且高质量的视觉输出。"
+    }
+   ]
+  },
+  {
+   "en": "We begin with a brief review of Flow Matching (FM) and describe how our approach builds on it to enable adaptive inference.",
+   "zh": "我们首先简要回顾流匹配（Flow Matching，FM）方法，并阐述我们的方法如何在此基础之上进行改进，以实现自适应推理。",
+   "sents": null
+  },
+  {
+   "en": "Let π 0 \\pi_{0} and π 1 \\pi_{1} denote probability distributions over ℝ d \\mathbb{R}^{d} , corresponding to a simple source distribution and a complex target data distribution, respectively. Flow Matching formulates generation as learning a continuous transformation that maps samples from π 0 \\pi_{0} to π 1 \\pi_{1} via a time-dependent dynamical system. Specifically, a velocity field v : ℝ d × [ 0 , 1 ] → ℝ d v:\\mathbb{R}^{d}\\times[0,1]\\rightarrow\\mathbb{R}^{d} defines the evolution of a sample x t x_{t} through the ordinary differential equation (ODE)",
+   "zh": "令 π₀ \\pi_{0} 和 π₁ \\pi_{1} 分别表示 ℝᵈ \\mathbb{R}^{d} 上的概率分布，对应于一个简单的源数据分布和一个复杂的目标数据分布。 流匹配将生成问题表述为学习一种连续变换，通过一个随时间变化的动态系统，将样本从 π₀ \\pi_{0} 映射到 π₁ \\pi_{1}。 具体而言，一个速度场 v : ℝᵈ × [0, 1] → ℝᵈ v:\\mathbb{R}^{d}\\times[0,1]\\rightarrow\\mathbb{R}^{d} 通过常微分方程（ODE）定义了样本 xₜ x_{t} 的演化过程。",
+   "sents": [
+    {
+     "en": "Let π 0 \\pi_{0} and π 1 \\pi_{1} denote probability distributions over ℝ d \\mathbb{R}^{d} , corresponding to a simple source distribution and a complex target data distribution, respectively.",
+     "zh": "令 π₀ \\pi_{0} 和 π₁ \\pi_{1} 分别表示 ℝᵈ \\mathbb{R}^{d} 上的概率分布，对应于一个简单的源数据分布和一个复杂的目标数据分布。"
+    },
+    {
+     "en": "Flow Matching formulates generation as learning a continuous transformation that maps samples from π 0 \\pi_{0} to π 1 \\pi_{1} via a time-dependent dynamical system.",
+     "zh": "流匹配将生成问题表述为学习一种连续变换，通过一个随时间变化的动态系统，将样本从 π₀ \\pi_{0} 映射到 π₁ \\pi_{1}。"
+    },
+    {
+     "en": "Specifically, a velocity field v : ℝ d × [ 0 , 1 ] → ℝ d v:\\mathbb{R}^{d}\\times[0,1]\\rightarrow\\mathbb{R}^{d} defines the evolution of a sample x t x_{t} through the ordinary differential equation (ODE)",
+     "zh": "具体而言，一个速度场 v : ℝᵈ × [0, 1] → ℝᵈ v:\\mathbb{R}^{d}\\times[0,1]\\rightarrow\\mathbb{R}^{d} 通过常微分方程（ODE）定义了样本 xₜ x_{t} 的演化过程。"
+    }
+   ]
+  },
+  {
+   "en": "The velocity field, typically parameterized by a neural network, is trained such that integrating this dynamics transports the initial distribution π 0 \\pi_{0} to π 1 \\pi_{1} at t = 1 t=1 . This induces a flow map that traces a continuous trajectory for each sample, ultimately producing data-consistent outputs.",
+   "zh": "速度场通常由神经网络进行参数化，其训练目标是使该动力学的积分能够将初始分布 π 0 \\pi_{0} 在 t = 1 t=1 时传输到 π 1 \\pi_{1}。 这会生成一个流映射，为每个样本描绘出一条连续轨迹，最终产生与数据一致的输出。",
+   "sents": [
+    {
+     "en": "The velocity field, typically parameterized by a neural network, is trained such that integrating this dynamics transports the initial distribution π 0 \\pi_{0} to π 1 \\pi_{1} at t = 1 t=1 .",
+     "zh": "速度场通常由神经网络进行参数化，其训练目标是使该动力学的积分能够将初始分布 π 0 \\pi_{0} 在 t = 1 t=1 时传输到 π 1 \\pi_{1}。"
+    },
+    {
+     "en": "This induces a flow map that traces a continuous trajectory for each sample, ultimately producing data-consistent outputs.",
+     "zh": "这会生成一个流映射，为每个样本描绘出一条连续轨迹，最终产生与数据一致的输出。"
+    }
+   ]
+  },
+  {
+   "en": "Inference. Since the learned dynamics generally do not admit closed-form solutions, generating requires numerical integration of the ODE. In practice, simple solvers such as the forward Euler method are commonly used due to their efficiency. The time interval [ 0 , 1 ] [0,1] is discretized into K K steps { t 0 = 0 , t 1 , … , t K = 1 } \\{t_{0}=0,t_{1},\\ldots,t_{K}=1\\} , and starting from x 0 ∼ π 0 x_{0}\\sim\\pi_{0} , the sample is iteratively updated as",
+   "zh": "推理。 由于学习到的动态通常不存在闭式解，因此生成过程需要对常微分方程进行数值积分。 在实践中，由于效率较高，通常会使用前向欧拉法等简单的求解器。 时间区间 [0, 1] 被离散化为 K 个步骤 {t₀=0, t₁, …, t_K=1}，并从 x₀ ∼ π₀ 开始，样本将迭代更新为",
+   "sents": [
+    {
+     "en": "Inference.",
+     "zh": "推理。"
+    },
+    {
+     "en": "Since the learned dynamics generally do not admit closed-form solutions, generating requires numerical integration of the ODE.",
+     "zh": "由于学习到的动态通常不存在闭式解，因此生成过程需要对常微分方程进行数值积分。"
+    },
+    {
+     "en": "In practice, simple solvers such as the forward Euler method are commonly used due to their efficiency.",
+     "zh": "在实践中，由于效率较高，通常会使用前向欧拉法等简单的求解器。"
+    },
+    {
+     "en": "The time interval [ 0 , 1 ] [0,1] is discretized into K K steps { t 0 = 0 , t 1 , … , t K = 1 } \\{t_{0}=0,t_{1},\\ldots,t_{K}=1\\} , and starting from x 0 ∼ π 0 x_{0}\\sim\\pi_{0} , the sample is iteratively updated as",
+     "zh": "时间区间 [0, 1] 被离散化为 K 个步骤 {t₀=0, t₁, …, t_K=1}，并从 x₀ ∼ π₀ 开始，样本将迭代更新为"
+    }
+   ]
+  },
+  {
+   "en": "This procedure approximates the continuous trajectory using a sequence of discrete updates, where the number of steps K K directly controls the trade-off between computational cost and generation quality. A finer discretization of the interval leads to lower Euler discretization error, denoted as E ⁡ ( K ) E(K) and vice versa. For a given K K , the discretization points are fixed beforehand by the schedule of the solver.",
+   "zh": "该过程通过一系列离散更新来近似连续轨迹，其中步数 K 直接控制着计算成本与生成质量之间的权衡。 对区间进行更精细的离散化会导致欧拉离散化误差降低（记作 E(K)），反之亦然。 对于给定的 K，离散化点由求解器的调度方案预先确定。",
+   "sents": [
+    {
+     "en": "This procedure approximates the continuous trajectory using a sequence of discrete updates, where the number of steps K K directly controls the trade-off between computational cost and generation quality.",
+     "zh": "该过程通过一系列离散更新来近似连续轨迹，其中步数 K 直接控制着计算成本与生成质量之间的权衡。"
+    },
+    {
+     "en": "A finer discretization of the interval leads to lower Euler discretization error, denoted as E ⁡ ( K ) E(K) and vice versa.",
+     "zh": "对区间进行更精细的离散化会导致欧拉离散化误差降低（记作 E(K)），反之亦然。"
+    },
+    {
+     "en": "For a given K K , the discretization points are fixed beforehand by the schedule of the solver.",
+     "zh": "对于给定的 K，离散化点由求解器的调度方案预先确定。"
+    }
+   ]
+  },
+  {
+   "en": "A key observation motivating our approach is that different conditional inputs can induce trajectories with different levels of variation and, consequently, different sensitivities to temporal discretization. Thus, a fixed step budget may be unnecessarily conservative for some inputs while insufficient for others, motivating an adaptive mechanism that selects the step budget conditioned on the input.",
+   "zh": "推动我们方法的一个关键观察是，不同的条件输入可能会产生具有不同变异程度的轨迹，因此对时间离散化的敏感度也会不同。 因此，对于某些输入而言，固定的步数预算可能过于保守，而对于其他输入则可能不足，这促使我们提出一种自适应机制，根据输入来选择步数预算。",
+   "sents": [
+    {
+     "en": "A key observation motivating our approach is that different conditional inputs can induce trajectories with different levels of variation and, consequently, different sensitivities to temporal discretization.",
+     "zh": "推动我们方法的一个关键观察是，不同的条件输入可能会产生具有不同变异程度的轨迹，因此对时间离散化的敏感度也会不同。"
+    },
+    {
+     "en": "Thus, a fixed step budget may be unnecessarily conservative for some inputs while insufficient for others, motivating an adaptive mechanism that selects the step budget conditioned on the input.",
+     "zh": "因此，对于某些输入而言，固定的步数预算可能过于保守，而对于其他输入则可能不足，这促使我们提出一种自适应机制，根据输入来选择步数预算。"
+    }
+   ]
+  },
+  {
+   "en": "To accelerate generation, our goal is to determine an input-dependent integration step budget during inference. Crucially, this decision should account for both the global data distribution and input-specific context, as samples from the same distribution can exhibit different trajectory dynamics. We cast adaptive step-budget selection as an online sequential decision-making problem using a Neural Contextual Bandit (NCB).",
+   "zh": "为了加速生成，我们的目标是在推理过程中确定一个依赖于输入的综合步数预算。 关键在于，这一决策应同时考虑全局数据分布和输入特定的上下文，因为来自同一分布的样本可能表现出不同的轨迹动态。 我们将自适应步数预算的选择问题转化为一个在线序列决策问题，并使用神经上下文多臂老虎机（NCB）来解决。",
+   "sents": [
+    {
+     "en": "To accelerate generation, our goal is to determine an input-dependent integration step budget during inference.",
+     "zh": "为了加速生成，我们的目标是在推理过程中确定一个依赖于输入的综合步数预算。"
+    },
+    {
+     "en": "Crucially, this decision should account for both the global data distribution and input-specific context, as samples from the same distribution can exhibit different trajectory dynamics.",
+     "zh": "关键在于，这一决策应同时考虑全局数据分布和输入特定的上下文，因为来自同一分布的样本可能表现出不同的轨迹动态。"
+    },
+    {
+     "en": "We cast adaptive step-budget selection as an online sequential decision-making problem using a Neural Contextual Bandit (NCB).",
+     "zh": "我们将自适应步数预算的选择问题转化为一个在线序列决策问题，并使用神经上下文多臂老虎机（NCB）来解决。"
+    }
+   ]
+  },
+  {
+   "en": "In a contextual bandit framework, an agent selects actions conditioned on input context to maximize cumulative reward while balancing exploration and exploitation. Let 𝒜 \\mathcal{A} denote the set of step budgets, where each action α ∈ 𝒜 \\alpha\\in\\mathcal{A} corresponds to the number of discretization steps in [ 0 , 1 ] [0,1] . For a given prompt x x , let φ ⁡ ( x ) \\varphi(x) denote the context features (e.g., semantic embeddings of prompt and complexity cues) enabling input-adaptive selection. A neural network models a policy π ⁡ ( α ∣ φ ⁡ ( x ) ) \\pi(\\alpha\\mid\\varphi(x)) , mapping features to action preferences, capturing complex input–decision relationships. At each prompt x x , the policy outputs the number of discretization steps α \\alpha based on φ ⁡ ( x ) \\varphi(x) , and the full trajectory with α \\alpha steps is executed. The policy is updated online using a reward below.",
+   "zh": "在上下文老虎机框架中，智能体根据输入上下文选择动作，以在探索与利用之间取得平衡的同时最大化累积奖励。 令 𝒜 \\mathcal{A} 表示步数预算集合，其中每个动作 α ∈ 𝒜 \\alpha\\in\\mathcal{A} 对应于区间 [0,1] 内的离散化步数。 对于给定的提示 x，令 φ⁡(x) 表示上下文特征（例如提示的语义嵌入和复杂度线索），这些特征支持输入自适应的选择。 一个神经网络模型化策略 π⁡(α∣φ⁡(x))，它将特征映射到动作偏好，从而捕捉复杂的输入与决策之间的关系。 在每个提示 x 处，该策略基于 φ⁡(x) 输出离散化步数 α，然后执行包含 α 步的完整轨迹。 策略通过以下奖励在线更新。",
+   "sents": [
+    {
+     "en": "In a contextual bandit framework, an agent selects actions conditioned on input context to maximize cumulative reward while balancing exploration and exploitation.",
+     "zh": "在上下文老虎机框架中，智能体根据输入上下文选择动作，以在探索与利用之间取得平衡的同时最大化累积奖励。"
+    },
+    {
+     "en": "Let 𝒜 \\mathcal{A} denote the set of step budgets, where each action α ∈ 𝒜 \\alpha\\in\\mathcal{A} corresponds to the number of discretization steps in [ 0 , 1 ] [0,1] .",
+     "zh": "令 𝒜 \\mathcal{A} 表示步数预算集合，其中每个动作 α ∈ 𝒜 \\alpha\\in\\mathcal{A} 对应于区间 [0,1] 内的离散化步数。"
+    },
+    {
+     "en": "For a given prompt x x , let φ ⁡ ( x ) \\varphi(x) denote the context features (e.g., semantic embeddings of prompt and complexity cues) enabling input-adaptive selection.",
+     "zh": "对于给定的提示 x，令 φ⁡(x) 表示上下文特征（例如提示的语义嵌入和复杂度线索），这些特征支持输入自适应的选择。"
+    },
+    {
+     "en": "A neural network models a policy π ⁡ ( α ∣ φ ⁡ ( x ) ) \\pi(\\alpha\\mid\\varphi(x)) , mapping features to action preferences, capturing complex input–decision relationships.",
+     "zh": "一个神经网络模型化策略 π⁡(α∣φ⁡(x))，它将特征映射到动作偏好，从而捕捉复杂的输入与决策之间的关系。"
+    },
+    {
+     "en": "At each prompt x x , the policy outputs the number of discretization steps α \\alpha based on φ ⁡ ( x ) \\varphi(x) , and the full trajectory with α \\alpha steps is executed.",
+     "zh": "在每个提示 x 处，该策略基于 φ⁡(x) 输出离散化步数 α，然后执行包含 α 步的完整轨迹。"
+    },
+    {
+     "en": "The policy is updated online using a reward below.",
+     "zh": "策略通过以下奖励在线更新。"
+    }
+   ]
+  },
+  {
+   "en": "Reward design. Let { x t k ( α ) } k = 0 α \\{x_{t_{k}}^{(\\alpha)}\\}_{k=0}^{\\alpha} denote the discretized trajectory obtained using step budget α ∈ 𝒜 \\alpha\\in\\mathcal{A} for an input x x , and let v ⁡ ( x t k ( α ) , t k ) v(x_{t_{k}}^{(\\alpha)},t_{k}) denote the corresponding model velocity. We quantify its trajectory-wise variation using the average ℓ 1 \\ell_{1} relative velocity change",
+   "zh": "奖励设计。 令 { x t k ( α ) } k = 0 α \\{x_{t_{k}}^{(\\alpha)}\\}_{k=0}^{\\alpha} 表示使用步数预算 α ∈ 𝒜 \\alpha\\in\\mathcal{A} 对输入 x x 得到的离散化轨迹，并令 v ⁡ ( x t k ( α ) , t k ) v(x_{t_{k}}^{(\\alpha)},t_{k}) 表示对应的模型速度。 我们使用平均 ℓ 1 \\ell_{1} 相对速度变化来量化其轨迹上的变化。",
+   "sents": [
+    {
+     "en": "Reward design.",
+     "zh": "奖励设计。"
+    },
+    {
+     "en": "Let { x t k ( α ) } k = 0 α \\{x_{t_{k}}^{(\\alpha)}\\}_{k=0}^{\\alpha} denote the discretized trajectory obtained using step budget α ∈ 𝒜 \\alpha\\in\\mathcal{A} for an input x x , and let v ⁡ ( x t k ( α ) , t k ) v(x_{t_{k}}^{(\\alpha)},t_{k}) denote the corresponding model velocity.",
+     "zh": "令 { x t k ( α ) } k = 0 α \\{x_{t_{k}}^{(\\alpha)}\\}_{k=0}^{\\alpha} 表示使用步数预算 α ∈ 𝒜 \\alpha\\in\\mathcal{A} 对输入 x x 得到的离散化轨迹，并令 v ⁡ ( x t k ( α ) , t k ) v(x_{t_{k}}^{(\\alpha)},t_{k}) 表示对应的模型速度。"
+    },
+    {
+     "en": "We quantify its trajectory-wise variation using the average ℓ 1 \\ell_{1} relative velocity change",
+     "zh": "我们使用平均 ℓ 1 \\ell_{1} 相对速度变化来量化其轨迹上的变化。"
+    }
+   ]
+  },
+  {
+   "en": "where ε > 0 \\varepsilon>0 ensures numerical stability. We use v ^ ​ ( x , α ) \\hat{v}(x,\\alpha) as an intrinsic, unsupervised surrogate for sensitivity to temporal discretization: larger velocity variations suggest dynamics that may be more sensitive to coarse discretization. Importantly, v ^ ​ ( x , α ) \\hat{v}(x,\\alpha) is a surrogate rather than a direct measure of discretization error or generation quality (see Appendix A.6 ).",
+   "zh": "其中 ε > 0 \\varepsilon>0 可确保数值稳定性。 我们将 v ^ ​ ( x , α ) \\hat{v}(x,\\alpha) 用作对时间离散化敏感性的内在无监督代理指标：速度变化越大，表明动力学可能对较粗的离散化更为敏感。 重要的是，v ^ ​ ( x , α ) \\hat{v}(x,\\alpha) 是一个代理指标，而非离散化误差或生成质量的直接度量（见附录 A.6）。",
+   "sents": [
+    {
+     "en": "where ε > 0 \\varepsilon>0 ensures numerical stability.",
+     "zh": "其中 ε > 0 \\varepsilon>0 可确保数值稳定性。"
+    },
+    {
+     "en": "We use v ^ ​ ( x , α ) \\hat{v}(x,\\alpha) as an intrinsic, unsupervised surrogate for sensitivity to temporal discretization: larger velocity variations suggest dynamics that may be more sensitive to coarse discretization.",
+     "zh": "我们将 v ^ ​ ( x , α ) \\hat{v}(x,\\alpha) 用作对时间离散化敏感性的内在无监督代理指标：速度变化越大，表明动力学可能对较粗的离散化更为敏感。"
+    },
+    {
+     "en": "Importantly, v ^ ​ ( x , α ) \\hat{v}(x,\\alpha) is a surrogate rather than a direct measure of discretization error or generation quality (see Appendix A.6 ).",
+     "zh": "重要的是，v ^ ​ ( x , α ) \\hat{v}(x,\\alpha) 是一个代理指标，而非离散化误差或生成质量的直接度量（见附录 A.6）。"
+    }
+   ]
+  },
+  {
+   "en": "For a given input x x and action α ∈ 𝒜 \\alpha\\in\\mathcal{A} , we define the reward as",
+   "zh": "对于给定的输入 x x 和动作 α ∈ 𝒜 \\alpha\\in\\mathcal{A}，我们将奖励定义为",
+   "sents": null
+  },
+  {
+   "en": "where μ > 0 \\mu>0 controls the trade-off between trajectory variation and computational cost. The term 1 − v ^ ​ ( x , α ) 1-\\hat{v}(x,\\alpha) favors step budgets exhibiting smaller relative velocity variation, while μ ​ α \\mu\\alpha penalizes additional computation. Since v ^ ​ ( x , α ) \\hat{v}(x,\\alpha) is evaluated along the trajectory induced by α \\alpha , the reward provides an intrinsic surrogate objective for step selection without requiring an external quality signal.",
+   "zh": "其中 μ > 0 \\mu>0 控制着轨迹变化与计算成本之间的权衡。 项 1 − v ^ ​ ( x , α ) 1-\\hat{v}(x,\\alpha) 倾向于选择相对速度变化较小的步数预算，而 μ ​ α \\mu\\alpha 则对额外的计算进行惩罚。 由于 v ^ ​ ( x , α ) \\hat{v}(x,\\alpha) 是沿着由 α \\alpha 引发的轨迹进行评估的，因此该奖励为步数选择提供了一个内在的替代目标，而无需外部质量信号。",
+   "sents": [
+    {
+     "en": "where μ > 0 \\mu>0 controls the trade-off between trajectory variation and computational cost.",
+     "zh": "其中 μ > 0 \\mu>0 控制着轨迹变化与计算成本之间的权衡。"
+    },
+    {
+     "en": "The term 1 − v ^ ​ ( x , α ) 1-\\hat{v}(x,\\alpha) favors step budgets exhibiting smaller relative velocity variation, while μ ​ α \\mu\\alpha penalizes additional computation.",
+     "zh": "项 1 − v ^ ​ ( x , α ) 1-\\hat{v}(x,\\alpha) 倾向于选择相对速度变化较小的步数预算，而 μ ​ α \\mu\\alpha 则对额外的计算进行惩罚。"
+    },
+    {
+     "en": "Since v ^ ​ ( x , α ) \\hat{v}(x,\\alpha) is evaluated along the trajectory induced by α \\alpha , the reward provides an intrinsic surrogate objective for step selection without requiring an external quality signal.",
+     "zh": "由于 v ^ ​ ( x , α ) \\hat{v}(x,\\alpha) 是沿着由 α \\alpha 引发的轨迹进行评估的，因此该奖励为步数选择提供了一个内在的替代目标，而无需外部质量信号。"
+    }
+   ]
+  },
+  {
+   "en": "For a given prompt x x , we define the reward-optimal step budget as",
+   "zh": "对于给定的提示 x x，我们将奖励最优的步骤预算定义为",
+   "sents": null
+  },
+  {
+   "en": "Here, “reward-optimal” refers specifically to optimality under the surrogate objective in Eq. 4 , rather than direct optimality with respect to perceptual or semantic generation quality. Consequently, prompts exhibiting larger trajectory variation can receive larger step budgets when the corresponding reduction in variation outweighs the additional computational cost. We further examine the relationship between this surrogate signal, prompt complexity, and adaptive step selection in Appendix A.6 .",
+   "zh": "此处，“奖励最优”特指在公式 4 中的代理目标下的最优性，而非直接针对感知或语义生成质量的最优性。 因此，当轨迹变异的相应减少超过额外的计算成本时，表现出更大轨迹变异的提示可以获得更大的步数预算。 我们在附录 A.6 中进一步探讨了这种代理信号、提示复杂性和自适应步数选择之间的关系。",
+   "sents": [
+    {
+     "en": "Here, “reward-optimal” refers specifically to optimality under the surrogate objective in Eq. 4 , rather than direct optimality with respect to perceptual or semantic generation quality.",
+     "zh": "此处，“奖励最优”特指在公式 4 中的代理目标下的最优性，而非直接针对感知或语义生成质量的最优性。"
+    },
+    {
+     "en": "Consequently, prompts exhibiting larger trajectory variation can receive larger step budgets when the corresponding reduction in variation outweighs the additional computational cost.",
+     "zh": "因此，当轨迹变异的相应减少超过额外的计算成本时，表现出更大轨迹变异的提示可以获得更大的步数预算。"
+    },
+    {
+     "en": "We further examine the relationship between this surrogate signal, prompt complexity, and adaptive step selection in Appendix A.6 .",
+     "zh": "我们在附录 A.6 中进一步探讨了这种代理信号、提示复杂性和自适应步数选择之间的关系。"
+    }
+   ]
+  },
+  {
+   "en": "The goal is to learn a policy π ∗ = arg ⁡ max π ⁡ 𝔼 ⁡ [ ∑ t = 1 T r ⁡ ( x t , α t ) ] \\pi^{*}=\\arg\\max_{\\pi}\\mathbb{E}\\!\\left[\\sum_{t=1}^{T}r(x_{t},\\alpha_{t})\\right] , where the expectation accounts for stochasticity in the generated trajectories. This formulation captures the exploration–exploitation trade-off while enabling input-adaptive decisions. The learned policy uses the contextual representation and observed rewards to allocate computation according to the surrogate trade-off between trajectory variation and computational cost.",
+   "zh": "目标在于学习一个策略 π* = arg max π 𝔼 [ ∑ t = 1 T r ( x t , α t ) ] \\pi^{*}=\\arg\\max_{\\pi}\\mathbb{E}\\!\\left[\\sum_{t=1}^{T}r(x_{t},\\alpha_{t})\\right]，其中期望值考虑了生成轨迹中的随机性。 这种表述既捕捉到了探索与利用之间的权衡，又支持了输入自适应的决策。 学习到的策略会利用上下文表示和观测到的奖励，根据轨迹变化与计算成本之间的代理权衡来分配计算资源。",
+   "sents": [
+    {
+     "en": "The goal is to learn a policy π ∗ = arg ⁡ max π ⁡ 𝔼 ⁡ [ ∑ t = 1 T r ⁡ ( x t , α t ) ] \\pi^{*}=\\arg\\max_{\\pi}\\mathbb{E}\\!\\left[\\sum_{t=1}^{T}r(x_{t},\\alpha_{t})\\right] , where the expectation accounts for stochasticity in the generated trajectories.",
+     "zh": "目标在于学习一个策略 π* = arg max π 𝔼 [ ∑ t = 1 T r ( x t , α t ) ] \\pi^{*}=\\arg\\max_{\\pi}\\mathbb{E}\\!\\left[\\sum_{t=1}^{T}r(x_{t},\\alpha_{t})\\right]，其中期望值考虑了生成轨迹中的随机性。"
+    },
+    {
+     "en": "This formulation captures the exploration–exploitation trade-off while enabling input-adaptive decisions.",
+     "zh": "这种表述既捕捉到了探索与利用之间的权衡，又支持了输入自适应的决策。"
+    },
+    {
+     "en": "The learned policy uses the contextual representation and observed rewards to allocate computation according to the surrogate trade-off between trajectory variation and computational cost.",
+     "zh": "学习到的策略会利用上下文表示和观测到的奖励，根据轨迹变化与计算成本之间的代理权衡来分配计算资源。"
+    }
+   ]
+  },
+  {
+   "en": "Context features: We define context features as a compact representation of the input prompt, capturing high-level semantic (embeddings), compositional (entity count), and structural (mean word length) information that guides adaptive step allocation. Intuitively, these properties may influence the variation of the conditional flow dynamics and therefore provide useful context for step selection. Appendix B provides further details on the feature design.",
+   "zh": "上下文特征：我们将上下文特征定义为输入提示的紧凑表示，它捕捉了高层语义（嵌入）、组合性（实体数量）和结构性（平均词长）信息，这些信息用于指导自适应步骤分配。 直观而言，这些属性可能会影响条件流动态的变化，因此为步骤选择提供了有用的上下文信息。 附录 B 详细说明了特征设计的相关细节。",
+   "sents": [
+    {
+     "en": "Context features: We define context features as a compact representation of the input prompt, capturing high-level semantic (embeddings), compositional (entity count), and structural (mean word length) information that guides adaptive step allocation.",
+     "zh": "上下文特征：我们将上下文特征定义为输入提示的紧凑表示，它捕捉了高层语义（嵌入）、组合性（实体数量）和结构性（平均词长）信息，这些信息用于指导自适应步骤分配。"
+    },
+    {
+     "en": "Intuitively, these properties may influence the variation of the conditional flow dynamics and therefore provide useful context for step selection.",
+     "zh": "直观而言，这些属性可能会影响条件流动态的变化，因此为步骤选择提供了有用的上下文信息。"
+    },
+    {
+     "en": "Appendix B provides further details on the feature design.",
+     "zh": "附录 B 详细说明了特征设计的相关细节。"
+    }
+   ]
+  },
+  {
+   "en": "Policy optimization. We use a neural network f θ ​ ( φ ​ ( x ) , α ) f_{\\theta}(\\varphi(x),\\alpha) to predict the reward for each pair of input context φ ⁡ ( x ) \\varphi(x) and action α ∈ 𝒜 \\alpha\\in\\mathcal{A} (step budget) denoted as f θ : ( φ ⁡ ( x ) , α ) ↦ 𝔼 ⁡ [ r ⁡ ( x , α ) ] . f_{\\theta}:(\\varphi(x),\\alpha)\\mapsto\\mathbb{E}[r(x,\\alpha)]. For the t t -th prompt, we obtain the context φ ⁡ ( x t ) \\varphi(x_{t}) , and decide the number of steps α t \\alpha_{t} by optimizing the sum of predicted rewards obtained by the neural network and the associated confidence term as follows: α t = arg ⁡ max α ∈ 𝒜 ​ [ f θ ​ ( φ ⁡ ( x t ) , α ) + β t ⋅ σ t ​ ( φ ⁡ ( x t ) , α ) ] , \\alpha_{t}=\\arg\\max_{\\alpha\\in\\mathcal{A}}\\left[f_{\\theta}(\\varphi(x_{t}),\\alpha)+\\beta_{t}\\cdot\\sigma_{t}(\\varphi(x_{t}),\\alpha)\\right], where σ t ​ ( φ ⁡ ( x t ) , α ) \\sigma_{t}(\\varphi(x_{t}),\\alpha) is the confidence term and β t > 0 \\beta_{t}>0 controls the exploration strength. The term σ t ​ ( φ ​ ( x ) , α ) \\sigma_{t}(\\varphi(x),\\alpha) is computed using the gradient features of the neural network as in [ 17 ] . Let g θ ​ ( x , α ) = ∇ θ f θ ​ ( φ ⁡ ( x ) , α ) g_{\\theta}(x,\\alpha)=\\nabla_{\\theta}f_{\\theta}(\\varphi(x),\\alpha) denote the gradient of the neural network output with respect to its parameters. We maintain a covariance matrix V t = λ ​ I + ∑ i = 1 t − 1 g θ ​ ( x i , α i ) ​ g θ ​ ( x i , α i ) ⊤ , V_{t}=\\lambda I+\\sum_{i=1}^{t-1}g_{\\theta}(x_{i},\\alpha_{i})\\,g_{\\theta}(x_{i},\\alpha_{i})^{\\top}, where λ > 0 \\lambda>0 is a regularization parameter. The uncertainty is then defined as σ t ​ ( φ ⁡ ( x ) , α ) = g θ ​ ( x , α ) ⊤ ​ V t − 1 ​ g θ ​ ( x , α ) . \\sigma_{t}(\\varphi(x),\\alpha)=\\sqrt{g_{\\theta}(x,\\alpha)^{\\top}V_{t}^{-1}g_{\\theta}(x,\\alpha)}.",
+   "zh": "策略优化。 我们使用一个神经网络 f θ ​ ( φ ​ ( x ) , α ) f_{\\theta}(\\varphi(x),\\alpha) 来预测每个输入上下文 φ ⁡ ( x ) \\varphi(x) 与动作 α ∈ 𝒜 \\alpha\\in\\mathcal{A}（步数预算）组合的奖励，表示为 f θ : ( φ ⁡ ( x ) , α ) ↦ 𝔼 ⁡ [ r ⁡ ( x , α ) ] . f_{\\theta}:(\\varphi(x),\\alpha)\\mapsto\\mathbb{E}[r(x,\\alpha)]。 对于第 t t 个提示，我们获取上下文 φ ⁡ ( x t ) \\varphi(x_{t})，并通过优化神经网络预测的奖励总和与相关的置信度项之和来决定步数 α t \\alpha_{t}，如下所示：α t = arg ⁡ max α ∈ 𝒜 ​ [ f θ ​ ( φ ⁡ ( x t ) , α ) + β t ⋅ σ t ​ ( φ ⁡ ( x t ) , α ) ] , \\alpha_{t}=\\arg\\max_{\\alpha\\in\\mathcal{A}}\\left[f_{\\theta}(\\varphi(x_{t}),\\alpha)+\\beta_{t}\\cdot\\sigma_{t}(\\varphi(x_{t}),\\alpha)\\right]，其中 σ t ​ ( φ ⁡ ( x t ) , α ) \\sigma_{t}(\\varphi(x_{t}),\\alpha) 是置信度项，β t > 0 \\beta_{t}>0 控制探索强度。 项 σ t ​ ( φ ​ ( x ) , α ) \\sigma_{t}(\\varphi(x),\\alpha) 的计算使用神经网络的梯度特征，如 [17] 所述。 令 g θ ​ ( x , α ) = ∇ θ f θ ​ ( φ ⁡ ( x ) , α ) g_{\\theta}(x,\\alpha)=\\nabla_{\\theta}f_{\\theta}(\\varphi(x),\\alpha) 表示神经网络输出相对于其参数的梯度。 我们维护一个协方差矩阵 V t = λ ​ I + ∑ i = 1 t − 1 g θ ​ ( x i , α i ) ​ g θ ​ ( x i , α i ) ⊤ , V_{t}=\\lambda I+\\sum_{i=1}^{t-1}g_{\\theta}(x_{i},\\alpha_{i})\\,g_{\\theta}(x_{i},\\alpha_{i})^{\\top}，其中 λ > 0 \\lambda>0 是一个正则化参数。 不确定性随后定义为 σ t ​ ( φ ⁡ ( x ) , α ) = g θ ​ ( x , α ) ⊤ ​ V t − 1 ​ g θ ​ ( x , α ) . \\sigma_{t}(\\varphi(x),\\alpha)=\\sqrt{g_{\\theta}(x,\\alpha)^{\\top}V_{t}^{-1}g_{\\theta}(x,\\alpha)}。",
+   "sents": [
+    {
+     "en": "Policy optimization.",
+     "zh": "策略优化。"
+    },
+    {
+     "en": "We use a neural network f θ ​ ( φ ​ ( x ) , α ) f_{\\theta}(\\varphi(x),\\alpha) to predict the reward for each pair of input context φ ⁡ ( x ) \\varphi(x) and action α ∈ 𝒜 \\alpha\\in\\mathcal{A} (step budget) denoted as f θ : ( φ ⁡ ( x ) , α ) ↦ 𝔼 ⁡ [ r ⁡ ( x , α ) ] . f_{\\theta}:(\\varphi(x),\\alpha)\\mapsto\\mathbb{E}[r(x,\\alpha)].",
+     "zh": "我们使用一个神经网络 f θ ​ ( φ ​ ( x ) , α ) f_{\\theta}(\\varphi(x),\\alpha) 来预测每个输入上下文 φ ⁡ ( x ) \\varphi(x) 与动作 α ∈ 𝒜 \\alpha\\in\\mathcal{A}（步数预算）组合的奖励，表示为 f θ : ( φ ⁡ ( x ) , α ) ↦ 𝔼 ⁡ [ r ⁡ ( x , α ) ] . f_{\\theta}:(\\varphi(x),\\alpha)\\mapsto\\mathbb{E}[r(x,\\alpha)]。"
+    },
+    {
+     "en": "For the t t -th prompt, we obtain the context φ ⁡ ( x t ) \\varphi(x_{t}) , and decide the number of steps α t \\alpha_{t} by optimizing the sum of predicted rewards obtained by the neural network and the associated confidence term as follows: α t = arg ⁡ max α ∈ 𝒜 ​ [ f θ ​ ( φ ⁡ ( x t ) , α ) + β t ⋅ σ t ​ ( φ ⁡ ( x t ) , α ) ] , \\alpha_{t}=\\arg\\max_{\\alpha\\in\\mathcal{A}}\\left[f_{\\theta}(\\varphi(x_{t}),\\alpha)+\\beta_{t}\\cdot\\sigma_{t}(\\varphi(x_{t}),\\alpha)\\right], where σ t ​ ( φ ⁡ ( x t ) , α ) \\sigma_{t}(\\varphi(x_{t}),\\alpha) is the confidence term and β t > 0 \\beta_{t}>0 controls the exploration strength.",
+     "zh": "对于第 t t 个提示，我们获取上下文 φ ⁡ ( x t ) \\varphi(x_{t})，并通过优化神经网络预测的奖励总和与相关的置信度项之和来决定步数 α t \\alpha_{t}，如下所示：α t = arg ⁡ max α ∈ 𝒜 ​ [ f θ ​ ( φ ⁡ ( x t ) , α ) + β t ⋅ σ t ​ ( φ ⁡ ( x t ) , α ) ] , \\alpha_{t}=\\arg\\max_{\\alpha\\in\\mathcal{A}}\\left[f_{\\theta}(\\varphi(x_{t}),\\alpha)+\\beta_{t}\\cdot\\sigma_{t}(\\varphi(x_{t}),\\alpha)\\right]，其中 σ t ​ ( φ ⁡ ( x t ) , α ) \\sigma_{t}(\\varphi(x_{t}),\\alpha) 是置信度项，β t > 0 \\beta_{t}>0 控制探索强度。"
+    },
+    {
+     "en": "The term σ t ​ ( φ ​ ( x ) , α ) \\sigma_{t}(\\varphi(x),\\alpha) is computed using the gradient features of the neural network as in [ 17 ] .",
+     "zh": "项 σ t ​ ( φ ​ ( x ) , α ) \\sigma_{t}(\\varphi(x),\\alpha) 的计算使用神经网络的梯度特征，如 [17] 所述。"
+    },
+    {
+     "en": "Let g θ ​ ( x , α ) = ∇ θ f θ ​ ( φ ⁡ ( x ) , α ) g_{\\theta}(x,\\alpha)=\\nabla_{\\theta}f_{\\theta}(\\varphi(x),\\alpha) denote the gradient of the neural network output with respect to its parameters.",
+     "zh": "令 g θ ​ ( x , α ) = ∇ θ f θ ​ ( φ ⁡ ( x ) , α ) g_{\\theta}(x,\\alpha)=\\nabla_{\\theta}f_{\\theta}(\\varphi(x),\\alpha) 表示神经网络输出相对于其参数的梯度。"
+    },
+    {
+     "en": "We maintain a covariance matrix V t = λ ​ I + ∑ i = 1 t − 1 g θ ​ ( x i , α i ) ​ g θ ​ ( x i , α i ) ⊤ , V_{t}=\\lambda I+\\sum_{i=1}^{t-1}g_{\\theta}(x_{i},\\alpha_{i})\\,g_{\\theta}(x_{i},\\alpha_{i})^{\\top}, where λ > 0 \\lambda>0 is a regularization parameter.",
+     "zh": "我们维护一个协方差矩阵 V t = λ ​ I + ∑ i = 1 t − 1 g θ ​ ( x i , α i ) ​ g θ ​ ( x i , α i ) ⊤ , V_{t}=\\lambda I+\\sum_{i=1}^{t-1}g_{\\theta}(x_{i},\\alpha_{i})\\,g_{\\theta}(x_{i},\\alpha_{i})^{\\top}，其中 λ > 0 \\lambda>0 是一个正则化参数。"
+    },
+    {
+     "en": "The uncertainty is then defined as σ t ​ ( φ ⁡ ( x ) , α ) = g θ ​ ( x , α ) ⊤ ​ V t − 1 ​ g θ ​ ( x , α ) . \\sigma_{t}(\\varphi(x),\\alpha)=\\sqrt{g_{\\theta}(x,\\alpha)^{\\top}V_{t}^{-1}g_{\\theta}(x,\\alpha)}.",
+     "zh": "不确定性随后定义为 σ t ​ ( φ ⁡ ( x ) , α ) = g θ ​ ( x , α ) ⊤ ​ V t − 1 ​ g θ ​ ( x , α ) . \\sigma_{t}(\\varphi(x),\\alpha)=\\sqrt{g_{\\theta}(x,\\alpha)^{\\top}V_{t}^{-1}g_{\\theta}(x,\\alpha)}。"
+    }
+   ]
+  },
+  {
+   "en": "Intuitively, g θ ​ ( x , α ) g_{\\theta}(x,\\alpha) represents the sensitivity of the predicted reward to the model parameters. If a context-action pair is similar to previously observed samples, its gradient direction is well-covered in V t V_{t} , resulting in a small uncertainty. Conversely, if it lies in a poorly explored region of the feature space, the corresponding direction has low coverage in V t V_{t} , leading to higher uncertainty. Thus, σ t ​ ( φ ​ ( x ) , α ) \\sigma_{t}(\\varphi(x),\\alpha) quantifies how well the model has learned the reward for that context-action pair, naturally encouraging exploration of uncertain regions.",
+   "zh": "直观地说，g θ ​ ( x , α ) g_{\\theta}(x,\\alpha) 表示预测奖励对模型参数的敏感度。 如果一个上下文-动作对与之前观察到的样本相似，其梯度方向在 V t V_{t} 中得到了充分覆盖，因此不确定性较低。 相反，如果该对位于特征空间中未被充分探索的区域，则对应的方向在 V t V_{t} 中的覆盖度较低，导致不确定性更高。 因此，σ t ​ ( φ ​ ( x ) , α ) \\sigma_{t}(\\varphi(x),\\alpha) 量化了模型对该上下文-动作对的奖励学习程度，从而自然地鼓励对不确定区域的探索。",
+   "sents": [
+    {
+     "en": "Intuitively, g θ ​ ( x , α ) g_{\\theta}(x,\\alpha) represents the sensitivity of the predicted reward to the model parameters.",
+     "zh": "直观地说，g θ ​ ( x , α ) g_{\\theta}(x,\\alpha) 表示预测奖励对模型参数的敏感度。"
+    },
+    {
+     "en": "If a context-action pair is similar to previously observed samples, its gradient direction is well-covered in V t V_{t} , resulting in a small uncertainty.",
+     "zh": "如果一个上下文-动作对与之前观察到的样本相似，其梯度方向在 V t V_{t} 中得到了充分覆盖，因此不确定性较低。"
+    },
+    {
+     "en": "Conversely, if it lies in a poorly explored region of the feature space, the corresponding direction has low coverage in V t V_{t} , leading to higher uncertainty.",
+     "zh": "相反，如果该对位于特征空间中未被充分探索的区域，则对应的方向在 V t V_{t} 中的覆盖度较低，导致不确定性更高。"
+    },
+    {
+     "en": "Thus, σ t ​ ( φ ​ ( x ) , α ) \\sigma_{t}(\\varphi(x),\\alpha) quantifies how well the model has learned the reward for that context-action pair, naturally encouraging exploration of uncertain regions.",
+     "zh": "因此，σ t ​ ( φ ​ ( x ) , α ) \\sigma_{t}(\\varphi(x),\\alpha) 量化了模型对该上下文-动作对的奖励学习程度，从而自然地鼓励对不确定区域的探索。"
+    }
+   ]
+  },
+  {
+   "en": "After executing the trajectory with α t \\alpha_{t} steps, reward r t = r ⁡ ( x t , α t ) r_{t}=r(x_{t},\\alpha_{t}) is calculated as in Eq 4 . The model parameters are updated using all observed data and decision 𝒟 t = { ( φ ⁡ ( x i ) , α i , r i ) } i = 1 t \\mathcal{D}_{t}=\\{(\\varphi(x_{i}),\\alpha_{i},r_{i})\\}_{i=1}^{t} . Specifically, the parameters are obtained by minimizing the empirical squared loss as follows:",
+   "zh": "在执行包含 α t \\alpha_{t} 个步骤的轨迹后，奖励 r t = r ⁡ ( x t , α t ) r_{t}=r(x_{t},\\alpha_{t}) 按照公式 4 进行计算。 模型参数使用所有观测到的数据和决策 𝒟 t = { ( φ ⁡ ( x i ) , α i , r i ) } i = 1 t \\mathcal{D}_{t}=\\{(\\varphi(x_{i}),\\alpha_{i},r_{i})\\}_{i=1}^{t} 进行更新。 具体而言，参数通过最小化经验平方损失获得，如下所示：",
+   "sents": [
+    {
+     "en": "After executing the trajectory with α t \\alpha_{t} steps, reward r t = r ⁡ ( x t , α t ) r_{t}=r(x_{t},\\alpha_{t}) is calculated as in Eq 4 .",
+     "zh": "在执行包含 α t \\alpha_{t} 个步骤的轨迹后，奖励 r t = r ⁡ ( x t , α t ) r_{t}=r(x_{t},\\alpha_{t}) 按照公式 4 进行计算。"
+    },
+    {
+     "en": "The model parameters are updated using all observed data and decision 𝒟 t = { ( φ ⁡ ( x i ) , α i , r i ) } i = 1 t \\mathcal{D}_{t}=\\{(\\varphi(x_{i}),\\alpha_{i},r_{i})\\}_{i=1}^{t} .",
+     "zh": "模型参数使用所有观测到的数据和决策 𝒟 t = { ( φ ⁡ ( x i ) , α i , r i ) } i = 1 t \\mathcal{D}_{t}=\\{(\\varphi(x_{i}),\\alpha_{i},r_{i})\\}_{i=1}^{t} 进行更新。"
+    },
+    {
+     "en": "Specifically, the parameters are obtained by minimizing the empirical squared loss as follows:",
+     "zh": "具体而言，参数通过最小化经验平方损失获得，如下所示："
+    }
+   ]
+  },
+  {
+   "en": "In practice, this optimization is performed periodically over a replay buffer of past interactions, allowing the model to progressively refine its reward estimates, leveraging both current context and historical data. We keep this buffer size as P P .",
+   "zh": "在实践中，这种优化会定期针对过往交互的重播缓冲区执行，使模型能够逐步完善其奖励估计，同时利用当前上下文和历史数据。 我们将此缓冲区的大小设为 P P 。",
+   "sents": [
+    {
+     "en": "In practice, this optimization is performed periodically over a replay buffer of past interactions, allowing the model to progressively refine its reward estimates, leveraging both current context and historical data.",
+     "zh": "在实践中，这种优化会定期针对过往交互的重播缓冲区执行，使模型能够逐步完善其奖励估计，同时利用当前上下文和历史数据。"
+    },
+    {
+     "en": "We keep this buffer size as P P .",
+     "zh": "我们将此缓冲区的大小设为 P P 。"
+    }
+   ]
+  },
+  {
+   "en": "We summarize our proposed method CoFlow in Algorithm 1 . It takes as input a pretrained flow matching model ℳ \\mathcal{M} , an action space 𝒜 \\mathcal{A} of step budgets, a neural reward model f θ f_{\\theta} , a regularization parameter λ \\lambda , and an update interval P P controlling the frequency of training. We initialize the neural network parameter θ \\theta , the covariance matrix V 0 = λ ​ I V_{0}=\\lambda I for uncertainty estimation, and a replay buffer 𝒟 \\mathcal{D} . At each iteration t t , a prompt x t x_{t} is received and encoded into a context feature φ ⁡ ( x t ) \\varphi(x_{t}) .",
+   "zh": "我们在算法 1 中总结了我们提出的方法 CoFlow。 该方法以预训练的流匹配模型 ℳ \\mathcal{M}、步数预算构成的动作空间 𝒜 \\mathcal{A}、神经奖励模型 f θ f_{\\theta}、正则化参数 λ \\lambda，以及控制训练频率的更新间隔 P P 作为输入。 我们初始化神经网络参数 θ \\theta、用于不确定性估计的协方差矩阵 V 0 = λ ​ I V_{0}=\\lambda I，以及一个重播缓冲区 𝒟 \\mathcal{D}。 在每个迭代 t t 时，会接收到一个提示 x t x_{t}，并将其编码为上下文特征 φ ⁡ ( x t ) \\varphi(x_{t})。",
+   "sents": [
+    {
+     "en": "We summarize our proposed method CoFlow in Algorithm 1 .",
+     "zh": "我们在算法 1 中总结了我们提出的方法 CoFlow。"
+    },
+    {
+     "en": "It takes as input a pretrained flow matching model ℳ \\mathcal{M} , an action space 𝒜 \\mathcal{A} of step budgets, a neural reward model f θ f_{\\theta} , a regularization parameter λ \\lambda , and an update interval P P controlling the frequency of training.",
+     "zh": "该方法以预训练的流匹配模型 ℳ \\mathcal{M}、步数预算构成的动作空间 𝒜 \\mathcal{A}、神经奖励模型 f θ f_{\\theta}、正则化参数 λ \\lambda，以及控制训练频率的更新间隔 P P 作为输入。"
+    },
+    {
+     "en": "We initialize the neural network parameter θ \\theta , the covariance matrix V 0 = λ ​ I V_{0}=\\lambda I for uncertainty estimation, and a replay buffer 𝒟 \\mathcal{D} .",
+     "zh": "我们初始化神经网络参数 θ \\theta、用于不确定性估计的协方差矩阵 V 0 = λ ​ I V_{0}=\\lambda I，以及一个重播缓冲区 𝒟 \\mathcal{D}。"
+    },
+    {
+     "en": "At each iteration t t , a prompt x t x_{t} is received and encoded into a context feature φ ⁡ ( x t ) \\varphi(x_{t}) .",
+     "zh": "在每个迭代 t t 时，会接收到一个提示 x t x_{t}，并将其编码为上下文特征 φ ⁡ ( x t ) \\varphi(x_{t})。"
+    }
+   ]
+  },
+  {
+   "en": "For t ≤ P t\\leq P , actions are selected using an ε \\varepsilon -greedy strategy over 𝒜 \\mathcal{A} to encourage sufficient early exploration (line 5). After this warm-up phase, we switch to a contextual bandit regime in which actions α t ∈ 𝒜 \\alpha_{t}\\in\\mathcal{A} are chosen based on neural network-based reward estimates and their optimistic upper confidence bounds (line 7). We observe the trajectory generated by the flow-matching model with a solver schedule involving α t \\alpha_{t} steps. A reward is then computed from velocity variation across timesteps (Eq. 4 ), capturing the surrogate trade-off between trajectory variation and computational cost. The tuple ( φ ⁡ ( x t ) , α t , r t ) (\\varphi(x_{t}),\\alpha_{t},r_{t}) is stored in 𝒟 \\mathcal{D} .",
+   "zh": "对于 t ≤ P，使用基于 𝒜 的 ε-贪心策略选择动作，以促进早期的充分探索（第 5 行）。 在此预热阶段之后，我们切换到上下文多臂老虎机机制，其中动作 α t ∈ 𝒜 根据基于神经网络的奖励估计值及其乐观的上置信界进行选择（第 7 行）。 我们通过包含 α t 步的求解器调度，观察由流匹配模型生成的轨迹。 随后，根据各时间步的速度变化计算奖励（公式 4），从而捕捉到轨迹变化与计算成本之间的代理权衡。 元组 ( φ ⁡ ( x t ) , α t , r t ) 被存储到 𝒟 中。",
+   "sents": [
+    {
+     "en": "For t ≤ P t\\leq P , actions are selected using an ε \\varepsilon -greedy strategy over 𝒜 \\mathcal{A} to encourage sufficient early exploration (line 5).",
+     "zh": "对于 t ≤ P，使用基于 𝒜 的 ε-贪心策略选择动作，以促进早期的充分探索（第 5 行）。"
+    },
+    {
+     "en": "After this warm-up phase, we switch to a contextual bandit regime in which actions α t ∈ 𝒜 \\alpha_{t}\\in\\mathcal{A} are chosen based on neural network-based reward estimates and their optimistic upper confidence bounds (line 7).",
+     "zh": "在此预热阶段之后，我们切换到上下文多臂老虎机机制，其中动作 α t ∈ 𝒜 根据基于神经网络的奖励估计值及其乐观的上置信界进行选择（第 7 行）。"
+    },
+    {
+     "en": "We observe the trajectory generated by the flow-matching model with a solver schedule involving α t \\alpha_{t} steps.",
+     "zh": "我们通过包含 α t 步的求解器调度，观察由流匹配模型生成的轨迹。"
+    },
+    {
+     "en": "A reward is then computed from velocity variation across timesteps (Eq. 4 ), capturing the surrogate trade-off between trajectory variation and computational cost.",
+     "zh": "随后，根据各时间步的速度变化计算奖励（公式 4），从而捕捉到轨迹变化与计算成本之间的代理权衡。"
+    },
+    {
+     "en": "The tuple ( φ ⁡ ( x t ) , α t , r t ) (\\varphi(x_{t}),\\alpha_{t},r_{t}) is stored in 𝒟 \\mathcal{D} .",
+     "zh": "元组 ( φ ⁡ ( x t ) , α t , r t ) 被存储到 𝒟 中。"
+    }
+   ]
+  },
+  {
+   "en": "Input: Pretrained FM model ℳ \\mathcal{M} , action set 𝒜 \\mathcal{A} , neural reward model f θ f_{\\theta} , exploration schedule { β t } \\{\\beta_{t}\\} , regularization λ \\lambda , update interval P P Initialize: Parameters θ \\theta , covariance matrix V 0 = λ ​ I V_{0}=\\lambda I , replay buffer 𝒟 ← ∅ \\mathcal{D}\\leftarrow\\emptyset",
+   "zh": "输入：预训练 FM 模型 ℳ \\mathcal{M}、动作集 𝒜 \\mathcal{A}、神经奖励模型 f θ f_{\\theta}、探索调度 { β t } \\{\\beta_{t}\\}、正则化项 λ \\lambda、更新间隔 P P  \n初始化：参数 θ \\theta、协方差矩阵 V 0 = λ ​ I V_{0}=\\lambda I、重播缓冲区 𝒟 ← ∅ \\mathcal{D}\\leftarrow\\emptyset",
+   "sents": null
+  },
+  {
+   "en": "Theoretical Analysis. We characterize the dependence of numerical integration error on the step budget. Our analysis considers forward Euler under standard regularity conditions and shows that the error scales as O ⁡ ( 1 / α ) O(1/\\alpha) , with an input-dependent constant determined by variation of the conditional flow dynamics.",
+   "zh": "理论分析。 我们描述了数值积分误差对步长预算的依赖关系。 我们的分析在标准正则性条件下考察了前向欧拉方法，并表明误差以 O(1/α) 的速率增长，其中常数取决于条件流动力学的变化，并与输入相关。",
+   "sents": [
+    {
+     "en": "Theoretical Analysis.",
+     "zh": "理论分析。"
+    },
+    {
+     "en": "We characterize the dependence of numerical integration error on the step budget.",
+     "zh": "我们描述了数值积分误差对步长预算的依赖关系。"
+    },
+    {
+     "en": "Our analysis considers forward Euler under standard regularity conditions and shows that the error scales as O ⁡ ( 1 / α ) O(1/\\alpha) , with an input-dependent constant determined by variation of the conditional flow dynamics.",
+     "zh": "我们的分析在标准正则性条件下考察了前向欧拉方法，并表明误差以 O(1/α) 的速率增长，其中常数取决于条件流动力学的变化，并与输入相关。"
+    }
+   ]
+  },
+  {
+   "en": "For an input x i x_{i} , consider the conditional flow ODE",
+   "zh": "对于输入 x_i (x_{i})，考虑条件流 ODE",
+   "sents": null
+  },
+  {
+   "en": "where v i v_{i} denotes the velocity field conditioned on x i x_{i} . Let z ^ i , α ( α ) \\hat{z}_{i,\\alpha}^{(\\alpha)} be the terminal state of its uniform α \\alpha -step forward-Euler approximation with h = 1 / α h=1/\\alpha , and define E i ​ ( α ) := ‖ z i ​ ( 1 ) − z ^ i , α ( α ) ‖ . E_{i}(\\alpha):=\\left\\|z_{i}(1)-\\hat{z}_{i,\\alpha}^{(\\alpha)}\\right\\|. Assume that v i ​ ( ⋅ , s ) v_{i}(\\cdot,s) is L L -Lipschitz in its state argument and continuously differentiable along the exact trajectory, with ‖ ∂ s v i ​ ( z i ​ ( s ) , s ) + J z ​ v i ​ ( z i ​ ( s ) , s ) ​ v i ​ ( z i ​ ( s ) , s ) ‖ ≤ M i , s ∈ [ 0 , 1 ] . \\left\\|\\partial_{s}v_{i}(z_{i}(s),s)+J_{z}v_{i}(z_{i}(s),s)v_{i}(z_{i}(s),s)\\right\\|\\leq M_{i},\\ s\\in[0,1]. Then, for L > 0 L>0 , E i ​ ( α ) ≤ M i ​ ( e L − 1 ) 2 ​ L ​ α . E_{i}(\\alpha)\\leq\\frac{M_{i}(e^{L}-1)}{2L\\alpha}. Consequently, for any sequence { α i } i = 1 T \\{\\alpha_{i}\\}_{i=1}^{T} ,",
+   "zh": "其中 v i v_{i} 表示以 x i x_{i} 为条件的速度场。 令 z ^ i , α ( α ) \\hat{z}_{i,\\alpha}^{(\\alpha)} 为其均匀 α \\alpha -步前向欧拉近似（h = 1 / α h=1/\\alpha）的终端状态，并定义 E i ​ ( α ) := ‖ z i ​ ( 1 ) − z ^ i , α ( α ) ‖ 。 E_{i}(\\alpha):=\\left\\|z_{i}(1)-\\hat{z}_{i,\\alpha}^{(\\alpha)}\\right\\|。 假设 v i ​ ( ⋅ , s ) v_{i}(\\cdot,s) 对其状态参数是 L L -Lipschitz 的，并且沿精确轨迹连续可微，满足 ‖ ∂ s v i ​ ( z i ​ ( s ) , s ) + J z ​ v i ​ ( z i ​ ( s ) , s ) ​ v i ​ ( z i ​ ( s ) , s ) ‖ ≤ M i , s ∈ [ 0 , 1 ] . \\left\\|\\partial_{s}v_{i}(z_{i}(s),s)+J_{z}v_{i}(z_{i}(s),s)v_{i}(z_{i}(s),s)\\right\\|\\leq M_{i},\\ s\\in[0,1]。 那么，对于 L > 0 L>0 ，有 E i ​ ( α ) ≤ M i ​ ( e L − 1 ) 2 ​ L ​ α 。 E_{i}(\\alpha)\\leq\\frac{M_{i}(e^{L}-1)}{2L\\alpha}。 因此，对于任意序列 { α i } i = 1 T \\{\\alpha_{i}\\}_{i=1}^{T} ，",
+   "sents": [
+    {
+     "en": "where v i v_{i} denotes the velocity field conditioned on x i x_{i} .",
+     "zh": "其中 v i v_{i} 表示以 x i x_{i} 为条件的速度场。"
+    },
+    {
+     "en": "Let z ^ i , α ( α ) \\hat{z}_{i,\\alpha}^{(\\alpha)} be the terminal state of its uniform α \\alpha -step forward-Euler approximation with h = 1 / α h=1/\\alpha , and define E i ​ ( α ) := ‖ z i ​ ( 1 ) − z ^ i , α ( α ) ‖ .",
+     "zh": "令 z ^ i , α ( α ) \\hat{z}_{i,\\alpha}^{(\\alpha)} 为其均匀 α \\alpha -步前向欧拉近似（h = 1 / α h=1/\\alpha）的终端状态，并定义 E i ​ ( α ) := ‖ z i ​ ( 1 ) − z ^ i , α ( α ) ‖ 。"
+    },
+    {
+     "en": "E_{i}(\\alpha):=\\left\\|z_{i}(1)-\\hat{z}_{i,\\alpha}^{(\\alpha)}\\right\\|.",
+     "zh": "E_{i}(\\alpha):=\\left\\|z_{i}(1)-\\hat{z}_{i,\\alpha}^{(\\alpha)}\\right\\|。"
+    },
+    {
+     "en": "Assume that v i ​ ( ⋅ , s ) v_{i}(\\cdot,s) is L L -Lipschitz in its state argument and continuously differentiable along the exact trajectory, with ‖ ∂ s v i ​ ( z i ​ ( s ) , s ) + J z ​ v i ​ ( z i ​ ( s ) , s ) ​ v i ​ ( z i ​ ( s ) , s ) ‖ ≤ M i , s ∈ [ 0 , 1 ] . \\left\\|\\partial_{s}v_{i}(z_{i}(s),s)+J_{z}v_{i}(z_{i}(s),s)v_{i}(z_{i}(s),s)\\right\\|\\leq M_{i},\\ s\\in[0,1].",
+     "zh": "假设 v i ​ ( ⋅ , s ) v_{i}(\\cdot,s) 对其状态参数是 L L -Lipschitz 的，并且沿精确轨迹连续可微，满足 ‖ ∂ s v i ​ ( z i ​ ( s ) , s ) + J z ​ v i ​ ( z i ​ ( s ) , s ) ​ v i ​ ( z i ​ ( s ) , s ) ‖ ≤ M i , s ∈ [ 0 , 1 ] . \\left\\|\\partial_{s}v_{i}(z_{i}(s),s)+J_{z}v_{i}(z_{i}(s),s)v_{i}(z_{i}(s),s)\\right\\|\\leq M_{i},\\ s\\in[0,1]。"
+    },
+    {
+     "en": "Then, for L > 0 L>0 , E i ​ ( α ) ≤ M i ​ ( e L − 1 ) 2 ​ L ​ α .",
+     "zh": "那么，对于 L > 0 L>0 ，有 E i ​ ( α ) ≤ M i ​ ( e L − 1 ) 2 ​ L ​ α 。"
+    },
+    {
+     "en": "E_{i}(\\alpha)\\leq\\frac{M_{i}(e^{L}-1)}{2L\\alpha}.",
+     "zh": "E_{i}(\\alpha)\\leq\\frac{M_{i}(e^{L}-1)}{2L\\alpha}。"
+    },
+    {
+     "en": "Consequently, for any sequence { α i } i = 1 T \\{\\alpha_{i}\\}_{i=1}^{T} ,",
+     "zh": "因此，对于任意序列 { α i } i = 1 T \\{\\alpha_{i}\\}_{i=1}^{T} ，"
+    }
+   ]
+  },
+  {
+   "en": "For L = 0 L=0 , the bound reduces to E i ​ ( α ) ≤ M i / ( 2 ​ α ) E_{i}(\\alpha)\\leq M_{i}/(2\\alpha) .",
+   "zh": "对于 L = 0 L=0，该界限简化为 E i ​ ( α ) ≤ M i / ( 2 ​ α ) E_{i}(\\alpha)\\leq M_{i}/(2\\alpha)。",
+   "sents": null
+  },
+  {
+   "en": "The proof is provided in Appendix A.1 . Theorem 1 establishes the O ⁡ ( 1 / α ) O(1/\\alpha) Euler error dependence, with the input-dependent constant M i M_{i} bounding the rate of change of the velocity field along the exact trajectory. The statistic v ^ ​ ( x , α ) \\hat{v}(x,\\alpha) in Eq. 3 is an observable relative-variation surrogate motivated by this dependence; it is not assumed to directly estimate M i M_{i} or the discretization error. Empirically, v ^ \\hat{v} exhibits a strong within-trajectory association with deviation from a high-step reference across integration budgets (Appendix A.6 ).",
+   "zh": "证明见附录 A.1。 定理 1 确立了 O⁡(1/α) 的欧拉误差依赖关系，其中与输入相关的常数 M_i 界定了速度场沿精确轨迹的变化率。 公式 3 中的统计量 v^(x,α) 是一种基于这种依赖关系的可观测相对变化代理量；它并不被假定为直接估计 M_i 或离散化误差。 从经验上看，v^ 在积分预算范围内表现出与偏离高步长参考值的强轨迹内相关性（附录 A.6）。",
+   "sents": [
+    {
+     "en": "The proof is provided in Appendix A.1 .",
+     "zh": "证明见附录 A.1。"
+    },
+    {
+     "en": "Theorem 1 establishes the O ⁡ ( 1 / α ) O(1/\\alpha) Euler error dependence, with the input-dependent constant M i M_{i} bounding the rate of change of the velocity field along the exact trajectory.",
+     "zh": "定理 1 确立了 O⁡(1/α) 的欧拉误差依赖关系，其中与输入相关的常数 M_i 界定了速度场沿精确轨迹的变化率。"
+    },
+    {
+     "en": "The statistic v ^ ​ ( x , α ) \\hat{v}(x,\\alpha) in Eq. 3 is an observable relative-variation surrogate motivated by this dependence; it is not assumed to directly estimate M i M_{i} or the discretization error.",
+     "zh": "公式 3 中的统计量 v^(x,α) 是一种基于这种依赖关系的可观测相对变化代理量；它并不被假定为直接估计 M_i 或离散化误差。"
+    },
+    {
+     "en": "Empirically, v ^ \\hat{v} exhibits a strong within-trajectory association with deviation from a high-step reference across integration budgets (Appendix A.6 ).",
+     "zh": "从经验上看，v^ 在积分预算范围内表现出与偏离高步长参考值的强轨迹内相关性（附录 A.6）。"
+    }
+   ]
+  },
+  {
+   "en": "Bandit Regret. Separately, the standard NeuralUCB analysis ( 17 ) provides a O ~ ​ ( T ) \\widetilde{O}(\\sqrt{T}) pseudo-regret guarantee under its stated assumptions. We use this result as a conditional characterization of the UCB component of CoFlow with respect to the surrogate reward in Eq. 4 . This result concerns learning the surrogate step-selection objective, whereas Theorem 1 characterizes Euler discretization error as a function of the step budget.",
+   "zh": "多臂老虎机遗憾。 此外，标准的 NeuralUCB 分析（17）在其所述假设下提供了 O ~ ​ ( T ) \\widetilde{O}(\\sqrt{T}) 的伪遗憾保证。 我们将此结果用作 CoFlow 中 UCB 组件相对于公式 4 中代理奖励的条件特征描述。 该结果涉及学习代理步骤选择目标，而定理 1 则将欧拉离散化误差描述为步骤预算的函数。",
+   "sents": [
+    {
+     "en": "Bandit Regret.",
+     "zh": "多臂老虎机遗憾。"
+    },
+    {
+     "en": "Separately, the standard NeuralUCB analysis ( 17 ) provides a O ~ ​ ( T ) \\widetilde{O}(\\sqrt{T}) pseudo-regret guarantee under its stated assumptions.",
+     "zh": "此外，标准的 NeuralUCB 分析（17）在其所述假设下提供了 O ~ ​ ( T ) \\widetilde{O}(\\sqrt{T}) 的伪遗憾保证。"
+    },
+    {
+     "en": "We use this result as a conditional characterization of the UCB component of CoFlow with respect to the surrogate reward in Eq. 4 .",
+     "zh": "我们将此结果用作 CoFlow 中 UCB 组件相对于公式 4 中代理奖励的条件特征描述。"
+    },
+    {
+     "en": "This result concerns learning the surrogate step-selection objective, whereas Theorem 1 characterizes Euler discretization error as a function of the step budget.",
+     "zh": "该结果涉及学习代理步骤选择目标，而定理 1 则将欧拉离散化误差描述为步骤预算的函数。"
+    }
+   ]
+  },
+  {
+   "en": "Computational Overhead. The contextual-bandit module introduces additional computation for uncertainty estimation and model updates. It uses a lightweight neural network ( d ∼ 30 d\\sim 30 K parameters), with the covariance inverse updated incrementally using rank-one Sherman–Morrison updates. The resulting forward, backward, and uncertainty computations are small relative to evaluations of the generative flow model, and their latency is included in all reported inference times. Detailed overhead measurements are provided in Appendix A.3 .",
+   "zh": "计算开销。 上下文老虎机模块会引入额外的计算，用于不确定性估计和模型更新。 它使用一个轻量级神经网络（d ∼ 30，约 30K 个参数），并通过秩一 Sherman–Morrison 更新以增量方式更新协方差矩阵的逆。 由此产生的前向、后向及不确定性计算，相对于生成流模型的评估而言规模很小，其延迟已包含在所有报告的推理时间中。 详细的开销测量结果见附录 A.3。",
+   "sents": [
+    {
+     "en": "Computational Overhead.",
+     "zh": "计算开销。"
+    },
+    {
+     "en": "The contextual-bandit module introduces additional computation for uncertainty estimation and model updates.",
+     "zh": "上下文老虎机模块会引入额外的计算，用于不确定性估计和模型更新。"
+    },
+    {
+     "en": "It uses a lightweight neural network ( d ∼ 30 d\\sim 30 K parameters), with the covariance inverse updated incrementally using rank-one Sherman–Morrison updates.",
+     "zh": "它使用一个轻量级神经网络（d ∼ 30，约 30K 个参数），并通过秩一 Sherman–Morrison 更新以增量方式更新协方差矩阵的逆。"
+    },
+    {
+     "en": "The resulting forward, backward, and uncertainty computations are small relative to evaluations of the generative flow model, and their latency is included in all reported inference times.",
+     "zh": "由此产生的前向、后向及不确定性计算，相对于生成流模型的评估而言规模很小，其延迟已包含在所有报告的推理时间中。"
+    },
+    {
+     "en": "Detailed overhead measurements are provided in Appendix A.3 .",
+     "zh": "详细的开销测量结果见附录 A.3。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate our method across three settings: text-to-image generation, image editing, and text-to-video synthesis. We first describe the datasets, followed by the baselines used for comparison.",
+   "zh": "我们在三种场景下对我们的方法进行了评估：文本到图像生成、图像编辑以及文本到视频合成。 我们首先介绍数据集，然后说明用于比较的基线模型。",
+   "sents": [
+    {
+     "en": "We evaluate our method across three settings: text-to-image generation, image editing, and text-to-video synthesis.",
+     "zh": "我们在三种场景下对我们的方法进行了评估：文本到图像生成、图像编辑以及文本到视频合成。"
+    },
+    {
+     "en": "We first describe the datasets, followed by the baselines used for comparison.",
+     "zh": "我们首先介绍数据集，然后说明用于比较的基线模型。"
+    }
+   ]
+  },
+  {
+   "en": "Datasets. For text-to-image generation, we use the GenEval benchmark ( 35 ) , consisting of 553 553 prompts designed to evaluate compositional reasoning. The prompts test capabilities such as object presence , spatial relations , attribute binding , and counting , providing a fine-grained measure of semantic alignment.",
+   "zh": "数据集。 对于文本到图像生成，我们使用 GenEval 基准测试（35），它包含 553 个旨在评估组合推理能力的提示词。 这些提示词测试了对象存在、空间关系、属性绑定和计数等能力，从而提供了语义对齐的精细度量。",
+   "sents": [
+    {
+     "en": "Datasets.",
+     "zh": "数据集。"
+    },
+    {
+     "en": "For text-to-image generation, we use the GenEval benchmark ( 35 ) , consisting of 553 553 prompts designed to evaluate compositional reasoning.",
+     "zh": "对于文本到图像生成，我们使用 GenEval 基准测试（35），它包含 553 个旨在评估组合推理能力的提示词。"
+    },
+    {
+     "en": "The prompts test capabilities such as object presence , spatial relations , attribute binding , and counting , providing a fine-grained measure of semantic alignment.",
+     "zh": "这些提示词测试了对象存在、空间关系、属性绑定和计数等能力，从而提供了语义对齐的精细度量。"
+    }
+   ]
+  },
+  {
+   "en": "For image editing, we adopt GEdit ( 36 ) , which contains 606 606 real-world editing instructions spanning object manipulation , appearance changes , layout modifications , and style transfer . This enables evaluation of both localized and global transformations. For video generation, we use VBench ( 37 ) and construct a subset of 80 80 prompts by uniformly sampling 5 5 prompts from each of its 16 16 evaluation dimensions. This ensures balanced coverage of factors such as motion consistency , object persistence , camera dynamics , and scene composition .",
+   "zh": "在图像编辑方面，我们采用 GEdit ( 36 )，它包含 606 条真实世界的编辑指令，涵盖对象操控、外观变化、布局修改和风格迁移。 这使得对局部和全局变换的评估成为可能。 在视频生成方面，我们使用 VBench ( 37 )，并从其 16 个评估维度中均匀采样 5 个提示词，构建一个包含 80 条提示词的子集。 这确保了运动一致性、对象持续性、相机动态和场景构图等因素得到均衡覆盖。",
+   "sents": [
+    {
+     "en": "For image editing, we adopt GEdit ( 36 ) , which contains 606 606 real-world editing instructions spanning object manipulation , appearance changes , layout modifications , and style transfer .",
+     "zh": "在图像编辑方面，我们采用 GEdit ( 36 )，它包含 606 条真实世界的编辑指令，涵盖对象操控、外观变化、布局修改和风格迁移。"
+    },
+    {
+     "en": "This enables evaluation of both localized and global transformations.",
+     "zh": "这使得对局部和全局变换的评估成为可能。"
+    },
+    {
+     "en": "For video generation, we use VBench ( 37 ) and construct a subset of 80 80 prompts by uniformly sampling 5 5 prompts from each of its 16 16 evaluation dimensions.",
+     "zh": "在视频生成方面，我们使用 VBench ( 37 )，并从其 16 个评估维度中均匀采样 5 个提示词，构建一个包含 80 条提示词的子集。"
+    },
+    {
+     "en": "This ensures balanced coverage of factors such as motion consistency , object persistence , camera dynamics , and scene composition .",
+     "zh": "这确保了运动一致性、对象持续性、相机动态和场景构图等因素得到均衡覆盖。"
+    }
+   ]
+  },
+  {
+   "en": "Baselines. We compare against representative methods spanning full-generation, training-based acceleration, and inference-time approaches. Full Generation performs standard sampling over the complete trajectory without approximation, serving as an upper bound on fidelity, while TeaCache [ 13 ] improves efficiency by caching intermediate representations across timesteps at the cost of minor approximation error.",
+   "zh": "基线方法。 我们将其与涵盖完整生成、基于训练的加速以及推理时方法的代表性方法进行比较。 完整生成方法在不进行任何近似的情况下，对完整的轨迹执行标准采样，因此可视为保真度的上限；而 TeaCache [ 13 ] 通过在时间步长之间缓存中间表示来提高效率，但会引入轻微的近似误差。",
+   "sents": [
+    {
+     "en": "Baselines.",
+     "zh": "基线方法。"
+    },
+    {
+     "en": "We compare against representative methods spanning full-generation, training-based acceleration, and inference-time approaches.",
+     "zh": "我们将其与涵盖完整生成、基于训练的加速以及推理时方法的代表性方法进行比较。"
+    },
+    {
+     "en": "Full Generation performs standard sampling over the complete trajectory without approximation, serving as an upper bound on fidelity, while TeaCache [ 13 ] improves efficiency by caching intermediate representations across timesteps at the cost of minor approximation error.",
+     "zh": "完整生成方法在不进行任何近似的情况下，对完整的轨迹执行标准采样，因此可视为保真度的上限；而 TeaCache [ 13 ] 通过在时间步长之间缓存中间表示来提高效率，但会引入轻微的近似误差。"
+    }
+   ]
+  },
+  {
+   "en": "InstaFlow [ 31 ] compresses multi-step generation into one or few steps via distillation, achieving large speedups but reduced visual and compositional quality. PeRFlow [ 5 ] enforces piecewise-linear velocity trajectories through additional training for stable few-step generation. FlowCast [ 14 ] uses speculative decoding to predict future steps in parallel, reducing wall-clock time but increasing NFEs.",
+   "zh": "InstaFlow [ 31 ] 通过蒸馏将多步生成压缩为一步或少量步骤，实现了显著的速度提升，但视觉和构图质量有所下降。 PeRFlow [ 5 ] 通过额外训练强制采用分段线性速度轨迹，以实现稳定的少步生成。 FlowCast [ 14 ] 利用推测性解码并行预测未来步骤，减少了实际运行时间，但增加了 NFEs。",
+   "sents": [
+    {
+     "en": "InstaFlow [ 31 ] compresses multi-step generation into one or few steps via distillation, achieving large speedups but reduced visual and compositional quality.",
+     "zh": "InstaFlow [ 31 ] 通过蒸馏将多步生成压缩为一步或少量步骤，实现了显著的速度提升，但视觉和构图质量有所下降。"
+    },
+    {
+     "en": "PeRFlow [ 5 ] enforces piecewise-linear velocity trajectories through additional training for stable few-step generation.",
+     "zh": "PeRFlow [ 5 ] 通过额外训练强制采用分段线性速度轨迹，以实现稳定的少步生成。"
+    },
+    {
+     "en": "FlowCast [ 14 ] uses speculative decoding to predict future steps in parallel, reducing wall-clock time but increasing NFEs.",
+     "zh": "FlowCast [ 14 ] 利用推测性解码并行预测未来步骤，减少了实际运行时间，但增加了 NFEs。"
+    }
+   ]
+  },
+  {
+   "en": "FastFlow [ 15 ] skips evaluations using a bandit-based smoothness heuristic, while AdaDiff [ 16 ] formulates step selection as reinforcement learning guided by external quality metrics, introducing overhead and potential misalignment with semantic fidelity.",
+   "zh": "FastFlow [ 15 ] 通过基于多臂老虎机模型的平滑性启发式方法跳过评估，而 AdaDiff [ 16 ] 则将步骤选择表述为由外部质量指标引导的强化学习问题，这带来了额外的开销，并可能导致与语义保真度的潜在不一致。",
+   "sents": null
+  },
+  {
+   "en": "In contrast, CoFlow uses a neural contextual bandit to predict an input-adaptive step budget before sampling and executes the full trajectory accordingly, enabling context-aware computation while preserving discretization consistency; results include all samples encountered during exploration.",
+   "zh": "相比之下，CoFlow 使用一种神经上下文多臂老虎机模型，在采样前预测一个适应输入的步数预算，并据此执行完整的轨迹，从而在保持离散化一致性的同时实现上下文感知的计算；其结果包含了探索过程中遇到的所有样本。",
+   "sents": null
+  },
+  {
+   "en": "All baselines are evaluated using their official implementations and hyperparameters (see Appendix 12 ). Table 1 reports results under released settings for all the baselines. We set μ = 1 / max α ∈ 𝒜 ⁡ α \\mu=1/\\max_{\\alpha\\in\\mathcal{A}}\\alpha to normalize the computational-cost term relative to the available step budgets. The parameter μ \\mu controls the trade-off between trajectory variation and computational cost; its effect is examined in Figures 3 and 4 . All the experiments were performed on a set of 2 NVIDIA A6000 GPUs.",
+   "zh": "所有基线方法均使用其官方实现和超参数进行评估（参见附录 12）。 表 1 报告了所有基线方法在已发布设置下的结果。 我们将 μ = 1 / max α ∈ 𝒜 ⁡ α \\mu=1/\\max_{\\alpha\\in\\mathcal{A}}\\alpha，以将计算成本项相对于可用步数预算进行归一化。 参数 μ \\mu 控制着轨迹变化与计算成本之间的权衡；其影响在图 3 和图 4 中进行了考察。 所有实验均在 2 块 NVIDIA A6000 GPU 上执行。",
+   "sents": [
+    {
+     "en": "All baselines are evaluated using their official implementations and hyperparameters (see Appendix 12 ).",
+     "zh": "所有基线方法均使用其官方实现和超参数进行评估（参见附录 12）。"
+    },
+    {
+     "en": "Table 1 reports results under released settings for all the baselines.",
+     "zh": "表 1 报告了所有基线方法在已发布设置下的结果。"
+    },
+    {
+     "en": "We set μ = 1 / max α ∈ 𝒜 ⁡ α \\mu=1/\\max_{\\alpha\\in\\mathcal{A}}\\alpha to normalize the computational-cost term relative to the available step budgets.",
+     "zh": "我们将 μ = 1 / max α ∈ 𝒜 ⁡ α \\mu=1/\\max_{\\alpha\\in\\mathcal{A}}\\alpha，以将计算成本项相对于可用步数预算进行归一化。"
+    },
+    {
+     "en": "The parameter μ \\mu controls the trade-off between trajectory variation and computational cost; its effect is examined in Figures 3 and 4 .",
+     "zh": "参数 μ \\mu 控制着轨迹变化与计算成本之间的权衡；其影响在图 3 和图 4 中进行了考察。"
+    },
+    {
+     "en": "All the experiments were performed on a set of 2 NVIDIA A6000 GPUs.",
+     "zh": "所有实验均在 2 块 NVIDIA A6000 GPU 上执行。"
+    }
+   ]
+  },
+  {
+   "en": "Models. To demonstrate the versatility of our approach, we evaluate across multiple state-of-the-art models: for image generation, we use BAGEL ( 28 ) , Flux-Kontext ( 19 ) , PeRFlow ( 5 ) and StableDiffusion models ( 38 ) ; for image editing, we use BAGEL and Flux-Kontext; for video generation, we use the HunYuanVideo model ( 25 ) .",
+   "zh": "模型。 为了展示我们方法的多功能性，我们在多个顶尖模型上进行了评估：在图像生成方面，我们使用了 BAGEL ( 28 )、Flux-Kontext ( 19 )、PeRFlow ( 5 ) 和 StableDiffusion 模型 ( 38 )；在图像编辑方面，我们使用了 BAGEL 和 Flux-Kontext；在视频生成方面，我们使用了 HunYuanVideo 模型 ( 25 )。",
+   "sents": [
+    {
+     "en": "Models.",
+     "zh": "模型。"
+    },
+    {
+     "en": "To demonstrate the versatility of our approach, we evaluate across multiple state-of-the-art models: for image generation, we use BAGEL ( 28 ) , Flux-Kontext ( 19 ) , PeRFlow ( 5 ) and StableDiffusion models ( 38 ) ; for image editing, we use BAGEL and Flux-Kontext; for video generation, we use the HunYuanVideo model ( 25 ) .",
+     "zh": "为了展示我们方法的多功能性，我们在多个顶尖模型上进行了评估：在图像生成方面，我们使用了 BAGEL ( 28 )、Flux-Kontext ( 19 )、PeRFlow ( 5 ) 和 StableDiffusion 模型 ( 38 )；在图像编辑方面，我们使用了 BAGEL 和 Flux-Kontext；在视频生成方面，我们使用了 HunYuanVideo 模型 ( 25 )。"
+    }
+   ]
+  },
+  {
+   "en": "Training the neural contextual bandit. We model the expected reward using a two-layer MLP f θ ​ ( φ ​ ( x ) , α ) f_{\\theta}(\\varphi(x),\\alpha) with ReLU activations and hidden dimension 64 64 (adapting from NeuralUCB [ 17 ] ). The context φ ⁡ ( x ) \\varphi(x) combines 8-dimensional handcrafted complexity features (see Appendix B and Table 14 ) with projected semantic embeddings from a pretrained SentenceTransformer (all-MiniLM-L6-v2) ( 39 ) (more details in Appendix B.1 ). The Neural Bandit inputs the context and the action and predicts a reward for the given action.",
+   "zh": "训练神经上下文多臂老虎机。 我们使用一个包含 ReLU 激活函数和 64 维隐藏层的两层 MLP f_{\\theta}(\\varphi(x),\\alpha)（灵感来自 NeuralUCB [17]）来建模期望奖励。 上下文 φ(x) 结合了 8 维的手工设计复杂度特征（见附录 B 和表 14），以及来自预训练 SentenceTransformer（all-MiniLM-L6-v2）的投影语义嵌入（39）（更多细节见附录 B.1）。 神经多臂老虎机将上下文和行动作为输入，并预测给定行动的奖励。",
+   "sents": [
+    {
+     "en": "Training the neural contextual bandit.",
+     "zh": "训练神经上下文多臂老虎机。"
+    },
+    {
+     "en": "We model the expected reward using a two-layer MLP f θ ​ ( φ ​ ( x ) , α ) f_{\\theta}(\\varphi(x),\\alpha) with ReLU activations and hidden dimension 64 64 (adapting from NeuralUCB [ 17 ] ).",
+     "zh": "我们使用一个包含 ReLU 激活函数和 64 维隐藏层的两层 MLP f_{\\theta}(\\varphi(x),\\alpha)（灵感来自 NeuralUCB [17]）来建模期望奖励。"
+    },
+    {
+     "en": "The context φ ⁡ ( x ) \\varphi(x) combines 8-dimensional handcrafted complexity features (see Appendix B and Table 14 ) with projected semantic embeddings from a pretrained SentenceTransformer (all-MiniLM-L6-v2) ( 39 ) (more details in Appendix B.1 ).",
+     "zh": "上下文 φ(x) 结合了 8 维的手工设计复杂度特征（见附录 B 和表 14），以及来自预训练 SentenceTransformer（all-MiniLM-L6-v2）的投影语义嵌入（39）（更多细节见附录 B.1）。"
+    },
+    {
+     "en": "The Neural Bandit inputs the context and the action and predicts a reward for the given action.",
+     "zh": "神经多臂老虎机将上下文和行动作为输入，并预测给定行动的奖励。"
+    }
+   ]
+  },
+  {
+   "en": "The model is trained online by storing ( φ ⁡ ( x t ) , α t , r t ) (\\varphi(x_{t}),\\alpha_{t},r_{t}) in a replay buffer 𝒟 \\mathcal{D} and performing updates every P P iterations via MSE minimization over 𝒟 \\mathcal{D} , using Adam ( 40 ) with learning rate 5 × 10 − 3 5\\times 10^{-3} for 20 20 epochs. Exploration is handled via a cold-start phase (each arm pulled once), followed by a ε \\varepsilon -greedy strategy, and subsequently a NeuralUCB-based action selection rule.",
+   "zh": "该模型通过在线训练进行优化：将 ( φ ⁡ ( x t ) , α t , r t ) (\\varphi(x_{t}),\\alpha_{t},r_{t}) 存储到重放缓冲区 𝒟 \\mathcal{D} 中，并在每 P P 次迭代后，基于 𝒟 \\mathcal{D} 通过最小化均方误差（MSE）进行更新，使用 Adam (40) 优化器，学习率为 5 × 10 − 3 5\\times 10^{-3}，共训练 20 20 个周期。 探索策略首先通过冷启动阶段实现（每个臂被选择一次），随后采用 ε \\varepsilon -greedy 策略，最后使用基于 NeuralUCB 的动作选择规则。",
+   "sents": [
+    {
+     "en": "The model is trained online by storing ( φ ⁡ ( x t ) , α t , r t ) (\\varphi(x_{t}),\\alpha_{t},r_{t}) in a replay buffer 𝒟 \\mathcal{D} and performing updates every P P iterations via MSE minimization over 𝒟 \\mathcal{D} , using Adam ( 40 ) with learning rate 5 × 10 − 3 5\\times 10^{-3} for 20 20 epochs.",
+     "zh": "该模型通过在线训练进行优化：将 ( φ ⁡ ( x t ) , α t , r t ) (\\varphi(x_{t}),\\alpha_{t},r_{t}) 存储到重放缓冲区 𝒟 \\mathcal{D} 中，并在每 P P 次迭代后，基于 𝒟 \\mathcal{D} 通过最小化均方误差（MSE）进行更新，使用 Adam (40) 优化器，学习率为 5 × 10 − 3 5\\times 10^{-3}，共训练 20 20 个周期。"
+    },
+    {
+     "en": "Exploration is handled via a cold-start phase (each arm pulled once), followed by a ε \\varepsilon -greedy strategy, and subsequently a NeuralUCB-based action selection rule.",
+     "zh": "探索策略首先通过冷启动阶段实现（每个臂被选择一次），随后采用 ε \\varepsilon -greedy 策略，最后使用基于 NeuralUCB 的动作选择规则。"
+    }
+   ]
+  },
+  {
+   "en": "Image generation. Table 1 reports results on GenEval for BAGEL and FLUX, with additional evaluation on the optimized PeRFlow model in Table 10 . GenEval measures fine-grained semantic alignment across compositional dimensions, while CLIP-IQA evaluates perceptual quality. On BAGEL, CoFlow achieves an overall score of 0.77 0.77 with 17.7 17.7 NFE, compared with 0.78 0.78 at 50 50 NFE for full inference; on FLUX, it achieves 0.65 0.65 with 19.5 19.5 NFE, compared with 0.66 0.66 at 50 50 NFE. These results demonstrate substantial computation reduction with a small change in aggregate generation quality. Category-wise results are provided in Appendix A.2 .",
+   "zh": "图像生成。 表 1 报告了 BAGEL 和 FLUX 在 GenEval 上的结果，并在表 10 中提供了对优化后的 PeRFlow 模型的额外评估。 GenEval 衡量跨组合维度的精细语义对齐，而 CLIP-IQA 则评估感知质量。 在 BAGEL 上，CoFlow 的总得分为 0.77，NFE 为 17.7，而完整推理在 50 NFE 下的总得分为 0.78；在 FLUX 上，其总得分为 0.65，NFE 为 19.5，而完整推理在 50 NFE 下的总得分为 0.66。 这些结果表明，在生成质量总体变化不大的情况下，计算量得到了显著降低。 按类别划分的结果见附录 A.2。",
+   "sents": [
+    {
+     "en": "Image generation.",
+     "zh": "图像生成。"
+    },
+    {
+     "en": "Table 1 reports results on GenEval for BAGEL and FLUX, with additional evaluation on the optimized PeRFlow model in Table 10 .",
+     "zh": "表 1 报告了 BAGEL 和 FLUX 在 GenEval 上的结果，并在表 10 中提供了对优化后的 PeRFlow 模型的额外评估。"
+    },
+    {
+     "en": "GenEval measures fine-grained semantic alignment across compositional dimensions, while CLIP-IQA evaluates perceptual quality.",
+     "zh": "GenEval 衡量跨组合维度的精细语义对齐，而 CLIP-IQA 则评估感知质量。"
+    },
+    {
+     "en": "On BAGEL, CoFlow achieves an overall score of 0.77 0.77 with 17.7 17.7 NFE, compared with 0.78 0.78 at 50 50 NFE for full inference; on FLUX, it achieves 0.65 0.65 with 19.5 19.5 NFE, compared with 0.66 0.66 at 50 50 NFE.",
+     "zh": "在 BAGEL 上，CoFlow 的总得分为 0.77，NFE 为 17.7，而完整推理在 50 NFE 下的总得分为 0.78；在 FLUX 上，其总得分为 0.65，NFE 为 19.5，而完整推理在 50 NFE 下的总得分为 0.66。"
+    },
+    {
+     "en": "These results demonstrate substantial computation reduction with a small change in aggregate generation quality.",
+     "zh": "这些结果表明，在生成质量总体变化不大的情况下，计算量得到了显著降低。"
+    },
+    {
+     "en": "Category-wise results are provided in Appendix A.2 .",
+     "zh": "按类别划分的结果见附录 A.2。"
+    }
+   ]
+  },
+  {
+   "en": "Image editing. Figure 3 presents results on GEdit using BAGEL, FLUX, and Step-1X-Edit. We report G_SC (semantic consistency), G_PQ (perceptual quality), and G_O (overall edit quality), evaluated using GPT-4.1 ( 41 ) as an automatic judge. Across the evaluated operating points, CoFlow reduces the integration budget while maintaining competitive semantic consistency and perceptual quality, demonstrating that adaptive step selection also extends to instruction-based image editing.",
+   "zh": "图像编辑。 图3展示了使用 BAGEL、FLUX 和 Step-1X-Edit 在 GEdit 上的结果。 我们报告了 G_SC（语义一致性）、G_PQ（感知质量）和 G_O（整体编辑质量），这些指标由 GPT-4.1（41）作为自动评判者进行评估。 在所有评估的运作点中，CoFlow 在保持具有竞争力的语义一致性和感知质量的同时，降低了集成预算，这表明自适应步长选择也适用于基于指令的图像编辑。",
+   "sents": [
+    {
+     "en": "Image editing.",
+     "zh": "图像编辑。"
+    },
+    {
+     "en": "Figure 3 presents results on GEdit using BAGEL, FLUX, and Step-1X-Edit.",
+     "zh": "图3展示了使用 BAGEL、FLUX 和 Step-1X-Edit 在 GEdit 上的结果。"
+    },
+    {
+     "en": "We report G_SC (semantic consistency), G_PQ (perceptual quality), and G_O (overall edit quality), evaluated using GPT-4.1 ( 41 ) as an automatic judge.",
+     "zh": "我们报告了 G_SC（语义一致性）、G_PQ（感知质量）和 G_O（整体编辑质量），这些指标由 GPT-4.1（41）作为自动评判者进行评估。"
+    },
+    {
+     "en": "Across the evaluated operating points, CoFlow reduces the integration budget while maintaining competitive semantic consistency and perceptual quality, demonstrating that adaptive step selection also extends to instruction-based image editing.",
+     "zh": "在所有评估的运作点中，CoFlow 在保持具有竞争力的语义一致性和感知质量的同时，降低了集成预算，这表明自适应步长选择也适用于基于指令的图像编辑。"
+    }
+   ]
+  },
+  {
+   "en": "Video generation. Figure 4 reports results on VBench, which evaluates motion dynamics, temporal consistency, and scene composition; we additionally report BRISQUE for frame-level perceptual quality. CoFlow reduces the integration budget while maintaining competitive video-generation performance, indicating that input-adaptive step selection extends beyond image generation to temporally structured outputs.",
+   "zh": "视频生成。 图4报告了VBench上的结果，该基准评估了运动动态、时间一致性和场景构图；我们还报告了用于帧级感知质量的BRISQUE指标。 CoFlow在保持具有竞争力的视频生成性能的同时，降低了集成预算，这表明输入自适应的步长选择不仅适用于图像生成，也适用于具有时间结构的输出。",
+   "sents": [
+    {
+     "en": "Video generation.",
+     "zh": "视频生成。"
+    },
+    {
+     "en": "Figure 4 reports results on VBench, which evaluates motion dynamics, temporal consistency, and scene composition; we additionally report BRISQUE for frame-level perceptual quality.",
+     "zh": "图4报告了VBench上的结果，该基准评估了运动动态、时间一致性和场景构图；我们还报告了用于帧级感知质量的BRISQUE指标。"
+    },
+    {
+     "en": "CoFlow reduces the integration budget while maintaining competitive video-generation performance, indicating that input-adaptive step selection extends beyond image generation to temporally structured outputs.",
+     "zh": "CoFlow在保持具有竞争力的视频生成性能的同时，降低了集成预算，这表明输入自适应的步长选择不仅适用于图像生成，也适用于具有时间结构的输出。"
+    }
+   ]
+  },
+  {
+   "en": "Summary. Across image generation, editing, and video synthesis, CoFlow consistently reduces inference computation while maintaining competitive output quality. The method selects an input-dependent integration budget and then executes the corresponding solver trajectory without modifying the pretrained generative model. Ablations further show that conditioning the policy on input context improves the observed quality–efficiency trade-off relative to a non-contextual variant (Appendix A.7 ). A finer-grained analysis further examines the contributions of MiniLM embeddings and handcrafted prompt features. Additional online ablations show that the policy stabilizes over the interaction sequence and is robust across prompt orderings, while uncertainty-aware UCB exploration improves both the surrogate objective and computational efficiency relative to an otherwise identical greedy policy (Appendix A.7 ). Finally, CoFlow can be combined with existing inference-time acceleration methods such as FastFlow and FlowCast for additional runtime reductions (Appendix A.4 ).",
+   "zh": "摘要。 在图像生成、编辑和视频合成等多个领域，CoFlow 始终能够在保持具有竞争力的输出质量的同时，减少推理计算量。 该方法选择一个依赖于输入数据的集成预算，然后执行相应的求解器轨迹，而无需修改预训练的生成模型。 消融实验进一步表明，将策略与输入上下文相关联，相较于非上下文相关的变体，能够改善所观察到的质量与效率之间的权衡（附录 A.7）。 更精细的分析进一步考察了 MiniLM 嵌入和人工设计的提示特征各自的作用。 额外的在线消融实验表明，该策略在整个交互序列中保持稳定，并且对提示顺序的变化具有鲁棒性；同时，考虑不确定性的 UCB 探索策略相较于其他条件相同的贪心策略，在代理目标函数和计算效率方面均有提升（附录 A.7）。 最后，CoFlow 可以与现有的推理阶段加速方法（如 FastFlow 和 FlowCast）结合使用，以进一步减少运行时间（附录 A.4）。",
+   "sents": [
+    {
+     "en": "Summary.",
+     "zh": "摘要。"
+    },
+    {
+     "en": "Across image generation, editing, and video synthesis, CoFlow consistently reduces inference computation while maintaining competitive output quality.",
+     "zh": "在图像生成、编辑和视频合成等多个领域，CoFlow 始终能够在保持具有竞争力的输出质量的同时，减少推理计算量。"
+    },
+    {
+     "en": "The method selects an input-dependent integration budget and then executes the corresponding solver trajectory without modifying the pretrained generative model.",
+     "zh": "该方法选择一个依赖于输入数据的集成预算，然后执行相应的求解器轨迹，而无需修改预训练的生成模型。"
+    },
+    {
+     "en": "Ablations further show that conditioning the policy on input context improves the observed quality–efficiency trade-off relative to a non-contextual variant (Appendix A.7 ).",
+     "zh": "消融实验进一步表明，将策略与输入上下文相关联，相较于非上下文相关的变体，能够改善所观察到的质量与效率之间的权衡（附录 A.7）。"
+    },
+    {
+     "en": "A finer-grained analysis further examines the contributions of MiniLM embeddings and handcrafted prompt features.",
+     "zh": "更精细的分析进一步考察了 MiniLM 嵌入和人工设计的提示特征各自的作用。"
+    },
+    {
+     "en": "Additional online ablations show that the policy stabilizes over the interaction sequence and is robust across prompt orderings, while uncertainty-aware UCB exploration improves both the surrogate objective and computational efficiency relative to an otherwise identical greedy policy (Appendix A.7 ).",
+     "zh": "额外的在线消融实验表明，该策略在整个交互序列中保持稳定，并且对提示顺序的变化具有鲁棒性；同时，考虑不确定性的 UCB 探索策略相较于其他条件相同的贪心策略，在代理目标函数和计算效率方面均有提升（附录 A.7）。"
+    },
+    {
+     "en": "Finally, CoFlow can be combined with existing inference-time acceleration methods such as FastFlow and FlowCast for additional runtime reductions (Appendix A.4 ).",
+     "zh": "最后，CoFlow 可以与现有的推理阶段加速方法（如 FastFlow 和 FlowCast）结合使用，以进一步减少运行时间（附录 A.4）。"
+    }
+   ]
+  },
+  {
+   "en": "Limitations. While CoFlow is lightweight and fully online, it requires a brief exploration phase to learn the contextual policy; however, note that all reported results already include exploration samples. Its effectiveness also depends on the expressiveness of the prompt features, which are intentionally designed to be simple and efficient. More expressive features could further improve adaptation quality, but at the cost of additional computational overhead. In practice, both the exploration phase and lightweight feature design stabilize quickly and have minimal impact on overall performance.",
+   "zh": "局限性。 虽然 CoFlow 轻量且完全在线，但它需要短暂的探索阶段来学习上下文策略；不过请注意，所有报告的结果均已包含探索样本。 其有效性还取决于提示特征的表现力，而这些特征被有意设计为简单且高效。 更具表现力的特征可以进一步提升适应质量，但会增加额外的计算开销。 在实际应用中，探索阶段和轻量级特征设计都能迅速稳定下来，并对整体性能的影响极小。",
+   "sents": [
+    {
+     "en": "Limitations.",
+     "zh": "局限性。"
+    },
+    {
+     "en": "While CoFlow is lightweight and fully online, it requires a brief exploration phase to learn the contextual policy; however, note that all reported results already include exploration samples.",
+     "zh": "虽然 CoFlow 轻量且完全在线，但它需要短暂的探索阶段来学习上下文策略；不过请注意，所有报告的结果均已包含探索样本。"
+    },
+    {
+     "en": "Its effectiveness also depends on the expressiveness of the prompt features, which are intentionally designed to be simple and efficient.",
+     "zh": "其有效性还取决于提示特征的表现力，而这些特征被有意设计为简单且高效。"
+    },
+    {
+     "en": "More expressive features could further improve adaptation quality, but at the cost of additional computational overhead.",
+     "zh": "更具表现力的特征可以进一步提升适应质量，但会增加额外的计算开销。"
+    },
+    {
+     "en": "In practice, both the exploration phase and lightweight feature design stabilize quickly and have minimal impact on overall performance.",
+     "zh": "在实际应用中，探索阶段和轻量级特征设计都能迅速稳定下来，并对整体性能的影响极小。"
+    }
+   ]
+  },
+  {
+   "en": "We introduced CoFlow , an online framework for input-adaptive step selection in flow-based generative models. CoFlow formulates step-budget selection as a neural contextual bandit, using lightweight prompt representations and an intrinsic trajectory-variation surrogate to adapt computation without retraining the underlying generative model. Across image generation, image editing, and video synthesis, CoFlow substantially reduces inference computation while maintaining competitive semantic and perceptual quality across multiple backbones. We further provide a forward-Euler analysis establishing an O ⁡ ( 1 / K ) O(1/K) discretization-error dependence under standard regularity conditions, together with empirical evidence that the proposed velocity-variation statistic tracks within-trajectory sensitivity to temporal discretization. Our results demonstrate that online contextual step selection provides a practical mechanism for adapting inference computation across inputs while remaining compatible with pretrained flow models and existing inference-time acceleration techniques.",
+   "zh": "我们提出了 CoFlow，一个用于流式生成模型中自适应输入步选择的在线框架。 CoFlow 将步预算选择问题建模为神经上下文老虎机问题，利用轻量级的提示表示和内在轨迹变化代理指标，在不重新训练底层生成模型的情况下实现计算自适应。 在图像生成、图像编辑和视频合成等任务中，CoFlow 显著减少了推理计算量，同时保持了多种基础模型下具有竞争力的语义和感知质量。 我们进一步提供了前向欧拉分析，在标准正则性条件下证明了离散化误差与 O(1/K) 的依赖关系，并辅以实证证据表明所提出的速度变化统计量能够追踪轨迹内对时间离散化的敏感性。 我们的结果表明，在线上下文步选择为跨输入自适应推理计算提供了一种实用机制，同时仍能兼容预训练的流模型和现有的推理时加速技术。",
+   "sents": [
+    {
+     "en": "We introduced CoFlow , an online framework for input-adaptive step selection in flow-based generative models.",
+     "zh": "我们提出了 CoFlow，一个用于流式生成模型中自适应输入步选择的在线框架。"
+    },
+    {
+     "en": "CoFlow formulates step-budget selection as a neural contextual bandit, using lightweight prompt representations and an intrinsic trajectory-variation surrogate to adapt computation without retraining the underlying generative model.",
+     "zh": "CoFlow 将步预算选择问题建模为神经上下文老虎机问题，利用轻量级的提示表示和内在轨迹变化代理指标，在不重新训练底层生成模型的情况下实现计算自适应。"
+    },
+    {
+     "en": "Across image generation, image editing, and video synthesis, CoFlow substantially reduces inference computation while maintaining competitive semantic and perceptual quality across multiple backbones.",
+     "zh": "在图像生成、图像编辑和视频合成等任务中，CoFlow 显著减少了推理计算量，同时保持了多种基础模型下具有竞争力的语义和感知质量。"
+    },
+    {
+     "en": "We further provide a forward-Euler analysis establishing an O ⁡ ( 1 / K ) O(1/K) discretization-error dependence under standard regularity conditions, together with empirical evidence that the proposed velocity-variation statistic tracks within-trajectory sensitivity to temporal discretization.",
+     "zh": "我们进一步提供了前向欧拉分析，在标准正则性条件下证明了离散化误差与 O(1/K) 的依赖关系，并辅以实证证据表明所提出的速度变化统计量能够追踪轨迹内对时间离散化的敏感性。"
+    },
+    {
+     "en": "Our results demonstrate that online contextual step selection provides a practical mechanism for adapting inference computation across inputs while remaining compatible with pretrained flow models and existing inference-time acceleration techniques.",
+     "zh": "我们的结果表明，在线上下文步选择为跨输入自适应推理计算提供了一种实用机制，同时仍能兼容预训练的流模型和现有的推理时加速技术。"
+    }
+   ]
+  },
+  {
+   "en": "Fix an input x i x_{i} and a step budget α \\alpha . Let t k = k ​ h t_{k}=kh , where h = 1 / α h=1/\\alpha and k = 0 , … , α k=0,\\ldots,\\alpha . Let z i ​ ( s ) z_{i}(s) denote the exact solution and z ^ i , k ( α ) \\hat{z}_{i,k}^{(\\alpha)} the Euler iterate,",
+   "zh": "固定输入 x_i 和步数预算 α。 令 t_k = k h，其中 h = 1 / α，且 k = 0, …, α。 令 z_i(s) 表示精确解，而 \\hat{z}_{i,k}^{(\\alpha)} 表示欧拉迭代解，",
+   "sents": [
+    {
+     "en": "Fix an input x i x_{i} and a step budget α \\alpha .",
+     "zh": "固定输入 x_i 和步数预算 α。"
+    },
+    {
+     "en": "Let t k = k ​ h t_{k}=kh , where h = 1 / α h=1/\\alpha and k = 0 , … , α k=0,\\ldots,\\alpha .",
+     "zh": "令 t_k = k h，其中 h = 1 / α，且 k = 0, …, α。"
+    },
+    {
+     "en": "Let z i ​ ( s ) z_{i}(s) denote the exact solution and z ^ i , k ( α ) \\hat{z}_{i,k}^{(\\alpha)} the Euler iterate,",
+     "zh": "令 z_i(s) 表示精确解，而 \\hat{z}_{i,k}^{(\\alpha)} 表示欧拉迭代解，"
+    }
+   ]
+  },
+  {
+   "en": "Since both trajectories start from the same initial state, e 0 = 0 e_{0}=0 .",
+   "zh": "由于两条轨迹都从相同的初始状态开始，e 0 = 0 e_{0}=0。",
+   "sents": null
+  },
+  {
+   "en": "Along the exact trajectory, the chain rule gives",
+   "zh": "沿着精确的轨迹，链式法则给出",
+   "sents": null
+  },
+  {
+   "en": "Subtracting the Euler update from the exact update yields",
+   "zh": "将欧拉更新从精确更新中减去，得到",
+   "sents": null
+  },
+  {
+   "en": "Using the L L -Lipschitz property of v i v_{i} ,",
+   "zh": "利用 v_i 的 L L-Lipschitz 性质，",
+   "sents": null
+  },
+  {
+   "en": "Since e 0 = 0 e_{0}=0 , iterating the recursion gives",
+   "zh": "由于 e 0 = 0 e_{0}=0 ，对递归进行迭代可得",
+   "sents": null
+  },
+  {
+   "en": "Since h = 1 / α h=1/\\alpha and ( 1 + L α ) α ≤ e L \\left(1+\\frac{L}{\\alpha}\\right)^{\\alpha}\\leq e^{L} , we obtain",
+   "zh": "由于 h = 1 / α h=1/\\alpha 且 ( 1 + L α ) α ≤ e L \\left(1+\\frac{L}{\\alpha}\\right)^{\\alpha}\\leq e^{L}，因此我们得到",
+   "sents": null
+  },
+  {
+   "en": "For L = 0 L=0 , the recursion reduces to",
+   "zh": "对于 L = 0 L=0，递归简化为",
+   "sents": null
+  },
+  {
+   "en": "Finally, summing over any sequence of step budgets { α i } i = 1 T \\{\\alpha_{i}\\}_{i=1}^{T} gives, for L > 0 L>0 ,",
+   "zh": "最后，对任意步数预算序列 { α i } i = 1 T \\{\\alpha_{i}\\}_{i=1}^{T} 求和，对于 L > 0 L>0 ，可得：",
+   "sents": null
+  },
+  {
+   "en": "The result requires standard regularity conditions for forward Euler: Lipschitz continuity of the velocity field in the state variable and a uniform bound M i M_{i} on the derivative of the velocity field along the exact trajectory. The constant M i M_{i} captures input-dependent variation in the conditional flow dynamics. The theorem characterizes numerical integration error independently of the surrogate reward used by CoFlow for adaptive step selection.",
+   "zh": "该结果需要前向欧拉方法的标准正则性条件：状态变量中速度场的利普希茨连续性，以及沿精确轨迹的速度场导数的统一界 M i M_{i}。 常数 M i M_{i} 捕捉了条件流动力学中依赖于输入的变异性。 该定理描述了数值积分误差，且与 CoFlow 用于自适应步长选择的代理奖励无关。",
+   "sents": [
+    {
+     "en": "The result requires standard regularity conditions for forward Euler: Lipschitz continuity of the velocity field in the state variable and a uniform bound M i M_{i} on the derivative of the velocity field along the exact trajectory.",
+     "zh": "该结果需要前向欧拉方法的标准正则性条件：状态变量中速度场的利普希茨连续性，以及沿精确轨迹的速度场导数的统一界 M i M_{i}。"
+    },
+    {
+     "en": "The constant M i M_{i} captures input-dependent variation in the conditional flow dynamics.",
+     "zh": "常数 M i M_{i} 捕捉了条件流动力学中依赖于输入的变异性。"
+    },
+    {
+     "en": "The theorem characterizes numerical integration error independently of the surrogate reward used by CoFlow for adaptive step selection.",
+     "zh": "该定理描述了数值积分误差，且与 CoFlow 用于自适应步长选择的代理奖励无关。"
+    }
+   ]
+  },
+  {
+   "en": "Tables 3 and 4 provide a category-wise breakdown on GenEval across Single Object (SO), Two Object (TO), Counting (CO), Color (CL), Color Attribute (CA), and Position (PO). This analysis complements the aggregate results by examining semantic alignment and compositional performance across different prompt categories.",
+   "zh": "表3和表4按类别详细展示了GenEval在单一对象（SO）、两个对象（TO）、计数（CO）、颜色（CL）、颜色属性（CA）和位置（PO）方面的表现。 这项分析通过考察不同提示类别中的语义对齐和组合性能，对汇总结果进行了补充。",
+   "sents": [
+    {
+     "en": "Tables 3 and 4 provide a category-wise breakdown on GenEval across Single Object (SO), Two Object (TO), Counting (CO), Color (CL), Color Attribute (CA), and Position (PO).",
+     "zh": "表3和表4按类别详细展示了GenEval在单一对象（SO）、两个对象（TO）、计数（CO）、颜色（CL）、颜色属性（CA）和位置（PO）方面的表现。"
+    },
+    {
+     "en": "This analysis complements the aggregate results by examining semantic alignment and compositional performance across different prompt categories.",
+     "zh": "这项分析通过考察不同提示类别中的语义对齐和组合性能，对汇总结果进行了补充。"
+    }
+   ]
+  },
+  {
+   "en": "Across both backbones, CoFlow maintains competitive performance across the GenEval categories while using substantially fewer function evaluations than full-step inference. The category-wise results further show that the efficiency gains are not restricted to a single type of prompt, with CoFlow retaining comparable performance across object composition, counting, attribute binding, and spatial-relation tasks. These results provide a more detailed view of the quality–efficiency trade-off observed in the aggregate evaluation.",
+   "zh": "在两种骨干网络中，CoFlow 在 GenEval 的各个类别上均保持了具有竞争力的性能，同时其函数评估次数远少于完整步骤推理。 按类别分析的结果进一步表明，效率提升并不局限于某一特定类型的提示；CoFlow 在对象组合、计数、属性绑定和空间关系任务中均保持了相当的性能。 这些结果为综合评估中观察到的质量与效率之间的权衡关系提供了更细致的视角。",
+   "sents": [
+    {
+     "en": "Across both backbones, CoFlow maintains competitive performance across the GenEval categories while using substantially fewer function evaluations than full-step inference.",
+     "zh": "在两种骨干网络中，CoFlow 在 GenEval 的各个类别上均保持了具有竞争力的性能，同时其函数评估次数远少于完整步骤推理。"
+    },
+    {
+     "en": "The category-wise results further show that the efficiency gains are not restricted to a single type of prompt, with CoFlow retaining comparable performance across object composition, counting, attribute binding, and spatial-relation tasks.",
+     "zh": "按类别分析的结果进一步表明，效率提升并不局限于某一特定类型的提示；CoFlow 在对象组合、计数、属性绑定和空间关系任务中均保持了相当的性能。"
+    },
+    {
+     "en": "These results provide a more detailed view of the quality–efficiency trade-off observed in the aggregate evaluation.",
+     "zh": "这些结果为综合评估中观察到的质量与效率之间的权衡关系提供了更细致的视角。"
+    }
+   ]
+  },
+  {
+   "en": "Table 2 reports the inference time for standard generation using fixed step budgets (50 and 25 steps) and compares it with our method under the same fixed budgets (NCB-50 and NCB-25). This controlled setup isolates the overhead introduced by the contextual bandit, independent of any step reduction.",
+   "zh": "表 2 报告了使用固定步数预算（50 步和 25 步）进行标准生成时的推理时间，并将其与在相同固定预算下我们方法的结果（NCB-50 和 NCB-25）进行了比较。 这种受控设置隔离了上下文多臂老虎机引入的额外开销，且不受任何步数减少的影响。",
+   "sents": [
+    {
+     "en": "Table 2 reports the inference time for standard generation using fixed step budgets (50 and 25 steps) and compares it with our method under the same fixed budgets (NCB-50 and NCB-25).",
+     "zh": "表 2 报告了使用固定步数预算（50 步和 25 步）进行标准生成时的推理时间，并将其与在相同固定预算下我们方法的结果（NCB-50 和 NCB-25）进行了比较。"
+    },
+    {
+     "en": "This controlled setup isolates the overhead introduced by the contextual bandit, independent of any step reduction.",
+     "zh": "这种受控设置隔离了上下文多臂老虎机引入的额外开销，且不受任何步数减少的影响。"
+    }
+   ]
+  },
+  {
+   "en": "The results show that the additional latency incurred by our method is negligible ( < 1 <1 second), demonstrating that the decision-making module introduces minimal runtime cost. Furthermore, training the neural bandit is computationally lightweight: even with a large number of interaction samples, the full training process completes within a few seconds ( ∼ \\sim 3-4 seconds in our setup). We include this time while calculating the average inference time reported in our result Tables.",
+   "zh": "结果表明，我们的方法带来的额外延迟可以忽略不计（<1秒），这说明决策模块引入的运行时成本极小。 此外，训练神经带臂算法的计算开销很小：即使有大量交互样本，完整的训练过程也能在几秒内完成（在我们的设置中约为3-4秒）。 我们在计算结果表中报告的平均推理时间时，已将这一时间包含在内。",
+   "sents": [
+    {
+     "en": "The results show that the additional latency incurred by our method is negligible ( < 1 <1 second), demonstrating that the decision-making module introduces minimal runtime cost.",
+     "zh": "结果表明，我们的方法带来的额外延迟可以忽略不计（<1秒），这说明决策模块引入的运行时成本极小。"
+    },
+    {
+     "en": "Furthermore, training the neural bandit is computationally lightweight: even with a large number of interaction samples, the full training process completes within a few seconds ( ∼ \\sim 3-4 seconds in our setup).",
+     "zh": "此外，训练神经带臂算法的计算开销很小：即使有大量交互样本，完整的训练过程也能在几秒内完成（在我们的设置中约为3-4秒）。"
+    },
+    {
+     "en": "We include this time while calculating the average inference time reported in our result Tables.",
+     "zh": "我们在计算结果表中报告的平均推理时间时，已将这一时间包含在内。"
+    }
+   ]
+  },
+  {
+   "en": "This efficiency stems from the simplicity of the underlying model, which consists of a small multilayer perceptron with ≈ 30 ​ k \\approx 30k parameters and low-dimensional inputs. Consequently, our approach achieves adaptive inference with virtually no computational overhead, making it practical for real-time deployment.",
+   "zh": "这种效率源于底层模型的简洁性：它由一个包含约 30k 个参数和低维输入的小型多层感知器组成。 因此，我们的方法几乎没有任何计算开销即可实现自适应推理，使其适用于实时部署。",
+   "sents": [
+    {
+     "en": "This efficiency stems from the simplicity of the underlying model, which consists of a small multilayer perceptron with ≈ 30 ​ k \\approx 30k parameters and low-dimensional inputs.",
+     "zh": "这种效率源于底层模型的简洁性：它由一个包含约 30k 个参数和低维输入的小型多层感知器组成。"
+    },
+    {
+     "en": "Consequently, our approach achieves adaptive inference with virtually no computational overhead, making it practical for real-time deployment.",
+     "zh": "因此，我们的方法几乎没有任何计算开销即可实现自适应推理，使其适用于实时部署。"
+    }
+   ]
+  },
+  {
+   "en": "Table 11 evaluates CoFlow in combination with existing inference-time acceleration methods. While these methods reduce computation within a given sampling procedure, CoFlow operates at the level of selecting an input-dependent integration budget. The two mechanisms can therefore be applied jointly.",
+   "zh": "表 11 评估了 CoFlow 与现有推理时加速方法的结合应用。 虽然这些方法能在给定的采样过程中减少计算量，但 CoFlow 则是在选择依赖于输入积分预算的层面上发挥作用。 因此，这两种机制可以联合使用。",
+   "sents": [
+    {
+     "en": "Table 11 evaluates CoFlow in combination with existing inference-time acceleration methods.",
+     "zh": "表 11 评估了 CoFlow 与现有推理时加速方法的结合应用。"
+    },
+    {
+     "en": "While these methods reduce computation within a given sampling procedure, CoFlow operates at the level of selecting an input-dependent integration budget.",
+     "zh": "虽然这些方法能在给定的采样过程中减少计算量，但 CoFlow 则是在选择依赖于输入积分预算的层面上发挥作用。"
+    },
+    {
+     "en": "The two mechanisms can therefore be applied jointly.",
+     "zh": "因此，这两种机制可以联合使用。"
+    }
+   ]
+  },
+  {
+   "en": "For each combination, CoFlow first selects the integration budget, after which the corresponding acceleration method is applied during generation. As shown in Table 11 , combining adaptive step selection with TeaCache, FastFlow, and FlowCast further reduces runtime relative to using each acceleration method alone, although the magnitude of the gain and its effect on generation quality vary across methods.",
+   "zh": "对于每种组合，CoFlow 首先选择集成预算，之后在生成过程中应用相应的加速方法。 如表 11 所示，将自适应步长选择与 TeaCache、FastFlow 和 FlowCast 相结合，相较于单独使用每种加速方法，能进一步缩短运行时间，尽管不同方法带来的收益幅度及其对生成质量的影响存在差异。",
+   "sents": [
+    {
+     "en": "For each combination, CoFlow first selects the integration budget, after which the corresponding acceleration method is applied during generation.",
+     "zh": "对于每种组合，CoFlow 首先选择集成预算，之后在生成过程中应用相应的加速方法。"
+    },
+    {
+     "en": "As shown in Table 11 , combining adaptive step selection with TeaCache, FastFlow, and FlowCast further reduces runtime relative to using each acceleration method alone, although the magnitude of the gain and its effect on generation quality vary across methods.",
+     "zh": "如表 11 所示，将自适应步长选择与 TeaCache、FastFlow 和 FlowCast 相结合，相较于单独使用每种加速方法，能进一步缩短运行时间，尽管不同方法带来的收益幅度及其对生成质量的影响存在差异。"
+    }
+   ]
+  },
+  {
+   "en": "These results demonstrate that adaptive step-budget selection can be combined with existing inference-time acceleration techniques, providing an additional mechanism for reducing computation without requiring modifications to the underlying generative model.",
+   "zh": "这些结果表明，自适应步长预算选择可以与现有的推理时加速技术相结合，从而提供一种额外的机制来减少计算量，而无需对底层的生成模型进行任何修改。",
+   "sents": null
+  },
+  {
+   "en": "Figure 7 presents qualitative comparisons between CoFlow and AdaDiff together with their selected step budgets. AdaDiff uses a policy learned offline, whereas CoFlow updates its step-selection policy online from observed interactions.",
+   "zh": "图 7 展示了 CoFlow 和 AdaDiff 之间的定性比较，以及它们所选的步骤预算。 AdaDiff 使用离线学习的策略，而 CoFlow 则通过观察到的交互在线更新其步骤选择策略。",
+   "sents": [
+    {
+     "en": "Figure 7 presents qualitative comparisons between CoFlow and AdaDiff together with their selected step budgets.",
+     "zh": "图 7 展示了 CoFlow 和 AdaDiff 之间的定性比较，以及它们所选的步骤预算。"
+    },
+    {
+     "en": "AdaDiff uses a policy learned offline, whereas CoFlow updates its step-selection policy online from observed interactions.",
+     "zh": "AdaDiff 使用离线学习的策略，而 CoFlow 则通过观察到的交互在线更新其步骤选择策略。"
+    }
+   ]
+  },
+  {
+   "en": "The examples illustrate differences in step-allocation behavior between the two approaches. AdaDiff frequently selects either a relatively small budget or the maximum budget, while CoFlow also assigns intermediate step budgets across inputs. This behavior is consistent with the contextual online formulation of CoFlow , which allows its decisions to depend on the current prompt representation and accumulated observations.",
+   "zh": "这些示例展示了两种方法在步骤分配行为上的差异。 AdaDiff 经常选择相对较小的预算或最大预算，而 CoFlow 则会在不同输入中分配中间步骤的预算。 这种行为与 CoFlow 的上下文在线建模方式一致，其决策可以依赖当前的提示表示和累积的观察结果。",
+   "sents": [
+    {
+     "en": "The examples illustrate differences in step-allocation behavior between the two approaches.",
+     "zh": "这些示例展示了两种方法在步骤分配行为上的差异。"
+    },
+    {
+     "en": "AdaDiff frequently selects either a relatively small budget or the maximum budget, while CoFlow also assigns intermediate step budgets across inputs.",
+     "zh": "AdaDiff 经常选择相对较小的预算或最大预算，而 CoFlow 则会在不同输入中分配中间步骤的预算。"
+    },
+    {
+     "en": "This behavior is consistent with the contextual online formulation of CoFlow , which allows its decisions to depend on the current prompt representation and accumulated observations.",
+     "zh": "这种行为与 CoFlow 的上下文在线建模方式一致，其决策可以依赖当前的提示表示和累积的观察结果。"
+    }
+   ]
+  },
+  {
+   "en": "Across the examples, CoFlow reduces the integration budget while retaining visually comparable outputs. These qualitative results complement the quantitative evaluations by illustrating how adaptive step selection can produce different computational allocations across individual inputs.",
+   "zh": "在所有示例中，CoFlow 在保持视觉效果相当的同时，降低了集成预算。 这些定性结果通过展示自适应步长选择如何为不同输入产生不同的计算分配，从而补充了定量评估。",
+   "sents": [
+    {
+     "en": "Across the examples, CoFlow reduces the integration budget while retaining visually comparable outputs.",
+     "zh": "在所有示例中，CoFlow 在保持视觉效果相当的同时，降低了集成预算。"
+    },
+    {
+     "en": "These qualitative results complement the quantitative evaluations by illustrating how adaptive step selection can produce different computational allocations across individual inputs.",
+     "zh": "这些定性结果通过展示自适应步长选择如何为不同输入产生不同的计算分配，从而补充了定量评估。"
+    }
+   ]
+  },
+  {
+   "en": "We use the L1-relative velocity change in Eq. 3 as a lightweight, model-internal measure of variation along the generated flow trajectory. Larger values of v ^ ​ ( x , α ) \\hat{v}(x,\\alpha) indicate stronger changes in the learned velocity field across integration timesteps and may therefore reflect greater sensitivity to coarse temporal discretization. Importantly, v ^ ​ ( x , α ) \\hat{v}(x,\\alpha) is not a direct estimate of discretization error or perceptual quality, but an observable trajectory-level surrogate that requires neither a reference solution nor an external quality model.",
+   "zh": "我们在公式 3 中使用 L1-相对速度变化量，作为沿所生成流轨迹变化的轻量级内部模型度量。 v ^ ​ ( x , α ) \\hat{v}(x,\\alpha) 的较大值表明，在积分时间步长中，所学到的速度场发生了更显著的变化，因此可能反映对粗略时间离散化的更高敏感度。 重要的是，v ^ ​ ( x , α ) \\hat{v}(x,\\alpha) 并非对离散化误差或感知质量的直接估计，而是一种可观测的轨迹级替代指标，它既不需要参考解，也不需要外部质量模型。",
+   "sents": [
+    {
+     "en": "We use the L1-relative velocity change in Eq. 3 as a lightweight, model-internal measure of variation along the generated flow trajectory.",
+     "zh": "我们在公式 3 中使用 L1-相对速度变化量，作为沿所生成流轨迹变化的轻量级内部模型度量。"
+    },
+    {
+     "en": "Larger values of v ^ ​ ( x , α ) \\hat{v}(x,\\alpha) indicate stronger changes in the learned velocity field across integration timesteps and may therefore reflect greater sensitivity to coarse temporal discretization.",
+     "zh": "v ^ ​ ( x , α ) \\hat{v}(x,\\alpha) 的较大值表明，在积分时间步长中，所学到的速度场发生了更显著的变化，因此可能反映对粗略时间离散化的更高敏感度。"
+    },
+    {
+     "en": "Importantly, v ^ ​ ( x , α ) \\hat{v}(x,\\alpha) is not a direct estimate of discretization error or perceptual quality, but an observable trajectory-level surrogate that requires neither a reference solution nor an external quality model.",
+     "zh": "重要的是，v ^ ​ ( x , α ) \\hat{v}(x,\\alpha) 并非对离散化误差或感知质量的直接估计，而是一种可观测的轨迹级替代指标，它既不需要参考解，也不需要外部质量模型。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 6 illustrates the velocity-change profiles across different prompts and integration budgets. To more directly examine the relationship with discretization sensitivity, we additionally compare generations obtained with step budgets { 5 , 10 , … , 50 } \\{5,10,\\ldots,50\\} against a 100-step reference generated from the identical initial latent. We measure reference deviation using the ℓ 2 \\ell_{2} distance between terminal latent states. Across eight representative GenEval prompts, v ^ \\hat{v} is strongly associated with reference deviation as the integration budget varies, with a mean within-prompt Spearman correlation of 0.924 0.924 (median 0.970 0.970 ); pooled across all prompt–budget pairs, the correlation is ρ = 0.822 \\rho=0.822 ( p < 10 − 16 p<10^{-16} ). A similar association is observed using the perceptual LPIPS distance (Spearman ρ = 0.676 \\rho=0.676 , p < 10 − 11 p<10^{-11} ), indicating that the trend is not specific to latent-space distance.",
+   "zh": "图6展示了在不同提示词和积分预算下的速度变化分布。 为了更直接地考察其与离散化敏感性的关系，我们还进一步比较了使用步长预算 {5,10,\\ldots,50} 生成的结果，以及与从相同初始潜在状态生成的100步参考结果。 我们使用终端潜在状态之间的 ℓ₂ 距离来衡量参考偏差。 在八个具有代表性的 GenEval 提示词中，随着积分预算的变化，v̂ 与参考偏差存在显著关联，提示词内部的斯皮尔曼相关系数均值为 0.924（中位数为 0.970）；在所有提示词-预算组合中，相关系数为 ρ = 0.822（p < 10⁻¹⁶）。 使用感知 LPIPS 距离也观察到了类似的关联（斯皮尔曼 ρ = 0.676，p < 10⁻¹¹），表明这一趋势并非特定于潜在空间距离。",
+   "sents": [
+    {
+     "en": "Figure 6 illustrates the velocity-change profiles across different prompts and integration budgets.",
+     "zh": "图6展示了在不同提示词和积分预算下的速度变化分布。"
+    },
+    {
+     "en": "To more directly examine the relationship with discretization sensitivity, we additionally compare generations obtained with step budgets { 5 , 10 , … , 50 } \\{5,10,\\ldots,50\\} against a 100-step reference generated from the identical initial latent.",
+     "zh": "为了更直接地考察其与离散化敏感性的关系，我们还进一步比较了使用步长预算 {5,10,\\ldots,50} 生成的结果，以及与从相同初始潜在状态生成的100步参考结果。"
+    },
+    {
+     "en": "We measure reference deviation using the ℓ 2 \\ell_{2} distance between terminal latent states.",
+     "zh": "我们使用终端潜在状态之间的 ℓ₂ 距离来衡量参考偏差。"
+    },
+    {
+     "en": "Across eight representative GenEval prompts, v ^ \\hat{v} is strongly associated with reference deviation as the integration budget varies, with a mean within-prompt Spearman correlation of 0.924 0.924 (median 0.970 0.970 ); pooled across all prompt–budget pairs, the correlation is ρ = 0.822 \\rho=0.822 ( p < 10 − 16 p<10^{-16} ).",
+     "zh": "在八个具有代表性的 GenEval 提示词中，随着积分预算的变化，v̂ 与参考偏差存在显著关联，提示词内部的斯皮尔曼相关系数均值为 0.924（中位数为 0.970）；在所有提示词-预算组合中，相关系数为 ρ = 0.822（p < 10⁻¹⁶）。"
+    },
+    {
+     "en": "A similar association is observed using the perceptual LPIPS distance (Spearman ρ = 0.676 \\rho=0.676 , p < 10 − 11 p<10^{-11} ), indicating that the trend is not specific to latent-space distance.",
+     "zh": "使用感知 LPIPS 距离也观察到了类似的关联（斯皮尔曼 ρ = 0.676，p < 10⁻¹¹），表明这一趋势并非特定于潜在空间距离。"
+    }
+   ]
+  },
+  {
+   "en": "Both v ^ \\hat{v} and reference deviation vary systematically with the integration budget, so these correlations should be interpreted as evidence that v ^ \\hat{v} tracks within-trajectory discretization sensitivity , rather than as evidence that it independently ranks generation difficulty across prompts. Indeed, when controlling for the step budget and comparing prompts at fixed α \\alpha , the mean cross-prompt Spearman correlation is 0.255 0.255 in this pilot. Thus, our analysis supports v ^ \\hat{v} as an intrinsic indicator of trajectory variation while distinguishing this role from cross-prompt complexity estimation.",
+   "zh": "v ^ \\hat{v} 和参考偏差都随着积分预算的系统性变化而规律变化，因此这些相关性应被解释为 v ^ \\hat{v} 跟踪轨迹内离散化敏感性的证据，而非其独立于提示对生成难度进行排名的证据。 事实上，在控制步数预算并比较固定 α \\alpha 下的提示时，本次试点中跨提示的平均斯皮尔曼相关系数为 0.255。 因此，我们的分析支持将 v ^ \\hat{v} 视为轨迹变化的内在指标，同时将其这一作用与跨提示的复杂性估计区分开来。",
+   "sents": [
+    {
+     "en": "Both v ^ \\hat{v} and reference deviation vary systematically with the integration budget, so these correlations should be interpreted as evidence that v ^ \\hat{v} tracks within-trajectory discretization sensitivity , rather than as evidence that it independently ranks generation difficulty across prompts.",
+     "zh": "v ^ \\hat{v} 和参考偏差都随着积分预算的系统性变化而规律变化，因此这些相关性应被解释为 v ^ \\hat{v} 跟踪轨迹内离散化敏感性的证据，而非其独立于提示对生成难度进行排名的证据。"
+    },
+    {
+     "en": "Indeed, when controlling for the step budget and comparing prompts at fixed α \\alpha , the mean cross-prompt Spearman correlation is 0.255 0.255 in this pilot.",
+     "zh": "事实上，在控制步数预算并比较固定 α \\alpha 下的提示时，本次试点中跨提示的平均斯皮尔曼相关系数为 0.255。"
+    },
+    {
+     "en": "Thus, our analysis supports v ^ \\hat{v} as an intrinsic indicator of trajectory variation while distinguishing this role from cross-prompt complexity estimation.",
+     "zh": "因此，我们的分析支持将 v ^ \\hat{v} 视为轨迹变化的内在指标，同时将其这一作用与跨提示的复杂性估计区分开来。"
+    }
+   ]
+  },
+  {
+   "en": "Table 6 evaluates the role of input context in adaptive step selection. We compare the contextual UCB policy with a non-contextual UCB variant that uses the same bandit framework without conditioning decisions on prompt-specific features. We additionally evaluate Thompson Sampling (TS) as an alternative exploration strategy.",
+   "zh": "表 6 评估了输入上下文在自适应步骤选择中的作用。 我们将上下文 UCB 策略与一种非上下文的 UCB 变体进行了比较，后者使用相同的多臂老虎机框架，但决策不依赖于提示特定的特征。 此外，我们还评估了汤普森采样（TS）作为另一种探索策略。",
+   "sents": [
+    {
+     "en": "Table 6 evaluates the role of input context in adaptive step selection.",
+     "zh": "表 6 评估了输入上下文在自适应步骤选择中的作用。"
+    },
+    {
+     "en": "We compare the contextual UCB policy with a non-contextual UCB variant that uses the same bandit framework without conditioning decisions on prompt-specific features.",
+     "zh": "我们将上下文 UCB 策略与一种非上下文的 UCB 变体进行了比较，后者使用相同的多臂老虎机框架，但决策不依赖于提示特定的特征。"
+    },
+    {
+     "en": "We additionally evaluate Thompson Sampling (TS) as an alternative exploration strategy.",
+     "zh": "此外，我们还评估了汤普森采样（TS）作为另一种探索策略。"
+    }
+   ]
+  },
+  {
+   "en": "The contextual variants achieve a better quality–efficiency trade-off than the non-contextual UCB baseline. In particular, contextual UCB improves the overall GenEval score from 0.74 0.74 to 0.77 0.77 while reducing the average NFE from 20.2 20.2 to 17.7 17.7 . Thompson Sampling exhibits similar behavior, reaching an overall score of 0.76 0.76 at 17.5 17.5 NFE. These results indicate that conditioning the decision policy on input-dependent information is useful beyond learning a single dataset-level step-selection strategy.",
+   "zh": "与无上下文 UCB 基线相比，上下文变体在质量与效率的权衡上表现更优。 具体而言，上下文 UCB 将整体 GenEval 分数从 0.74 0.74 提升至 0.77 0.77，同时将平均 NFE 从 20.2 20.2 降至 17.7 17.7。 Thompson Sampling 表现出类似的行为，在 17.5 17.5 NFE 时达到 0.76 0.76 的整体分数。 这些结果表明，将决策策略建立在输入相关的信息之上，其作用不仅限于学习单一数据集层面的步骤选择策略。",
+   "sents": [
+    {
+     "en": "The contextual variants achieve a better quality–efficiency trade-off than the non-contextual UCB baseline.",
+     "zh": "与无上下文 UCB 基线相比，上下文变体在质量与效率的权衡上表现更优。"
+    },
+    {
+     "en": "In particular, contextual UCB improves the overall GenEval score from 0.74 0.74 to 0.77 0.77 while reducing the average NFE from 20.2 20.2 to 17.7 17.7 .",
+     "zh": "具体而言，上下文 UCB 将整体 GenEval 分数从 0.74 0.74 提升至 0.77 0.77，同时将平均 NFE 从 20.2 20.2 降至 17.7 17.7。"
+    },
+    {
+     "en": "Thompson Sampling exhibits similar behavior, reaching an overall score of 0.76 0.76 at 17.5 17.5 NFE.",
+     "zh": "Thompson Sampling 表现出类似的行为，在 17.5 17.5 NFE 时达到 0.76 0.76 的整体分数。"
+    },
+    {
+     "en": "These results indicate that conditioning the decision policy on input-dependent information is useful beyond learning a single dataset-level step-selection strategy.",
+     "zh": "这些结果表明，将决策策略建立在输入相关的信息之上，其作用不仅限于学习单一数据集层面的步骤选择策略。"
+    }
+   ]
+  },
+  {
+   "en": "We further ablate the representation used to condition the step-selection policy by comparing no input context, handcrafted prompt features, MiniLM embeddings, and their combination. Table 7 reports results aggregated over three seeds. The full representation reduces the mean NFE from 39.75 39.75 to 37.67 37.67 and decreases the frequency of selecting the maximum step budget from 65.4 % 65.4\\% to 47.9 % 47.9\\% relative to the no-context variant. Handcrafted features achieve a similar reduction in NFE ( 37.79 37.79 ), whereas MiniLM alone remains closer to the no-context policy ( 39.58 39.58 NFE). These results indicate that contextual information influences computation allocation, with handcrafted features accounting for a substantial portion of the observed reduction.",
+   "zh": "我们通过比较无输入上下文、人工设计的提示特征、MiniLM 嵌入以及它们的组合，进一步消融了用于条件化步骤选择策略的表示。 表 7 报告了在三个种子下汇总的结果。 与无上下文变体相比，完整表示将平均 NFE 从 39.75 降低到 37.67，并将选择最大步骤预算的频率从 65.4% 降低到 47.9%。 人工设计的特征实现了类似的 NFE 降低（37.79），而仅使用 MiniLM 的结果则更接近无上下文策略（NFE 为 39.58）。 这些结果表明，上下文信息会影响计算分配，其中人工设计的特征对观察到的降低贡献显著。",
+   "sents": [
+    {
+     "en": "We further ablate the representation used to condition the step-selection policy by comparing no input context, handcrafted prompt features, MiniLM embeddings, and their combination.",
+     "zh": "我们通过比较无输入上下文、人工设计的提示特征、MiniLM 嵌入以及它们的组合，进一步消融了用于条件化步骤选择策略的表示。"
+    },
+    {
+     "en": "Table 7 reports results aggregated over three seeds.",
+     "zh": "表 7 报告了在三个种子下汇总的结果。"
+    },
+    {
+     "en": "The full representation reduces the mean NFE from 39.75 39.75 to 37.67 37.67 and decreases the frequency of selecting the maximum step budget from 65.4 % 65.4\\% to 47.9 % 47.9\\% relative to the no-context variant.",
+     "zh": "与无上下文变体相比，完整表示将平均 NFE 从 39.75 降低到 37.67，并将选择最大步骤预算的频率从 65.4% 降低到 47.9%。"
+    },
+    {
+     "en": "Handcrafted features achieve a similar reduction in NFE ( 37.79 37.79 ), whereas MiniLM alone remains closer to the no-context policy ( 39.58 39.58 NFE).",
+     "zh": "人工设计的特征实现了类似的 NFE 降低（37.79），而仅使用 MiniLM 的结果则更接近无上下文策略（NFE 为 39.58）。"
+    },
+    {
+     "en": "These results indicate that contextual information influences computation allocation, with handcrafted features accounting for a substantial portion of the observed reduction.",
+     "zh": "这些结果表明，上下文信息会影响计算分配，其中人工设计的特征对观察到的降低贡献显著。"
+    }
+   ]
+  },
+  {
+   "en": "Since CoFlow updates its step-selection policy online, we examine its behavior as a function of the number of observed interactions and its sensitivity to prompt ordering. We evaluate 100 GenEval prompts under five random prompt permutations and three independent seeds per permutation. As shown in Table 8 , the policy improves during the initial interactions and subsequently stabilizes: the mean NFE decreases from 43.2 43.2 over rounds 1 1 – 10 10 to 37.4 37.4 over rounds 81 81 – 100 100 , while the mean surrogate reward increases from 0.520 0.520 to 0.580 0.580 . Across prompt permutations, the final mean NFE is 37.8 ± 1.1 37.8\\pm 1.1 and the corresponding mean surrogate reward is 0.579 ± 0.009 0.579\\pm 0.009 , indicating limited sensitivity to prompt ordering.",
+   "zh": "由于 CoFlow 在线更新其步骤选择策略，我们将其行为视为已观察交互次数的函数，并研究其对提示顺序的敏感度。 我们在五种随机提示排列下评估了 100 个 GenEval 提示，每种排列使用三个独立的随机种子。 如表 8 所示，该策略在初始交互阶段得到改进，随后趋于稳定：平均 NFE 从第 1–10 轮时的 43.2 降至第 81–100 轮时的 37.4，而平均代理奖励则从 0.520 增至 0.580。 在所有提示排列中，最终的平均 NFE 为 37.8 ± 1.1，对应的平均代理奖励为 0.579 ± 0.009，表明其对提示顺序的敏感度有限。",
+   "sents": [
+    {
+     "en": "Since CoFlow updates its step-selection policy online, we examine its behavior as a function of the number of observed interactions and its sensitivity to prompt ordering.",
+     "zh": "由于 CoFlow 在线更新其步骤选择策略，我们将其行为视为已观察交互次数的函数，并研究其对提示顺序的敏感度。"
+    },
+    {
+     "en": "We evaluate 100 GenEval prompts under five random prompt permutations and three independent seeds per permutation.",
+     "zh": "我们在五种随机提示排列下评估了 100 个 GenEval 提示，每种排列使用三个独立的随机种子。"
+    },
+    {
+     "en": "As shown in Table 8 , the policy improves during the initial interactions and subsequently stabilizes: the mean NFE decreases from 43.2 43.2 over rounds 1 1 – 10 10 to 37.4 37.4 over rounds 81 81 – 100 100 , while the mean surrogate reward increases from 0.520 0.520 to 0.580 0.580 .",
+     "zh": "如表 8 所示，该策略在初始交互阶段得到改进，随后趋于稳定：平均 NFE 从第 1–10 轮时的 43.2 降至第 81–100 轮时的 37.4，而平均代理奖励则从 0.520 增至 0.580。"
+    },
+    {
+     "en": "Across prompt permutations, the final mean NFE is 37.8 ± 1.1 37.8\\pm 1.1 and the corresponding mean surrogate reward is 0.579 ± 0.009 0.579\\pm 0.009 , indicating limited sensitivity to prompt ordering.",
+     "zh": "在所有提示排列中，最终的平均 NFE 为 37.8 ± 1.1，对应的平均代理奖励为 0.579 ± 0.009，表明其对提示顺序的敏感度有限。"
+    }
+   ]
+  },
+  {
+   "en": "To isolate the contribution of uncertainty-aware exploration, we compare NeuralUCB with a greedy variant using the identical context representation, neural reward model, online updates, replay buffer, initialization, and cold-start procedure, but without the UCB confidence bonus after initialization. The greedy policy therefore selects α t = arg ⁡ max α ​ f θ ​ ( φ ⁡ ( x t ) , α ) \\alpha_{t}=\\arg\\max_{\\alpha}f_{\\theta}(\\varphi(x_{t}),\\alpha) . As shown in Table 9 , NeuralUCB achieves a higher mean surrogate reward ( 0.582 0.582 vs. 0.541 0.541 ) while reducing the mean NFE ( 37.5 37.5 vs. 39.6 39.6 ). It also selects the maximum step budget less frequently ( 49.7 % 49.7\\% vs. 63.4 % 63.4\\% ) and exhibits higher action entropy ( 1.54 1.54 vs. 1.21 1.21 ), indicating a more diverse allocation of computation. This controlled ablation shows that uncertainty-aware exploration provides a measurable benefit beyond greedy optimization of the learned reward predictor.",
+   "zh": "为了孤立不确定性感知探索的贡献，我们将 NeuralUCB 与一个贪婪变体进行比较：该变体使用完全相同的情境表示、神经奖励模型、在线更新、重播缓冲区、初始化和冷启动流程，但在初始化之后没有 UCB 置信度加成。 因此，贪婪策略选择 α t = arg ⁡ max α ​ f θ ​ ( φ ⁡ ( x t ) , α ) \\alpha_{t}=\\arg\\max_{\\alpha}f_{\\theta}(\\varphi(x_{t}),\\alpha) 。 如表 9 所示，NeuralUCB 实现了更高的平均代理奖励（0.582 vs. 0.541），同时降低了平均 NFE（37.5 vs. 39.6）。 它还更少地选择最大步数预算（49.7% vs. 63.4%），并表现出更高的动作熵（1.54 vs. 1.21），表明计算资源分配更加多样化。 这项受控的消融分析表明，不确定性感知探索带来的收益是可观的，并且超越了仅对已学习奖励预测器进行贪婪优化的结果。",
+   "sents": [
+    {
+     "en": "To isolate the contribution of uncertainty-aware exploration, we compare NeuralUCB with a greedy variant using the identical context representation, neural reward model, online updates, replay buffer, initialization, and cold-start procedure, but without the UCB confidence bonus after initialization.",
+     "zh": "为了孤立不确定性感知探索的贡献，我们将 NeuralUCB 与一个贪婪变体进行比较：该变体使用完全相同的情境表示、神经奖励模型、在线更新、重播缓冲区、初始化和冷启动流程，但在初始化之后没有 UCB 置信度加成。"
+    },
+    {
+     "en": "The greedy policy therefore selects α t = arg ⁡ max α ​ f θ ​ ( φ ⁡ ( x t ) , α ) \\alpha_{t}=\\arg\\max_{\\alpha}f_{\\theta}(\\varphi(x_{t}),\\alpha) .",
+     "zh": "因此，贪婪策略选择 α t = arg ⁡ max α ​ f θ ​ ( φ ⁡ ( x t ) , α ) \\alpha_{t}=\\arg\\max_{\\alpha}f_{\\theta}(\\varphi(x_{t}),\\alpha) 。"
+    },
+    {
+     "en": "As shown in Table 9 , NeuralUCB achieves a higher mean surrogate reward ( 0.582 0.582 vs. 0.541 0.541 ) while reducing the mean NFE ( 37.5 37.5 vs. 39.6 39.6 ).",
+     "zh": "如表 9 所示，NeuralUCB 实现了更高的平均代理奖励（0.582 vs. 0.541），同时降低了平均 NFE（37.5 vs. 39.6）。"
+    },
+    {
+     "en": "It also selects the maximum step budget less frequently ( 49.7 % 49.7\\% vs. 63.4 % 63.4\\% ) and exhibits higher action entropy ( 1.54 1.54 vs. 1.21 1.21 ), indicating a more diverse allocation of computation.",
+     "zh": "它还更少地选择最大步数预算（49.7% vs. 63.4%），并表现出更高的动作熵（1.54 vs. 1.21），表明计算资源分配更加多样化。"
+    },
+    {
+     "en": "This controlled ablation shows that uncertainty-aware exploration provides a measurable benefit beyond greedy optimization of the learned reward predictor.",
+     "zh": "这项受控的消融分析表明，不确定性感知探索带来的收益是可观的，并且超越了仅对已学习奖励预测器进行贪婪优化的结果。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 8 compares direct step reduction with trajectory truncation. In the former, generation is performed using a timestep schedule constructed directly for the reduced integration budget. In the latter, a comparable speedup is obtained by skipping intermediate evaluations along a higher-step trajectory.",
+   "zh": "图 8 比较了直接减少步数与截断轨迹两种方法。 在前一种方法中，生成过程使用专为减少积分预算而构建的时间步长计划进行。 在后一种方法中，通过跳过更高步数轨迹中的中间评估，可以获得类似的速度提升。",
+   "sents": [
+    {
+     "en": "Figure 8 compares direct step reduction with trajectory truncation.",
+     "zh": "图 8 比较了直接减少步数与截断轨迹两种方法。"
+    },
+    {
+     "en": "In the former, generation is performed using a timestep schedule constructed directly for the reduced integration budget.",
+     "zh": "在前一种方法中，生成过程使用专为减少积分预算而构建的时间步长计划进行。"
+    },
+    {
+     "en": "In the latter, a comparable speedup is obtained by skipping intermediate evaluations along a higher-step trajectory.",
+     "zh": "在后一种方法中，通过跳过更高步数轨迹中的中间评估，可以获得类似的速度提升。"
+    }
+   ]
+  },
+  {
+   "en": "In the examples shown, direct step reduction retains better visual quality than trajectory truncation at a comparable computational budget. One possible explanation is that direct reduction preserves a solver-consistent discretization for the selected number of steps, whereas trajectory truncation modifies the original sampling trajectory by omitting intermediate evaluations.",
+   "zh": "在所示示例中，在计算资源相当的情况下，直接减少步数比截断轨迹能更好地保留视觉质量。 一种可能的解释是，直接减少步数能为所选步数保留与求解器一致的离散化方式，而截断轨迹则通过省略中间评估来修改原始的采样轨迹。",
+   "sents": [
+    {
+     "en": "In the examples shown, direct step reduction retains better visual quality than trajectory truncation at a comparable computational budget.",
+     "zh": "在所示示例中，在计算资源相当的情况下，直接减少步数比截断轨迹能更好地保留视觉质量。"
+    },
+    {
+     "en": "One possible explanation is that direct reduction preserves a solver-consistent discretization for the selected number of steps, whereas trajectory truncation modifies the original sampling trajectory by omitting intermediate evaluations.",
+     "zh": "一种可能的解释是，直接减少步数能为所选步数保留与求解器一致的离散化方式，而截断轨迹则通过省略中间评估来修改原始的采样轨迹。"
+    }
+   ]
+  },
+  {
+   "en": "This comparison motivates the design of CoFlow , which selects an input-dependent step budget and then executes the corresponding solver schedule rather than selecting a high-step trajectory and subsequently removing intermediate evaluations.",
+   "zh": "这种对比启发了 CoFlow 的设计：它选择一种依赖于输入的步骤预算，然后执行相应的求解器调度方案，而不是先选择一个高步骤数的轨迹，再移除中间评估。",
+   "sents": null
+  },
+  {
+   "en": "In Table 13 , we evaluate CoFlow across a diverse set of numerical solvers on the Stable Diffusion XL [ 38 ] backbone, including deterministic and stochastic variants, as well as first-order, second-order, and multistep integration schemes. We first report baseline performance under a fixed discretization budget (50 steps) to establish a consistent comparison across solvers. We then apply CoFlow as an adaptive inference controller that selects a reduced, input-dependent number of steps while preserving the original solver dynamics.",
+   "zh": "在表 13 中，我们在 Stable Diffusion XL [38] 主干模型上，针对一组多样化的数值求解器评估了 CoFlow，其中包括确定性和随机性变体，以及一阶、二阶和多步积分方案。 我们首先报告在固定离散化预算（50 步）下的基线性能，以便在不同求解器之间建立一致的比较基准。 接着，我们将 CoFlow 用作自适应推理控制器，它能够在保留原始求解器动态特性的同时，选择一种依赖于输入的、数量较少的步数。",
+   "sents": [
+    {
+     "en": "In Table 13 , we evaluate CoFlow across a diverse set of numerical solvers on the Stable Diffusion XL [ 38 ] backbone, including deterministic and stochastic variants, as well as first-order, second-order, and multistep integration schemes.",
+     "zh": "在表 13 中，我们在 Stable Diffusion XL [38] 主干模型上，针对一组多样化的数值求解器评估了 CoFlow，其中包括确定性和随机性变体，以及一阶、二阶和多步积分方案。"
+    },
+    {
+     "en": "We first report baseline performance under a fixed discretization budget (50 steps) to establish a consistent comparison across solvers.",
+     "zh": "我们首先报告在固定离散化预算（50 步）下的基线性能，以便在不同求解器之间建立一致的比较基准。"
+    },
+    {
+     "en": "We then apply CoFlow as an adaptive inference controller that selects a reduced, input-dependent number of steps while preserving the original solver dynamics.",
+     "zh": "接着，我们将 CoFlow 用作自适应推理控制器，它能够在保留原始求解器动态特性的同时，选择一种依赖于输入的、数量较少的步数。"
+    }
+   ]
+  },
+  {
+   "en": "Across all solver families, CoFlow achieves a consistent reduction in the number of function evaluations (NFEs) by approximately 2.5 × 2.5\\times , while maintaining competitive performance in both semantic alignment (GenEval) and perceptual quality (IQA). Notably, the relative ranking of solvers remains largely unchanged after applying CoFlow , indicating that our method operates orthogonally to the choice of numerical solver.",
+   "zh": "在所有求解器家族中，CoFlow 实现了函数求值次数（NFEs）约 2.5 × 2.5\\times 的持续减少，同时保持了在语义对齐（GenEval）和感知质量（IQA）方面的竞争力。 值得注意的是，在应用 CoFlow 后，各求解器的相对排名基本保持不变，这表明我们的方法独立于数值求解器的选择而运行。",
+   "sents": [
+    {
+     "en": "Across all solver families, CoFlow achieves a consistent reduction in the number of function evaluations (NFEs) by approximately 2.5 × 2.5\\times , while maintaining competitive performance in both semantic alignment (GenEval) and perceptual quality (IQA).",
+     "zh": "在所有求解器家族中，CoFlow 实现了函数求值次数（NFEs）约 2.5 × 2.5\\times 的持续减少，同时保持了在语义对齐（GenEval）和感知质量（IQA）方面的竞争力。"
+    },
+    {
+     "en": "Notably, the relative ranking of solvers remains largely unchanged after applying CoFlow , indicating that our method operates orthogonally to the choice of numerical solver.",
+     "zh": "值得注意的是，在应用 CoFlow 后，各求解器的相对排名基本保持不变，这表明我们的方法独立于数值求解器的选择而运行。"
+    }
+   ]
+  },
+  {
+   "en": "We also observe mild solver-dependent sensitivity to step reduction: multistep methods (e.g., DPM++ variants) exhibit slightly larger degradation in GenEval, likely due to their reliance on historical trajectory information, whereas higher-order solvers such as Heun demonstrate greater robustness under reduced discretization. Overall, these results highlight that CoFlow provides a general, plug-and-play acceleration mechanism that is compatible with a wide range of solvers, enabling substantial speedups without sacrificing generation fidelity.",
+   "zh": "我们还观察到，步长缩减对求解器存在轻微依赖的敏感性：多步方法（例如 DPM++ 变体）在 GenEval 中的性能下降略大，这可能是因为它们依赖于历史轨迹信息；而更高阶的求解器（如 Heun）在离散化程度降低时表现出更强的鲁棒性。 总体而言，这些结果表明 CoFlow 提供了一种通用且即插即用的加速机制，能够与多种求解器兼容，从而在不牺牲生成保真度的前提下实现显著的速度提升。",
+   "sents": [
+    {
+     "en": "We also observe mild solver-dependent sensitivity to step reduction: multistep methods (e.g., DPM++ variants) exhibit slightly larger degradation in GenEval, likely due to their reliance on historical trajectory information, whereas higher-order solvers such as Heun demonstrate greater robustness under reduced discretization.",
+     "zh": "我们还观察到，步长缩减对求解器存在轻微依赖的敏感性：多步方法（例如 DPM++ 变体）在 GenEval 中的性能下降略大，这可能是因为它们依赖于历史轨迹信息；而更高阶的求解器（如 Heun）在离散化程度降低时表现出更强的鲁棒性。"
+    },
+    {
+     "en": "Overall, these results highlight that CoFlow provides a general, plug-and-play acceleration mechanism that is compatible with a wide range of solvers, enabling substantial speedups without sacrificing generation fidelity.",
+     "zh": "总体而言，这些结果表明 CoFlow 提供了一种通用且即插即用的加速机制，能够与多种求解器兼容，从而在不牺牲生成保真度的前提下实现显著的速度提升。"
+    }
+   ]
+  },
+  {
+   "en": "We construct a context vector φ ⁡ ( x ) ∈ ℝ d \\varphi(x)\\in\\mathbb{R}^{d} from complementary semantic, compositional, and structural properties of the input prompt. The representation combines a MiniLM sentence embedding with lightweight handcrafted features, providing input-dependent information to the contextual bandit while introducing minimal computational overhead. The individual handcrafted features are summarized in Table 14 .",
+   "zh": "我们从输入提示的互补语义、组合和结构特性中构建一个上下文向量 φ(x) ∈ ℝ^d。 该表示方法将 MiniLM 句子嵌入与轻量级人工设计特征相结合，在引入最小计算开销的同时，为上下文多臂老虎机提供依赖输入的信息。 各项人工设计特征总结于表 14。",
+   "sents": [
+    {
+     "en": "We construct a context vector φ ⁡ ( x ) ∈ ℝ d \\varphi(x)\\in\\mathbb{R}^{d} from complementary semantic, compositional, and structural properties of the input prompt.",
+     "zh": "我们从输入提示的互补语义、组合和结构特性中构建一个上下文向量 φ(x) ∈ ℝ^d。"
+    },
+    {
+     "en": "The representation combines a MiniLM sentence embedding with lightweight handcrafted features, providing input-dependent information to the contextual bandit while introducing minimal computational overhead.",
+     "zh": "该表示方法将 MiniLM 句子嵌入与轻量级人工设计特征相结合，在引入最小计算开销的同时，为上下文多臂老虎机提供依赖输入的信息。"
+    },
+    {
+     "en": "The individual handcrafted features are summarized in Table 14 .",
+     "zh": "各项人工设计特征总结于表 14。"
+    }
+   ]
+  },
+  {
+   "en": "Feature Design: The handcrafted features capture complementary surface-level properties of the prompt that may provide useful cues for adaptive step selection:",
+   "zh": "特征设计：人工设计的特征能够捕捉提示中互补的表面属性，这些属性可能为自适应步骤选择提供有用线索：",
+   "sents": null
+  },
+  {
+   "en": "Compositional scale: Word count captures prompt length and provides a lightweight cue for the amount of compositional information present.",
+   "zh": "组合规模：词数可以反映提示的长度，并为其中包含的组合信息量提供一个轻量级的线索。",
+   "sents": null
+  },
+  {
+   "en": "Semantic richness: Subword type-token ratio (TTR), mean word length, and syllable complexity capture lexical diversity and linguistic specificity.",
+   "zh": "语义丰富性：亚词类型-标记比（TTR）、平均词长和音节复杂度能够反映词汇多样性和语言特异性。",
+   "sents": null
+  },
+  {
+   "en": "Entities and attributes: Object and attribute densities are obtained using lightweight part-of-speech tagging and provide cues about the presence of nouns and descriptive constraints.",
+   "zh": "实体与属性：通过轻量级的词性标注获取对象和属性的密度，从而提供关于名词存在以及描述性约束的线索。",
+   "sents": null
+  },
+  {
+   "en": "Numerical constraints: The fraction of words containing digits captures explicit numerical or counting information.",
+   "zh": "数值约束：包含数字的词语比例反映了明确的数值或计数信息。",
+   "sents": null
+  },
+  {
+   "en": "Structural information: Punctuation density provides a lightweight description of prompt structure, including clauses, lists, and multi-part instructions.",
+   "zh": "结构信息：标点密度为提示词结构提供了一种轻量级描述，包括从句、列表和多部分指令。",
+   "sents": null
+  },
+  {
+   "en": "Normalization: All features are normalized to the range [ 0 , 1 ] [0,1] to ensure consistent scaling across different dimensions. This prevents any single feature from dominating the representation and stabilizes learning in the bandit model.",
+   "zh": "归一化：所有特征都被归一化到区间 [0, 1]，以确保不同维度之间具有一致的缩放比例。 这可以防止任何单一特征在表示中占据主导地位，并稳定化赌博机模型中的学习过程。",
+   "sents": [
+    {
+     "en": "Normalization: All features are normalized to the range [ 0 , 1 ] [0,1] to ensure consistent scaling across different dimensions.",
+     "zh": "归一化：所有特征都被归一化到区间 [0, 1]，以确保不同维度之间具有一致的缩放比例。"
+    },
+    {
+     "en": "This prevents any single feature from dominating the representation and stabilizes learning in the bandit model.",
+     "zh": "这可以防止任何单一特征在表示中占据主导地位，并稳定化赌博机模型中的学习过程。"
+    }
+   ]
+  },
+  {
+   "en": "Efficiency: The proposed feature set is intentionally lightweight. All statistics are computed in linear time with respect to the prompt length, and POS-based features are extracted using a small, off-the-shelf tagger. In practice, this incurs only a few milliseconds of overhead per prompt, which is negligible compared to the cost of generative inference.",
+   "zh": "效率：所提出的特征集是有意设计为轻量级的。 所有统计量的计算时间都与提示长度呈线性关系，且基于词性的特征是使用一个小型的现成标签器提取的。 在实际应用中，每个提示仅产生几毫秒的额外开销，与生成推理的成本相比可以忽略不计。",
+   "sents": [
+    {
+     "en": "Efficiency: The proposed feature set is intentionally lightweight.",
+     "zh": "效率：所提出的特征集是有意设计为轻量级的。"
+    },
+    {
+     "en": "All statistics are computed in linear time with respect to the prompt length, and POS-based features are extracted using a small, off-the-shelf tagger.",
+     "zh": "所有统计量的计算时间都与提示长度呈线性关系，且基于词性的特征是使用一个小型的现成标签器提取的。"
+    },
+    {
+     "en": "In practice, this incurs only a few milliseconds of overhead per prompt, which is negligible compared to the cost of generative inference.",
+     "zh": "在实际应用中，每个提示仅产生几毫秒的额外开销，与生成推理的成本相比可以忽略不计。"
+    }
+   ]
+  },
+  {
+   "en": "A key component of our approach is the construction of a lightweight yet expressive context representation for each prompt. We employ a pretrained SentenceTransformer (all-MiniLM-L6-v2) to obtain semantic embeddings, which are combined with handcrafted complexity features.",
+   "zh": "我们方法的一个关键组成部分是为每个提示构建一个轻量但富有表现力的上下文表示。 我们使用一个预训练的 SentenceTransformer（all-MiniLM-L6-v2）来获取语义嵌入，并将其与人工设计的复杂度特征相结合。",
+   "sents": [
+    {
+     "en": "A key component of our approach is the construction of a lightweight yet expressive context representation for each prompt.",
+     "zh": "我们方法的一个关键组成部分是为每个提示构建一个轻量但富有表现力的上下文表示。"
+    },
+    {
+     "en": "We employ a pretrained SentenceTransformer (all-MiniLM-L6-v2) to obtain semantic embeddings, which are combined with handcrafted complexity features.",
+     "zh": "我们使用一个预训练的 SentenceTransformer（all-MiniLM-L6-v2）来获取语义嵌入，并将其与人工设计的复杂度特征相结合。"
+    }
+   ]
+  },
+  {
+   "en": "Why SentenceTransformer (MiniLM)? We use all-MiniLM-L6-v2 as a compact semantic representation of the prompt. Its sentence-level embeddings complement the handcrafted lexical and structural features by encoding higher-level semantic information while remaining inexpensive to compute. Its compact representation is particularly suitable for the lightweight contextual decision module used by CoFlow .",
+   "zh": "为什么选择 SentenceTransformer (MiniLM)？ 我们使用 all-MiniLM-L6-v2 作为提示的紧凑语义表示。 其句子级嵌入通过编码更高层级的语义信息，同时保持计算成本低廉，从而补充了人工设计的词汇和结构特征。 其紧凑的表示形式特别适用于 CoFlow 使用的轻量级上下文决策模块。",
+   "sents": [
+    {
+     "en": "Why SentenceTransformer (MiniLM)?",
+     "zh": "为什么选择 SentenceTransformer (MiniLM)？"
+    },
+    {
+     "en": "We use all-MiniLM-L6-v2 as a compact semantic representation of the prompt.",
+     "zh": "我们使用 all-MiniLM-L6-v2 作为提示的紧凑语义表示。"
+    },
+    {
+     "en": "Its sentence-level embeddings complement the handcrafted lexical and structural features by encoding higher-level semantic information while remaining inexpensive to compute.",
+     "zh": "其句子级嵌入通过编码更高层级的语义信息，同时保持计算成本低廉，从而补充了人工设计的词汇和结构特征。"
+    },
+    {
+     "en": "Its compact representation is particularly suitable for the lightweight contextual decision module used by CoFlow .",
+     "zh": "其紧凑的表示形式特别适用于 CoFlow 使用的轻量级上下文决策模块。"
+    }
+   ]
+  },
+  {
+   "en": "Why not use the model’s native text encoder? An alternative is to use the prompt encoder from the underlying generative model. However, we avoid this as it produces high-dimensional representations, leading to significantly larger input sizes for the bandit. This increases both computational cost and training instability, making it less suitable for a lightweight, real-time decision module. In contrast, our use of an external, pretrained sentence encoder provides a model-agnostic and reusable representation that generalizes across different generative backbones (e.g., BAGEL, FLUX) without modification. Overall, this design yields a compact, semantically meaningful, and model-agnostic context representation that is suited for adaptive decision-making under strict efficiency constraints.",
+   "zh": "为什么不使用模型的原生文本编码器呢？ 另一种方法是使用底层生成模型中的提示编码器。 然而，我们避免这样做，因为它会产生高维表示，从而导致智能体需要处理的输入规模显著增大。 这既增加了计算成本，也带来了训练不稳定性，使其不太适合用作轻量级的实时决策模块。 相比之下，我们使用的外部预训练句子编码器提供了一种与模型无关且可重用的表示方法，无需修改即可跨不同生成模型（例如 BAGEL、FLUX）实现泛化。 总体而言，这种设计产生了一种紧凑、语义明确且与模型无关的上下文表示，适合在严格的效率约束下实现自适应决策。",
+   "sents": [
+    {
+     "en": "Why not use the model’s native text encoder?",
+     "zh": "为什么不使用模型的原生文本编码器呢？"
+    },
+    {
+     "en": "An alternative is to use the prompt encoder from the underlying generative model.",
+     "zh": "另一种方法是使用底层生成模型中的提示编码器。"
+    },
+    {
+     "en": "However, we avoid this as it produces high-dimensional representations, leading to significantly larger input sizes for the bandit.",
+     "zh": "然而，我们避免这样做，因为它会产生高维表示，从而导致智能体需要处理的输入规模显著增大。"
+    },
+    {
+     "en": "This increases both computational cost and training instability, making it less suitable for a lightweight, real-time decision module.",
+     "zh": "这既增加了计算成本，也带来了训练不稳定性，使其不太适合用作轻量级的实时决策模块。"
+    },
+    {
+     "en": "In contrast, our use of an external, pretrained sentence encoder provides a model-agnostic and reusable representation that generalizes across different generative backbones (e.g., BAGEL, FLUX) without modification.",
+     "zh": "相比之下，我们使用的外部预训练句子编码器提供了一种与模型无关且可重用的表示方法，无需修改即可跨不同生成模型（例如 BAGEL、FLUX）实现泛化。"
+    },
+    {
+     "en": "Overall, this design yields a compact, semantically meaningful, and model-agnostic context representation that is suited for adaptive decision-making under strict efficiency constraints.",
+     "zh": "总体而言，这种设计产生了一种紧凑、语义明确且与模型无关的上下文表示，适合在严格的效率约束下实现自适应决策。"
+    }
+   ]
+  },
+  {
+   "en": "Question: Do the main claims made in the abstract and introduction accurately reflect the paper’s contributions and scope?",
+   "zh": "问题：摘要和引言中提出的主要论点是否准确反映了该论文的贡献和范围？",
+   "sents": null
+  },
+  {
+   "en": "Justification: Yes, the main claims in the abstract and introduction accurately reflect the paper’s contribution and scope.",
+   "zh": "理由：是的，摘要和引言中的主要论点准确反映了该论文的贡献和范围。",
+   "sents": null
+  },
+  {
+   "en": "The answer [N/A] means that the abstract and introduction do not include the claims made in the paper.",
+   "zh": "答案 [N/A] 表示摘要和引言中未包含论文中提出的主张。",
+   "sents": null
+  },
+  {
+   "en": "The abstract and/or introduction should clearly state the claims made, including the contributions made in the paper and important assumptions and limitations. A [No] or [N/A] answer to this question will not be perceived well by the reviewers.",
+   "zh": "摘要和/或引言应明确陈述论文中提出的主张，包括论文的贡献以及重要的假设和局限性。 对这个问题回答 [否] 或 [不适用] 将不会被评审人看好。",
+   "sents": [
+    {
+     "en": "The abstract and/or introduction should clearly state the claims made, including the contributions made in the paper and important assumptions and limitations.",
+     "zh": "摘要和/或引言应明确陈述论文中提出的主张，包括论文的贡献以及重要的假设和局限性。"
+    },
+    {
+     "en": "A [No] or [N/A] answer to this question will not be perceived well by the reviewers.",
+     "zh": "对这个问题回答 [否] 或 [不适用] 将不会被评审人看好。"
+    }
+   ]
+  },
+  {
+   "en": "The claims made should match theoretical and experimental results, and reflect how much the results can be expected to generalize to other settings.",
+   "zh": "所提出的主张应与理论和实验结果相符，并反映这些结果在多大程度上可以推广到其他情境。",
+   "sents": null
+  },
+  {
+   "en": "It is fine to include aspirational goals as motivation as long as it is clear that these goals are not attained by the paper.",
+   "zh": "只要明确说明本文并未实现这些目标，那么将理想化的目标作为动机是可以接受的。",
+   "sents": null
+  },
+  {
+   "en": "Question: Does the paper discuss the limitations of the work performed by the authors?",
+   "zh": "问题：本文是否讨论了作者所完成工作的局限性？",
+   "sents": null
+  },
+  {
+   "en": "Justification: Added the limitation of our work in 4.1",
+   "zh": "理由：在第 4.1 节中补充了本研究的局限性",
+   "sents": null
+  },
+  {
+   "en": "The answer [N/A] means that the paper has no limitation while the answer [No] means that the paper has limitations, but those are not discussed in the paper.",
+   "zh": "答案 [N/A] 表示该论文没有局限性，而答案 [No] 则表示该论文存在局限性，但这些局限性在论文中并未被讨论。",
+   "sents": null
+  },
+  {
+   "en": "The authors are encouraged to create a separate “Limitations” section in their paper.",
+   "zh": "作者被鼓励在论文中创建一个独立的“局限性”部分。",
+   "sents": null
+  },
+  {
+   "en": "The paper should point out any strong assumptions and how robust the results are to violations of these assumptions (e.g., independence assumptions, noiseless settings, model well-specification, asymptotic approximations only holding locally). The authors should reflect on how these assumptions might be violated in practice and what the implications would be.",
+   "zh": "论文应指出任何较强的假设，以及结果在违反这些假设时具有多强的稳健性（例如，独立性假设、无噪声设定、模型规格正确性，以及仅在局部成立的渐近近似）。 作者应反思这些假设在实践中可能如何被违反，以及由此带来的影响。",
+   "sents": [
+    {
+     "en": "The paper should point out any strong assumptions and how robust the results are to violations of these assumptions (e.g., independence assumptions, noiseless settings, model well-specification, asymptotic approximations only holding locally).",
+     "zh": "论文应指出任何较强的假设，以及结果在违反这些假设时具有多强的稳健性（例如，独立性假设、无噪声设定、模型规格正确性，以及仅在局部成立的渐近近似）。"
+    },
+    {
+     "en": "The authors should reflect on how these assumptions might be violated in practice and what the implications would be.",
+     "zh": "作者应反思这些假设在实践中可能如何被违反，以及由此带来的影响。"
+    }
+   ]
+  },
+  {
+   "en": "The authors should reflect on the scope of the claims made, e.g., if the approach was only tested on a few datasets or with a few runs. In general, empirical results often depend on implicit assumptions, which should be articulated.",
+   "zh": "作者应反思所提出主张的范围，例如，该方法是否仅在少数数据集上或仅通过少量运行进行了测试。 通常而言，经验性结果往往依赖于隐含的假设，这些假设应当被明确阐述。",
+   "sents": [
+    {
+     "en": "The authors should reflect on the scope of the claims made, e.g., if the approach was only tested on a few datasets or with a few runs.",
+     "zh": "作者应反思所提出主张的范围，例如，该方法是否仅在少数数据集上或仅通过少量运行进行了测试。"
+    },
+    {
+     "en": "In general, empirical results often depend on implicit assumptions, which should be articulated.",
+     "zh": "通常而言，经验性结果往往依赖于隐含的假设，这些假设应当被明确阐述。"
+    }
+   ]
+  },
+  {
+   "en": "The authors should reflect on the factors that influence the performance of the approach. For example, a facial recognition algorithm may perform poorly when image resolution is low or images are taken in low lighting. Or a speech-to-text system might not be used reliably to provide closed captions for online lectures because it fails to handle technical jargon.",
+   "zh": "作者应反思影响该方法性能的因素。 例如，当图像分辨率较低或图像在低光照条件下拍摄时，人脸识别算法的性能可能会很差。 或者，语音转文字系统可能无法可靠地用于为在线课程提供字幕，因为它无法处理专业术语。",
+   "sents": [
+    {
+     "en": "The authors should reflect on the factors that influence the performance of the approach.",
+     "zh": "作者应反思影响该方法性能的因素。"
+    },
+    {
+     "en": "For example, a facial recognition algorithm may perform poorly when image resolution is low or images are taken in low lighting.",
+     "zh": "例如，当图像分辨率较低或图像在低光照条件下拍摄时，人脸识别算法的性能可能会很差。"
+    },
+    {
+     "en": "Or a speech-to-text system might not be used reliably to provide closed captions for online lectures because it fails to handle technical jargon.",
+     "zh": "或者，语音转文字系统可能无法可靠地用于为在线课程提供字幕，因为它无法处理专业术语。"
+    }
+   ]
+  },
+  {
+   "en": "The authors should discuss the computational efficiency of the proposed algorithms and how they scale with dataset size.",
+   "zh": "作者应讨论所提出算法的计算效率，以及它们如何随着数据集规模的增大而扩展。",
+   "sents": null
+  },
+  {
+   "en": "If applicable, the authors should discuss possible limitations of their approach to address problems of privacy and fairness.",
+   "zh": "如果适用，作者应讨论其方法可能存在的局限性，以应对隐私和公平性问题。",
+   "sents": null
+  },
+  {
+   "en": "While the authors might fear that complete honesty about limitations might be used by reviewers as grounds for rejection, a worse outcome might be that reviewers discover limitations that aren’t acknowledged in the paper. The authors should use their best judgment and recognize that individual actions in favor of transparency play an important role in developing norms that preserve the integrity of the community. Reviewers will be specifically instructed to not penalize honesty concerning limitations.",
+   "zh": "尽管作者们可能担心，对局限性的完全坦诚会被审稿人用作拒绝论文的理由，但更糟糕的情况可能是，审稿人发现了论文中未提及的局限性。 作者应依据自己的最佳判断行事，并认识到，为追求透明度而采取的个人行动，在形成维护学术共同体完整性的规范方面发挥着重要作用。 将特别指示审稿人不得因坦诚说明局限性而对论文进行惩罚。",
+   "sents": [
+    {
+     "en": "While the authors might fear that complete honesty about limitations might be used by reviewers as grounds for rejection, a worse outcome might be that reviewers discover limitations that aren’t acknowledged in the paper.",
+     "zh": "尽管作者们可能担心，对局限性的完全坦诚会被审稿人用作拒绝论文的理由，但更糟糕的情况可能是，审稿人发现了论文中未提及的局限性。"
+    },
+    {
+     "en": "The authors should use their best judgment and recognize that individual actions in favor of transparency play an important role in developing norms that preserve the integrity of the community.",
+     "zh": "作者应依据自己的最佳判断行事，并认识到，为追求透明度而采取的个人行动，在形成维护学术共同体完整性的规范方面发挥着重要作用。"
+    },
+    {
+     "en": "Reviewers will be specifically instructed to not penalize honesty concerning limitations.",
+     "zh": "将特别指示审稿人不得因坦诚说明局限性而对论文进行惩罚。"
+    }
+   ]
+  },
+  {
+   "en": "Question: For each theoretical result, does the paper provide the full set of assumptions and a complete (and correct) proof?",
+   "zh": "问题：对于每一项理论性结果，该论文是否提供了完整的假设集合以及完整（且正确）的证明？",
+   "sents": null
+  },
+  {
+   "en": "Justification: In the Appendix A.1 , we add the proof of Theorem 1 .",
+   "zh": "理由：在附录 A.1 中，我们补充了定理 1 的证明。",
+   "sents": null
+  },
+  {
+   "en": "The answer [N/A] means that the paper does not include theoretical results.",
+   "zh": "答案 [N/A] 表示该论文不包含理论性结果。",
+   "sents": null
+  },
+  {
+   "en": "All the theorems, formulas, and proofs in the paper should be numbered and cross-referenced.",
+   "zh": "论文中的所有定理、公式和证明都应编号并进行交叉引用。",
+   "sents": null
+  },
+  {
+   "en": "All assumptions should be clearly stated or referenced in the statement of any theorems.",
+   "zh": "所有假设都应在任何定理的陈述中明确说明或引用。",
+   "sents": null
+  },
+  {
+   "en": "The proofs can either appear in the main paper or the supplemental material, but if they appear in the supplemental material, the authors are encouraged to provide a short proof sketch to provide intuition.",
+   "zh": "证明可以出现在主论文或补充材料中，但如果出现在补充材料中，建议作者提供一个简短的证明概要，以帮助读者理解其直观思路。",
+   "sents": null
+  },
+  {
+   "en": "Inversely, any informal proof provided in the core of the paper should be complemented by formal proofs provided in appendix or supplemental material.",
+   "zh": "反之，论文核心部分提供的任何非正式证明，都应由附录或补充材料中提供的正式证明加以补充。",
+   "sents": null
+  },
+  {
+   "en": "Theorems and Lemmas that the proof relies upon should be properly referenced.",
+   "zh": "证明所依赖的定理和引理应得到适当的引用。",
+   "sents": null
+  },
+  {
+   "en": "Question: Does the paper fully disclose all the information needed to reproduce the main experimental results of the paper to the extent that it affects the main claims and/or conclusions of the paper (regardless of whether the code and data are provided or not)?",
+   "zh": "问题：本文是否完整披露了重现其主要实验结果所需的所有信息，且这些信息对本文的主要论点和/或结论具有影响（无论代码和数据是否已提供）？",
+   "sents": null
+  },
+  {
+   "en": "Justification: We provided the source code in the abstract, all the hyperparameter details in 12 to reproduce the results.",
+   "zh": "理由：我们在摘要中提供了源代码，并在第 12 节中给出了所有超参数细节，以便复现结果。",
+   "sents": null
+  },
+  {
+   "en": "The answer [N/A] means that the paper does not include experiments.",
+   "zh": "答案 [N/A] 表示该论文未包含实验。",
+   "sents": null
+  },
+  {
+   "en": "If the paper includes experiments, a [No] answer to this question will not be perceived well by the reviewers: Making the paper reproducible is important, regardless of whether the code and data are provided or not.",
+   "zh": "如果论文包含实验，那么对这个问题回答 [否] 将不会给审稿人留下好印象：无论是否提供了代码和数据，使论文具有可重复性都至关重要。",
+   "sents": null
+  },
+  {
+   "en": "If the contribution is a dataset and/or model, the authors should describe the steps taken to make their results reproducible or verifiable.",
+   "zh": "如果贡献内容是一个数据集和/或模型，作者应描述为使结果具有可重复性或可验证性而采取的步骤。",
+   "sents": null
+  },
+  {
+   "en": "Depending on the contribution, reproducibility can be accomplished in various ways. For example, if the contribution is a novel architecture, describing the architecture fully might suffice, or if the contribution is a specific model and empirical evaluation, it may be necessary to either make it possible for others to replicate the model with the same dataset, or provide access to the model. In general. releasing code and data is often one good way to accomplish this, but reproducibility can also be provided via detailed instructions for how to replicate the results, access to a hosted model (e.g., in the case of a large language model), releasing of a model checkpoint, or other means that are appropriate to the research performed.",
+   "zh": "根据贡献的不同，可以通过多种方式实现可重复性。 例如，如果贡献是一种新颖的架构，那么完整描述该架构可能就已足够；如果贡献是一个特定的模型和实证评估，则可能需要让他人能够使用相同的数据集复现该模型，或者提供获取该模型的途径。 通常而言，发布代码和数据往往是实现这一目标的好方法之一，但也可以通过详细说明如何复现结果的步骤、提供托管模型的访问权限（例如大型语言模型的情况）、发布模型检查点，或采用其他适合所开展研究的方式来实现可重复性。",
+   "sents": [
+    {
+     "en": "Depending on the contribution, reproducibility can be accomplished in various ways.",
+     "zh": "根据贡献的不同，可以通过多种方式实现可重复性。"
+    },
+    {
+     "en": "For example, if the contribution is a novel architecture, describing the architecture fully might suffice, or if the contribution is a specific model and empirical evaluation, it may be necessary to either make it possible for others to replicate the model with the same dataset, or provide access to the model.",
+     "zh": "例如，如果贡献是一种新颖的架构，那么完整描述该架构可能就已足够；如果贡献是一个特定的模型和实证评估，则可能需要让他人能够使用相同的数据集复现该模型，或者提供获取该模型的途径。"
+    },
+    {
+     "en": "In general. releasing code and data is often one good way to accomplish this, but reproducibility can also be provided via detailed instructions for how to replicate the results, access to a hosted model (e.g., in the case of a large language model), releasing of a model checkpoint, or other means that are appropriate to the research performed.",
+     "zh": "通常而言，发布代码和数据往往是实现这一目标的好方法之一，但也可以通过详细说明如何复现结果的步骤、提供托管模型的访问权限（例如大型语言模型的情况）、发布模型检查点，或采用其他适合所开展研究的方式来实现可重复性。"
+    }
+   ]
+  },
+  {
+   "en": "While NeurIPS does not require releasing code, the conference does require all submissions to provide some reasonable avenue for reproducibility, which may depend on the nature of the contribution. For example",
+   "zh": "虽然 NeurIPS 不强制要求公开代码，但会议确实要求所有投稿提供某种合理的可复现途径，具体方式可能取决于贡献的性质。例如：",
+   "sents": null
+  },
+  {
+   "en": "If the contribution is primarily a new algorithm, the paper should make it clear how to reproduce that algorithm.",
+   "zh": "如果该贡献主要是一项新算法，论文应明确说明如何复现该算法。",
+   "sents": null
+  },
+  {
+   "en": "If the contribution is primarily a new model architecture, the paper should describe the architecture clearly and fully.",
+   "zh": "如果该贡献主要是一种新的模型架构，论文应清晰且完整地描述该架构。",
+   "sents": null
+  },
+  {
+   "en": "If the contribution is a new model (e.g., a large language model), then there should either be a way to access this model for reproducing the results or a way to reproduce the model (e.g., with an open-source dataset or instructions for how to construct the dataset).",
+   "zh": "如果该贡献是一项新模型（例如，一个大语言模型），那么应当提供一种访问该模型以复现结果的方法，或者提供复现该模型的方法（例如，使用开源数据集或构建该数据集的说明）。",
+   "sents": null
+  },
+  {
+   "en": "We recognize that reproducibility may be tricky in some cases, in which case authors are welcome to describe the particular way they provide for reproducibility. In the case of closed-source models, it may be that access to the model is limited in some way (e.g., to registered users), but it should be possible for other researchers to have some path to reproducing or verifying the results.",
+   "zh": "我们认识到，在某些情况下，可重复性可能颇具挑战；在这种情况下，作者可以描述他们确保可重复性的具体方法。 对于闭源模型，其访问权限可能在某些方面受到限制（例如，仅限注册用户），但其他研究人员仍应能够以某种方式复现或验证研究结果。",
+   "sents": [
+    {
+     "en": "We recognize that reproducibility may be tricky in some cases, in which case authors are welcome to describe the particular way they provide for reproducibility.",
+     "zh": "我们认识到，在某些情况下，可重复性可能颇具挑战；在这种情况下，作者可以描述他们确保可重复性的具体方法。"
+    },
+    {
+     "en": "In the case of closed-source models, it may be that access to the model is limited in some way (e.g., to registered users), but it should be possible for other researchers to have some path to reproducing or verifying the results.",
+     "zh": "对于闭源模型，其访问权限可能在某些方面受到限制（例如，仅限注册用户），但其他研究人员仍应能够以某种方式复现或验证研究结果。"
+    }
+   ]
+  },
+  {
+   "en": "Question: Does the paper provide open access to the data and code, with sufficient instructions to faithfully reproduce the main experimental results, as described in supplemental material?",
+   "zh": "问题：论文是否对数据和代码提供了开放获取，并附有足以忠实复现主要实验结果的说明（如补充材料所述）？",
+   "sents": null
+  },
+  {
+   "en": "Justification: We provide an anonymized repository for the source code to reproduce the experimental results. The link of the repository is provided in the abstract of the paper.",
+   "zh": "理由：我们提供了一个匿名化的源代码仓库，以便复现实验结果。 该仓库的链接已提供在论文的摘要中。",
+   "sents": [
+    {
+     "en": "Justification: We provide an anonymized repository for the source code to reproduce the experimental results.",
+     "zh": "理由：我们提供了一个匿名化的源代码仓库，以便复现实验结果。"
+    },
+    {
+     "en": "The link of the repository is provided in the abstract of the paper.",
+     "zh": "该仓库的链接已提供在论文的摘要中。"
+    }
+   ]
+  },
+  {
+   "en": "The answer [N/A] means that paper does not include experiments requiring code.",
+   "zh": "答案 [N/A] 表示该论文不包含需要代码的实验。",
+   "sents": null
+  },
+  {
+   "en": "Please see the NeurIPS code and data submission guidelines ( https://neurips.cc/public/guides/CodeSubmissionPolicy ) for more details.",
+   "zh": "有关更多详细信息，请参阅 NeurIPS 的代码和数据提交指南（https://neurips.cc/public/guides/CodeSubmissionPolicy）。",
+   "sents": null
+  },
+  {
+   "en": "While we encourage the release of code and data, we understand that this might not be possible, so [No] is an acceptable answer. Papers cannot be rejected simply for not including code, unless this is central to the contribution (e.g., for a new open-source benchmark).",
+   "zh": "虽然我们鼓励发布代码和数据，但我们理解这可能并非可行，因此选择 [否] 也是可以接受的答案。 论文不能仅仅因为没有包含代码而被拒绝，除非代码是其贡献的核心部分（例如，针对一个新的开源基准测试）。",
+   "sents": [
+    {
+     "en": "While we encourage the release of code and data, we understand that this might not be possible, so [No] is an acceptable answer.",
+     "zh": "虽然我们鼓励发布代码和数据，但我们理解这可能并非可行，因此选择 [否] 也是可以接受的答案。"
+    },
+    {
+     "en": "Papers cannot be rejected simply for not including code, unless this is central to the contribution (e.g., for a new open-source benchmark).",
+     "zh": "论文不能仅仅因为没有包含代码而被拒绝，除非代码是其贡献的核心部分（例如，针对一个新的开源基准测试）。"
+    }
+   ]
+  },
+  {
+   "en": "The instructions should contain the exact command and environment needed to run to reproduce the results. See the NeurIPS code and data submission guidelines ( https://neurips.cc/public/guides/CodeSubmissionPolicy ) for more details.",
+   "zh": "说明中应包含运行所需的确切命令和环境，以便重现结果。 更多详情请参阅 NeurIPS 的代码和数据提交指南（https://neurips.cc/public/guides/CodeSubmissionPolicy）。",
+   "sents": [
+    {
+     "en": "The instructions should contain the exact command and environment needed to run to reproduce the results.",
+     "zh": "说明中应包含运行所需的确切命令和环境，以便重现结果。"
+    },
+    {
+     "en": "See the NeurIPS code and data submission guidelines ( https://neurips.cc/public/guides/CodeSubmissionPolicy ) for more details.",
+     "zh": "更多详情请参阅 NeurIPS 的代码和数据提交指南（https://neurips.cc/public/guides/CodeSubmissionPolicy）。"
+    }
+   ]
+  },
+  {
+   "en": "The authors should provide instructions on data access and preparation, including how to access the raw data, preprocessed data, intermediate data, and generated data, etc.",
+   "zh": "作者应提供有关数据访问和准备的说明，包括如何获取原始数据、预处理数据、中间数据和生成数据等。",
+   "sents": null
+  },
+  {
+   "en": "The authors should provide scripts to reproduce all experimental results for the new proposed method and baselines. If only a subset of experiments are reproducible, they should state which ones are omitted from the script and why.",
+   "zh": "作者应提供脚本，以便复现新提出的方法以及基线方法的所有实验结果。 如果仅有一部分实验可以复现，他们应说明哪些实验未被包含在脚本中及其原因。",
+   "sents": [
+    {
+     "en": "The authors should provide scripts to reproduce all experimental results for the new proposed method and baselines.",
+     "zh": "作者应提供脚本，以便复现新提出的方法以及基线方法的所有实验结果。"
+    },
+    {
+     "en": "If only a subset of experiments are reproducible, they should state which ones are omitted from the script and why.",
+     "zh": "如果仅有一部分实验可以复现，他们应说明哪些实验未被包含在脚本中及其原因。"
+    }
+   ]
+  },
+  {
+   "en": "At submission time, to preserve anonymity, the authors should release anonymized versions (if applicable).",
+   "zh": "提交时，为保持匿名性，作者应发布经过匿名处理的版本（如适用）。",
+   "sents": null
+  },
+  {
+   "en": "Providing as much information as possible in supplemental material (appended to the paper) is recommended, but including URLs to data and code is permitted.",
+   "zh": "建议在补充材料（附于论文之后）中尽可能提供更多信息，但也可以包含数据和代码的 URL。",
+   "sents": null
+  },
+  {
+   "en": "Question: Does the paper specify all the training and test details (e.g., data splits, hyperparameters, how they were chosen, type of optimizer) necessary to understand the results?",
+   "zh": "问题：该论文是否说明了理解研究结果所需的所有训练和测试细节（例如，数据划分、超参数及其选择方式、优化器类型）？",
+   "sents": null
+  },
+  {
+   "en": "Justification: Our method is fully inference time, so no train splits are present, and we provide all hyperparameter settings in Table 12 and in the experimental section 4",
+   "zh": "理由：我们的方法完全在推理阶段执行，因此不存在训练数据划分；所有超参数设置均列于表 12 及第 4 节实验部分。",
+   "sents": null
+  },
+  {
+   "en": "The experimental setting should be presented in the core of the paper to a level of detail that is necessary to appreciate the results and make sense of them.",
+   "zh": "实验设置应在论文的核心部分以足够的细节呈现，以便读者能够理解并正确解读研究结果。",
+   "sents": null
+  },
+  {
+   "en": "The full details can be provided either with the code, in appendix, or as supplemental material.",
+   "zh": "完整细节可以通过代码、附录或补充材料提供。",
+   "sents": null
+  },
+  {
+   "en": "Question: Does the paper report error bars suitably and correctly defined or other appropriate information about the statistical significance of the experiments?",
+   "zh": "问题：该论文是否恰当且正确地报告了误差棒，或提供了关于实验统计显著性的其他适当信息？",
+   "sents": null
+  },
+  {
+   "en": "Justification: Consistent with prior work in visual generation, evaluation is primarily based on standard benchmark metrics and qualitative comparisons.",
+   "zh": "理由：与视觉生成领域的先期研究一致，评估主要基于标准的基准指标和定性比较。",
+   "sents": null
+  },
+  {
+   "en": "The authors should answer [Yes] if the results are accompanied by error bars, confidence intervals, or statistical significance tests, at least for the experiments that support the main claims of the paper.",
+   "zh": "如果研究结果附有误差棒、置信区间或统计显著性检验（至少对于支持论文主要论点的实验而言），作者应选择[是]。",
+   "sents": null
+  },
+  {
+   "en": "The factors of variability that the error bars are capturing should be clearly stated (for example, train/test split, initialization, random drawing of some parameter, or overall run with given experimental conditions).",
+   "zh": "误差棒所反映的变异性因素应明确说明（例如，训练/测试划分、初始化、某些参数的随机抽取，或在给定实验条件下的整体运行）。",
+   "sents": null
+  },
+  {
+   "en": "The method for calculating the error bars should be explained (closed form formula, call to a library function, bootstrap, etc.)",
+   "zh": "应说明误差棒的计算方法（闭式公式、调用库函数、自助法等）。",
+   "sents": null
+  },
+  {
+   "en": "The assumptions made should be given (e.g., Normally distributed errors).",
+   "zh": "所采用的假设应予以说明（例如，误差服从正态分布）。",
+   "sents": null
+  },
+  {
+   "en": "It should be clear whether the error bar is the standard deviation or the standard error of the mean.",
+   "zh": "应当明确误差棒代表的是标准差还是均值的标准误。",
+   "sents": null
+  },
+  {
+   "en": "It is OK to report 1-sigma error bars, but one should state it. The authors should preferably report a 2-sigma error bar than state that they have a 96% CI, if the hypothesis of Normality of errors is not verified.",
+   "zh": "报告 1-σ 误差棒是可以的，但应当明确说明这一点。 如果未验证误差的正态性假设，作者最好报告 2-σ 误差棒，而不是声称其置信区间为 96%。",
+   "sents": [
+    {
+     "en": "It is OK to report 1-sigma error bars, but one should state it.",
+     "zh": "报告 1-σ 误差棒是可以的，但应当明确说明这一点。"
+    },
+    {
+     "en": "The authors should preferably report a 2-sigma error bar than state that they have a 96% CI, if the hypothesis of Normality of errors is not verified.",
+     "zh": "如果未验证误差的正态性假设，作者最好报告 2-σ 误差棒，而不是声称其置信区间为 96%。"
+    }
+   ]
+  },
+  {
+   "en": "For asymmetric distributions, the authors should be careful not to show in tables or figures symmetric error bars that would yield results that are out of range (e.g., negative error rates).",
+   "zh": "对于非对称分布，作者应谨慎避免在表格或图表中展示对称误差棒，因为这可能导致结果超出合理范围（例如，出现负的错误率）。",
+   "sents": null
+  },
+  {
+   "en": "If error bars are reported in tables or plots, the authors should explain in the text how they were calculated and reference the corresponding figures or tables in the text.",
+   "zh": "如果表格或图表中报告了误差棒，作者应在正文中解释其计算方法，并在正文中引用相应的图表。",
+   "sents": null
+  },
+  {
+   "en": "Question: For each experiment, does the paper provide sufficient information on the computer resources (type of compute workers, memory, time of execution) needed to reproduce the experiments?",
+   "zh": "问题：对于每次实验，该论文是否提供了足够的信息，说明重现这些实验所需的计算资源（计算智能体的类型、内存、执行时间）？",
+   "sents": null
+  },
+  {
+   "en": "Justification: In the experimental section 4 , we provide the compute resources used and the time for running experiments is discussed in all the result tables, as our method works on inference time reduction.",
+   "zh": "理由：在实验部分 4 中，我们提供了所使用的计算资源，并且所有结果表中都讨论了运行实验所需的时间，因为我们的方法旨在减少推理时间。",
+   "sents": null
+  },
+  {
+   "en": "The paper should indicate the type of compute workers CPU or GPU, internal cluster, or cloud provider, including relevant memory and storage.",
+   "zh": "论文中应说明计算工作器的类型（CPU 或 GPU）、内部集群或云提供商，并包含相关的内存和存储信息。",
+   "sents": null
+  },
+  {
+   "en": "The paper should provide the amount of compute required for each of the individual experimental runs as well as estimate the total compute.",
+   "zh": "该论文应说明每次单独实验运行所需的计算量，并估算总计算量。",
+   "sents": null
+  },
+  {
+   "en": "The paper should disclose whether the full research project required more compute than the experiments reported in the paper (e.g., preliminary or failed experiments that didn’t make it into the paper).",
+   "zh": "论文应说明整个研究项目所需的计算资源是否多于论文中报告的那些实验（例如，未纳入论文的初步实验或失败实验）。",
+   "sents": null
+  },
+  {
+   "en": "Question: Does the research conducted in the paper conform, in every respect, with the NeurIPS Code of Ethics https://neurips.cc/public/EthicsGuidelines ?",
+   "zh": "问题：该论文中开展的研究是否在各方面均符合 NeurIPS 道德准则 https://neurips.cc/public/EthicsGuidelines？",
+   "sents": null
+  },
+  {
+   "en": "Justification: Our paper conforms, in every aspect, with NeurIPS Code of Ethics.",
+   "zh": "理由：我们的论文在各方面均符合 NeurIPS 道德准则。",
+   "sents": null
+  },
+  {
+   "en": "The answer [N/A] means that the authors have not reviewed the NeurIPS Code of Ethics.",
+   "zh": "答案 [N/A] 表示作者尚未审阅 NeurIPS 道德准则。",
+   "sents": null
+  },
+  {
+   "en": "If the authors answer [No] , they should explain the special circumstances that require a deviation from the Code of Ethics.",
+   "zh": "如果作者回答[否]，他们应解释需要偏离《道德准则》的特殊情况。",
+   "sents": null
+  },
+  {
+   "en": "The authors should make sure to preserve anonymity (e.g., if there is a special consideration due to laws or regulations in their jurisdiction).",
+   "zh": "作者应确保保持匿名性（例如，如果其司法管辖区的法律或法规存在特殊考量）。",
+   "sents": null
+  },
+  {
+   "en": "Question: Does the paper discuss both potential positive societal impacts and negative societal impacts of the work performed?",
+   "zh": "问题：该论文是否讨论了所开展工作可能带来的积极社会影响和消极社会影响？",
+   "sents": null
+  },
+  {
+   "en": "Justification: Our work is focused on inference time speedup of existing methods, hence it does not have any societal impact.",
+   "zh": "理由：我们的工作专注于现有方法在推理阶段的加速，因此对社会没有任何影响。",
+   "sents": null
+  },
+  {
+   "en": "The answer [N/A] means that there is no societal impact of the work performed.",
+   "zh": "答案 [N/A] 表示所完成的工作对社会没有影响。",
+   "sents": null
+  },
+  {
+   "en": "If the authors answer [N/A] or [No] , they should explain why their work has no societal impact or why the paper does not address societal impact.",
+   "zh": "如果作者回答 [N/A] 或 [否]，他们应解释其工作为何没有社会影响，或该论文为何未涉及社会影响。",
+   "sents": null
+  },
+  {
+   "en": "Examples of negative societal impacts include potential malicious or unintended uses (e.g., disinformation, generating fake profiles, surveillance), fairness considerations (e.g., deployment of technologies that could make decisions that unfairly impact specific groups), privacy considerations, and security considerations.",
+   "zh": "负面社会影响的示例包括潜在的恶意或无意用途（例如，虚假信息、生成虚假个人资料、监控）、公平性考量（例如，部署可能对特定群体造成不公平影响的技术决策）、隐私考量以及安全考量。",
+   "sents": null
+  },
+  {
+   "en": "The conference expects that many papers will be foundational research and not tied to particular applications, let alone deployments. However, if there is a direct path to any negative applications, the authors should point it out. For example, it is legitimate to point out that an improvement in the quality of generative models could be used to generate Deepfakes for disinformation. On the other hand, it is not needed to point out that a generic algorithm for optimizing neural networks could enable people to train models that generate Deepfakes faster.",
+   "zh": "本次会议期望许多论文都将属于基础性研究，而非与特定应用挂钩，更不用说实际部署了。 然而，如果存在任何可能导致负面应用的直接路径，作者应当指出这一点。 例如，指出生成式模型质量的提升可能被用于制造虚假信息中的深度伪造内容，这一观点是合理的。 另一方面，则无需指出一种通用的神经网络优化算法可能使人们能够更快地训练出可生成深度伪造内容的模型。",
+   "sents": [
+    {
+     "en": "The conference expects that many papers will be foundational research and not tied to particular applications, let alone deployments.",
+     "zh": "本次会议期望许多论文都将属于基础性研究，而非与特定应用挂钩，更不用说实际部署了。"
+    },
+    {
+     "en": "However, if there is a direct path to any negative applications, the authors should point it out.",
+     "zh": "然而，如果存在任何可能导致负面应用的直接路径，作者应当指出这一点。"
+    },
+    {
+     "en": "For example, it is legitimate to point out that an improvement in the quality of generative models could be used to generate Deepfakes for disinformation.",
+     "zh": "例如，指出生成式模型质量的提升可能被用于制造虚假信息中的深度伪造内容，这一观点是合理的。"
+    },
+    {
+     "en": "On the other hand, it is not needed to point out that a generic algorithm for optimizing neural networks could enable people to train models that generate Deepfakes faster.",
+     "zh": "另一方面，则无需指出一种通用的神经网络优化算法可能使人们能够更快地训练出可生成深度伪造内容的模型。"
+    }
+   ]
+  },
+  {
+   "en": "The authors should consider possible harms that could arise when the technology is being used as intended and functioning correctly, harms that could arise when the technology is being used as intended but gives incorrect results, and harms following from (intentional or unintentional) misuse of the technology.",
+   "zh": "作者应考虑该技术按预期使用且正常运行时可能产生的危害、该技术按预期使用但给出错误结果时可能产生的危害，以及因（有意或无意）滥用该技术而导致的危害。",
+   "sents": null
+  },
+  {
+   "en": "If there are negative societal impacts, the authors could also discuss possible mitigation strategies (e.g., gated release of models, providing defenses in addition to attacks, mechanisms for monitoring misuse, mechanisms to monitor how a system learns from feedback over time, improving the efficiency and accessibility of ML).",
+   "zh": "如果存在负面社会影响，作者还可以讨论可能的缓解策略（例如，对模型进行限制性发布、在提供攻击方法的同时提供防御措施、建立滥用行为监测机制、建立监测系统随时间从反馈中学习方式的机制，以及提升机器学习技术的效率和可及性）。",
+   "sents": null
+  },
+  {
+   "en": "Question: Does the paper describe safeguards that have been put in place for responsible release of data or models that have a high risk for misuse (e.g., pre-trained language models, image generators, or scraped datasets)?",
+   "zh": "问题：该论文是否描述了为确保数据或模型负责任地发布而采取的安全措施？这些数据或模型存在被滥用的较高风险（例如，预训练语言模型、图像生成器或网络爬取的数据集）。",
+   "sents": null
+  },
+  {
+   "en": "Justification: As our method is an inference-time speedup method, we do not require any additional safeguards to be put.",
+   "zh": "理由：由于我们的方法是一种推理时的加速方法，因此无需添加任何额外的安全措施。",
+   "sents": null
+  },
+  {
+   "en": "The answer [N/A] means that the paper poses no such risks.",
+   "zh": "答案 [N/A] 表示该论文不存在此类风险。",
+   "sents": null
+  },
+  {
+   "en": "Released models that have a high risk for misuse or dual-use should be released with necessary safeguards to allow for controlled use of the model, for example by requiring that users adhere to usage guidelines or restrictions to access the model or implementing safety filters.",
+   "zh": "对于存在较高滥用或双重用途风险已发布的模型，应配备必要的安全保障措施，以实现对该模型的受控使用。例如，可以要求用户遵守使用指南或限制才能访问该模型，或者实施安全过滤器。",
+   "sents": null
+  },
+  {
+   "en": "Datasets that have been scraped from the Internet could pose safety risks. The authors should describe how they avoided releasing unsafe images.",
+   "zh": "从互联网上抓取的数据集可能会带来安全风险。 作者应说明他们如何避免发布不安全的图像。",
+   "sents": [
+    {
+     "en": "Datasets that have been scraped from the Internet could pose safety risks.",
+     "zh": "从互联网上抓取的数据集可能会带来安全风险。"
+    },
+    {
+     "en": "The authors should describe how they avoided releasing unsafe images.",
+     "zh": "作者应说明他们如何避免发布不安全的图像。"
+    }
+   ]
+  },
+  {
+   "en": "We recognize that providing effective safeguards is challenging, and many papers do not require this, but we encourage authors to take this into account and make a best faith effort.",
+   "zh": "我们认识到，提供有效的保障措施具有挑战性，许多论文也并未提出这一要求，但我们鼓励作者将此纳入考量，并尽最大努力予以实现。",
+   "sents": null
+  },
+  {
+   "en": "Question: Are the creators or original owners of assets (e.g., code, data, models), used in the paper, properly credited and are the license and terms of use explicitly mentioned and properly respected?",
+   "zh": "问题：论文中使用的资产（例如代码、数据、模型）的创建者或原始所有者是否得到了适当的署名？其许可证和使用条款是否被明确提及并得到妥善遵守？",
+   "sents": null
+  },
+  {
+   "en": "Justification: We use some of the existing models in the visual generation domain, and we have properly cited them and adhered to their terms of use.",
+   "zh": "理由：我们使用了一些视觉生成领域现有的模型，并已对其进行了适当的引用，同时遵守了其使用条款。",
+   "sents": null
+  },
+  {
+   "en": "The answer [N/A] means that the paper does not use existing assets.",
+   "zh": "答案 [N/A] 表示该论文未使用现有资产。",
+   "sents": null
+  },
+  {
+   "en": "The authors should cite the original paper that produced the code package or dataset.",
+   "zh": "作者应引用生成该代码包或数据集的原始论文。",
+   "sents": null
+  },
+  {
+   "en": "The authors should state which version of the asset is used and, if possible, include a URL.",
+   "zh": "作者应说明使用了哪个版本的资产，并在可能的情况下附上一个 URL。",
+   "sents": null
+  },
+  {
+   "en": "The name of the license (e.g., CC-BY 4.0) should be included for each asset.",
+   "zh": "每个资产都应包含许可证的名称（例如，CC-BY 4.0）。",
+   "sents": null
+  },
+  {
+   "en": "For scraped data from a particular source (e.g., website), the copyright and terms of service of that source should be provided.",
+   "zh": "对于从特定来源（例如网站）抓取的数据，应提供该来源的版权和条款与条件。",
+   "sents": null
+  },
+  {
+   "en": "If assets are released, the license, copyright information, and terms of use in the package should be provided. For popular datasets, paperswithcode.com/datasets has curated licenses for some datasets. Their licensing guide can help determine the license of a dataset.",
+   "zh": "如果发布资产，则应提供包中的许可证、版权信息和使用条款。 对于热门数据集，paperswithcode.com/datasets 已为部分数据集整理了许可证。 他们的许可指南可以帮助确定数据集的许可证。",
+   "sents": [
+    {
+     "en": "If assets are released, the license, copyright information, and terms of use in the package should be provided.",
+     "zh": "如果发布资产，则应提供包中的许可证、版权信息和使用条款。"
+    },
+    {
+     "en": "For popular datasets, paperswithcode.com/datasets has curated licenses for some datasets.",
+     "zh": "对于热门数据集，paperswithcode.com/datasets 已为部分数据集整理了许可证。"
+    },
+    {
+     "en": "Their licensing guide can help determine the license of a dataset.",
+     "zh": "他们的许可指南可以帮助确定数据集的许可证。"
+    }
+   ]
+  },
+  {
+   "en": "For existing datasets that are re-packaged, both the original license and the license of the derived asset (if it has changed) should be provided.",
+   "zh": "对于经过重新打包的现有数据集，应同时提供原始许可证和衍生资产的许可证（如果已变更）。",
+   "sents": null
+  },
+  {
+   "en": "If this information is not available online, the authors are encouraged to reach out to the asset’s creators.",
+   "zh": "如果这些信息在网上无法获取，建议作者联系该资产的创作者。",
+   "sents": null
+  },
+  {
+   "en": "Question: Are new assets introduced in the paper well documented and is the documentation provided alongside the assets?",
+   "zh": "问题：论文中引入的新资产是否得到了充分说明？提供的文档是否与这些资产一同给出？",
+   "sents": null
+  },
+  {
+   "en": "Justification: We do not provide any new assets.",
+   "zh": "理由：我们不提供任何新资产。",
+   "sents": null
+  },
+  {
+   "en": "The answer [N/A] means that the paper does not release new assets.",
+   "zh": "答案 [N/A] 表示该论文并未发布新的资产。",
+   "sents": null
+  },
+  {
+   "en": "Researchers should communicate the details of the dataset/code/model as part of their submissions via structured templates. This includes details about training, license, limitations, etc.",
+   "zh": "研究人员应在提交成果时，通过结构化模板说明数据集、代码或模型的相关细节。 这包括训练信息、许可协议、局限性等方面的内容。",
+   "sents": [
+    {
+     "en": "Researchers should communicate the details of the dataset/code/model as part of their submissions via structured templates.",
+     "zh": "研究人员应在提交成果时，通过结构化模板说明数据集、代码或模型的相关细节。"
+    },
+    {
+     "en": "This includes details about training, license, limitations, etc.",
+     "zh": "这包括训练信息、许可协议、局限性等方面的内容。"
+    }
+   ]
+  },
+  {
+   "en": "The paper should discuss whether and how consent was obtained from people whose asset is used.",
+   "zh": "论文应讨论是否以及如何从其资产被使用的人那里获得了同意。",
+   "sents": null
+  },
+  {
+   "en": "At submission time, remember to anonymize your assets (if applicable). You can either create an anonymized URL or include an anonymized zip file.",
+   "zh": "提交时，请记得对您的资产进行匿名化处理（如适用）。 您可以创建一个匿名化 URL，或者附上一个经过匿名处理的压缩文件。",
+   "sents": [
+    {
+     "en": "At submission time, remember to anonymize your assets (if applicable).",
+     "zh": "提交时，请记得对您的资产进行匿名化处理（如适用）。"
+    },
+    {
+     "en": "You can either create an anonymized URL or include an anonymized zip file.",
+     "zh": "您可以创建一个匿名化 URL，或者附上一个经过匿名处理的压缩文件。"
+    }
+   ]
+  },
+  {
+   "en": "Crowdsourcing and research with human subjects",
+   "zh": "众包与涉及人类受试者的研究",
+   "sents": null
+  },
+  {
+   "en": "Question: For crowdsourcing experiments and research with human subjects, does the paper include the full text of instructions given to participants and screenshots, if applicable, as well as details about compensation (if any)?",
+   "zh": "问题：对于涉及人类受试者的众包实验和研究，该论文是否包含了提供给参与者的完整说明文本以及（如适用）的屏幕截图，同时还说明了补偿细节（如有）？",
+   "sents": null
+  },
+  {
+   "en": "Justification: There are no crowdsourcing experiments in our work.",
+   "zh": "理由：我们的研究中没有众包实验。",
+   "sents": null
+  },
+  {
+   "en": "The answer [N/A] means that the paper does not involve crowdsourcing nor research with human subjects.",
+   "zh": "答案 [N/A] 表示该论文既不涉及众包，也不涉及以人类为对象的研究。",
+   "sents": null
+  },
+  {
+   "en": "Including this information in the supplemental material is fine, but if the main contribution of the paper involves human subjects, then as much detail as possible should be included in the main paper.",
+   "zh": "将此类信息包含在补充材料中是可以的，但如果论文的主要贡献涉及人类受试者，则应在主文中尽可能详细地说明。",
+   "sents": null
+  },
+  {
+   "en": "According to the NeurIPS Code of Ethics, workers involved in data collection, curation, or other labor should be paid at least the minimum wage in the country of the data collector.",
+   "zh": "根据 NeurIPS 道德准则，参与数据收集、整理或其他劳动的工作人员，其薪酬应至少达到数据收集者所在国家的最低工资标准。",
+   "sents": null
+  },
+  {
+   "en": "Institutional review board (IRB) approvals or equivalent for research with human subjects",
+   "zh": "涉及人类受试者的研究须获得机构审查委员会（IRB）批准或同等批准",
+   "sents": null
+  },
+  {
+   "en": "Question: Does the paper describe potential risks incurred by study participants, whether such risks were disclosed to the subjects, and whether Institutional Review Board (IRB) approvals (or an equivalent approval/review based on the requirements of your country or institution) were obtained?",
+   "zh": "问题：该论文是否描述了研究参与者可能面临的风险？这些风险是否已向受试者披露？是否获得了机构审查委员会（IRB）的批准（或根据您所在国家/地区或机构的要求获得的同等批准/审查）？",
+   "sents": null
+  },
+  {
+   "en": "Justification: There are no potential risks of our work. Our work is focused on inference time speedup.",
+   "zh": "理由：我们的工作不存在潜在风险。 我们的工作专注于推理时间的加速。",
+   "sents": [
+    {
+     "en": "Justification: There are no potential risks of our work.",
+     "zh": "理由：我们的工作不存在潜在风险。"
+    },
+    {
+     "en": "Our work is focused on inference time speedup.",
+     "zh": "我们的工作专注于推理时间的加速。"
+    }
+   ]
+  },
+  {
+   "en": "Depending on the country in which research is conducted, IRB approval (or equivalent) may be required for any human subjects research. If you obtained IRB approval, you should clearly state this in the paper.",
+   "zh": "研究所在哪个国家，可能就需要对任何涉及人类受试者的研究获得伦理审查委员会（IRB）的批准（或同等批准）。 如果你获得了伦理审查委员会（IRB）的批准，就应该在论文中明确说明这一点。",
+   "sents": [
+    {
+     "en": "Depending on the country in which research is conducted, IRB approval (or equivalent) may be required for any human subjects research.",
+     "zh": "研究所在哪个国家，可能就需要对任何涉及人类受试者的研究获得伦理审查委员会（IRB）的批准（或同等批准）。"
+    },
+    {
+     "en": "If you obtained IRB approval, you should clearly state this in the paper.",
+     "zh": "如果你获得了伦理审查委员会（IRB）的批准，就应该在论文中明确说明这一点。"
+    }
+   ]
+  },
+  {
+   "en": "We recognize that the procedures for this may vary significantly between institutions and locations, and we expect authors to adhere to the NeurIPS Code of Ethics and the guidelines for their institution.",
+   "zh": "我们认识到，相关流程可能因机构和地点的不同而存在显著差异，因此我们期望作者遵守 NeurIPS 道德准则及其所在机构的指导方针。",
+   "sents": null
+  },
+  {
+   "en": "For initial submissions, do not include any information that would break anonymity (if applicable), such as the institution conducting the review.",
+   "zh": "对于初次提交的材料，请勿包含任何可能破坏匿名性的信息（如适用），例如负责评审的机构。",
+   "sents": null
+  },
+  {
+   "en": "Question: Does the paper describe the usage of LLMs if it is an important, original, or non-standard component of the core methods in this research? Note that if the LLM is used only for writing, editing, or formatting purposes and does not impact the core methodology, scientific rigor, or originality of the research, declaration is not required.",
+   "zh": "问题：如果大型语言模型（LLM）是这项研究核心方法中重要、原创或非标准的组成部分，论文是否描述了其使用方式？ 请注意，如果 LLM 仅用于写作、编辑或格式调整，且未对研究的核心理论方法、科学严谨性或原创性产生影响，则无需声明。",
+   "sents": [
+    {
+     "en": "Question: Does the paper describe the usage of LLMs if it is an important, original, or non-standard component of the core methods in this research?",
+     "zh": "问题：如果大型语言模型（LLM）是这项研究核心方法中重要、原创或非标准的组成部分，论文是否描述了其使用方式？"
+    },
+    {
+     "en": "Note that if the LLM is used only for writing, editing, or formatting purposes and does not impact the core methodology, scientific rigor, or originality of the research, declaration is not required.",
+     "zh": "请注意，如果 LLM 仅用于写作、编辑或格式调整，且未对研究的核心理论方法、科学严谨性或原创性产生影响，则无需声明。"
+    }
+   ]
+  },
+  {
+   "en": "Justification: We use the LLM only for editing and formatting.",
+   "zh": "理由：我们仅使用 LLM 进行编辑和格式调整。",
+   "sents": null
+  },
+  {
+   "en": "The answer [N/A] means that the core method development in this research does not involve LLMs as any important, original, or non-standard components.",
+   "zh": "答案 [N/A] 表示本研究中的核心方法开发并未将 LLM 作为任何重要、原创或非标准的组成部分。",
+   "sents": null
+  },
+  {
+   "en": "Please refer to our LLM policy in the NeurIPS handbook for what should or should not be described.",
+   "zh": "有关哪些内容应当或不应进行描述，请参阅 NeurIPS 手册中我们的 LLM 政策。",
+   "sents": null
+  }
+ ]
+}
