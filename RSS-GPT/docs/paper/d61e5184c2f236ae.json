@@ -1,0 +1,1555 @@
+{
+ "id": "d61e5184c2f236ae",
+ "source": "arxiv-video",
+ "link": "https://arxiv.org/abs/2610.10429v1",
+ "title": "SGF+: Decoupling Gradient Flows for Autoregressive Video Generation",
+ "title_zh": "SGF+：解耦梯度流以实现自回归视频生成",
+ "published": "2026-10-07T17:09:04Z",
+ "translated_at": "2026-10-21T00:18:21Z",
+ "paragraphs": [
+  {
+   "en": "Autoregressive video generation requires denoising the current frames while writing their key-value representations as context for future predictions. However, these two roles typically share parameters, and we find that their gradients exhibit distinct patterns and systematic negative alignment, hindering the joint optimization of visual quality and temporal consistency. We introduce Self Gradient Forcing Plus (SGF+), which assigns separate parameters to context writing and denoising while preserving their interaction through causal attention. Both roles are jointly optimized using the original generation objective without auxiliary losses, with context writing supervised through its contribution to future predictions. This simple change improves visual quality and long-horizon consistency over the evaluated baselines in both framewise and chunkwise generation, without additional video training data or a longer training horizon. Trained on only 5s rollouts, SGF+ supports continuous generation for up to 24 hours without long-video fine-tuning. These results highlight role-specific parameterization as an effective design principle for high-quality autoregressive video generation and native long-horizon extrapolation.",
+   "zh": "自回归视频生成需要在编写当前帧的关键值表示时对其进行降噪，同时将这些表示作为上下文用于未来的预测。 然而，这两个角色通常共享参数，我们发现它们的梯度呈现出不同的模式和系统性的负向对齐，从而阻碍了视觉质量和时间一致性的联合优化。 我们提出了自我梯度强制增强（SGF+）方法，该方法为上下文编写和降噪分配了独立的参数，同时通过因果注意力保持它们之间的相互作用。 两个角色均使用原始生成目标进行联合优化，无需辅助损失函数，其中上下文编写通过其对未来预测的贡献进行监督。 这一简单的改进在帧级和分块级生成中，相较于所评估的基线模型提升了视觉质量和长期一致性，且无需额外的视频训练数据或更长的训练时长。 SGF+ 仅在 5 秒的视频片段上进行训练，却支持最长达 24 小时的连续生成，而无需对长视频进行微调。 这些结果表明，角色特定的参数化是一种有效的设计原则，有助于实现高质量的自回归视频生成和本土化的长期外推能力。",
+   "sents": [
+    {
+     "en": "Autoregressive video generation requires denoising the current frames while writing their key-value representations as context for future predictions.",
+     "zh": "自回归视频生成需要在编写当前帧的关键值表示时对其进行降噪，同时将这些表示作为上下文用于未来的预测。"
+    },
+    {
+     "en": "However, these two roles typically share parameters, and we find that their gradients exhibit distinct patterns and systematic negative alignment, hindering the joint optimization of visual quality and temporal consistency.",
+     "zh": "然而，这两个角色通常共享参数，我们发现它们的梯度呈现出不同的模式和系统性的负向对齐，从而阻碍了视觉质量和时间一致性的联合优化。"
+    },
+    {
+     "en": "We introduce Self Gradient Forcing Plus (SGF+), which assigns separate parameters to context writing and denoising while preserving their interaction through causal attention.",
+     "zh": "我们提出了自我梯度强制增强（SGF+）方法，该方法为上下文编写和降噪分配了独立的参数，同时通过因果注意力保持它们之间的相互作用。"
+    },
+    {
+     "en": "Both roles are jointly optimized using the original generation objective without auxiliary losses, with context writing supervised through its contribution to future predictions.",
+     "zh": "两个角色均使用原始生成目标进行联合优化，无需辅助损失函数，其中上下文编写通过其对未来预测的贡献进行监督。"
+    },
+    {
+     "en": "This simple change improves visual quality and long-horizon consistency over the evaluated baselines in both framewise and chunkwise generation, without additional video training data or a longer training horizon.",
+     "zh": "这一简单的改进在帧级和分块级生成中，相较于所评估的基线模型提升了视觉质量和长期一致性，且无需额外的视频训练数据或更长的训练时长。"
+    },
+    {
+     "en": "Trained on only 5s rollouts, SGF+ supports continuous generation for up to 24 hours without long-video fine-tuning.",
+     "zh": "SGF+ 仅在 5 秒的视频片段上进行训练，却支持最长达 24 小时的连续生成，而无需对长视频进行微调。"
+    },
+    {
+     "en": "These results highlight role-specific parameterization as an effective design principle for high-quality autoregressive video generation and native long-horizon extrapolation.",
+     "zh": "这些结果表明，角色特定的参数化是一种有效的设计原则，有助于实现高质量的自回归视频生成和本土化的长期外推能力。"
+    }
+   ]
+  },
+  {
+   "en": "Autoregressive video diffusion models generate videos sequentially by denoising new frames conditioned on historical context [ 44 , 15 , 25 , 32 ] . The generated frames are then encoded into key-value (KV) representations that provide context for subsequent predictions. This process supports low-latency video generation and interactive world modeling, where inference can extend far beyond the temporal horizon used in training [ 42 , 14 , 30 , 48 , 8 ] . It involves two distinct computational roles: denoising generates the current content, while context writing determines how that content is represented for future generation. Learning both roles is essential for maintaining visual quality and temporal consistency as generation continues.",
+   "zh": "自回归视频扩散模型通过以历史上下文为条件对新的帧进行去噪，按顺序生成视频 [ 44 , 15 , 25 , 32 ] 。 随后，生成的帧会被编码为键值（KV）表示，为后续预测提供上下文。 这一过程支持低延迟的视频生成和交互式世界建模，其中推理可以远远超出训练时使用的时序范围 [ 42 , 14 , 30 , 48 , 8 ] 。 它涉及两种不同的计算角色：去噪负责生成当前内容，而上下文写入则决定该内容如何表示以供未来生成。 同时学习这两种角色对于在持续生成过程中保持视觉质量和时序一致性至关重要。",
+   "sents": [
+    {
+     "en": "Autoregressive video diffusion models generate videos sequentially by denoising new frames conditioned on historical context [ 44 , 15 , 25 , 32 ] .",
+     "zh": "自回归视频扩散模型通过以历史上下文为条件对新的帧进行去噪，按顺序生成视频 [ 44 , 15 , 25 , 32 ] 。"
+    },
+    {
+     "en": "The generated frames are then encoded into key-value (KV) representations that provide context for subsequent predictions.",
+     "zh": "随后，生成的帧会被编码为键值（KV）表示，为后续预测提供上下文。"
+    },
+    {
+     "en": "This process supports low-latency video generation and interactive world modeling, where inference can extend far beyond the temporal horizon used in training [ 42 , 14 , 30 , 48 , 8 ] .",
+     "zh": "这一过程支持低延迟的视频生成和交互式世界建模，其中推理可以远远超出训练时使用的时序范围 [ 42 , 14 , 30 , 48 , 8 ] 。"
+    },
+    {
+     "en": "It involves two distinct computational roles: denoising generates the current content, while context writing determines how that content is represented for future generation.",
+     "zh": "它涉及两种不同的计算角色：去噪负责生成当前内容，而上下文写入则决定该内容如何表示以供未来生成。"
+    },
+    {
+     "en": "Learning both roles is essential for maintaining visual quality and temporal consistency as generation continues.",
+     "zh": "同时学习这两种角色对于在持续生成过程中保持视觉质量和时序一致性至关重要。"
+    }
+   ]
+  },
+  {
+   "en": "As summarized in Figure 2 , Self Forcing (SF) [ 15 ] mitigates exposure bias by training on self-generated histories with a video-level distribution-matching objective. However, to maintain computational tractability, SF treats the historical KV cache as frozen rollout state for subsequent predictions. Future generation losses can therefore supervise how noisy target tokens read history, but not how earlier generated latents are encoded into useful K/V representations for future generation. This missing supervision path constitutes the historical context-gradient gap [ 52 ] .",
+   "zh": "如图 2 所示，自我强制（Self Forcing，SF）[15] 通过在视频级分布匹配目标上训练自生成的历史数据，来缓解暴露偏差。 然而，为了保持计算上的可行性，SF 将历史 KV 缓存视为后续预测中固定的展开状态。 因此，未来生成的损失可以监督目标词元读取历史时的噪声程度，但无法监督早期生成的潜在变量如何被编码为对未来生成有用的 K/V 表示。 这种缺失的监督路径构成了历史上下文-梯度间隙 [52]。",
+   "sents": [
+    {
+     "en": "As summarized in Figure 2 , Self Forcing (SF) [ 15 ] mitigates exposure bias by training on self-generated histories with a video-level distribution-matching objective.",
+     "zh": "如图 2 所示，自我强制（Self Forcing，SF）[15] 通过在视频级分布匹配目标上训练自生成的历史数据，来缓解暴露偏差。"
+    },
+    {
+     "en": "However, to maintain computational tractability, SF treats the historical KV cache as frozen rollout state for subsequent predictions.",
+     "zh": "然而，为了保持计算上的可行性，SF 将历史 KV 缓存视为后续预测中固定的展开状态。"
+    },
+    {
+     "en": "Future generation losses can therefore supervise how noisy target tokens read history, but not how earlier generated latents are encoded into useful K/V representations for future generation.",
+     "zh": "因此，未来生成的损失可以监督目标词元读取历史时的噪声程度，但无法监督早期生成的潜在变量如何被编码为对未来生成有用的 K/V 表示。"
+    },
+    {
+     "en": "This missing supervision path constitutes the historical context-gradient gap [ 52 ] .",
+     "zh": "这种缺失的监督路径构成了历史上下文-梯度间隙 [52]。"
+    }
+   ]
+  },
+  {
+   "en": "Self Gradient Forcing (SGF) [ 52 ] closes this gap through a two-pass training procedure. The first pass performs a no-gradient autoregressive rollout, while the second reconstructs context representations and target predictions in parallel. The sampled latents remain detached, but the reconstructed KV path is differentiable, allowing future generation losses to supervise context writing without backpropagating through the full rollout. Although this improves long-video extrapolation, context writing and denoising still share the same parameters. We observe residual degradation in long sequences and, in a small number of generated videos, even lower visual quality in the initial frames than with SF. Since the first generated frame has no preceding video context, it provides a useful probe of denoising quality. These observations motivate a fundamental question: Can shared parameters effectively accommodate the optimization demands of both context writing and denoising?",
+   "zh": "自我梯度强制（SGF）[52] 通过两遍训练流程弥合了这一差距。 第一遍执行无梯度的自回归展开，而第二遍则并行重建上下文表示和目标预测。 采样的潜在变量保持分离，但重建的 KV 路径是可微分的，这使得未来的生成损失能够监督上下文写入，而无需通过完整的展开过程反向传播。 尽管这改善了长视频的外推能力，但上下文写入和去噪仍然共享相同的参数。 我们观察到长序列中存在残留的性能下降，并且在少数生成的视频中，初始帧的视觉质量甚至比使用 SF 时更低。 由于第一个生成的帧没有前置的视频上下文，因此它提供了一个评估去噪质量的有用探针。 这些观察结果引出了一个根本性问题：共享参数能否有效满足上下文写入和去噪双方的优化需求？",
+   "sents": [
+    {
+     "en": "Self Gradient Forcing (SGF) [ 52 ] closes this gap through a two-pass training procedure.",
+     "zh": "自我梯度强制（SGF）[52] 通过两遍训练流程弥合了这一差距。"
+    },
+    {
+     "en": "The first pass performs a no-gradient autoregressive rollout, while the second reconstructs context representations and target predictions in parallel.",
+     "zh": "第一遍执行无梯度的自回归展开，而第二遍则并行重建上下文表示和目标预测。"
+    },
+    {
+     "en": "The sampled latents remain detached, but the reconstructed KV path is differentiable, allowing future generation losses to supervise context writing without backpropagating through the full rollout.",
+     "zh": "采样的潜在变量保持分离，但重建的 KV 路径是可微分的，这使得未来的生成损失能够监督上下文写入，而无需通过完整的展开过程反向传播。"
+    },
+    {
+     "en": "Although this improves long-video extrapolation, context writing and denoising still share the same parameters.",
+     "zh": "尽管这改善了长视频的外推能力，但上下文写入和去噪仍然共享相同的参数。"
+    },
+    {
+     "en": "We observe residual degradation in long sequences and, in a small number of generated videos, even lower visual quality in the initial frames than with SF.",
+     "zh": "我们观察到长序列中存在残留的性能下降，并且在少数生成的视频中，初始帧的视觉质量甚至比使用 SF 时更低。"
+    },
+    {
+     "en": "Since the first generated frame has no preceding video context, it provides a useful probe of denoising quality.",
+     "zh": "由于第一个生成的帧没有前置的视频上下文，因此它提供了一个评估去噪质量的有用探针。"
+    },
+    {
+     "en": "These observations motivate a fundamental question: Can shared parameters effectively accommodate the optimization demands of both context writing and denoising?",
+     "zh": "这些观察结果引出了一个根本性问题：共享参数能否有效满足上下文写入和去噪双方的优化需求？"
+    }
+   ]
+  },
+  {
+   "en": "We investigate this question by analyzing the gradient contributions of context writing and denoising under the same generation objective during SGF training. As shown in Figure 3 , (a) angular-distance t-SNE reveals distinct role-dependent gradient groups in both Attention and FFN. (b) After aggregation within each module family, the mean gradient directions exhibit large angular separation: 104.2 ∘ 104.2^{\\circ} in Attention and 106.3 ∘ 106.3^{\\circ} in FFN, both exceeding 90 ∘ 90^{\\circ} . (c) Pairwise analysis across prompts and denoising timesteps further reveals systematic negative alignment, with negative cosine similarities for all 512 measured pairs in both module families. These results reveal substantially different, even conflicting, optimization demands on shared parameters, motivating role-specific parameterization. Appendix G provides a local theoretical analysis of its optimization advantage under gradient conflict.",
+   "zh": "我们通过分析在相同生成目标下，SGF 训练过程中上下文写作和去噪的梯度贡献来研究这个问题。 如图 3 所示，(a) 角距离 t-SNE 揭示了 Attention 和 FFN 中因角色不同而形成的明显梯度分组。 (b) 在每个模块族内进行聚合后，平均梯度方向表现出较大的角度分离：Attention 中为 104.2 ∘ 104.2^{\\circ}，FFN 中为 106.3 ∘ 106.3^{\\circ}，均超过 90 ∘ 90^{\\circ}。 (c) 对提示和去噪时间步长之间的成对分析进一步揭示了系统性的负向对齐，两个模块族中所有 512 个测量配对均为负余弦相似度。 这些结果表明共享参数面临着显著不同甚至相互冲突的优化需求，从而推动了角色特定的参数化方法。 附录 G 提供了在梯度冲突条件下其优化优势的局部理论分析。",
+   "sents": [
+    {
+     "en": "We investigate this question by analyzing the gradient contributions of context writing and denoising under the same generation objective during SGF training.",
+     "zh": "我们通过分析在相同生成目标下，SGF 训练过程中上下文写作和去噪的梯度贡献来研究这个问题。"
+    },
+    {
+     "en": "As shown in Figure 3 , (a) angular-distance t-SNE reveals distinct role-dependent gradient groups in both Attention and FFN.",
+     "zh": "如图 3 所示，(a) 角距离 t-SNE 揭示了 Attention 和 FFN 中因角色不同而形成的明显梯度分组。"
+    },
+    {
+     "en": "(b) After aggregation within each module family, the mean gradient directions exhibit large angular separation: 104.2 ∘ 104.2^{\\circ} in Attention and 106.3 ∘ 106.3^{\\circ} in FFN, both exceeding 90 ∘ 90^{\\circ} .",
+     "zh": "(b) 在每个模块族内进行聚合后，平均梯度方向表现出较大的角度分离：Attention 中为 104.2 ∘ 104.2^{\\circ}，FFN 中为 106.3 ∘ 106.3^{\\circ}，均超过 90 ∘ 90^{\\circ}。"
+    },
+    {
+     "en": "(c) Pairwise analysis across prompts and denoising timesteps further reveals systematic negative alignment, with negative cosine similarities for all 512 measured pairs in both module families.",
+     "zh": "(c) 对提示和去噪时间步长之间的成对分析进一步揭示了系统性的负向对齐，两个模块族中所有 512 个测量配对均为负余弦相似度。"
+    },
+    {
+     "en": "These results reveal substantially different, even conflicting, optimization demands on shared parameters, motivating role-specific parameterization.",
+     "zh": "这些结果表明共享参数面临着显著不同甚至相互冲突的优化需求，从而推动了角色特定的参数化方法。"
+    },
+    {
+     "en": "Appendix G provides a local theoretical analysis of its optimization advantage under gradient conflict.",
+     "zh": "附录 G 提供了在梯度冲突条件下其优化优势的局部理论分析。"
+    }
+   ]
+  },
+  {
+   "en": "Based on this analysis, we introduce Self Gradient Forcing Plus (SGF+) , which revisits a basic design choice in autoregressive video forcing: sharing parameters between context writing and denoising. SGF+ adopts role-specific parameterization , assigning independent parameters to the two roles while preserving their interaction through the causal attention structure. The context writer encodes generated history into layer-wise KV representations, which the denoiser reads to generate current frames. Both roles are jointly optimized using the original generation objective, with context writing supervised through its contribution to future predictions. This simple architectural change retains SGF’s self-generated rollouts, differentiable replay, and short training horizon, requiring no auxiliary losses, additional video training data, or long-horizon fine-tuning. By intervening in parameter sharing, SGF+ addresses a different design dimension from history construction and context management, making these approaches complementary in mechanism.",
+   "zh": "基于这一分析，我们提出了自我梯度强制增强（Self Gradient Forcing Plus，SGF+），该方法重新审视了自回归视频强制生成中的一个基本设计选择：在上下文生成与去噪之间共享参数。 SGF+ 采用角色特定的参数化方法，为两个角色分配独立的参数，同时通过因果注意力结构保持它们之间的交互。 上下文生成器将生成的历史编码为逐层的 KV 表示，去噪器则读取这些表示以生成当前帧。 两个角色均使用原始生成目标进行联合优化，其中上下文生成通过其对未来预测的贡献受到监督。 这一简单的架构变化保留了 SGF 的自我生成展开、可微重播和短训练时长的特性，且无需辅助损失、额外的视频训练数据或长时长的微调。 通过干预参数共享机制，SGF+ 从历史构建和上下文管理的不同设计维度入手，使这些方法在机制上形成互补。",
+   "sents": [
+    {
+     "en": "Based on this analysis, we introduce Self Gradient Forcing Plus (SGF+) , which revisits a basic design choice in autoregressive video forcing: sharing parameters between context writing and denoising.",
+     "zh": "基于这一分析，我们提出了自我梯度强制增强（Self Gradient Forcing Plus，SGF+），该方法重新审视了自回归视频强制生成中的一个基本设计选择：在上下文生成与去噪之间共享参数。"
+    },
+    {
+     "en": "SGF+ adopts role-specific parameterization , assigning independent parameters to the two roles while preserving their interaction through the causal attention structure.",
+     "zh": "SGF+ 采用角色特定的参数化方法，为两个角色分配独立的参数，同时通过因果注意力结构保持它们之间的交互。"
+    },
+    {
+     "en": "The context writer encodes generated history into layer-wise KV representations, which the denoiser reads to generate current frames.",
+     "zh": "上下文生成器将生成的历史编码为逐层的 KV 表示，去噪器则读取这些表示以生成当前帧。"
+    },
+    {
+     "en": "Both roles are jointly optimized using the original generation objective, with context writing supervised through its contribution to future predictions.",
+     "zh": "两个角色均使用原始生成目标进行联合优化，其中上下文生成通过其对未来预测的贡献受到监督。"
+    },
+    {
+     "en": "This simple architectural change retains SGF’s self-generated rollouts, differentiable replay, and short training horizon, requiring no auxiliary losses, additional video training data, or long-horizon fine-tuning.",
+     "zh": "这一简单的架构变化保留了 SGF 的自我生成展开、可微重播和短训练时长的特性，且无需辅助损失、额外的视频训练数据或长时长的微调。"
+    },
+    {
+     "en": "By intervening in parameter sharing, SGF+ addresses a different design dimension from history construction and context management, making these approaches complementary in mechanism.",
+     "zh": "通过干预参数共享机制，SGF+ 从历史构建和上下文管理的不同设计维度入手，使这些方法在机制上形成互补。"
+    }
+   ]
+  },
+  {
+   "en": "Experiments on VBench over generation horizons of 5s, 60s, and 240s show that SGF+ achieves better visual quality and long-horizon consistency than SF and SGF in both framewise and chunkwise generation. The qualitative comparisons in Figure 1 illustrate these gains over long rollouts. With only 5s training rollouts, SGF+ supports continuous generation for up to 24 hours, without extending the training horizon or applying long-video fine-tuning. We refer to this ability as native long-horizon extrapolation : sustained generation learned within a limited temporal training window. Together, these results highlight role-specific parameterization as an effective design principle for high-quality autoregressive video generation and native long-horizon extrapolation. Our main contributions are as follows:",
+   "zh": "在 VBench 上针对 5 秒、60 秒和 240 秒生成时间范围进行的实验表明，无论是在逐帧生成还是分块生成中，SGF+ 都比 SF 和 SGF 实现了更优的视觉质量和长期一致性。 图 1 中的定性比较展示了这些方法在长时间生成过程中的优势。 仅通过 5 秒的训练生成，SGF+ 即可支持最长达 24 小时的连续生成，而无需延长训练时间范围或进行长视频微调。 我们将这种能力称为“原生长期外推”：即在有限的时域训练窗口内学到的持续生成能力。 综合来看，这些结果凸显了角色特定参数化是高质量自回归视频生成和原生长期外推的有效设计原则。 我们的主要贡献如下：",
+   "sents": [
+    {
+     "en": "Experiments on VBench over generation horizons of 5s, 60s, and 240s show that SGF+ achieves better visual quality and long-horizon consistency than SF and SGF in both framewise and chunkwise generation.",
+     "zh": "在 VBench 上针对 5 秒、60 秒和 240 秒生成时间范围进行的实验表明，无论是在逐帧生成还是分块生成中，SGF+ 都比 SF 和 SGF 实现了更优的视觉质量和长期一致性。"
+    },
+    {
+     "en": "The qualitative comparisons in Figure 1 illustrate these gains over long rollouts.",
+     "zh": "图 1 中的定性比较展示了这些方法在长时间生成过程中的优势。"
+    },
+    {
+     "en": "With only 5s training rollouts, SGF+ supports continuous generation for up to 24 hours, without extending the training horizon or applying long-video fine-tuning.",
+     "zh": "仅通过 5 秒的训练生成，SGF+ 即可支持最长达 24 小时的连续生成，而无需延长训练时间范围或进行长视频微调。"
+    },
+    {
+     "en": "We refer to this ability as native long-horizon extrapolation : sustained generation learned within a limited temporal training window.",
+     "zh": "我们将这种能力称为“原生长期外推”：即在有限的时域训练窗口内学到的持续生成能力。"
+    },
+    {
+     "en": "Together, these results highlight role-specific parameterization as an effective design principle for high-quality autoregressive video generation and native long-horizon extrapolation.",
+     "zh": "综合来看，这些结果凸显了角色特定参数化是高质量自回归视频生成和原生长期外推的有效设计原则。"
+    },
+    {
+     "en": "Our main contributions are as follows:",
+     "zh": "我们的主要贡献如下："
+    }
+   ]
+  },
+  {
+   "en": "We identify distinct, even conflicting, context-writing and denoising gradients under the same objective, revealing an optimization limitation of shared parameters.",
+   "zh": "我们在同一目标下识别出相互独立、甚至冲突的上下文生成与去噪梯度，揭示了共享参数所导致的优化局限性。",
+   "sents": null
+  },
+  {
+   "en": "We introduce Self Gradient Forcing Plus (SGF+), a role-specific parameterization for autoregressive video diffusion that jointly trains context writing and denoising with the original generation objective, without auxiliary losses, additional video training data, or long-horizon fine-tuning.",
+   "zh": "我们提出了一种名为 Self Gradient Forcing Plus (SGF+) 的方法，这是一种针对自回归视频扩散模型的角色特定参数化方案。该方法将上下文生成与去噪训练与原生成目标联合进行，且无需辅助损失函数、额外的视频训练数据或长期微调。",
+   "sents": null
+  },
+  {
+   "en": "Experiments show improved visual quality and long-horizon consistency in framewise and chunkwise generation, with native long-horizon extrapolation to 24-hour continuous videos from 5s training rollouts.",
+   "zh": "实验表明，在逐帧和逐块生成中，视觉质量和长期一致性均得到提升，并且能够基于 5 秒的训练过程，原生地外推至长达 24 小时的连续视频。",
+   "sents": null
+  },
+  {
+   "en": "Autoregressive video diffusion combines iterative denoising with causal temporal prediction [ 29 , 3 ] . Causal video distillation and Self Forcing support efficient streaming inference through historical KV reuse [ 44 , 15 ] , while Rolling Forcing coordinates denoising across a moving temporal window [ 25 ] . Historical context also connects past outputs to future predictions in interactive world models. EchoWM, SolarWM, Zing-0.5, XPACE, and EditWorld adopt or adapt SGF’s differentiable context reconstruction to supervise context writing through future generation losses, with applications spanning visual world simulation, interactive editing, and audio-video generation [ 14 , 4 , 38 , 48 , 24 ] . SGF+ complements these developments through role-specific parameterization, jointly optimizing context writing and denoising with separate parameters under the original generation objective, without auxiliary losses.",
+   "zh": "自回归视频扩散将迭代去噪与因果时间预测相结合 [ 29 , 3 ] 。 因果视频蒸馏和 Self Forcing 通过复用历史 KV 支持高效的流式推理 [ 44 , 15 ] ，而 Rolling Forcing 则在动态时间窗口内协调去噪过程 [ 25 ] 。 在交互式世界模型中，历史上下文还将过去的输出与未来的预测联系起来。 EchoWM、SolarWM、Zing-0.5、XPACE 和 EditWorld 采用或改进了 SGF 的可微上下文重建方法，通过未来生成损失来监督上下文写入，其应用涵盖视觉世界模拟、交互式编辑以及音视频生成 [ 14 , 4 , 38 , 48 , 24 ] 。 SGF+ 通过角色特定的参数化补充了这些进展：在原始生成目标下，使用独立的参数联合优化上下文写入和去噪过程，且无需辅助损失。",
+   "sents": [
+    {
+     "en": "Autoregressive video diffusion combines iterative denoising with causal temporal prediction [ 29 , 3 ] .",
+     "zh": "自回归视频扩散将迭代去噪与因果时间预测相结合 [ 29 , 3 ] 。"
+    },
+    {
+     "en": "Causal video distillation and Self Forcing support efficient streaming inference through historical KV reuse [ 44 , 15 ] , while Rolling Forcing coordinates denoising across a moving temporal window [ 25 ] .",
+     "zh": "因果视频蒸馏和 Self Forcing 通过复用历史 KV 支持高效的流式推理 [ 44 , 15 ] ，而 Rolling Forcing 则在动态时间窗口内协调去噪过程 [ 25 ] 。"
+    },
+    {
+     "en": "Historical context also connects past outputs to future predictions in interactive world models.",
+     "zh": "在交互式世界模型中，历史上下文还将过去的输出与未来的预测联系起来。"
+    },
+    {
+     "en": "EchoWM, SolarWM, Zing-0.5, XPACE, and EditWorld adopt or adapt SGF’s differentiable context reconstruction to supervise context writing through future generation losses, with applications spanning visual world simulation, interactive editing, and audio-video generation [ 14 , 4 , 38 , 48 , 24 ] .",
+     "zh": "EchoWM、SolarWM、Zing-0.5、XPACE 和 EditWorld 采用或改进了 SGF 的可微上下文重建方法，通过未来生成损失来监督上下文写入，其应用涵盖视觉世界模拟、交互式编辑以及音视频生成 [ 14 , 4 , 38 , 48 , 24 ] 。"
+    },
+    {
+     "en": "SGF+ complements these developments through role-specific parameterization, jointly optimizing context writing and denoising with separate parameters under the original generation objective, without auxiliary losses.",
+     "zh": "SGF+ 通过角色特定的参数化补充了这些进展：在原始生成目标下，使用独立的参数联合优化上下文写入和去噪过程，且无需辅助损失。"
+    }
+   ]
+  },
+  {
+   "en": "Forcing methods differ in history construction, supervision, and gradient propagation. Teacher forcing uses clean ground-truth histories, whereas Diffusion Forcing independently samples noise levels across temporal tokens [ 2 ] . SF uses self-generated rollouts to reduce the mismatch between training and inference [ 15 ] , while Resampling Forcing combines self-resampled histories with a frame-level diffusion objective [ 12 ] . Rolling Forcing coordinates denoising across adjacent frames at progressively different noise levels [ 25 ] , and Mask Forcing broadens rollout exploration through dual-noise masking under the existing distillation objective [ 50 ] .",
+   "zh": "强制方法在历史构建、监督和学习梯度传播方面存在差异。 教师强制使用干净的真实历史数据，而扩散强制则在不同时间步的标记上独立采样噪声水平 [ 2 ] 。 SF 利用自生成的展开序列来减少训练与推理之间的不匹配 [ 15 ] ，而重采样强制则将自重采样的历史数据与帧级扩散目标相结合 [ 12 ] 。 滚动强制在不同噪声水平上协调相邻帧的去噪过程 [ 25 ] ，而掩码强制则通过现有蒸馏目标下的双噪声掩码来扩展展开序列的探索范围 [ 50 ] 。",
+   "sents": [
+    {
+     "en": "Forcing methods differ in history construction, supervision, and gradient propagation.",
+     "zh": "强制方法在历史构建、监督和学习梯度传播方面存在差异。"
+    },
+    {
+     "en": "Teacher forcing uses clean ground-truth histories, whereas Diffusion Forcing independently samples noise levels across temporal tokens [ 2 ] .",
+     "zh": "教师强制使用干净的真实历史数据，而扩散强制则在不同时间步的标记上独立采样噪声水平 [ 2 ] 。"
+    },
+    {
+     "en": "SF uses self-generated rollouts to reduce the mismatch between training and inference [ 15 ] , while Resampling Forcing combines self-resampled histories with a frame-level diffusion objective [ 12 ] .",
+     "zh": "SF 利用自生成的展开序列来减少训练与推理之间的不匹配 [ 15 ] ，而重采样强制则将自重采样的历史数据与帧级扩散目标相结合 [ 12 ] 。"
+    },
+    {
+     "en": "Rolling Forcing coordinates denoising across adjacent frames at progressively different noise levels [ 25 ] , and Mask Forcing broadens rollout exploration through dual-noise masking under the existing distillation objective [ 50 ] .",
+     "zh": "滚动强制在不同噪声水平上协调相邻帧的去噪过程 [ 25 ] ，而掩码强制则通过现有蒸馏目标下的双噪声掩码来扩展展开序列的探索范围 [ 50 ] 。"
+    }
+   ]
+  },
+  {
+   "en": "Many subsequent methods build on SF’s self-generated rollout framework to improve initialization or supervision. Causal Forcing uses an autoregressive teacher for ODE initialization before SF-style distribution matching [ 51 ] , while Causal Forcing++ replaces it with causal consistency distillation [ 49 ] . Data-Forcing Distillation introduces data guidance into score-based updates to improve fidelity and diversity [ 5 ] . One-Forcing adds adversarial supervision from real videos [ 10 ] , Reward Forcing reweights DMD updates using motion rewards [ 26 ] , and DuoMatching augments video-level distribution matching with frame-level marginal supervision from an image teacher [ 47 ] . Video-Mirai uses future-aware representation targets [ 46 ] , while Next Forcing introduces auxiliary multi-chunk prediction modules [ 40 ] .",
+   "zh": "许多后续方法都基于 SF 的自生成展开框架，以改进初始化或监督。 Causal Forcing 在采用 SF 风格的分布匹配之前，使用自回归教师模型进行 ODE 初始化 [ 51 ]；而 Causal Forcing++ 则将其替换为因果一致性蒸馏 [ 49 ]。 Data-Forcing Distillation 将数据引导引入基于得分的更新过程，以提高保真度和多样性 [ 5 ]。 One-Forcing 增加了来自真实视频的对抗性监督 [ 10 ]；Reward Forcing 使用运动奖励重新加权 DMD 更新 [ 26 ]；DuoMatching 则将图像教师模型提供的帧级边际监督与视频级分布匹配相结合 [ 47 ]。 Video-Mirai 使用了未来感知的表示目标 [ 46 ]，而 Next Forcing 则引入了辅助的多片段预测模块 [ 40 ]。",
+   "sents": [
+    {
+     "en": "Many subsequent methods build on SF’s self-generated rollout framework to improve initialization or supervision.",
+     "zh": "许多后续方法都基于 SF 的自生成展开框架，以改进初始化或监督。"
+    },
+    {
+     "en": "Causal Forcing uses an autoregressive teacher for ODE initialization before SF-style distribution matching [ 51 ] , while Causal Forcing++ replaces it with causal consistency distillation [ 49 ] .",
+     "zh": "Causal Forcing 在采用 SF 风格的分布匹配之前，使用自回归教师模型进行 ODE 初始化 [ 51 ]；而 Causal Forcing++ 则将其替换为因果一致性蒸馏 [ 49 ]。"
+    },
+    {
+     "en": "Data-Forcing Distillation introduces data guidance into score-based updates to improve fidelity and diversity [ 5 ] .",
+     "zh": "Data-Forcing Distillation 将数据引导引入基于得分的更新过程，以提高保真度和多样性 [ 5 ]。"
+    },
+    {
+     "en": "One-Forcing adds adversarial supervision from real videos [ 10 ] , Reward Forcing reweights DMD updates using motion rewards [ 26 ] , and DuoMatching augments video-level distribution matching with frame-level marginal supervision from an image teacher [ 47 ] .",
+     "zh": "One-Forcing 增加了来自真实视频的对抗性监督 [ 10 ]；Reward Forcing 使用运动奖励重新加权 DMD 更新 [ 26 ]；DuoMatching 则将图像教师模型提供的帧级边际监督与视频级分布匹配相结合 [ 47 ]。"
+    },
+    {
+     "en": "Video-Mirai uses future-aware representation targets [ 46 ] , while Next Forcing introduces auxiliary multi-chunk prediction modules [ 40 ] .",
+     "zh": "Video-Mirai 使用了未来感知的表示目标 [ 46 ]，而 Next Forcing 则引入了辅助的多片段预测模块 [ 40 ]。"
+    }
+   ]
+  },
+  {
+   "en": "SGF extends SF’s training framework by restoring gradients through historical KV construction, allowing future generation losses to supervise context writing [ 52 ] . SGF+ revisits the underlying parameter-sharing design, jointly optimizing context writing and denoising with separate parameters under the original generation objective. This formulation retains short rollouts without auxiliary losses or additional video training data, and complements advances in history construction and supervision design.",
+   "zh": "SGF 通过历史 KV 构建恢复梯度，从而扩展了 SF 的训练框架，使未来的生成损失能够监督上下文写作 [ 52 ]。 SGF+ 重新审视了底层的参数共享设计，在原始生成目标下，使用独立的参数联合优化上下文写作和去噪。 这种形式无需辅助损失或额外的视频训练数据即可保留短次展开，并补充了历史构建和监督设计的进步。",
+   "sents": [
+    {
+     "en": "SGF extends SF’s training framework by restoring gradients through historical KV construction, allowing future generation losses to supervise context writing [ 52 ] .",
+     "zh": "SGF 通过历史 KV 构建恢复梯度，从而扩展了 SF 的训练框架，使未来的生成损失能够监督上下文写作 [ 52 ]。"
+    },
+    {
+     "en": "SGF+ revisits the underlying parameter-sharing design, jointly optimizing context writing and denoising with separate parameters under the original generation objective.",
+     "zh": "SGF+ 重新审视了底层的参数共享设计，在原始生成目标下，使用独立的参数联合优化上下文写作和去噪。"
+    },
+    {
+     "en": "This formulation retains short rollouts without auxiliary losses or additional video training data, and complements advances in history construction and supervision design.",
+     "zh": "这种形式无需辅助损失或额外的视频训练数据即可保留短次展开，并补充了历史构建和监督设计的进步。"
+    }
+   ]
+  },
+  {
+   "en": "Long-video methods improve temporal coverage, context access, and inference-time state management [ 13 , 31 ] . LongLive uses a short-video teacher to supervise successive segments of longer self-generated videos, combining this streaming long tuning with a bounded attention window, a frame sink, and KV recaching for prompt transitions [ 42 ] . Self-Forcing++ similarly supervises sampled segments of extended student rollouts, allowing the student’s training horizon to exceed the teacher’s supervision window [ 6 ] . Within a limited context budget, rolling caches support streaming generation [ 15 ] , attention sinks retain persistent anchors [ 25 , 42 ] , and history routing retrieves relevant earlier frames [ 12 ] . Training-free methods further improve extrapolation: FreqForcing mitigates spectral drift through self-anchoring [ 22 ] , while MemRoPE combines evolving memory tokens with online RoPE indexing [ 20 ] .",
+   "zh": "长视频方法提升了时间覆盖范围、上下文访问能力和推理时的状态管理能力 [ 13 , 31 ] 。 LongLive 使用一个短视频教师模型来监督更长自生成视频的连续片段，并将这种流式长序列微调与有界注意力窗口、帧存储器和用于提示转换的 KV 缓存重新加载相结合 [ 42 ] 。 Self-Forcing++ 同样通过监督扩展后的学生模型采样片段来进行训练，使得学生模型的训练范围可以超越教师模型的监督窗口 [ 6 ] 。 在有限的上下文预算内，滚动缓存支持流式生成 [ 15 ] ，注意力存储器保留持久锚点 [ 25 , 42 ] ，而历史路由则检索相关的早期帧 [ 12 ] 。 无需训练的方法进一步提升了外推能力：FreqForcing 通过自锚定缓解光谱漂移 [ 22 ] ，而 MemRoPE 则将动态变化的记忆令牌与在线 RoPE 索引相结合 [ 20 ] 。",
+   "sents": [
+    {
+     "en": "Long-video methods improve temporal coverage, context access, and inference-time state management [ 13 , 31 ] .",
+     "zh": "长视频方法提升了时间覆盖范围、上下文访问能力和推理时的状态管理能力 [ 13 , 31 ] 。"
+    },
+    {
+     "en": "LongLive uses a short-video teacher to supervise successive segments of longer self-generated videos, combining this streaming long tuning with a bounded attention window, a frame sink, and KV recaching for prompt transitions [ 42 ] .",
+     "zh": "LongLive 使用一个短视频教师模型来监督更长自生成视频的连续片段，并将这种流式长序列微调与有界注意力窗口、帧存储器和用于提示转换的 KV 缓存重新加载相结合 [ 42 ] 。"
+    },
+    {
+     "en": "Self-Forcing++ similarly supervises sampled segments of extended student rollouts, allowing the student’s training horizon to exceed the teacher’s supervision window [ 6 ] .",
+     "zh": "Self-Forcing++ 同样通过监督扩展后的学生模型采样片段来进行训练，使得学生模型的训练范围可以超越教师模型的监督窗口 [ 6 ] 。"
+    },
+    {
+     "en": "Within a limited context budget, rolling caches support streaming generation [ 15 ] , attention sinks retain persistent anchors [ 25 , 42 ] , and history routing retrieves relevant earlier frames [ 12 ] .",
+     "zh": "在有限的上下文预算内，滚动缓存支持流式生成 [ 15 ] ，注意力存储器保留持久锚点 [ 25 , 42 ] ，而历史路由则检索相关的早期帧 [ 12 ] 。"
+    },
+    {
+     "en": "Training-free methods further improve extrapolation: FreqForcing mitigates spectral drift through self-anchoring [ 22 ] , while MemRoPE combines evolving memory tokens with online RoPE indexing [ 20 ] .",
+     "zh": "无需训练的方法进一步提升了外推能力：FreqForcing 通过自锚定缓解光谱漂移 [ 22 ] ，而 MemRoPE 则将动态变化的记忆令牌与在线 RoPE 索引相结合 [ 20 ] 。"
+    }
+   ]
+  },
+  {
+   "en": "SGF+ addresses how context writing and denoising are jointly learned within a limited temporal training window. Through role-specific parameterization, it achieves native long-horizon extrapolation under the original generation objective, without extending the training horizon or applying long-video fine-tuning. This intervention is complementary in mechanism to context management, spectral correction, positional adaptation, and longer-horizon training.",
+   "zh": "SGF+ 解决了如何在有限的时序训练窗口内联合学习上下文生成与降噪的问题。 通过角色特定的参数化方法，它在原始生成目标下实现了原生的长时序外推能力，而无需扩展训练时序或进行长视频微调。 这种干预在机制上与上下文管理、谱校正、位置自适应以及更长的时序训练相互补充。",
+   "sents": [
+    {
+     "en": "SGF+ addresses how context writing and denoising are jointly learned within a limited temporal training window.",
+     "zh": "SGF+ 解决了如何在有限的时序训练窗口内联合学习上下文生成与降噪的问题。"
+    },
+    {
+     "en": "Through role-specific parameterization, it achieves native long-horizon extrapolation under the original generation objective, without extending the training horizon or applying long-video fine-tuning.",
+     "zh": "通过角色特定的参数化方法，它在原始生成目标下实现了原生的长时序外推能力，而无需扩展训练时序或进行长视频微调。"
+    },
+    {
+     "en": "This intervention is complementary in mechanism to context management, spectral correction, positional adaptation, and longer-horizon training.",
+     "zh": "这种干预在机制上与上下文管理、谱校正、位置自适应以及更长的时序训练相互补充。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 4 presents the training pipelines of SGF and SGF+. Section 3.1 reviews SGF’s two-pass training procedure, which makes context writing differentiable. Section 3.2 analyzes the gradient conflict caused by sharing parameters between context writing and denoising. Section 3.3 then introduces SGF+, which separates the two roles with role-specific parameters to achieve higher visual quality and stronger long-horizon consistency.",
+   "zh": "图 4 展示了 SGF 和 SGF+ 的训练流程。 第 3.1 节回顾了 SGF 的双遍训练过程，该过程使上下文生成具有可微性。 第 3.2 节分析了因上下文生成与去噪共享参数而导致的梯度冲突。 接着，第 3.3 节介绍了 SGF+，它通过为不同角色分配专用参数来分离这两种功能，从而实现了更高的视觉质量和更强的长期一致性。",
+   "sents": [
+    {
+     "en": "Figure 4 presents the training pipelines of SGF and SGF+.",
+     "zh": "图 4 展示了 SGF 和 SGF+ 的训练流程。"
+    },
+    {
+     "en": "Section 3.1 reviews SGF’s two-pass training procedure, which makes context writing differentiable.",
+     "zh": "第 3.1 节回顾了 SGF 的双遍训练过程，该过程使上下文生成具有可微性。"
+    },
+    {
+     "en": "Section 3.2 analyzes the gradient conflict caused by sharing parameters between context writing and denoising.",
+     "zh": "第 3.2 节分析了因上下文生成与去噪共享参数而导致的梯度冲突。"
+    },
+    {
+     "en": "Section 3.3 then introduces SGF+, which separates the two roles with role-specific parameters to achieve higher visual quality and stronger long-horizon consistency.",
+     "zh": "接着，第 3.3 节介绍了 SGF+，它通过为不同角色分配专用参数来分离这两种功能，从而实现了更高的视觉质量和更强的长期一致性。"
+    }
+   ]
+  },
+  {
+   "en": "An autoregressive video diffusion model generates latent blocks sequentially. For block i i , a denoiser reads the historical key-value (KV) cache and maps a noisy latent z i t z_{i}^{t} to a clean estimate x ~ i \\tilde{x}_{i} . A context-writing call then encodes this estimate into the memory used by later blocks:",
+   "zh": "一种自回归视频扩散模型按顺序生成潜在块。 对于第 i 个块，去噪器会读取历史键值（KV）缓存，并将带有噪声的潜在变量 z_{i}^{t} 映射为干净的估计值 \\tilde{x}_{i}。 随后，一个上下文写入调用会将该估计值编码到后续块所使用的内存中：",
+   "sents": [
+    {
+     "en": "An autoregressive video diffusion model generates latent blocks sequentially.",
+     "zh": "一种自回归视频扩散模型按顺序生成潜在块。"
+    },
+    {
+     "en": "For block i i , a denoiser reads the historical key-value (KV) cache and maps a noisy latent z i t z_{i}^{t} to a clean estimate x ~ i \\tilde{x}_{i} .",
+     "zh": "对于第 i 个块，去噪器会读取历史键值（KV）缓存，并将带有噪声的潜在变量 z_{i}^{t} 映射为干净的估计值 \\tilde{x}_{i}。"
+    },
+    {
+     "en": "A context-writing call then encodes this estimate into the memory used by later blocks:",
+     "zh": "随后，一个上下文写入调用会将该估计值编码到后续块所使用的内存中："
+    }
+   ]
+  },
+  {
+   "en": "The model therefore uses the same DiT parameters θ \\theta in two roles: denoising the current block and writing its clean representation for future predictions.",
+   "zh": "因此，该模型在两种角色中使用了相同的 DiT 参数 θ \\theta：对当前块进行去噪，并为其生成干净的表示以用于未来预测。",
+   "sents": null
+  },
+  {
+   "en": "SGF trains this recurrent process with two passes. Pass 1: no-gradient self-rollout. The model performs the ordinary serial autoregressive rollout without retaining an autograd graph. It samples a denoising exit t ⋆ t^{\\star} and records the noisy exit latent z i t ⋆ z_{i}^{t^{\\star}} and its clean estimate x ~ i \\tilde{x}_{i} at each autoregressive step. The clean estimates are processed at t ctx = 0 t_{\\mathrm{ctx}}=0 to update the serial KV cache used by subsequent blocks. This produces the collections Z ⋆ = { z i t ⋆ } i Z^{\\star}=\\{z_{i}^{t^{\\star}}\\}_{i} and X = { x ~ i } i X=\\{\\tilde{x}_{i}\\}_{i} , both detached from the sampling trajectory.",
+   "zh": "SGF 通过两次遍历来训练这一循环过程。 第一次遍历：无梯度自展开。 模型执行普通的串行自回归展开，但不保留自动求导图。 它在每个自回归步骤中采样一个去噪退出时刻 t ⋆ t^{\\star}，并记录带噪声的退出潜在变量 z i t ⋆ z_{i}^{t^{\\star}} 及其干净的估计值 x ~ i \\tilde{x}_{i}。 这些干净的估计值在 t ctx = 0 t_{\\mathrm{ctx}}=0 时进行处理，以更新后续块使用的串行 KV 缓存。 这样便得到了集合 Z ⋆ = { z i t ⋆ } i Z^{\\star}=\\{z_{i}^{t^{\\star}}\\}_{i} 和 X = { x ~ i } i X=\\{\\tilde{x}_{i}\\}_{i}，两者均与采样轨迹分离。",
+   "sents": [
+    {
+     "en": "SGF trains this recurrent process with two passes.",
+     "zh": "SGF 通过两次遍历来训练这一循环过程。"
+    },
+    {
+     "en": "Pass 1: no-gradient self-rollout.",
+     "zh": "第一次遍历：无梯度自展开。"
+    },
+    {
+     "en": "The model performs the ordinary serial autoregressive rollout without retaining an autograd graph.",
+     "zh": "模型执行普通的串行自回归展开，但不保留自动求导图。"
+    },
+    {
+     "en": "It samples a denoising exit t ⋆ t^{\\star} and records the noisy exit latent z i t ⋆ z_{i}^{t^{\\star}} and its clean estimate x ~ i \\tilde{x}_{i} at each autoregressive step.",
+     "zh": "它在每个自回归步骤中采样一个去噪退出时刻 t ⋆ t^{\\star}，并记录带噪声的退出潜在变量 z i t ⋆ z_{i}^{t^{\\star}} 及其干净的估计值 x ~ i \\tilde{x}_{i}。"
+    },
+    {
+     "en": "The clean estimates are processed at t ctx = 0 t_{\\mathrm{ctx}}=0 to update the serial KV cache used by subsequent blocks.",
+     "zh": "这些干净的估计值在 t ctx = 0 t_{\\mathrm{ctx}}=0 时进行处理，以更新后续块使用的串行 KV 缓存。"
+    },
+    {
+     "en": "This produces the collections Z ⋆ = { z i t ⋆ } i Z^{\\star}=\\{z_{i}^{t^{\\star}}\\}_{i} and X = { x ~ i } i X=\\{\\tilde{x}_{i}\\}_{i} , both detached from the sampling trajectory.",
+     "zh": "这样便得到了集合 Z ⋆ = { z i t ⋆ } i Z^{\\star}=\\{z_{i}^{t^{\\star}}\\}_{i} 和 X = { x ~ i } i X=\\{\\tilde{x}_{i}\\}_{i}，两者均与采样轨迹分离。"
+    }
+   ]
+  },
+  {
+   "en": "Pass 2: parallel context-gradient reconstruction. SGF reconstructs the sampled-exit computation in a single parallel forward pass under a causal reconstruction mask ℳ rec \\mathcal{M}_{\\mathrm{rec}} . The latents in X X remain stop-gradient inputs, but the context hidden states and their KV projections are recomputed with gradient tracking:",
+   "zh": "第 2 步：并行上下文梯度重建。 SGF 在因果重建掩码 ℳ rec \\mathcal{M}_{\\mathrm{rec}} 下，通过单次并行前向传播重建采样出口的计算。 X 中的潜在变量仍为停止梯度输入，但上下文隐藏状态及其 KV 投影将通过梯度追踪重新计算：",
+   "sents": [
+    {
+     "en": "Pass 2: parallel context-gradient reconstruction.",
+     "zh": "第 2 步：并行上下文梯度重建。"
+    },
+    {
+     "en": "SGF reconstructs the sampled-exit computation in a single parallel forward pass under a causal reconstruction mask ℳ rec \\mathcal{M}_{\\mathrm{rec}} .",
+     "zh": "SGF 在因果重建掩码 ℳ rec \\mathcal{M}_{\\mathrm{rec}} 下，通过单次并行前向传播重建采样出口的计算。"
+    },
+    {
+     "en": "The latents in X X remain stop-gradient inputs, but the context hidden states and their KV projections are recomputed with gradient tracking:",
+     "zh": "X 中的潜在变量仍为停止梯度输入，但上下文隐藏状态及其 KV 投影将通过梯度追踪重新计算："
+    }
+   ]
+  },
+  {
+   "en": "Consequently, the future-generation loss trains both how noisy target tokens read the history and how clean context tokens write it. The sampled latents and cache trajectory stay detached. Only the Pass-2 reconstruction is differentiable. This boundary restores the context-writing path without backpropagating through the full autoregressive rollout.",
+   "zh": "因此，下一代损失函数同时训练了带噪声的目标标记如何读取历史以及干净的上下文标记如何写入历史。 采样的潜在变量和缓存轨迹保持分离。 只有 Pass-2 的重建过程是可微分的。 这一边界恢复了上下文写入路径，而无需通过完整的自回归展开进行反向传播。",
+   "sents": [
+    {
+     "en": "Consequently, the future-generation loss trains both how noisy target tokens read the history and how clean context tokens write it.",
+     "zh": "因此，下一代损失函数同时训练了带噪声的目标标记如何读取历史以及干净的上下文标记如何写入历史。"
+    },
+    {
+     "en": "The sampled latents and cache trajectory stay detached.",
+     "zh": "采样的潜在变量和缓存轨迹保持分离。"
+    },
+    {
+     "en": "Only the Pass-2 reconstruction is differentiable.",
+     "zh": "只有 Pass-2 的重建过程是可微分的。"
+    },
+    {
+     "en": "This boundary restores the context-writing path without backpropagating through the full autoregressive rollout.",
+     "zh": "这一边界恢复了上下文写入路径，而无需通过完整的自回归展开进行反向传播。"
+    }
+   ]
+  },
+  {
+   "en": "SGF restores context-writing supervision, but context writing and denoising still update the same parameters. We isolate their gradient contributions within the same Pass-2 computation. For a shared linear weight W W , let H H denote its input activations and Δ = ∂ ℒ / ∂ Y \\Delta=\\partial\\mathcal{L}/\\partial Y the corresponding output gradients. Partitioning the tokens by role gives",
+   "zh": "SGF恢复了上下文写入的监督机制，但上下文写入和去噪仍然更新相同的参数。 我们在同一Pass-2计算中隔离了它们的梯度贡献。 对于共享的线性权重W W，令H H表示其输入激活值，Δ = ∂ ℒ / ∂ Y \\Delta=\\partial\\mathcal{L}/\\partial Y为相应的输出梯度。 按角色对标记进行划分可得",
+   "sents": [
+    {
+     "en": "SGF restores context-writing supervision, but context writing and denoising still update the same parameters.",
+     "zh": "SGF恢复了上下文写入的监督机制，但上下文写入和去噪仍然更新相同的参数。"
+    },
+    {
+     "en": "We isolate their gradient contributions within the same Pass-2 computation.",
+     "zh": "我们在同一Pass-2计算中隔离了它们的梯度贡献。"
+    },
+    {
+     "en": "For a shared linear weight W W , let H H denote its input activations and Δ = ∂ ℒ / ∂ Y \\Delta=\\partial\\mathcal{L}/\\partial Y the corresponding output gradients.",
+     "zh": "对于共享的线性权重W W，令H H表示其输入激活值，Δ = ∂ ℒ / ∂ Y \\Delta=\\partial\\mathcal{L}/\\partial Y为相应的输出梯度。"
+    },
+    {
+     "en": "Partitioning the tokens by role gives",
+     "zh": "按角色对标记进行划分可得"
+    }
+   ]
+  },
+  {
+   "en": "where g C g_{\\mathrm{C}} and g D g_{\\mathrm{D}} are the contributions from context-writing and denoising tokens, respectively. Both contributions arise from the same objective rather than separate losses. We measure their directional alignment using cosine similarity:",
+   "zh": "其中 g C g_{\\mathrm{C}} 和 g D g_{\\mathrm{D}} 分别来自上下文生成和去噪标记的贡献。 这两项贡献均源于同一目标函数，而非独立的损失函数。 我们使用余弦相似度来衡量它们的方向一致性：",
+   "sents": [
+    {
+     "en": "where g C g_{\\mathrm{C}} and g D g_{\\mathrm{D}} are the contributions from context-writing and denoising tokens, respectively.",
+     "zh": "其中 g C g_{\\mathrm{C}} 和 g D g_{\\mathrm{D}} 分别来自上下文生成和去噪标记的贡献。"
+    },
+    {
+     "en": "Both contributions arise from the same objective rather than separate losses.",
+     "zh": "这两项贡献均源于同一目标函数，而非独立的损失函数。"
+    },
+    {
+     "en": "We measure their directional alignment using cosine similarity:",
+     "zh": "我们使用余弦相似度来衡量它们的方向一致性："
+    }
+   ]
+  },
+  {
+   "en": "Large angles indicate substantial directional disagreement between the two gradient contributions. A pair is conflicting when s < 0 s<0 , equivalently when the angle between the gradients exceeds 90 ∘ 90^{\\circ} .",
+   "zh": "较大的夹角表明两个梯度分量之间存在显著的方向性分歧。 当 s < 0 时，一对梯度是冲突的；这等价于梯度之间的夹角超过 90°。",
+   "sents": [
+    {
+     "en": "Large angles indicate substantial directional disagreement between the two gradient contributions.",
+     "zh": "较大的夹角表明两个梯度分量之间存在显著的方向性分歧。"
+    },
+    {
+     "en": "A pair is conflicting when s < 0 s<0 , equivalently when the angle between the gradients exceeds 90 ∘ 90^{\\circ} .",
+     "zh": "当 s < 0 时，一对梯度是冲突的；这等价于梯度之间的夹角超过 90°。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 3 visualizes the gradient relationships in SGF. (a) Gradient distributions. Angular-distance t-SNE shows clearly separated distributions of context-writing and denoising gradients in both Attention and FFN. (b) Mean gradient directions. The mean gradient directions of the two roles exhibit large angular separation, even exceeding 90 ∘ 90^{\\circ} in both module families, indicating overall negative alignment. (c) Gradient conflict across timesteps. All 512 paired cosine similarities are negative in both module families, indicating persistent conflict across the measured prompts and denoising timesteps. Appendix E provides the complete layer-wise gradient distributions.",
+   "zh": "图3展示了SGF中的梯度关系。 (a) 梯度分布。 角距离t-SNE清晰地显示了Attention和FFN两种模块中上下文生成与去噪梯度的分离分布。 (b) 平均梯度方向。 这两种角色的平均梯度方向呈现出较大的角度分离，在两种模块家族中甚至超过了90°（90^{\\circ}），表明整体呈负向对齐。 (c) 跨时间步的梯度冲突。 在所有512对余弦相似度中，两种模块家族的数值均为负值，表明在整个测量提示和去噪时间步范围内存在持续冲突。 附录E提供了完整的逐层梯度分布。",
+   "sents": [
+    {
+     "en": "Figure 3 visualizes the gradient relationships in SGF.",
+     "zh": "图3展示了SGF中的梯度关系。"
+    },
+    {
+     "en": "(a) Gradient distributions.",
+     "zh": "(a) 梯度分布。"
+    },
+    {
+     "en": "Angular-distance t-SNE shows clearly separated distributions of context-writing and denoising gradients in both Attention and FFN.",
+     "zh": "角距离t-SNE清晰地显示了Attention和FFN两种模块中上下文生成与去噪梯度的分离分布。"
+    },
+    {
+     "en": "(b) Mean gradient directions.",
+     "zh": "(b) 平均梯度方向。"
+    },
+    {
+     "en": "The mean gradient directions of the two roles exhibit large angular separation, even exceeding 90 ∘ 90^{\\circ} in both module families, indicating overall negative alignment.",
+     "zh": "这两种角色的平均梯度方向呈现出较大的角度分离，在两种模块家族中甚至超过了90°（90^{\\circ}），表明整体呈负向对齐。"
+    },
+    {
+     "en": "(c) Gradient conflict across timesteps.",
+     "zh": "(c) 跨时间步的梯度冲突。"
+    },
+    {
+     "en": "All 512 paired cosine similarities are negative in both module families, indicating persistent conflict across the measured prompts and denoising timesteps.",
+     "zh": "在所有512对余弦相似度中，两种模块家族的数值均为负值，表明在整个测量提示和去噪时间步范围内存在持续冲突。"
+    },
+    {
+     "en": "Appendix E provides the complete layer-wise gradient distributions.",
+     "zh": "附录E提供了完整的逐层梯度分布。"
+    }
+   ]
+  },
+  {
+   "en": "This directional relationship directly affects the gradient received by the shared parameters. Since g W = g C + g D g_{W}=g_{\\mathrm{C}}+g_{\\mathrm{D}} , conflicting gradient contributions partially cancel on shared parameters. This motivates assigning independent parameters to context writing and denoising, separating their updates while preserving their forward interaction. Appendix G explains the advantage of role separation under gradient conflict from a local optimization perspective.",
+   "zh": "这种方向性关系直接影响共享参数所接收的梯度。 由于 g W = g C + g D，即 g_{W}=g_{\\mathrm{C}}+g_{\\mathrm{D}}，冲突的梯度贡献在共享参数上会部分抵消。 这促使我们将上下文生成和去噪分配给独立的参数，从而在保持其前向交互的同时分离它们的更新过程。 附录 G 从局部优化的角度解释了角色分离在梯度冲突下的优势。",
+   "sents": [
+    {
+     "en": "This directional relationship directly affects the gradient received by the shared parameters.",
+     "zh": "这种方向性关系直接影响共享参数所接收的梯度。"
+    },
+    {
+     "en": "Since g W = g C + g D g_{W}=g_{\\mathrm{C}}+g_{\\mathrm{D}} , conflicting gradient contributions partially cancel on shared parameters.",
+     "zh": "由于 g W = g C + g D，即 g_{W}=g_{\\mathrm{C}}+g_{\\mathrm{D}}，冲突的梯度贡献在共享参数上会部分抵消。"
+    },
+    {
+     "en": "This motivates assigning independent parameters to context writing and denoising, separating their updates while preserving their forward interaction.",
+     "zh": "这促使我们将上下文生成和去噪分配给独立的参数，从而在保持其前向交互的同时分离它们的更新过程。"
+    },
+    {
+     "en": "Appendix G explains the advantage of role separation under gradient conflict from a local optimization perspective.",
+     "zh": "附录 G 从局部优化的角度解释了角色分离在梯度冲突下的优势。"
+    }
+   ]
+  },
+  {
+   "en": "Self Gradient Forcing Plus assigns independent parameters to context writing and denoising, forming a context writer 𝒞 θ c \\mathcal{C}_{\\theta_{c}} and a denoiser 𝒟 θ d \\mathcal{D}_{\\theta_{d}} . Both are initialized from the same autoregressive diffusion model. Pass 1 retains the no-gradient rollout in Figure 4 : 𝒟 θ d \\mathcal{D}_{\\theta_{d}} generates each block, and 𝒞 θ c \\mathcal{C}_{\\theta_{c}} writes its clean estimate into the cache. Pass 2 becomes",
+   "zh": "Self Gradient Forcing Plus 为上下文生成和去噪分配了独立的参数，从而形成一个上下文生成器 𝒞 θ c \\mathcal{C}_{\\theta_{c}} 和一个去噪器 𝒟 θ d \\mathcal{D}_{\\theta_{d}}。 两者均初始自同一个自回归扩散模型。 Pass 1 保留了图 4 中的无梯度展开：𝒟 θ d \\mathcal{D}_{\\theta_{d}} 生成每个块，而 𝒞 θ c \\mathcal{C}_{\\theta_{c}} 将其干净的估计值写入缓存。Pass 2 则变为",
+   "sents": [
+    {
+     "en": "Self Gradient Forcing Plus assigns independent parameters to context writing and denoising, forming a context writer 𝒞 θ c \\mathcal{C}_{\\theta_{c}} and a denoiser 𝒟 θ d \\mathcal{D}_{\\theta_{d}} .",
+     "zh": "Self Gradient Forcing Plus 为上下文生成和去噪分配了独立的参数，从而形成一个上下文生成器 𝒞 θ c \\mathcal{C}_{\\theta_{c}} 和一个去噪器 𝒟 θ d \\mathcal{D}_{\\theta_{d}}。"
+    },
+    {
+     "en": "Both are initialized from the same autoregressive diffusion model.",
+     "zh": "两者均初始自同一个自回归扩散模型。"
+    },
+    {
+     "en": "Pass 1 retains the no-gradient rollout in Figure 4 : 𝒟 θ d \\mathcal{D}_{\\theta_{d}} generates each block, and 𝒞 θ c \\mathcal{C}_{\\theta_{c}} writes its clean estimate into the cache. Pass 2 becomes",
+     "zh": "Pass 1 保留了图 4 中的无梯度展开：𝒟 θ d \\mathcal{D}_{\\theta_{d}} 生成每个块，而 𝒞 θ c \\mathcal{C}_{\\theta_{c}} 将其干净的估计值写入缓存。Pass 2 则变为"
+    }
+   ]
+  },
+  {
+   "en": "The future-generation objective reaches θ c \\theta_{c} through the differentiable KV state M θ c M_{\\theta_{c}} and θ d \\theta_{d} through target denoising. The context writer and denoiser remain forward-coupled and jointly trained, while their updates no longer accumulate on the same weights. SGF+ reroutes SGF’s existing gradient paths without an auxiliary context loss or gradient projection.",
+   "zh": "下一代目标通过可微分的 KV 状态 M_{\\theta_{c}} 和通过目标去噪的 \\theta_{d} 达到 \\theta_{c}。 上下文生成器和去噪器保持前向耦合并联合训练，但它们的更新不再累积在相同的权重上。 SGF+ 在不引入辅助上下文损失或梯度投影的情况下，重新引导了 SGF 的现有梯度路径。",
+   "sents": [
+    {
+     "en": "The future-generation objective reaches θ c \\theta_{c} through the differentiable KV state M θ c M_{\\theta_{c}} and θ d \\theta_{d} through target denoising.",
+     "zh": "下一代目标通过可微分的 KV 状态 M_{\\theta_{c}} 和通过目标去噪的 \\theta_{d} 达到 \\theta_{c}。"
+    },
+    {
+     "en": "The context writer and denoiser remain forward-coupled and jointly trained, while their updates no longer accumulate on the same weights.",
+     "zh": "上下文生成器和去噪器保持前向耦合并联合训练，但它们的更新不再累积在相同的权重上。"
+    },
+    {
+     "en": "SGF+ reroutes SGF’s existing gradient paths without an auxiliary context loss or gradient projection.",
+     "zh": "SGF+ 在不引入辅助上下文损失或梯度投影的情况下，重新引导了 SGF 的现有梯度路径。"
+    }
+   ]
+  },
+  {
+   "en": "We adopt parameter separation as the simplest and most direct way to prevent conflicting role updates. Beyond parameter separation, other approaches such as model merging [ 39 , 18 , 41 , 45 ] offer insights into coordinating the optimization of different roles. We leave this for future work.",
+   "zh": "我们采用参数分离作为防止角色更新冲突最简单、最直接的方法。 除了参数分离之外，其他方法（例如模型合并 [ 39 , 18 , 41 , 45 ]）也为协调不同角色的优化提供了思路。 我们将此留待未来的工作。",
+   "sents": [
+    {
+     "en": "We adopt parameter separation as the simplest and most direct way to prevent conflicting role updates.",
+     "zh": "我们采用参数分离作为防止角色更新冲突最简单、最直接的方法。"
+    },
+    {
+     "en": "Beyond parameter separation, other approaches such as model merging [ 39 , 18 , 41 , 45 ] offer insights into coordinating the optimization of different roles.",
+     "zh": "除了参数分离之外，其他方法（例如模型合并 [ 39 , 18 , 41 , 45 ]）也为协调不同角色的优化提供了思路。"
+    },
+    {
+     "en": "We leave this for future work.",
+     "zh": "我们将此留待未来的工作。"
+    }
+   ]
+  },
+  {
+   "en": "We use Teacher Forcing (TF) initialization with weights released by Causal Forcing [ 51 ] and train on 5s video windows using filtered and expanded prompts from VidProM [ 37 ] . Following SGF [ 52 ] , we compare SF, SGF, and SGF+ in framewise and chunkwise generation at 5s, 60s, and 240s. The 60s and 240s evaluations therefore test native extrapolation beyond the training horizon. All models use a causal video diffusion student based on Wan2.1-T2V-1.3B [ 35 ] , a frozen Wan2.1-T2V-14B teacher, and a separately trained fake-score network initialized from Wan2.1-T2V-1.3B. SGF+ can implement role-specific parameter separation using either two separate LoRA adapters or two full parameter sets. In this work, we use the latter.",
+   "zh": "我们采用教师强制（TF）初始化方法，其中权重由因果强制 [ 51 ] 提供，并使用 VidProM [ 37 ] 提供的经过过滤和扩展的提示，在 5 秒的视频窗口上进行训练。 遵循 SGF [ 52 ] 的方法，我们在 5 秒、60 秒和 240 秒的生成任务中，对 SF、SGF 和 SGF+ 进行了逐帧和分块生成的比较。 因此，60 秒和 240 秒的评估测试了模型在训练时间范围之外进行原生外推的能力。 所有模型均使用基于 Wan2.1-T2V-1.3B [ 35 ] 的因果视频扩散学生模型、一个冻结的 Wan2.1-T2V-14B 教师模型，以及一个从 Wan2.1-T2V-1.3B 初始化的独立训练的虚假分数网络。 SGF+ 可以通过使用两个独立的 LoRA 适配器或两个完整的参数集来实现特定角色的参数分离。 在本研究中，我们采用了后一种方法。",
+   "sents": [
+    {
+     "en": "We use Teacher Forcing (TF) initialization with weights released by Causal Forcing [ 51 ] and train on 5s video windows using filtered and expanded prompts from VidProM [ 37 ] .",
+     "zh": "我们采用教师强制（TF）初始化方法，其中权重由因果强制 [ 51 ] 提供，并使用 VidProM [ 37 ] 提供的经过过滤和扩展的提示，在 5 秒的视频窗口上进行训练。"
+    },
+    {
+     "en": "Following SGF [ 52 ] , we compare SF, SGF, and SGF+ in framewise and chunkwise generation at 5s, 60s, and 240s.",
+     "zh": "遵循 SGF [ 52 ] 的方法，我们在 5 秒、60 秒和 240 秒的生成任务中，对 SF、SGF 和 SGF+ 进行了逐帧和分块生成的比较。"
+    },
+    {
+     "en": "The 60s and 240s evaluations therefore test native extrapolation beyond the training horizon.",
+     "zh": "因此，60 秒和 240 秒的评估测试了模型在训练时间范围之外进行原生外推的能力。"
+    },
+    {
+     "en": "All models use a causal video diffusion student based on Wan2.1-T2V-1.3B [ 35 ] , a frozen Wan2.1-T2V-14B teacher, and a separately trained fake-score network initialized from Wan2.1-T2V-1.3B.",
+     "zh": "所有模型均使用基于 Wan2.1-T2V-1.3B [ 35 ] 的因果视频扩散学生模型、一个冻结的 Wan2.1-T2V-14B 教师模型，以及一个从 Wan2.1-T2V-1.3B 初始化的独立训练的虚假分数网络。"
+    },
+    {
+     "en": "SGF+ can implement role-specific parameter separation using either two separate LoRA adapters or two full parameter sets.",
+     "zh": "SGF+ 可以通过使用两个独立的 LoRA 适配器或两个完整的参数集来实现特定角色的参数分离。"
+    },
+    {
+     "en": "In this work, we use the latter.",
+     "zh": "在本研究中，我们采用了后一种方法。"
+    }
+   ]
+  },
+  {
+   "en": "The 5s evaluation follows standard VBench [ 16 ] , with full results in Appendix A . The main comparison evaluates 60s and 240s generation using VBench-Long prompts [ 17 ] and 128 MovieGen prompts [ 28 ] , respectively. For both horizons, we report Subject Consistency, Background Consistency, Temporal Flickering, Motion Smoothness, Dynamic Degree, Aesthetic Quality, and Imaging Quality. Scores are multiplied by 100, and higher is better. Further implementation details are provided in Appendix B .",
+   "zh": "5s 评估遵循标准的 VBench [ 16 ]，完整结果见附录 A。 主要对比分别使用 VBench-Long 提示词 [ 17 ] 和 128 个 MovieGen 提示词 [ 28 ]，对 60s 和 240s 的生成进行评估。 对于两种时间跨度，我们报告了主体一致性、背景一致性、时间闪烁、运动平滑度、动态程度、美学质量和成像质量。 分数乘以 100，数值越高越好。 更多实现细节见附录 B。",
+   "sents": [
+    {
+     "en": "The 5s evaluation follows standard VBench [ 16 ] , with full results in Appendix A .",
+     "zh": "5s 评估遵循标准的 VBench [ 16 ]，完整结果见附录 A。"
+    },
+    {
+     "en": "The main comparison evaluates 60s and 240s generation using VBench-Long prompts [ 17 ] and 128 MovieGen prompts [ 28 ] , respectively.",
+     "zh": "主要对比分别使用 VBench-Long 提示词 [ 17 ] 和 128 个 MovieGen 提示词 [ 28 ]，对 60s 和 240s 的生成进行评估。"
+    },
+    {
+     "en": "For both horizons, we report Subject Consistency, Background Consistency, Temporal Flickering, Motion Smoothness, Dynamic Degree, Aesthetic Quality, and Imaging Quality.",
+     "zh": "对于两种时间跨度，我们报告了主体一致性、背景一致性、时间闪烁、运动平滑度、动态程度、美学质量和成像质量。"
+    },
+    {
+     "en": "Scores are multiplied by 100, and higher is better.",
+     "zh": "分数乘以 100，数值越高越好。"
+    },
+    {
+     "en": "Further implementation details are provided in Appendix B .",
+     "zh": "更多实现细节见附录 B。"
+    }
+   ]
+  },
+  {
+   "en": "Qualitative comparisons. Figure 5 compares SF, SGF, and SGF+ over 240s rollouts in chunkwise and framewise generation. In the gold-rush town scene, SGF+ preserves a more coherent rendering of buildings and miners, while SF exhibits background distortions and SGF develops conspicuous green streak artifacts. In the salt-desert scene, SGF+ better maintains the explorer’s appearance and desert setting, with fewer helmet distortions and sky artifacts than the baselines. In the warehouse-flower scene, SF produces floating flower-like artifacts and SGF exhibits pronounced changes in flower shape and scale, while SGF+ better preserves the flower cluster and surrounding scene. These examples illustrate improvements in both visual quality and long-horizon consistency. Additional qualitative comparisons in both generation settings are provided in Appendix F . Trained only on 5s video windows, SGF+ supports continuous generation for up to 24 hours, as shown in Figure 1 and Appendix D .",
+   "zh": "定性比较。 图 5 比较了 SF、SGF 和 SGF+ 在分块生成与逐帧生成中 240 秒推理过程的对比结果。 在金矿小镇场景中，SGF+ 保留了更连贯的建筑和矿工渲染效果，而 SF 出现了背景失真，SGF 则产生了明显的绿色条纹伪影。 在盐碱沙漠场景中，SGF+ 更好地保持了探险者的外观和沙漠环境，与基线模型相比，头盔失真和天空伪影更少。 在仓库花卉场景中，SF 生成了漂浮的花卉状伪影，SGF 则表现出花朵形状和尺度的显著变化，而 SGF+ 更好地保留了花簇及其周围场景。 这些例子展示了视觉质量和长期一致性方面的改进。 两种生成设置下的更多定性比较见附录 F。 SGF+ 仅在 5 秒视频窗口上进行训练，但如图 1 和附录 D 所示，它支持最长可达 24 小时的连续生成。",
+   "sents": [
+    {
+     "en": "Qualitative comparisons.",
+     "zh": "定性比较。"
+    },
+    {
+     "en": "Figure 5 compares SF, SGF, and SGF+ over 240s rollouts in chunkwise and framewise generation.",
+     "zh": "图 5 比较了 SF、SGF 和 SGF+ 在分块生成与逐帧生成中 240 秒推理过程的对比结果。"
+    },
+    {
+     "en": "In the gold-rush town scene, SGF+ preserves a more coherent rendering of buildings and miners, while SF exhibits background distortions and SGF develops conspicuous green streak artifacts.",
+     "zh": "在金矿小镇场景中，SGF+ 保留了更连贯的建筑和矿工渲染效果，而 SF 出现了背景失真，SGF 则产生了明显的绿色条纹伪影。"
+    },
+    {
+     "en": "In the salt-desert scene, SGF+ better maintains the explorer’s appearance and desert setting, with fewer helmet distortions and sky artifacts than the baselines.",
+     "zh": "在盐碱沙漠场景中，SGF+ 更好地保持了探险者的外观和沙漠环境，与基线模型相比，头盔失真和天空伪影更少。"
+    },
+    {
+     "en": "In the warehouse-flower scene, SF produces floating flower-like artifacts and SGF exhibits pronounced changes in flower shape and scale, while SGF+ better preserves the flower cluster and surrounding scene.",
+     "zh": "在仓库花卉场景中，SF 生成了漂浮的花卉状伪影，SGF 则表现出花朵形状和尺度的显著变化，而 SGF+ 更好地保留了花簇及其周围场景。"
+    },
+    {
+     "en": "These examples illustrate improvements in both visual quality and long-horizon consistency.",
+     "zh": "这些例子展示了视觉质量和长期一致性方面的改进。"
+    },
+    {
+     "en": "Additional qualitative comparisons in both generation settings are provided in Appendix F .",
+     "zh": "两种生成设置下的更多定性比较见附录 F。"
+    },
+    {
+     "en": "Trained only on 5s video windows, SGF+ supports continuous generation for up to 24 hours, as shown in Figure 1 and Appendix D .",
+     "zh": "SGF+ 仅在 5 秒视频窗口上进行训练，但如图 1 和附录 D 所示，它支持最长可达 24 小时的连续生成。"
+    }
+   ]
+  },
+  {
+   "en": "Quantitative comparisons. Table 1 compares the three methods at generation horizons of 12 × 12\\times and 48 × 48\\times the training window. Across both generation granularities and both long horizons, SGF+ outperforms SF and SGF on most quality and consistency metrics, with gains in subject consistency, background consistency, temporal flickering, motion smoothness, aesthetic quality, and imaging quality. These results indicate that separating the parameters of context writing and denoising to avoid conflicting gradients on shared weights helps preserve both visual quality and long-horizon consistency during extended generation. Dynamic Degree is the main exception, with SF or SGF achieving higher scores. This does not necessarily indicate better motion quality: scene jumps, object deformation, subject disappearance, or additional people appearing (as shown in Figures 1 and 5 ) can produce large but incoherent apparent motion, inflating Dynamic Degree. In contrast, SGF+ maintains more stable visuals and more coherent motion, so its lower Dynamic Degree does not imply worse generation quality.",
+   "zh": "定量比较。 表 1 比较了三种方法在生成时间跨度为训练窗口 12 × 12\\times 和 48 × 48\\times 时的表现。 在所有两种生成颗粒度和所有两种长时程中，SGF+ 在大多数质量和一致性指标上均优于 SF 和 SGF，尤其在主体一致性、背景一致性、时间闪烁、运动平滑度、美学质量和成像质量方面有所提升。 这些结果表明，将上下文写入和去噪的参数分离开来，以避免共享权重上的梯度冲突，有助于在长时间生成过程中同时保留视觉质量和长时程一致性。 动态程度是主要例外，SF 或 SGF 在此项上获得了更高的分数。 这并不一定意味着运动质量更好：场景跳跃、物体变形、主体消失或额外人物出现（如图 1 和图 5 所示）都可能产生幅度大但不连贯的表观运动，从而推高动态程度。 相比之下，SGF+ 能保持更稳定的视觉效果和更连贯的运动，因此其较低的动态程度并不意味着生成质量更差。",
+   "sents": [
+    {
+     "en": "Quantitative comparisons.",
+     "zh": "定量比较。"
+    },
+    {
+     "en": "Table 1 compares the three methods at generation horizons of 12 × 12\\times and 48 × 48\\times the training window.",
+     "zh": "表 1 比较了三种方法在生成时间跨度为训练窗口 12 × 12\\times 和 48 × 48\\times 时的表现。"
+    },
+    {
+     "en": "Across both generation granularities and both long horizons, SGF+ outperforms SF and SGF on most quality and consistency metrics, with gains in subject consistency, background consistency, temporal flickering, motion smoothness, aesthetic quality, and imaging quality.",
+     "zh": "在所有两种生成颗粒度和所有两种长时程中，SGF+ 在大多数质量和一致性指标上均优于 SF 和 SGF，尤其在主体一致性、背景一致性、时间闪烁、运动平滑度、美学质量和成像质量方面有所提升。"
+    },
+    {
+     "en": "These results indicate that separating the parameters of context writing and denoising to avoid conflicting gradients on shared weights helps preserve both visual quality and long-horizon consistency during extended generation.",
+     "zh": "这些结果表明，将上下文写入和去噪的参数分离开来，以避免共享权重上的梯度冲突，有助于在长时间生成过程中同时保留视觉质量和长时程一致性。"
+    },
+    {
+     "en": "Dynamic Degree is the main exception, with SF or SGF achieving higher scores.",
+     "zh": "动态程度是主要例外，SF 或 SGF 在此项上获得了更高的分数。"
+    },
+    {
+     "en": "This does not necessarily indicate better motion quality: scene jumps, object deformation, subject disappearance, or additional people appearing (as shown in Figures 1 and 5 ) can produce large but incoherent apparent motion, inflating Dynamic Degree.",
+     "zh": "这并不一定意味着运动质量更好：场景跳跃、物体变形、主体消失或额外人物出现（如图 1 和图 5 所示）都可能产生幅度大但不连贯的表观运动，从而推高动态程度。"
+    },
+    {
+     "en": "In contrast, SGF+ maintains more stable visuals and more coherent motion, so its lower Dynamic Degree does not imply worse generation quality.",
+     "zh": "相比之下，SGF+ 能保持更稳定的视觉效果和更连贯的运动，因此其较低的动态程度并不意味着生成质量更差。"
+    }
+   ]
+  },
+  {
+   "en": "The comparison between SGF and SGF+ in Section 4.2 demonstrates the benefits of parameter separation. We further ablate parameter separation in Attention and FFN. Table 2 considers these two main Transformer module families. Both partial-separation variants underperform the full model on quality and consistency metrics. Thus, an MoE-style design [ 9 , 21 , 7 , 19 ] that introduces role experts only in FFN cannot fully eliminate the conflict, as conflicting gradients also arise in Attention. Attention-only separation achieves the highest Dynamic Degree but scores substantially lower than FFN-only separation and the full model on most other metrics, again showing that a higher Dynamic Degree does not necessarily indicate better generation quality.",
+   "zh": "第 4.2 节中 SGF 与 SGF+ 的对比展示了参数分离的优势。 我们进一步在 Attention 和 FFN 中进行了参数分离的消融分析。 表 2 考察了这两个主要的 Transformer 模块家族。 两种部分分离变体在质量和一致性指标上均表现劣于完整模型。 因此，仅在 FFN 中引入角色专家的 MoE 风格设计 [9, 21, 7, 19] 无法完全消除冲突，因为 Attention 中也会产生冲突梯度。 仅对 Attention 进行分离的方案实现了最高的动态度，但在大多数其他指标上的得分显著低于仅对 FFN 进行分离的方案和完整模型，这再次表明更高的动态度并不一定意味着更好的生成质量。",
+   "sents": [
+    {
+     "en": "The comparison between SGF and SGF+ in Section 4.2 demonstrates the benefits of parameter separation.",
+     "zh": "第 4.2 节中 SGF 与 SGF+ 的对比展示了参数分离的优势。"
+    },
+    {
+     "en": "We further ablate parameter separation in Attention and FFN.",
+     "zh": "我们进一步在 Attention 和 FFN 中进行了参数分离的消融分析。"
+    },
+    {
+     "en": "Table 2 considers these two main Transformer module families.",
+     "zh": "表 2 考察了这两个主要的 Transformer 模块家族。"
+    },
+    {
+     "en": "Both partial-separation variants underperform the full model on quality and consistency metrics.",
+     "zh": "两种部分分离变体在质量和一致性指标上均表现劣于完整模型。"
+    },
+    {
+     "en": "Thus, an MoE-style design [ 9 , 21 , 7 , 19 ] that introduces role experts only in FFN cannot fully eliminate the conflict, as conflicting gradients also arise in Attention.",
+     "zh": "因此，仅在 FFN 中引入角色专家的 MoE 风格设计 [9, 21, 7, 19] 无法完全消除冲突，因为 Attention 中也会产生冲突梯度。"
+    },
+    {
+     "en": "Attention-only separation achieves the highest Dynamic Degree but scores substantially lower than FFN-only separation and the full model on most other metrics, again showing that a higher Dynamic Degree does not necessarily indicate better generation quality.",
+     "zh": "仅对 Attention 进行分离的方案实现了最高的动态度，但在大多数其他指标上的得分显著低于仅对 FFN 进行分离的方案和完整模型，这再次表明更高的动态度并不一定意味着更好的生成质量。"
+    }
+   ]
+  },
+  {
+   "en": "Efficiency. Table 3 shows that SGF+ doubles generator parameters from 1.4B to 2.8B while preserving SGF’s denoising and context-writing call schedule. Each token uses only its role-specific parameters within a forward pass, so computation does not double. For the evaluated 81-frame workload, inference time remains nearly unchanged at 4.969 seconds versus 4.962 seconds for SGF, while memory increases from 24.85 to 27.96 GB. Training peak and stable memory increase from 97.83 to 98.15 GB and from 70.06 to 73.60 GB, respectively; time per step rises from 11.79 to 12.76 seconds, an increase of approximately 8.2%. Thus, the additional parameter storage incurs only modest memory overhead, alongside an 8.2% increase in training time per step and nearly unchanged inference latency under the evaluated workload.",
+   "zh": "效率。 表3显示，SGF+将生成器参数从1.4B翻倍至2.8B，同时保留了SGF的去噪和上下文写作调用计划。 在每个前向传播中，每个标记仅使用与其角色相关的参数，因此计算量并未翻倍。 在评估的81帧工作负载中，推理时间几乎保持不变，为4.969秒（SGF为4.962秒），而内存占用从24.85 GB增至27.96 GB。 训练峰值内存和稳定内存分别从97.83 GB增至98.15 GB，以及从70.06 GB增至73.60 GB；每步训练时间从11.79秒增至12.76秒，增幅约为8.2%。 因此，额外的参数存储仅带来了轻微的内存开销，同时每步训练时间增加了8.2%，而在所评估的工作负载下，推理延迟几乎未变。",
+   "sents": [
+    {
+     "en": "Efficiency.",
+     "zh": "效率。"
+    },
+    {
+     "en": "Table 3 shows that SGF+ doubles generator parameters from 1.4B to 2.8B while preserving SGF’s denoising and context-writing call schedule.",
+     "zh": "表3显示，SGF+将生成器参数从1.4B翻倍至2.8B，同时保留了SGF的去噪和上下文写作调用计划。"
+    },
+    {
+     "en": "Each token uses only its role-specific parameters within a forward pass, so computation does not double.",
+     "zh": "在每个前向传播中，每个标记仅使用与其角色相关的参数，因此计算量并未翻倍。"
+    },
+    {
+     "en": "For the evaluated 81-frame workload, inference time remains nearly unchanged at 4.969 seconds versus 4.962 seconds for SGF, while memory increases from 24.85 to 27.96 GB.",
+     "zh": "在评估的81帧工作负载中，推理时间几乎保持不变，为4.969秒（SGF为4.962秒），而内存占用从24.85 GB增至27.96 GB。"
+    },
+    {
+     "en": "Training peak and stable memory increase from 97.83 to 98.15 GB and from 70.06 to 73.60 GB, respectively; time per step rises from 11.79 to 12.76 seconds, an increase of approximately 8.2%.",
+     "zh": "训练峰值内存和稳定内存分别从97.83 GB增至98.15 GB，以及从70.06 GB增至73.60 GB；每步训练时间从11.79秒增至12.76秒，增幅约为8.2%。"
+    },
+    {
+     "en": "Thus, the additional parameter storage incurs only modest memory overhead, alongside an 8.2% increase in training time per step and nearly unchanged inference latency under the evaluated workload.",
+     "zh": "因此，额外的参数存储仅带来了轻微的内存开销，同时每步训练时间增加了8.2%，而在所评估的工作负载下，推理延迟几乎未变。"
+    }
+   ]
+  },
+  {
+   "en": "Role-specific gradient conflict at TF initialization. Role-specific gradient differences and conflict are already observable at teacher-forcing (TF) initialization, before SGF training. Figure 6 shows a sharp directional change between diffusion timestep indices 0 and 1, at the transition from clean-context writing to noisy denoising. Appendix C further shows mean role-gradient angles exceeding 90 ∘ 90^{\\circ} in both Attention and FFN, with the vast majority of paired cosine similarities being negative. These findings motivate investigating role-specific parameterization from the TF stage and its potential extension to world action models (WAMs) [ 43 , 23 , 36 , 27 ] trained with teacher forcing, which use context KV representations for action prediction.",
+   "zh": "TF 初始化时的角色特定梯度冲突。 在教师强制（TF）初始化阶段，即 SGF 训练开始之前，已经可以观察到角色特定的梯度差异和冲突。 图 6 显示，在扩散时间步索引 0 和 1 之间，从干净上下文写作向含噪去噪的过渡过程中，方向发生了急剧变化。 附录 C 进一步表明，Attention 和 FFN 中的平均角色梯度角度均超过了 90°（90^{\\circ}），且绝大多数成对余弦相似度均为负值。 这些发现促使我们从 TF 阶段开始研究角色特定的参数化方法，并探索其向使用上下文 KV 表示进行动作预测、通过教师强制训练的“世界动作模型”（WAMs）[43, 23, 36, 27] 的潜在扩展。",
+   "sents": [
+    {
+     "en": "Role-specific gradient conflict at TF initialization.",
+     "zh": "TF 初始化时的角色特定梯度冲突。"
+    },
+    {
+     "en": "Role-specific gradient differences and conflict are already observable at teacher-forcing (TF) initialization, before SGF training.",
+     "zh": "在教师强制（TF）初始化阶段，即 SGF 训练开始之前，已经可以观察到角色特定的梯度差异和冲突。"
+    },
+    {
+     "en": "Figure 6 shows a sharp directional change between diffusion timestep indices 0 and 1, at the transition from clean-context writing to noisy denoising.",
+     "zh": "图 6 显示，在扩散时间步索引 0 和 1 之间，从干净上下文写作向含噪去噪的过渡过程中，方向发生了急剧变化。"
+    },
+    {
+     "en": "Appendix C further shows mean role-gradient angles exceeding 90 ∘ 90^{\\circ} in both Attention and FFN, with the vast majority of paired cosine similarities being negative.",
+     "zh": "附录 C 进一步表明，Attention 和 FFN 中的平均角色梯度角度均超过了 90°（90^{\\circ}），且绝大多数成对余弦相似度均为负值。"
+    },
+    {
+     "en": "These findings motivate investigating role-specific parameterization from the TF stage and its potential extension to world action models (WAMs) [ 43 , 23 , 36 , 27 ] trained with teacher forcing, which use context KV representations for action prediction.",
+     "zh": "这些发现促使我们从 TF 阶段开始研究角色特定的参数化方法，并探索其向使用上下文 KV 表示进行动作预测、通过教师强制训练的“世界动作模型”（WAMs）[43, 23, 36, 27] 的潜在扩展。"
+    }
+   ]
+  },
+  {
+   "en": "Relation to autoregressive language models. Standard autoregressive LLMs [ 1 , 33 , 34 , 11 ] encode discrete text tokens, write KV representations, and predict subsequent tokens in one forward pass; historical representations also receive gradients from future token losses during training. Autoregressive video diffusion alternates between clean-context encoding and noisy-latent denoising. These distinct input conditions and computational roles may help explain the observed gradient differences. Our results highlight role-specific parameterization as an effective design principle for autoregressive video training: context writing and denoising remain jointly optimized under the original generation objective, without auxiliary losses, additional video training data, or long-video fine-tuning.",
+   "zh": "与自回归语言模型的关系。 标准的自回归大型语言模型 [ 1 , 33 , 34 , 11 ] 会编码离散的文本标记、写入 KV 表示，并在一次前向传播中预测后续标记；在训练过程中，历史表示也会从未来标记的损失中获得梯度。 自回归视频扩散模型在干净上下文编码与噪声潜变量去噪之间交替进行。 这些不同的输入条件和计算角色或许有助于解释观察到的梯度差异。 我们的研究结果凸显了角色特定的参数化是一种有效的自回归视频训练设计原则：在原始生成目标下，上下文写入和去噪仍能联合优化，且无需辅助损失、额外的视频训练数据或长视频的微调。",
+   "sents": [
+    {
+     "en": "Relation to autoregressive language models.",
+     "zh": "与自回归语言模型的关系。"
+    },
+    {
+     "en": "Standard autoregressive LLMs [ 1 , 33 , 34 , 11 ] encode discrete text tokens, write KV representations, and predict subsequent tokens in one forward pass; historical representations also receive gradients from future token losses during training.",
+     "zh": "标准的自回归大型语言模型 [ 1 , 33 , 34 , 11 ] 会编码离散的文本标记、写入 KV 表示，并在一次前向传播中预测后续标记；在训练过程中，历史表示也会从未来标记的损失中获得梯度。"
+    },
+    {
+     "en": "Autoregressive video diffusion alternates between clean-context encoding and noisy-latent denoising.",
+     "zh": "自回归视频扩散模型在干净上下文编码与噪声潜变量去噪之间交替进行。"
+    },
+    {
+     "en": "These distinct input conditions and computational roles may help explain the observed gradient differences.",
+     "zh": "这些不同的输入条件和计算角色或许有助于解释观察到的梯度差异。"
+    },
+    {
+     "en": "Our results highlight role-specific parameterization as an effective design principle for autoregressive video training: context writing and denoising remain jointly optimized under the original generation objective, without auxiliary losses, additional video training data, or long-video fine-tuning.",
+     "zh": "我们的研究结果凸显了角色特定的参数化是一种有效的自回归视频训练设计原则：在原始生成目标下，上下文写入和去噪仍能联合优化，且无需辅助损失、额外的视频训练数据或长视频的微调。"
+    }
+   ]
+  },
+  {
+   "en": "We identified an optimization conflict between context writing and denoising in shared-parameter Self Gradient Forcing. SGF+ resolves this conflict through role-specific parameter separation, improving visual quality and long-horizon consistency over SF and SGF in both framewise and chunkwise generation. It supports generation for up to 24 hours from 5s training rollouts. This role distinction is already evident at TF initialization, motivating role-aware parameterization throughout autoregressive video training.",
+   "zh": "我们在共享参数的自我梯度强制方法中发现了上下文生成与降噪之间的优化冲突。 SGF+ 通过按角色分离参数解决了这一冲突，在逐帧和逐块生成中，相较于 SF 和 SGF，显著提升了视觉质量和长期一致性。 该方法支持基于 5 秒的训练 rollout 进行长达 24 小时的生成。 这种角色区分在 TF 初始化阶段就已显现，因此有必要在整个自回归视频训练过程中采用角色感知的参数化方法。",
+   "sents": [
+    {
+     "en": "We identified an optimization conflict between context writing and denoising in shared-parameter Self Gradient Forcing.",
+     "zh": "我们在共享参数的自我梯度强制方法中发现了上下文生成与降噪之间的优化冲突。"
+    },
+    {
+     "en": "SGF+ resolves this conflict through role-specific parameter separation, improving visual quality and long-horizon consistency over SF and SGF in both framewise and chunkwise generation.",
+     "zh": "SGF+ 通过按角色分离参数解决了这一冲突，在逐帧和逐块生成中，相较于 SF 和 SGF，显著提升了视觉质量和长期一致性。"
+    },
+    {
+     "en": "It supports generation for up to 24 hours from 5s training rollouts.",
+     "zh": "该方法支持基于 5 秒的训练 rollout 进行长达 24 小时的生成。"
+    },
+    {
+     "en": "This role distinction is already evident at TF initialization, motivating role-aware parameterization throughout autoregressive video training.",
+     "zh": "这种角色区分在 TF 初始化阶段就已显现，因此有必要在整个自回归视频训练过程中采用角色感知的参数化方法。"
+    }
+   ]
+  },
+  {
+   "en": "We provide additional information in the supplementary material, as outlined below:",
+   "zh": "我们在补充材料中提供了更多信息，具体如下：",
+   "sents": null
+  },
+  {
+   "en": "Sec. A : Additional Short-Video Results.",
+   "zh": "第 X 节。 A：补充短视频结果。",
+   "sents": [
+    {
+     "en": "Sec.",
+     "zh": "第 X 节。"
+    },
+    {
+     "en": "A : Additional Short-Video Results.",
+     "zh": "A：补充短视频结果。"
+    }
+   ]
+  },
+  {
+   "en": "Sec. B : Additional Implementation Details.",
+   "zh": "节。 B：额外的实现细节。",
+   "sents": [
+    {
+     "en": "Sec.",
+     "zh": "节。"
+    },
+    {
+     "en": "B : Additional Implementation Details.",
+     "zh": "B：额外的实现细节。"
+    }
+   ]
+  },
+  {
+   "en": "Sec. C : Gradient Role Separation at TF Initialization.",
+   "zh": "第 X 节。 C：TF 初始化时的梯度角色分离。",
+   "sents": [
+    {
+     "en": "Sec.",
+     "zh": "第 X 节。"
+    },
+    {
+     "en": "C : Gradient Role Separation at TF Initialization.",
+     "zh": "C：TF 初始化时的梯度角色分离。"
+    }
+   ]
+  },
+  {
+   "en": "Sec. E : Layer-wise Gradient Role Separation.",
+   "zh": "第 X 节。 E：逐层梯度角色分离。",
+   "sents": [
+    {
+     "en": "Sec.",
+     "zh": "第 X 节。"
+    },
+    {
+     "en": "E : Layer-wise Gradient Role Separation.",
+     "zh": "E：逐层梯度角色分离。"
+    }
+   ]
+  },
+  {
+   "en": "Sec. F : Additional Qualitative Comparisons.",
+   "zh": "节。 F：额外的定性比较。",
+   "sents": [
+    {
+     "en": "Sec.",
+     "zh": "节。"
+    },
+    {
+     "en": "F : Additional Qualitative Comparisons.",
+     "zh": "F：额外的定性比较。"
+    }
+   ]
+  },
+  {
+   "en": "Sec. G : Local Optimization Analysis of Role Separation.",
+   "zh": "第 X 节。 G：角色分离的局部优化分析。",
+   "sents": [
+    {
+     "en": "Sec.",
+     "zh": "第 X 节。"
+    },
+    {
+     "en": "G : Local Optimization Analysis of Role Separation.",
+     "zh": "G：角色分离的局部优化分析。"
+    }
+   ]
+  },
+  {
+   "en": "Within each generation mode, the compared methods share the same sink-plus-FIFO context policy. Framewise generation uses 4 sink latents, 16 recent latents in the FIFO cache, and 1 current latent, giving a total window of 21. Chunkwise generation uses 3 sink latents, 6 recent latents, and a current chunk of 3 latents, giving a total window of 12.",
+   "zh": "在每种生成模式下，所比较的方法都共享相同的“汇点加FIFO”上下文策略。 帧式生成使用4个汇点潜在变量、FIFO缓存中的16个近期潜在变量以及1个当前潜在变量，总窗口大小为21。 分块式生成使用3个汇点潜在变量、6个近期潜在变量以及一个包含3个潜在变量的当前分块，总窗口大小为12。",
+   "sents": [
+    {
+     "en": "Within each generation mode, the compared methods share the same sink-plus-FIFO context policy.",
+     "zh": "在每种生成模式下，所比较的方法都共享相同的“汇点加FIFO”上下文策略。"
+    },
+    {
+     "en": "Framewise generation uses 4 sink latents, 16 recent latents in the FIFO cache, and 1 current latent, giving a total window of 21.",
+     "zh": "帧式生成使用4个汇点潜在变量、FIFO缓存中的16个近期潜在变量以及1个当前潜在变量，总窗口大小为21。"
+    },
+    {
+     "en": "Chunkwise generation uses 3 sink latents, 6 recent latents, and a current chunk of 3 latents, giving a total window of 12.",
+     "zh": "分块式生成使用3个汇点潜在变量、6个近期潜在变量以及一个包含3个潜在变量的当前分块，总窗口大小为12。"
+    }
+   ]
+  },
+  {
+   "en": "We optimize both the generator and the critic using AdamW with β 1 = 0 \\beta_{1}=0 and β 2 = 0.999 \\beta_{2}=0.999 . The learning rates are 2 × 10 − 6 2\\times 10^{-6} for the generator and 4 × 10 − 7 4\\times 10^{-7} for the critic. We perform one generator update for every five critic updates and use four denoising steps for generation.",
+   "zh": "我们使用 AdamW 优化生成器和判别器，其中 β₁ = 0，β₂ = 0.999。 学习率分别为生成器的 2 × 10⁻⁶ 和判别器的 4 × 10⁻⁷。 每五次更新判别器，我们就更新一次生成器，并在生成时使用四步去噪步骤。",
+   "sents": [
+    {
+     "en": "We optimize both the generator and the critic using AdamW with β 1 = 0 \\beta_{1}=0 and β 2 = 0.999 \\beta_{2}=0.999 .",
+     "zh": "我们使用 AdamW 优化生成器和判别器，其中 β₁ = 0，β₂ = 0.999。"
+    },
+    {
+     "en": "The learning rates are 2 × 10 − 6 2\\times 10^{-6} for the generator and 4 × 10 − 7 4\\times 10^{-7} for the critic.",
+     "zh": "学习率分别为生成器的 2 × 10⁻⁶ 和判别器的 4 × 10⁻⁷。"
+    },
+    {
+     "en": "We perform one generator update for every five critic updates and use four denoising steps for generation.",
+     "zh": "每五次更新判别器，我们就更新一次生成器，并在生成时使用四步去噪步骤。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 7 provides additional visualizations of the gradient relationships between context writing and denoising at TF initialization. The two roles exhibit distinct gradient distributions in Attention and FFN, with mean directions forming angles of 95.1 ∘ 95.1^{\\circ} and 105.1 ∘ 105.1^{\\circ} , respectively, both exceeding 90 ∘ 90^{\\circ} . The vast majority of paired cosine similarities are negative, indicating that role separation and gradient conflict are already present at TF initialization and supporting separation of the two roles from the TF stage.",
+   "zh": "图 7 提供了在 TF 初始化阶段，上下文写作与降噪之间梯度关系的更多可视化信息。 这两种角色在注意力机制和 FFN 中表现出不同的梯度分布，其平均方向分别形成 95.1 ∘ 95.1^{\\circ} 和 105.1 ∘ 105.1^{\\circ} 的角度，均超过了 90 ∘ 90^{\\circ}。 绝大多数成对的余弦相似度均为负值，这表明角色分离与梯度冲突在 TF 初始化阶段就已经存在，从而支持从 TF 阶段开始对这两种角色进行分离。",
+   "sents": [
+    {
+     "en": "Figure 7 provides additional visualizations of the gradient relationships between context writing and denoising at TF initialization.",
+     "zh": "图 7 提供了在 TF 初始化阶段，上下文写作与降噪之间梯度关系的更多可视化信息。"
+    },
+    {
+     "en": "The two roles exhibit distinct gradient distributions in Attention and FFN, with mean directions forming angles of 95.1 ∘ 95.1^{\\circ} and 105.1 ∘ 105.1^{\\circ} , respectively, both exceeding 90 ∘ 90^{\\circ} .",
+     "zh": "这两种角色在注意力机制和 FFN 中表现出不同的梯度分布，其平均方向分别形成 95.1 ∘ 95.1^{\\circ} 和 105.1 ∘ 105.1^{\\circ} 的角度，均超过了 90 ∘ 90^{\\circ}。"
+    },
+    {
+     "en": "The vast majority of paired cosine similarities are negative, indicating that role separation and gradient conflict are already present at TF initialization and supporting separation of the two roles from the TF stage.",
+     "zh": "绝大多数成对的余弦相似度均为负值，这表明角色分离与梯度冲突在 TF 初始化阶段就已经存在，从而支持从 TF 阶段开始对这两种角色进行分离。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 8 presents four examples of continuous 24-hour generation by SGF+ trained on 5s video windows, without long-video fine-tuning.",
+   "zh": "图8展示了四个使用SGF+在5秒视频窗口上训练、且未经长视频微调的连续24小时生成示例。",
+   "sents": null
+  },
+  {
+   "en": "Figures 11 – 14 present twelve chunkwise cases, and Figures 15 – 16 present six framewise cases, with matched prompts across SF, SGF, and SGF+.",
+   "zh": "图 11–14 展示了十二个分块案例，而图 15–16 展示了六个逐帧案例，其中 SF、SGF 和 SGF+ 的提示词相互匹配。",
+   "sents": null
+  },
+  {
+   "en": "We analyze the local effect of separating context-writing and denoising parameters in SGF+. Two comparison protocols distinguish the restriction imposed by parameter sharing from its effect on a gradient-descent step: a common update budget and a common learning rate.",
+   "zh": "我们分析了在 SGF+ 中分离上下文生成与去噪参数所带来的局部影响。 两种比较方案用于区分参数共享所施加的限制及其对梯度下降步的影响：一种采用共同的更新预算，另一种采用共同的学习率。",
+   "sents": [
+    {
+     "en": "We analyze the local effect of separating context-writing and denoising parameters in SGF+.",
+     "zh": "我们分析了在 SGF+ 中分离上下文生成与去噪参数所带来的局部影响。"
+    },
+    {
+     "en": "Two comparison protocols distinguish the restriction imposed by parameter sharing from its effect on a gradient-descent step: a common update budget and a common learning rate.",
+     "zh": "两种比较方案用于区分参数共享所施加的限制及其对梯度下降步的影响：一种采用共同的更新预算，另一种采用共同的学习率。"
+    }
+   ]
+  },
+  {
+   "en": "Fix the detached rollout latents, sampled denoising exits, DMD supervision, and all forward randomness. The resulting Pass-2 surrogate is",
+   "zh": "修复分离的展开潜在变量、采样的去噪出口、DMD 监督以及所有前向随机性。 由此得到的 Pass-2 代理是",
+   "sents": [
+    {
+     "en": "Fix the detached rollout latents, sampled denoising exits, DMD supervision, and all forward randomness.",
+     "zh": "修复分离的展开潜在变量、采样的去噪出口、DMD 监督以及所有前向随机性。"
+    },
+    {
+     "en": "The resulting Pass-2 surrogate is",
+     "zh": "由此得到的 Pass-2 代理是"
+    }
+   ]
+  },
+  {
+   "en": "where ℓ \\ell uses the fixed supervision. Let θ c , θ d ∈ ℝ p \\theta_{c},\\theta_{d}\\in\\mathbb{R}^{p} have matching coordinates, such that tying them reproduces the shared forward computation. At x 0 = ( θ , θ ) x_{0}=(\\theta,\\theta) , define the full role-wise partial derivatives",
+   "zh": "其中 ℓ \\ell 使用固定的监督信息。 设 θ c , θ d ∈ ℝ p \\theta_{c},\\theta_{d}\\in\\mathbb{R}^{p} 具有匹配的坐标，使得将它们绑定可以重现共享的前向计算。 在 x 0 = ( θ , θ ) x_{0}=(\\theta,\\theta) 处，定义完整的按角色划分的偏导数",
+   "sents": [
+    {
+     "en": "where ℓ \\ell uses the fixed supervision.",
+     "zh": "其中 ℓ \\ell 使用固定的监督信息。"
+    },
+    {
+     "en": "Let θ c , θ d ∈ ℝ p \\theta_{c},\\theta_{d}\\in\\mathbb{R}^{p} have matching coordinates, such that tying them reproduces the shared forward computation.",
+     "zh": "设 θ c , θ d ∈ ℝ p \\theta_{c},\\theta_{d}\\in\\mathbb{R}^{p} 具有匹配的坐标，使得将它们绑定可以重现共享的前向计算。"
+    },
+    {
+     "en": "At x 0 = ( θ , θ ) x_{0}=(\\theta,\\theta) , define the full role-wise partial derivatives",
+     "zh": "在 x 0 = ( θ , θ ) x_{0}=(\\theta,\\theta) 处，定义完整的按角色划分的偏导数"
+    }
+   ]
+  },
+  {
+   "en": "The writer derivative passes through the differentiable KV state. Both derivatives belong to the same objective, and the tied objective f ⁡ ( θ ) = F ⁡ ( θ , θ ) f(\\theta)=F(\\theta,\\theta) satisfies ∇ f ​ ( θ ) = g C + g D \\nabla f(\\theta)=g_{\\mathrm{C}}+g_{\\mathrm{D}} .",
+   "zh": "该写作的导数会经过可微的 KV 状态。 这两个导数都属于同一个目标函数，且绑定的目标函数 f ⁡ ( θ ) = F ⁡ ( θ , θ ) f(\\theta)=F(\\theta,\\theta) 满足 ∇ f ​ ( θ ) = g C + g D \\nabla f(\\theta)=g_{\\mathrm{C}}+g_{\\mathrm{D}}。",
+   "sents": [
+    {
+     "en": "The writer derivative passes through the differentiable KV state.",
+     "zh": "该写作的导数会经过可微的 KV 状态。"
+    },
+    {
+     "en": "Both derivatives belong to the same objective, and the tied objective f ⁡ ( θ ) = F ⁡ ( θ , θ ) f(\\theta)=F(\\theta,\\theta) satisfies ∇ f ​ ( θ ) = g C + g D \\nabla f(\\theta)=g_{\\mathrm{C}}+g_{\\mathrm{D}} .",
+     "zh": "这两个导数都属于同一个目标函数，且绑定的目标函数 f ⁡ ( θ ) = F ⁡ ( θ , θ ) f(\\theta)=F(\\theta,\\theta) 满足 ∇ f ​ ( θ ) = g C + g D \\nabla f(\\theta)=g_{\\mathrm{C}}+g_{\\mathrm{D}}。"
+    }
+   ]
+  },
+  {
+   "en": "At this common point, impose the Euclidean product-space budget ‖ δ c ‖ 2 + ‖ δ d ‖ 2 ≤ r 2 \\left\\lVert\\delta_{c}\\right\\rVert^{2}+\\left\\lVert\\delta_{d}\\right\\rVert^{2}\\leq r^{2} , with r > 0 r>0 . A tied update ( u , u ) (u,u) therefore costs 2 ​ ‖ u ‖ 2 2\\left\\lVert u\\right\\rVert^{2} . For a subspace V ⊆ ℝ 2 ​ p V\\subseteq\\mathbb{R}^{2p} of admissible updates, define the maximum first-order decrease",
+   "zh": "在此公共点处，施加欧几里得乘积空间预算 ‖ δ c ‖ 2 + ‖ δ d ‖ 2 ≤ r 2 \\left\\lVert\\delta_{c}\\right\\rVert^{2}+\\left\\lVert\\delta_{d}\\right\\rVert^{2}\\leq r^{2}，其中 r > 0。 因此，一个绑定更新 ( u , u ) (u,u) 的成本为 2 ​ ‖ u ‖ 2 2\\left\\lVert u\\right\\rVert^{2}。 对于容许更新的子空间 V ⊆ ℝ 2 ​ p V\\subseteq\\mathbb{R}^{2p}，定义最大一阶下降量",
+   "sents": [
+    {
+     "en": "At this common point, impose the Euclidean product-space budget ‖ δ c ‖ 2 + ‖ δ d ‖ 2 ≤ r 2 \\left\\lVert\\delta_{c}\\right\\rVert^{2}+\\left\\lVert\\delta_{d}\\right\\rVert^{2}\\leq r^{2} , with r > 0 r>0 .",
+     "zh": "在此公共点处，施加欧几里得乘积空间预算 ‖ δ c ‖ 2 + ‖ δ d ‖ 2 ≤ r 2 \\left\\lVert\\delta_{c}\\right\\rVert^{2}+\\left\\lVert\\delta_{d}\\right\\rVert^{2}\\leq r^{2}，其中 r > 0。"
+    },
+    {
+     "en": "A tied update ( u , u ) (u,u) therefore costs 2 ​ ‖ u ‖ 2 2\\left\\lVert u\\right\\rVert^{2} .",
+     "zh": "因此，一个绑定更新 ( u , u ) (u,u) 的成本为 2 ​ ‖ u ‖ 2 2\\left\\lVert u\\right\\rVert^{2}。"
+    },
+    {
+     "en": "For a subspace V ⊆ ℝ 2 ​ p V\\subseteq\\mathbb{R}^{2p} of admissible updates, define the maximum first-order decrease",
+     "zh": "对于容许更新的子空间 V ⊆ ℝ 2 ​ p V\\subseteq\\mathbb{R}^{2p}，定义最大一阶下降量"
+    }
+   ]
+  },
+  {
+   "en": "This budget matches parameter displacement in the specified geometry; it does not match parameter count or computational cost.",
+   "zh": "该预算与指定几何形状中的参数位移相匹配；但它与参数数量或计算成本不匹配。",
+   "sents": null
+  },
+  {
+   "en": "Let F F be differentiable at x 0 x_{0} . For independent updates V split = ℝ 2 ​ p V_{\\mathrm{split}}=\\mathbb{R}^{2p} and tied updates V shared = { ( u , u ) : u ∈ ℝ p } V_{\\mathrm{shared}}=\\{(u,u):u\\in\\mathbb{R}^{p}\\} ,",
+   "zh": "假设 F 在 x₀ 处可微。 对于独立的更新，V_split = ℝ²ᵖ；而对于绑定的更新，V_shared = {(u, u) : u ∈ ℝᵖ}。",
+   "sents": [
+    {
+     "en": "Let F F be differentiable at x 0 x_{0} .",
+     "zh": "假设 F 在 x₀ 处可微。"
+    },
+    {
+     "en": "For independent updates V split = ℝ 2 ​ p V_{\\mathrm{split}}=\\mathbb{R}^{2p} and tied updates V shared = { ( u , u ) : u ∈ ℝ p } V_{\\mathrm{shared}}=\\{(u,u):u\\in\\mathbb{R}^{p}\\} ,",
+     "zh": "对于独立的更新，V_split = ℝ²ᵖ；而对于绑定的更新，V_shared = {(u, u) : u ∈ ℝᵖ}。"
+    }
+   ]
+  },
+  {
+   "en": "Cauchy–Schwarz gives − ⟨ g , δ ⟩ ≤ r ​ ‖ g ‖ -\\left\\langle g,\\delta\\right\\rangle\\leq r\\left\\lVert g\\right\\rVert , attained by δ = − r g / ‖ g ‖ \\delta=-rg/\\left\\lVert g\\right\\rVert when g ≠ 0 g\\neq 0 . For tied updates, the budget becomes ‖ u ‖ ≤ r / 2 \\left\\lVert u\\right\\rVert\\leq r/\\sqrt{2} and the linear decrease is − ⟨ g C + g D , u ⟩ -\\left\\langle g_{\\mathrm{C}}+g_{\\mathrm{D}},u\\right\\rangle , whose maximum is r ⁡ ‖ g C + g D ‖ / 2 r\\left\\lVert g_{\\mathrm{C}}+g_{\\mathrm{D}}\\right\\rVert/\\sqrt{2} . When either maximizing gradient vanishes, the corresponding maximum is zero. Subtracting the squared expressions and expanding the norms gives Eq. ( 11 ). ∎",
+   "zh": "柯西-施瓦茨不等式给出 −⟨g,δ⟩≤r‖g‖，当 g≠0 时，该等式在 δ=−rg/‖g‖ 处取到。 对于绑定更新，预算变为 ‖u‖≤r/√2，线性下降量为 −⟨gC+gD,u⟩，其最大值为 r‖gC+gD‖/√2。 当任一最大化梯度消失时，对应的最大值为零。 将平方表达式相减并展开范数，即可得到方程 (11)。∎",
+   "sents": [
+    {
+     "en": "Cauchy–Schwarz gives − ⟨ g , δ ⟩ ≤ r ​ ‖ g ‖ -\\left\\langle g,\\delta\\right\\rangle\\leq r\\left\\lVert g\\right\\rVert , attained by δ = − r g / ‖ g ‖ \\delta=-rg/\\left\\lVert g\\right\\rVert when g ≠ 0 g\\neq 0 .",
+     "zh": "柯西-施瓦茨不等式给出 −⟨g,δ⟩≤r‖g‖，当 g≠0 时，该等式在 δ=−rg/‖g‖ 处取到。"
+    },
+    {
+     "en": "For tied updates, the budget becomes ‖ u ‖ ≤ r / 2 \\left\\lVert u\\right\\rVert\\leq r/\\sqrt{2} and the linear decrease is − ⟨ g C + g D , u ⟩ -\\left\\langle g_{\\mathrm{C}}+g_{\\mathrm{D}},u\\right\\rangle , whose maximum is r ⁡ ‖ g C + g D ‖ / 2 r\\left\\lVert g_{\\mathrm{C}}+g_{\\mathrm{D}}\\right\\rVert/\\sqrt{2} .",
+     "zh": "对于绑定更新，预算变为 ‖u‖≤r/√2，线性下降量为 −⟨gC+gD,u⟩，其最大值为 r‖gC+gD‖/√2。"
+    },
+    {
+     "en": "When either maximizing gradient vanishes, the corresponding maximum is zero.",
+     "zh": "当任一最大化梯度消失时，对应的最大值为零。"
+    },
+    {
+     "en": "Subtracting the squared expressions and expanding the norms gives Eq. ( 11 ). ∎",
+     "zh": "将平方表达式相减并展开范数，即可得到方程 (11)。∎"
+    }
+   ]
+  },
+  {
+   "en": "The orthogonal decomposition into shared and role-dependent directions is",
+   "zh": "对共享方向和角色依赖方向的正交分解是",
+   "sents": null
+  },
+  {
+   "en": "The second component, with squared norm ‖ g C − g D ‖ 2 / 2 \\left\\lVert g_{\\mathrm{C}}-g_{\\mathrm{D}}\\right\\rVert^{2}/2 , is excluded by parameter sharing.",
+   "zh": "第二个分量，其平方范数为 ‖ g C − g D ‖ 2 / 2 \\left\\lVert g_{\\mathrm{C}}-g_{\\mathrm{D}}\\right\\rVert^{2}/2 ，通过参数共享被排除在外。",
+   "sents": null
+  },
+  {
+   "en": "When E = ‖ g C ‖ 2 + ‖ g D ‖ 2 > 0 E=\\left\\lVert g_{\\mathrm{C}}\\right\\rVert^{2}+\\left\\lVert g_{\\mathrm{D}}\\right\\rVert^{2}>0 , the fraction of squared gradient norm outside the tied-update subspace is",
+   "zh": "当 E = ‖ g C ‖ 2 + ‖ g D ‖ 2 > 0 E=\\left\\lVert g_{\\mathrm{C}}\\right\\rVert^{2}+\\left\\lVert g_{\\mathrm{D}}\\right\\rVert^{2}>0 时，梯度范数平方中位于绑定更新子空间之外的部分为",
+   "sents": null
+  },
+  {
+   "en": "Thus 0 ≤ Γ ≤ 1 0\\leq\\Gamma\\leq 1 , with Γ = 0 \\Gamma=0 exactly when g C = g D g_{\\mathrm{C}}=g_{\\mathrm{D}} and Γ = 1 \\Gamma=1 exactly when g C = − g D ≠ 0 g_{\\mathrm{C}}=-g_{\\mathrm{D}}\\neq 0 . Negative alignment implies Γ > 1 / 2 \\Gamma>1/2 , but any unequal role gradients yield Γ > 0 \\Gamma>0 . Hence Γ \\Gamma measures the sharing restriction, which is distinct from the negative-alignment criterion for gradient conflict.",
+   "zh": "因此，0 ≤ Γ ≤ 1，其中 Γ = 0 恰好发生在 g C = g D 时，而 Γ = 1 恰好发生在 g C = − g D ≠ 0 时。 负向对齐意味着 Γ > 1 / 2，但任何不等的角色梯度都会导致 Γ > 0。 因此，Γ 衡量了共享限制，这与梯度冲突的负向对齐标准不同。",
+   "sents": [
+    {
+     "en": "Thus 0 ≤ Γ ≤ 1 0\\leq\\Gamma\\leq 1 , with Γ = 0 \\Gamma=0 exactly when g C = g D g_{\\mathrm{C}}=g_{\\mathrm{D}} and Γ = 1 \\Gamma=1 exactly when g C = − g D ≠ 0 g_{\\mathrm{C}}=-g_{\\mathrm{D}}\\neq 0 .",
+     "zh": "因此，0 ≤ Γ ≤ 1，其中 Γ = 0 恰好发生在 g C = g D 时，而 Γ = 1 恰好发生在 g C = − g D ≠ 0 时。"
+    },
+    {
+     "en": "Negative alignment implies Γ > 1 / 2 \\Gamma>1/2 , but any unequal role gradients yield Γ > 0 \\Gamma>0 .",
+     "zh": "负向对齐意味着 Γ > 1 / 2，但任何不等的角色梯度都会导致 Γ > 0。"
+    },
+    {
+     "en": "Hence Γ \\Gamma measures the sharing restriction, which is distinct from the negative-alignment criterion for gradient conflict.",
+     "zh": "因此，Γ 衡量了共享限制，这与梯度冲突的负向对齐标准不同。"
+    }
+   ]
+  },
+  {
+   "en": "For example, g C = ( 2 , 1 ) g_{\\mathrm{C}}=(2,1) and g D = ( 2 , − 1 ) g_{\\mathrm{D}}=(2,-1) have cosine similarity 3 / 5 3/5 , while their second coordinates cancel in the shared gradient ( 4 , 0 ) (4,0) . Nevertheless, Γ = 1 / 5 > 0 \\Gamma=1/5>0 , illustrating a sharing restriction under positive overall alignment.",
+   "zh": "例如，g C = ( 2 , 1 ) g_{\\mathrm{C}}=(2,1) 和 g D = ( 2 , − 1 ) g_{\\mathrm{D}}=(2,-1) 的余弦相似度为 3 / 5 3/5，而它们在共享梯度 ( 4 , 0 ) (4,0) 中的第二个坐标相互抵消。 尽管如此，Γ = 1 / 5 > 0 \\Gamma=1/5>0，这表明在整体对齐为正的情况下存在共享限制。",
+   "sents": [
+    {
+     "en": "For example, g C = ( 2 , 1 ) g_{\\mathrm{C}}=(2,1) and g D = ( 2 , − 1 ) g_{\\mathrm{D}}=(2,-1) have cosine similarity 3 / 5 3/5 , while their second coordinates cancel in the shared gradient ( 4 , 0 ) (4,0) .",
+     "zh": "例如，g C = ( 2 , 1 ) g_{\\mathrm{C}}=(2,1) 和 g D = ( 2 , − 1 ) g_{\\mathrm{D}}=(2,-1) 的余弦相似度为 3 / 5 3/5，而它们在共享梯度 ( 4 , 0 ) (4,0) 中的第二个坐标相互抵消。"
+    },
+    {
+     "en": "Nevertheless, Γ = 1 / 5 > 0 \\Gamma=1/5>0 , illustrating a sharing restriction under positive overall alignment.",
+     "zh": "尽管如此，Γ = 1 / 5 > 0 \\Gamma=1/5>0，这表明在整体对齐为正的情况下存在共享限制。"
+    }
+   ]
+  },
+  {
+   "en": "If g C = − g D ≠ 0 g_{\\mathrm{C}}=-g_{\\mathrm{D}}\\neq 0 at x 0 = ( θ , θ ) x_{0}=(\\theta,\\theta) , then θ \\theta is a stationary point of the tied objective f f , whereas x 0 x_{0} is not a stationary point of F F . If, additionally, ∇ F \\nabla F is L L -Lipschitz on a neighborhood containing the segment from x 0 x_{0} to x 0 − η ​ g x_{0}-\\eta g , where L > 0 L>0 and 0 < η < 2 / L 0<\\eta<2/L , then",
+   "zh": "如果在 x₀ = (θ, θ) 处有 g_C = −g_D ≠ 0，则 θ 是绑定目标函数 f 的一个驻点，而 x₀ 却不是目标函数 F 的驻点。 此外，如果 ∇F 在包含从 x₀ 到 x₀ − ηg 线段的邻域上是 L-利普希茨连续的，其中 L > 0 且 0 < η < 2/L，那么",
+   "sents": [
+    {
+     "en": "If g C = − g D ≠ 0 g_{\\mathrm{C}}=-g_{\\mathrm{D}}\\neq 0 at x 0 = ( θ , θ ) x_{0}=(\\theta,\\theta) , then θ \\theta is a stationary point of the tied objective f f , whereas x 0 x_{0} is not a stationary point of F F .",
+     "zh": "如果在 x₀ = (θ, θ) 处有 g_C = −g_D ≠ 0，则 θ 是绑定目标函数 f 的一个驻点，而 x₀ 却不是目标函数 F 的驻点。"
+    },
+    {
+     "en": "If, additionally, ∇ F \\nabla F is L L -Lipschitz on a neighborhood containing the segment from x 0 x_{0} to x 0 − η ​ g x_{0}-\\eta g , where L > 0 L>0 and 0 < η < 2 / L 0<\\eta<2/L , then",
+     "zh": "此外，如果 ∇F 在包含从 x₀ 到 x₀ − ηg 线段的邻域上是 L-利普希茨连续的，其中 L > 0 且 0 < η < 2/L，那么"
+    }
+   ]
+  },
+  {
+   "en": "The chain rule gives ∇ f ​ ( θ ) = 0 \\nabla f(\\theta)=0 , whereas ∇ F ​ ( x 0 ) = g ≠ 0 \\nabla F(x_{0})=g\\neq 0 . The descent lemma along the update segment yields Eq. ( 14 ), whose decrease is strict for 0 < η < 2 / L 0<\\eta<2/L . ∎",
+   "zh": "链式法则给出 ∇ f ​ ( θ ) = 0 \\nabla f(\\theta)=0 ，而 ∇ F ​ ( x 0 ) = g ≠ 0 \\nabla F(x_{0})=g\\neq 0 。 沿着更新段的下降引理得出方程： ( 14 )，当 0 < η < 2 / L 时，其减少是严格的。 ∎",
+   "sents": [
+    {
+     "en": "The chain rule gives ∇ f ​ ( θ ) = 0 \\nabla f(\\theta)=0 , whereas ∇ F ​ ( x 0 ) = g ≠ 0 \\nabla F(x_{0})=g\\neq 0 .",
+     "zh": "链式法则给出 ∇ f ​ ( θ ) = 0 \\nabla f(\\theta)=0 ，而 ∇ F ​ ( x 0 ) = g ≠ 0 \\nabla F(x_{0})=g\\neq 0 。"
+    },
+    {
+     "en": "The descent lemma along the update segment yields Eq.",
+     "zh": "沿着更新段的下降引理得出方程："
+    },
+    {
+     "en": "( 14 ), whose decrease is strict for 0 < η < 2 / L 0<\\eta<2/L . ∎",
+     "zh": "( 14 )，当 0 < η < 2 / L 时，其减少是严格的。 ∎"
+    }
+   ]
+  },
+  {
+   "en": "Complete cancellation is a sufficient condition for this stationary-point separation; negative alignment alone does not imply stationarity.",
+   "zh": "完全取消是这种稳态点分离的充分条件；仅凭负向对齐并不一定意味着达到稳态。",
+   "sents": null
+  },
+  {
+   "en": "The first-order gap in Proposition G.1 yields a finite-step advantage for the corresponding normalized updates, without requiring negative alignment.",
+   "zh": "命题 G.1 中一阶差距为相应的归一化更新带来了有限步的优势，而无需负向对齐。",
+   "sents": null
+  },
+  {
+   "en": "Suppose ∇ F \\nabla F is L L -Lipschitz on an open neighborhood of the closed ball B ⁡ ( x 0 , ρ ) B(x_{0},\\rho) , with L , ρ > 0 L,\\rho>0 , and g C ≠ g D g_{\\mathrm{C}}\\neq g_{\\mathrm{D}} . Let",
+   "zh": "假设 ∇ F \\nabla F 在闭球 B ⁡ ( x 0 , ρ ) B(x_{0},\\rho) 的一个开邻域上是 L L -Lipschitz 的，其中 L , ρ > 0 L,\\rho>0 ，且 g C ≠ g D g_{\\mathrm{C}}\\neq g_{\\mathrm{D}} 。令",
+   "sents": null
+  },
+  {
+   "en": "For 0 < r ≤ ρ 0<r\\leq\\rho , choose the updates that maximize first-order decrease under the product-space budget:",
+   "zh": "对于 0 < r ≤ ρ，选择能在乘积空间预算下最大化一阶下降的更新：",
+   "sents": null
+  },
+  {
+   "en": "the split update strictly outperforms the shared update and strictly decreases the surrogate:",
+   "zh": "分裂更新严格优于共享更新，并且严格降低代理目标函数：",
+   "sents": null
+  },
+  {
+   "en": "Equation ( 12 ) gives a 2 − b 2 = ‖ g C − g D ‖ 2 / 2 > 0 a^{2}-b^{2}=\\left\\lVert g_{\\mathrm{C}}-g_{\\mathrm{D}}\\right\\rVert^{2}/2>0 . For ‖ δ ‖ ≤ ρ \\left\\lVert\\delta\\right\\rVert\\leq\\rho , smoothness yields",
+   "zh": "方程 (12) 给出 a²−b²=‖gC−gD‖²/2>0。 对于 ‖δ‖≤ρ，平滑性可得",
+   "sents": [
+    {
+     "en": "Equation ( 12 ) gives a 2 − b 2 = ‖ g C − g D ‖ 2 / 2 > 0 a^{2}-b^{2}=\\left\\lVert g_{\\mathrm{C}}-g_{\\mathrm{D}}\\right\\rVert^{2}/2>0 .",
+     "zh": "方程 (12) 给出 a²−b²=‖gC−gD‖²/2>0。"
+    },
+    {
+     "en": "For ‖ δ ‖ ≤ ρ \\left\\lVert\\delta\\right\\rVert\\leq\\rho , smoothness yields",
+     "zh": "对于 ‖δ‖≤ρ，平滑性可得"
+    }
+   ]
+  },
+  {
+   "en": "The two updates have norm at most r r and linear terms − r ​ a -ra and − r ​ b -rb , respectively, including b = 0 b=0 . Subtracting their expansions bounds the remainder difference by L ​ r 2 Lr^{2} , giving Eq. ( 17 ). Equation ( 18 ) makes this bound positive and also ensures",
+   "zh": "这两个更新的范数最多为 r，且线性项分别为 −ra 和 −rb（包括 b = 0 的情况）。 减去它们的展开式可将余差的上界限制在 Lr² 以内，从而得到方程 (17)。 方程 (18) 使该上界为正，并且也确保了",
+   "sents": [
+    {
+     "en": "The two updates have norm at most r r and linear terms − r ​ a -ra and − r ​ b -rb , respectively, including b = 0 b=0 .",
+     "zh": "这两个更新的范数最多为 r，且线性项分别为 −ra 和 −rb（包括 b = 0 的情况）。"
+    },
+    {
+     "en": "Subtracting their expansions bounds the remainder difference by L ​ r 2 Lr^{2} , giving Eq. ( 17 ).",
+     "zh": "减去它们的展开式可将余差的上界限制在 Lr² 以内，从而得到方程 (17)。"
+    },
+    {
+     "en": "Equation ( 18 ) makes this bound positive and also ensures",
+     "zh": "方程 (18) 使该上界为正，并且也确保了"
+    }
+   ]
+  },
+  {
+   "en": "because r < ( a − b ) / L ≤ a / L < 2 ​ a / L r<(a-b)/L\\leq a/L<2a/L . ∎",
+   "zh": "因为 r < ( a − b ) / L ≤ a / L < 2 ​ a / L r<(a-b)/L\\leq a/L<2a/L . ∎",
+   "sents": null
+  },
+  {
+   "en": "For b > 0 b>0 , both steps have product-space norm r r ; for b = 0 b=0 , the shared step is zero. The comparison concerns the normalized updates in Eq. ( 16 ).",
+   "zh": "当 b > 0 时，两个步骤的乘积空间范数均为 r；当 b = 0 时，共享步骤为零。 该比较涉及公式（16）中的归一化更新。",
+   "sents": [
+    {
+     "en": "For b > 0 b>0 , both steps have product-space norm r r ; for b = 0 b=0 , the shared step is zero.",
+     "zh": "当 b > 0 时，两个步骤的乘积空间范数均为 r；当 b = 0 时，共享步骤为零。"
+    },
+    {
+     "en": "The comparison concerns the normalized updates in Eq. ( 16 ).",
+     "zh": "该比较涉及公式（16）中的归一化更新。"
+    }
+   ]
+  },
+  {
+   "en": "We next compare ordinary gradient-descent steps with a common learning rate η \\eta for the shared parameter vector and each independent role vector.",
+   "zh": "接下来，我们将普通的梯度下降步与共享参数向量以及每个独立角色向量所采用的常用学习率 η \\eta 进行比较。",
+   "sents": null
+  },
+  {
+   "en": "Let h = g C + g D h=g_{\\mathrm{C}}+g_{\\mathrm{D}} , E = ‖ g C ‖ 2 + ‖ g D ‖ 2 E=\\left\\lVert g_{\\mathrm{C}}\\right\\rVert^{2}+\\left\\lVert g_{\\mathrm{D}}\\right\\rVert^{2} , and S = ‖ h ‖ 2 S=\\left\\lVert h\\right\\rVert^{2} . In the product space, the updates are",
+   "zh": "令 h = g C + g D h=g_{\\mathrm{C}}+g_{\\mathrm{D}}，E = ‖ g C ‖ 2 + ‖ g D ‖ 2 E=\\left\\lVert g_{\\mathrm{C}}\\right\\rVert^{2}+\\left\\lVert g_{\\mathrm{D}}\\right\\rVert^{2}，且 S = ‖ h ‖ 2 S=\\left\\lVert h\\right\\rVert^{2}。 在乘积空间中，更新是",
+   "sents": [
+    {
+     "en": "Let h = g C + g D h=g_{\\mathrm{C}}+g_{\\mathrm{D}} , E = ‖ g C ‖ 2 + ‖ g D ‖ 2 E=\\left\\lVert g_{\\mathrm{C}}\\right\\rVert^{2}+\\left\\lVert g_{\\mathrm{D}}\\right\\rVert^{2} , and S = ‖ h ‖ 2 S=\\left\\lVert h\\right\\rVert^{2} .",
+     "zh": "令 h = g C + g D h=g_{\\mathrm{C}}+g_{\\mathrm{D}}，E = ‖ g C ‖ 2 + ‖ g D ‖ 2 E=\\left\\lVert g_{\\mathrm{C}}\\right\\rVert^{2}+\\left\\lVert g_{\\mathrm{D}}\\right\\rVert^{2}，且 S = ‖ h ‖ 2 S=\\left\\lVert h\\right\\rVert^{2}。"
+    },
+    {
+     "en": "In the product space, the updates are",
+     "zh": "在乘积空间中，更新是"
+    }
+   ]
+  },
+  {
+   "en": "Their squared norms are 2 ​ η 2 ​ S 2\\eta^{2}S and η 2 ​ E \\eta^{2}E , respectively, so this protocol generally uses different displacement budgets.",
+   "zh": "它们的平方范数分别为 2​η²S 和 η²E，因此该协议通常使用不同的位移预算。",
+   "sents": null
+  },
+  {
+   "en": "Suppose ∇ F \\nabla F is L L -Lipschitz on an open neighborhood of the closed ball B ⁡ ( x 0 , ρ ) B(x_{0},\\rho) , with L , ρ > 0 L,\\rho>0 . If ⟨ g C , g D ⟩ = − κ < 0 \\left\\langle g_{\\mathrm{C}},g_{\\mathrm{D}}\\right\\rangle=-\\kappa<0 , set K = E + 2 ​ S K=E+2S and M = max ⁡ { E , 2 ​ S } M=\\max\\{\\sqrt{E},\\sqrt{2S}\\} . For η > 0 \\eta>0 with η ​ M ≤ ρ \\eta M\\leq\\rho ,",
+   "zh": "假设 ∇ F \\nabla F 在闭球 B ⁡ ( x 0 , ρ ) B(x_{0},\\rho) 的某个开邻域上是 L L -Lipschitz 的，其中 L , ρ > 0 L,\\rho>0 。 如果 ⟨ g C , g D ⟩ = − κ < 0 \\left\\langle g_{\\mathrm{C}},g_{\\mathrm{D}}\\right\\rangle=-\\kappa<0 ，则令 K = E + 2 ​ S K=E+2S 且 M = max ⁡ { E , 2 ​ S } M=\\max\\{\\sqrt{E},\\sqrt{2S}\\} 。 对于 η > 0 \\eta>0 且满足 η ​ M ≤ ρ \\eta M\\leq\\rho ，",
+   "sents": [
+    {
+     "en": "Suppose ∇ F \\nabla F is L L -Lipschitz on an open neighborhood of the closed ball B ⁡ ( x 0 , ρ ) B(x_{0},\\rho) , with L , ρ > 0 L,\\rho>0 .",
+     "zh": "假设 ∇ F \\nabla F 在闭球 B ⁡ ( x 0 , ρ ) B(x_{0},\\rho) 的某个开邻域上是 L L -Lipschitz 的，其中 L , ρ > 0 L,\\rho>0 。"
+    },
+    {
+     "en": "If ⟨ g C , g D ⟩ = − κ < 0 \\left\\langle g_{\\mathrm{C}},g_{\\mathrm{D}}\\right\\rangle=-\\kappa<0 , set K = E + 2 ​ S K=E+2S and M = max ⁡ { E , 2 ​ S } M=\\max\\{\\sqrt{E},\\sqrt{2S}\\} .",
+     "zh": "如果 ⟨ g C , g D ⟩ = − κ < 0 \\left\\langle g_{\\mathrm{C}},g_{\\mathrm{D}}\\right\\rangle=-\\kappa<0 ，则令 K = E + 2 ​ S K=E+2S 且 M = max ⁡ { E , 2 ​ S } M=\\max\\{\\sqrt{E},\\sqrt{2S}\\} 。"
+    },
+    {
+     "en": "For η > 0 \\eta>0 with η ​ M ≤ ρ \\eta M\\leq\\rho ,",
+     "zh": "对于 η > 0 \\eta>0 且满足 η ​ M ≤ ρ \\eta M\\leq\\rho ，"
+    }
+   ]
+  },
+  {
+   "en": "the split update both outperforms the shared update and strictly decreases the surrogate:",
+   "zh": "分裂更新在性能上优于共享更新，并且严格降低了代理目标函数：",
+   "sents": null
+  },
+  {
+   "en": "Both updates lie in the smoothness ball, so the expansion in Eq. ( 20 ) applies. The linear terms are − η ​ S -\\eta S and − η ​ E -\\eta E , with difference η ⁡ ( E − S ) = − 2 ​ η ​ ⟨ g C , g D ⟩ = 2 ​ η ​ κ \\eta(E-S)=-2\\eta\\left\\langle g_{\\mathrm{C}},g_{\\mathrm{D}}\\right\\rangle=2\\eta\\kappa . The sum of the remainder bounds is L ​ η 2 ​ ( E + 2 ​ S ) / 2 L\\eta^{2}(E+2S)/2 , proving Eq. ( 23 ). In particular,",
+   "zh": "两个更新都位于平滑性球内，因此公式（20）中的展开式适用。 线性项为 −ηS 和 −ηE，其差值为 η(E−S) = −2η⟨gC,gD⟩ = 2ηκ。 剩余项的界之和为 Lη²(E+2S)/2，从而证明了公式（23）。特别地，",
+   "sents": [
+    {
+     "en": "Both updates lie in the smoothness ball, so the expansion in Eq. ( 20 ) applies.",
+     "zh": "两个更新都位于平滑性球内，因此公式（20）中的展开式适用。"
+    },
+    {
+     "en": "The linear terms are − η ​ S -\\eta S and − η ​ E -\\eta E , with difference η ⁡ ( E − S ) = − 2 ​ η ​ ⟨ g C , g D ⟩ = 2 ​ η ​ κ \\eta(E-S)=-2\\eta\\left\\langle g_{\\mathrm{C}},g_{\\mathrm{D}}\\right\\rangle=2\\eta\\kappa .",
+     "zh": "线性项为 −ηS 和 −ηE，其差值为 η(E−S) = −2η⟨gC,gD⟩ = 2ηκ。"
+    },
+    {
+     "en": "The sum of the remainder bounds is L ​ η 2 ​ ( E + 2 ​ S ) / 2 L\\eta^{2}(E+2S)/2 , proving Eq. ( 23 ). In particular,",
+     "zh": "剩余项的界之和为 Lη²(E+2S)/2，从而证明了公式（23）。特别地，"
+    }
+   ]
+  },
+  {
+   "en": "when η < 4 ​ κ / ( L ​ K ) \\eta<4\\kappa/(LK) . Finally, F ⁡ ( x 0 + δ split ) ≤ F ⁡ ( x 0 ) − η ⁡ ( 1 − L ​ η / 2 ) ​ E < F ⁡ ( x 0 ) F(x_{0}+\\delta_{\\mathrm{split}})\\leq F(x_{0})-\\eta(1-L\\eta/2)E<F(x_{0}) for η < 2 / L \\eta<2/L . Negative alignment ensures E , K , M > 0 E,K,M>0 , so the interval in Eq. ( 24 ) is nonempty. ∎",
+   "zh": "当 η < 4 κ / ( L K ) 时，\\eta<4\\kappa/(LK) 。 最后，对于 η < 2 / L ，有 F ⁡ ( x 0 + δ split ) ≤ F ⁡ ( x 0 ) − η ⁡ ( 1 − L ​ η / 2 ) ​ E < F ⁡ ( x 0 ) F(x_{0}+\\delta_{\\mathrm{split}})\\leq F(x_{0})-\\eta(1-L\\eta/2)E<F(x_{0}) 。 负对齐确保 E , K , M > 0 E,K,M>0 ，因此方程 ( 24 ) 中的区间非空。 ∎",
+   "sents": [
+    {
+     "en": "when η < 4 ​ κ / ( L ​ K ) \\eta<4\\kappa/(LK) .",
+     "zh": "当 η < 4 κ / ( L K ) 时，\\eta<4\\kappa/(LK) 。"
+    },
+    {
+     "en": "Finally, F ⁡ ( x 0 + δ split ) ≤ F ⁡ ( x 0 ) − η ⁡ ( 1 − L ​ η / 2 ) ​ E < F ⁡ ( x 0 ) F(x_{0}+\\delta_{\\mathrm{split}})\\leq F(x_{0})-\\eta(1-L\\eta/2)E<F(x_{0}) for η < 2 / L \\eta<2/L .",
+     "zh": "最后，对于 η < 2 / L ，有 F ⁡ ( x 0 + δ split ) ≤ F ⁡ ( x 0 ) − η ⁡ ( 1 − L ​ η / 2 ) ​ E < F ⁡ ( x 0 ) F(x_{0}+\\delta_{\\mathrm{split}})\\leq F(x_{0})-\\eta(1-L\\eta/2)E<F(x_{0}) 。"
+    },
+    {
+     "en": "Negative alignment ensures E , K , M > 0 E,K,M>0 , so the interval in Eq. ( 24 ) is nonempty. ∎",
+     "zh": "负对齐确保 E , K , M > 0 E,K,M>0 ，因此方程 ( 24 ) 中的区间非空。 ∎"
+    }
+   ]
+  },
+  {
+   "en": "Under the same smoothness assumptions, the common-learning-rate comparison has the general expansion",
+   "zh": "在相同的平滑性假设下，通用学习率比较具有如下一般展开形式",
+   "sents": null
+  },
+  {
+   "en": "A strictly positive inner product therefore favors the shared update for sufficiently small η \\eta , even if some coordinates cancel. This differs from Corollary G.2 because the common-learning-rate protocol does not normalize update lengths.",
+   "zh": "因此，对于足够小的 η，严格为正的内积会倾向于共享更新，即使某些坐标相互抵消。 这与推论 G.2 不同，因为共同学习率协议不会对更新长度进行归一化。",
+   "sents": [
+    {
+     "en": "A strictly positive inner product therefore favors the shared update for sufficiently small η \\eta , even if some coordinates cancel.",
+     "zh": "因此，对于足够小的 η，严格为正的内积会倾向于共享更新，即使某些坐标相互抵消。"
+    },
+    {
+     "en": "This differs from Corollary G.2 because the common-learning-rate protocol does not normalize update lengths.",
+     "zh": "这与推论 G.2 不同，因为共同学习率协议不会对更新长度进行归一化。"
+    }
+   ]
+  },
+  {
+   "en": "For a minibatch, the proposition requires negative alignment of the aggregated gradients. Negative alignment of individual samples or selected modules does not establish this condition for the full gradient. A selected-block comparison holds with all other parameters fixed.",
+   "zh": "对于一个迷你批量，该命题要求聚合梯度的负向对齐。 单个样本或所选模块的负向对齐并不能为完整梯度建立这一条件。 在保持所有其他参数固定的情况下，所选块比较成立。",
+   "sents": [
+    {
+     "en": "For a minibatch, the proposition requires negative alignment of the aggregated gradients.",
+     "zh": "对于一个迷你批量，该命题要求聚合梯度的负向对齐。"
+    },
+    {
+     "en": "Negative alignment of individual samples or selected modules does not establish this condition for the full gradient.",
+     "zh": "单个样本或所选模块的负向对齐并不能为完整梯度建立这一条件。"
+    },
+    {
+     "en": "A selected-block comparison holds with all other parameters fixed.",
+     "zh": "在保持所有其他参数固定的情况下，所选块比较成立。"
+    }
+   ]
+  },
+  {
+   "en": "Partition the matching role parameters into B B disjoint blocks, with gradients g C ( b ) g_{\\mathrm{C}}^{(b)} and g D ( b ) g_{\\mathrm{D}}^{(b)} . Blocks in 𝒮 ⊆ { 1 , … , B } \\mathcal{S}\\subseteq\\{1,\\ldots,B\\} have independent role updates; the remaining blocks are tied. All blocks share the same total product-space budget.",
+   "zh": "将匹配的角色参数划分为 B 个互不相交的分块，其梯度为 g C ( b ) g_{\\mathrm{C}}^{(b)} 和 g D ( b ) g_{\\mathrm{D}}^{(b)}。 𝒮 ⊆ { 1 , … , B } \\mathcal{S}\\subseteq\\{1,\\ldots,B\\} 中的分块具有独立的角色更新；其余分块则共享参数。 所有分块共享相同的总乘积空间预算。",
+   "sents": [
+    {
+     "en": "Partition the matching role parameters into B B disjoint blocks, with gradients g C ( b ) g_{\\mathrm{C}}^{(b)} and g D ( b ) g_{\\mathrm{D}}^{(b)} .",
+     "zh": "将匹配的角色参数划分为 B 个互不相交的分块，其梯度为 g C ( b ) g_{\\mathrm{C}}^{(b)} 和 g D ( b ) g_{\\mathrm{D}}^{(b)}。"
+    },
+    {
+     "en": "Blocks in 𝒮 ⊆ { 1 , … , B } \\mathcal{S}\\subseteq\\{1,\\ldots,B\\} have independent role updates; the remaining blocks are tied.",
+     "zh": "𝒮 ⊆ { 1 , … , B } \\mathcal{S}\\subseteq\\{1,\\ldots,B\\} 中的分块具有独立的角色更新；其余分块则共享参数。"
+    },
+    {
+     "en": "All blocks share the same total product-space budget.",
+     "zh": "所有分块共享相同的总乘积空间预算。"
+    }
+   ]
+  },
+  {
+   "en": "At the common shared point, the maximum first-order decrease D 𝒮 ​ ( r ) D_{\\mathcal{S}}(r) for this partially separated update space satisfies",
+   "zh": "在公共共享点上，对于此部分分离的更新空间，最大一阶下降量 D 𝒮 ​ ( r ) D_{\\mathcal{S}}(r) 满足",
+   "sents": null
+  },
+  {
+   "en": "Consequently, relative to full separation,",
+   "zh": "因此，相对于完全分离而言，",
+   "sents": null
+  },
+  {
+   "en": "For any linear subspace V V and orthogonal projection P V P_{V} , ⟨ g , δ ⟩ = ⟨ P V ​ g , δ ⟩ \\left\\langle g,\\delta\\right\\rangle=\\left\\langle P_{V}g,\\delta\\right\\rangle for δ ∈ V \\delta\\in V . Thus D V ​ ( r ) = r ⁡ ‖ P V ​ g ‖ D_{V}(r)=r\\left\\lVert P_{V}g\\right\\rVert , including the zero-projection case. In a separated block the projection retains both gradient components. In a tied block it replaces them by their average, as in Eq. ( 12 ), with squared norm ‖ g C ( b ) + g D ( b ) ‖ 2 / 2 \\left\\lVert g_{\\mathrm{C}}^{(b)}+g_{\\mathrm{D}}^{(b)}\\right\\rVert^{2}/2 . Disjoint parameter blocks are orthogonal, so their squared projection norms add, giving Eq. ( 28 ). Subtracting from D full ​ ( r ) 2 = r 2 ​ ∑ b ( ‖ g C ( b ) ‖ 2 + ‖ g D ( b ) ‖ 2 ) D_{\\mathrm{full}}(r)^{2}=r^{2}\\sum_{b}(\\left\\lVert g_{\\mathrm{C}}^{(b)}\\right\\rVert^{2}+\\left\\lVert g_{\\mathrm{D}}^{(b)}\\right\\rVert^{2}) and applying Eq. ( 11 ) blockwise proves the result. ∎",
+   "zh": "对于任意线性子空间 V 和正交投影 P_V，有 ⟨g, δ⟩ = ⟨P_V g, δ⟩（其中 δ ∈ V）。因此，D_V(r) = r‖P_V g‖，这包括投影为零的情况。在分离块中，投影会保留梯度的两个分量。在共享块中，投影则用它们的平均值来替代这两个分量，如公式 (12) 所示，此时平方范数为 ‖g_C^{(b)} + g_D^{(b)}‖²/2。互不交叠的参数块是正交的，因此它们投影的平方范数可以相加，从而得到公式 (28)。从 D_full(r)^2 = r²∑_b(‖g_C^{(b)}‖² + ‖g_D^{(b)}‖²) 中减去该值，并按块应用公式 (11)，即可证明该结论。∎",
+   "sents": null
+  },
+  {
+   "en": "Separating only FFN leaves the Attention contribution in Eq. ( 29 ). This quantifies the residual sharing restriction in the partial-separation variants, provided that tying their matching parameters reproduces the same forward computation at x 0 x_{0} .",
+   "zh": "仅分离 FFN 会将注意力贡献保留在公式 (29) 中。 这量化了部分分离变体中的残差共享限制，前提是绑定它们的匹配参数能在 x₀ x_{0} 处重现相同的正向计算。",
+   "sents": [
+    {
+     "en": "Separating only FFN leaves the Attention contribution in Eq. ( 29 ).",
+     "zh": "仅分离 FFN 会将注意力贡献保留在公式 (29) 中。"
+    },
+    {
+     "en": "This quantifies the residual sharing restriction in the partial-separation variants, provided that tying their matching parameters reproduces the same forward computation at x 0 x_{0} .",
+     "zh": "这量化了部分分离变体中的残差共享限制，前提是绑定它们的匹配参数能在 x₀ x_{0} 处重现相同的正向计算。"
+    }
+   ]
+  },
+  {
+   "en": "World action models. Our observation of gradient conflict at TF initialization motivates exploring role-specific parameterization from the teacher-forcing stage. World action models (WAMs) [ 43 , 23 , 36 , 27 ] , which commonly rely on teacher-forced training, provide a natural setting for this direction. Separating context writing from visual and action prediction may enable more effective learning of historical representations for subsequent predictions.",
+   "zh": "世界动作模型。 我们在 TF 初始化阶段观察到的梯度冲突，促使我们从教师强制阶段开始探索角色特定的参数化方法。 世界动作模型（WAMs）[43, 23, 36, 27] 通常依赖教师强制训练，为这一方向提供了自然的实验环境。 将上下文生成与视觉和动作预测分离，可能有助于更有效地学习历史表示，以支持后续预测。",
+   "sents": [
+    {
+     "en": "World action models.",
+     "zh": "世界动作模型。"
+    },
+    {
+     "en": "Our observation of gradient conflict at TF initialization motivates exploring role-specific parameterization from the teacher-forcing stage.",
+     "zh": "我们在 TF 初始化阶段观察到的梯度冲突，促使我们从教师强制阶段开始探索角色特定的参数化方法。"
+    },
+    {
+     "en": "World action models (WAMs) [ 43 , 23 , 36 , 27 ] , which commonly rely on teacher-forced training, provide a natural setting for this direction.",
+     "zh": "世界动作模型（WAMs）[43, 23, 36, 27] 通常依赖教师强制训练，为这一方向提供了自然的实验环境。"
+    },
+    {
+     "en": "Separating context writing from visual and action prediction may enable more effective learning of historical representations for subsequent predictions.",
+     "zh": "将上下文生成与视觉和动作预测分离，可能有助于更有效地学习历史表示，以支持后续预测。"
+    }
+   ]
+  },
+  {
+   "en": "Efficient context writers and KV compression. Role-specific parameterization motivates asymmetric architectures, with model capacity tailored to the demands of context writing and denoising. A lightweight context writer could learn compressed KV representations from redundant video histories under a constrained cache budget. Such writer-side adaptation could be optimized through future generation losses while keeping the denoiser’s parameters and attention interface unchanged. The goal is to reduce parameter storage, cache memory, and attention cost while preserving the denoiser’s generative capabilities and long-horizon consistency.",
+   "zh": "高效的上下文写入器和 KV 压缩。 角色特定的参数化推动了非对称架构的发展，其中模型容量会根据上下文写入和去噪的需求进行定制。 在缓存预算受限的情况下，一个轻量级的上下文写入器可以从冗余的视频历史中学习压缩的 KV 表示。 这种写入器侧的自适应可以通过未来的生成损失进行优化，同时保持去噪器的参数和注意力接口不变。 其目标是减少参数存储、缓存内存和注意力成本，同时保留去噪器的生成能力和长期一致性。",
+   "sents": [
+    {
+     "en": "Efficient context writers and KV compression.",
+     "zh": "高效的上下文写入器和 KV 压缩。"
+    },
+    {
+     "en": "Role-specific parameterization motivates asymmetric architectures, with model capacity tailored to the demands of context writing and denoising.",
+     "zh": "角色特定的参数化推动了非对称架构的发展，其中模型容量会根据上下文写入和去噪的需求进行定制。"
+    },
+    {
+     "en": "A lightweight context writer could learn compressed KV representations from redundant video histories under a constrained cache budget.",
+     "zh": "在缓存预算受限的情况下，一个轻量级的上下文写入器可以从冗余的视频历史中学习压缩的 KV 表示。"
+    },
+    {
+     "en": "Such writer-side adaptation could be optimized through future generation losses while keeping the denoiser’s parameters and attention interface unchanged.",
+     "zh": "这种写入器侧的自适应可以通过未来的生成损失进行优化，同时保持去噪器的参数和注意力接口不变。"
+    },
+    {
+     "en": "The goal is to reduce parameter storage, cache memory, and attention cost while preserving the denoiser’s generative capabilities and long-horizon consistency.",
+     "zh": "其目标是减少参数存储、缓存内存和注意力成本，同时保留去噪器的生成能力和长期一致性。"
+    }
+   ]
+  }
+ ]
+}
