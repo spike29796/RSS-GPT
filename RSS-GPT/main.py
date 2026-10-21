@@ -13,6 +13,7 @@ import time
 import traceback
 import collectors
 import translate_step  # 摘要前置翻译工序（2026-10-07）
+import summary_batch  # 批量摘要：一次请求处理一包条目（2026-10-22）
 #from dateutil.parser import parse
 
 def get_cfg(sec, name, default=None):
@@ -647,6 +648,76 @@ def write_source_line(ok, name, items, new, note=''):
         f.write(f"{1 if ok else 0}|{name}|{items}|{new}|{note}\n")
 
 
+def _fill_from_batch(entry, text, categories, default_category):
+    """把批量返回的三行文本解析后填回 entry；解析不出返回 False。"""
+    try:
+        category, summary, title_zh = parse_category_and_summary(text, categories, default_category)
+    except Exception:
+        return False
+    if summary is None:
+        return False
+    entry.gpt_category, entry.summary, entry.title_zh = category, summary, title_zh
+    return True
+
+
+def flush_summary_batch(pending, model, language, categories, default_category,
+                        retry_queue, retry_marked, log_file=None):
+    """一包条目一次调用总结完，逐条填回 entry；缺项的原地回退逐条。
+
+    pending: [(entry, query, token_length)]
+    最坏情况（整包失败 + 逐条也失败）与改造前的逐条模式完全一致：摘要为
+    None，条目进 retry 队列，下一轮优先补。
+    """
+    if not pending:
+        return
+    results = None
+    _bstats = {}
+    if language == 'zh':
+        try:
+            results = summary_batch.summarize_batch(
+                [{'id': i + 1, 'query': q} for i, (_e, q, _t) in enumerate(pending)],
+                model=model, categories=categories, default_category=default_category,
+                language=language, summary_length=summary_length, log_file=log_file,
+                stats=_bstats)
+        except Exception:
+            results = None
+    # 批量路径的 usage 落日志：逐条路径一直有 LLM usage 行，批量路径没有，
+    # 单轮 token 账就算不出来（2026-10-22）。
+    if _bstats and log_file:
+        _t = _bstats.get('translate') or {}
+        _s = _bstats.get('summary') or {}
+        try:
+            with open(log_file, 'a', encoding='utf-8') as f:
+                f.write('LLM usage (batch): translate prompt=%s completion=%s total=%s | '
+                        'summary prompt=%s completion=%s total=%s\n'
+                        % (_t.get('prompt'), _t.get('completion'), _t.get('total'),
+                           _s.get('prompt'), _s.get('completion'), _s.get('total')))
+        except Exception:
+            pass
+    if not isinstance(results, dict):
+        results = {}
+
+    for idx, (entry, query, token_length) in enumerate(pending):
+        text = results.get(idx + 1)
+        done = bool(text) and _fill_from_batch(entry, text, categories, default_category)
+        if not done:
+            try:
+                entry.gpt_category, entry.summary, entry.title_zh = gpt_summary(
+                    query, model=model, language=language, categories=categories,
+                    default_category=default_category, log_file=log_file)
+            except Exception as e:
+                entry.summary = None
+                mark_retry(retry_queue, entry.link, 'api_error')
+                retry_marked.add(entry.link)
+                with open(log_file, 'a', encoding='utf-8') as f:
+                    f.write("Summarization failed, append the original article\n")
+                    f.write(f"error: {_redact_secrets(type(e).__name__ + ': ' + str(e))}\n")
+        with open(log_file, 'a', encoding='utf-8') as f:
+            f.write(f"Token length: {token_length}\n")
+            f.write(f"Summarized using {model} (batch of {len(pending)})\n")
+            f.write(f"Category: {getattr(entry, 'gpt_category', None)}\n")
+
+
 def output(sec, language):
     """ output
     This function is used to output the summary of the RSS feed.
@@ -687,6 +758,10 @@ def output(sec, language):
     else:
         max_items = int(max_items)
     cnt = 0
+    # 批量摘要：一次请求处理多少条（0/1 = 退回逐条老行为）。
+    _BATCH_SIZE = int(os.environ.get('SUMMARY_BATCH_SIZE', '10')) or 1
+    _batch_model = custom_model or 'gpt-4o-mini'
+
     # 本轮抓不到的地址。攒着不立刻写行：一个源只能有一行，等它处理完再判。
     fetch_failures = []
     categories = get_categories(sec)
@@ -761,6 +836,12 @@ def output(sec, language):
             print(f"Fetch failed from {rss_url} (tried 3 times)")
             fetch_failures.append(rss_url)
             continue
+        # 批量摘要缓冲（2026-10-22）。收尾阶段（分类解析 + append）统一后置到
+        # 批量摘要之后，所以本轮去重改用 _seen，不再依赖 append_entries。
+        _pending = []
+        _tofinish = []
+        _seen = set()
+
         for entry in feed.entries:
             if cnt > max_entries:
                 with open(log_file, 'a', encoding='utf-8') as f:
@@ -776,8 +857,10 @@ def output(sec, language):
             if entry.link in dropped_links:
                 continue
 
-            if entry.link in [x.link for x in append_entries]:
+            if entry.link in _seen:
                 continue
+            _seen.add(entry.link)
+
 
             entry.title = generate_untitled(entry)
 
@@ -805,58 +888,47 @@ def output(sec, language):
             # max_items == 0 means "no cap": summarize every new entry.
             # (Before 2026-10-09 the guard was `cnt > max_items`, so 0 meant
             # "summarize nothing" — the opposite of what the config implies.)
+            # 2026-10-22: 不再逐条调用。先攒进 _pending，满一包（默认 10 条）
+            # 发一次请求，由 flush_summary_batch 填回；收尾整体后移到循环外。
             if max_items and cnt > max_items:
                 entry.summary = None
+                _tofinish.append((entry, False))
             elif OPENAI_API_KEY and (llm_deadline is None or datetime.datetime.now().timestamp() <= llm_deadline):
                 # Also gated by the time budget: new items missed today are
-                # picked up by backfill on later runs — a lost commit is worse.
-                token_length = len(cleaned_article)
+                # picked up by backfill on later runs - a lost commit is worse.
                 # Title is prepended to the summary input: collector sources
                 # (e.g. awwwards) have little body text beyond tags.
-                query = f"{entry.title}\n{cleaned_article}"
-                if custom_model:
-                    try:
-                        entry.gpt_category, entry.summary, entry.title_zh = gpt_summary(query,model=custom_model, language=language, categories=categories, default_category=default_category, log_file=log_file)
-                        with open(log_file, 'a', encoding='utf-8') as f:
-                            f.write(f"Token length: {token_length}\n")
-                            f.write(f"Summarized using {custom_model}\n")
-                            f.write(f"Category: {entry.gpt_category}\n")
-                    except Exception as e:
-                        entry.summary = None
-                        mark_retry(retry_queue, entry.link, 'api_error')
-                        retry_marked.add(entry.link)
-                        with open(log_file, 'a', encoding='utf-8') as f:
-                            f.write(f"Summarization failed, append the original article\n")
-                            f.write(f"error: {_redact_secrets(type(e).__name__ + ': ' + str(e))}\n")
-                else:
-                    try:
-                        entry.gpt_category, entry.summary, entry.title_zh = gpt_summary(query,model="gpt-4o-mini", language=language, categories=categories, default_category=default_category, log_file=log_file)
-                        with open(log_file, 'a', encoding='utf-8') as f:
-                            f.write(f"Token length: {token_length}\n")
-                            f.write(f"Summarized using gpt-4o-mini\n")
-                            f.write(f"Category: {entry.gpt_category}\n")
-                    except Exception:
-                        try:
-                            entry.gpt_category, entry.summary, entry.title_zh = gpt_summary(query,model="gpt-4o", language=language, categories=categories, default_category=default_category, log_file=log_file)
-                            with open(log_file, 'a', encoding='utf-8') as f:
-                                f.write(f"Token length: {token_length}\n")
-                                f.write(f"Summarized using GPT-4o\n")
-                                f.write(f"Category: {entry.gpt_category}\n")
-                        except Exception as e:
-                            entry.summary = None
-                            mark_retry(retry_queue, entry.link, 'api_error')
-                            retry_marked.add(entry.link)
-                            with open(log_file, 'a', encoding='utf-8') as f:
-                                f.write(f"Summarization failed, append the original article\n")
-                                f.write(f"error: {_redact_secrets(type(e).__name__ + ': ' + str(e))}\n")
-                if getattr(entry, 'summary', None) is None and entry.link not in retry_marked:
-                    # The LLM answered but the output never complied (or the
-                    # content was persistently empty): queue the entry for
-                    # priority retry on the next run instead of dropping it.
-                    mark_retry(retry_queue, entry.link, 'bad_output')
-                    retry_marked.add(entry.link)
-                    with open(log_file, 'a', encoding='utf-8') as f:
-                        f.write(f"Summarization produced no usable output, queued for retry: [{entry.title}]({entry.link})\n")
+                _pending.append((entry, f"{entry.title}\n{cleaned_article}", len(cleaned_article)))
+                _tofinish.append((entry, True))
+                if len(_pending) >= _BATCH_SIZE:
+                    flush_summary_batch(_pending, model=_batch_model, language=language,
+                                        categories=categories, default_category=default_category,
+                                        retry_queue=retry_queue, retry_marked=retry_marked,
+                                        log_file=log_file)
+                    del _pending[:]
+            else:
+                entry.summary = None
+                _tofinish.append((entry, False))
+
+
+        # 尾包：不满一包的也要发出去。
+        if _pending:
+            flush_summary_batch(_pending, model=_batch_model, language=language,
+                                categories=categories, default_category=default_category,
+                                retry_queue=retry_queue, retry_marked=retry_marked,
+                                log_file=log_file)
+            del _pending[:]
+
+        # 收尾：retry 判定 + 分类解析 + append，整体放在批量摘要之后。
+        for entry, _need_llm in _tofinish:
+            if _need_llm and getattr(entry, 'summary', None) is None and entry.link not in retry_marked:
+                # The LLM answered but the output never complied (or the
+                # content was persistently empty): queue the entry for
+                # priority retry on the next run instead of dropping it.
+                mark_retry(retry_queue, entry.link, 'bad_output')
+                retry_marked.add(entry.link)
+                with open(log_file, 'a', encoding='utf-8') as f:
+                    f.write(f"Summarization produced no usable output, queued for retry: [{entry.title}]({entry.link})\n")
 
             # Category resolution: the feed's own tag wins when available
             # (e.g. openai.com/news ships an official <category> per item),
@@ -883,6 +955,7 @@ def output(sec, language):
             append_entries.append(entry)
             with open(log_file, 'a', encoding='utf-8') as f:
                 f.write(f"Append: [{entry.title}]({entry.link})\n")
+
 
     with open(log_file, 'a', encoding='utf-8') as f:
         f.write(f'append_entries: {len(append_entries)}\n')
@@ -981,24 +1054,15 @@ def output(sec, language):
                     continue
                 candidates.append((record, record_article(record)))
 
-        def backfill_one(record, article):
-            started = datetime.datetime.now().timestamp()
-            query = f"{record['title']}\n{clean_html(article)}"
-            try:
-                category, summary, title_zh = gpt_summary(query, model=custom_model or "gpt-4o-mini", language=language, categories=categories, default_category=default_category, log_file=log_file)
-            except Exception as e:
-                mark_retry(retry_queue, record['link'], 'api_error')
-                with open(log_file, 'a', encoding='utf-8') as f:
-                    f.write(f"Backfill failed: [{record['title']}]({record['link']})\nerror: {_redact_secrets(type(e).__name__ + ': ' + str(e))}\n")
-                return 0
+        def backfill_apply(record, article, category, summary, title_zh, elapsed):
+            """把总结结果写回 record 并记日志；成功返回 1，坏输出入队返回 0。"""
             if summary is None:
                 mark_retry(retry_queue, record['link'], 'bad_output')
                 return 0  # non-compliant output; stays queued for the next run
-            elapsed = datetime.datetime.now().timestamp() - started
             had_summary = bool(record.get('summary'))
             if had_summary:
                 # One-time translation backfill (T-019): the entry already has
-                # a summary — fill ONLY the missing title_zh. summary/content/
+                # a summary - fill ONLY the missing title_zh. summary/content/
                 # category and every other field stay byte-identical.
                 # Previously this path also rewrote summary/content with fresh
                 # LLM output, clobbering good summaries (and tripping the e2e
@@ -1026,15 +1090,61 @@ def output(sec, language):
                     f.write(f"Backfilled in {elapsed:.0f}s using {custom_model or 'gpt-4o-mini'}: [{record['title']}]({record['link']})\nCategory: {category}\n")
             return 1
 
+        def backfill_batch(chunk):
+            """一批（默认 10 条）一次请求总结完；缺项/坏项的原地回退逐条。
+
+            chunk: [(record, article)]
+            """
+            if not chunk:
+                return 0
+            started = datetime.datetime.now().timestamp()
+            queries = [f"{r['title']}\n{clean_html(a)}" for r, a in chunk]
+            results = {}
+            if language == 'zh':
+                try:
+                    results = summary_batch.summarize_batch(
+                        [{'id': i + 1, 'query': q} for i, q in enumerate(queries)],
+                        model=custom_model or "gpt-4o-mini", categories=categories,
+                        default_category=default_category, language=language,
+                        summary_length=summary_length, log_file=log_file) or {}
+                except Exception:
+                    results = {}
+            if not isinstance(results, dict):
+                results = {}
+            ok = 0
+            for idx, (record, article) in enumerate(chunk):
+                category, summary, title_zh = None, None, None
+                text = results.get(idx + 1)
+                if text:
+                    try:
+                        category, summary, title_zh = parse_category_and_summary(text, categories, default_category)
+                    except Exception:
+                        summary = None
+                if summary is None:
+                    # 缺项或整包失败：原地回退逐条，行为与改造前一致。
+                    try:
+                        category, summary, title_zh = gpt_summary(queries[idx], model=custom_model or "gpt-4o-mini", language=language, categories=categories, default_category=default_category, log_file=log_file)
+                    except Exception as e:
+                        mark_retry(retry_queue, record['link'], 'api_error')
+                        with open(log_file, 'a', encoding='utf-8') as f:
+                            f.write(f"Backfill failed: [{record['title']}]({record['link']})\nerror: {_redact_secrets(type(e).__name__ + ': ' + str(e))}\n")
+                        continue
+                ok += backfill_apply(record, article, category, summary, title_zh,
+                                     datetime.datetime.now().timestamp() - started)
+            return ok
+
         backfilled = 0
-        # Account limit is 3 concurrent requests — batch accordingly.
-        for i in range(0, len(candidates), 3):
+        # Account limit is 3 concurrent requests - so run 3 CHUNKS at a time
+        # (each chunk is one request), not 3 single entries.
+        chunks = [candidates[i:i + _BATCH_SIZE] for i in range(0, len(candidates), _BATCH_SIZE)]
+        for i in range(0, len(chunks), 3):
             if llm_deadline is not None and datetime.datetime.now().timestamp() > llm_deadline:
                 with open(log_file, 'a', encoding='utf-8') as f:
                     f.write('Backfill time budget exhausted; remaining entries deferred to the next run.\n')
                 break
             with ThreadPoolExecutor(max_workers=3) as pool:
-                backfilled += sum(pool.map(lambda c: backfill_one(*c), candidates[i:i + 3]))
+                backfilled += sum(pool.map(backfill_batch, chunks[i:i + 3]))
+
         with open(log_file, 'a', encoding='utf-8') as f:
             f.write(f'backfilled_entries: {backfilled}\n')
 

@@ -113,6 +113,87 @@ def translate_to_zh(query, log_file=None):
         return query
 
 
+BATCH_SIZE = int(os.environ.get('TRANSLATE_BATCH_SIZE', '10'))
+
+# 批量模式：格式在 system 里钉死，模型只负责填数据。
+# 参考 SillyTavern 预设的做法 —— 先把返回结构写死，再喂内容。
+_BATCH_SYSTEM = (
+    '你是翻译引擎。用户会给你一个 JSON 数组，里面是 N 条待翻译文本。\n'
+    '严格要求：\n'
+    '1. 只输出 JSON 数组，不要任何解释，不要 markdown 代码块标记。\n'
+    '2. 输出的数组长度必须等于输入的 N，每一项的 id 必须与输入一一对应。\n'
+    '3. 每一项的格式固定为：{"id": <输入的id>, "zh": "<中文译文>"}\n'
+)
+
+
+def _strip_fence(text):
+    """剥掉 ```json 围栏，并截出最外层的 JSON 数组。"""
+    t = (text or '').strip()
+    if t.startswith('```'):
+        t = t.split('\n', 1)[1] if '\n' in t else ''
+        if t.rstrip().endswith('```'):
+            t = t.rstrip()[:-3]
+        t = t.strip()
+    # 无条件按最外层 [ ... ] 截取。模型经常在数组后面补一句解释，
+    # 只在「不以 [ 开头」时才截，会把 [{...}] 后面那句话一起带进去，
+    # json.loads 直接报 Extra data —— 沙箱实测就是这么崩的。
+    i, j = t.find('['), t.rfind(']')
+    if i != -1 and j > i:
+        t = t[i:j + 1]
+    return t
+
+
+def translate_batch_to_zh(items, log_file=None, stats=None):
+    """一次翻 N 条。items 形如 [{"id": 1, "text": "..."}]，返回 {id: 译文}。
+
+    stats 传入 dict 时，把本次调用的 usage 写进 stats['translate']。
+    任何环节失败都返回 None，调用方回退到逐条 translate_to_zh()。
+    """
+    if not TRANSLATE_URL or not items:
+        return None
+    payload = [{'id': it['id'], 'text': it['text'][:TRANSLATE_MAX_CHARS]} for it in items]
+    body = json.dumps({
+        'model': TRANSLATE_MODEL,
+        'messages': [
+            {'role': 'system', 'content': _BATCH_SYSTEM + _glossary_block()},
+            {'role': 'user', 'content': json.dumps(payload, ensure_ascii=False)},
+        ],
+        'stream': False,
+        'temperature': 0,
+        'max_tokens': TRANSLATE_NUM_PREDICT,
+    }).encode('utf-8')
+
+    try:
+        req = urllib.request.Request(
+            TRANSLATE_URL + '/chat/completions',
+            data=body,
+            headers=_headers(),
+        )
+        resp = json.loads(urllib.request.urlopen(req, timeout=TRANSLATE_TIMEOUT).read())
+        if isinstance(stats, dict):
+            u = resp.get('usage') or {}
+            stats['translate'] = {
+                'prompt': u.get('prompt_tokens'),
+                'completion': u.get('completion_tokens'),
+                'total': u.get('total_tokens'),
+            }
+        # strict=False：译文里出现裸换行这类控制字符时不至于整包作废。
+        arr = json.loads(_strip_fence(_extract_choice(resp)), strict=False)
+        out = {}
+        for row in arr:
+            if isinstance(row, dict) and 'id' in row and (row.get('zh') or '').strip():
+                out[row['id']] = row['zh'].strip()
+        if not out:
+            # 空返回要留证据：可能模型给了空数组，也可能换了结构。
+            _log(log_file, '批量翻译空返回，模型原始输出前 300 字符：%r'
+                 % _extract_choice(resp)[:300])
+        _log(log_file, '批量翻译：%d 条入 -> %d 条出' % (len(payload), len(out)))
+        return out or None
+    except Exception as e:
+        _log(log_file, '批量翻译失败（%s: %s），交调用方兜底' % (type(e).__name__, e))
+        return None
+
+
 def _log(log_file, msg):
     if not log_file:
         return
