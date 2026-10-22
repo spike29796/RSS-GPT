@@ -1,0 +1,1691 @@
+{
+ "id": "cc61bdc0ed2e98dc",
+ "source": "arxiv-agent",
+ "link": "https://arxiv.org/abs/2610.22915v1",
+ "title": "Reward Engine: Reward-Centric Self-Evolution for Open-Ended Tool Agents",
+ "title_zh": "面向开放式工具代理的奖励引擎：以奖励为中心的自我进化方法",
+ "published": "2026-10-16T04:25:34Z",
+ "translated_at": "2026-10-22T18:19:46Z",
+ "paragraphs": [
+  {
+   "en": "Open-ended tool agents can complete the same objective through different tool paths, and their quality depends jointly on the interaction trace, environment state, and final artifacts, so such tasks rarely admit an executable ground-truth reward. The central challenge is therefore to construct a reward from existing experience that exposes the current policy’s failures while remaining stationary during optimization. We introduce Reward Engine, which, like a self-motivated student, first works out what success requires and then optimizes toward it. From the task and initial trajectories, it builds a RewardPack of testcases for required correctness and rubrics for graded quality, each executed as a check that returns a judgment with evidence. The frozen RewardPack then guides the agent to revise and select its outputs, and can also serve as a reward for reinforcement learning. On WorkBuddy Bench Office and Claw-Eval, the constructed reward largely agrees with the benchmark graders, not reversing their ordering on 82.3% and 80.5% of candidate pairs. Used to revise executions, it raises three-run consistency ( Pass 3 \\mathrm{Pass}^{3} ) over Baseline from 45.0% to 54.0% and from 78.4% to 83.7%.",
+   "zh": "开放式工具智能体可以通过不同的工具路径完成同一目标，其质量共同取决于交互轨迹、环境状态和最终产物，因此这类任务很少有可执行的真值奖励。 因此，核心挑战是从已有经验中构建一个奖励，使其既能暴露当前策略的失败之处，又在优化过程中保持稳定。 我们提出 Reward Engine，它像一名自我激励的学生，先弄清成功需要什么，然后朝此目标优化。 它从任务和初始轨迹出发，构建一个 RewardPack，其中包含用于检验正确性的测试用例和用于分级质量的评分准则，每一项都作为一个检查执行并返回带证据的判定。 冻结的 RewardPack 随后指导智能体修订和选择其输出，并且还可以作为强化学习的奖励。 在 WorkBuddy Bench Office 和 Claw-Eval 上，构建的奖励与基准评分器大体一致，在 82.3% 和 80.5% 的候选对上没有颠倒它们的排序。 用于修订执行时，它将三次运行一致性（ Pass 3 \\mathrm{Pass}^{3} ）相对 Baseline 从 45.0% 提升到 54.0%，从 78.4% 提升到 83.7%。",
+   "sents": [
+    {
+     "en": "Open-ended tool agents can complete the same objective through different tool paths, and their quality depends jointly on the interaction trace, environment state, and final artifacts, so such tasks rarely admit an executable ground-truth reward.",
+     "zh": "开放式工具智能体可以通过不同的工具路径完成同一目标，其质量共同取决于交互轨迹、环境状态和最终产物，因此这类任务很少有可执行的真值奖励。"
+    },
+    {
+     "en": "The central challenge is therefore to construct a reward from existing experience that exposes the current policy’s failures while remaining stationary during optimization.",
+     "zh": "因此，核心挑战是从已有经验中构建一个奖励，使其既能暴露当前策略的失败之处，又在优化过程中保持稳定。"
+    },
+    {
+     "en": "We introduce Reward Engine, which, like a self-motivated student, first works out what success requires and then optimizes toward it.",
+     "zh": "我们提出 Reward Engine，它像一名自我激励的学生，先弄清成功需要什么，然后朝此目标优化。"
+    },
+    {
+     "en": "From the task and initial trajectories, it builds a RewardPack of testcases for required correctness and rubrics for graded quality, each executed as a check that returns a judgment with evidence.",
+     "zh": "它从任务和初始轨迹出发，构建一个 RewardPack，其中包含用于检验正确性的测试用例和用于分级质量的评分准则，每一项都作为一个检查执行并返回带证据的判定。"
+    },
+    {
+     "en": "The frozen RewardPack then guides the agent to revise and select its outputs, and can also serve as a reward for reinforcement learning.",
+     "zh": "冻结的 RewardPack 随后指导智能体修订和选择其输出，并且还可以作为强化学习的奖励。"
+    },
+    {
+     "en": "On WorkBuddy Bench Office and Claw-Eval, the constructed reward largely agrees with the benchmark graders, not reversing their ordering on 82.3% and 80.5% of candidate pairs.",
+     "zh": "在 WorkBuddy Bench Office 和 Claw-Eval 上，构建的奖励与基准评分器大体一致，在 82.3% 和 80.5% 的候选对上没有颠倒它们的排序。"
+    },
+    {
+     "en": "Used to revise executions, it raises three-run consistency ( Pass 3 \\mathrm{Pass}^{3} ) over Baseline from 45.0% to 54.0% and from 78.4% to 83.7%.",
+     "zh": "用于修订执行时，它将三次运行一致性（ Pass 3 \\mathrm{Pass}^{3} ）相对 Baseline 从 45.0% 提升到 54.0%，从 78.4% 提升到 83.7%。"
+    }
+   ]
+  },
+  {
+   "en": "Tool agents are increasingly asked to do open-ended work, such as reconciling spreadsheets, drafting reports from mixed-format files, or triaging tickets [ Yao et al., 2025 ; Tencent Youtu Lab et al., 2026 ; Ye et al., 2026 ] . Unlike verifiable tasks such as math with final answers or code with unit tests [ Cobbe et al., 2021 ; Jimenez et al., 2024 ] , whose rewards directly drive reinforcement learning [ Shao et al., 2024 ] , these tasks come with no reward: many solutions are acceptable, and quality depends on the trace, environment state, and delivered artifacts. Constructing the reward thus becomes the key, and harder, problem; without it, an agent can neither critique and select among its attempts nor train on them. Common proxies fall short: a weekly report whose completion rate reads 92% although the source rows give 78% passes a file-existence check and can pass a holistic model judge, whose verdicts depend on presentation and ordering [ Zheng et al., 2023 ; Wang et al., 2024 ] . Like a self-motivated student facing an untaught task, the agent must first work out which constraints must hold and where there is room to excel ( Figure 1 ), and the resulting reward must meet three requirements:",
+   "zh": "工具型智能体被越来越多地要求完成开放性的工作，例如核对电子表格、根据混合格式的文件起草报告，或对工单进行分类分流 [ Yao et al., 2025 ; Tencent Youtu Lab et al., 2026 ; Ye et al., 2026 ] 。 与具有最终答案的数学题或带有单元测试的代码等可验证任务 [ Cobbe et al., 2021 ; Jimenez et al., 2024 ] 不同——这类任务的奖励可直接驱动强化学习 [ Shao et al., 2024 ] ——上述任务没有奖励：许多解法都可接受，而质量取决于轨迹、环境状态以及交付的产物。 因此，构造奖励成为关键的、也更困难的问题；没有奖励，智能体既无法评估并从其多次尝试中作出选择，也无法据此进行训练。 常见的替代方法都有不足：一份周报的完成率显示为 92%，而源数据行实际给出的是 78%，它却能通过文件存在性检查，甚至可能通过整体性模型裁判的评判，因为此类裁判的结论依赖于呈现方式与排列顺序 [ Zheng et al., 2023 ; Wang et al., 2024 ] 。 就像一个面对未曾学过的任务的自驱型学生，智能体必须首先弄清哪些约束条件必须成立、哪里有发挥的空间（ 图 1 ），而由此得出的奖励必须满足三个要求：",
+   "sents": [
+    {
+     "en": "Tool agents are increasingly asked to do open-ended work, such as reconciling spreadsheets, drafting reports from mixed-format files, or triaging tickets [ Yao et al., 2025 ; Tencent Youtu Lab et al., 2026 ; Ye et al., 2026 ] .",
+     "zh": "工具型智能体被越来越多地要求完成开放性的工作，例如核对电子表格、根据混合格式的文件起草报告，或对工单进行分类分流 [ Yao et al., 2025 ; Tencent Youtu Lab et al., 2026 ; Ye et al., 2026 ] 。"
+    },
+    {
+     "en": "Unlike verifiable tasks such as math with final answers or code with unit tests [ Cobbe et al., 2021 ; Jimenez et al., 2024 ] , whose rewards directly drive reinforcement learning [ Shao et al., 2024 ] , these tasks come with no reward: many solutions are acceptable, and quality depends on the trace, environment state, and delivered artifacts.",
+     "zh": "与具有最终答案的数学题或带有单元测试的代码等可验证任务 [ Cobbe et al., 2021 ; Jimenez et al., 2024 ] 不同——这类任务的奖励可直接驱动强化学习 [ Shao et al., 2024 ] ——上述任务没有奖励：许多解法都可接受，而质量取决于轨迹、环境状态以及交付的产物。"
+    },
+    {
+     "en": "Constructing the reward thus becomes the key, and harder, problem; without it, an agent can neither critique and select among its attempts nor train on them.",
+     "zh": "因此，构造奖励成为关键的、也更困难的问题；没有奖励，智能体既无法评估并从其多次尝试中作出选择，也无法据此进行训练。"
+    },
+    {
+     "en": "Common proxies fall short: a weekly report whose completion rate reads 92% although the source rows give 78% passes a file-existence check and can pass a holistic model judge, whose verdicts depend on presentation and ordering [ Zheng et al., 2023 ; Wang et al., 2024 ] .",
+     "zh": "常见的替代方法都有不足：一份周报的完成率显示为 92%，而源数据行实际给出的是 78%，它却能通过文件存在性检查，甚至可能通过整体性模型裁判的评判，因为此类裁判的结论依赖于呈现方式与排列顺序 [ Zheng et al., 2023 ; Wang et al., 2024 ] 。"
+    },
+    {
+     "en": "Like a self-motivated student facing an untaught task, the agent must first work out which constraints must hold and where there is room to excel ( Figure 1 ), and the resulting reward must meet three requirements:",
+     "zh": "就像一个面对未曾学过的任务的自驱型学生，智能体必须首先弄清哪些约束条件必须成立、哪里有发挥的空间（ 图 1 ），而由此得出的奖励必须满足三个要求："
+    }
+   ]
+  },
+  {
+   "en": "Evidence-grounded: each criterion, whether a hard constraint (testcase) or graded quality (rubric), must be judged by recomputing it from the artifact, trace, and environment and returned with a receipt, such as “expected 78%, observed 92%: fail”. The receipt tells a critic what to fix and a selector why one candidate ranks higher, and it keeps a violated requirement apart from an unreadable file or missing evidence.",
+   "zh": "证据可溯源：每条评判标准，无论是硬性约束（测试用例）还是分级的质量项（评分细则），都必须通过从工件、轨迹和环境中重新计算来判定，并附带一份凭证，例如「期望 78%，实际观测 92%：不通过」。 这份凭证告诉评审者该修复什么，告诉选择者为什么某个候选方案排名更高，并且它能把「违反了某项需求」与「文件无法读取或证据缺失」区分开来。",
+   "sents": [
+    {
+     "en": "Evidence-grounded: each criterion, whether a hard constraint (testcase) or graded quality (rubric), must be judged by recomputing it from the artifact, trace, and environment and returned with a receipt, such as “expected 78%, observed 92%: fail”.",
+     "zh": "证据可溯源：每条评判标准，无论是硬性约束（测试用例）还是分级的质量项（评分细则），都必须通过从工件、轨迹和环境中重新计算来判定，并附带一份凭证，例如「期望 78%，实际观测 92%：不通过」。"
+    },
+    {
+     "en": "The receipt tells a critic what to fix and a selector why one candidate ranks higher, and it keeps a violated requirement apart from an unreadable file or missing evidence.",
+     "zh": "这份凭证告诉评审者该修复什么，告诉选择者为什么某个候选方案排名更高，并且它能把「违反了某项需求」与「文件无法读取或证据缺失」区分开来。"
+    }
+   ]
+  },
+  {
+   "en": "Tested before use: a drafted check can itself be wrong, for instance by reading the wrong column or accepting a near miss, so the reward must be tested against labeled counterexamples before the agent relies on it, and a repair must not break cases it already judged correctly.",
+   "zh": "使用前需测试：起草的检查本身可能是错的，例如读错了列或接受了近似错误（near miss），因此在智能体依赖该奖励之前，必须用标注的反例对其进行测试，且修复不得破坏其已正确判断的案例。",
+   "sents": null
+  },
+  {
+   "en": "Stationary: the reward must stay fixed while the agent is revised or selected against it and change only between rounds; otherwise an apparent gain may come from a moved target rather than a better output.",
+   "zh": "平稳性：在针对奖励对智能体进行修改或筛选时，奖励必须保持固定，且仅在轮次之间变化；否则，表面的收益可能来自被移动的目标，而非更好的输出。",
+   "sents": null
+  },
+  {
+   "en": "Existing evaluators and reward-construction methods meet these requirements only in part ( Table 5 in Appendix A ). Model judges, rubric judges, and trained verifiers [ Zheng et al., 2023 ; Kim et al., 2024 ; Saad-Falcon et al., 2025 ; Gunjal et al., 2026 ; Cobbe et al., 2021 ] score outputs, but their judgments are not bound to re-runnable procedures, and at most partially record the evidence behind them [ Zhuge et al., 2025 ; Rao and Callison-Burch, 2026 ] . Reward-construction methods write executable reward code or tests [ Ma et al., 2024 ; Xie et al., 2024 ; Chen et al., 2023 ] but keep no evidence receipts, so a violated requirement cannot be told apart from a broken check. Most importantly, none tests the reward for a task on labeled counterexamples before optimizing against it, or accepts a repair only if earlier agreement is preserved; the closest, EvoRubrics [ Ding et al., 2026 ] , adapts its rubrics adversarially but updates them at every training step, so the target moves while it is used. What is missing is a reward that is evidence-grounded, tested against counterexamples before use, and held fixed while the agent is optimized against it.",
+   "zh": "现有的评估器和奖励构建方法只能部分满足这些要求（附录 A 中的表 5）。 模型裁判、量规裁判和训练得到的验证器 [ Zheng et al., 2023 ; Kim et al., 2024 ; Saad-Falcon et al., 2025 ; Gunjal et al., 2026 ; Cobbe et al., 2021 ] 会对输出进行打分，但它们的判断并不绑定于可重新运行的程序，而且至多只能部分记录其背后的证据 [ Zhuge et al., 2025 ; Rao and Callison-Burch, 2026 ] 。 奖励构建方法会编写可执行的奖励代码或测试 [ Ma et al., 2024 ; Xie et al., 2024 ; Chen et al., 2023 ] ，但不保留证据凭据，因此无法区分是需求被违反还是检查本身出了问题。 最重要的是，没有一种方法在针对奖励进行优化之前，先用带标注的反例对该任务的奖励进行测试，或者只有在保持此前一致性的情况下才接受修复；最接近的 EvoRubrics [ Ding et al., 2026 ] 以对抗方式调整其量规，但在每个训练步骤都进行更新，因此目标在使用过程中不断变动。 所缺失的是一种有证据支撑、在使用前经过反例测试、并在智能体针对其进行优化时保持固定不变的奖励。",
+   "sents": [
+    {
+     "en": "Existing evaluators and reward-construction methods meet these requirements only in part ( Table 5 in Appendix A ).",
+     "zh": "现有的评估器和奖励构建方法只能部分满足这些要求（附录 A 中的表 5）。"
+    },
+    {
+     "en": "Model judges, rubric judges, and trained verifiers [ Zheng et al., 2023 ; Kim et al., 2024 ; Saad-Falcon et al., 2025 ; Gunjal et al., 2026 ; Cobbe et al., 2021 ] score outputs, but their judgments are not bound to re-runnable procedures, and at most partially record the evidence behind them [ Zhuge et al., 2025 ; Rao and Callison-Burch, 2026 ] .",
+     "zh": "模型裁判、量规裁判和训练得到的验证器 [ Zheng et al., 2023 ; Kim et al., 2024 ; Saad-Falcon et al., 2025 ; Gunjal et al., 2026 ; Cobbe et al., 2021 ] 会对输出进行打分，但它们的判断并不绑定于可重新运行的程序，而且至多只能部分记录其背后的证据 [ Zhuge et al., 2025 ; Rao and Callison-Burch, 2026 ] 。"
+    },
+    {
+     "en": "Reward-construction methods write executable reward code or tests [ Ma et al., 2024 ; Xie et al., 2024 ; Chen et al., 2023 ] but keep no evidence receipts, so a violated requirement cannot be told apart from a broken check.",
+     "zh": "奖励构建方法会编写可执行的奖励代码或测试 [ Ma et al., 2024 ; Xie et al., 2024 ; Chen et al., 2023 ] ，但不保留证据凭据，因此无法区分是需求被违反还是检查本身出了问题。"
+    },
+    {
+     "en": "Most importantly, none tests the reward for a task on labeled counterexamples before optimizing against it, or accepts a repair only if earlier agreement is preserved; the closest, EvoRubrics [ Ding et al., 2026 ] , adapts its rubrics adversarially but updates them at every training step, so the target moves while it is used.",
+     "zh": "最重要的是，没有一种方法在针对奖励进行优化之前，先用带标注的反例对该任务的奖励进行测试，或者只有在保持此前一致性的情况下才接受修复；最接近的 EvoRubrics [ Ding et al., 2026 ] 以对抗方式调整其量规，但在每个训练步骤都进行更新，因此目标在使用过程中不断变动。"
+    },
+    {
+     "en": "What is missing is a reward that is evidence-grounded, tested against counterexamples before use, and held fixed while the agent is optimized against it.",
+     "zh": "所缺失的是一种有证据支撑、在使用前经过反例测试、并在智能体针对其进行优化时保持固定不变的奖励。"
+    }
+   ]
+  },
+  {
+   "en": "We introduce Reward Engine ( Figure 2 ) to close this gap: it builds such a reward for each task and uses it to improve the agent’s deliverable. Each round has three stages:",
+   "zh": "我们提出奖励引擎（Reward Engine）（图 2）来弥补这一空白：它为每个任务构建这样的奖励，并利用它来改进智能体的交付成果。 每一轮包含三个阶段：",
+   "sents": [
+    {
+     "en": "We introduce Reward Engine ( Figure 2 ) to close this gap: it builds such a reward for each task and uses it to improve the agent’s deliverable.",
+     "zh": "我们提出奖励引擎（Reward Engine）（图 2）来弥补这一空白：它为每个任务构建这样的奖励，并利用它来改进智能体的交付成果。"
+    },
+    {
+     "en": "Each round has three stages:",
+     "zh": "每一轮包含三个阶段："
+    }
+   ]
+  },
+  {
+   "en": "Build reward. From the task and a few initial trajectories, never hidden answers or benchmark scores, a Jury drafts the task’s obligations as testcases or graded rubrics, and a Builder binds each to an executable check that returns a judgment with an evidence receipt ( Sections 2 and 3.1 ). A quality-control loop tests the reward on labeled control, error, and boundary cases and accepts only repairs that lose no previously matched case; the result is frozen as a RewardPack ( Section 3.2 ).",
+   "zh": "构建奖励。 基于任务和少量初始轨迹（从不使用隐藏答案或基准分数），一个评审团（Jury）将任务的义务起草为测试用例或评分细则（rubrics），而一个构建者（Builder）将每项义务绑定到一个可执行的检查上，该检查返回带有证据回执的判定（第 2 节和第 3.1 节）。 一个质量控制循环在带标签的对照、错误和边界用例上测试该奖励，并且只接受不丢失任何先前匹配用例的修复；其结果被冻结为奖励包（RewardPack）（第 3.2 节）。",
+   "sents": [
+    {
+     "en": "Build reward.",
+     "zh": "构建奖励。"
+    },
+    {
+     "en": "From the task and a few initial trajectories, never hidden answers or benchmark scores, a Jury drafts the task’s obligations as testcases or graded rubrics, and a Builder binds each to an executable check that returns a judgment with an evidence receipt ( Sections 2 and 3.1 ).",
+     "zh": "基于任务和少量初始轨迹（从不使用隐藏答案或基准分数），一个评审团（Jury）将任务的义务起草为测试用例或评分细则（rubrics），而一个构建者（Builder）将每项义务绑定到一个可执行的检查上，该检查返回带有证据回执的判定（第 2 节和第 3.1 节）。"
+    },
+    {
+     "en": "A quality-control loop tests the reward on labeled control, error, and boundary cases and accepts only repairs that lose no previously matched case; the result is frozen as a RewardPack ( Section 3.2 ).",
+     "zh": "一个质量控制循环在带标签的对照、错误和边界用例上测试该奖励，并且只接受不丢失任何先前匹配用例的修复；其结果被冻结为奖励包（RewardPack）（第 3.2 节）。"
+    }
+   ]
+  },
+  {
+   "en": "Execute by reward. A Critic turns failed criteria into revision feedback, and a Jury ranks the revision with the round’s other candidates; a candidate replaces the fresh task-only one only if it ranks strictly higher and fails no test the task-only candidate passes ( Section 3.3 ).",
+   "zh": "以奖励驱动执行。 评论者（Critic）将未通过的标准转化为修改反馈，评审团（Jury）将修改后的候选结果与该轮的其他候选结果进行排序；只有当某个候选结果的排名严格更高，且未通过任何仅基于任务生成的候选结果所通过的测试时，它才会替换该仅基于任务生成的候选结果（见 3.3 节）。",
+   "sents": [
+    {
+     "en": "Execute by reward.",
+     "zh": "以奖励驱动执行。"
+    },
+    {
+     "en": "A Critic turns failed criteria into revision feedback, and a Jury ranks the revision with the round’s other candidates; a candidate replaces the fresh task-only one only if it ranks strictly higher and fails no test the task-only candidate passes ( Section 3.3 ).",
+     "zh": "评论者（Critic）将未通过的标准转化为修改反馈，评审团（Jury）将修改后的候选结果与该轮的其他候选结果进行排序；只有当某个候选结果的排名严格更高，且未通过任何仅基于任务生成的候选结果所通过的测试时，它才会替换该仅基于任务生成的候选结果（见 3.3 节）。"
+    }
+   ]
+  },
+  {
+   "en": "Update reward. Products, receipts, and defects found during use inform only the next RewardPack, so the reward never shifts while it is used; a meta loop across task families, which we do not evaluate, can further refine how rewards are built. On WorkBuddy Bench Office and Claw-Eval, the RewardPack does not reverse the benchmark grader’s ordering on 82.3% and 80.5% of candidate pairs and raises Pass 3 \\mathrm{Pass}^{3} over Baseline from 45.0% to 54.0% and from 78.4% to 83.7% ( Section 4.2 ).",
+   "zh": "更新奖励。 在使用过程中发现的产品、收据和缺陷只会影响下一个 RewardPack，因此奖励在使用期间不会发生变化；跨任务族群的元循环（我们未对其进行评估）可以进一步改进奖励的构建方式。 在 WorkBuddy Bench Office 和 Claw-Eval 上，RewardPack 在 82.3% 和 80.5% 的候选对上不会反转基准评分器的排序，并将 Pass 3 \\mathrm{Pass}^{3} 相对于 Baseline 从 45.0% 提升到 54.0%，从 78.4% 提升到 83.7%（第 4.2 节）。",
+   "sents": [
+    {
+     "en": "Update reward.",
+     "zh": "更新奖励。"
+    },
+    {
+     "en": "Products, receipts, and defects found during use inform only the next RewardPack, so the reward never shifts while it is used; a meta loop across task families, which we do not evaluate, can further refine how rewards are built.",
+     "zh": "在使用过程中发现的产品、收据和缺陷只会影响下一个 RewardPack，因此奖励在使用期间不会发生变化；跨任务族群的元循环（我们未对其进行评估）可以进一步改进奖励的构建方式。"
+    },
+    {
+     "en": "On WorkBuddy Bench Office and Claw-Eval, the RewardPack does not reverse the benchmark grader’s ordering on 82.3% and 80.5% of candidate pairs and raises Pass 3 \\mathrm{Pass}^{3} over Baseline from 45.0% to 54.0% and from 78.4% to 83.7% ( Section 4.2 ).",
+     "zh": "在 WorkBuddy Bench Office 和 Claw-Eval 上，RewardPack 在 82.3% 和 80.5% 的候选对上不会反转基准评分器的排序，并将 Pass 3 \\mathrm{Pass}^{3} 相对于 Baseline 从 45.0% 提升到 54.0%，从 78.4% 提升到 83.7%（第 4.2 节）。"
+    }
+   ]
+  },
+  {
+   "en": "Our main contributions are (1) An evidence-grounded RewardPack of testcases for required correctness and rubrics for graded quality, built from the task and initial trajectories, each criterion and rubric bound to an executable evidence check ( Sections 2 and 3.1 ). (2) Reward-centric self-improvement , in which the frozen RewardPack guides Critic-driven revision and Jury selection of the deliverable and is updated only between rounds ( Sections 3.3 and 2 ). (3) Two-benchmark evidence on WorkBuddy Bench Office and Claw-Eval that the RewardPack largely agrees with the benchmark graders and raises the delivered output’s pass rate over Baseline ( Section 4 ).",
+   "zh": "我们的主要贡献是：(1) 一个以证据为依据的 RewardPack，其中包含面向所需正确性的测试用例和面向分级质量的评分准则（rubrics），它基于任务和初始轨迹构建，每条标准和评分准则都绑定一个可执行的证据检查（见第 2 节和第 3.1 节）。 (2) 以奖励为中心的自我改进，其中冻结的 RewardPack 指导由 Critic 驱动的修订以及对交付物的 Jury 选择，且 RewardPack 仅在轮次之间更新（见第 3.3 节和第 2 节）。 (3) 在 WorkBuddy Bench Office 和 Claw-Eval 两个基准上的证据表明，RewardPack 与基准评分器大体一致，并使交付输出的通过率相比 Baseline 得到提升（见第 4 节）。",
+   "sents": [
+    {
+     "en": "Our main contributions are (1) An evidence-grounded RewardPack of testcases for required correctness and rubrics for graded quality, built from the task and initial trajectories, each criterion and rubric bound to an executable evidence check ( Sections 2 and 3.1 ).",
+     "zh": "我们的主要贡献是：(1) 一个以证据为依据的 RewardPack，其中包含面向所需正确性的测试用例和面向分级质量的评分准则（rubrics），它基于任务和初始轨迹构建，每条标准和评分准则都绑定一个可执行的证据检查（见第 2 节和第 3.1 节）。"
+    },
+    {
+     "en": "(2) Reward-centric self-improvement , in which the frozen RewardPack guides Critic-driven revision and Jury selection of the deliverable and is updated only between rounds ( Sections 3.3 and 2 ).",
+     "zh": "(2) 以奖励为中心的自我改进，其中冻结的 RewardPack 指导由 Critic 驱动的修订以及对交付物的 Jury 选择，且 RewardPack 仅在轮次之间更新（见第 3.3 节和第 2 节）。"
+    },
+    {
+     "en": "(3) Two-benchmark evidence on WorkBuddy Bench Office and Claw-Eval that the RewardPack largely agrees with the benchmark graders and raises the delivered output’s pass rate over Baseline ( Section 4 ).",
+     "zh": "(3) 在 WorkBuddy Bench Office 和 Claw-Eval 两个基准上的证据表明，RewardPack 与基准评分器大体一致，并使交付输出的通过率相比 Baseline 得到提升（见第 4 节）。"
+    }
+   ]
+  },
+  {
+   "en": "A task supplies public requirements x x , including its input files, and a tool environment. An actor π \\pi , a language model in a fixed tool harness, takes actions a t ∼ π ( ⋅ ∣ h t ) a_{t}\\sim\\pi(\\cdot\\mid h_{t}) given its context h t h_{t} and delivers a product y y : the artifact, its interaction trace, and the resulting environment state. The task’s quality q ⁡ ( y ) q(y) , here the benchmark grader’s score, is hidden. The system sees only the public information ℐ \\mathcal{I} : x x , updates from the task’s own (possibly simulated) user, public background knowledge the task does not forbid, the execution history, and a few initial runs ℬ \\mathcal{B} of π \\pi on x x alone. From ℐ \\mathcal{I} it must (i) construct a reward R R whose judgments track q q and (ii) use R R to deliver a product y ⋆ y^{\\star} of higher q q than π \\pi attains alone; Section 4.2 measures (i) by order agreement with the grader and (ii) by the scores and pass rates of y ⋆ y^{\\star} . The weights of π \\pi are never updated: what evolves is the reward and the process that builds it. Hidden answers and grading outputs are excluded by design.",
+   "zh": "一个任务提供公开需求 x x（包括其输入文件）和一个工具环境。 一个执行者 π \\pi，即处于固定工具框架中的语言模型，在给定上下文 h t h_{t} 的情况下采取动作 a t ∼ π ( ⋅ ∣ h t ) a_{t}\\sim\\pi(\\cdot\\mid h_{t})，并交付一个产品 y y：即产出物、其交互轨迹以及由此产生的环境状态。 任务的质量 q ⁡ ( y ) q(y)（此处为基准测试评分器的得分）是隐藏的。 系统只能看到公开信息 ℐ \\mathcal{I}：x x、来自任务自身（可能是模拟的）用户的更新、任务不禁止的公开背景知识、执行历史，以及仅用 x x 对 π \\pi 进行的少数几次初始运行 ℬ \\mathcal{B}。 基于公开信息 ℐ \\mathcal{I}，系统必须 (i) 构建一个奖励 R R，其判断能够追踪 q q；并 (ii) 使用 R R 交付一个质量 q q 高于 π \\pi 单独所能达到水平的产品 y ⋆ y^{\\star}；第 4.2 节通过与评分器的排序一致性来衡量 (i)，通过 y ⋆ y^{\\star} 的得分和通过率来衡量 (ii)。 π \\pi 的权重从不更新：演化的是奖励以及构建奖励的过程。 隐藏的答案和评分输出在设计上被排除在外。",
+   "sents": [
+    {
+     "en": "A task supplies public requirements x x , including its input files, and a tool environment.",
+     "zh": "一个任务提供公开需求 x x（包括其输入文件）和一个工具环境。"
+    },
+    {
+     "en": "An actor π \\pi , a language model in a fixed tool harness, takes actions a t ∼ π ( ⋅ ∣ h t ) a_{t}\\sim\\pi(\\cdot\\mid h_{t}) given its context h t h_{t} and delivers a product y y : the artifact, its interaction trace, and the resulting environment state.",
+     "zh": "一个执行者 π \\pi，即处于固定工具框架中的语言模型，在给定上下文 h t h_{t} 的情况下采取动作 a t ∼ π ( ⋅ ∣ h t ) a_{t}\\sim\\pi(\\cdot\\mid h_{t})，并交付一个产品 y y：即产出物、其交互轨迹以及由此产生的环境状态。"
+    },
+    {
+     "en": "The task’s quality q ⁡ ( y ) q(y) , here the benchmark grader’s score, is hidden.",
+     "zh": "任务的质量 q ⁡ ( y ) q(y)（此处为基准测试评分器的得分）是隐藏的。"
+    },
+    {
+     "en": "The system sees only the public information ℐ \\mathcal{I} : x x , updates from the task’s own (possibly simulated) user, public background knowledge the task does not forbid, the execution history, and a few initial runs ℬ \\mathcal{B} of π \\pi on x x alone.",
+     "zh": "系统只能看到公开信息 ℐ \\mathcal{I}：x x、来自任务自身（可能是模拟的）用户的更新、任务不禁止的公开背景知识、执行历史，以及仅用 x x 对 π \\pi 进行的少数几次初始运行 ℬ \\mathcal{B}。"
+    },
+    {
+     "en": "From ℐ \\mathcal{I} it must (i) construct a reward R R whose judgments track q q and (ii) use R R to deliver a product y ⋆ y^{\\star} of higher q q than π \\pi attains alone; Section 4.2 measures (i) by order agreement with the grader and (ii) by the scores and pass rates of y ⋆ y^{\\star} .",
+     "zh": "基于公开信息 ℐ \\mathcal{I}，系统必须 (i) 构建一个奖励 R R，其判断能够追踪 q q；并 (ii) 使用 R R 交付一个质量 q q 高于 π \\pi 单独所能达到水平的产品 y ⋆ y^{\\star}；第 4.2 节通过与评分器的排序一致性来衡量 (i)，通过 y ⋆ y^{\\star} 的得分和通过率来衡量 (ii)。"
+    },
+    {
+     "en": "The weights of π \\pi are never updated: what evolves is the reward and the process that builds it.",
+     "zh": "π \\pi 的权重从不更新：演化的是奖励以及构建奖励的过程。"
+    },
+    {
+     "en": "Hidden answers and grading outputs are excluded by design.",
+     "zh": "隐藏的答案和评分输出在设计上被排除在外。"
+    }
+   ]
+  },
+  {
+   "en": "A reward binds criteria to checks, and running a check on a product returns a judgment with its evidence:",
+   "zh": "奖励将准则与检查绑定在一起，对产品运行检查会返回一个带有证据的判断结果：",
+   "sents": null
+  },
+  {
+   "en": "A criterion c i c_{i} is a testcase (required correctness, z i ∈ { 𝗉𝖺𝗌𝗌 , 𝖿𝖺𝗂𝗅 } z_{i}\\in\\{\\mathsf{pass},\\mathsf{fail}\\} ) or a rubric (graded quality, z i ∈ { 𝖿𝖺𝗂𝗅 , 𝗉𝖺𝗋𝗍𝗂𝖺𝗅 , 𝖿𝗎𝗅𝗅 } z_{i}\\in\\{\\mathsf{fail},\\mathsf{partial},\\mathsf{full}\\} against written anchors); z i = ⊥ z_{i}=\\bot means no judgment, and several bound tests give a tuple ( Section B.2 ). A check κ i \\kappa_{i} is a stored, re-runnable procedure, either code, such as recomputing a rate from source rows, or a model judgment over evidence it first locates, so it need not be deterministic. The receipt e i e_{i} references the inspected evidence and records the execution status, keeping apart an observed violation (a failing judgment), insufficient evidence ( ⊥ \\bot , normal status), and a check that did not run ( ⊥ \\bot , error status). A RewardPack stores one version R v R_{v} with the records needed to audit and re-run it ( Table 7 ).",
+   "zh": "判据 c i c_{i} 可以是测试用例（要求正确性，z i ∈ { 𝗉𝖺𝗌𝗌 , 𝖿𝖺𝗂𝗅 } z_{i}\\in\\{\\mathsf{pass},\\mathsf{fail}\\}），也可以是评分细则（对质量打分，z i ∈ { 𝖿𝖺𝗂𝗅 , 𝗉𝖺𝗋𝗍𝗂𝖺𝗅 , 𝖿𝗎𝗅𝗅 } z_{i}\\in\\{\\mathsf{fail},\\mathsf{partial},\\mathsf{full}\\}，依据书面锚点）；z i = ⊥ z_{i}=\\bot 表示未作判断，而多个绑定的测试构成一个元组（见 B.2 节）。 检查项 κ i \\kappa_{i} 是一种被存储、可重复运行的过程，既可以是代码（例如从源数据行重新计算某个比率），也可以是模型对其先定位的证据所作的判断，因此它不必是确定性的。 回执 e i e_{i} 引用被检查的证据并记录执行状态，从而将观察到的违规（失败的判断）、证据不足（⊥ \\bot，正常状态）与未运行的检查项（⊥ \\bot，错误状态）区分开来。 一个 RewardPack 存储 R v R_{v} 的一个版本，以及审计和重新运行它所需的记录（见表 7）。",
+   "sents": [
+    {
+     "en": "A criterion c i c_{i} is a testcase (required correctness, z i ∈ { 𝗉𝖺𝗌𝗌 , 𝖿𝖺𝗂𝗅 } z_{i}\\in\\{\\mathsf{pass},\\mathsf{fail}\\} ) or a rubric (graded quality, z i ∈ { 𝖿𝖺𝗂𝗅 , 𝗉𝖺𝗋𝗍𝗂𝖺𝗅 , 𝖿𝗎𝗅𝗅 } z_{i}\\in\\{\\mathsf{fail},\\mathsf{partial},\\mathsf{full}\\} against written anchors); z i = ⊥ z_{i}=\\bot means no judgment, and several bound tests give a tuple ( Section B.2 ).",
+     "zh": "判据 c i c_{i} 可以是测试用例（要求正确性，z i ∈ { 𝗉𝖺𝗌𝗌 , 𝖿𝖺𝗂𝗅 } z_{i}\\in\\{\\mathsf{pass},\\mathsf{fail}\\}），也可以是评分细则（对质量打分，z i ∈ { 𝖿𝖺𝗂𝗅 , 𝗉𝖺𝗋𝗍𝗂𝖺𝗅 , 𝖿𝗎𝗅𝗅 } z_{i}\\in\\{\\mathsf{fail},\\mathsf{partial},\\mathsf{full}\\}，依据书面锚点）；z i = ⊥ z_{i}=\\bot 表示未作判断，而多个绑定的测试构成一个元组（见 B.2 节）。"
+    },
+    {
+     "en": "A check κ i \\kappa_{i} is a stored, re-runnable procedure, either code, such as recomputing a rate from source rows, or a model judgment over evidence it first locates, so it need not be deterministic.",
+     "zh": "检查项 κ i \\kappa_{i} 是一种被存储、可重复运行的过程，既可以是代码（例如从源数据行重新计算某个比率），也可以是模型对其先定位的证据所作的判断，因此它不必是确定性的。"
+    },
+    {
+     "en": "The receipt e i e_{i} references the inspected evidence and records the execution status, keeping apart an observed violation (a failing judgment), insufficient evidence ( ⊥ \\bot , normal status), and a check that did not run ( ⊥ \\bot , error status).",
+     "zh": "回执 e i e_{i} 引用被检查的证据并记录执行状态，从而将观察到的违规（失败的判断）、证据不足（⊥ \\bot，正常状态）与未运行的检查项（⊥ \\bot，错误状态）区分开来。"
+    },
+    {
+     "en": "A RewardPack stores one version R v R_{v} with the records needed to audit and re-run it ( Table 7 ).",
+     "zh": "一个 RewardPack 存储 R v R_{v} 的一个版本，以及审计和重新运行它所需的记录（见表 7）。"
+    }
+   ]
+  },
+  {
+   "en": "R ⁡ ( y ) R(y) is a vector, not a scalar, so each consumer states its use: the Critic turns failing judgments and receipts into feedback ( Eq. 5 ); selection ranks candidates by a Jury that reads artifacts and receipts, and rejects any candidate that fails a test the task-only candidate passes ( Eq. 6 ); and the grader comparison orders candidates by the share of resolved criteria that pass. Reinforcement learning would need a similar reduction and is not evaluated.",
+   "zh": "R ⁡ ( y ) R(y) 是一个向量而非标量，因此每个消费者都会说明其用途：Critic（评判者）将失败的判断与回执转化为反馈（式 5）；选择阶段由阅读产物与回执的 Jury（评审团）对候选方案进行排序，并拒绝任何在仅基于任务生成的候选方案能通过的测试上失败的候选方案（式 6）；评分器比较则按通过标准的占比对候选方案排序。 强化学习需要进行类似的约减，因此未予评估。",
+   "sents": [
+    {
+     "en": "R ⁡ ( y ) R(y) is a vector, not a scalar, so each consumer states its use: the Critic turns failing judgments and receipts into feedback ( Eq. 5 ); selection ranks candidates by a Jury that reads artifacts and receipts, and rejects any candidate that fails a test the task-only candidate passes ( Eq. 6 ); and the grader comparison orders candidates by the share of resolved criteria that pass.",
+     "zh": "R ⁡ ( y ) R(y) 是一个向量而非标量，因此每个消费者都会说明其用途：Critic（评判者）将失败的判断与回执转化为反馈（式 5）；选择阶段由阅读产物与回执的 Jury（评审团）对候选方案进行排序，并拒绝任何在仅基于任务生成的候选方案能通过的测试上失败的候选方案（式 6）；评分器比较则按通过标准的占比对候选方案排序。"
+    },
+    {
+     "en": "Reinforcement learning would need a similar reduction and is not evaluated.",
+     "zh": "强化学习需要进行类似的约减，因此未予评估。"
+    }
+   ]
+  },
+  {
+   "en": "The requirements of Section 1 become conditions on R R . Evidence-grounded : every judgment other than ⊥ \\bot carries a receipt naming the parts of y y and x x it used. Tested before use : R R is first run on labeled cases ( y j , i j , z j ⋆ ) (y_{j},i_{j},z^{\\star}_{j}) , each a product, a targeted criterion, and a reference label assigned blind to R R ; R R agrees on a case if z i j = z j ⋆ z_{i_{j}}=z^{\\star}_{j} , is unresolved if z i j = ⊥ z_{i_{j}}=\\bot , and disagrees otherwise, and a repair must keep every case already agreed on ( Section 3.2 ). Stationary : of the three layers, the actor π \\pi , the reward R R , and the construction state ϕ \\phi that builds rewards ( Section 3.1 ), only π \\pi is fixed throughout. We index actor steps by t t , rounds by n n , reward versions by v v , and updates of ϕ \\phi by k k . Quality control may produce several versions within a round; the last is frozen for the round’s execution stage, where feedback changes only the context h t h_{t} , and revisions of R R or ϕ \\phi take effect only at round boundaries. A gain within a round therefore comes from a better product, not a moved target.",
+   "zh": "第 1 节的要求成为对 R R 的条件。 有据可依：除 ⊥ \\bot 之外的每个判断都附带一个回执，注明其所使用的 y y 和 x x 的部分。 先测试后使用：R R 首先在带标注的案例 ( y j , i j , z j ⋆ ) (y_{j},i_{j},z^{\\star}_{j}) 上运行，每个案例是一个乘积、一个针对性判据，以及一个对 R R 盲分配的参考标签；若 z i j = z j ⋆ z_{i_{j}}=z^{\\star}_{j} ，则 R R 在该案例上达成一致，若 z i j = ⊥ z_{i_{j}}=\\bot ，则为未决，否则为不一致，且任何修复必须保持所有已达成一致的案例不变（第 3.2 节）。 固定不变：在三层结构中，行动者 π \\pi 、奖励 R R 以及构建奖励的构造状态 ϕ \\phi （第 3.1 节）之中，只有 π \\pi 在全程保持固定。 我们用 t t 索引行动者步骤，用 n n 索引轮次，用 v v 索引奖励版本，用 k k 索引 ϕ \\phi 的更新。 质量控制可能在一轮内产生多个版本；最后一个版本在该轮的执行阶段被冻结，其中反馈只改变上下文 h t h_{t} ，而 R R 或 ϕ \\phi 的修订只在轮次边界处生效。 因此，一轮内的收益来自更好的乘积，而非被移动的标靶。",
+   "sents": [
+    {
+     "en": "The requirements of Section 1 become conditions on R R .",
+     "zh": "第 1 节的要求成为对 R R 的条件。"
+    },
+    {
+     "en": "Evidence-grounded : every judgment other than ⊥ \\bot carries a receipt naming the parts of y y and x x it used.",
+     "zh": "有据可依：除 ⊥ \\bot 之外的每个判断都附带一个回执，注明其所使用的 y y 和 x x 的部分。"
+    },
+    {
+     "en": "Tested before use : R R is first run on labeled cases ( y j , i j , z j ⋆ ) (y_{j},i_{j},z^{\\star}_{j}) , each a product, a targeted criterion, and a reference label assigned blind to R R ; R R agrees on a case if z i j = z j ⋆ z_{i_{j}}=z^{\\star}_{j} , is unresolved if z i j = ⊥ z_{i_{j}}=\\bot , and disagrees otherwise, and a repair must keep every case already agreed on ( Section 3.2 ).",
+     "zh": "先测试后使用：R R 首先在带标注的案例 ( y j , i j , z j ⋆ ) (y_{j},i_{j},z^{\\star}_{j}) 上运行，每个案例是一个乘积、一个针对性判据，以及一个对 R R 盲分配的参考标签；若 z i j = z j ⋆ z_{i_{j}}=z^{\\star}_{j} ，则 R R 在该案例上达成一致，若 z i j = ⊥ z_{i_{j}}=\\bot ，则为未决，否则为不一致，且任何修复必须保持所有已达成一致的案例不变（第 3.2 节）。"
+    },
+    {
+     "en": "Stationary : of the three layers, the actor π \\pi , the reward R R , and the construction state ϕ \\phi that builds rewards ( Section 3.1 ), only π \\pi is fixed throughout.",
+     "zh": "固定不变：在三层结构中，行动者 π \\pi 、奖励 R R 以及构建奖励的构造状态 ϕ \\phi （第 3.1 节）之中，只有 π \\pi 在全程保持固定。"
+    },
+    {
+     "en": "We index actor steps by t t , rounds by n n , reward versions by v v , and updates of ϕ \\phi by k k .",
+     "zh": "我们用 t t 索引行动者步骤，用 n n 索引轮次，用 v v 索引奖励版本，用 k k 索引 ϕ \\phi 的更新。"
+    },
+    {
+     "en": "Quality control may produce several versions within a round; the last is frozen for the round’s execution stage, where feedback changes only the context h t h_{t} , and revisions of R R or ϕ \\phi take effect only at round boundaries.",
+     "zh": "质量控制可能在一轮内产生多个版本；最后一个版本在该轮的执行阶段被冻结，其中反馈只改变上下文 h t h_{t} ，而 R R 或 ϕ \\phi 的修订只在轮次边界处生效。"
+    },
+    {
+     "en": "A gain within a round therefore comes from a better product, not a moved target.",
+     "zh": "因此，一轮内的收益来自更好的乘积，而非被移动的标靶。"
+    }
+   ]
+  },
+  {
+   "en": "Algorithm 1 gives the per-task procedure over the three stages of Figure 2 ; Appendix B gives the notation, RewardPack schema, and implementation details.",
+   "zh": "算法 1 给出了图 2 三个阶段的每个任务流程；附录 B 给出了符号说明、RewardPack 模式以及实现细节。",
+   "sents": null
+  },
+  {
+   "en": "Three Jury members draft obligations from the public task before seeing any artifact, then revisit them against the initial task-only runs ℬ \\mathcal{B} , which show where the current policy falls short and where acceptable solutions differ. A reducer merges the drafts into criteria, each marked as a testcase or a rubric, keeping each criterion’s source, applicability, and fail/partial/full anchors; unresolved obligations stay visible. For the weekly report, Jury fixes the reporting period and the completion-rate definition. An obligation that no member proposes remains an omission that this review cannot detect ( Section B.3 ).",
+   "zh": "三名评审团成员在查看任何工件之前，先从公共任务中起草义务，然后结合仅基于初始任务的运行 ℬ \\mathcal{B} 重新审视这些义务，这些运行显示了当前策略的不足之处以及可接受的解决方案之间的差异。 归约器将各草稿合并为准则，每条准则标记为测试用例或评分量表，并保留每条准则的来源、适用范围以及失败/部分/完全达标的锚点；未解决的义务保持可见。 对于周报，评审团固定报告周期和完成率的定义。 没有任何成员提出的义务仍然是本次评审无法检测到的遗漏（ Section B.3 ）。",
+   "sents": [
+    {
+     "en": "Three Jury members draft obligations from the public task before seeing any artifact, then revisit them against the initial task-only runs ℬ \\mathcal{B} , which show where the current policy falls short and where acceptable solutions differ.",
+     "zh": "三名评审团成员在查看任何工件之前，先从公共任务中起草义务，然后结合仅基于初始任务的运行 ℬ \\mathcal{B} 重新审视这些义务，这些运行显示了当前策略的不足之处以及可接受的解决方案之间的差异。"
+    },
+    {
+     "en": "A reducer merges the drafts into criteria, each marked as a testcase or a rubric, keeping each criterion’s source, applicability, and fail/partial/full anchors; unresolved obligations stay visible.",
+     "zh": "归约器将各草稿合并为准则，每条准则标记为测试用例或评分量表，并保留每条准则的来源、适用范围以及失败/部分/完全达标的锚点；未解决的义务保持可见。"
+    },
+    {
+     "en": "For the weekly report, Jury fixes the reporting period and the completion-rate definition.",
+     "zh": "对于周报，评审团固定报告周期和完成率的定义。"
+    },
+    {
+     "en": "An obligation that no member proposes remains an omission that this review cannot detect ( Section B.3 ).",
+     "zh": "没有任何成员提出的义务仍然是本次评审无法检测到的遗漏（ Section B.3 ）。"
+    }
+   ]
+  },
+  {
+   "en": "Builder turns each criterion into executable tests, refining its fail/partial/full anchors into the rubric a model-judge check applies (Reward Builder), and binds them to inputs, tools, and judgment procedures (Harness Builder); for the weekly report, the completion-rate test recomputes the rate from the source rows. Construction is guided by the construction state ϕ = ( ω , ℳ ) \\phi=(\\omega,\\mathcal{M}) , which pairs Strategy ω \\omega with Memory ℳ \\mathcal{M} , under a scope, delivery contract, and budget:",
+   "zh": "构建器将每条准则转化为可执行的测试，把其失败/部分/完全的锚点细化为模型评审检查所应用的评分标准（奖励构建器），并将其绑定到输入、工具与判定流程（执行框架构建器）；对于周报任务，完成率测试会从源数据行重新计算完成率。 构建过程由构建状态 ϕ = ( ω , ℳ ) \\phi=(\\omega,\\mathcal{M}) 指导，该状态将策略 ω \\omega 与记忆 ℳ \\mathcal{M} 配对，并在范围、交付契约与预算的约束下进行：",
+   "sents": [
+    {
+     "en": "Builder turns each criterion into executable tests, refining its fail/partial/full anchors into the rubric a model-judge check applies (Reward Builder), and binds them to inputs, tools, and judgment procedures (Harness Builder); for the weekly report, the completion-rate test recomputes the rate from the source rows.",
+     "zh": "构建器将每条准则转化为可执行的测试，把其失败/部分/完全的锚点细化为模型评审检查所应用的评分标准（奖励构建器），并将其绑定到输入、工具与判定流程（执行框架构建器）；对于周报任务，完成率测试会从源数据行重新计算完成率。"
+    },
+    {
+     "en": "Construction is guided by the construction state ϕ = ( ω , ℳ ) \\phi=(\\omega,\\mathcal{M}) , which pairs Strategy ω \\omega with Memory ℳ \\mathcal{M} , under a scope, delivery contract, and budget:",
+     "zh": "构建过程由构建状态 ϕ = ( ω , ℳ ) \\phi=(\\omega,\\mathcal{M}) 指导，该状态将策略 ω \\omega 与记忆 ℳ \\mathcal{M} 配对，并在范围、交付契约与预算的约束下进行："
+    }
+   ]
+  },
+  {
+   "en": "where Build \\Build may instead return an explicit construction failure. Each receipt of Eq. 1 is bound to the inspected artifact, environment snapshot, inputs, scope, and check version, so a judgment can be audited, and a receipt is reused only when its artifact, environment snapshot, scope, and check version all still match ( Section B.2 ).",
+   "zh": "其中 Build \\Build 可以改为返回显式的构造失败。 式 1 的每个回执都绑定到被检查的制品、环境快照、输入、范围和检查版本，因此判断可以被审计，并且只有当其制品、环境快照、范围和检查版本全部仍然匹配时（第 B.2 节），回执才会被复用。",
+   "sents": [
+    {
+     "en": "where Build \\Build may instead return an explicit construction failure.",
+     "zh": "其中 Build \\Build 可以改为返回显式的构造失败。"
+    },
+    {
+     "en": "Each receipt of Eq. 1 is bound to the inspected artifact, environment snapshot, inputs, scope, and check version, so a judgment can be audited, and a receipt is reused only when its artifact, environment snapshot, scope, and check version all still match ( Section B.2 ).",
+     "zh": "式 1 的每个回执都绑定到被检查的制品、环境快照、输入、范围和检查版本，因此判断可以被审计，并且只有当其制品、环境快照、范围和检查版本全部仍然匹配时（第 B.2 节），回执才会被复用。"
+    }
+   ]
+  },
+  {
+   "en": "Strategy ω \\omega holds module guidance and settings for quality control (QC, Section 3.2 ), and Memory ℳ \\mathcal{M} stores construction lessons with their sources and validation status. Stage 3 of every round ( Figure 2 ) adds lessons to Memory, so Memory grows within the inner loop, whereas Strategy changes only in the meta loop of Algorithm 1 . That loop proposes updates of ϕ \\phi on training task families and selects them on disjoint validation families; it changes how evaluators are built ( ϕ \\phi ), not how tasks are solved ( π \\pi ). We do not evaluate the meta loop: Section 4 runs the inner loop only.",
+   "zh": "策略 ω \\omega 保存用于质量控制（QC，第 3.2 节）的模块引导与设置，记忆 ℳ \\mathcal{M} 存储构建经验教训及其来源和验证状态。 每一轮的第 3 阶段（图 2）向记忆中添加经验教训，因此记忆在内循环中增长，而策略仅在算法 1 的元循环中变化。 该元循环在训练任务族上提出对 ϕ \\phi 的更新，并在不相交的验证任务族上进行选择；它改变的是评估器的构建方式（ϕ \\phi），而不是任务的解决方式（π \\pi）。 我们不评估元循环：第 4 节仅运行内循环。",
+   "sents": [
+    {
+     "en": "Strategy ω \\omega holds module guidance and settings for quality control (QC, Section 3.2 ), and Memory ℳ \\mathcal{M} stores construction lessons with their sources and validation status.",
+     "zh": "策略 ω \\omega 保存用于质量控制（QC，第 3.2 节）的模块引导与设置，记忆 ℳ \\mathcal{M} 存储构建经验教训及其来源和验证状态。"
+    },
+    {
+     "en": "Stage 3 of every round ( Figure 2 ) adds lessons to Memory, so Memory grows within the inner loop, whereas Strategy changes only in the meta loop of Algorithm 1 .",
+     "zh": "每一轮的第 3 阶段（图 2）向记忆中添加经验教训，因此记忆在内循环中增长，而策略仅在算法 1 的元循环中变化。"
+    },
+    {
+     "en": "That loop proposes updates of ϕ \\phi on training task families and selects them on disjoint validation families; it changes how evaluators are built ( ϕ \\phi ), not how tasks are solved ( π \\pi ).",
+     "zh": "该元循环在训练任务族上提出对 ϕ \\phi 的更新，并在不相交的验证任务族上进行选择；它改变的是评估器的构建方式（ϕ \\phi），而不是任务的解决方式（π \\pi）。"
+    },
+    {
+     "en": "We do not evaluate the meta loop: Section 4 runs the inner loop only.",
+     "zh": "我们不评估元循环：第 4 节仅运行内循环。"
+    }
+   ]
+  },
+  {
+   "en": "A drafted check may be implemented incorrectly, or an obligation may be missing or mis-stated. QC (Adversarial Testing and Repair & Validate in Figure 2 ) targets both. At version v v it constructs labeled cases of the form defined in Section 2 ,",
+   "zh": "起草的检查项可能被错误实现，或某项义务可能缺失或表述有误。 QC（图 2 中的对抗性测试与修复及验证）同时针对这两点。 在版本 v v 时，它构建第 2 节中定义的形式的带标签案例，",
+   "sents": [
+    {
+     "en": "A drafted check may be implemented incorrectly, or an obligation may be missing or mis-stated.",
+     "zh": "起草的检查项可能被错误实现，或某项义务可能缺失或表述有误。"
+    },
+    {
+     "en": "QC (Adversarial Testing and Repair & Validate in Figure 2 ) targets both.",
+     "zh": "QC（图 2 中的对抗性测试与修复及验证）同时针对这两点。"
+    },
+    {
+     "en": "At version v v it constructs labeled cases of the form defined in Section 2 ,",
+     "zh": "在版本 v v 时，它构建第 2 节中定义的形式的带标签案例，"
+    }
+   ]
+  },
+  {
+   "en": "of three kinds: control cases should pass, error cases violate the targeted criterion (e.g., an edited cell that breaks the completion rate), and boundary cases are near misses. Reference judges, which are language models, label anonymized cases against public evidence, blind to the RewardPack, the attack rationale, and the predicted label. The cases join the repair ledger Q v = Q v − 1 ∪ A v Q_{v}=Q_{v-1}\\cup A_{v} , with Q − 1 = ∅ Q_{-1}=\\varnothing . Agreement, disagreement, and unresolved judgments are as defined in Section 2 ; judgments are recorded once per version and replayed. Let G v ⊆ Q v G_{v}\\subseteq Q_{v} be the cases on which R v R_{v} agrees and F v ⊆ A v F_{v}\\subseteq A_{v} the new cases on which it disagrees. A case whose repair is rejected stays in the ledger as a disagreement and is not targeted again, although a later accepted repair that also fixes it adds it to the agreed cases.",
+   "zh": "分为三类：对照用例应当通过，错误用例违反目标准则（例如某个破坏完成率的被编辑单元格），边界用例则是险些不合规的情况。 参考评审器是语言模型，它们依据公开证据对匿名化用例进行标注，对 RewardPack、攻击理由和预测标签均不可见。 这些用例加入修复账本 Q v = Q v − 1 ∪ A v Q_{v}=Q_{v-1}\\cup A_{v} ，其中 Q − 1 = ∅ Q_{-1}=\\varnothing 。 一致、不一致和未决判定如第 2 节所定义；判定按版本记录一次并被重放。 设 G v ⊆ Q v G_{v}\\subseteq Q_{v} 为 R v R_{v} 表示一致的用例集合，F v ⊆ A v F_{v}\\subseteq A_{v} 为其表示不一致的新用例集合。 修复被拒绝的用例会以不一致的形式留在账本中，且不再被作为目标，不过若后续某个被接受的修复同时也修复了它，则会将其加入一致用例。",
+   "sents": [
+    {
+     "en": "of three kinds: control cases should pass, error cases violate the targeted criterion (e.g., an edited cell that breaks the completion rate), and boundary cases are near misses.",
+     "zh": "分为三类：对照用例应当通过，错误用例违反目标准则（例如某个破坏完成率的被编辑单元格），边界用例则是险些不合规的情况。"
+    },
+    {
+     "en": "Reference judges, which are language models, label anonymized cases against public evidence, blind to the RewardPack, the attack rationale, and the predicted label.",
+     "zh": "参考评审器是语言模型，它们依据公开证据对匿名化用例进行标注，对 RewardPack、攻击理由和预测标签均不可见。"
+    },
+    {
+     "en": "The cases join the repair ledger Q v = Q v − 1 ∪ A v Q_{v}=Q_{v-1}\\cup A_{v} , with Q − 1 = ∅ Q_{-1}=\\varnothing .",
+     "zh": "这些用例加入修复账本 Q v = Q v − 1 ∪ A v Q_{v}=Q_{v-1}\\cup A_{v} ，其中 Q − 1 = ∅ Q_{-1}=\\varnothing 。"
+    },
+    {
+     "en": "Agreement, disagreement, and unresolved judgments are as defined in Section 2 ; judgments are recorded once per version and replayed.",
+     "zh": "一致、不一致和未决判定如第 2 节所定义；判定按版本记录一次并被重放。"
+    },
+    {
+     "en": "Let G v ⊆ Q v G_{v}\\subseteq Q_{v} be the cases on which R v R_{v} agrees and F v ⊆ A v F_{v}\\subseteq A_{v} the new cases on which it disagrees.",
+     "zh": "设 G v ⊆ Q v G_{v}\\subseteq Q_{v} 为 R v R_{v} 表示一致的用例集合，F v ⊆ A v F_{v}\\subseteq A_{v} 为其表示不一致的新用例集合。"
+    },
+    {
+     "en": "A case whose repair is rejected stays in the ledger as a disagreement and is not targeted again, although a later accepted repair that also fixes it adds it to the agreed cases.",
+     "zh": "修复被拒绝的用例会以不一致的形式留在账本中，且不再被作为目标，不过若后续某个被接受的修复同时也修复了它，则会将其加入一致用例。"
+    }
+   ]
+  },
+  {
+   "en": "Jury revises missing or mis-stated obligations and Builder repairs checks, producing a minimal candidate R ~ ∼ Repair ϕ ⁡ ( R v , F v ) \\widetilde{R}\\sim\\Repair_{\\phi}(R_{v},F_{v}) that preserves unrelated criteria and checks and remeasures only affected bindings. Writing G ~ \\widetilde{G} and U ~ \\widetilde{U} for the cases of Q v Q_{v} on which the candidate agrees and is unresolved, it is accepted only if",
+   "zh": "评审者修订缺失或表述错误的义务，构建者修复检查，生成最小候选 R ~ ∼ Repair ϕ ( R v , F v ) \\widetilde{R}\\sim\\Repair_{\\phi}(R_{v},F_{v})，该候选保留无关的准则与检查，仅重新测量受影响的绑定。 用 G ~ \\widetilde{G} 和 U ~ \\widetilde{U} 分别表示 Q v Q_{v} 中候选与其一致以及尚未解决的部分，只有当满足以下条件时该候选才被接受：",
+   "sents": [
+    {
+     "en": "Jury revises missing or mis-stated obligations and Builder repairs checks, producing a minimal candidate R ~ ∼ Repair ϕ ⁡ ( R v , F v ) \\widetilde{R}\\sim\\Repair_{\\phi}(R_{v},F_{v}) that preserves unrelated criteria and checks and remeasures only affected bindings.",
+     "zh": "评审者修订缺失或表述错误的义务，构建者修复检查，生成最小候选 R ~ ∼ Repair ϕ ( R v , F v ) \\widetilde{R}\\sim\\Repair_{\\phi}(R_{v},F_{v})，该候选保留无关的准则与检查，仅重新测量受影响的绑定。"
+    },
+    {
+     "en": "Writing G ~ \\widetilde{G} and U ~ \\widetilde{U} for the cases of Q v Q_{v} on which the candidate agrees and is unresolved, it is accepted only if",
+     "zh": "用 G ~ \\widetilde{G} 和 U ~ \\widetilde{U} 分别表示 Q v Q_{v} 中候选与其一致以及尚未解决的部分，只有当满足以下条件时该候选才被接受："
+    }
+   ]
+  },
+  {
+   "en": "The implementation also requires unchanged known reference labels and supported fresh boundary cases around the repair ( Section B.3 ). The last condition of Eq. 4 is strict: a ledger case that stays unresolved under every version blocks later repairs until its evidence is resolved, and QC then keeps the incumbent. Then R v + 1 = R ~ R_{v+1}=\\widetilde{R} if the candidate is accepted and R v + 1 = R v R_{v+1}=R_{v} otherwise, and QC continues until an attack finds no failure or its budget is exhausted.",
+   "zh": "该实现还要求已知的参考标签保持不变，并支持修复过程中新出现的边界情况（见 B.3 节）。 式 4 的最后一个条件是严格的：一个在所有版本下都保持未解决的账本案例会阻塞后续的修复，直到其证据得到解决，随后质量控制（QC）保留现任方案。 若候选方案被接受，则 R_{v+1}=\\widetilde{R}，否则 R_{v+1}=R_{v}，且质量控制（QC）持续进行，直到某次攻击未发现任何失败或其预算耗尽为止。",
+   "sents": [
+    {
+     "en": "The implementation also requires unchanged known reference labels and supported fresh boundary cases around the repair ( Section B.3 ).",
+     "zh": "该实现还要求已知的参考标签保持不变，并支持修复过程中新出现的边界情况（见 B.3 节）。"
+    },
+    {
+     "en": "The last condition of Eq. 4 is strict: a ledger case that stays unresolved under every version blocks later repairs until its evidence is resolved, and QC then keeps the incumbent.",
+     "zh": "式 4 的最后一个条件是严格的：一个在所有版本下都保持未解决的账本案例会阻塞后续的修复，直到其证据得到解决，随后质量控制（QC）保留现任方案。"
+    },
+    {
+     "en": "Then R v + 1 = R ~ R_{v+1}=\\widetilde{R} if the candidate is accepted and R v + 1 = R v R_{v+1}=R_{v} otherwise, and QC continues until an attack finds no failure or its budget is exhausted.",
+     "zh": "若候选方案被接受，则 R_{v+1}=\\widetilde{R}，否则 R_{v+1}=R_{v}，且质量控制（QC）持续进行，直到某次攻击未发现任何失败或其预算耗尽为止。"
+    }
+   ]
+  },
+  {
+   "en": "The acceptance rule makes agreement monotone, G v ⊆ G v + 1 G_{v}\\subseteq G_{v+1} : a reference case the reward once matched is never lost ( Proposition 1 in Section C.1 ). The guarantee has three limits. It is relative to the reference labels, which are themselves fallible model judgments whose accuracy we do not measure, so a systematically wrong label is kept as firmly as a correct one. It covers only accumulated cases; accuracy on unseen artifacts requires held-out evaluation. And it covers only QC repairs: at a round boundary (stage 3), BoundaryUpdate in Algorithm 1 keeps, rebuilds, or revises the reward under the caller’s rules, which need not preserve G v G_{v} ( Section B.3 ).",
+   "zh": "该接受规则使一致性具有单调性，G v ⊆ G v + 1 G_{v}\\subseteq G_{v+1}：一旦奖励匹配到某个参考案例，就永远不会丢失（第 C.1 节的命题 1）。 该保证有三个局限。 它是相对于参考标签而言的，而这些参考标签本身就是可能出错的模型判断，我们并未测量其准确性，因此系统性错误的标签会与正确的标签同样牢固地被保留。 它只覆盖已积累的案例；在未见过的产物上的准确性需要通过留出集评估来检验。 而且它只覆盖 QC 修复：在轮次边界（阶段 3）处，算法 1 中的 BoundaryUpdate 会按照调用方的规则保留、重建或修订奖励，而调用方的规则未必保持 G v G_{v}（第 B.3 节）。",
+   "sents": [
+    {
+     "en": "The acceptance rule makes agreement monotone, G v ⊆ G v + 1 G_{v}\\subseteq G_{v+1} : a reference case the reward once matched is never lost ( Proposition 1 in Section C.1 ).",
+     "zh": "该接受规则使一致性具有单调性，G v ⊆ G v + 1 G_{v}\\subseteq G_{v+1}：一旦奖励匹配到某个参考案例，就永远不会丢失（第 C.1 节的命题 1）。"
+    },
+    {
+     "en": "The guarantee has three limits.",
+     "zh": "该保证有三个局限。"
+    },
+    {
+     "en": "It is relative to the reference labels, which are themselves fallible model judgments whose accuracy we do not measure, so a systematically wrong label is kept as firmly as a correct one.",
+     "zh": "它是相对于参考标签而言的，而这些参考标签本身就是可能出错的模型判断，我们并未测量其准确性，因此系统性错误的标签会与正确的标签同样牢固地被保留。"
+    },
+    {
+     "en": "It covers only accumulated cases; accuracy on unseen artifacts requires held-out evaluation.",
+     "zh": "它只覆盖已积累的案例；在未见过的产物上的准确性需要通过留出集评估来检验。"
+    },
+    {
+     "en": "And it covers only QC repairs: at a round boundary (stage 3), BoundaryUpdate in Algorithm 1 keeps, rebuilds, or revises the reward under the caller’s rules, which need not preserve G v G_{v} ( Section B.3 ).",
+     "zh": "而且它只覆盖 QC 修复：在轮次边界（阶段 3）处，算法 1 中的 BoundaryUpdate 会按照调用方的规则保留、重建或修订奖励，而调用方的规则未必保持 G v G_{v}（第 B.3 节）。"
+    }
+   ]
+  },
+  {
+   "en": "After QC the latest version is frozen for execution (stage 2 of Figure 2 ); we write R R for it below. Products, receipts, and defects found during use inform construction only at the next round boundary (stage 3).",
+   "zh": "质检通过后，最新版本即被冻结以供执行（图2的阶段2）；下文将其记为 R R。 产品、回执以及使用过程中发现的缺陷，只能在下一轮边界时（阶段3）才用于告知构建过程。",
+   "sents": [
+    {
+     "en": "After QC the latest version is frozen for execution (stage 2 of Figure 2 ); we write R R for it below.",
+     "zh": "质检通过后，最新版本即被冻结以供执行（图2的阶段2）；下文将其记为 R R。"
+    },
+    {
+     "en": "Products, receipts, and defects found during use inform construction only at the next round boundary (stage 3).",
+     "zh": "产品、回执以及使用过程中发现的缺陷，只能在下一轮边界时（阶段3）才用于告知构建过程。"
+    }
+   ]
+  },
+  {
+   "en": "Actor steps append actions and observations to the context, and the terminal review of a reward-guided delivery y T y_{T} appends Critic feedback computed from targeted checks of the frozen reward:",
+   "zh": "Actor 步骤将动作和观测追加到上下文中，而对奖励引导的交付 y T y_{T} 的终端审查则会追加从对冻结奖励的针对性检查中计算出的 Critic 反馈：",
+   "sents": null
+  },
+  {
+   "en": "where R S ​ ( y T ) R_{S}(y_{T}) restricts Eq. 1 to the set S S of checks the review targets (at most three in our runs). Critic suggests, requests clarification, or abstains, citing supporting receipts. When the review is nonempty and budget remains, the same actor session continues from h T ′ h^{\\prime}_{T} , and the revised delivery is then rechecked. This loop uses the limits and stopping conditions in Section D.3 , with π \\pi and R R fixed throughout. Because unselected checks stay unverified, stopping does not certify that the whole RewardPack passes.",
+   "zh": "其中 R_{S}(y_{T}) 将式 1 限制在评审所针对的检查集合 S S 上（在我们的运行中至多三项）。 评审者（critic）提出建议、请求澄清，或选择弃权，并引用支持性凭证。 当评审非空且预算仍有剩余时，同一行动者会话从 h^{\\prime}_{T} 继续进行，随后修订后的交付物会被重新检查。 该循环使用 D.3 节中的限制与停止条件，其中 π \\pi 和 R R 在整个过程中保持不变。 由于未被选中的检查保持未验证状态，停止并不意味着整个 RewardPack 全部通过。",
+   "sents": [
+    {
+     "en": "where R S ​ ( y T ) R_{S}(y_{T}) restricts Eq. 1 to the set S S of checks the review targets (at most three in our runs).",
+     "zh": "其中 R_{S}(y_{T}) 将式 1 限制在评审所针对的检查集合 S S 上（在我们的运行中至多三项）。"
+    },
+    {
+     "en": "Critic suggests, requests clarification, or abstains, citing supporting receipts.",
+     "zh": "评审者（critic）提出建议、请求澄清，或选择弃权，并引用支持性凭证。"
+    },
+    {
+     "en": "When the review is nonempty and budget remains, the same actor session continues from h T ′ h^{\\prime}_{T} , and the revised delivery is then rechecked.",
+     "zh": "当评审非空且预算仍有剩余时，同一行动者会话从 h^{\\prime}_{T} 继续进行，随后修订后的交付物会被重新检查。"
+    },
+    {
+     "en": "This loop uses the limits and stopping conditions in Section D.3 , with π \\pi and R R fixed throughout.",
+     "zh": "该循环使用 D.3 节中的限制与停止条件，其中 π \\pi 和 R R 在整个过程中保持不变。"
+    },
+    {
+     "en": "Because unselected checks stay unverified, stopping does not certify that the whole RewardPack passes.",
+     "zh": "由于未被选中的检查保持未验证状态，停止并不意味着整个 RewardPack 全部通过。"
+    }
+   ]
+  },
+  {
+   "en": "Each round generates three candidates: a task-only candidate y ∘ y^{\\circ} from the task alone, a reward-guided revision using the RewardPack and terminal Critic review, and a hypothesis-guided candidate whose actor receives guidance from a Hypothesis module but neither the RewardPack nor the other candidates. The complete candidate-generation protocol is specified in Section D.3 . In this second Jury role, three members rank all candidates generated so far from their artifacts and receipts, and a reducer adjudicates the rankings against the evidence, giving an order ≻ \\succ . The selector chooses among the current round’s candidates 𝒴 n \\mathcal{Y}_{n} and keeps y ∘ y^{\\circ} unless one ranks strictly above it without a known regression:",
+   "zh": "每一轮生成三个候选：仅由任务生成的候选 y ∘ y^{\\circ}、使用 RewardPack 和终末 Critic 审查得到的奖励引导修订，以及假设引导的候选——其 actor 接收 Hypothesis 模块的指导，但不接收 RewardPack 也不接收其他候选。 完整的候选生成协议在 D.3 节中规定。 在这第二个 Jury 角色中，三名成员根据已有的产物和凭证对所有已生成的候选进行排序，一个 reducer 依据证据裁定这些排序，给出一个顺序 ≻ \\succ 。 选择器在当前轮次的候选 𝒴 n \\mathcal{Y}_{n} 中进行选择，并保留 y ∘ y^{\\circ}，除非某个候选在没有已知退步的情况下严格排在它之上：",
+   "sents": [
+    {
+     "en": "Each round generates three candidates: a task-only candidate y ∘ y^{\\circ} from the task alone, a reward-guided revision using the RewardPack and terminal Critic review, and a hypothesis-guided candidate whose actor receives guidance from a Hypothesis module but neither the RewardPack nor the other candidates.",
+     "zh": "每一轮生成三个候选：仅由任务生成的候选 y ∘ y^{\\circ}、使用 RewardPack 和终末 Critic 审查得到的奖励引导修订，以及假设引导的候选——其 actor 接收 Hypothesis 模块的指导，但不接收 RewardPack 也不接收其他候选。"
+    },
+    {
+     "en": "The complete candidate-generation protocol is specified in Section D.3 .",
+     "zh": "完整的候选生成协议在 D.3 节中规定。"
+    },
+    {
+     "en": "In this second Jury role, three members rank all candidates generated so far from their artifacts and receipts, and a reducer adjudicates the rankings against the evidence, giving an order ≻ \\succ .",
+     "zh": "在这第二个 Jury 角色中，三名成员根据已有的产物和凭证对所有已生成的候选进行排序，一个 reducer 依据证据裁定这些排序，给出一个顺序 ≻ \\succ 。"
+    },
+    {
+     "en": "The selector chooses among the current round’s candidates 𝒴 n \\mathcal{Y}_{n} and keeps y ∘ y^{\\circ} unless one ranks strictly above it without a known regression:",
+     "zh": "选择器在当前轮次的候选 𝒴 n \\mathcal{Y}_{n} 中进行选择，并保留 y ∘ y^{\\circ}，除非某个候选在没有已知退步的情况下严格排在它之上："
+    }
+   ]
+  },
+  {
+   "en": "We call y ⋆ y^{\\star} Selected by reward ; ties are broken as in Section D.3 . The selector sees no benchmark scores or grading receipts. The reward enters selection as evidence for the Jury and as a test-level veto, not as a scalar score; the order agreement in Section 4.2 evaluates the reward’s own pass-share ordering ( Section 2 ), not the Jury’s ranking. Each round therefore makes many more model calls than a single actor run, across the Jury, Builder, QC, Critic, and ranking roles; Section D.6 explains why we report no total-cost or equal-budget comparison.",
+   "zh": "我们将 y ⋆ y^{\\star} 称为「由奖励选出」；平局的处理方式与 D.3 节相同。 选择者看不到任何基准测试分数或评分凭证。 奖励作为证据输入评审团的选择过程，并作为测试层面的否决权，而不是作为一个标量分数；4.2 节中的顺序一致性评估的是奖励自身的通过率排序（第 2 节），而不是评审团的排名。 因此，每一轮在评审团、构建者、质检、评论家和排名等角色上产生的模型调用次数远多于单次执行者运行；D.6 节解释了为什么我们不报告总成本或等预算比较。",
+   "sents": [
+    {
+     "en": "We call y ⋆ y^{\\star} Selected by reward ; ties are broken as in Section D.3 .",
+     "zh": "我们将 y ⋆ y^{\\star} 称为「由奖励选出」；平局的处理方式与 D.3 节相同。"
+    },
+    {
+     "en": "The selector sees no benchmark scores or grading receipts.",
+     "zh": "选择者看不到任何基准测试分数或评分凭证。"
+    },
+    {
+     "en": "The reward enters selection as evidence for the Jury and as a test-level veto, not as a scalar score; the order agreement in Section 4.2 evaluates the reward’s own pass-share ordering ( Section 2 ), not the Jury’s ranking.",
+     "zh": "奖励作为证据输入评审团的选择过程，并作为测试层面的否决权，而不是作为一个标量分数；4.2 节中的顺序一致性评估的是奖励自身的通过率排序（第 2 节），而不是评审团的排名。"
+    },
+    {
+     "en": "Each round therefore makes many more model calls than a single actor run, across the Jury, Builder, QC, Critic, and ranking roles; Section D.6 explains why we report no total-cost or equal-budget comparison.",
+     "zh": "因此，每一轮在评审团、构建者、质检、评论家和排名等角色上产生的模型调用次数远多于单次执行者运行；D.6 节解释了为什么我们不报告总成本或等预算比较。"
+    }
+   ]
+  },
+  {
+   "en": "We ask three questions in Section 4.2 : does Reward Engine improve the delivered artifact; does the frozen reward select better candidates than reward-free policies; and does its ordering agree with the benchmark grader’s? Section E.3 reports sensitivity analyses.",
+   "zh": "我们在 4.2 节中提出三个问题：奖励引擎（Reward Engine）是否改进了交付的制品；冻结的奖励是否比无奖励策略选出更好的候选；以及它的排序是否与基准评分器一致？ E.3 节报告了敏感性分析。",
+   "sents": [
+    {
+     "en": "We ask three questions in Section 4.2 : does Reward Engine improve the delivered artifact; does the frozen reward select better candidates than reward-free policies; and does its ordering agree with the benchmark grader’s?",
+     "zh": "我们在 4.2 节中提出三个问题：奖励引擎（Reward Engine）是否改进了交付的制品；冻结的奖励是否比无奖励策略选出更好的候选；以及它的排序是否与基准评分器一致？"
+    },
+    {
+     "en": "Section E.3 reports sensitivity analyses.",
+     "zh": "E.3 节报告了敏感性分析。"
+    }
+   ]
+  },
+  {
+   "en": "WorkBuddy Bench Office has 50 mixed-format office tasks scored 0–100 by deterministic rules and a model judge [ Tencent Youtu Lab et al., 2026 ] . Claw-Eval provides executable environments and human-checked rubrics [ Ye et al., 2026 ; Claw-Eval Contributors, 2026 ] ; we use 104 frozen task versions from 68 scenarios (36 bilingual pairs), scored 0–100 by its native grader with a custom judge ( Appendix D ).",
+   "zh": "WorkBuddy Bench Office 包含 50 个混合格式的办公任务，由确定性规则和模型裁判（[ Tencent Youtu Lab et al., 2026 ]）进行 0–100 分评分。 Claw-Eval 提供可执行的环境和经过人工核对的评分细则 [ Ye et al., 2026 ; Claw-Eval Contributors, 2026 ]；我们使用来自 68 个场景（36 组双语配对）的 104 个冻结任务版本，由其原生评分器结合自定义裁判进行 0–100 分评分（附录 D）。",
+   "sents": [
+    {
+     "en": "WorkBuddy Bench Office has 50 mixed-format office tasks scored 0–100 by deterministic rules and a model judge [ Tencent Youtu Lab et al., 2026 ] .",
+     "zh": "WorkBuddy Bench Office 包含 50 个混合格式的办公任务，由确定性规则和模型裁判（[ Tencent Youtu Lab et al., 2026 ]）进行 0–100 分评分。"
+    },
+    {
+     "en": "Claw-Eval provides executable environments and human-checked rubrics [ Ye et al., 2026 ; Claw-Eval Contributors, 2026 ] ; we use 104 frozen task versions from 68 scenarios (36 bilingual pairs), scored 0–100 by its native grader with a custom judge ( Appendix D ).",
+     "zh": "Claw-Eval 提供可执行的环境和经过人工核对的评分细则 [ Ye et al., 2026 ; Claw-Eval Contributors, 2026 ]；我们使用来自 68 个场景（36 组双语配对）的 104 个冻结任务版本，由其原生评分器结合自定义裁判进行 0–100 分评分（附录 D）。"
+    }
+   ]
+  },
+  {
+   "en": "Each task is executed in sequential rounds. In every round, the system generates a fresh task-only candidate from the public task alone, a reward-guided revision that also receives the RewardPack and terminal Critic review, and a hypothesis-guided candidate; the selector then returns Selected by reward ( Section 3.3 ). We compare Selected by reward with Baseline, Revision, uniform choice among the generated candidates, and an Oracle that selects the candidate with the highest benchmark score. Baseline and policy aggregation are defined in Section D.2 , and the complete candidate-generation protocol is given in Section D.3 .",
+   "zh": "每个任务按顺序轮次执行。 在每一轮中，系统仅基于公开任务生成一个仅使用任务信息的候选，一个同样接收 RewardPack 和终端 Critic 评审的奖励引导修订版本，以及一个假设引导的候选；随后选择器返回按奖励选出的结果（ Section 3.3 ）。 我们将按奖励选出的结果与基线、修订版本、在生成候选中的均匀选择，以及选择基准分数最高候选的先知（Oracle）进行比较。 基线和策略聚合定义见 Section D.2 ，完整的候选生成协议见 Section D.3 。",
+   "sents": [
+    {
+     "en": "Each task is executed in sequential rounds.",
+     "zh": "每个任务按顺序轮次执行。"
+    },
+    {
+     "en": "In every round, the system generates a fresh task-only candidate from the public task alone, a reward-guided revision that also receives the RewardPack and terminal Critic review, and a hypothesis-guided candidate; the selector then returns Selected by reward ( Section 3.3 ).",
+     "zh": "在每一轮中，系统仅基于公开任务生成一个仅使用任务信息的候选，一个同样接收 RewardPack 和终端 Critic 评审的奖励引导修订版本，以及一个假设引导的候选；随后选择器返回按奖励选出的结果（ Section 3.3 ）。"
+    },
+    {
+     "en": "We compare Selected by reward with Baseline, Revision, uniform choice among the generated candidates, and an Oracle that selects the candidate with the highest benchmark score.",
+     "zh": "我们将按奖励选出的结果与基线、修订版本、在生成候选中的均匀选择，以及选择基准分数最高候选的先知（Oracle）进行比较。"
+    },
+    {
+     "en": "Baseline and policy aggregation are defined in Section D.2 , and the complete candidate-generation protocol is given in Section D.3 .",
+     "zh": "基线和策略聚合定义见 Section D.2 ，完整的候选生成协议见 Section D.3 。"
+    }
+   ]
+  },
+  {
+   "en": "We report mean score, average pass rate, three-run success coverage ( pass ​ @ ​ 3 \\mathrm{pass@3} ), and three-run consistency ( Pass 3 \\mathrm{Pass}^{3} ), together with paired 95% confidence intervals that resample WorkBuddy Bench Office tasks or Claw-Eval scenarios. For selection, we additionally report regret to the oracle and the share of the uniform-to-oracle gap recovered. Metric definitions, aggregation, and statistical procedures are specified in Sections D.2 and D.4 ; per-round performance is reported in Section E.2 .",
+   "zh": "我们报告平均得分、平均通过率、三次运行的成功覆盖（ pass ​ @ ​ 3 \\mathrm{pass@3} ）与三次运行一致性（ Pass 3 \\mathrm{Pass}^{3} ），并给出通过对 WorkBuddy Bench Office 任务或 Claw-Eval 场景进行重抽样得到的配对 95% 置信区间。 在选择任务上，我们额外报告相对于预言机的遗憾值以及均匀策略到预言机差距的恢复比例。 指标定义、聚合方式与统计流程在 D.2 节和 D.4 节中给出；每一轮的性能在 E.2 节中报告。",
+   "sents": [
+    {
+     "en": "We report mean score, average pass rate, three-run success coverage ( pass ​ @ ​ 3 \\mathrm{pass@3} ), and three-run consistency ( Pass 3 \\mathrm{Pass}^{3} ), together with paired 95% confidence intervals that resample WorkBuddy Bench Office tasks or Claw-Eval scenarios.",
+     "zh": "我们报告平均得分、平均通过率、三次运行的成功覆盖（ pass ​ @ ​ 3 \\mathrm{pass@3} ）与三次运行一致性（ Pass 3 \\mathrm{Pass}^{3} ），并给出通过对 WorkBuddy Bench Office 任务或 Claw-Eval 场景进行重抽样得到的配对 95% 置信区间。"
+    },
+    {
+     "en": "For selection, we additionally report regret to the oracle and the share of the uniform-to-oracle gap recovered.",
+     "zh": "在选择任务上，我们额外报告相对于预言机的遗憾值以及均匀策略到预言机差距的恢复比例。"
+    },
+    {
+     "en": "Metric definitions, aggregation, and statistical procedures are specified in Sections D.2 and D.4 ; per-round performance is reported in Section E.2 .",
+     "zh": "指标定义、聚合方式与统计流程在 D.2 节和 D.4 节中给出；每一轮的性能在 E.2 节中报告。"
+    }
+   ]
+  },
+  {
+   "en": "It has the highest mean score on WorkBuddy Bench Office and Claw-Eval ( Table 1 ), gaining + 2.03 +2.03 ( [ 0.90 , 3.21 ] [0.90,3.21] ) on Claw-Eval and + 1.16 +1.16 ( [ − 1.60 , 3.96 ] [-1.60,3.96] ) on WorkBuddy Bench Office, where the interval includes zero. It also has the highest success coverage, reaching every Claw-Eval task at least once ( pass ​ @ ​ 3 = 100 % \\mathrm{pass@3}=100\\% ), and raises Pass 3 \\mathrm{Pass}^{3} from 45.00% to 54.00% and from 78.37% to 83.65% ( Table 2 ; Figure 3 a,b).",
+   "zh": "它在 WorkBuddy Bench Office 和 Claw-Eval（表 1）上获得了最高的平均分，在 Claw-Eval 上提升 +2.03 +2.03（[0.90, 3.21] [0.90,3.21]），在 WorkBuddy Bench Office 上提升 +1.16 +1.16（[−1.60, 3.96] [-1.60,3.96]），其中该区间包含零。 它还拥有最高的成功覆盖率，至少一次通过所有 Claw-Eval 任务（pass@3 = 100% \\mathrm{pass@3}=100\\%），并将 Pass^3 \\mathrm{Pass}^{3} 分别从 45.00% 提升至 54.00%、从 78.37% 提升至 83.65%（表 2；图 3a,b）。",
+   "sents": [
+    {
+     "en": "It has the highest mean score on WorkBuddy Bench Office and Claw-Eval ( Table 1 ), gaining + 2.03 +2.03 ( [ 0.90 , 3.21 ] [0.90,3.21] ) on Claw-Eval and + 1.16 +1.16 ( [ − 1.60 , 3.96 ] [-1.60,3.96] ) on WorkBuddy Bench Office, where the interval includes zero.",
+     "zh": "它在 WorkBuddy Bench Office 和 Claw-Eval（表 1）上获得了最高的平均分，在 Claw-Eval 上提升 +2.03 +2.03（[0.90, 3.21] [0.90,3.21]），在 WorkBuddy Bench Office 上提升 +1.16 +1.16（[−1.60, 3.96] [-1.60,3.96]），其中该区间包含零。"
+    },
+    {
+     "en": "It also has the highest success coverage, reaching every Claw-Eval task at least once ( pass ​ @ ​ 3 = 100 % \\mathrm{pass@3}=100\\% ), and raises Pass 3 \\mathrm{Pass}^{3} from 45.00% to 54.00% and from 78.37% to 83.65% ( Table 2 ; Figure 3 a,b).",
+     "zh": "它还拥有最高的成功覆盖率，至少一次通过所有 Claw-Eval 任务（pass@3 = 100% \\mathrm{pass@3}=100\\%），并将 Pass^3 \\mathrm{Pass}^{3} 分别从 45.00% 提升至 54.00%、从 78.37% 提升至 83.65%（表 2；图 3a,b）。"
+    }
+   ]
+  },
+  {
+   "en": "Relative to Baseline, the run failure rate falls by 37.5% on Claw-Eval, with an interval excluding zero, and by 14.0% on WorkBuddy Bench Office, with an interval including zero ( Figure 3 c). The per-task distributions retain both gains and losses ( Figure 3 d,e). Always delivering the revision attains the highest Pass 3 \\mathrm{Pass}^{3} (56.00% and 87.50%) but a lower mean and coverage, so selection trades some consistency for higher average quality.",
+   "zh": "相对于基线，在 Claw-Eval 上的运行失败率下降 37.5%，其区间不包含零；在 WorkBuddy Bench Office 上下降 14.0%，其区间包含零（图 3c）。 逐任务的分布同时保留了增益与损失（图 3d、e）。 始终交付修订版本的方案获得了最高的 Pass 3 \\mathrm{Pass}^{3}（56.00% 和 87.50%），但均值和覆盖率较低，因此选择策略以牺牲一定的一致性换取更高的平均质量。",
+   "sents": [
+    {
+     "en": "Relative to Baseline, the run failure rate falls by 37.5% on Claw-Eval, with an interval excluding zero, and by 14.0% on WorkBuddy Bench Office, with an interval including zero ( Figure 3 c).",
+     "zh": "相对于基线，在 Claw-Eval 上的运行失败率下降 37.5%，其区间不包含零；在 WorkBuddy Bench Office 上下降 14.0%，其区间包含零（图 3c）。"
+    },
+    {
+     "en": "The per-task distributions retain both gains and losses ( Figure 3 d,e).",
+     "zh": "逐任务的分布同时保留了增益与损失（图 3d、e）。"
+    },
+    {
+     "en": "Always delivering the revision attains the highest Pass 3 \\mathrm{Pass}^{3} (56.00% and 87.50%) but a lower mean and coverage, so selection trades some consistency for higher average quality.",
+     "zh": "始终交付修订版本的方案获得了最高的 Pass 3 \\mathrm{Pass}^{3}（56.00% 和 87.50%），但均值和覆盖率较低，因此选择策略以牺牲一定的一致性换取更高的平均质量。"
+    }
+   ]
+  },
+  {
+   "en": "All policies choose among the same generated candidates, so selection quality can be compared on equal footing. Selecting by the frozen reward gains + 1.83 +1.83 ( [ 0.22 , 3.61 ] [0.22,3.61] ) over uniform choice on WorkBuddy Bench Office and + 2.36 +2.36 ( [ 1.56 , 3.20 ] [1.56,3.20] ) on Claw-Eval, recovering 25.76% and 39.40% of the uniform-to-oracle gap ( Table 3 ). Its mean regret, 5.29 and 3.63, is the lowest among the non-oracle policies, compared with 6.40 and 4.13 for always revising.",
+   "zh": "所有策略都在相同的生成候选中进行选择，因此可以在平等的基础上比较选择质量。 在 WorkBuddy Bench Office 上，使用冻结奖励进行选择比随机选择提升 +1.83（[0.22, 3.61]），在 Claw-Eval 上提升 +2.36（[1.56, 3.20]），分别恢复了从随机选择到理想选择差距的 25.76% 和 39.40%（表 3）。 其平均遗憾值分别为 5.29 和 3.63，在非理想策略中最低，相比之下，始终修订策略的平均遗憾值为 6.40 和 4.13。",
+   "sents": [
+    {
+     "en": "All policies choose among the same generated candidates, so selection quality can be compared on equal footing.",
+     "zh": "所有策略都在相同的生成候选中进行选择，因此可以在平等的基础上比较选择质量。"
+    },
+    {
+     "en": "Selecting by the frozen reward gains + 1.83 +1.83 ( [ 0.22 , 3.61 ] [0.22,3.61] ) over uniform choice on WorkBuddy Bench Office and + 2.36 +2.36 ( [ 1.56 , 3.20 ] [1.56,3.20] ) on Claw-Eval, recovering 25.76% and 39.40% of the uniform-to-oracle gap ( Table 3 ).",
+     "zh": "在 WorkBuddy Bench Office 上，使用冻结奖励进行选择比随机选择提升 +1.83（[0.22, 3.61]），在 Claw-Eval 上提升 +2.36（[1.56, 3.20]），分别恢复了从随机选择到理想选择差距的 25.76% 和 39.40%（表 3）。"
+    },
+    {
+     "en": "Its mean regret, 5.29 and 3.63, is the lowest among the non-oracle policies, compared with 6.40 and 4.13 for always revising.",
+     "zh": "其平均遗憾值分别为 5.29 和 3.63，在非理想策略中最低，相比之下，始终修订策略的平均遗憾值为 6.40 和 4.13。"
+    }
+   ]
+  },
+  {
+   "en": "We re-evaluate candidates against frozen RewardPacks and compare their within-task orderings with the benchmark grader. Order agreement, the share of grader-ordered candidate pairs that the reward does not reverse, is 82.33% on WorkBuddy Bench Office and 80.53% on Claw-Eval, and 84.69% and 81.72% on distinguishable tasks ( Table 4 ). The packs may have seen evaluated candidates; this analysis does not measure generalization to unseen candidates.",
+   "zh": "我们使用冻结的 RewardPack 对候选重新评估，并将奖励给出的任务内排序与基准评分器的排序进行比较。 排序一致率（即奖励不会颠倒评分器所排候选对的比例）在 WorkBuddy Bench Office 上为 82.33%，在 Claw-Eval 上为 80.53%，在可区分任务上分别为 84.69% 和 81.72%（表 4）。 这些奖励包可能已经见过被评估的候选；此分析并未衡量对未见候选的泛化能力。",
+   "sents": [
+    {
+     "en": "We re-evaluate candidates against frozen RewardPacks and compare their within-task orderings with the benchmark grader.",
+     "zh": "我们使用冻结的 RewardPack 对候选重新评估，并将奖励给出的任务内排序与基准评分器的排序进行比较。"
+    },
+    {
+     "en": "Order agreement, the share of grader-ordered candidate pairs that the reward does not reverse, is 82.33% on WorkBuddy Bench Office and 80.53% on Claw-Eval, and 84.69% and 81.72% on distinguishable tasks ( Table 4 ).",
+     "zh": "排序一致率（即奖励不会颠倒评分器所排候选对的比例）在 WorkBuddy Bench Office 上为 82.33%，在 Claw-Eval 上为 80.53%，在可区分任务上分别为 84.69% 和 81.72%（表 4）。"
+    },
+    {
+     "en": "The packs may have seen evaluated candidates; this analysis does not measure generalization to unseen candidates.",
+     "zh": "这些奖励包可能已经见过被评估的候选；此分析并未衡量对未见候选的泛化能力。"
+    }
+   ]
+  },
+  {
+   "en": "Model judges scale open-ended evaluation but are sensitive to position and presentation [ Zheng et al., 2023 ; Wang et al., 2024 ] . Fine-grained rubric judges [ Kim et al., 2024 ] , rubrics and checklists as rewards [ Gunjal et al., 2026 ; Viswanathan et al., 2025 ] , reusable rubric evaluation [ Rao and Callison-Burch, 2026 ] , and natural-language unit tests [ Saad-Falcon et al., 2025 ] make criteria explicit, and Agent-as-a-Judge adds agentic inspection [ Zhuge et al., 2025 ] . Trained verifiers and process reward models score solutions or steps [ Cobbe et al., 2021 ; Lightman et al., 2024 ; Zhang et al., 2025 ] , and AgentRewardBench documents disagreement between automatic and expert judgments of web-agent trajectories [ Lù et al., 2025 ] . Our unit of evaluation is instead a criterion bound to an executed procedure whose receipt names the artifact, scope, and version, with explicit status for errors and unresolved evidence.",
+   "zh": "模型裁判可实现开放式评估的规模化，但对位置和呈现方式较为敏感 [ Zheng et al., 2023 ; Wang et al., 2024 ] 。 细粒度准则裁判 [ Kim et al., 2024 ] 、将评分细则和检查清单用作奖励 [ Gunjal et al., 2026 ; Viswanathan et al., 2025 ] 、可复用的评分细则评估 [ Rao and Callison-Burch, 2026 ] ，以及自然语言单元测试 [ Saad-Falcon et al., 2025 ] 使评估标准显式化，而 Agent-as-a-Judge 则增加了智能体式的审查 [ Zhuge et al., 2025 ] 。 经过训练的验证器和过程奖励模型可对解法或步骤进行打分 [ Cobbe et al., 2021 ; Lightman et al., 2024 ; Zhang et al., 2025 ] ，并且 AgentRewardBench 记录了自动判断与专家对网络智能体轨迹判断之间的分歧 [ Lù et al., 2025 ] 。 我们的评估单元则是一个绑定到已执行过程的准则，该过程的回执中标注了工件、范围和版本，并对错误和未解决的证据给出显式的状态。",
+   "sents": [
+    {
+     "en": "Model judges scale open-ended evaluation but are sensitive to position and presentation [ Zheng et al., 2023 ; Wang et al., 2024 ] .",
+     "zh": "模型裁判可实现开放式评估的规模化，但对位置和呈现方式较为敏感 [ Zheng et al., 2023 ; Wang et al., 2024 ] 。"
+    },
+    {
+     "en": "Fine-grained rubric judges [ Kim et al., 2024 ] , rubrics and checklists as rewards [ Gunjal et al., 2026 ; Viswanathan et al., 2025 ] , reusable rubric evaluation [ Rao and Callison-Burch, 2026 ] , and natural-language unit tests [ Saad-Falcon et al., 2025 ] make criteria explicit, and Agent-as-a-Judge adds agentic inspection [ Zhuge et al., 2025 ] .",
+     "zh": "细粒度准则裁判 [ Kim et al., 2024 ] 、将评分细则和检查清单用作奖励 [ Gunjal et al., 2026 ; Viswanathan et al., 2025 ] 、可复用的评分细则评估 [ Rao and Callison-Burch, 2026 ] ，以及自然语言单元测试 [ Saad-Falcon et al., 2025 ] 使评估标准显式化，而 Agent-as-a-Judge 则增加了智能体式的审查 [ Zhuge et al., 2025 ] 。"
+    },
+    {
+     "en": "Trained verifiers and process reward models score solutions or steps [ Cobbe et al., 2021 ; Lightman et al., 2024 ; Zhang et al., 2025 ] , and AgentRewardBench documents disagreement between automatic and expert judgments of web-agent trajectories [ Lù et al., 2025 ] .",
+     "zh": "经过训练的验证器和过程奖励模型可对解法或步骤进行打分 [ Cobbe et al., 2021 ; Lightman et al., 2024 ; Zhang et al., 2025 ] ，并且 AgentRewardBench 记录了自动判断与专家对网络智能体轨迹判断之间的分歧 [ Lù et al., 2025 ] 。"
+    },
+    {
+     "en": "Our unit of evaluation is instead a criterion bound to an executed procedure whose receipt names the artifact, scope, and version, with explicit status for errors and unresolved evidence.",
+     "zh": "我们的评估单元则是一个绑定到已执行过程的准则，该过程的回执中标注了工件、范围和版本，并对错误和未解决的证据给出显式的状态。"
+    }
+   ]
+  },
+  {
+   "en": "Language models can design rewards from descriptions [ Kwon et al., 2023 ] and write reward code refined with training feedback [ Ma et al., 2024 ; Xie et al., 2024 ] ; CodeT selects programs with generated tests [ Chen et al., 2023 ] ; and EvoRubrics co-evolves rubrics adversarially with the policy [ Ding et al., 2026 ] . Reward Engine instead tests the reward against counterexamples before use, gates repairs by regression on accumulated cases as in software regression testing, and freezes the result while it is used ( Table 5 ). Freezing fixes the standard but does not remove proxy misspecification, since a fixed proxy can still be overoptimized or hacked [ Skalse et al., 2022 ; Gao et al., 2023 ; Pan et al., 2024 ] .",
+   "zh": "语言模型可以根据描述设计奖励 [ Kwon et al., 2023 ]，并撰写通过训练反馈不断改进的奖励代码 [ Ma et al., 2024 ; Xie et al., 2024 ]；CodeT 利用生成的测试来筛选程序 [ Chen et al., 2023 ]；EvoRubrics 则与策略以对抗方式共同演化评分标准 [ Ding et al., 2026 ]。 奖励引擎则相反，它会在使用之前先用反例检验奖励，像软件回归测试那样通过在累积案例上的回归来把关修复，并在使用期间冻结结果（表 5）。 冻结固定了标准，但并不能消除代理偏差，因为固定的代理仍可能被过度优化或被钻空子 [ Skalse et al., 2022 ; Gao et al., 2023 ; Pan et al., 2024 ]。",
+   "sents": [
+    {
+     "en": "Language models can design rewards from descriptions [ Kwon et al., 2023 ] and write reward code refined with training feedback [ Ma et al., 2024 ; Xie et al., 2024 ] ; CodeT selects programs with generated tests [ Chen et al., 2023 ] ; and EvoRubrics co-evolves rubrics adversarially with the policy [ Ding et al., 2026 ] .",
+     "zh": "语言模型可以根据描述设计奖励 [ Kwon et al., 2023 ]，并撰写通过训练反馈不断改进的奖励代码 [ Ma et al., 2024 ; Xie et al., 2024 ]；CodeT 利用生成的测试来筛选程序 [ Chen et al., 2023 ]；EvoRubrics 则与策略以对抗方式共同演化评分标准 [ Ding et al., 2026 ]。"
+    },
+    {
+     "en": "Reward Engine instead tests the reward against counterexamples before use, gates repairs by regression on accumulated cases as in software regression testing, and freezes the result while it is used ( Table 5 ).",
+     "zh": "奖励引擎则相反，它会在使用之前先用反例检验奖励，像软件回归测试那样通过在累积案例上的回归来把关修复，并在使用期间冻结结果（表 5）。"
+    },
+    {
+     "en": "Freezing fixes the standard but does not remove proxy misspecification, since a fixed proxy can still be overoptimized or hacked [ Skalse et al., 2022 ; Gao et al., 2023 ; Pan et al., 2024 ] .",
+     "zh": "冻结固定了标准，但并不能消除代理偏差，因为固定的代理仍可能被过度优化或被钻空子 [ Skalse et al., 2022 ; Gao et al., 2023 ; Pan et al., 2024 ]。"
+    }
+   ]
+  },
+  {
+   "en": "Self-Refine, Reflexion, CRITIC, and TextGrad revise outputs or system components with language feedback [ Madaan et al., 2023 ; Shinn et al., 2023 ; Gou et al., 2024 ; Yuksekgonul et al., 2025 ] , although re-prompting alone can account for gains attributed to critique [ Stechly et al., 2025 ] . ExpeL, ADAS, and SkillRL retain lessons, agent designs, or skills [ Zhao et al., 2024 ; Hu et al., 2025 ; Xia et al., 2026 ] , and Constitutional AI, PPO, and GRPO update parameters from feedback or rewards [ Bai et al., 2022 ; Schulman et al., 2017 ; Shao et al., 2024 ] . Reward Engine exposes the measurement behind its feedback, and its persistent target is evaluator construction rather than task solving.",
+   "zh": "Self-Refine、Reflexion、CRITIC 和 TextGrad 利用语言反馈来修订输出或系统组件 [ Madaan et al., 2023 ; Shinn et al., 2023 ; Gou et al., 2024 ; Yuksekgonul et al., 2025 ] ，不过仅靠重新提示就能解释部分归因于批评的性能提升 [ Stechly et al., 2025 ] 。 ExpeL、ADAS 和 SkillRL 保留经验教训、智能体设计或技能 [ Zhao et al., 2024 ; Hu et al., 2025 ; Xia et al., 2026 ] ，而 Constitutional AI、PPO 和 GRPO 则依据反馈或奖励更新参数 [ Bai et al., 2022 ; Schulman et al., 2017 ; Shao et al., 2024 ] 。 Reward Engine 公开了其反馈背后的度量机制，其持久目标是构建评估器而非解决任务。",
+   "sents": [
+    {
+     "en": "Self-Refine, Reflexion, CRITIC, and TextGrad revise outputs or system components with language feedback [ Madaan et al., 2023 ; Shinn et al., 2023 ; Gou et al., 2024 ; Yuksekgonul et al., 2025 ] , although re-prompting alone can account for gains attributed to critique [ Stechly et al., 2025 ] .",
+     "zh": "Self-Refine、Reflexion、CRITIC 和 TextGrad 利用语言反馈来修订输出或系统组件 [ Madaan et al., 2023 ; Shinn et al., 2023 ; Gou et al., 2024 ; Yuksekgonul et al., 2025 ] ，不过仅靠重新提示就能解释部分归因于批评的性能提升 [ Stechly et al., 2025 ] 。"
+    },
+    {
+     "en": "ExpeL, ADAS, and SkillRL retain lessons, agent designs, or skills [ Zhao et al., 2024 ; Hu et al., 2025 ; Xia et al., 2026 ] , and Constitutional AI, PPO, and GRPO update parameters from feedback or rewards [ Bai et al., 2022 ; Schulman et al., 2017 ; Shao et al., 2024 ] .",
+     "zh": "ExpeL、ADAS 和 SkillRL 保留经验教训、智能体设计或技能 [ Zhao et al., 2024 ; Hu et al., 2025 ; Xia et al., 2026 ] ，而 Constitutional AI、PPO 和 GRPO 则依据反馈或奖励更新参数 [ Bai et al., 2022 ; Schulman et al., 2017 ; Shao et al., 2024 ] 。"
+    },
+    {
+     "en": "Reward Engine exposes the measurement behind its feedback, and its persistent target is evaluator construction rather than task solving.",
+     "zh": "Reward Engine 公开了其反馈背后的度量机制，其持久目标是构建评估器而非解决任务。"
+    }
+   ]
+  },
+  {
+   "en": "Reward Engine makes reward construction part of solving open-ended tool tasks. From public task requirements and execution experience, it builds evidence-grounded checks for required correctness and graded quality, tests them against counterexamples, and holds the resulting reward fixed while it guides revision and selection. Updates between rounds incorporate new evidence without changing the standard during use. On WorkBuddy Bench Office and Claw-Eval, this approach raises three-run consistency over Baseline and improves selection over uniform choice among the same candidates by 1.83 and 2.36 points, respectively, with 95% confidence intervals excluding zero. Mean delivery gains over Baseline are clearest on Claw-Eval. The constructed reward also does not reverse the benchmark graders’ ordering on over 80% of evaluated candidate pairs. These results support constructing and validating rewards as a practical route to improving tool-agent outputs at inference time. Applying the same reward interface to reinforcement learning is a direction for future work.",
+   "zh": "奖励引擎将奖励构建纳入开放式工具任务的求解过程。 它依据公开的任务要求与执行经验，针对所需的正确性与分级质量构建基于证据的检查项，用反例对其进行测试，并在引导修订与选择期间保持所得奖励固定不变。 轮次之间的更新纳入新证据，但不改变使用期间的标准。 在 WorkBuddy Bench Office 与 Claw-Eval 上，该方法将三次运行的一致性提升至 Baseline 之上，并在相同候选中的均匀选择之上使选择结果分别提升 1.83 与 2.36 分，95% 置信区间均不含零。 相对于 Baseline 的平均交付增益在 Claw-Eval 上最为明显。 所构建的奖励在超过 80% 的被评估候选对上也不会逆转基准评分器的排序。 这些结果表明，构建并验证奖励是提升智能体输出在推理阶段表现的一条可行路径。 将同一奖励接口应用于强化学习是未来的研究方向。",
+   "sents": [
+    {
+     "en": "Reward Engine makes reward construction part of solving open-ended tool tasks.",
+     "zh": "奖励引擎将奖励构建纳入开放式工具任务的求解过程。"
+    },
+    {
+     "en": "From public task requirements and execution experience, it builds evidence-grounded checks for required correctness and graded quality, tests them against counterexamples, and holds the resulting reward fixed while it guides revision and selection.",
+     "zh": "它依据公开的任务要求与执行经验，针对所需的正确性与分级质量构建基于证据的检查项，用反例对其进行测试，并在引导修订与选择期间保持所得奖励固定不变。"
+    },
+    {
+     "en": "Updates between rounds incorporate new evidence without changing the standard during use.",
+     "zh": "轮次之间的更新纳入新证据，但不改变使用期间的标准。"
+    },
+    {
+     "en": "On WorkBuddy Bench Office and Claw-Eval, this approach raises three-run consistency over Baseline and improves selection over uniform choice among the same candidates by 1.83 and 2.36 points, respectively, with 95% confidence intervals excluding zero.",
+     "zh": "在 WorkBuddy Bench Office 与 Claw-Eval 上，该方法将三次运行的一致性提升至 Baseline 之上，并在相同候选中的均匀选择之上使选择结果分别提升 1.83 与 2.36 分，95% 置信区间均不含零。"
+    },
+    {
+     "en": "Mean delivery gains over Baseline are clearest on Claw-Eval.",
+     "zh": "相对于 Baseline 的平均交付增益在 Claw-Eval 上最为明显。"
+    },
+    {
+     "en": "The constructed reward also does not reverse the benchmark graders’ ordering on over 80% of evaluated candidate pairs.",
+     "zh": "所构建的奖励在超过 80% 的被评估候选对上也不会逆转基准评分器的排序。"
+    },
+    {
+     "en": "These results support constructing and validating rewards as a practical route to improving tool-agent outputs at inference time.",
+     "zh": "这些结果表明，构建并验证奖励是提升智能体输出在推理阶段表现的一条可行路径。"
+    },
+    {
+     "en": "Applying the same reward interface to reinforcement learning is a direction for future work.",
+     "zh": "将同一奖励接口应用于强化学习是未来的研究方向。"
+    }
+   ]
+  },
+  {
+   "en": "Appendix A compares Reward Engine with related methods, Appendix B gives the notation, RewardPack schema, and implementation details, and Appendix C proves the regression-gate invariant. Appendix D describes the benchmarks, baselines, implementation, statistical procedures, grading provenance, and recorded costs. Appendix E supports each main-text result in the order of Section 4 : delivery quality, per-round results, sensitivity analyses, selection, agreement with the benchmark grader, and auxiliary measurement case studies.",
+   "zh": "附录 A 将奖励引擎与相关方法进行比较，附录 B 给出符号、RewardPack 模式以及实现细节，附录 C 证明回归门控不变式。 附录 D 描述基准测试、基线方法、实现、统计流程、评分来源以及记录的成本。 附录 E 按 4 节的顺序支持正文中的每个结果：交付质量、逐轮结果、敏感性分析、选择、与基准评分器的一致性，以及辅助测量的案例研究。",
+   "sents": [
+    {
+     "en": "Appendix A compares Reward Engine with related methods, Appendix B gives the notation, RewardPack schema, and implementation details, and Appendix C proves the regression-gate invariant.",
+     "zh": "附录 A 将奖励引擎与相关方法进行比较，附录 B 给出符号、RewardPack 模式以及实现细节，附录 C 证明回归门控不变式。"
+    },
+    {
+     "en": "Appendix D describes the benchmarks, baselines, implementation, statistical procedures, grading provenance, and recorded costs.",
+     "zh": "附录 D 描述基准测试、基线方法、实现、统计流程、评分来源以及记录的成本。"
+    },
+    {
+     "en": "Appendix E supports each main-text result in the order of Section 4 : delivery quality, per-round results, sensitivity analyses, selection, agreement with the benchmark grader, and auxiliary measurement case studies.",
+     "zh": "附录 E 按 4 节的顺序支持正文中的每个结果：交付质量、逐轮结果、敏感性分析、选择、与基准评分器的一致性，以及辅助测量的案例研究。"
+    }
+   ]
+  },
+  {
+   "en": "In method-comparison tables, bold marks the best displayed point estimate among comparable methods, including ties. Higher scores and success rates, and lower regret and error rates, are preferred. Oracle upper bounds and label-defining comparators are excluded; bold does not imply statistical significance.",
+   "zh": "在方法对比表中，粗体表示可比方法中最佳显示点估计值，包括并列情况。 分数与成功率越高越好，遗憾值与错误率越低越好。 上界预言值与定义标签的比较基准不参与标注；粗体并不代表具有统计显著性。",
+   "sents": [
+    {
+     "en": "In method-comparison tables, bold marks the best displayed point estimate among comparable methods, including ties.",
+     "zh": "在方法对比表中，粗体表示可比方法中最佳显示点估计值，包括并列情况。"
+    },
+    {
+     "en": "Higher scores and success rates, and lower regret and error rates, are preferred.",
+     "zh": "分数与成功率越高越好，遗憾值与错误率越低越好。"
+    },
+    {
+     "en": "Oracle upper bounds and label-defining comparators are excluded; bold does not imply statistical significance.",
+     "zh": "上界预言值与定义标签的比较基准不参与标注；粗体并不代表具有统计显著性。"
+    }
+   ]
+  },
+  {
+   "en": "Table 5 compares Reward Engine with the evaluators and reward-construction methods discussed in Section 5 on the properties that define its reward. Marks describe each method as specified and evaluated in the cited work, not extensions it could support; feedback and experience methods, which revise the actor rather than the evaluator, are discussed only in Section 5 . Most methods already keep the evaluator fixed while it is used. What distinguishes Reward Engine is the combination of evidence receipts, per-task counterexample testing, and a regression gate. These make evaluator failures visible and keep repairs from losing earlier agreement, but they do not by themselves make the reward correct: the gate holds only on generated cases with fallible reference labels ( Proposition 1 ).",
+   "zh": "表 5 在定义其奖励的各属性上，将 Reward Engine 与第 5 节中讨论的评估器和奖励构建方法进行了比较。 各标记描述的是每种方法在被引文献中按规定说明和评估的情况，而非其可能支持的扩展；反馈和经验方法修改的是行动者而非评估器，因此仅在第 5 节中讨论。 大多数方法在使用评估器时已经保持评估器固定不变。 Reward Engine 的独特之处在于证据回执、逐任务反例测试和回归门控三者的结合。 这些机制使评估器的失败可见，并防止修复丢失先前达成的一致，但它们本身并不能保证奖励正确：门控仅在生成的、参考标签可能出错的用例上生效（命题 1）。",
+   "sents": [
+    {
+     "en": "Table 5 compares Reward Engine with the evaluators and reward-construction methods discussed in Section 5 on the properties that define its reward.",
+     "zh": "表 5 在定义其奖励的各属性上，将 Reward Engine 与第 5 节中讨论的评估器和奖励构建方法进行了比较。"
+    },
+    {
+     "en": "Marks describe each method as specified and evaluated in the cited work, not extensions it could support; feedback and experience methods, which revise the actor rather than the evaluator, are discussed only in Section 5 .",
+     "zh": "各标记描述的是每种方法在被引文献中按规定说明和评估的情况，而非其可能支持的扩展；反馈和经验方法修改的是行动者而非评估器，因此仅在第 5 节中讨论。"
+    },
+    {
+     "en": "Most methods already keep the evaluator fixed while it is used.",
+     "zh": "大多数方法在使用评估器时已经保持评估器固定不变。"
+    },
+    {
+     "en": "What distinguishes Reward Engine is the combination of evidence receipts, per-task counterexample testing, and a regression gate.",
+     "zh": "Reward Engine 的独特之处在于证据回执、逐任务反例测试和回归门控三者的结合。"
+    },
+    {
+     "en": "These make evaluator failures visible and keep repairs from losing earlier agreement, but they do not by themselves make the reward correct: the gate holds only on generated cases with fallible reference labels ( Proposition 1 ).",
+     "zh": "这些机制使评估器的失败可见，并防止修复丢失先前达成的一致，但它们本身并不能保证奖励正确：门控仅在生成的、参考标签可能出错的用例上生效（命题 1）。"
+    }
+   ]
+  },
+  {
+   "en": "a Each criterion is bound to a stored, re-runnable procedure (code or a tool recipe). Reward Engine’s procedures include model judgments over located evidence, so executability does not imply a deterministic oracle. Checklist feedback writes verifier programs only for items it can check exactly and averages them with judge scores.",
+   "zh": "每个评判标准都绑定到一个已存储、可重复运行的程序（代码或工具配方）。 奖励引擎的程序包括对定位证据的模型判断，因此可执行并不意味着确定性的标准答案。 核对清单反馈只为它能精确检查的项目编写验证程序，并将其与评判分数取平均。",
+   "sents": [
+    {
+     "en": "a Each criterion is bound to a stored, re-runnable procedure (code or a tool recipe).",
+     "zh": "每个评判标准都绑定到一个已存储、可重复运行的程序（代码或工具配方）。"
+    },
+    {
+     "en": "Reward Engine’s procedures include model judgments over located evidence, so executability does not imply a deterministic oracle.",
+     "zh": "奖励引擎的程序包括对定位证据的模型判断，因此可执行并不意味着确定性的标准答案。"
+    },
+    {
+     "en": "Checklist feedback writes verifier programs only for items it can check exactly and averages them with judge scores.",
+     "zh": "核对清单反馈只为它能精确检查的项目编写验证程序，并将其与评判分数取平均。"
+    }
+   ]
+  },
+  {
+   "en": "b Each judgment retains the inspected evidence and separates unresolved or failed measurement from a violation. Autorubric records a per-criterion explanation and an explicit cannot-assess verdict; Agent-as-a-Judge gathers workspace evidence for each requirement.",
+   "zh": "b 每次判定都会保留所检查的证据，并将未解决或失败的测量与违规区分开来。 Autorubric 记录每个准则的解释和明确的“无法评估”结论；Agent-as-a-Judge 为每项需求收集工作区证据。",
+   "sents": [
+    {
+     "en": "b Each judgment retains the inspected evidence and separates unresolved or failed measurement from a violation.",
+     "zh": "b 每次判定都会保留所检查的证据，并将未解决或失败的测量与违规区分开来。"
+    },
+    {
+     "en": "Autorubric records a per-criterion explanation and an explicit cannot-assess verdict; Agent-as-a-Judge gathers workspace evidence for each requirement.",
+     "zh": "Autorubric 记录每个准则的解释和明确的“无法评估”结论；Agent-as-a-Judge 为每项需求收集工作区证据。"
+    }
+   ]
+  },
+  {
+   "en": "c The evaluator for a task is tested on labeled counterexamples before use. Several works measure agreement with human labels in aggregate [ Zheng et al., 2023 , Zhuge et al., 2025 , Rao and Callison-Burch, 2026 , Lù et al., 2025 ] ; EvoRubrics adapts its rubric generator adversarially during training rather than testing it on labeled cases.",
+   "zh": "c 在使用前，会在带标签的反例上对任务的评估器进行测试。 若干工作衡量与人工标签的总体一致性 [Zheng et al., 2023, Zhuge et al., 2025, Rao and Callison-Burch, 2026, Lù et al., 2025]；EvoRubrics 则在训练期间以对抗方式调整其量规生成器，而不是在带标签的案例上对其进行测试。",
+   "sents": [
+    {
+     "en": "c The evaluator for a task is tested on labeled counterexamples before use.",
+     "zh": "c 在使用前，会在带标签的反例上对任务的评估器进行测试。"
+    },
+    {
+     "en": "Several works measure agreement with human labels in aggregate [ Zheng et al., 2023 , Zhuge et al., 2025 , Rao and Callison-Burch, 2026 , Lù et al., 2025 ] ; EvoRubrics adapts its rubric generator adversarially during training rather than testing it on labeled cases.",
+     "zh": "若干工作衡量与人工标签的总体一致性 [Zheng et al., 2023, Zhuge et al., 2025, Rao and Callison-Burch, 2026, Lù et al., 2025]；EvoRubrics 则在训练期间以对抗方式调整其量规生成器，而不是在带标签的案例上对其进行测试。"
+    }
+   ]
+  },
+  {
+   "en": "d A revision is accepted only if no previously agreed case is lost; for Reward Engine this holds on generated cases with fallible reference labels ( Proposition 1 ).",
+   "zh": "d 只有在不丢失任何先前已达成一致的案例（case）时，修订才会被接受；对于 Reward Engine 而言，这在带有可出错参考标签的生成案例上成立（命题 1）。",
+   "sents": null
+  },
+  {
+   "en": "e The evaluator is fixed while a policy is trained, reranked, or revised against it, that is, during optimization. Eureka and Text2Reward fix the reward within each training run and revise it between runs, as Reward Engine does between rounds; EvoRubrics updates its rubrics at every training step.",
+   "zh": "评估器在策略针对它进行训练、重排序或修订期间（即在优化过程中）是固定的。 Eureka 和 Text2Reward 在每次训练运行中固定奖励，并在各次运行之间对其进行修订，正如 Reward Engine 在各轮之间所做的那样；EvoRubrics 则在每次训练步骤中更新其量规。",
+   "sents": [
+    {
+     "en": "e The evaluator is fixed while a policy is trained, reranked, or revised against it, that is, during optimization.",
+     "zh": "评估器在策略针对它进行训练、重排序或修订期间（即在优化过程中）是固定的。"
+    },
+    {
+     "en": "Eureka and Text2Reward fix the reward within each training run and revise it between runs, as Reward Engine does between rounds; EvoRubrics updates its rubrics at every training step.",
+     "zh": "Eureka 和 Text2Reward 在每次训练运行中固定奖励，并在各次运行之间对其进行修订，正如 Reward Engine 在各轮之间所做的那样；EvoRubrics 则在每次训练步骤中更新其量规。"
+    }
+   ]
+  },
+  {
+   "en": "This section gives the notation, the RewardPack schema, and the implementation details behind the construction, repair, and use stages summarized in Section 3 . Figure 2 shows the evaluated configuration; Builder appears there as Reward Builder and Harness Builder, and QC as Adversarial Testing and Repair & Validate.",
+   "zh": "本节给出第3节所总结的构建、修复与使用各阶段背后的记号、RewardPack 模式以及实现细节。 图2展示了被评估的配置；Builder 在其中显示为 Reward Builder 和 Harness Builder，QC 显示为 Adversarial Testing 和 Repair & Validate。",
+   "sents": [
+    {
+     "en": "This section gives the notation, the RewardPack schema, and the implementation details behind the construction, repair, and use stages summarized in Section 3 .",
+     "zh": "本节给出第3节所总结的构建、修复与使用各阶段背后的记号、RewardPack 模式以及实现细节。"
+    },
+    {
+     "en": "Figure 2 shows the evaluated configuration; Builder appears there as Reward Builder and Harness Builder, and QC as Adversarial Testing and Repair & Validate.",
+     "zh": "图2展示了被评估的配置；Builder 在其中显示为 Reward Builder 和 Harness Builder，QC 显示为 Adversarial Testing 和 Repair & Validate。"
+    }
+   ]
+  },
+  {
+   "en": "Table 6 collects the notation used in Sections 2 and 3 and this appendix. The model has three layers: the actor π \\pi , the reward R R , and the construction state ϕ \\phi that builds rewards. Actor steps t t , reward versions v v , and experimental rounds n n are distinct indices: additional actor steps need not change the reward.",
+   "zh": "表 6 汇总了第 2 节、第 3 节以及本附录中使用的符号。 该模型包含三层：行动者 π \\pi、奖励 R R，以及用于构建奖励的构建状态 ϕ \\phi。 行动者步数 t t、奖励版本 v v 和实验轮次 n n 是不同的索引：增加行动者步数未必会改变奖励。",
+   "sents": [
+    {
+     "en": "Table 6 collects the notation used in Sections 2 and 3 and this appendix.",
+     "zh": "表 6 汇总了第 2 节、第 3 节以及本附录中使用的符号。"
+    },
+    {
+     "en": "The model has three layers: the actor π \\pi , the reward R R , and the construction state ϕ \\phi that builds rewards.",
+     "zh": "该模型包含三层：行动者 π \\pi、奖励 R R，以及用于构建奖励的构建状态 ϕ \\phi。"
+    },
+    {
+     "en": "Actor steps t t , reward versions v v , and experimental rounds n n are distinct indices: additional actor steps need not change the reward.",
+     "zh": "行动者步数 t t、奖励版本 v v 和实验轮次 n n 是不同的索引：增加行动者步数未必会改变奖励。"
+    }
+   ]
+  },
+  {
+   "en": "Budgets, scopes, and delivery contracts are named in words rather than symbols. Benchmark scores and success statistics use separate notation, defined in Section D.4 .",
+   "zh": "预算、范围和交付合同用文字而非符号命名。 基准测试分数和成功率统计使用单独的记号，在 D.4 节中定义。",
+   "sents": [
+    {
+     "en": "Budgets, scopes, and delivery contracts are named in words rather than symbols.",
+     "zh": "预算、范围和交付合同用文字而非符号命名。"
+    },
+    {
+     "en": "Benchmark scores and success statistics use separate notation, defined in Section D.4 .",
+     "zh": "基准测试分数和成功率统计使用单独的记号，在 D.4 节中定义。"
+    }
+   ]
+  },
+  {
+   "en": "A RewardPack stores one reward version R v = { ( c i , κ i ) } i = 1 m R_{v}=\\{(c_{i},\\kappa_{i})\\}_{i=1}^{m} together with its scope, version metadata, and repair ledger; Table 7 lists the stored records.",
+   "zh": "RewardPack 存储一个奖励版本 R v = { ( c i , κ i ) } i = 1 m R_{v}=\\{(c_{i},\\kappa_{i})\\}_{i=1}^{m} 及其作用域、版本元数据和修复账本；表 7 列出了所存储的记录。",
+   "sents": null
+  },
+  {
+   "en": "For criterion i i with bound tests ℓ ∈ L i \\ell\\in L_{i} , the judgment is the tuple z i = ( z i ​ ℓ ) ℓ ∈ L i z_{i}=(z_{i\\ell})_{\\ell\\in L_{i}} with z i ​ ℓ ∈ 𝒵 i ​ ℓ ∪ { ⊥ } z_{i\\ell}\\in\\mathcal{Z}_{i\\ell}\\cup\\{\\bot\\} binary or graded; the single-test judgments of Section 2 are the case | L i | = 1 |L_{i}|=1 . Three outcomes are kept apart throughout: a failing judgment records an observed violation, ⊥ \\bot records insufficient evidence, and a parser or tool exception is an execution error, recorded in the receipt e i e_{i} , that establishes neither a violation nor its cause. No scalar is imposed. A consumer that needs one supplies a reduction rule, under which ( 𝗉𝖺𝗌𝗌 , ⊥ ) (\\mathsf{pass},\\bot) earns no implicit partial credit and an all-unknown tuple remains unresolved; hard or soft kinds and priorities imply no global weights, vetoes, or aggregation rule. A receipt may be reused only if its artifact, environment snapshot, requirement scope, and check version all match the current measurement. This is admissibility for reuse, not semantic truth, and it cannot supply missing observations, so a modified workbook needs fresh receipts and a checker repair keeps only receipts whose bindings still match.",
+   "zh": "对于带界测试 ℓ ∈ L i \\ell\\in L_{i} 的准则 i i ，判定是元组 z i = ( z i ​ ℓ ) ℓ ∈ L i z_{i}=(z_{i\\ell})_{\\ell\\in L_{i}} ，其中 z i ​ ℓ ∈ 𝒵 i ​ ℓ ∪ { ⊥ } z_{i\\ell}\\in\\mathcal{Z}_{i\\ell}\\cup\\{\\bot\\} ，取值为二元或分级；第 2 节中的单测试判定是 | L i | = 1 |L_{i}|=1 的情形。 全文始终区分三种结果：失败判定记录已观测到的违规，⊥ \\bot 记录证据不足，而解析器或工具异常则是执行错误，记录在回执 e i e_{i} 中，它既不确立违规也不确立其原因。不施加任何标量。 需要单一结果的消费方需自行提供归约规则；在该规则下，( 𝗉𝖺𝗌𝗌 , ⊥ ) (\\mathsf{pass},\\bot) 不会获得隐式的部分得分，且全未知的元组仍保持未决；硬性或软性类别与优先级并不意味着任何全局权重、否决权或聚合规则。 回执只有在其工件、环境快照、需求范围和检查器版本均与当前度量相匹配时才可复用。 这是面向复用的可采性，而非语义真值，且它无法补足缺失的观测，因此修改后的工作簿需要新的回执，而检查器修复后仅保留其绑定仍然匹配的回执。",
+   "sents": [
+    {
+     "en": "For criterion i i with bound tests ℓ ∈ L i \\ell\\in L_{i} , the judgment is the tuple z i = ( z i ​ ℓ ) ℓ ∈ L i z_{i}=(z_{i\\ell})_{\\ell\\in L_{i}} with z i ​ ℓ ∈ 𝒵 i ​ ℓ ∪ { ⊥ } z_{i\\ell}\\in\\mathcal{Z}_{i\\ell}\\cup\\{\\bot\\} binary or graded; the single-test judgments of Section 2 are the case | L i | = 1 |L_{i}|=1 .",
+     "zh": "对于带界测试 ℓ ∈ L i \\ell\\in L_{i} 的准则 i i ，判定是元组 z i = ( z i ​ ℓ ) ℓ ∈ L i z_{i}=(z_{i\\ell})_{\\ell\\in L_{i}} ，其中 z i ​ ℓ ∈ 𝒵 i ​ ℓ ∪ { ⊥ } z_{i\\ell}\\in\\mathcal{Z}_{i\\ell}\\cup\\{\\bot\\} ，取值为二元或分级；第 2 节中的单测试判定是 | L i | = 1 |L_{i}|=1 的情形。"
+    },
+    {
+     "en": "Three outcomes are kept apart throughout: a failing judgment records an observed violation, ⊥ \\bot records insufficient evidence, and a parser or tool exception is an execution error, recorded in the receipt e i e_{i} , that establishes neither a violation nor its cause. No scalar is imposed.",
+     "zh": "全文始终区分三种结果：失败判定记录已观测到的违规，⊥ \\bot 记录证据不足，而解析器或工具异常则是执行错误，记录在回执 e i e_{i} 中，它既不确立违规也不确立其原因。不施加任何标量。"
+    },
+    {
+     "en": "A consumer that needs one supplies a reduction rule, under which ( 𝗉𝖺𝗌𝗌 , ⊥ ) (\\mathsf{pass},\\bot) earns no implicit partial credit and an all-unknown tuple remains unresolved; hard or soft kinds and priorities imply no global weights, vetoes, or aggregation rule.",
+     "zh": "需要单一结果的消费方需自行提供归约规则；在该规则下，( 𝗉𝖺𝗌𝗌 , ⊥ ) (\\mathsf{pass},\\bot) 不会获得隐式的部分得分，且全未知的元组仍保持未决；硬性或软性类别与优先级并不意味着任何全局权重、否决权或聚合规则。"
+    },
+    {
+     "en": "A receipt may be reused only if its artifact, environment snapshot, requirement scope, and check version all match the current measurement.",
+     "zh": "回执只有在其工件、环境快照、需求范围和检查器版本均与当前度量相匹配时才可复用。"
+    },
+    {
+     "en": "This is admissibility for reuse, not semantic truth, and it cannot supply missing observations, so a modified workbook needs fresh receipts and a checker repair keeps only receipts whose bindings still match.",
+     "zh": "这是面向复用的可采性，而非语义真值，且它无法补足缺失的观测，因此修改后的工作簿需要新的回执，而检查器修复后仅保留其绑定仍然匹配的回执。"
+    }
+   ]
+  },
+  {
+   "en": "Construction and feedback use only ℐ \\mathcal{I} ( Section 2 ). Genuine user updates enter ℐ \\mathcal{I} , and internal suggestions never add requirements. Hidden answers and grader outputs are excluded by design. Public benchmark materials that an actor retrieves count as public knowledge ( Table 12 ).",
+   "zh": "构建与反馈仅使用 ℐ \\mathcal{I}（第 2 节）。 真正的用户更新才会进入 ℐ \\mathcal{I}，内部建议从不添加要求。 隐藏答案和评分器输出在设计上被排除在外。 执行智能体检索到的公开基准材料算作公开知识（表 12）。",
+   "sents": [
+    {
+     "en": "Construction and feedback use only ℐ \\mathcal{I} ( Section 2 ).",
+     "zh": "构建与反馈仅使用 ℐ \\mathcal{I}（第 2 节）。"
+    },
+    {
+     "en": "Genuine user updates enter ℐ \\mathcal{I} , and internal suggestions never add requirements.",
+     "zh": "真正的用户更新才会进入 ℐ \\mathcal{I}，内部建议从不添加要求。"
+    },
+    {
+     "en": "Hidden answers and grader outputs are excluded by design.",
+     "zh": "隐藏答案和评分器输出在设计上被排除在外。"
+    },
+    {
+     "en": "Public benchmark materials that an actor retrieves count as public knowledge ( Table 12 ).",
+     "zh": "执行智能体检索到的公开基准材料算作公开知识（表 12）。"
+    }
+   ]
+  },
+  {
+   "en": "Three Jury members draft obligations from the public requirements and permitted knowledge, then reconsider them against the initial task-only artifacts. Each phase needs at least two usable drafts; missing outputs do not count as agreement, and too few drafts or a failed reduction yield no publishable specification. A reducer merges both phases, and validation maps, defers, or excludes with a reason every identified obligation. Obligations that were never proposed remain a semantic omission risk that validation cannot detect. Knowledge, strategies, and QC hypotheses may suggest checks but do not establish requirements.",
+   "zh": "三名评审成员根据公开需求和允许的知识起草义务，然后对照仅基于初始任务的产物重新审视这些义务。 每个阶段至少需要两份可用的草稿；缺失的输出不计作一致同意，草稿过少或归约失败都无法产出可发布的规范。 归约器合并两个阶段，验证环节对每一条已识别的义务进行映射、推迟或附带理由地排除。 从未被提出的义务仍然构成验证无法检测的语义遗漏风险。 知识、策略和QC假设可以提示检查项，但不能确立需求。",
+   "sents": [
+    {
+     "en": "Three Jury members draft obligations from the public requirements and permitted knowledge, then reconsider them against the initial task-only artifacts.",
+     "zh": "三名评审成员根据公开需求和允许的知识起草义务，然后对照仅基于初始任务的产物重新审视这些义务。"
+    },
+    {
+     "en": "Each phase needs at least two usable drafts; missing outputs do not count as agreement, and too few drafts or a failed reduction yield no publishable specification.",
+     "zh": "每个阶段至少需要两份可用的草稿；缺失的输出不计作一致同意，草稿过少或归约失败都无法产出可发布的规范。"
+    },
+    {
+     "en": "A reducer merges both phases, and validation maps, defers, or excludes with a reason every identified obligation.",
+     "zh": "归约器合并两个阶段，验证环节对每一条已识别的义务进行映射、推迟或附带理由地排除。"
+    },
+    {
+     "en": "Obligations that were never proposed remain a semantic omission risk that validation cannot detect.",
+     "zh": "从未被提出的义务仍然构成验证无法检测的语义遗漏风险。"
+    },
+    {
+     "en": "Knowledge, strategies, and QC hypotheses may suggest checks but do not establish requirements.",
+     "zh": "知识、策略和QC假设可以提示检查项，但不能确立需求。"
+    }
+   ]
+  },
+  {
+   "en": "Builder produces the bindings in Table 7 under the caller’s scope, construction budget, and delivery contract, returning an admissible RewardPack or an explicit construction failure that remains in the delivery denominator. The Outcome contract requires schema, binding, and smoke checks and permits synthetic fixtures. Publication additionally requires a receipt for every bound test on a real artifact, not all of them errors, a completed review, and a selection rationale. The artifact must come from a sandboxed actor run charged to construction or a verified archive captured before grading.",
+   "zh": "构建者在调用方的作用域、构建预算和交付契约下生成表 7 中的绑定，返回一个可采纳的 RewardPack 或一个明确的构建失败，该失败仍计入交付分母。 Outcome 契约要求模式检查、绑定检查和冒烟测试，并允许使用合成夹具。 发布还要求对真实制品上的每个绑定测试提供回执（并非全部为错误）、一次已完成的评审，以及一个选择理由。 该制品必须来自计入构建的沙箱化智能体运行，或来自评分前捕获的经核验归档。",
+   "sents": [
+    {
+     "en": "Builder produces the bindings in Table 7 under the caller’s scope, construction budget, and delivery contract, returning an admissible RewardPack or an explicit construction failure that remains in the delivery denominator.",
+     "zh": "构建者在调用方的作用域、构建预算和交付契约下生成表 7 中的绑定，返回一个可采纳的 RewardPack 或一个明确的构建失败，该失败仍计入交付分母。"
+    },
+    {
+     "en": "The Outcome contract requires schema, binding, and smoke checks and permits synthetic fixtures.",
+     "zh": "Outcome 契约要求模式检查、绑定检查和冒烟测试，并允许使用合成夹具。"
+    },
+    {
+     "en": "Publication additionally requires a receipt for every bound test on a real artifact, not all of them errors, a completed review, and a selection rationale.",
+     "zh": "发布还要求对真实制品上的每个绑定测试提供回执（并非全部为错误）、一次已完成的评审，以及一个选择理由。"
+    },
+    {
+     "en": "The artifact must come from a sandboxed actor run charged to construction or a verified archive captured before grading.",
+     "zh": "该制品必须来自计入构建的沙箱化智能体运行，或来自评分前捕获的经核验归档。"
+    }
+   ]
+  },
+  {
+   "en": "Adversarial review executes the control, error, and boundary cases of Section 3.2 . Reference models label anonymized material against public task evidence, blind to the RewardPack, the attack rationale, and the predicted labels, and replay preserves case identities and material. Beyond Eq. 4 , the implementation accepts a candidate only if known reference labels are unchanged and fresh boundary cases around the repair are supported; otherwise the incumbent is kept. Structural review checks bindings but not semantics, so a rebuild without adversarial review leaves its semantic correction unverified. QC routes confirmed checker defects to Builder, missing or mis-stated obligations to Jury, and independently established artifact defects to actor feedback, and leaves uncertain attributions unresolved; infrastructure failures permit bounded remeasurement. A checker repair preserves the criteria and unrelated checks, and a criterion repair remeasures only the affected bindings. Defects found while a reward is in use are queued and never modify the active version. The BoundaryUpdate operation in Algorithm 1 keeps, rebuilds, or revises the reward at a round boundary under comparison and tie rules fixed by the caller, carrying forward the repair ledger. It records the resulting reward as the next version R v + 1 R_{v+1} ; retaining the incumbent leaves the reward contents unchanged. These boundary transitions follow the caller’s rules rather than Eq. 4 . After QC, the latest version is frozen for the execution segment.",
+   "zh": "对抗性审查执行 3.2 节中的控制、错误与边界用例。 参考模型依据公开的任务证据对匿名化材料进行标注，对 RewardPack、攻击原理以及预测标签保持盲态，重放则保留用例身份与材料。 除公式 4 之外，只有在已知参考标签保持不变且修复周围的新边界用例得到支持时，实现才接受候选版本；否则保留现有版本。 结构性审查只检查绑定而不检查语义，因此未经对抗性审查的重建无法验证其语义修正。 质量控制（QC）将已确认的检查器缺陷路由给 Builder，将缺失或表述错误的义务路由给 Jury，将独立确立的工件缺陷路由给行动者反馈，并将归属不明的情况保持未决；基础设施故障允许进行有界重测。 检查器修复会保留判定标准与无关检查，而判定标准修复只重测受影响的绑定。 在奖励使用期间发现的缺陷会被排队处理，绝不修改正在使用的版本。 算法 1 中的 BoundaryUpdate 操作在调用方固定的比较与平局规则下，于轮次边界处保留、重建或修订奖励，并延续修复台账。 操作将所得奖励记录为下一版本 R v + 1 R_{v+1}；保留现有版本则奖励内容保持不变。 这些边界转换遵循调用方的规则，而非公式 4。 质量控制之后，最新版本在执行段内被冻结。",
+   "sents": [
+    {
+     "en": "Adversarial review executes the control, error, and boundary cases of Section 3.2 .",
+     "zh": "对抗性审查执行 3.2 节中的控制、错误与边界用例。"
+    },
+    {
+     "en": "Reference models label anonymized material against public task evidence, blind to the RewardPack, the attack rationale, and the predicted labels, and replay preserves case identities and material.",
+     "zh": "参考模型依据公开的任务证据对匿名化材料进行标注，对 RewardPack、攻击原理以及预测标签保持盲态，重放则保留用例身份与材料。"
+    },
+    {
+     "en": "Beyond Eq. 4 , the implementation accepts a candidate only if known reference labels are unchanged and fresh boundary cases around the repair are supported; otherwise the incumbent is kept.",
+     "zh": "除公式 4 之外，只有在已知参考标签保持不变且修复周围的新边界用例得到支持时，实现才接受候选版本；否则保留现有版本。"
+    },
+    {
+     "en": "Structural review checks bindings but not semantics, so a rebuild without adversarial review leaves its semantic correction unverified.",
+     "zh": "结构性审查只检查绑定而不检查语义，因此未经对抗性审查的重建无法验证其语义修正。"
+    },
+    {
+     "en": "QC routes confirmed checker defects to Builder, missing or mis-stated obligations to Jury, and independently established artifact defects to actor feedback, and leaves uncertain attributions unresolved; infrastructure failures permit bounded remeasurement.",
+     "zh": "质量控制（QC）将已确认的检查器缺陷路由给 Builder，将缺失或表述错误的义务路由给 Jury，将独立确立的工件缺陷路由给行动者反馈，并将归属不明的情况保持未决；基础设施故障允许进行有界重测。"
+    },
+    {
+     "en": "A checker repair preserves the criteria and unrelated checks, and a criterion repair remeasures only the affected bindings.",
+     "zh": "检查器修复会保留判定标准与无关检查，而判定标准修复只重测受影响的绑定。"
+    },
+    {
+     "en": "Defects found while a reward is in use are queued and never modify the active version.",
+     "zh": "在奖励使用期间发现的缺陷会被排队处理，绝不修改正在使用的版本。"
+    },
+    {
+     "en": "The BoundaryUpdate operation in Algorithm 1 keeps, rebuilds, or revises the reward at a round boundary under comparison and tie rules fixed by the caller, carrying forward the repair ledger.",
+     "zh": "算法 1 中的 BoundaryUpdate 操作在调用方固定的比较与平局规则下，于轮次边界处保留、重建或修订奖励，并延续修复台账。"
+    },
+    {
+     "en": "It records the resulting reward as the next version R v + 1 R_{v+1} ; retaining the incumbent leaves the reward contents unchanged.",
+     "zh": "操作将所得奖励记录为下一版本 R v + 1 R_{v+1}；保留现有版本则奖励内容保持不变。"
+    },
+    {
+     "en": "These boundary transitions follow the caller’s rules rather than Eq. 4 .",
+     "zh": "这些边界转换遵循调用方的规则，而非公式 4。"
+    },
+    {
+     "en": "After QC, the latest version is frozen for the execution segment.",
+     "zh": "质量控制之后，最新版本在执行段内被冻结。"
+    }
+   ]
+  },
+  {
+   "en": "An execution segment starts from a caller-supplied context h 0 h_{0} and ends at completion, budget exhaustion, or a scope change; output edits within a segment are remeasured under the frozen reward, whereas a change of requirements, admitted sources, or environment assumptions starts a new segment. Critic abstains, suggests, or requests clarification, citing evidence for each claimed gap and preserving criterion and test identifiers, evidence references, and error status; missing evidence prompts verification rather than a verdict. TerminalReviewLoop in Algorithm 1 applies terminal review, feedback-driven continuation, and rechecking to the reward-guided candidate under the frozen reward; ordinary actor steps append only actions and observations. The operation returns the final actor context, including its delivery and any unresolved status. The evaluated revision budget, stopping conditions, and selection rule are specified in Section D.3 .",
+   "zh": "执行片段从调用方提供的上下文 h 0 h_{0} 开始，在完成、预算耗尽或范围变更时结束；片段内的输出编辑在冻结奖励下重新度量，而需求、允许来源或环境假设的变更则会开启新片段。 评审者选择弃权、建议或请求澄清，为每个所声称的缺口引用证据，并保留准则与测试标识符、证据引用和错误状态；缺失证据时会触发验证而非给出裁决。 算法 1 中的 TerminalReviewLoop 在冻结奖励下对奖励引导的候选执行终审、反馈驱动的续跑以及复核；普通智能体步骤仅追加动作与观察。 该操作返回最终的智能体上下文，包括其交付内容以及任何未解决的状态。 被评估的修订预算、停止条件与选择规则在 D.3 节中规定。",
+   "sents": [
+    {
+     "en": "An execution segment starts from a caller-supplied context h 0 h_{0} and ends at completion, budget exhaustion, or a scope change; output edits within a segment are remeasured under the frozen reward, whereas a change of requirements, admitted sources, or environment assumptions starts a new segment.",
+     "zh": "执行片段从调用方提供的上下文 h 0 h_{0} 开始，在完成、预算耗尽或范围变更时结束；片段内的输出编辑在冻结奖励下重新度量，而需求、允许来源或环境假设的变更则会开启新片段。"
+    },
+    {
+     "en": "Critic abstains, suggests, or requests clarification, citing evidence for each claimed gap and preserving criterion and test identifiers, evidence references, and error status; missing evidence prompts verification rather than a verdict.",
+     "zh": "评审者选择弃权、建议或请求澄清，为每个所声称的缺口引用证据，并保留准则与测试标识符、证据引用和错误状态；缺失证据时会触发验证而非给出裁决。"
+    },
+    {
+     "en": "TerminalReviewLoop in Algorithm 1 applies terminal review, feedback-driven continuation, and rechecking to the reward-guided candidate under the frozen reward; ordinary actor steps append only actions and observations.",
+     "zh": "算法 1 中的 TerminalReviewLoop 在冻结奖励下对奖励引导的候选执行终审、反馈驱动的续跑以及复核；普通智能体步骤仅追加动作与观察。"
+    },
+    {
+     "en": "The operation returns the final actor context, including its delivery and any unresolved status.",
+     "zh": "该操作返回最终的智能体上下文，包括其交付内容以及任何未解决的状态。"
+    },
+    {
+     "en": "The evaluated revision budget, stopping conditions, and selection rule are specified in Section D.3 .",
+     "zh": "被评估的修订预算、停止条件与选择规则在 D.3 节中规定。"
+    }
+   ]
+  },
+  {
+   "en": "Memory retrieves up to three entries into the construction context by sparse cosine similarity over task, requirements, checks, and gaps; each entry records its sources, applicability, validation status, and limitations.",
+   "zh": "记忆（Memory）通过基于任务、需求、检查项和缺口的稀疏余弦相似度，最多检索三条条目到构建上下文中；每条条目记录其来源、适用性、验证状态和局限性。",
+   "sents": null
+  },
+  {
+   "en": "The boxes give abridged semantic prompts for the construction, measurement, terminal-feedback, and ranking calls. Task-specific content is represented by named inputs; these are not verbatim transcripts of every historical run. Exact payloads remain in archived request records. Shared evidence rules apply to every role, while the evaluated call schedule and revision limits are specified in Section D.3 .",
+   "zh": "图中各框给出了构建、测量、终端反馈和排序调用的简要语义提示。 任务特定的内容由具名输入表示；这些并非每次历史运行的逐字记录。 确切的载荷保留在存档的请求记录中。 共享证据规则适用于每个角色，而被评估的调用时间表和修订次数上限在第 D.3 节中规定。",
+   "sents": [
+    {
+     "en": "The boxes give abridged semantic prompts for the construction, measurement, terminal-feedback, and ranking calls.",
+     "zh": "图中各框给出了构建、测量、终端反馈和排序调用的简要语义提示。"
+    },
+    {
+     "en": "Task-specific content is represented by named inputs; these are not verbatim transcripts of every historical run.",
+     "zh": "任务特定的内容由具名输入表示；这些并非每次历史运行的逐字记录。"
+    },
+    {
+     "en": "Exact payloads remain in archived request records.",
+     "zh": "确切的载荷保留在存档的请求记录中。"
+    },
+    {
+     "en": "Shared evidence rules apply to every role, while the evaluated call schedule and revision limits are specified in Section D.3 .",
+     "zh": "共享证据规则适用于每个角色，而被评估的调用时间表和修订次数上限在第 D.3 节中规定。"
+    }
+   ]
+  },
+  {
+   "en": "Schema validation, checker dispatch, evidence binding, revision limits, and the task-only fallback are controller operations outside these prompts.",
+   "zh": "模式校验、检查器调度、证据绑定、修订次数限制以及仅任务回退，均属于这些提示词之外的控制层（controller）操作。",
+   "sents": null
+  },
+  {
+   "en": "If R v + 1 R_{v+1} is obtained from R v R_{v} by the acceptance rule Eq. 4 , then G v ⊆ G v + 1 G_{v}\\subseteq G_{v+1} , and | G v + 1 | ≥ | G v | + 1 |G_{v+1}|\\geq|G_{v}|+1 when the candidate is accepted. Hence, along such transitions, a case on which the reward once agreed with its reference label is never lost, and at most | Q | − | G 0 | |Q|-|G_{0}| repairs are accepted, where Q Q is the final ledger.",
+   "zh": "若 R v+1 是由 R v 通过接受规则（式 4）得到的，则 G v ⊆ G v+1，且当候选解被接受时，|G v+1| ≥ |G v| + 1。 因此，沿着这样的转移，奖励曾与其参考标签一致的案例永远不会丢失，并且最多接受 |Q| − |G 0| 次修复，其中 Q 是最终的账本。",
+   "sents": [
+    {
+     "en": "If R v + 1 R_{v+1} is obtained from R v R_{v} by the acceptance rule Eq. 4 , then G v ⊆ G v + 1 G_{v}\\subseteq G_{v+1} , and | G v + 1 | ≥ | G v | + 1 |G_{v+1}|\\geq|G_{v}|+1 when the candidate is accepted.",
+     "zh": "若 R v+1 是由 R v 通过接受规则（式 4）得到的，则 G v ⊆ G v+1，且当候选解被接受时，|G v+1| ≥ |G v| + 1。"
+    },
+    {
+     "en": "Hence, along such transitions, a case on which the reward once agreed with its reference label is never lost, and at most | Q | − | G 0 | |Q|-|G_{0}| repairs are accepted, where Q Q is the final ledger.",
+     "zh": "因此，沿着这样的转移，奖励曾与其参考标签一致的案例永远不会丢失，并且最多接受 |Q| − |G 0| 次修复，其中 Q 是最终的账本。"
+    }
+   ]
+  },
+  {
+   "en": "Judgments are recorded once per version and replayed, so G v G_{v} is fixed given v v , and on Q v Q_{v} the recorded judgments of R v + 1 R_{v+1} are those of R ~ \\widetilde{R} if it is accepted and those of R v R_{v} otherwise. Since Q v ⊆ Q v + 1 Q_{v}\\subseteq Q_{v+1} , this gives G v + 1 ⊇ G ~ G_{v+1}\\supseteq\\widetilde{G} after acceptance and G v + 1 ⊇ G v G_{v+1}\\supseteq G_{v} after rejection. After acceptance, the no-regression clause gives G ~ ⊇ G v \\widetilde{G}\\supseteq G_{v} , so G v ⊆ G v + 1 G_{v}\\subseteq G_{v+1} in both cases. The fixes-a-failure clause further supplies some j ∗ ∈ F v ∩ G ~ j^{\\ast}\\in F_{v}\\cap\\widetilde{G} ; as R v R_{v} disagrees on j ∗ j^{\\ast} , we have j ∗ ∈ G v + 1 ∖ G v j^{\\ast}\\in G_{v+1}\\setminus G_{v} , so | G v + 1 | ≥ | G v | + 1 |G_{v+1}|\\geq|G_{v}|+1 . Each accepted repair thus adds at least one case to a set contained in Q Q , so at most | Q | − | G 0 | |Q|-|G_{0}| repairs are accepted. ∎",
+   "zh": "判断结果按每个版本记录一次并进行重放，因此在给定 v v 时 G v G_{v} 是固定的，并且在 Q v Q_{v} 上，R v + 1 R_{v+1} 的已记录判断在 R ~ \\widetilde{R} 被接受时即为 R ~ \\widetilde{R} 的判断，否则为 R v R_{v} 的判断。 由于 Q v ⊆ Q v + 1 Q_{v}\\subseteq Q_{v+1}，这意味着在接受后 G v + 1 ⊇ G ~ G_{v+1}\\supseteq\\widetilde{G}，在拒绝后 G v + 1 ⊇ G v G_{v+1}\\supseteq G_{v}。 在接受之后，无回退条款给出 G ~ ⊇ G v \\widetilde{G}\\supseteq G_{v}，因此在两种情况下都有 G v ⊆ G v + 1 G_{v}\\subseteq G_{v+1}。 修复失败条款进一步提供了某个 j ∗ ∈ F v ∩ G ~ j^{\\ast}\\in F_{v}\\cap\\widetilde{G}；由于 R v R_{v} 在 j ∗ j^{\\ast} 上不一致，我们有 j ∗ ∈ G v + 1 ∖ G v j^{\\ast}\\in G_{v+1}\\setminus G_{v}，因此 | G v + 1 | ≥ | G v | + 1 |G_{v+1}|\\geq|G_{v}|+1。 于是每个被接受的修复都会向一个包含于 Q Q 中的集合至少添加一个案例，因此至多有 | Q | − | G 0 | |Q|-|G_{0}| 个修复被接受。∎",
+   "sents": [
+    {
+     "en": "Judgments are recorded once per version and replayed, so G v G_{v} is fixed given v v , and on Q v Q_{v} the recorded judgments of R v + 1 R_{v+1} are those of R ~ \\widetilde{R} if it is accepted and those of R v R_{v} otherwise.",
+     "zh": "判断结果按每个版本记录一次并进行重放，因此在给定 v v 时 G v G_{v} 是固定的，并且在 Q v Q_{v} 上，R v + 1 R_{v+1} 的已记录判断在 R ~ \\widetilde{R} 被接受时即为 R ~ \\widetilde{R} 的判断，否则为 R v R_{v} 的判断。"
+    },
+    {
+     "en": "Since Q v ⊆ Q v + 1 Q_{v}\\subseteq Q_{v+1} , this gives G v + 1 ⊇ G ~ G_{v+1}\\supseteq\\widetilde{G} after acceptance and G v + 1 ⊇ G v G_{v+1}\\supseteq G_{v} after rejection.",
+     "zh": "由于 Q v ⊆ Q v + 1 Q_{v}\\subseteq Q_{v+1}，这意味着在接受后 G v + 1 ⊇ G ~ G_{v+1}\\supseteq\\widetilde{G}，在拒绝后 G v + 1 ⊇ G v G_{v+1}\\supseteq G_{v}。"
+    },
+    {
+     "en": "After acceptance, the no-regression clause gives G ~ ⊇ G v \\widetilde{G}\\supseteq G_{v} , so G v ⊆ G v + 1 G_{v}\\subseteq G_{v+1} in both cases.",
+     "zh": "在接受之后，无回退条款给出 G ~ ⊇ G v \\widetilde{G}\\supseteq G_{v}，因此在两种情况下都有 G v ⊆ G v + 1 G_{v}\\subseteq G_{v+1}。"
+    },
+    {
+     "en": "The fixes-a-failure clause further supplies some j ∗ ∈ F v ∩ G ~ j^{\\ast}\\in F_{v}\\cap\\widetilde{G} ; as R v R_{v} disagrees on j ∗ j^{\\ast} , we have j ∗ ∈ G v + 1 ∖ G v j^{\\ast}\\in G_{v+1}\\setminus G_{v} , so | G v + 1 | ≥ | G v | + 1 |G_{v+1}|\\geq|G_{v}|+1 .",
+     "zh": "修复失败条款进一步提供了某个 j ∗ ∈ F v ∩ G ~ j^{\\ast}\\in F_{v}\\cap\\widetilde{G}；由于 R v R_{v} 在 j ∗ j^{\\ast} 上不一致，我们有 j ∗ ∈ G v + 1 ∖ G v j^{\\ast}\\in G_{v+1}\\setminus G_{v}，因此 | G v + 1 | ≥ | G v | + 1 |G_{v+1}|\\geq|G_{v}|+1。"
+    },
+    {
+     "en": "Each accepted repair thus adds at least one case to a set contained in Q Q , so at most | Q | − | G 0 | |Q|-|G_{0}| repairs are accepted. ∎",
+     "zh": "于是每个被接受的修复都会向一个包含于 Q Q 中的集合至少添加一个案例，因此至多有 | Q | − | G 0 | |Q|-|G_{0}| 个修复被接受。∎"
+    }
+   ]
+  },
+  {
+   "en": "The statement concerns the set G v G_{v} ; the agreement rate on Q v Q_{v} can still fall when an attack round adds failing cases. It is a property of the acceptance rule, not of the attacker: it says nothing about cases that were never generated, and a systematically wrong reference label is ratcheted in as easily as a correct one. Round-boundary updates follow the caller’s rules ( Section B.3 ) and are covered only when they pass the same gate. Held-out evaluation of the frozen reward against independent labels addresses these gaps.",
+   "zh": "该陈述针对的是集合 G_{v}；当某一攻击轮次加入失败的用例时，Q_{v} 上的一致率仍可能下降。 这是接受规则的属性，而非攻击者的属性：它对从未被生成的用例不作任何说明，而且系统性错误的参考标签与正确的标签一样容易被棘轮式固化。 轮次边界处的更新遵循调用方的规则（见 B.3 节），并且只有当它们通过同一道关卡时才被纳入。 用独立标签对冻结的奖励进行留出评估可以弥补这些缺口。",
+   "sents": [
+    {
+     "en": "The statement concerns the set G v G_{v} ; the agreement rate on Q v Q_{v} can still fall when an attack round adds failing cases.",
+     "zh": "该陈述针对的是集合 G_{v}；当某一攻击轮次加入失败的用例时，Q_{v} 上的一致率仍可能下降。"
+    },
+    {
+     "en": "It is a property of the acceptance rule, not of the attacker: it says nothing about cases that were never generated, and a systematically wrong reference label is ratcheted in as easily as a correct one.",
+     "zh": "这是接受规则的属性，而非攻击者的属性：它对从未被生成的用例不作任何说明，而且系统性错误的参考标签与正确的标签一样容易被棘轮式固化。"
+    },
+    {
+     "en": "Round-boundary updates follow the caller’s rules ( Section B.3 ) and are covered only when they pass the same gate.",
+     "zh": "轮次边界处的更新遵循调用方的规则（见 B.3 节），并且只有当它们通过同一道关卡时才被纳入。"
+    },
+    {
+     "en": "Held-out evaluation of the frozen reward against independent labels addresses these gaps.",
+     "zh": "用独立标签对冻结的奖励进行留出评估可以弥补这些缺口。"
+    }
+   ]
+  },
+  {
+   "en": "WorkBuddy Bench Office is the Office subset of a role-based benchmark whose other subsets cover Code, Web, and Security [ Tencent Youtu Lab et al., 2026 ] . We use all 50 tasks of the version-1.0 Office subset with equal weight. They involve spreadsheets, CSV, PDF, and word-processing documents (24 data/file operations, 17 document operations, and nine workspace-automation tasks), and their difficulty lies in data relationships, document structure, state, and supporting evidence rather than file size. Agents run in a sandboxed Docker workspace through Harbor. The CompositeVerifier combines deterministic checks on the submitted artifacts with a model judge over extracted evidence through a task-specific weighted sum; across our 150 final receipts, the deterministic weight ranges from 0.70 to 0.95. A run passes at 80 (inclusive). These external graders are distinct from the internal RewardPack measurements. Among 450 round-candidate records, the only invalid score is the initial-round task-only score on analyst-forecast-extract-L3-018 , archived as 72.8 with an invalid-scoring flag; we count it as zero and retain the raw value and flag. Selection returned the revision in that round, so it is unaffected.",
+   "zh": "WorkBuddy Bench Office 是一个基于角色的基准测试中 Office 子集，该基准测试的其他子集涵盖代码、Web 和安全 [ Tencent Youtu Lab et al., 2026 ]。 我们使用 1.0 版 Office 子集的全部 50 个任务，且权重相等。 这些任务涉及电子表格、CSV、PDF 和文字处理文档（24 个数据/文件操作任务、17 个文档操作任务和 9 个工作区自动化任务），其难度在于数据关系、文档结构、状态和支持证据，而非文件大小。 智能体通过 Harbor 在沙箱化的 Docker 工作区中运行。 CompositeVerifier 将对提交产物的确定性检查与模型裁判对提取证据的评判结合起来，通过任务特定的加权和进行；在我们最终收到的 150 份回执中，确定性权重范围为 0.70 至 0.95。 运行结果达到 80 分（含）即为通过。 这些外部评分者有别于内部的 RewardPack 度量。 在 450 条轮次候选记录中，唯一无效的分数是 analyst-forecast-extract-L3-018 的首轮仅任务分数，归档值为 72.8 并带有无效评分标志；我们将其计为零，同时保留原始数值和标志。 该轮的选拔结果返回了该修订版本，因此不受影响。",
+   "sents": [
+    {
+     "en": "WorkBuddy Bench Office is the Office subset of a role-based benchmark whose other subsets cover Code, Web, and Security [ Tencent Youtu Lab et al., 2026 ] .",
+     "zh": "WorkBuddy Bench Office 是一个基于角色的基准测试中 Office 子集，该基准测试的其他子集涵盖代码、Web 和安全 [ Tencent Youtu Lab et al., 2026 ]。"
+    },
+    {
+     "en": "We use all 50 tasks of the version-1.0 Office subset with equal weight.",
+     "zh": "我们使用 1.0 版 Office 子集的全部 50 个任务，且权重相等。"
+    },
+    {
+     "en": "They involve spreadsheets, CSV, PDF, and word-processing documents (24 data/file operations, 17 document operations, and nine workspace-automation tasks), and their difficulty lies in data relationships, document structure, state, and supporting evidence rather than file size.",
+     "zh": "这些任务涉及电子表格、CSV、PDF 和文字处理文档（24 个数据/文件操作任务、17 个文档操作任务和 9 个工作区自动化任务），其难度在于数据关系、文档结构、状态和支持证据，而非文件大小。"
+    },
+    {
+     "en": "Agents run in a sandboxed Docker workspace through Harbor.",
+     "zh": "智能体通过 Harbor 在沙箱化的 Docker 工作区中运行。"
+    },
+    {
+     "en": "The CompositeVerifier combines deterministic checks on the submitted artifacts with a model judge over extracted evidence through a task-specific weighted sum; across our 150 final receipts, the deterministic weight ranges from 0.70 to 0.95.",
+     "zh": "CompositeVerifier 将对提交产物的确定性检查与模型裁判对提取证据的评判结合起来，通过任务特定的加权和进行；在我们最终收到的 150 份回执中，确定性权重范围为 0.70 至 0.95。"
+    },
+    {
+     "en": "A run passes at 80 (inclusive).",
+     "zh": "运行结果达到 80 分（含）即为通过。"
+    },
+    {
+     "en": "These external graders are distinct from the internal RewardPack measurements.",
+     "zh": "这些外部评分者有别于内部的 RewardPack 度量。"
+    },
+    {
+     "en": "Among 450 round-candidate records, the only invalid score is the initial-round task-only score on analyst-forecast-extract-L3-018 , archived as 72.8 with an invalid-scoring flag; we count it as zero and retain the raw value and flag.",
+     "zh": "在 450 条轮次候选记录中，唯一无效的分数是 analyst-forecast-extract-L3-018 的首轮仅任务分数，归档值为 72.8 并带有无效评分标志；我们将其计为零，同时保留原始数值和标志。"
+    },
+    {
+     "en": "Selection returned the revision in that round, so it is unaffected.",
+     "zh": "该轮的选拔结果返回了该修订版本，因此不受影响。"
+    }
+   ]
+  },
+  {
+   "en": "Claw-Eval evaluates autonomous agents on tasks with executable environments and human-checked rubrics [ Ye et al., 2026 , Claw-Eval Contributors, 2026 ] . It contains 300 tasks and 2,159 rubrics across nine categories (161 general, 101 multimodal, and 38 multi-turn tasks), provides sandboxed services, records trajectories, and distinguishes completion, safety, and robustness; its leaderboard uses Pass 3 \\mathrm{Pass}^{3} over three independent trials. We use 104 frozen task versions from 68 scenarios, including 36 bilingual pairs, scored on the continuous 0–100 native scale with a custom model judge; a run passes at 75 (inclusive). Each task version is evaluated over three sequential rounds of task-only, revision, and hypothesis-guided candidates, yielding 936 graded round candidates. Baseline repetition and aggregation are defined in Section D.2 . Our empirical three-run success metrics follow the aggregation in Sections D.2 and D.4 ; the sequential rounds are dependent, unlike the leaderboard’s independent-trial protocol.",
+   "zh": "Claw-Eval 在具有可执行环境和人工核查评分标准的任务上评估自主智能体 [ Ye et al., 2026, Claw-Eval Contributors, 2026 ]。 它包含九个类别下的 300 个任务和 2,159 条评分标准（161 个通用任务、101 个多模态任务和 38 个多轮任务），提供沙箱服务、记录轨迹，并区分完成度、安全性与鲁棒性；其排行榜使用三次独立试验上的 Pass 3 \\mathrm{Pass}^{3}。 我们使用来自 68 个场景的 104 个冻结任务版本（包括 36 对双语任务），采用自定义模型裁判在原生的 0–100 连续量表上评分；一次运行达到 75 分（含）即为通过。 每个任务版本在仅任务、修订和假设引导三轮顺序候选上进行评估，共产生 936 个经评分的轮次候选。 基线重复与聚合方式定义于 D.2 节。 我们的三次运行经验性成功率指标遵循 D.2 节和 D.4 节中的聚合方式；与排行榜的独立试验协议不同，这些顺序轮次是相互依赖的。",
+   "sents": [
+    {
+     "en": "Claw-Eval evaluates autonomous agents on tasks with executable environments and human-checked rubrics [ Ye et al., 2026 , Claw-Eval Contributors, 2026 ] .",
+     "zh": "Claw-Eval 在具有可执行环境和人工核查评分标准的任务上评估自主智能体 [ Ye et al., 2026, Claw-Eval Contributors, 2026 ]。"
+    },
+    {
+     "en": "It contains 300 tasks and 2,159 rubrics across nine categories (161 general, 101 multimodal, and 38 multi-turn tasks), provides sandboxed services, records trajectories, and distinguishes completion, safety, and robustness; its leaderboard uses Pass 3 \\mathrm{Pass}^{3} over three independent trials.",
+     "zh": "它包含九个类别下的 300 个任务和 2,159 条评分标准（161 个通用任务、101 个多模态任务和 38 个多轮任务），提供沙箱服务、记录轨迹，并区分完成度、安全性与鲁棒性；其排行榜使用三次独立试验上的 Pass 3 \\mathrm{Pass}^{3}。"
+    },
+    {
+     "en": "We use 104 frozen task versions from 68 scenarios, including 36 bilingual pairs, scored on the continuous 0–100 native scale with a custom model judge; a run passes at 75 (inclusive).",
+     "zh": "我们使用来自 68 个场景的 104 个冻结任务版本（包括 36 对双语任务），采用自定义模型裁判在原生的 0–100 连续量表上评分；一次运行达到 75 分（含）即为通过。"
+    },
+    {
+     "en": "Each task version is evaluated over three sequential rounds of task-only, revision, and hypothesis-guided candidates, yielding 936 graded round candidates.",
+     "zh": "每个任务版本在仅任务、修订和假设引导三轮顺序候选上进行评估，共产生 936 个经评分的轮次候选。"
+    },
+    {
+     "en": "Baseline repetition and aggregation are defined in Section D.2 .",
+     "zh": "基线重复与聚合方式定义于 D.2 节。"
+    },
+    {
+     "en": "Our empirical three-run success metrics follow the aggregation in Sections D.2 and D.4 ; the sequential rounds are dependent, unlike the leaderboard’s independent-trial protocol.",
+     "zh": "我们的三次运行经验性成功率指标遵循 D.2 节和 D.4 节中的聚合方式；与排行榜的独立试验协议不同，这些顺序轮次是相互依赖的。"
+    }
+   ]
+  },
+  {
+   "en": "Baseline uses two repetitions of three task-only runs per task (six executions). In every run, the same actor receives only the public task and its attachments. For a three-run statistic g g ( Section D.4 ) and native score s i ​ r ( q ) s^{(q)}_{ir} of task i i in repetition q q and run r r ,",
+   "zh": "基线对每个任务使用三次仅任务运行的两轮重复（共六次执行）。 在每次运行中，同一个智能体只接收公开任务及其附件。 对于三轮运行的统计量 g g（第 D.4 节）以及任务 i i 在重复 q q 和运行 r r 中的原生分数 s i ​ r ( q ) s^{(q)}_{ir}，",
+   "sents": [
+    {
+     "en": "Baseline uses two repetitions of three task-only runs per task (six executions).",
+     "zh": "基线对每个任务使用三次仅任务运行的两轮重复（共六次执行）。"
+    },
+    {
+     "en": "In every run, the same actor receives only the public task and its attachments.",
+     "zh": "在每次运行中，同一个智能体只接收公开任务及其附件。"
+    },
+    {
+     "en": "For a three-run statistic g g ( Section D.4 ) and native score s i ​ r ( q ) s^{(q)}_{ir} of task i i in repetition q q and run r r ,",
+     "zh": "对于三轮运行的统计量 g g（第 D.4 节）以及任务 i i 在重复 q q 和运行 r r 中的原生分数 s i ​ r ( q ) s^{(q)}_{ir}，"
+    }
+   ]
+  },
+  {
+   "en": "Revision, hypothesis guidance, and Selected by reward apply g g to their three sequential rounds. We write s i ​ ( A ) s_{i}(A) for the task-level mean score of method A A ; aggregation precedes paired resampling. Uniform choice averages the three candidates per task-round; Oracle takes their maximum benchmark score. Headroom is ( policy − uniform ) / ( oracle − uniform ) (\\text{policy}-\\text{uniform})/(\\text{oracle}-\\text{uniform}) .",
+   "zh": "修订、假设引导与「由奖励选择」将 g g 应用于它们的三个连续轮次。 我们用 s i ​ ( A ) s_{i}(A) 表示方法 A A 的任务级平均得分；聚合先于成对重抽样进行。 均匀选择对每个任务轮次的三位候选取平均；Oracle 取它们的最大基准得分。 提升空间为 ( policy − uniform ) / ( oracle − uniform ) (\\text{policy}-\\text{uniform})/(\\text{oracle}-\\text{uniform}) 。",
+   "sents": [
+    {
+     "en": "Revision, hypothesis guidance, and Selected by reward apply g g to their three sequential rounds.",
+     "zh": "修订、假设引导与「由奖励选择」将 g g 应用于它们的三个连续轮次。"
+    },
+    {
+     "en": "We write s i ​ ( A ) s_{i}(A) for the task-level mean score of method A A ; aggregation precedes paired resampling.",
+     "zh": "我们用 s i ​ ( A ) s_{i}(A) 表示方法 A A 的任务级平均得分；聚合先于成对重抽样进行。"
+    },
+    {
+     "en": "Uniform choice averages the three candidates per task-round; Oracle takes their maximum benchmark score.",
+     "zh": "均匀选择对每个任务轮次的三位候选取平均；Oracle 取它们的最大基准得分。"
+    },
+    {
+     "en": "Headroom is ( policy − uniform ) / ( oracle − uniform ) (\\text{policy}-\\text{uniform})/(\\text{oracle}-\\text{uniform}) .",
+     "zh": "提升空间为 ( policy − uniform ) / ( oracle − uniform ) (\\text{policy}-\\text{uniform})/(\\text{oracle}-\\text{uniform}) 。"
+    }
+   ]
+  },
+  {
+   "en": "Each round launches a fresh task-only actor that receives only the public task and its attachments. The reward-guided revision additionally receives the current RewardPack and terminal Critic review: a model overview proposes up to three targeted checks per review, and each nonempty review permits one continuation in the same actor session followed by a recheck, with at most two revisions. Measurement, Critic calls, and continuations consume the execution budget. Revision stops early only when the current overview reports no gaps, nothing is deferred or carried over, and the selected checks and all blocking requirements pass; unselected checks remain unverified, so stopping does not certify full-pack coverage. When the budget is exhausted, the latest artifact is kept with its unresolved status. The hypothesis-guided candidate receives guidance from a Hypothesis module but neither the RewardPack nor the candidate pool. Before each round, the module reads the public task, Jury gaps, permitted knowledge, and same-task artifacts and checks from earlier rounds, and returns fallible guidance (a method, an optional target, the expected benefit, a verification plan, and clarification questions) or a keep decision, which reduces the candidate to task-only generation. On WorkBuddy Bench Office the archive records the guidance as applied on 41 tasks, a keep decision on two, and an unknown state on seven. Because the surrounding loop accumulates candidates, measurements, memory, and Jury decisions, “task-only” describes the actor’s prompt, not independence from the loop.",
+   "zh": "每一轮都会启动一个全新的仅任务智能体，它只接收公开任务及其附件。 奖励引导的修订版本还会接收当前的 RewardPack 和 Critic 的终局评审：模型概览在每次评审中最多提出三项针对性检查，且每次非空评审允许在同一智能体会话中续写一次并随后复检，最多修订两次。 测量、Critic 调用和续写都会消耗执行预算。 只有当当前概览报告没有缺口、没有遗留或延续事项，且所选检查和所有阻塞性要求都通过时，修订才会提前停止；未选中的检查仍未验证，因此停止并不意味着完整的全包覆盖。 当预算耗尽时，最新的产物将连同其未解决的状态一起保留。 假设引导的候选会接收来自 Hypothesis 模块的指导，但既不接收 RewardPack 也不接收候选池。 在每轮之前，该模块会读取公开任务、Jury 缺口、允许使用的知识，以及此前各轮的同任务产物和检查，并返回可错的指导（一种方法、一个可选目标、预期收益、验证计划以及澄清问题）或一个保留决定，保留决定会使候选退化为仅任务生成。 在 WorkBuddy Bench Office 上，档案记录显示该指导在 41 个任务上被应用，在两个任务上是保留决定，在七个任务上是未知状态。 由于外围循环会累积候选、测量、记忆和 Jury 决定，“仅任务”描述的是智能体的提示词，而非独立于循环之外。",
+   "sents": [
+    {
+     "en": "Each round launches a fresh task-only actor that receives only the public task and its attachments.",
+     "zh": "每一轮都会启动一个全新的仅任务智能体，它只接收公开任务及其附件。"
+    },
+    {
+     "en": "The reward-guided revision additionally receives the current RewardPack and terminal Critic review: a model overview proposes up to three targeted checks per review, and each nonempty review permits one continuation in the same actor session followed by a recheck, with at most two revisions.",
+     "zh": "奖励引导的修订版本还会接收当前的 RewardPack 和 Critic 的终局评审：模型概览在每次评审中最多提出三项针对性检查，且每次非空评审允许在同一智能体会话中续写一次并随后复检，最多修订两次。"
+    },
+    {
+     "en": "Measurement, Critic calls, and continuations consume the execution budget.",
+     "zh": "测量、Critic 调用和续写都会消耗执行预算。"
+    },
+    {
+     "en": "Revision stops early only when the current overview reports no gaps, nothing is deferred or carried over, and the selected checks and all blocking requirements pass; unselected checks remain unverified, so stopping does not certify full-pack coverage.",
+     "zh": "只有当当前概览报告没有缺口、没有遗留或延续事项，且所选检查和所有阻塞性要求都通过时，修订才会提前停止；未选中的检查仍未验证，因此停止并不意味着完整的全包覆盖。"
+    },
+    {
+     "en": "When the budget is exhausted, the latest artifact is kept with its unresolved status.",
+     "zh": "当预算耗尽时，最新的产物将连同其未解决的状态一起保留。"
+    },
+    {
+     "en": "The hypothesis-guided candidate receives guidance from a Hypothesis module but neither the RewardPack nor the candidate pool.",
+     "zh": "假设引导的候选会接收来自 Hypothesis 模块的指导，但既不接收 RewardPack 也不接收候选池。"
+    },
+    {
+     "en": "Before each round, the module reads the public task, Jury gaps, permitted knowledge, and same-task artifacts and checks from earlier rounds, and returns fallible guidance (a method, an optional target, the expected benefit, a verification plan, and clarification questions) or a keep decision, which reduces the candidate to task-only generation.",
+     "zh": "在每轮之前，该模块会读取公开任务、Jury 缺口、允许使用的知识，以及此前各轮的同任务产物和检查，并返回可错的指导（一种方法、一个可选目标、预期收益、验证计划以及澄清问题）或一个保留决定，保留决定会使候选退化为仅任务生成。"
+    },
+    {
+     "en": "On WorkBuddy Bench Office the archive records the guidance as applied on 41 tasks, a keep decision on two, and an unknown state on seven.",
+     "zh": "在 WorkBuddy Bench Office 上，档案记录显示该指导在 41 个任务上被应用，在两个任务上是保留决定，在七个任务上是未知状态。"
+    },
+    {
+     "en": "Because the surrounding loop accumulates candidates, measurements, memory, and Jury decisions, “task-only” describes the actor’s prompt, not independence from the loop.",
+     "zh": "由于外围循环会累积候选、测量、记忆和 Jury 决定，“仅任务”描述的是智能体的提示词，而非独立于循环之外。"
+    }
+   ]
+  },
+  {
+   "en": "Three Jury members compare the candidates. A valid record places every candidate exactly once, in an ordered tie group or an unknown list, with artifact references and reasons; abstention is valid, whereas malformed output is not. A model reducer adjudicates at least two valid records against the evidence without counting votes, using ties for unsupported differences and unknowns for insufficient evidence. The terminal Jury ranks all accumulated candidates, but the selector chooses among the current round’s three: the highest-ranked candidate strictly ahead of the task-only candidate with no known failure on a test, matched by identifier, that the task-only candidate passes, with eligible ties favoring the revision over the hypothesis-guided candidate; otherwise the task-only candidate.",
+   "zh": "三位评委（Jury）成员对候选进行比对。 一条有效记录将每个候选恰好放置一次，置于有序的并列组或未知列表中，并附带工件引用与理由；弃权是有效的，而格式错误的输出则无效。 一个模型归约器（reducer）在不计票的情况下，依据证据对至少两条有效记录进行裁决，对无依据的分歧使用并列（tie），对证据不足使用未知（unknown）。 终局评委对所有累积的候选进行排名，但选择器仅在当前轮的三个之中选择：排名最高、严格领先于仅任务候选、且在某个测试上无已知失败（按标识符匹配）的候选，而该测试是仅任务候选所通过的；符合条件的并列情况下，修订候选优先于假设引导的候选；否则选择仅任务候选。",
+   "sents": [
+    {
+     "en": "Three Jury members compare the candidates.",
+     "zh": "三位评委（Jury）成员对候选进行比对。"
+    },
+    {
+     "en": "A valid record places every candidate exactly once, in an ordered tie group or an unknown list, with artifact references and reasons; abstention is valid, whereas malformed output is not.",
+     "zh": "一条有效记录将每个候选恰好放置一次，置于有序的并列组或未知列表中，并附带工件引用与理由；弃权是有效的，而格式错误的输出则无效。"
+    },
+    {
+     "en": "A model reducer adjudicates at least two valid records against the evidence without counting votes, using ties for unsupported differences and unknowns for insufficient evidence.",
+     "zh": "一个模型归约器（reducer）在不计票的情况下，依据证据对至少两条有效记录进行裁决，对无依据的分歧使用并列（tie），对证据不足使用未知（unknown）。"
+    },
+    {
+     "en": "The terminal Jury ranks all accumulated candidates, but the selector chooses among the current round’s three: the highest-ranked candidate strictly ahead of the task-only candidate with no known failure on a test, matched by identifier, that the task-only candidate passes, with eligible ties favoring the revision over the hypothesis-guided candidate; otherwise the task-only candidate.",
+     "zh": "终局评委对所有累积的候选进行排名，但选择器仅在当前轮的三个之中选择：排名最高、严格领先于仅任务候选、且在某个测试上无已知失败（按标识符匹配）的候选，而该测试是仅任务候选所通过的；符合条件的并列情况下，修订候选优先于假设引导的候选；否则选择仅任务候选。"
+    }
+   ]
+  },
+  {
+   "en": "Success thresholds are η = 80 \\eta=80 for WorkBuddy Bench Office and η = 75 \\eta=75 for Claw-Eval.",
+   "zh": "成功阈值为 WorkBuddy Bench Office 的 η = 80 \\eta=80 和 Claw-Eval 的 η = 75 \\eta=75。",
+   "sents": null
+  },
+  {
+   "en": "For a three-run group with benchmark scores s 1 , s 2 , s 3 s_{1},s_{2},s_{3} and successes b r = 𝟏 [ s r ≥ η ] b_{r}=\\mathbf{1}[s_{r}\\geq\\eta] , the three-run statistics g g are the mean score, average pass rate, success coverage, and consistency:",
+   "zh": "对于一个包含三次运行的组，其基准得分为 s 1 , s 2 , s 3 s_{1},s_{2},s_{3}，成功指标为 b r = 𝟏 [ s r ≥ η ] b_{r}=\\mathbf{1}[s_{r}\\geq\\eta]，三次运行的统计量 g g 包括：平均得分、平均通过率、成功覆盖率以及一致性：",
+   "sents": null
+  },
+  {
+   "en": "Method-specific task-level aggregation is defined in Section D.2 . After that aggregation, task averages of coverage and consistency give pass ​ @ ​ 3 \\mathrm{pass@3} and Pass 3 \\mathrm{Pass}^{3} , respectively. Over the task set 𝒯 \\mathcal{T} , we report task-averaged scores s ¯ ​ ( A ) = | 𝒯 | − 1 ​ ∑ i ∈ 𝒯 s i ​ ( A ) \\bar{s}(A)=|\\mathcal{T}|^{-1}\\sum_{i\\in\\mathcal{T}}s_{i}(A) and paired differences from Baseline, Δ ⁡ ( A ) = | 𝒯 | − 1 ​ ∑ i ∈ 𝒯 ( s i ​ ( A ) − s i ​ ( Baseline ) ) \\Delta(A)=|\\mathcal{T}|^{-1}\\sum_{i\\in\\mathcal{T}}\\bigl(s_{i}(A)-s_{i}(\\mathrm{Baseline})\\bigr) .",
+   "zh": "方法特定的任务级聚合在 D.2 节中定义。 在该聚合之后，覆盖率和一致性的任务平均值分别给出 pass ​@​3 \\mathrm{pass@3} 和 Pass 3 \\mathrm{Pass}^{3}。 在任务集 𝒯 \\mathcal{T} 上，我们报告任务平均分数 s ¯ ​(A)=|𝒯|−1​∑i∈𝒯si​(A) \\bar{s}(A)=|\\mathcal{T}|^{-1}\\sum_{i\\in\\mathcal{T}}s_{i}(A) 以及相对于 Baseline 的配对差值 Δ⁡(A)=|𝒯|−1​∑i∈𝒯(si​(A)−si​(Baseline)) \\Delta(A)=|\\mathcal{T}|^{-1}\\sum_{i\\in\\mathcal{T}}\\bigl(s_{i}(A)-s_{i}(\\mathrm{Baseline})\\bigr)。",
+   "sents": [
+    {
+     "en": "Method-specific task-level aggregation is defined in Section D.2 .",
+     "zh": "方法特定的任务级聚合在 D.2 节中定义。"
+    },
+    {
+     "en": "After that aggregation, task averages of coverage and consistency give pass ​ @ ​ 3 \\mathrm{pass@3} and Pass 3 \\mathrm{Pass}^{3} , respectively.",
+     "zh": "在该聚合之后，覆盖率和一致性的任务平均值分别给出 pass ​@​3 \\mathrm{pass@3} 和 Pass 3 \\mathrm{Pass}^{3}。"
+    },
+    {
+     "en": "Over the task set 𝒯 \\mathcal{T} , we report task-averaged scores s ¯ ​ ( A ) = | 𝒯 | − 1 ​ ∑ i ∈ 𝒯 s i ​ ( A ) \\bar{s}(A)=|\\mathcal{T}|^{-1}\\sum_{i\\in\\mathcal{T}}s_{i}(A) and paired differences from Baseline, Δ ⁡ ( A ) = | 𝒯 | − 1 ​ ∑ i ∈ 𝒯 ( s i ​ ( A ) − s i ​ ( Baseline ) ) \\Delta(A)=|\\mathcal{T}|^{-1}\\sum_{i\\in\\mathcal{T}}\\bigl(s_{i}(A)-s_{i}(\\mathrm{Baseline})\\bigr) .",
+     "zh": "在任务集 𝒯 \\mathcal{T} 上，我们报告任务平均分数 s ¯ ​(A)=|𝒯|−1​∑i∈𝒯si​(A) \\bar{s}(A)=|\\mathcal{T}|^{-1}\\sum_{i\\in\\mathcal{T}}s_{i}(A) 以及相对于 Baseline 的配对差值 Δ⁡(A)=|𝒯|−1​∑i∈𝒯(si​(A)−si​(Baseline)) \\Delta(A)=|\\mathcal{T}|^{-1}\\sum_{i\\in\\mathcal{T}}\\bigl(s_{i}(A)-s_{i}(\\mathrm{Baseline})\\bigr)。"
+    }
+   ]
+  },
+  {
+   "en": "Paired 95% percentile intervals use 200,000 resamples of WorkBuddy Bench Office tasks (NumPy default generator, seed 20260915) or the 68 Claw-Eval scenario clusters (seed 20261005), preserving bilingual task versions and all observations belonging to each sampled unit; sampled task versions receive equal weight. Differences of at most 10 − 8 10^{-8} count as ties for W/T/L, the two-sided sign test (which excludes ties), and the Wilcoxon signed-rank test. Scores are never rounded before comparison. Intervals are nominal and unadjusted for multiple comparisons. Claw-Eval task-level tests do not account for bilingual dependence; its uncertainty is assessed with the scenario-cluster intervals.",
+   "zh": "配对 95% 百分位区间使用 WorkBuddy Bench Office 任务的 200,000 次重抽样（NumPy 默认生成器，种子 20260915），或 68 个 Claw-Eval 场景簇的 200,000 次重抽样（种子 20261005），并保留双语任务版本以及属于每个被抽样单元的全部观测；被抽样的任务版本权重相等。 差异不超过 10 − 8 10^{-8} 时，在 W/T/L、排除平局的双侧符号检验以及 Wilcoxon 符号秩检验中均计为平局。 分数在比较前绝不进行舍入。 区间为名义区间，且未针对多重比较进行校正。 Claw-Eval 的任务级检验不考虑双语相关性；其不确定性通过场景簇区间进行评估。",
+   "sents": [
+    {
+     "en": "Paired 95% percentile intervals use 200,000 resamples of WorkBuddy Bench Office tasks (NumPy default generator, seed 20260915) or the 68 Claw-Eval scenario clusters (seed 20261005), preserving bilingual task versions and all observations belonging to each sampled unit; sampled task versions receive equal weight.",
+     "zh": "配对 95% 百分位区间使用 WorkBuddy Bench Office 任务的 200,000 次重抽样（NumPy 默认生成器，种子 20260915），或 68 个 Claw-Eval 场景簇的 200,000 次重抽样（种子 20261005），并保留双语任务版本以及属于每个被抽样单元的全部观测；被抽样的任务版本权重相等。"
+    },
+    {
+     "en": "Differences of at most 10 − 8 10^{-8} count as ties for W/T/L, the two-sided sign test (which excludes ties), and the Wilcoxon signed-rank test.",
+     "zh": "差异不超过 10 − 8 10^{-8} 时，在 W/T/L、排除平局的双侧符号检验以及 Wilcoxon 符号秩检验中均计为平局。"
+    },
+    {
+     "en": "Scores are never rounded before comparison.",
+     "zh": "分数在比较前绝不进行舍入。"
+    },
+    {
+     "en": "Intervals are nominal and unadjusted for multiple comparisons.",
+     "zh": "区间为名义区间，且未针对多重比较进行校正。"
+    },
+    {
+     "en": "Claw-Eval task-level tests do not account for bilingual dependence; its uncertainty is assessed with the scenario-cluster intervals.",
+     "zh": "Claw-Eval 的任务级检验不考虑双语相关性；其不确定性通过场景簇区间进行评估。"
+    }
+   ]
+  },
+  {
+   "en": "Relative failure reduction is 100 ​ ( 1 − 1 − p ¯ ​ ( A ) 1 − p ¯ ​ ( Baseline ) ) 100\\bigl(1-\\frac{1-\\bar{p}(A)}{1-\\bar{p}(\\mathrm{Baseline})}\\bigr) , where p ¯ ​ ( A ) \\bar{p}(A) is the task-averaged pass rate of method A A at the reporting threshold. Both pass rates are recomputed together in each of the same 200,000 paired bootstrap draws; no draw has zero Baseline failure rate. This statistic and the absolute pass-rate difference summarize the same outcomes. The per-task gains in Figure 3 d,e are s i ​ ( Selected by reward ) − s i ​ ( Baseline ) s_{i}(\\text{Selected by reward})-s_{i}(\\mathrm{Baseline}) ; values within 10 − 8 10^{-8} of zero are ties.",
+   "zh": "相对失败率降低为 100 ​ ( 1 − 1 − p ¯ ​ ( A ) 1 − p ¯ ​ ( Baseline ) ) 100\\bigl(1-\\frac{1-\\bar{p}(A)}{1-\\bar{p}(\\mathrm{Baseline})}\\bigr)，其中 p ¯ ​ ( A ) \\bar{p}(A) 是方法 A A 在报告阈值下的任务平均通过率。 两种通过率都在相同的 200,000 次配对自助抽样中一起重新计算；没有任何一次抽样的基线失败率为零。 该统计量与绝对通过率差异概括的是相同的结果。 图 3 d,e 中每个任务的增益为 s i ​ ( Selected by reward ) − s i ​ ( Baseline ) s_{i}(\\text{Selected by reward})-s_{i}(\\mathrm{Baseline})；在 10 − 8 10^{-8} 以内的值视为平局。",
+   "sents": [
+    {
+     "en": "Relative failure reduction is 100 ​ ( 1 − 1 − p ¯ ​ ( A ) 1 − p ¯ ​ ( Baseline ) ) 100\\bigl(1-\\frac{1-\\bar{p}(A)}{1-\\bar{p}(\\mathrm{Baseline})}\\bigr) , where p ¯ ​ ( A ) \\bar{p}(A) is the task-averaged pass rate of method A A at the reporting threshold.",
+     "zh": "相对失败率降低为 100 ​ ( 1 − 1 − p ¯ ​ ( A ) 1 − p ¯ ​ ( Baseline ) ) 100\\bigl(1-\\frac{1-\\bar{p}(A)}{1-\\bar{p}(\\mathrm{Baseline})}\\bigr)，其中 p ¯ ​ ( A ) \\bar{p}(A) 是方法 A A 在报告阈值下的任务平均通过率。"
+    },
+    {
+     "en": "Both pass rates are recomputed together in each of the same 200,000 paired bootstrap draws; no draw has zero Baseline failure rate.",
+     "zh": "两种通过率都在相同的 200,000 次配对自助抽样中一起重新计算；没有任何一次抽样的基线失败率为零。"
+    },
+    {
+     "en": "This statistic and the absolute pass-rate difference summarize the same outcomes.",
+     "zh": "该统计量与绝对通过率差异概括的是相同的结果。"
+    },
+    {
+     "en": "The per-task gains in Figure 3 d,e are s i ​ ( Selected by reward ) − s i ​ ( Baseline ) s_{i}(\\text{Selected by reward})-s_{i}(\\mathrm{Baseline}) ; values within 10 − 8 10^{-8} of zero are ties.",
+     "zh": "图 3 d,e 中每个任务的增益为 s i ​ ( Selected by reward ) − s i ​ ( Baseline ) s_{i}(\\text{Selected by reward})-s_{i}(\\mathrm{Baseline})；在 10 − 8 10^{-8} 以内的值视为平局。"
+    }
+   ]
+  },
+  {
+   "en": "Archived deliveries requiring native scores were restored from their exact workspaces. We matched candidate identities and artifact records and verified inventory SHA-256 hashes, including six reused deliveries. On October 6, 2026, we ran the original task-specific rule checks in isolated task Docker environments and the native rubric judge with DeepSeek V4 Flash via OpenLux. No actor was rerun and no delivered artifact was revised. Native technical retries and format repair were retained; scores were not retried for quality. Source bindings, grader receipts, errors, and request/response bodies (except the first smoke run, which retains verdicts) are archived separately. This later grading introduces temporal judge and environment variation; bootstrap intervals condition on accepted scores and do not capture fresh-judge variability.",
+   "zh": "需要原生评分的存档交付已从其确切的工作区中恢复。 我们匹配了候选身份与工件记录，并核验了清单的 SHA-256 哈希值，包括六个重复使用的交付。 2026 年 10 月 6 日，我们在隔离的任务 Docker 环境中运行了原始的任务特定规则检查，并通过 OpenLux 运行了使用 DeepSeek V4 Flash 的原生量规评判器。 未重新运行任何智能体，也未修改任何已交付的工件。 原生的技术性重试与格式修复被保留；评分未因质量原因进行重试。 来源绑定、评分器回执、错误信息以及请求/响应体（除首次冒烟运行保留裁决结果外）均单独存档。 这种后续评分引入了时间上的评判器与环境差异；自助法区间以已接受的评分为条件，无法捕捉新评判器的变异性。",
+   "sents": [
+    {
+     "en": "Archived deliveries requiring native scores were restored from their exact workspaces.",
+     "zh": "需要原生评分的存档交付已从其确切的工作区中恢复。"
+    },
+    {
+     "en": "We matched candidate identities and artifact records and verified inventory SHA-256 hashes, including six reused deliveries.",
+     "zh": "我们匹配了候选身份与工件记录，并核验了清单的 SHA-256 哈希值，包括六个重复使用的交付。"
+    },
+    {
+     "en": "On October 6, 2026, we ran the original task-specific rule checks in isolated task Docker environments and the native rubric judge with DeepSeek V4 Flash via OpenLux.",
+     "zh": "2026 年 10 月 6 日，我们在隔离的任务 Docker 环境中运行了原始的任务特定规则检查，并通过 OpenLux 运行了使用 DeepSeek V4 Flash 的原生量规评判器。"
+    },
+    {
+     "en": "No actor was rerun and no delivered artifact was revised.",
+     "zh": "未重新运行任何智能体，也未修改任何已交付的工件。"
+    },
+    {
+     "en": "Native technical retries and format repair were retained; scores were not retried for quality.",
+     "zh": "原生的技术性重试与格式修复被保留；评分未因质量原因进行重试。"
+    },
+    {
+     "en": "Source bindings, grader receipts, errors, and request/response bodies (except the first smoke run, which retains verdicts) are archived separately.",
+     "zh": "来源绑定、评分器回执、错误信息以及请求/响应体（除首次冒烟运行保留裁决结果外）均单独存档。"
+    },
+    {
+     "en": "This later grading introduces temporal judge and environment variation; bootstrap intervals condition on accepted scores and do not capture fresh-judge variability.",
+     "zh": "这种后续评分引入了时间上的评判器与环境差异；自助法区间以已接受的评分为条件，无法捕捉新评判器的变异性。"
+    }
+   ]
+  },
+  {
+   "en": "The available token records cover auxiliary offline analyses, including failed attempts, rather than the complete benchmark workflow. Actor execution, reward construction, candidate generation, selection, and grading are not covered by a complete, non-overlapping cost ledger, and timing records omit some calls and retries. These records therefore support no total-cost, throughput, or equal-budget comparison.",
+   "zh": "现有的 token 记录仅涵盖辅助离线分析（包括失败的尝试），而非完整的基准测试流程。 智能体执行、奖励构建、候选生成、选择和评分并未由一份完整且不重叠的成本账目覆盖，且时间记录遗漏了部分调用与重试。 因此，这些记录无法支持总成本、吞吐量或等预算的比较。",
+   "sents": [
+    {
+     "en": "The available token records cover auxiliary offline analyses, including failed attempts, rather than the complete benchmark workflow.",
+     "zh": "现有的 token 记录仅涵盖辅助离线分析（包括失败的尝试），而非完整的基准测试流程。"
+    },
+    {
+     "en": "Actor execution, reward construction, candidate generation, selection, and grading are not covered by a complete, non-overlapping cost ledger, and timing records omit some calls and retries.",
+     "zh": "智能体执行、奖励构建、候选生成、选择和评分并未由一份完整且不重叠的成本账目覆盖，且时间记录遗漏了部分调用与重试。"
+    },
+    {
+     "en": "These records therefore support no total-cost, throughput, or equal-budget comparison.",
+     "zh": "因此，这些记录无法支持总成本、吞吐量或等预算的比较。"
+    }
+   ]
+  },
+  {
+   "en": "This section supports the main results in Section 4.2 . Sections E.1 , E.2 and E.3 give delivery diagnostics and sensitivity analyses, and Section E.4 details selection.",
+   "zh": "本节支持第 4.2 节中的主要结果。 E.1、E.2 和 E.3 节给出了交付诊断与敏感性分析，E.4 节详细说明了选择过程。",
+   "sents": [
+    {
+     "en": "This section supports the main results in Section 4.2 .",
+     "zh": "本节支持第 4.2 节中的主要结果。"
+    },
+    {
+     "en": "Sections E.1 , E.2 and E.3 give delivery diagnostics and sensitivity analyses, and Section E.4 details selection.",
+     "zh": "E.1、E.2 和 E.3 节给出了交付诊断与敏感性分析，E.4 节详细说明了选择过程。"
+    }
+   ]
+  },
+  {
+   "en": "Table 9 collects paired effect estimates and diagnostic tests against Baseline. On Claw-Eval, selection has the highest mean and coverage, whereas revision has the highest all-round success (91/104 versus 87/104); their paired differences in mean, average pass rate, and Pass 3 \\mathrm{Pass}^{3} all have intervals that include zero. Relative failure reductions are 14.0% ( [ − 4.17 , 32.74 ] [-4.17,32.74] ) on WorkBuddy Bench Office and 37.5% ( [ 8.00 , 57.58 ] [8.00,57.58] ) on Claw-Eval; their definition and resampling procedure are given in Section D.4 .",
+   "zh": "表9汇总了相对于基线（Baseline）的成对效应估计与诊断检验。 在 Claw-Eval 上，selection 的均值和覆盖率最高，而 revision 的整体成功率最高（91/104 对 87/104）；二者在均值、平均通过率和 Pass 3 \\mathrm{Pass}^{3} 上的成对差异区间均包含零。 相对失败率降低在 WorkBuddy Bench Office 上为 14.0%（ [ − 4.17 , 32.74 ] [-4.17,32.74] ），在 Claw-Eval 上为 37.5%（ [ 8.00 , 57.58 ] [8.00,57.58] ）；其定义与重抽样步骤见 D.4 节。",
+   "sents": [
+    {
+     "en": "Table 9 collects paired effect estimates and diagnostic tests against Baseline.",
+     "zh": "表9汇总了相对于基线（Baseline）的成对效应估计与诊断检验。"
+    },
+    {
+     "en": "On Claw-Eval, selection has the highest mean and coverage, whereas revision has the highest all-round success (91/104 versus 87/104); their paired differences in mean, average pass rate, and Pass 3 \\mathrm{Pass}^{3} all have intervals that include zero.",
+     "zh": "在 Claw-Eval 上，selection 的均值和覆盖率最高，而 revision 的整体成功率最高（91/104 对 87/104）；二者在均值、平均通过率和 Pass 3 \\mathrm{Pass}^{3} 上的成对差异区间均包含零。"
+    },
+    {
+     "en": "Relative failure reductions are 14.0% ( [ − 4.17 , 32.74 ] [-4.17,32.74] ) on WorkBuddy Bench Office and 37.5% ( [ 8.00 , 57.58 ] [8.00,57.58] ) on Claw-Eval; their definition and resampling procedure are given in Section D.4 .",
+     "zh": "相对失败率降低在 WorkBuddy Bench Office 上为 14.0%（ [ − 4.17 , 32.74 ] [-4.17,32.74] ），在 Claw-Eval 上为 37.5%（ [ 8.00 , 57.58 ] [8.00,57.58] ）；其定义与重抽样步骤见 D.4 节。"
+    }
+   ]
+  },
+  {
+   "en": "Table 10 reports initial round and final round means and pass rates at the same thresholds as the main results. Each displayed mean uses one score per task and method in that round. Task-only denotes the fresh candidate generated from the public task in the corresponding sequential round. These rows are round-level diagnostics; the primary aggregates are defined in Sections D.2 and D.4 .",
+   "zh": "表 10 报告了与主结果相同阈值下的初始轮和最终轮的均值及通过率。 每个展示的均值在该轮中对每个任务和方法使用一个分数。 Task-only 表示在相应顺序轮次中由公开任务生成的全新候选。 这些行是轮次级别的诊断信息；主要的汇总指标定义见 D.2 节和 D.4 节。",
+   "sents": [
+    {
+     "en": "Table 10 reports initial round and final round means and pass rates at the same thresholds as the main results.",
+     "zh": "表 10 报告了与主结果相同阈值下的初始轮和最终轮的均值及通过率。"
+    },
+    {
+     "en": "Each displayed mean uses one score per task and method in that round.",
+     "zh": "每个展示的均值在该轮中对每个任务和方法使用一个分数。"
+    },
+    {
+     "en": "Task-only denotes the fresh candidate generated from the public task in the corresponding sequential round.",
+     "zh": "Task-only 表示在相应顺序轮次中由公开任务生成的全新候选。"
+    },
+    {
+     "en": "These rows are round-level diagnostics; the primary aggregates are defined in Sections D.2 and D.4 .",
+     "zh": "这些行是轮次级别的诊断信息；主要的汇总指标定义见 D.2 节和 D.4 节。"
+    }
+   ]
+  },
+  {
+   "en": "Table 11 reports three-round comparisons with Baseline after excluding the grader-exception task. The exclusion is applied to every method and changes the task population, including removing the largest selection loss; the full-sample comparison remains primary.",
+   "zh": "表11报告了剔除评分例外任务后与基线的三轮比较结果。 该剔除适用于所有方法，并改变了任务总体，包括移除了最大的选择损失；全样本比较仍为主要结果。",
+   "sents": [
+    {
+     "en": "Table 11 reports three-round comparisons with Baseline after excluding the grader-exception task.",
+     "zh": "表11报告了剔除评分例外任务后与基线的三轮比较结果。"
+    },
+    {
+     "en": "The exclusion is applied to every method and changes the task population, including removing the largest selection loss; the full-sample comparison remains primary.",
+     "zh": "该剔除适用于所有方法，并改变了任务总体，包括移除了最大的选择损失；全样本比较仍为主要结果。"
+    }
+   ]
+  },
+  {
+   "en": "Method Δ \\Delta mean [95% CI] Omit grader exception Revision +0.74 [ − - 1.23, 2.67] Selected by reward +1.89 [ − - 0.40, 4.43]",
+   "zh": "方法 Δ \\Delta 均值 [95% CI] 忽略评分者例外 修订 +0.74 [ − - 1.23, 2.67] 由奖励选中 +1.89 [ − - 0.40, 4.43]",
+   "sents": null
+  },
+  {
+   "en": "A scan of the 150 accepted final-round receipts for explicit evaluator-exception diagnostics found one affected task-only candidate; the scan does not revalidate every grader or artifact. Two accepted final-round scores equal zero, one with missing delivery evidence and no explicit exception and the other with both an exception and missing evidence for the model judge; both remain in the full-sample analysis.",
+   "zh": "对150份已接受的终轮收据进行扫描，以查找明确的评估员例外诊断，发现一名仅涉及任务的候选者受到影响；该扫描并未重新验证每个评分器或工件。 两个已接受的终轮得分等于零，一个缺少交付证据且无明确例外，另一个既有例外又缺少模型裁判的证据；两者都保留在全样本分析中。",
+   "sents": [
+    {
+     "en": "A scan of the 150 accepted final-round receipts for explicit evaluator-exception diagnostics found one affected task-only candidate; the scan does not revalidate every grader or artifact.",
+     "zh": "对150份已接受的终轮收据进行扫描，以查找明确的评估员例外诊断，发现一名仅涉及任务的候选者受到影响；该扫描并未重新验证每个评分器或工件。"
+    },
+    {
+     "en": "Two accepted final-round scores equal zero, one with missing delivery evidence and no explicit exception and the other with both an exception and missing evidence for the model judge; both remain in the full-sample analysis.",
+     "zh": "两个已接受的终轮得分等于零，一个缺少交付证据且无明确例外，另一个既有例外又缺少模型裁判的证据；两者都保留在全样本分析中。"
+    }
+   ]
+  },
+  {
+   "en": "Method Mean Avg. pass (%) pass ​ @ ​ 3 \\mathrm{pass@3} (%) Pass 3 \\mathrm{Pass}^{3} (%) Baseline 89.34 89.64 98.06 78.16 Revision 90.88 93.53 98.06 87.38 Selected by reward 91.39 93.53 100.00 83.50",
+   "zh": "方法 Mean Avg. pass (%) pass@3 \\mathrm{pass@3} (%) Pass³ \\mathrm{Pass}^{3} (%) Baseline（基线） 89.34 89.64 98.06 78.16 Revision（修订） 90.88 93.53 98.06 87.38 Selected by reward（按奖励选择） 91.39 93.53 100.00 83.50",
+   "sents": null
+  },
+  {
+   "en": "Table 13 gives the full policy comparison on the generated candidate pools; Table 3 summarizes gains over uniform choice. Relative to always returning the revision, selection gains + 1.11 +1.11 ( [ − 0.34 , 2.75 ] [-0.34,2.75] ) on WorkBuddy Bench Office and + 0.50 +0.50 ( [ − 1.01 , 2.21 ] [-1.01,2.21] ) on Claw-Eval, so neither interval establishes superiority over that fixed policy. Selection finds a best candidate in 74/150 and 183/312 task-rounds, versus 73/150 and 206/312 for revision. Thus, on Claw-Eval it hits a best candidate less often but has lower average regret; revision recovers 10.13% and 31.03% of the uniform-to-oracle gap on the two benchmarks. These comparisons characterize the selector as a whole and exclude candidate-generation costs: the archive does not identify how often rankings relied on receipts rather than artifact text. A compute-matched comparison with repeated sampling and a generic model selector remains untested.",
+   "zh": "表13给出了在生成候选池上的完整策略对比；表3汇总了相对于统一选择的收益。 相对于总是返回修订版本，选择在 WorkBuddy Bench Office 上获得 +1.11（[-0.34, 2.75]），在 Claw-Eval 上获得 +0.50（[-1.01, 2.21]），因此两个区间均无法确立相对于该固定策略的优势。 选择在 74/150 和 183/312 个任务轮次中找到最佳候选，而修订版本为 73/150 和 206/312。 因此，在 Claw-Eval 上它命中最佳候选的频率较低，但平均遗憾值更低；修订版本在两个基准上分别恢复了统一选择到预言机差距的 10.13% 和 31.03%。 这些比较是对选择器整体特征的刻画，且不包含候选生成成本：该档案库无法识别排名依赖凭证而非工件文本的频率。 与重复采样及通用模型选择器进行的计算量匹配对比仍有待检验。",
+   "sents": [
+    {
+     "en": "Table 13 gives the full policy comparison on the generated candidate pools; Table 3 summarizes gains over uniform choice.",
+     "zh": "表13给出了在生成候选池上的完整策略对比；表3汇总了相对于统一选择的收益。"
+    },
+    {
+     "en": "Relative to always returning the revision, selection gains + 1.11 +1.11 ( [ − 0.34 , 2.75 ] [-0.34,2.75] ) on WorkBuddy Bench Office and + 0.50 +0.50 ( [ − 1.01 , 2.21 ] [-1.01,2.21] ) on Claw-Eval, so neither interval establishes superiority over that fixed policy.",
+     "zh": "相对于总是返回修订版本，选择在 WorkBuddy Bench Office 上获得 +1.11（[-0.34, 2.75]），在 Claw-Eval 上获得 +0.50（[-1.01, 2.21]），因此两个区间均无法确立相对于该固定策略的优势。"
+    },
+    {
+     "en": "Selection finds a best candidate in 74/150 and 183/312 task-rounds, versus 73/150 and 206/312 for revision.",
+     "zh": "选择在 74/150 和 183/312 个任务轮次中找到最佳候选，而修订版本为 73/150 和 206/312。"
+    },
+    {
+     "en": "Thus, on Claw-Eval it hits a best candidate less often but has lower average regret; revision recovers 10.13% and 31.03% of the uniform-to-oracle gap on the two benchmarks.",
+     "zh": "因此，在 Claw-Eval 上它命中最佳候选的频率较低，但平均遗憾值更低；修订版本在两个基准上分别恢复了统一选择到预言机差距的 10.13% 和 31.03%。"
+    },
+    {
+     "en": "These comparisons characterize the selector as a whole and exclude candidate-generation costs: the archive does not identify how often rankings relied on receipts rather than artifact text.",
+     "zh": "这些比较是对选择器整体特征的刻画，且不包含候选生成成本：该档案库无法识别排名依赖凭证而非工件文本的频率。"
+    },
+    {
+     "en": "A compute-matched comparison with repeated sampling and a generic model selector remains untested.",
+     "zh": "与重复采样及通用模型选择器进行的计算量匹配对比仍有待检验。"
+    }
+   ]
+  },
+  {
+   "en": "Policy Score Δ \\Delta vs. reward-guided revision [95% CI] Hit rate (%) Regret WorkBuddy Bench Office Always reward-guided revision 81.10 +0.00 [0.00, 0.00] 48.67 6.40 Uniform expectation 80.38 -0.72 [-2.13, 0.74] 38.22 7.12 Selected by reward 82.21 +1.11 [-0.34, 2.75] 49.33 5.29 Oracle 87.50 +6.40 [3.83, 9.73] 100.00 0.00 Claw-Eval Always reward-guided revision 90.97 +0.00 [0.00, 0.00] 66.03 4.13 Uniform expectation 89.11 -1.86 [-3.04, -0.51] 48.29 5.99 Selected by reward 91.47 +0.50 [-1.01, 2.21] 58.65 3.63 Oracle 95.10 +4.13 [2.59, 5.97] 100.00 0.00",
+   "zh": "策略得分 Δ \\Delta 与基于奖励的修订对比 [95% 置信区间] 命中率 (%) 后悔值 WorkBench Bench 办公 总是使用基于奖励的修订 81.10 +0.00 [0.00, 0.00] 48.67 6.40 统一期望 80.38 -0.72 [-2.13, 0.74] 38.22 7.12 由奖励选择 82.21 +1.11 [-0.34, 2.75] 49.33 5.29 Oracle（最优） 87.50 +6.40 [3.83, 9.73] 100.00 0.00 Claw-Eval 总是使用基于奖励的修订 90.97 +0.00 [0.00, 0.00] 66.03 4.13 统一期望 89.11 -1.86 [-3.04, -0.51] 48.29 5.99 由奖励选择 91.47 +0.50 [-1.01, 2.21] 58.65 3.63 Oracle（最优） 95.10 +4.13 [2.59, 5.97] 100.00 0.00",
+   "sents": null
+  }
+ ]
+}

@@ -1,0 +1,1634 @@
+{
+ "id": "034f9b2e1851348c",
+ "source": "arxiv-agent",
+ "link": "https://arxiv.org/abs/2610.23213v1",
+ "title": "Not All Test-Time Compute Is Evidence: Model-Specific Bias in LLM Reasoning",
+ "title_zh": "并非所有测试时计算都是证据：大语言模型推理中的模型特定偏差",
+ "published": "2026-10-16T09:48:02Z",
+ "translated_at": "2026-10-22T16:09:17Z",
+ "paragraphs": [
+  {
+   "en": "Test-time scaling methods implicitly assume that additional computation from the same model provides independent evidence. We show that this assumption fails within a single reasoning model: errors are correlated across repeated samples, across reasoning depth, and in the model’s own self-evaluation, so more compute from the same model is not more evidence. We introduce Dia ( D isagreement-triggered I ndependent A rbitration), which treats disagreement between an intermediate-stage and the final-stage prediction as a per-question signal of reasoning instability and resolves it by asking a small panel of heterogeneous models to solve the question independently, without seeing either candidate, and aggregating their answers directly. Across seven benchmarks and two base models, Dia outperforms full chain-of-thought in 12 of 14 settings, including a 7.00% gain on MuSiQue, while activating on only ∼ {\\sim} 17% of examples and using up to 47.2% fewer tokens than a multi-agent baseline. Ablations show that both independent solving and solver heterogeneity are necessary for these gains.",
+   "zh": "测试时扩展方法隐含地假设来自同一模型的额外计算能够提供独立的证据。 我们证明这一假设在单一推理模型内部并不成立：错误在重复采样之间、在推理深度上以及模型自身的自评估中都存在相关性，因此来自同一模型的更多计算并不等于更多证据。 我们提出 Dia（分歧触发的独立仲裁，Disagreement-triggered Independent Arbitration），它将中间阶段与最终阶段预测之间的分歧视为每个问题的推理不稳定性信号，并通过让一小组异构模型在不查看任何候选答案的情况下独立求解该问题，再直接聚合它们的答案来解决该分歧。 在七个基准和两个基座模型上，Dia 在 14 个设置中的 12 个上超越了完整思维链，包括在 MuSiQue 上取得 7.00% 的提升，同时仅在约 {\\sim} 17% 的样本上激活，且比多智能体基线最多少用 47.2% 的 token。 消融实验表明，独立求解与求解器异构性对于这些提升都是必不可少的。",
+   "sents": [
+    {
+     "en": "Test-time scaling methods implicitly assume that additional computation from the same model provides independent evidence.",
+     "zh": "测试时扩展方法隐含地假设来自同一模型的额外计算能够提供独立的证据。"
+    },
+    {
+     "en": "We show that this assumption fails within a single reasoning model: errors are correlated across repeated samples, across reasoning depth, and in the model’s own self-evaluation, so more compute from the same model is not more evidence.",
+     "zh": "我们证明这一假设在单一推理模型内部并不成立：错误在重复采样之间、在推理深度上以及模型自身的自评估中都存在相关性，因此来自同一模型的更多计算并不等于更多证据。"
+    },
+    {
+     "en": "We introduce Dia ( D isagreement-triggered I ndependent A rbitration), which treats disagreement between an intermediate-stage and the final-stage prediction as a per-question signal of reasoning instability and resolves it by asking a small panel of heterogeneous models to solve the question independently, without seeing either candidate, and aggregating their answers directly.",
+     "zh": "我们提出 Dia（分歧触发的独立仲裁，Disagreement-triggered Independent Arbitration），它将中间阶段与最终阶段预测之间的分歧视为每个问题的推理不稳定性信号，并通过让一小组异构模型在不查看任何候选答案的情况下独立求解该问题，再直接聚合它们的答案来解决该分歧。"
+    },
+    {
+     "en": "Across seven benchmarks and two base models, Dia outperforms full chain-of-thought in 12 of 14 settings, including a 7.00% gain on MuSiQue, while activating on only ∼ {\\sim} 17% of examples and using up to 47.2% fewer tokens than a multi-agent baseline.",
+     "zh": "在七个基准和两个基座模型上，Dia 在 14 个设置中的 12 个上超越了完整思维链，包括在 MuSiQue 上取得 7.00% 的提升，同时仅在约 {\\sim} 17% 的样本上激活，且比多智能体基线最多少用 47.2% 的 token。"
+    },
+    {
+     "en": "Ablations show that both independent solving and solver heterogeneity are necessary for these gains.",
+     "zh": "消融实验表明，独立求解与求解器异构性对于这些提升都是必不可少的。"
+    }
+   ]
+  },
+  {
+   "en": "Test-time scaling has become a central strategy for improving reasoning in large language models: chain-of-thought prompting ( Wei et al., 2022 ) , repeated sampling with majority vote ( Wang et al., 2023 ) , adaptive early exit ( Yang et al., 2026 ; Fu et al., 2025 ; Dai et al., 2025 ) , and multi-agent reasoning ( Wu et al., 2024 ; Li et al., 2023 ; Li et al., 2024 ) all convert additional inference-time computation into accuracy gains ( Snell et al., 2025 ; Guo et al., 2025 ) . Test-time scaling is particularly effective when additional computation contributes evidence that is sufficiently complementary to the model’s current belief, allowing errors to be corrected rather than repeatedly reinforced. However, computation from the same model can remain shaped by persistent model-specific error bias , limiting the diversity of the evidence it provides. We observe three manifestations of this phenomenon across generation, reasoning, and self-evaluation (Figure 1 ).",
+   "zh": "测试时扩展已成为提升大型语言模型推理能力的核心策略：思维链提示（Wei et al., 2022）、结合多数投票的重复采样（Wang et al., 2023）、自适应提前退出（Yang et al., 2026; Fu et al., 2025; Dai et al., 2025）以及多智能体推理（Wu et al., 2024; Li et al., 2023; Li et al., 2024）都能将额外的推理时计算转化为准确率的提升（Snell et al., 2025; Guo et al., 2025）。 当额外计算能够提供与模型当前信念足够互补的证据时，测试时扩展尤为有效，这使得错误可以被纠正，而不是被反复强化。 然而，来自同一模型的计算可能仍受其固有的模型特定错误偏差的影响，从而限制了其所提供证据的多样性。 我们在生成、推理和自我评估三个环节中观察到该现象的三种表现（图1）。",
+   "sents": [
+    {
+     "en": "Test-time scaling has become a central strategy for improving reasoning in large language models: chain-of-thought prompting ( Wei et al., 2022 ) , repeated sampling with majority vote ( Wang et al., 2023 ) , adaptive early exit ( Yang et al., 2026 ; Fu et al., 2025 ; Dai et al., 2025 ) , and multi-agent reasoning ( Wu et al., 2024 ; Li et al., 2023 ; Li et al., 2024 ) all convert additional inference-time computation into accuracy gains ( Snell et al., 2025 ; Guo et al., 2025 ) .",
+     "zh": "测试时扩展已成为提升大型语言模型推理能力的核心策略：思维链提示（Wei et al., 2022）、结合多数投票的重复采样（Wang et al., 2023）、自适应提前退出（Yang et al., 2026; Fu et al., 2025; Dai et al., 2025）以及多智能体推理（Wu et al., 2024; Li et al., 2023; Li et al., 2024）都能将额外的推理时计算转化为准确率的提升（Snell et al., 2025; Guo et al., 2025）。"
+    },
+    {
+     "en": "Test-time scaling is particularly effective when additional computation contributes evidence that is sufficiently complementary to the model’s current belief, allowing errors to be corrected rather than repeatedly reinforced.",
+     "zh": "当额外计算能够提供与模型当前信念足够互补的证据时，测试时扩展尤为有效，这使得错误可以被纠正，而不是被反复强化。"
+    },
+    {
+     "en": "However, computation from the same model can remain shaped by persistent model-specific error bias , limiting the diversity of the evidence it provides.",
+     "zh": "然而，来自同一模型的计算可能仍受其固有的模型特定错误偏差的影响，从而限制了其所提供证据的多样性。"
+    },
+    {
+     "en": "We observe three manifestations of this phenomenon across generation, reasoning, and self-evaluation (Figure 1 ).",
+     "zh": "我们在生成、推理和自我评估三个环节中观察到该现象的三种表现（图1）。"
+    }
+   ]
+  },
+  {
+   "en": "(a) Generation bias under repeated sampling. Repeated sampling can diversify reasoning traces without necessarily diversifying their failures. When self-consistency produces an incorrect majority answer, erroneous samples frequently concentrate on the same dominant wrong answer rather than spreading across alternatives, indicating a persistent generation bias rather than independent error modes (Section 2.1 ).",
+   "zh": "(a) 重复采样下的生成偏差。 重复采样可以使推理轨迹多样化，但并不一定使其错误多样化。 当自一致性产生错误的多数答案时，错误样本往往集中在同一个主导性错误答案上，而不是分散在不同的备选答案中，这表明存在持续的生成偏差，而非相互独立的错误模式（第 2.1 节）。",
+   "sents": [
+    {
+     "en": "(a) Generation bias under repeated sampling.",
+     "zh": "(a) 重复采样下的生成偏差。"
+    },
+    {
+     "en": "Repeated sampling can diversify reasoning traces without necessarily diversifying their failures.",
+     "zh": "重复采样可以使推理轨迹多样化，但并不一定使其错误多样化。"
+    },
+    {
+     "en": "When self-consistency produces an incorrect majority answer, erroneous samples frequently concentrate on the same dominant wrong answer rather than spreading across alternatives, indicating a persistent generation bias rather than independent error modes (Section 2.1 ).",
+     "zh": "当自一致性产生错误的多数答案时，错误样本往往集中在同一个主导性错误答案上，而不是分散在不同的备选答案中，这表明存在持续的生成偏差，而非相互独立的错误模式（第 2.1 节）。"
+    }
+   ]
+  },
+  {
+   "en": "(b) Initial-answer persistence bias. Reasoning does not necessarily provide evidence independent of a model’s initial judgment. When a model is first asked to answer directly and then asked to reason before answering, its post-reasoning prediction can remain strongly associated with the initial answer; in particular, an initially incorrect prediction may persist through subsequent reasoning rather than being corrected (Section 2.2 ). Prior work similarly suggests that reasoning models can form strong preliminary answer preferences ( Dang et al., 2026 ) , that extended reasoning can lead to overthinking ( Zhou et al., 2026 ) , and that early errors may propagate through subsequent reasoning ( Zhang et al., 2024 ) .",
+   "zh": "(b) 初始答案持续性偏差。 推理不一定能提供独立于模型初始判断的证据。 当模型首先被要求直接作答、然后被要求在回答前进行推理时，其推理后的预测可能与初始答案保持强关联；特别是，初始错误的预测可能在后续推理中持续存在，而不是被纠正（第 2.2 节）。 先前的工作同样表明，推理模型可能形成强烈的初步答案偏好（Dang et al., 2026）、扩展推理可能导致过度思考（Zhou et al., 2026），以及早期错误可能在后续推理中传播（Zhang et al., 2024）。",
+   "sents": [
+    {
+     "en": "(b) Initial-answer persistence bias.",
+     "zh": "(b) 初始答案持续性偏差。"
+    },
+    {
+     "en": "Reasoning does not necessarily provide evidence independent of a model’s initial judgment.",
+     "zh": "推理不一定能提供独立于模型初始判断的证据。"
+    },
+    {
+     "en": "When a model is first asked to answer directly and then asked to reason before answering, its post-reasoning prediction can remain strongly associated with the initial answer; in particular, an initially incorrect prediction may persist through subsequent reasoning rather than being corrected (Section 2.2 ).",
+     "zh": "当模型首先被要求直接作答、然后被要求在回答前进行推理时，其推理后的预测可能与初始答案保持强关联；特别是，初始错误的预测可能在后续推理中持续存在，而不是被纠正（第 2.2 节）。"
+    },
+    {
+     "en": "Prior work similarly suggests that reasoning models can form strong preliminary answer preferences ( Dang et al., 2026 ) , that extended reasoning can lead to overthinking ( Zhou et al., 2026 ) , and that early errors may propagate through subsequent reasoning ( Zhang et al., 2024 ) .",
+     "zh": "先前的工作同样表明，推理模型可能形成强烈的初步答案偏好（Dang et al., 2026）、扩展推理可能导致过度思考（Zhou et al., 2026），以及早期错误可能在后续推理中传播（Zhang et al., 2024）。"
+    }
+   ]
+  },
+  {
+   "en": "(c) Longer-reasoning preference bias. A related bias appears when the model is asked to evaluate competing answers produced at different stages of its own reasoning. Rather than judging the candidates symmetrically, the model strongly favors the later, more elaborate reasoning outcome, even when the earlier answer is correct. In our experiments, the model selects the later-stage answer in over 95% of disagreements and remains highly confident even when this preference leads to an incorrect decision (Section 2.3 ). This behavior is related to previously documented length and verbosity biases in LLM-based evaluation ( Zheng et al., 2023 ; Hu et al., 2025 ) .",
+   "zh": "(c) 更长推理偏好偏差。 一个相关的偏差出现在要求模型评估其自身推理的不同阶段所产生的相互竞争的答案时。 模型并非对称地评判候选答案，而是强烈偏爱较晚出现的、更详尽的推理结果，即使较早的答案是正确的。 在我们的实验中，当两个答案不一致时，模型在超过 95% 的情况下选择较后阶段的答案，并且即使这种偏好导致错误的决策，模型仍然保持高度自信（第 2.3 节）。 这种行为与之前文献中记录的基于 LLM 的评估中的长度偏差和冗长偏差有关（Zheng et al., 2023; Hu et al., 2025）。",
+   "sents": [
+    {
+     "en": "(c) Longer-reasoning preference bias.",
+     "zh": "(c) 更长推理偏好偏差。"
+    },
+    {
+     "en": "A related bias appears when the model is asked to evaluate competing answers produced at different stages of its own reasoning.",
+     "zh": "一个相关的偏差出现在要求模型评估其自身推理的不同阶段所产生的相互竞争的答案时。"
+    },
+    {
+     "en": "Rather than judging the candidates symmetrically, the model strongly favors the later, more elaborate reasoning outcome, even when the earlier answer is correct.",
+     "zh": "模型并非对称地评判候选答案，而是强烈偏爱较晚出现的、更详尽的推理结果，即使较早的答案是正确的。"
+    },
+    {
+     "en": "In our experiments, the model selects the later-stage answer in over 95% of disagreements and remains highly confident even when this preference leads to an incorrect decision (Section 2.3 ).",
+     "zh": "在我们的实验中，当两个答案不一致时，模型在超过 95% 的情况下选择较后阶段的答案，并且即使这种偏好导致错误的决策，模型仍然保持高度自信（第 2.3 节）。"
+    },
+    {
+     "en": "This behavior is related to previously documented length and verbosity biases in LLM-based evaluation ( Zheng et al., 2023 ; Hu et al., 2025 ) .",
+     "zh": "这种行为与之前文献中记录的基于 LLM 的评估中的长度偏差和冗长偏差有关（Zheng et al., 2023; Hu et al., 2025）。"
+    }
+   ]
+  },
+  {
+   "en": "Together, these observations suggest that:",
+   "zh": "综合来看，这些观察结果表明：",
+   "sents": null
+  },
+  {
+   "en": "model-specific error bias persists across generation , reasoning , and self-evaluation , that is, the three stages of same-model computation that test-time scaling methods rely on. More compute from the same model is therefore not more evidence.",
+   "zh": "特定于模型的错误偏差在生成、推理和自我评估这三个阶段中持续存在，而这三个阶段正是测试时扩展方法所依赖的同模型计算的三个环节。 因此，来自同一个模型的更多计算并不等于更多证据。",
+   "sents": [
+    {
+     "en": "model-specific error bias persists across generation , reasoning , and self-evaluation , that is, the three stages of same-model computation that test-time scaling methods rely on.",
+     "zh": "特定于模型的错误偏差在生成、推理和自我评估这三个阶段中持续存在，而这三个阶段正是测试时扩展方法所依赖的同模型计算的三个环节。"
+    },
+    {
+     "en": "More compute from the same model is therefore not more evidence.",
+     "zh": "因此，来自同一个模型的更多计算并不等于更多证据。"
+    }
+   ]
+  },
+  {
+   "en": "These findings suggest that useful additional computation should provide evidence that is both selectively acquired and complementary to the base model’s existing reasoning.",
+   "zh": "这些发现表明，有用的额外计算应当提供既有选择性地获取、又与基础模型已有推理互补的证据。",
+   "sents": null
+  },
+  {
+   "en": "(1) When to seek additional evidence. Prior work shows that intermediate predictions and answer-stability signals can reveal how reasoning evolves and support adaptive computation ( Yang et al., 2026 ; Fu et al., 2025 ; Dai et al., 2025 ) , while extended reasoning is not always beneficial ( Zhou et al., 2026 ) . Motivated by these observations, we use disagreement between an intermediate prediction and the final prediction as a simple per-question signal of reasoning instability.",
+   "zh": "(1) 何时寻求额外证据。 先前的工作表明，中间预测和答案稳定性信号可以揭示推理如何演化并支持自适应计算 ( Yang et al., 2026 ; Fu et al., 2025 ; Dai et al., 2025 ) ，而延长推理并不总是有益的 ( Zhou et al., 2026 ) 。 受这些观察启发，我们使用中间预测与最终预测之间的不一致作为一种简单的、针对每个问题的推理不稳定性信号。",
+   "sents": [
+    {
+     "en": "(1) When to seek additional evidence.",
+     "zh": "(1) 何时寻求额外证据。"
+    },
+    {
+     "en": "Prior work shows that intermediate predictions and answer-stability signals can reveal how reasoning evolves and support adaptive computation ( Yang et al., 2026 ; Fu et al., 2025 ; Dai et al., 2025 ) , while extended reasoning is not always beneficial ( Zhou et al., 2026 ) .",
+     "zh": "先前的工作表明，中间预测和答案稳定性信号可以揭示推理如何演化并支持自适应计算 ( Yang et al., 2026 ; Fu et al., 2025 ; Dai et al., 2025 ) ，而延长推理并不总是有益的 ( Zhou et al., 2026 ) 。"
+    },
+    {
+     "en": "Motivated by these observations, we use disagreement between an intermediate prediction and the final prediction as a simple per-question signal of reasoning instability.",
+     "zh": "受这些观察启发，我们使用中间预测与最终预测之间的不一致作为一种简单的、针对每个问题的推理不稳定性信号。"
+    }
+   ]
+  },
+  {
+   "en": "(2) Where the evidence should come from. For such cases, we seek complementary evidence from heterogeneous LLMs. Prior ensemble studies show that different models exhibit complementary strengths and can succeed on different subsets of problems ( Jiang et al., 2023 ; Wang et al., 2025 ) , suggesting that model heterogeneity can reduce dependence on the particular error tendencies of the base model.",
+   "zh": "（2）证据应来自何处。 针对这类情况，我们从异构大语言模型中寻求补充证据。 已有的集成研究表明，不同模型各具互补优势，并能在不同的问题子集上取得成功（Jiang 等，2023；Wang 等，2025），这表明模型异构性可以降低对基座模型特定错误倾向的依赖。",
+   "sents": [
+    {
+     "en": "(2) Where the evidence should come from.",
+     "zh": "（2）证据应来自何处。"
+    },
+    {
+     "en": "For such cases, we seek complementary evidence from heterogeneous LLMs.",
+     "zh": "针对这类情况，我们从异构大语言模型中寻求补充证据。"
+    },
+    {
+     "en": "Prior ensemble studies show that different models exhibit complementary strengths and can succeed on different subsets of problems ( Jiang et al., 2023 ; Wang et al., 2025 ) , suggesting that model heterogeneity can reduce dependence on the particular error tendencies of the base model.",
+     "zh": "已有的集成研究表明，不同模型各具互补优势，并能在不同的问题子集上取得成功（Jiang 等，2023；Wang 等，2025），这表明模型异构性可以降低对基座模型特定错误倾向的依赖。"
+    }
+   ]
+  },
+  {
+   "en": "(3) How the evidence should be combined. We let these solvers reason independently, without seeing the base model’s candidate predictions, and aggregate their answers directly, consistent with evidence that voting-based ensembles can be competitive with more elaborate multi-agent protocols ( Li et al., 2024 ; Smit et al., 2024 ) .",
+   "zh": "(3) 应如何整合这些证据。 我们让这些求解器独立推理，不查看基础模型的候选预测，并直接聚合它们的答案，这与投票式集成可以与更复杂的多智能体协议相媲美的证据一致（Li et al., 2024；Smit et al., 2024）。",
+   "sents": [
+    {
+     "en": "(3) How the evidence should be combined.",
+     "zh": "(3) 应如何整合这些证据。"
+    },
+    {
+     "en": "We let these solvers reason independently, without seeing the base model’s candidate predictions, and aggregate their answers directly, consistent with evidence that voting-based ensembles can be competitive with more elaborate multi-agent protocols ( Li et al., 2024 ; Smit et al., 2024 ) .",
+     "zh": "我们让这些求解器独立推理，不查看基础模型的候选预测，并直接聚合它们的答案，这与投票式集成可以与更复杂的多智能体协议相媲美的证据一致（Li et al., 2024；Smit et al., 2024）。"
+    }
+   ]
+  },
+  {
+   "en": "These three principles lead to Dia ( D isagreement-triggered I ndependent A rbitration): agreement between the intermediate and final predictions is returned directly, whereas such reasoning-stage disagreement activates a small heterogeneous solver panel for candidate-blind, answer-level arbitration.",
+   "zh": "这三个原则引出了 Dia（Disagreement-triggered Independent Arbitration，由分歧触发的独立仲裁）：当中间预测与最终预测一致时，直接返回该结果；而当推理阶段出现分歧时，则激活一个小型异构智能体面板，进行候选盲选、答案级别的仲裁。",
+   "sents": null
+  },
+  {
+   "en": "Across seven benchmarks and two base models (Qwen3-4B and Qwen3-8B; Yang et al., 2025 ), Dia outperforms full chain-of-thought in 12 of 14 settings, including an improvement from 59.0% to 66.0% on MuSiQue ( Trivedi et al., 2022 ) , while activating on only ∼ {\\sim} 17% of examples and using up to 47.2% fewer tokens than a fully-connected multi-agent baseline that invokes every agent on all questions. A multi-agent baseline that routes independent agent outputs through a centralized judge underperforms direct answer aggregation, e.g., 60.67% vs. 66.00% on MuSiQue with Qwen3-4B, highlighting the importance of the aggregation protocol.",
+   "zh": "在七个基准和两个基础模型（Qwen3-4B 和 Qwen3-8B；Yang 等，2025）上，Dia 在 14 个设置中的 12 个里优于完整的思维链，包括在 MuSiQue（Trivedi 等，2022）上从 59.0% 提升到 66.0%，同时仅在约 {\\sim}17% 的样本上激活，并且比在所有问题上调用每个智能体的全连接多智能体基线最多少用 47.2% 的词元。 一种将独立智能体的输出经由集中式裁判进行路由的多智能体基线表现不如直接答案聚合，例如在 MuSiQue 上使用 Qwen3-4B 时为 60.67% 对 66.00%，这凸显了聚合协议的重要性。",
+   "sents": [
+    {
+     "en": "Across seven benchmarks and two base models (Qwen3-4B and Qwen3-8B; Yang et al., 2025 ), Dia outperforms full chain-of-thought in 12 of 14 settings, including an improvement from 59.0% to 66.0% on MuSiQue ( Trivedi et al., 2022 ) , while activating on only ∼ {\\sim} 17% of examples and using up to 47.2% fewer tokens than a fully-connected multi-agent baseline that invokes every agent on all questions.",
+     "zh": "在七个基准和两个基础模型（Qwen3-4B 和 Qwen3-8B；Yang 等，2025）上，Dia 在 14 个设置中的 12 个里优于完整的思维链，包括在 MuSiQue（Trivedi 等，2022）上从 59.0% 提升到 66.0%，同时仅在约 {\\sim}17% 的样本上激活，并且比在所有问题上调用每个智能体的全连接多智能体基线最多少用 47.2% 的词元。"
+    },
+    {
+     "en": "A multi-agent baseline that routes independent agent outputs through a centralized judge underperforms direct answer aggregation, e.g., 60.67% vs. 66.00% on MuSiQue with Qwen3-4B, highlighting the importance of the aggregation protocol.",
+     "zh": "一种将独立智能体的输出经由集中式裁判进行路由的多智能体基线表现不如直接答案聚合，例如在 MuSiQue 上使用 Qwen3-4B 时为 60.67% 对 66.00%，这凸显了聚合协议的重要性。"
+    }
+   ]
+  },
+  {
+   "en": "Three manifestations of model-specific error bias. We identify systematic error persistence across three stages of same-model computation: repeated sampling can reproduce a shared wrong answer, reasoning can preserve an initially incorrect prediction, and self-evaluation can systematically favor a later and more elaborate reasoning outcome (Section 2 ).",
+   "zh": "模型特定错误偏差的三种表现。 我们发现在同一模型的三个计算阶段中存在系统性的错误持续性：重复采样可能复现同一个错误答案，推理可能保留最初错误的预测，自我评估可能系统性地偏向更晚出现且更详尽的推理结果（第 2 节）。",
+   "sents": [
+    {
+     "en": "Three manifestations of model-specific error bias.",
+     "zh": "模型特定错误偏差的三种表现。"
+    },
+    {
+     "en": "We identify systematic error persistence across three stages of same-model computation: repeated sampling can reproduce a shared wrong answer, reasoning can preserve an initially incorrect prediction, and self-evaluation can systematically favor a later and more elaborate reasoning outcome (Section 2 ).",
+     "zh": "我们发现在同一模型的三个计算阶段中存在系统性的错误持续性：重复采样可能复现同一个错误答案，推理可能保留最初错误的预测，自我评估可能系统性地偏向更晚出现且更详尽的推理结果（第 2 节）。"
+    }
+   ]
+  },
+  {
+   "en": "Disagreement-triggered independent arbitration. To mitigate model-specific error bias, we propose Dia , a framework that detects reasoning instability via reasoning-stage disagreement and resolves it through candidate-blind, answer-level arbitration by heterogeneous external solvers (Section 3 ).",
+   "zh": "分歧触发的独立仲裁。 为缓解模型特定的错误偏差，我们提出 Dia，该框架通过推理阶段的分歧检测推理不稳定性，并通过异构外部求解器进行候选盲、答案层面的仲裁来解决该问题（第 3 节）。",
+   "sents": [
+    {
+     "en": "Disagreement-triggered independent arbitration.",
+     "zh": "分歧触发的独立仲裁。"
+    },
+    {
+     "en": "To mitigate model-specific error bias, we propose Dia , a framework that detects reasoning instability via reasoning-stage disagreement and resolves it through candidate-blind, answer-level arbitration by heterogeneous external solvers (Section 3 ).",
+     "zh": "为缓解模型特定的错误偏差，我们提出 Dia，该框架通过推理阶段的分歧检测推理不稳定性，并通过异构外部求解器进行候选盲、答案层面的仲裁来解决该问题（第 3 节）。"
+    }
+   ]
+  },
+  {
+   "en": "Comprehensive evaluation. Across seven benchmarks and two base models, Dia improves over full chain-of-thought in 12 of 14 settings while activating on only ∼ {\\sim} 17% of examples and using up to 47.2% fewer tokens than the multi-agent baseline (Section 4 ).",
+   "zh": "全面评估。 在七个基准测试和两个基础模型上，Dia 在 14 个设置中的 12 个上优于完整的思维链，同时仅对约 {\\sim} 17% 的示例激活，并且比多智能体基线少使用多达 47.2% 的 token（第 4 节）。",
+   "sents": [
+    {
+     "en": "Comprehensive evaluation.",
+     "zh": "全面评估。"
+    },
+    {
+     "en": "Across seven benchmarks and two base models, Dia improves over full chain-of-thought in 12 of 14 settings while activating on only ∼ {\\sim} 17% of examples and using up to 47.2% fewer tokens than the multi-agent baseline (Section 4 ).",
+     "zh": "在七个基准测试和两个基础模型上，Dia 在 14 个设置中的 12 个上优于完整的思维链，同时仅对约 {\\sim} 17% 的示例激活，并且比多智能体基线少使用多达 47.2% 的 token（第 4 节）。"
+    }
+   ]
+  },
+  {
+   "en": "Repeated sampling from a reasoning model can produce varied reasoning traces while sharing the same failure pattern. We quantify this effect on questions where majority-vote self-consistency produces an incorrect answer. For each failed question q q , we denote by C q C_{q} the fraction of incorrect samples assigned to the most frequent wrong answer.",
+   "zh": "从推理模型中重复采样，可以在共享相同失败模式的同时产生多样的推理轨迹。 我们在多数投票自洽性产生错误答案的问题上量化了这种效应。 对于每个失败的问题 q q，我们用 C q C_{q} 表示被分配给最高频错误答案的错误样本所占的比例。",
+   "sents": [
+    {
+     "en": "Repeated sampling from a reasoning model can produce varied reasoning traces while sharing the same failure pattern.",
+     "zh": "从推理模型中重复采样，可以在共享相同失败模式的同时产生多样的推理轨迹。"
+    },
+    {
+     "en": "We quantify this effect on questions where majority-vote self-consistency produces an incorrect answer.",
+     "zh": "我们在多数投票自洽性产生错误答案的问题上量化了这种效应。"
+    },
+    {
+     "en": "For each failed question q q , we denote by C q C_{q} the fraction of incorrect samples assigned to the most frequent wrong answer.",
+     "zh": "对于每个失败的问题 q q，我们用 C q C_{q} 表示被分配给最高频错误答案的错误样本所占的比例。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 2 shows the distribution of C q C_{q} under SC@20 on MMLU-Pro and GPQA-Diamond. Across models and datasets, the wrong answers are more concentrated than the uniform-choice baseline. For many failed questions, all incorrect samples converge on a single answer ( C q = 1 C_{q}=1 ).",
+   "zh": "图 2 展示了在 MMLU-Pro 和 GPQA-Diamond 上 SC@20 下 C q C_{q} 的分布。 在各模型和数据集上，错误答案比均匀选择基线更加集中。 对于许多回答错误的问题，所有错误样本都收敛到同一个答案（ C q = 1 C_{q}=1 ）。",
+   "sents": [
+    {
+     "en": "Figure 2 shows the distribution of C q C_{q} under SC@20 on MMLU-Pro and GPQA-Diamond.",
+     "zh": "图 2 展示了在 MMLU-Pro 和 GPQA-Diamond 上 SC@20 下 C q C_{q} 的分布。"
+    },
+    {
+     "en": "Across models and datasets, the wrong answers are more concentrated than the uniform-choice baseline.",
+     "zh": "在各模型和数据集上，错误答案比均匀选择基线更加集中。"
+    },
+    {
+     "en": "For many failed questions, all incorrect samples converge on a single answer ( C q = 1 C_{q}=1 ).",
+     "zh": "对于许多回答错误的问题，所有错误样本都收敛到同一个答案（ C q = 1 C_{q}=1 ）。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 2 shows three patterns. First, when repeated samples from the same model are wrong, they often collapse onto a single answer rather than spread across alternatives. Second, error concentration increases with model scale. Third, concentration is higher in the reasoning-oriented models. Takeaway. Increasing the sampling budget of the same model may repeatedly reinforce an existing error mode rather than introduce independent evidence.",
+   "zh": "图 2 展示了三种模式。 第一，当来自同一模型的重复样本出错时，它们往往坍缩到同一个答案上，而不是分散在各个备选答案之间。 第二，错误集中度随模型规模的增大而上升。 第三，在以推理为导向的模型中集中度更高。启示。 增加同一模型的采样预算可能会反复强化已有的错误模式，而不是引入独立的证据。",
+   "sents": [
+    {
+     "en": "Figure 2 shows three patterns.",
+     "zh": "图 2 展示了三种模式。"
+    },
+    {
+     "en": "First, when repeated samples from the same model are wrong, they often collapse onto a single answer rather than spread across alternatives.",
+     "zh": "第一，当来自同一模型的重复样本出错时，它们往往坍缩到同一个答案上，而不是分散在各个备选答案之间。"
+    },
+    {
+     "en": "Second, error concentration increases with model scale.",
+     "zh": "第二，错误集中度随模型规模的增大而上升。"
+    },
+    {
+     "en": "Third, concentration is higher in the reasoning-oriented models. Takeaway.",
+     "zh": "第三，在以推理为导向的模型中集中度更高。启示。"
+    },
+    {
+     "en": "Increasing the sampling budget of the same model may repeatedly reinforce an existing error mode rather than introduce independent evidence.",
+     "zh": "增加同一模型的采样预算可能会反复强化已有的错误模式，而不是引入独立的证据。"
+    }
+   ]
+  },
+  {
+   "en": "Reasoning is expected to provide additional evidence beyond a model’s initial judgment. However, a model may already exhibit a strong answer preference before any explicit reasoning, and the same preference can remain after full reasoning. To examine this initial-answer persistence, we first ask the model to produce a direct answer without reasoning and ask the same model to solve the same question with full chain-of-thought reasoning. We measure whether the final answer retains the initial answer, particularly when the initial answer is incorrect.",
+   "zh": "推理预期应在模型最初判断之外提供额外的依据。 然而，模型可能在任何显式推理之前就已表现出强烈的答案偏好，且在完成完整推理后同样的偏好仍可能保持不变。 为考察这种初始答案的持续性，我们首先要求模型在不进行推理的情况下直接给出答案，再要求同一个模型通过完整的思维链推理来解答同一问题。 我们衡量最终答案是否保留了初始答案，尤其是在初始答案错误的情况下。",
+   "sents": [
+    {
+     "en": "Reasoning is expected to provide additional evidence beyond a model’s initial judgment.",
+     "zh": "推理预期应在模型最初判断之外提供额外的依据。"
+    },
+    {
+     "en": "However, a model may already exhibit a strong answer preference before any explicit reasoning, and the same preference can remain after full reasoning.",
+     "zh": "然而，模型可能在任何显式推理之前就已表现出强烈的答案偏好，且在完成完整推理后同样的偏好仍可能保持不变。"
+    },
+    {
+     "en": "To examine this initial-answer persistence, we first ask the model to produce a direct answer without reasoning and ask the same model to solve the same question with full chain-of-thought reasoning.",
+     "zh": "为考察这种初始答案的持续性，我们首先要求模型在不进行推理的情况下直接给出答案，再要求同一个模型通过完整的思维链推理来解答同一问题。"
+    },
+    {
+     "en": "We measure whether the final answer retains the initial answer, particularly when the initial answer is incorrect.",
+     "zh": "我们衡量最终答案是否保留了初始答案，尤其是在初始答案错误的情况下。"
+    }
+   ]
+  },
+  {
+   "en": "The right panel of Figure 2 shows that full CoT often reproduces the model’s initially incorrect answer rather than independently reassessing the question. Same-error persistence is strongest on MuSR and remains visible across model scales and datasets. Takeaway. Additional reasoning can elaborate an existing error without supplying the independent evidence needed to overturn it.",
+   "zh": "图2的右面板显示，完整思维链往往复现模型最初给出的错误答案，而不是独立地重新评估问题。 同一错误的持续性在 MuSR 上最强，并且在不同模型规模和数据集上均可见。要点。 额外的推理可以在缺乏推翻错误所需的独立证据的情况下，对既有错误进行细化阐述。",
+   "sents": [
+    {
+     "en": "The right panel of Figure 2 shows that full CoT often reproduces the model’s initially incorrect answer rather than independently reassessing the question.",
+     "zh": "图2的右面板显示，完整思维链往往复现模型最初给出的错误答案，而不是独立地重新评估问题。"
+    },
+    {
+     "en": "Same-error persistence is strongest on MuSR and remains visible across model scales and datasets. Takeaway.",
+     "zh": "同一错误的持续性在 MuSR 上最强，并且在不同模型规模和数据集上均可见。要点。"
+    },
+    {
+     "en": "Additional reasoning can elaborate an existing error without supplying the independent evidence needed to overturn it.",
+     "zh": "额外的推理可以在缺乏推翻错误所需的独立证据的情况下，对既有错误进行细化阐述。"
+    }
+   ]
+  },
+  {
+   "en": "A model’s prediction can change as reasoning proceeds. To capture this change, we compare an intermediate-stage prediction , obtained at an intermediate reasoning stage where the model is sufficiently confident, with the final-stage prediction produced after the model completes its reasoning. When the two disagree, which we call a reasoning-stage disagreement , one simple way to resolve the conflict is to let the model select between its own two predictions. This choice may not be neutral: the model may systematically favor the final-stage prediction simply because it follows more reasoning. We examine this bias with Qwen3-8B on reasoning-stage disagreements. Candidates are anonymized and their presentation order is balanced.",
+   "zh": "模型的预测可能会随着推理的进行而改变。 为了捕捉这种变化，我们将中间阶段预测——即在模型已有足够置信度的中间推理阶段所得到的预测——与模型完成推理后产生的最终阶段预测进行比较。 当两者不一致时，我们称之为推理阶段分歧，解决这种冲突的一种简单方法是让模型在自己的两个预测之间做出选择。 这种选择可能并非中性：模型可能会仅仅因为最终阶段预测经历了更多推理而系统性地偏向它。 我们使用 Qwen3-8B 在推理阶段分歧上考察了这种偏差。 候选项经过匿名化处理，其呈现顺序也进行了平衡。",
+   "sents": [
+    {
+     "en": "A model’s prediction can change as reasoning proceeds.",
+     "zh": "模型的预测可能会随着推理的进行而改变。"
+    },
+    {
+     "en": "To capture this change, we compare an intermediate-stage prediction , obtained at an intermediate reasoning stage where the model is sufficiently confident, with the final-stage prediction produced after the model completes its reasoning.",
+     "zh": "为了捕捉这种变化，我们将中间阶段预测——即在模型已有足够置信度的中间推理阶段所得到的预测——与模型完成推理后产生的最终阶段预测进行比较。"
+    },
+    {
+     "en": "When the two disagree, which we call a reasoning-stage disagreement , one simple way to resolve the conflict is to let the model select between its own two predictions.",
+     "zh": "当两者不一致时，我们称之为推理阶段分歧，解决这种冲突的一种简单方法是让模型在自己的两个预测之间做出选择。"
+    },
+    {
+     "en": "This choice may not be neutral: the model may systematically favor the final-stage prediction simply because it follows more reasoning.",
+     "zh": "这种选择可能并非中性：模型可能会仅仅因为最终阶段预测经历了更多推理而系统性地偏向它。"
+    },
+    {
+     "en": "We examine this bias with Qwen3-8B on reasoning-stage disagreements.",
+     "zh": "我们使用 Qwen3-8B 在推理阶段分歧上考察了这种偏差。"
+    },
+    {
+     "en": "Candidates are anonymized and their presentation order is balanced.",
+     "zh": "候选项经过匿名化处理，其呈现顺序也进行了平衡。"
+    }
+   ]
+  },
+  {
+   "en": "Table 1 reveals a strong directional asymmetry in self-selection. On reasoning-stage disagreements, the model selects the final-stage prediction in more than 95% of cases, and its selections are reliable mainly when that prediction is correct. When the intermediate-stage prediction is correct but the final-stage prediction is incorrect, the model rarely selects the earlier prediction. This preference persists with high confidence even when it leads to an incorrect choice. Takeaway. These results reveal a longer-reasoning preference bias: the model tends to trust the later, more elaborate reasoning outcome even when further reasoning has moved away from the correct answer.",
+   "zh": "表1揭示了自我选择中强烈的方向性不对称。 在推理阶段的分歧上，该模型在超过95%的情况下选择最终阶段的预测，且其选择主要在该预测正确时才是可靠的。 当中间阶段的预测正确而最终阶段的预测错误时，该模型很少选择较早的预测。 即使导致错误的选择，这种偏好仍以高置信度持续存在。要点。 这些结果揭示了一种偏好更长推理的偏差：即使进一步的推理已经偏离正确答案，该模型仍倾向于相信较晚、更详尽的推理结果。",
+   "sents": [
+    {
+     "en": "Table 1 reveals a strong directional asymmetry in self-selection.",
+     "zh": "表1揭示了自我选择中强烈的方向性不对称。"
+    },
+    {
+     "en": "On reasoning-stage disagreements, the model selects the final-stage prediction in more than 95% of cases, and its selections are reliable mainly when that prediction is correct.",
+     "zh": "在推理阶段的分歧上，该模型在超过95%的情况下选择最终阶段的预测，且其选择主要在该预测正确时才是可靠的。"
+    },
+    {
+     "en": "When the intermediate-stage prediction is correct but the final-stage prediction is incorrect, the model rarely selects the earlier prediction.",
+     "zh": "当中间阶段的预测正确而最终阶段的预测错误时，该模型很少选择较早的预测。"
+    },
+    {
+     "en": "This preference persists with high confidence even when it leads to an incorrect choice. Takeaway.",
+     "zh": "即使导致错误的选择，这种偏好仍以高置信度持续存在。要点。"
+    },
+    {
+     "en": "These results reveal a longer-reasoning preference bias: the model tends to trust the later, more elaborate reasoning outcome even when further reasoning has moved away from the correct answer.",
+     "zh": "这些结果揭示了一种偏好更长推理的偏差：即使进一步的推理已经偏离正确答案，该模型仍倾向于相信较晚、更详尽的推理结果。"
+    }
+   ]
+  },
+  {
+   "en": "We propose Dia (Disagreement-triggered Independent Arbitration) to resolve disagreements between predictions produced at two reasoning depths (Figure 3 ). Given a question q q , the base model yields a final-stage prediction after completing its reasoning and, whenever a confidence criterion is met at an intermediate reasoning stage, an intermediate-stage prediction extracted at that point. For compact notation, we denote the intermediate-stage and final-stage predictions by a E ​ ( q ) a_{E}(q) and a F ​ ( q ) a_{F}(q) , respectively, and let m E ​ ( q ) ∈ { 0 , 1 } m_{E}(q)\\in\\{0,1\\} indicate whether an intermediate-stage prediction is available. Dia takes these predictions as fixed inputs; the extraction procedure for a E ​ ( q ) a_{E}(q) is described in Section 4.1 .",
+   "zh": "我们提出 Dia（Disagreement-triggered Independent Arbitration，分歧触发的独立仲裁）来解决在两个推理深度上产生的预测之间的分歧（图 3 ）。 给定问题 q q ，基础模型在完成其推理后产生最终阶段预测，并且只要在中间推理阶段满足置信度准则，还会提取该时点的中间阶段预测。 为便于简洁表示，我们将中间阶段预测和最终阶段预测分别记为 a E ​ ( q ) a_{E}(q) 和 a F ​ ( q ) a_{F}(q) ，并用 m E ​ ( q ) ∈ { 0 , 1 } m_{E}(q)\\in\\{0,1\\} 表示是否存在中间阶段预测。 Dia 将这些预测作为固定输入； a E ​ ( q ) a_{E}(q) 的提取过程在 4.1 节中描述。",
+   "sents": [
+    {
+     "en": "We propose Dia (Disagreement-triggered Independent Arbitration) to resolve disagreements between predictions produced at two reasoning depths (Figure 3 ).",
+     "zh": "我们提出 Dia（Disagreement-triggered Independent Arbitration，分歧触发的独立仲裁）来解决在两个推理深度上产生的预测之间的分歧（图 3 ）。"
+    },
+    {
+     "en": "Given a question q q , the base model yields a final-stage prediction after completing its reasoning and, whenever a confidence criterion is met at an intermediate reasoning stage, an intermediate-stage prediction extracted at that point.",
+     "zh": "给定问题 q q ，基础模型在完成其推理后产生最终阶段预测，并且只要在中间推理阶段满足置信度准则，还会提取该时点的中间阶段预测。"
+    },
+    {
+     "en": "For compact notation, we denote the intermediate-stage and final-stage predictions by a E ​ ( q ) a_{E}(q) and a F ​ ( q ) a_{F}(q) , respectively, and let m E ​ ( q ) ∈ { 0 , 1 } m_{E}(q)\\in\\{0,1\\} indicate whether an intermediate-stage prediction is available.",
+     "zh": "为便于简洁表示，我们将中间阶段预测和最终阶段预测分别记为 a E ​ ( q ) a_{E}(q) 和 a F ​ ( q ) a_{F}(q) ，并用 m E ​ ( q ) ∈ { 0 , 1 } m_{E}(q)\\in\\{0,1\\} 表示是否存在中间阶段预测。"
+    },
+    {
+     "en": "Dia takes these predictions as fixed inputs; the extraction procedure for a E ​ ( q ) a_{E}(q) is described in Section 4.1 .",
+     "zh": "Dia 将这些预测作为固定输入； a E ​ ( q ) a_{E}(q) 的提取过程在 4.1 节中描述。"
+    }
+   ]
+  },
+  {
+   "en": "If no intermediate-stage prediction is available ( m E ​ ( q ) = 0 m_{E}(q)=0 ), we return a F ​ ( q ) a_{F}(q) . If a E ​ ( q ) = a F ​ ( q ) a_{E}(q)=a_{F}(q) , we return the shared answer. External solvers are called only on reasoning-stage disagreement, that is, when a E ​ ( q ) a_{E}(q) is available and differs from a F ​ ( q ) a_{F}(q) . We denote this routing decision by",
+   "zh": "如果没有中间阶段预测可用（m_E(q)=0），我们返回 a_F(q)。 如果 a_E(q)=a_F(q)，我们返回共享的答案。 仅在推理阶段出现分歧时才调用外部求解器，即当 a_E(q) 可用且与 a_F(q) 不同时。 我们将这一路由决策记为",
+   "sents": [
+    {
+     "en": "If no intermediate-stage prediction is available ( m E ​ ( q ) = 0 m_{E}(q)=0 ), we return a F ​ ( q ) a_{F}(q) .",
+     "zh": "如果没有中间阶段预测可用（m_E(q)=0），我们返回 a_F(q)。"
+    },
+    {
+     "en": "If a E ​ ( q ) = a F ​ ( q ) a_{E}(q)=a_{F}(q) , we return the shared answer.",
+     "zh": "如果 a_E(q)=a_F(q)，我们返回共享的答案。"
+    },
+    {
+     "en": "External solvers are called only on reasoning-stage disagreement, that is, when a E ​ ( q ) a_{E}(q) is available and differs from a F ​ ( q ) a_{F}(q) .",
+     "zh": "仅在推理阶段出现分歧时才调用外部求解器，即当 a_E(q) 可用且与 a_F(q) 不同时。"
+    },
+    {
+     "en": "We denote this routing decision by",
+     "zh": "我们将这一路由决策记为"
+    }
+   ]
+  },
+  {
+   "en": "When z ⁡ ( q ) = 1 z(q)=1 , we ask three heterogeneous solvers to solve the original question. Each solver receives only the question and its answer options and answers the question independently. No solver sees a E ​ ( q ) a_{E}(q) , a F ​ ( q ) a_{F}(q) , the reasoning traces behind them, or another solver’s output. Each valid response is normalized to a task-specific answer representation v k v_{k} .",
+   "zh": "当 z ⁡ ( q ) = 1 z(q)=1 时，我们让三个异构智能体来解答原始问题。 每个智能体只接收问题及其答案选项，并独立作答。 任何智能体都看不到 a_{E}(q)、a_{F}(q)、它们背后的推理轨迹，或其他智能体的输出。 每个有效回答会被规范化为特定于任务的答案表示 v_{k}。",
+   "sents": [
+    {
+     "en": "When z ⁡ ( q ) = 1 z(q)=1 , we ask three heterogeneous solvers to solve the original question.",
+     "zh": "当 z ⁡ ( q ) = 1 z(q)=1 时，我们让三个异构智能体来解答原始问题。"
+    },
+    {
+     "en": "Each solver receives only the question and its answer options and answers the question independently.",
+     "zh": "每个智能体只接收问题及其答案选项，并独立作答。"
+    },
+    {
+     "en": "No solver sees a E ​ ( q ) a_{E}(q) , a F ​ ( q ) a_{F}(q) , the reasoning traces behind them, or another solver’s output.",
+     "zh": "任何智能体都看不到 a_{E}(q)、a_{F}(q)、它们背后的推理轨迹，或其他智能体的输出。"
+    },
+    {
+     "en": "Each valid response is normalized to a task-specific answer representation v k v_{k} .",
+     "zh": "每个有效回答会被规范化为特定于任务的答案表示 v_{k}。"
+    }
+   ]
+  },
+  {
+   "en": "Let 𝒱 \\mathcal{V} denote the indices of solvers with valid responses. We count their support for a E a_{E} and a F a_{F} :",
+   "zh": "设 𝒱 \\mathcal{V} 表示返回有效响应的求解器的索引集合。 我们统计它们对 a E a_{E} 和 a F a_{F} 的支持情况：",
+   "sents": [
+    {
+     "en": "Let 𝒱 \\mathcal{V} denote the indices of solvers with valid responses.",
+     "zh": "设 𝒱 \\mathcal{V} 表示返回有效响应的求解器的索引集合。"
+    },
+    {
+     "en": "We count their support for a E a_{E} and a F a_{F} :",
+     "zh": "我们统计它们对 a E a_{E} 和 a F a_{F} 的支持情况："
+    }
+   ]
+  },
+  {
+   "en": "If at least two solvers agree on an answer outside { a E , a F } \\{a_{E},a_{F}\\} , we return that answer. Otherwise, we return a E a_{E} when n E > n F n_{E}>n_{F} and a F a_{F} when n F > n E n_{F}>n_{E} .",
+   "zh": "如果至少有两个求解器在 { a E , a F } \\{a_{E},a_{F}\\} 之外的答案上达成一致，我们就返回该答案。 否则，当 n E > n F n_{E}>n_{F} 时我们返回 a E a_{E}，当 n F > n E n_{F}>n_{E} 时我们返回 a F a_{F}。",
+   "sents": [
+    {
+     "en": "If at least two solvers agree on an answer outside { a E , a F } \\{a_{E},a_{F}\\} , we return that answer.",
+     "zh": "如果至少有两个求解器在 { a E , a F } \\{a_{E},a_{F}\\} 之外的答案上达成一致，我们就返回该答案。"
+    },
+    {
+     "en": "Otherwise, we return a E a_{E} when n E > n F n_{E}>n_{F} and a F a_{F} when n F > n E n_{F}>n_{E} .",
+     "zh": "否则，当 n E > n F n_{E}>n_{F} 时我们返回 a E a_{E}，当 n F > n E n_{F}>n_{E} 时我们返回 a F a_{F}。"
+    }
+   ]
+  },
+  {
+   "en": "We explain why heterogeneous solvers and candidate-blind solving help through a single quantity, the truth margin . Formal statements and proofs are in Appendix B .",
+   "zh": "我们通过一个单一的量——真值差距（truth margin），解释为什么异构求解器和无候选者偏差的求解方式会带来帮助。 形式化表述与证明见附录 B。",
+   "sents": [
+    {
+     "en": "We explain why heterogeneous solvers and candidate-blind solving help through a single quantity, the truth margin .",
+     "zh": "我们通过一个单一的量——真值差距（truth margin），解释为什么异构求解器和无候选者偏差的求解方式会带来帮助。"
+    },
+    {
+     "en": "Formal statements and proofs are in Appendix B .",
+     "zh": "形式化表述与证明见附录 B。"
+    }
+   ]
+  },
+  {
+   "en": "For a question with gold answer y ⋆ y^{\\star} and a panel S S of n n solvers with average accuracy p ¯ S \\bar{p}_{S} , let κ S ∈ [ 0 , 1 ] \\kappa_{S}\\in[0,1] be the fraction of the panel’s expected wrong votes that fall on its single most popular wrong answer, and define",
+   "zh": "对于一个具有标准答案 y ⋆ y^{\\star}、以及由 n n 个平均准确率为 p ¯ S \\bar{p}_{S} 的求解者组成的评审团 S S 的问题，设 κ S ∈ [ 0 , 1 ] \\kappa_{S}\\in[0,1] 为评审团的期望错误票中落在其单个最受欢迎的错误答案上的比例，并定义",
+   "sents": null
+  },
+  {
+   "en": "Δ S \\Delta_{S} is the expected vote share of y ⋆ y^{\\star} minus that of the strongest wrong answer. The definition encodes an asymmetry: correct votes always coincide on y ⋆ y^{\\star} , whereas wrong votes defeat the truth only if they also coincide on the same wrong answer.",
+   "zh": "Δ_S 表示 y⋆ 的期望票数减去最强错误答案的期望票数。 该定义体现了一种不对称性：正确票总是集中在 y⋆ 上，而错误票只有在同样集中在同一个错误答案上时才能击败正确答案。",
+   "sents": [
+    {
+     "en": "Δ S \\Delta_{S} is the expected vote share of y ⋆ y^{\\star} minus that of the strongest wrong answer.",
+     "zh": "Δ_S 表示 y⋆ 的期望票数减去最强错误答案的期望票数。"
+    },
+    {
+     "en": "The definition encodes an asymmetry: correct votes always coincide on y ⋆ y^{\\star} , whereas wrong votes defeat the truth only if they also coincide on the same wrong answer.",
+     "zh": "该定义体现了一种不对称性：正确票总是集中在 y⋆ 上，而错误票只有在同样集中在同一个错误答案上时才能击败正确答案。"
+    }
+   ]
+  },
+  {
+   "en": "Under independent voting, plurality is governed by the truth margin Δ S \\Delta_{S} , the expected vote share of the gold answer relative to the strongest wrong alternative. If Δ S > 0 \\Delta_{S}>0 , increasing the number of independent votes concentrates the outcome on the gold answer, exponentially fast in n n ; if Δ S < 0 \\Delta_{S}<0 , additional votes instead reinforce the dominant error mode.",
+   "zh": "在独立投票下， plurality 由真实差距 \\Delta_{S} 决定，即 gold 答案相对于最强错误备选答案的期望得票份额。 如果 \\Delta_{S}>0，增加独立投票的数量会使结果集中到 gold 答案上，速度随 n n 呈指数级；如果 \\Delta_{S}<0，增加投票反而会强化占主导的错误模式。",
+   "sents": [
+    {
+     "en": "Under independent voting, plurality is governed by the truth margin Δ S \\Delta_{S} , the expected vote share of the gold answer relative to the strongest wrong alternative.",
+     "zh": "在独立投票下， plurality 由真实差距 \\Delta_{S} 决定，即 gold 答案相对于最强错误备选答案的期望得票份额。"
+    },
+    {
+     "en": "If Δ S > 0 \\Delta_{S}>0 , increasing the number of independent votes concentrates the outcome on the gold answer, exponentially fast in n n ; if Δ S < 0 \\Delta_{S}<0 , additional votes instead reinforce the dominant error mode.",
+     "zh": "如果 \\Delta_{S}>0，增加独立投票的数量会使结果集中到 gold 答案上，速度随 n n 呈指数级；如果 \\Delta_{S}<0，增加投票反而会强化占主导的错误模式。"
+    }
+   ]
+  },
+  {
+   "en": "Repeated samples from the same model preserve the answer distribution and therefore the sign of Δ S \\Delta_{S} : for a homogeneous panel, p ¯ S \\bar{p}_{S} is the model’s own accuracy and κ S \\kappa_{S} is exactly the wrong-answer concentration C q C_{q} of Section 2.1 , and neither depends on the sampling budget. Only a change of solver population can change the sign of the margin, so the benefit of heterogeneity is not diversity per se but a reduction of shared error modes; Section 4.3.2 tests this prediction.",
+   "zh": "从同一模型重复采样会保持答案分布，因此也保持 Δ S \\Delta_{S} 的符号：对于同质面板，p ¯ S \\bar{p}_{S} 就是模型自身的准确率，κ S \\kappa_{S} 恰好等于 2.1 节中的错误答案集中度 C q C_{q}，二者都不依赖于采样预算。 只有求解者群体的变化才能改变差值的符号，因此异质性的收益不在于多样性本身，而在于减少共享的错误模式；4.3.2 节对这一预测进行了检验。",
+   "sents": [
+    {
+     "en": "Repeated samples from the same model preserve the answer distribution and therefore the sign of Δ S \\Delta_{S} : for a homogeneous panel, p ¯ S \\bar{p}_{S} is the model’s own accuracy and κ S \\kappa_{S} is exactly the wrong-answer concentration C q C_{q} of Section 2.1 , and neither depends on the sampling budget.",
+     "zh": "从同一模型重复采样会保持答案分布，因此也保持 Δ S \\Delta_{S} 的符号：对于同质面板，p ¯ S \\bar{p}_{S} 就是模型自身的准确率，κ S \\kappa_{S} 恰好等于 2.1 节中的错误答案集中度 C q C_{q}，二者都不依赖于采样预算。"
+    },
+    {
+     "en": "Only a change of solver population can change the sign of the margin, so the benefit of heterogeneity is not diversity per se but a reduction of shared error modes; Section 4.3.2 tests this prediction.",
+     "zh": "只有求解者群体的变化才能改变差值的符号，因此异质性的收益不在于多样性本身，而在于减少共享的错误模式；4.3.2 节对这一预测进行了检验。"
+    }
+   ]
+  },
+  {
+   "en": "Candidate exposure systematically shifts a solver’s answer distribution toward the exposed candidate. If the exposed candidate is correct, this shift increases the truth margin. If it is incorrect, the same shift decreases the margin against that wrong answer and can reverse its sign. Candidate-blind solving removes this pre-aggregation shift.",
+   "zh": "候选答案暴露会系统性地使求解者的答案分布向被暴露的候选答案偏移。 如果被暴露的候选答案是正确的，这种偏移会扩大真实答案的优势幅度。 如果它是错误的，同样的偏移会缩小针对该错误答案的优势幅度，甚至可能使其符号反转。 候选盲求解消除了这种聚合前的偏移。",
+   "sents": [
+    {
+     "en": "Candidate exposure systematically shifts a solver’s answer distribution toward the exposed candidate.",
+     "zh": "候选答案暴露会系统性地使求解者的答案分布向被暴露的候选答案偏移。"
+    },
+    {
+     "en": "If the exposed candidate is correct, this shift increases the truth margin.",
+     "zh": "如果被暴露的候选答案是正确的，这种偏移会扩大真实答案的优势幅度。"
+    },
+    {
+     "en": "If it is incorrect, the same shift decreases the margin against that wrong answer and can reverse its sign.",
+     "zh": "如果它是错误的，同样的偏移会缩小针对该错误答案的优势幅度，甚至可能使其符号反转。"
+    },
+    {
+     "en": "Candidate-blind solving removes this pre-aggregation shift.",
+     "zh": "候选盲求解消除了这种聚合前的偏移。"
+    }
+   ]
+  },
+  {
+   "en": "Exposure amplifies the candidate being shown, not necessarily the truth, so communication helps only when solvers can reliably distinguish correct from incorrect shared answers, which is exactly what Section 2.3 calls into question. Dia therefore obtains each solver’s judgment before revealing any candidate, so the evidence entering aggregation is not conditioned on the alternatives being arbitrated.",
+   "zh": "曝光放大的是被展示的候选答案，而不一定是真相，因此沟通只有在求解者能够可靠地区分正确与错误的共享答案时才有帮助，而这正是 2.3 节所质疑的。 因此，Dia 在揭示任何候选答案之前先获取每个求解者的判断，从而进入聚合的证据不以被仲裁的备选方案为条件。",
+   "sents": [
+    {
+     "en": "Exposure amplifies the candidate being shown, not necessarily the truth, so communication helps only when solvers can reliably distinguish correct from incorrect shared answers, which is exactly what Section 2.3 calls into question.",
+     "zh": "曝光放大的是被展示的候选答案，而不一定是真相，因此沟通只有在求解者能够可靠地区分正确与错误的共享答案时才有帮助，而这正是 2.3 节所质疑的。"
+    },
+    {
+     "en": "Dia therefore obtains each solver’s judgment before revealing any candidate, so the evidence entering aggregation is not conditioned on the alternatives being arbitrated.",
+     "zh": "因此，Dia 在揭示任何候选答案之前先获取每个求解者的判断，从而进入聚合的证据不以被仲裁的备选方案为条件。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate on seven benchmarks across four reasoning domains. MMLU-Pro ( Wang et al., 2024 ) and GPQA-Diamond ( Rein et al., 2024 ) cover knowledge-intensive reasoning. DetectBench ( Gu et al., 2024 ) , MuSiQue ( Trivedi et al., 2022 ) , and 2WikiMultiHopQA ( Ho et al., 2020 ) cover contextual and multi-hop reasoning. We use MATH ( Hendrycks et al., 2021 ) , restricted to problems of difficulty levels 3 to 5, for mathematical reasoning and MuSR ( Sprague et al., 2024 ) for narrative or soft reasoning. Dataset statistics and sampling details are provided in Appendix A.1 .",
+   "zh": "我们在四个推理领域的七个基准上进行评估。 MMLU-Pro（Wang 等，2024）和 GPQA-Diamond（Rein 等，2024）涵盖知识密集型推理。 DetectBench（Gu 等，2024）、MuSiQue（Trivedi 等，2022）和 2WikiMultiHopQA（Ho 等，2020）涵盖上下文推理和多跳推理。 我们使用 MATH（Hendrycks 等，2021），仅限难度等级 3 到 5 的题目，用于数学推理；使用 MuSR（Sprague 等，2024）用于叙事或软推理。 数据集统计信息与采样细节见附录 A.1。",
+   "sents": [
+    {
+     "en": "We evaluate on seven benchmarks across four reasoning domains.",
+     "zh": "我们在四个推理领域的七个基准上进行评估。"
+    },
+    {
+     "en": "MMLU-Pro ( Wang et al., 2024 ) and GPQA-Diamond ( Rein et al., 2024 ) cover knowledge-intensive reasoning.",
+     "zh": "MMLU-Pro（Wang 等，2024）和 GPQA-Diamond（Rein 等，2024）涵盖知识密集型推理。"
+    },
+    {
+     "en": "DetectBench ( Gu et al., 2024 ) , MuSiQue ( Trivedi et al., 2022 ) , and 2WikiMultiHopQA ( Ho et al., 2020 ) cover contextual and multi-hop reasoning.",
+     "zh": "DetectBench（Gu 等，2024）、MuSiQue（Trivedi 等，2022）和 2WikiMultiHopQA（Ho 等，2020）涵盖上下文推理和多跳推理。"
+    },
+    {
+     "en": "We use MATH ( Hendrycks et al., 2021 ) , restricted to problems of difficulty levels 3 to 5, for mathematical reasoning and MuSR ( Sprague et al., 2024 ) for narrative or soft reasoning.",
+     "zh": "我们使用 MATH（Hendrycks 等，2021），仅限难度等级 3 到 5 的题目，用于数学推理；使用 MuSR（Sprague 等，2024）用于叙事或软推理。"
+    },
+    {
+     "en": "Dataset statistics and sampling details are provided in Appendix A.1 .",
+     "zh": "数据集统计信息与采样细节见附录 A.1。"
+    }
+   ]
+  },
+  {
+   "en": "We compare Dia with seven baselines, grouped by the kind of intervention each applies against model-specific error bias. ① Standard reasoning. CoT ( Wei et al., 2022 ) lets the base model complete its reasoning and returns the final prediction. ② Adaptive reasoning. DEER ( Yang et al., 2026 ) and Dynasor ( Fu et al., 2025 ) use intermediate reasoning signals to decide whether continued reasoning is necessary: DEER relies on confidence at intermediate reasoning states, whereas Dynasor, in its CoT setting, uses the stability of intermediate predictions. Like Dia , both act on signals exposed before reasoning terminates, but they modify the computation of the same model rather than seeking evidence outside it. ③ Multi-agent inference. We consider two protocols using the same four-agent pool. MAS-Exchange ( Wu et al., 2024 ; Li et al., 2023 ) uses fully-connected communication: agents first solve the question independently, observe all peer responses, revise once, and then vote. MAS-Judge ( Wang et al., 2025 ) removes peer-to-peer communication: agents solve independently, after which a centralized judge, instantiated by the base model, observes all responses and selects the final answer. ④ Learning-based debiasing. We test whether model-specific error bias can be reduced through parameter updates: SFT trains the base model on its own correct samples and DPO then prefers correct over incorrect samples of the same question (details in Appendix A.2 ).",
+   "zh": "我们将 Dia 与七种基线进行比较，并按每种方法针对模型特定错误偏差所施加干预的类型进行分组。① 标准推理。 CoT（Wei et al., 2022）让基础模型完成其推理并返回最终预测。② 自适应推理。 DEER（Yang et al., 2026）和 Dynasor（Fu et al., 2025）利用中间推理信号来判断是否需要继续推理：DEER 依赖于中间推理状态下的置信度，而 Dynasor 在其 CoT 设置中使用中间预测的稳定性。 与 Dia 一样，两者都作用于推理结束前暴露出的信号，但它们修改的是同一模型的计算，而不是在该模型之外寻找证据。③ 多智能体推理。 我们考虑使用同一个四智能体池的两种协议。 MAS-Exchange（Wu et al., 2024；Li et al., 2023）采用全连接通信：智能体首先独立解题，观察所有同伴的回答，修订一次，然后投票。 MAS-Judge（Wang et al., 2025）去除了智能体之间的点对点通信：智能体独立解题，之后由基础模型实例化的集中式裁判观察所有回答并选出最终答案。④ 基于学习的去偏。 我们测试能否通过参数更新来减少模型特定的错误偏差：SFT 在基础模型自身的正确样本上进行训练，随后 DPO 对同一问题的正确样本给予高于错误样本的偏好（细节见附录 A.2）。",
+   "sents": [
+    {
+     "en": "We compare Dia with seven baselines, grouped by the kind of intervention each applies against model-specific error bias. ① Standard reasoning.",
+     "zh": "我们将 Dia 与七种基线进行比较，并按每种方法针对模型特定错误偏差所施加干预的类型进行分组。① 标准推理。"
+    },
+    {
+     "en": "CoT ( Wei et al., 2022 ) lets the base model complete its reasoning and returns the final prediction. ② Adaptive reasoning.",
+     "zh": "CoT（Wei et al., 2022）让基础模型完成其推理并返回最终预测。② 自适应推理。"
+    },
+    {
+     "en": "DEER ( Yang et al., 2026 ) and Dynasor ( Fu et al., 2025 ) use intermediate reasoning signals to decide whether continued reasoning is necessary: DEER relies on confidence at intermediate reasoning states, whereas Dynasor, in its CoT setting, uses the stability of intermediate predictions.",
+     "zh": "DEER（Yang et al., 2026）和 Dynasor（Fu et al., 2025）利用中间推理信号来判断是否需要继续推理：DEER 依赖于中间推理状态下的置信度，而 Dynasor 在其 CoT 设置中使用中间预测的稳定性。"
+    },
+    {
+     "en": "Like Dia , both act on signals exposed before reasoning terminates, but they modify the computation of the same model rather than seeking evidence outside it. ③ Multi-agent inference.",
+     "zh": "与 Dia 一样，两者都作用于推理结束前暴露出的信号，但它们修改的是同一模型的计算，而不是在该模型之外寻找证据。③ 多智能体推理。"
+    },
+    {
+     "en": "We consider two protocols using the same four-agent pool.",
+     "zh": "我们考虑使用同一个四智能体池的两种协议。"
+    },
+    {
+     "en": "MAS-Exchange ( Wu et al., 2024 ; Li et al., 2023 ) uses fully-connected communication: agents first solve the question independently, observe all peer responses, revise once, and then vote.",
+     "zh": "MAS-Exchange（Wu et al., 2024；Li et al., 2023）采用全连接通信：智能体首先独立解题，观察所有同伴的回答，修订一次，然后投票。"
+    },
+    {
+     "en": "MAS-Judge ( Wang et al., 2025 ) removes peer-to-peer communication: agents solve independently, after which a centralized judge, instantiated by the base model, observes all responses and selects the final answer. ④ Learning-based debiasing.",
+     "zh": "MAS-Judge（Wang et al., 2025）去除了智能体之间的点对点通信：智能体独立解题，之后由基础模型实例化的集中式裁判观察所有回答并选出最终答案。④ 基于学习的去偏。"
+    },
+    {
+     "en": "We test whether model-specific error bias can be reduced through parameter updates: SFT trains the base model on its own correct samples and DPO then prefers correct over incorrect samples of the same question (details in Appendix A.2 ).",
+     "zh": "我们测试能否通过参数更新来减少模型特定的错误偏差：SFT 在基础模型自身的正确样本上进行训练，随后 DPO 对同一问题的正确样本给予高于错误样本的偏好（细节见附录 A.2）。"
+    }
+   ]
+  },
+  {
+   "en": "We use Qwen3-4B and Qwen3-8B as base models. The external solvers are DeepSeek-v4-Flash ( DeepSeek-AI, 2026 ) , Llama-3.3-70B-Instruct ( Meta, 2024 ) , and GPT-4o-mini ( OpenAI, 2024 ) . Following Yang et al. (2026) , we extract the intermediate-stage prediction at reasoning-transition points when the confidence criterion is met. The final-stage prediction is obtained by letting the same base model complete its reasoning under matched inference settings.",
+   "zh": "我们使用 Qwen3-4B 和 Qwen3-8B 作为基础模型。 外部求解器为 DeepSeek-v4-Flash（DeepSeek-AI, 2026）、Llama-3.3-70B-Instruct（Meta, 2024）和 GPT-4o-mini（OpenAI, 2024）。遵循 Yang 等人 （2026）的做法，我们在置信度准则满足时，于推理转折点提取中间阶段预测。 最终阶段预测则是让同一个基础模型在匹配的推理设置下完成其推理而得到的。",
+   "sents": [
+    {
+     "en": "We use Qwen3-4B and Qwen3-8B as base models.",
+     "zh": "我们使用 Qwen3-4B 和 Qwen3-8B 作为基础模型。"
+    },
+    {
+     "en": "The external solvers are DeepSeek-v4-Flash ( DeepSeek-AI, 2026 ) , Llama-3.3-70B-Instruct ( Meta, 2024 ) , and GPT-4o-mini ( OpenAI, 2024 ) . Following Yang et al.",
+     "zh": "外部求解器为 DeepSeek-v4-Flash（DeepSeek-AI, 2026）、Llama-3.3-70B-Instruct（Meta, 2024）和 GPT-4o-mini（OpenAI, 2024）。遵循 Yang 等人"
+    },
+    {
+     "en": "(2026) , we extract the intermediate-stage prediction at reasoning-transition points when the confidence criterion is met.",
+     "zh": "（2026）的做法，我们在置信度准则满足时，于推理转折点提取中间阶段预测。"
+    },
+    {
+     "en": "The final-stage prediction is obtained by letting the same base model complete its reasoning under matched inference settings.",
+     "zh": "最终阶段预测则是让同一个基础模型在匹配的推理设置下完成其推理而得到的。"
+    }
+   ]
+  },
+  {
+   "en": "We report answer accuracy in percent, and all accuracy differences are absolute differences. Token Ratio is the total input and output token usage normalized by the CoT baseline on the same dataset and model.",
+   "zh": "我们以百分比报告答案准确率，所有准确率差异均为绝对差异。 Token Ratio（词元比）是指在同一数据集和模型上，以思维链基线进行归一化后的总输入与输出词元使用量。",
+   "sents": [
+    {
+     "en": "We report answer accuracy in percent, and all accuracy differences are absolute differences.",
+     "zh": "我们以百分比报告答案准确率，所有准确率差异均为绝对差异。"
+    },
+    {
+     "en": "Token Ratio is the total input and output token usage normalized by the CoT baseline on the same dataset and model.",
+     "zh": "Token Ratio（词元比）是指在同一数据集和模型上，以思维链基线进行归一化后的总输入与输出词元使用量。"
+    }
+   ]
+  },
+  {
+   "en": "Answers are normalized to option keys before aggregation. The final selected answer is scored against the benchmark gold option. For free-form outputs, the final answer is evaluated by Qwen 3.7-Plus ( qwen/qwen3.7-plus ), an independent LLM judge, against the benchmark gold answer.",
+   "zh": "答案在聚合之前会被规范化为选项键。 最终选定的答案会对照基准的金标准选项进行评分。 对于自由格式输出，最终答案由独立的 LLM 评审模型 Qwen 3.7-Plus（qwen/qwen3.7-plus）对照基准的金标准答案进行评估。",
+   "sents": [
+    {
+     "en": "Answers are normalized to option keys before aggregation.",
+     "zh": "答案在聚合之前会被规范化为选项键。"
+    },
+    {
+     "en": "The final selected answer is scored against the benchmark gold option.",
+     "zh": "最终选定的答案会对照基准的金标准选项进行评分。"
+    },
+    {
+     "en": "For free-form outputs, the final answer is evaluated by Qwen 3.7-Plus ( qwen/qwen3.7-plus ), an independent LLM judge, against the benchmark gold answer.",
+     "zh": "对于自由格式输出，最终答案由独立的 LLM 评审模型 Qwen 3.7-Plus（qwen/qwen3.7-plus）对照基准的金标准答案进行评估。"
+    }
+   ]
+  },
+  {
+   "en": "† The DPO stage was skipped for MATH with Qwen3-8B because insufficient valid preference pairs could be constructed to meet our minimum training requirement. Only the SFT result is reported.",
+   "zh": "† 对于使用 Qwen3-8B 的 MATH，DPO 阶段被跳过，因为无法构建足够多的有效偏好对来满足我们的最低训练要求。 仅报告 SFT 的结果。",
+   "sents": [
+    {
+     "en": "† The DPO stage was skipped for MATH with Qwen3-8B because insufficient valid preference pairs could be constructed to meet our minimum training requirement.",
+     "zh": "† 对于使用 Qwen3-8B 的 MATH，DPO 阶段被跳过，因为无法构建足够多的有效偏好对来满足我们的最低训练要求。"
+    },
+    {
+     "en": "Only the SFT result is reported.",
+     "zh": "仅报告 SFT 的结果。"
+    }
+   ]
+  },
+  {
+   "en": "Observation ①. Dia achieves the highest average accuracy at both model scales. Across the seven benchmarks, Dia improves average accuracy over CoT by 3.05% and 2.45% with Qwen3-4B and Qwen3-8B, respectively, and outperforms CoT in 12 of 14 settings. The two exceptions are on MATH, where CoT accuracy is already near ceiling and reasoning-stage disagreement leaves little room for correction.",
+   "zh": "观察①。 Dia 在两个模型规模上均取得最高的平均准确率。 在七个基准测试中，Dia 使用 Qwen3-4B 和 Qwen3-8B 分别将平均准确率较 CoT 提升 3.05% 和 2.45%，并在 14 个设置中的 12 个里优于 CoT。 两个例外出现在 MATH 上，因为 CoT 的准确率已接近上限，推理阶段的分歧几乎没有留下修正空间。",
+   "sents": [
+    {
+     "en": "Observation ①.",
+     "zh": "观察①。"
+    },
+    {
+     "en": "Dia achieves the highest average accuracy at both model scales.",
+     "zh": "Dia 在两个模型规模上均取得最高的平均准确率。"
+    },
+    {
+     "en": "Across the seven benchmarks, Dia improves average accuracy over CoT by 3.05% and 2.45% with Qwen3-4B and Qwen3-8B, respectively, and outperforms CoT in 12 of 14 settings.",
+     "zh": "在七个基准测试中，Dia 使用 Qwen3-4B 和 Qwen3-8B 分别将平均准确率较 CoT 提升 3.05% 和 2.45%，并在 14 个设置中的 12 个里优于 CoT。"
+    },
+    {
+     "en": "The two exceptions are on MATH, where CoT accuracy is already near ceiling and reasoning-stage disagreement leaves little room for correction.",
+     "zh": "两个例外出现在 MATH 上，因为 CoT 的准确率已接近上限，推理阶段的分歧几乎没有留下修正空间。"
+    }
+   ]
+  },
+  {
+   "en": "Observation ②. Detecting unstable reasoning is not sufficient; the source of corrective evidence matters. DEER and Dynasor modify or terminate the base model’s reasoning using intermediate signals, whereas Dia uses such signals to request independent evidence from heterogeneous models. Dia achieves higher accuracy than both adaptive-reasoning baselines in all 14 settings, although at a higher token cost than early exit.",
+   "zh": "观察②。 检测到不稳定推理并不足够，纠正性证据的来源同样重要。 DEER 和 Dynasor 使用中间信号来修改或终止基础模型的推理，而 Dia 则使用此类信号向异构模型请求独立证据。 Dia 在全部 14 种设置中的准确率均高于两个自适应推理基线，尽管其 token 开销高于提前退出。",
+   "sents": [
+    {
+     "en": "Observation ②.",
+     "zh": "观察②。"
+    },
+    {
+     "en": "Detecting unstable reasoning is not sufficient; the source of corrective evidence matters.",
+     "zh": "检测到不稳定推理并不足够，纠正性证据的来源同样重要。"
+    },
+    {
+     "en": "DEER and Dynasor modify or terminate the base model’s reasoning using intermediate signals, whereas Dia uses such signals to request independent evidence from heterogeneous models.",
+     "zh": "DEER 和 Dynasor 使用中间信号来修改或终止基础模型的推理，而 Dia 则使用此类信号向异构模型请求独立证据。"
+    },
+    {
+     "en": "Dia achieves higher accuracy than both adaptive-reasoning baselines in all 14 settings, although at a higher token cost than early exit.",
+     "zh": "Dia 在全部 14 种设置中的准确率均高于两个自适应推理基线，尽管其 token 开销高于提前退出。"
+    }
+   ]
+  },
+  {
+   "en": "Observation ③. How multiple models are combined matters as much as having multiple models. MAS-Exchange introduces cross-agent conditioning before the final vote, while MAS-Judge preserves independent generation but introduces a candidate-aware centralized decision. Dia avoids both operations and directly aggregates independently obtained answers. Compared with MAS-Exchange, it improves average accuracy by 1.26% and 0.96% with Qwen3-4B and Qwen3-8B while lowering the average token ratio by about 30% at both scales, and it also exceeds MAS-Judge in average accuracy with fewer tokens; Section 4.3 examines the underlying mechanism.",
+   "zh": "观察③。 多个模型如何组合与拥有多个模型同样重要。 MAS-Exchange 在最终投票之前引入智能体间的条件化，而 MAS-Judge 保留独立生成但引入一种感知候选的集中式决策。 Dia 则避免这两种操作，直接聚合独立获得的答案。 与 MAS-Exchange 相比，它在 Qwen3-4B 和 Qwen3-8B 上分别将平均准确率提升 1.26% 和 0.96%，同时在两种规模下都将平均 token 比率降低约 30%，并且它还在使用更少 token 的情况下在平均准确率上超过 MAS-Judge；第 4.3 节考察了其底层机制。",
+   "sents": [
+    {
+     "en": "Observation ③.",
+     "zh": "观察③。"
+    },
+    {
+     "en": "How multiple models are combined matters as much as having multiple models.",
+     "zh": "多个模型如何组合与拥有多个模型同样重要。"
+    },
+    {
+     "en": "MAS-Exchange introduces cross-agent conditioning before the final vote, while MAS-Judge preserves independent generation but introduces a candidate-aware centralized decision.",
+     "zh": "MAS-Exchange 在最终投票之前引入智能体间的条件化，而 MAS-Judge 保留独立生成但引入一种感知候选的集中式决策。"
+    },
+    {
+     "en": "Dia avoids both operations and directly aggregates independently obtained answers.",
+     "zh": "Dia 则避免这两种操作，直接聚合独立获得的答案。"
+    },
+    {
+     "en": "Compared with MAS-Exchange, it improves average accuracy by 1.26% and 0.96% with Qwen3-4B and Qwen3-8B while lowering the average token ratio by about 30% at both scales, and it also exceeds MAS-Judge in average accuracy with fewer tokens; Section 4.3 examines the underlying mechanism.",
+     "zh": "与 MAS-Exchange 相比，它在 Qwen3-4B 和 Qwen3-8B 上分别将平均准确率提升 1.26% 和 0.96%，同时在两种规模下都将平均 token 比率降低约 30%，并且它还在使用更少 token 的情况下在平均准确率上超过 MAS-Judge；第 4.3 节考察了其底层机制。"
+    }
+   ]
+  },
+  {
+   "en": "Observation ④. Learning-based correction does not reliably remove the error modes. SFT and SFT+DPO provide limited and inconsistent gains over CoT despite being trained on correct and incorrect samples of the base model itself. Gains, where present, are confined to MuSR and, for Qwen3-8B, 2WikiMultiHopQA; in the remaining settings both variants match or fall below CoT, and adding DPO after SFT does not consistently help.",
+   "zh": "观察④。 基于学习的纠正无法可靠地消除这些错误模式。 尽管在基座模型自身的正确与错误样本上进行训练，SFT 和 SFT+DPO 相比 CoT 带来的提升有限且不一致。 有提升时，也仅局限于 MuSR，以及 Qwen3-8B 上的 2WikiMultiHopQA；在其余设置中，两种变体均与 CoT 持平或低于 CoT，且在 SFT 之后添加 DPO 并不总能带来帮助。",
+   "sents": [
+    {
+     "en": "Observation ④.",
+     "zh": "观察④。"
+    },
+    {
+     "en": "Learning-based correction does not reliably remove the error modes.",
+     "zh": "基于学习的纠正无法可靠地消除这些错误模式。"
+    },
+    {
+     "en": "SFT and SFT+DPO provide limited and inconsistent gains over CoT despite being trained on correct and incorrect samples of the base model itself.",
+     "zh": "尽管在基座模型自身的正确与错误样本上进行训练，SFT 和 SFT+DPO 相比 CoT 带来的提升有限且不一致。"
+    },
+    {
+     "en": "Gains, where present, are confined to MuSR and, for Qwen3-8B, 2WikiMultiHopQA; in the remaining settings both variants match or fall below CoT, and adding DPO after SFT does not consistently help.",
+     "zh": "有提升时，也仅局限于 MuSR，以及 Qwen3-8B 上的 2WikiMultiHopQA；在其余设置中，两种变体均与 CoT 持平或低于 CoT，且在 SFT 之后添加 DPO 并不总能带来帮助。"
+    }
+   ]
+  },
+  {
+   "en": "We test whether external models can resolve reasoning-stage disagreements by comparing the candidate reasoning traces rather than solving the question independently. We use Qwen3-8B as the base model and retain the three default external models as reviewers on MuSR and MMLU-Pro. Candidates are anonymized and their presentation order is balanced. Each reviewer independently selects one candidate, and the final decision follows a two-of-three majority vote.",
+   "zh": "我们测试外部模型能否通过比较候选推理轨迹而非独立解题，来解决推理阶段的分歧。 我们使用 Qwen3-8B 作为基础模型，并在 MuSR 和 MMLU-Pro 上保留三个默认的外部模型作为评审。 候选答案经过匿名化处理，其呈现顺序是均衡的。 每位评审独立选择一个候选答案，最终决定遵循三票中取二的多数投票。",
+   "sents": [
+    {
+     "en": "We test whether external models can resolve reasoning-stage disagreements by comparing the candidate reasoning traces rather than solving the question independently.",
+     "zh": "我们测试外部模型能否通过比较候选推理轨迹而非独立解题，来解决推理阶段的分歧。"
+    },
+    {
+     "en": "We use Qwen3-8B as the base model and retain the three default external models as reviewers on MuSR and MMLU-Pro.",
+     "zh": "我们使用 Qwen3-8B 作为基础模型，并在 MuSR 和 MMLU-Pro 上保留三个默认的外部模型作为评审。"
+    },
+    {
+     "en": "Candidates are anonymized and their presentation order is balanced.",
+     "zh": "候选答案经过匿名化处理，其呈现顺序是均衡的。"
+    },
+    {
+     "en": "Each reviewer independently selects one candidate, and the final decision follows a two-of-three majority vote.",
+     "zh": "每位评审独立选择一个候选答案，最终决定遵循三票中取二的多数投票。"
+    }
+   ]
+  },
+  {
+   "en": "With complete traces, the ensemble selects the final-stage prediction in over 90% of disagreements on both datasets (Table 3 ), and rarely recovers a correct intermediate-stage prediction. The final-stage preference therefore persists even with heterogeneous reviewers.",
+   "zh": "在完整轨迹下，集成方法在两个数据集上超过 90% 的分歧中选择最终阶段的预测（表 3），并且很少恢复出正确的中间阶段预测。 因此，即使评审者异构，对最终阶段的偏好依然存在。",
+   "sents": [
+    {
+     "en": "With complete traces, the ensemble selects the final-stage prediction in over 90% of disagreements on both datasets (Table 3 ), and rarely recovers a correct intermediate-stage prediction.",
+     "zh": "在完整轨迹下，集成方法在两个数据集上超过 90% 的分歧中选择最终阶段的预测（表 3），并且很少恢复出正确的中间阶段预测。"
+    },
+    {
+     "en": "The final-stage preference therefore persists even with heterogeneous reviewers.",
+     "zh": "因此，即使评审者异构，对最终阶段的偏好依然存在。"
+    }
+   ]
+  },
+  {
+   "en": "To examine the role of presentation, Qwen3-8B summarizes each trace with the same prompt, structure, and approximately matched token budget. This reduces the final-stage preference and the directional asymmetry, but selection accuracy improves only slightly on MuSR and decreases on MMLU-Pro. Takeaway. These results motivate asking external solvers to answer the question independently rather than judge competing traces.",
+   "zh": "为考察呈现方式的作用，Qwen3-8B 使用相同的提示词、结构和大致匹配的 token 预算来总结每条轨迹。 这降低了最终阶段的偏好性和方向性不对称，但选择准确率在 MuSR 上仅略有提升，在 MMLU-Pro 上则有所下降。结论。 这些结果促使我们让外部求解器独立回答问题，而不是对相互竞争的轨迹进行评判。",
+   "sents": [
+    {
+     "en": "To examine the role of presentation, Qwen3-8B summarizes each trace with the same prompt, structure, and approximately matched token budget.",
+     "zh": "为考察呈现方式的作用，Qwen3-8B 使用相同的提示词、结构和大致匹配的 token 预算来总结每条轨迹。"
+    },
+    {
+     "en": "This reduces the final-stage preference and the directional asymmetry, but selection accuracy improves only slightly on MuSR and decreases on MMLU-Pro. Takeaway.",
+     "zh": "这降低了最终阶段的偏好性和方向性不对称，但选择准确率在 MuSR 上仅略有提升，在 MMLU-Pro 上则有所下降。结论。"
+    },
+    {
+     "en": "These results motivate asking external solvers to answer the question independently rather than judge competing traces.",
+     "zh": "这些结果促使我们让外部求解器独立回答问题，而不是对相互竞争的轨迹进行评判。"
+    }
+   ]
+  },
+  {
+   "en": "We replace the heterogeneous solvers with three independently sampled Qwen3-8B solvers. The base model remains Qwen3-8B, and the arbitration rule is unchanged. Both settings are evaluated on the same activated reasoning-stage disagreements.",
+   "zh": "我们用三个独立采样的 Qwen3-8B 智能体替换原有的异构求解器。 基座模型仍为 Qwen3-8B，仲裁规则保持不变。 两种设置均在相同的已激活推理阶段分歧上进行评估。",
+   "sents": [
+    {
+     "en": "We replace the heterogeneous solvers with three independently sampled Qwen3-8B solvers.",
+     "zh": "我们用三个独立采样的 Qwen3-8B 智能体替换原有的异构求解器。"
+    },
+    {
+     "en": "The base model remains Qwen3-8B, and the arbitration rule is unchanged.",
+     "zh": "基座模型仍为 Qwen3-8B，仲裁规则保持不变。"
+    },
+    {
+     "en": "Both settings are evaluated on the same activated reasoning-stage disagreements.",
+     "zh": "两种设置均在相同的已激活推理阶段分歧上进行评估。"
+    }
+   ]
+  },
+  {
+   "en": "Arbitration accuracy decreases on all three datasets, with drops of more than 30% on both 2WikiMultiHopQA and MuSiQue (Table 4 ). On these two datasets, every question answered correctly by the homogeneous panel is also answered correctly by the heterogeneous panel. This pattern is consistent with the model-specific error bias discussed in Section 2 . Takeaway. It supports using heterogeneous solvers to obtain corrective evidence rather than relying on repeated samples from the base model.",
+   "zh": "仲裁准确率在三个数据集上均下降，其中在 2WikiMultiHopQA 和 MuSiQue 上下降幅度均超过 30%（表 4）。 在这两个数据集上，同质智能体小组答对的每个问题，异质智能体小组也都答对了。 这一模式与第 2 节讨论的模型特定错误偏差相一致。要点。 这支持使用异质求解器来获取纠正性证据，而不是依赖基础模型的重复采样。",
+   "sents": [
+    {
+     "en": "Arbitration accuracy decreases on all three datasets, with drops of more than 30% on both 2WikiMultiHopQA and MuSiQue (Table 4 ).",
+     "zh": "仲裁准确率在三个数据集上均下降，其中在 2WikiMultiHopQA 和 MuSiQue 上下降幅度均超过 30%（表 4）。"
+    },
+    {
+     "en": "On these two datasets, every question answered correctly by the homogeneous panel is also answered correctly by the heterogeneous panel.",
+     "zh": "在这两个数据集上，同质智能体小组答对的每个问题，异质智能体小组也都答对了。"
+    },
+    {
+     "en": "This pattern is consistent with the model-specific error bias discussed in Section 2 . Takeaway.",
+     "zh": "这一模式与第 2 节讨论的模型特定错误偏差相一致。要点。"
+    },
+    {
+     "en": "It supports using heterogeneous solvers to obtain corrective evidence rather than relying on repeated samples from the base model.",
+     "zh": "这支持使用异质求解器来获取纠正性证据，而不是依赖基础模型的重复采样。"
+    }
+   ]
+  },
+  {
+   "en": "We keep the three heterogeneous solvers fixed and evaluate Qwen3 base models at 8B, 30B, and 80B scales 1 1 1 The 30B and 80B variants are Qwen3-30B-A3B-Instruct-2507 and Qwen3-Next-80B-A3B-Instruct, respectively. on MuSR and MMLU-Pro. Dia outperforms both CoT and DEER in all six settings (Table 4 ). The gains persist at 80B without upgrading the external solvers. Takeaway. Together with the homogeneous-solver ablation in Section 4.3.2 , these results suggest that heterogeneous models provide useful complementary predictions even as the base model becomes stronger.",
+   "zh": "我们保持三个异构求解器不变，并在 MuSR 和 MMLU-Pro 上评估 8B、30B 和 80B 规模的 Qwen3 基础模型 1 1 1 30B 和 80B 的变体分别是 Qwen3-30B-A3B-Instruct-2507 和 Qwen3-Next-80B-A3B-Instruct。 Dia 在全部六种设置中均优于 CoT 和 DEER（表 4）。 在不升级外部求解器的情况下，这些增益在 80B 规模上依然保持。要点。 结合第 4.3.2 节中的同构求解器消融实验，这些结果表明，即使基础模型变得更强，异构模型仍能提供有用的互补预测。",
+   "sents": [
+    {
+     "en": "We keep the three heterogeneous solvers fixed and evaluate Qwen3 base models at 8B, 30B, and 80B scales 1 1 1 The 30B and 80B variants are Qwen3-30B-A3B-Instruct-2507 and Qwen3-Next-80B-A3B-Instruct, respectively. on MuSR and MMLU-Pro.",
+     "zh": "我们保持三个异构求解器不变，并在 MuSR 和 MMLU-Pro 上评估 8B、30B 和 80B 规模的 Qwen3 基础模型 1 1 1 30B 和 80B 的变体分别是 Qwen3-30B-A3B-Instruct-2507 和 Qwen3-Next-80B-A3B-Instruct。"
+    },
+    {
+     "en": "Dia outperforms both CoT and DEER in all six settings (Table 4 ).",
+     "zh": "Dia 在全部六种设置中均优于 CoT 和 DEER（表 4）。"
+    },
+    {
+     "en": "The gains persist at 80B without upgrading the external solvers. Takeaway.",
+     "zh": "在不升级外部求解器的情况下，这些增益在 80B 规模上依然保持。要点。"
+    },
+    {
+     "en": "Together with the homogeneous-solver ablation in Section 4.3.2 , these results suggest that heterogeneous models provide useful complementary predictions even as the base model becomes stronger.",
+     "zh": "结合第 4.3.2 节中的同构求解器消融实验，这些结果表明，即使基础模型变得更强，异构模型仍能提供有用的互补预测。"
+    }
+   ]
+  },
+  {
+   "en": "Activation rates decrease with model scale, as larger models form more stable intermediate-stage predictions, yet Dia continues to improve accuracy while invoking external solvers less often.",
+   "zh": "激活率随模型规模的增大而下降，因为更大的模型会形成更稳定的中期预测，但 Dia 在更少调用外部求解器的情况下仍能持续提升准确率。",
+   "sents": null
+  },
+  {
+   "en": "The errors of a language model are not independent across samples, reasoning steps, or self-evaluation. At the generation level, models commit to an answer early and then rationalize it ( Zhang et al., 2024 ) , larger models misfire at the commitment step despite retaining the correct answer ( Yeom et al., 2026 ) , and this commitment is skewed by surface features and prior beliefs ( Zheng et al., 2024 ; Jiang et al., 2024 ; Dasgupta et al., 2022 ) . Because such biases are shared across samples, majority voting over repeated samples ( Wang et al., 2023 ) can amplify a shared wrong answer rather than average it out. At the reasoning level, chain-of-thought explanations can be unfaithful to the factors that drive the prediction ( Turpin et al., 2023 ) , reasoning models form strong preliminary answer preferences that trigger overthinking ( Dang et al., 2026 ; Chen et al., 2025 ) , and longer reasoning does not reliably improve accuracy ( Zhou et al., 2026 ) . At the evaluation level, LLM judges exhibit position, verbosity, and self-preference biases ( Zheng et al., 2023 ; Wataoka et al., 2024 ; Ye et al., 2025 ; Hu et al., 2025 ) . Prior work studies these biases in isolation, largely on multiple-choice or short chain-of-thought settings; we show that they co-occur within a single reasoning model and address them at test time by acquiring evidence from outside the model.",
+   "zh": "语言模型的错误在样本之间、推理步骤之间以及自我评估之间并非相互独立。 在生成层面，模型会过早地确定答案并随后进行合理化（Zhang et al., 2024）；更大的模型尽管仍保留了正确答案，却会在确定答案这一步出错（Yeom et al., 2026）；而这种确定性会被表面特征和先验信念所偏移（Zheng et al., 2024；Jiang et al., 2024；Dasgupta et al., 2022）。 由于这类偏差在各样本之间是共享的，对重复样本进行多数投票（Wang et al., 2023）可能会放大同一个共享的错误答案，而不是将其平均消除。 在推理层面，思维链的解释可能并不忠实于驱动预测的因素（Turpin et al., 2023）；推理模型会形成强烈的初步答案偏好，从而触发过度思考（Dang et al., 2026；Chen et al., 2025）；而且更长的推理并不能可靠地提高准确率（Zhou et al., 2026）。 在评估层面，LLM 评判者表现出位置、冗长和自我偏好偏差（Zheng et al., 2023；Wataoka et al., 2024；Ye et al., 2025；Hu et al., 2025）。 已有工作大多在选择题或短思维链设置下孤立地研究这些偏差；我们则表明这些偏差会在同一个推理模型内共同出现，并通过在测试时从模型之外获取证据来解决它们。",
+   "sents": [
+    {
+     "en": "The errors of a language model are not independent across samples, reasoning steps, or self-evaluation.",
+     "zh": "语言模型的错误在样本之间、推理步骤之间以及自我评估之间并非相互独立。"
+    },
+    {
+     "en": "At the generation level, models commit to an answer early and then rationalize it ( Zhang et al., 2024 ) , larger models misfire at the commitment step despite retaining the correct answer ( Yeom et al., 2026 ) , and this commitment is skewed by surface features and prior beliefs ( Zheng et al., 2024 ; Jiang et al., 2024 ; Dasgupta et al., 2022 ) .",
+     "zh": "在生成层面，模型会过早地确定答案并随后进行合理化（Zhang et al., 2024）；更大的模型尽管仍保留了正确答案，却会在确定答案这一步出错（Yeom et al., 2026）；而这种确定性会被表面特征和先验信念所偏移（Zheng et al., 2024；Jiang et al., 2024；Dasgupta et al., 2022）。"
+    },
+    {
+     "en": "Because such biases are shared across samples, majority voting over repeated samples ( Wang et al., 2023 ) can amplify a shared wrong answer rather than average it out.",
+     "zh": "由于这类偏差在各样本之间是共享的，对重复样本进行多数投票（Wang et al., 2023）可能会放大同一个共享的错误答案，而不是将其平均消除。"
+    },
+    {
+     "en": "At the reasoning level, chain-of-thought explanations can be unfaithful to the factors that drive the prediction ( Turpin et al., 2023 ) , reasoning models form strong preliminary answer preferences that trigger overthinking ( Dang et al., 2026 ; Chen et al., 2025 ) , and longer reasoning does not reliably improve accuracy ( Zhou et al., 2026 ) .",
+     "zh": "在推理层面，思维链的解释可能并不忠实于驱动预测的因素（Turpin et al., 2023）；推理模型会形成强烈的初步答案偏好，从而触发过度思考（Dang et al., 2026；Chen et al., 2025）；而且更长的推理并不能可靠地提高准确率（Zhou et al., 2026）。"
+    },
+    {
+     "en": "At the evaluation level, LLM judges exhibit position, verbosity, and self-preference biases ( Zheng et al., 2023 ; Wataoka et al., 2024 ; Ye et al., 2025 ; Hu et al., 2025 ) .",
+     "zh": "在评估层面，LLM 评判者表现出位置、冗长和自我偏好偏差（Zheng et al., 2023；Wataoka et al., 2024；Ye et al., 2025；Hu et al., 2025）。"
+    },
+    {
+     "en": "Prior work studies these biases in isolation, largely on multiple-choice or short chain-of-thought settings; we show that they co-occur within a single reasoning model and address them at test time by acquiring evidence from outside the model.",
+     "zh": "已有工作大多在选择题或短思维链设置下孤立地研究这些偏差；我们则表明这些偏差会在同一个推理模型内共同出现，并通过在测试时从模型之外获取证据来解决它们。"
+    }
+   ]
+  },
+  {
+   "en": "Test-time compute can be allocated adaptively ( Snell et al., 2025 ) , either by constraining reasoning length ( Han et al., 2025 ; Xu et al., 2025 ; Aggarwal and Welleck, 2025 ) or by monitoring intermediate answers and stopping once they stabilize or become confident ( Fu et al., 2025 ; Yang et al., 2026 ; Dai et al., 2025 ) . These methods decide how much to compute and trust the intermediate-stage prediction whenever it is confident, which is where the preliminary-answer bias above resides. Dia uses the same kind of signal to decide when to seek external evidence, and retains both the intermediate-stage and final-stage predictions.",
+   "zh": "测试时计算可以被自适应地分配（Snell et al., 2025），方式包括约束推理长度（Han et al., 2025；Xu et al., 2025；Aggarwal and Welleck, 2025），或者监控中间答案并在其稳定或变得可信后停止（Fu et al., 2025；Yang et al., 2026；Dai et al., 2025）。 这些方法决定计算多少，并在中间阶段预测可信时予以信任，而这正是上述初步答案偏差所在之处。 Dia 使用同类信号来决定何时寻求外部证据，并同时保留中间阶段与最终阶段的预测。",
+   "sents": [
+    {
+     "en": "Test-time compute can be allocated adaptively ( Snell et al., 2025 ) , either by constraining reasoning length ( Han et al., 2025 ; Xu et al., 2025 ; Aggarwal and Welleck, 2025 ) or by monitoring intermediate answers and stopping once they stabilize or become confident ( Fu et al., 2025 ; Yang et al., 2026 ; Dai et al., 2025 ) .",
+     "zh": "测试时计算可以被自适应地分配（Snell et al., 2025），方式包括约束推理长度（Han et al., 2025；Xu et al., 2025；Aggarwal and Welleck, 2025），或者监控中间答案并在其稳定或变得可信后停止（Fu et al., 2025；Yang et al., 2026；Dai et al., 2025）。"
+    },
+    {
+     "en": "These methods decide how much to compute and trust the intermediate-stage prediction whenever it is confident, which is where the preliminary-answer bias above resides.",
+     "zh": "这些方法决定计算多少，并在中间阶段预测可信时予以信任，而这正是上述初步答案偏差所在之处。"
+    },
+    {
+     "en": "Dia uses the same kind of signal to decide when to seek external evidence, and retains both the intermediate-stage and final-stage predictions.",
+     "zh": "Dia 使用同类信号来决定何时寻求外部证据，并同时保留中间阶段与最终阶段的预测。"
+    }
+   ]
+  },
+  {
+   "en": "Multi-agent methods improve reasoning by letting agents exchange and revise answers ( Wu et al., 2024 ; Li et al., 2023 ; Liang et al., 2024 ) , by layering models on earlier outputs ( Wang et al., 2025 ) , or by sampling more agents and voting ( Li et al., 2024 ) . Recent analyses question whether communication adds independent evidence: agents conform to a majority, especially when uncertain, and frequently switch from a correct answer to an incorrect one to match their peers ( Zhu et al., 2025 ; Cho et al., 2025 ; Wynn et al., 2025 ) ; most of the benefit of debate comes from majority voting rather than from the exchange itself ( Smit et al., 2024 ; Choi et al., 2025 ) ; and many failures of agent systems trace to inter-agent misalignment and weak verification ( Cemri et al., 2025 ) . Cost is a further concern, since invoking a full agent system on every query is expensive, which motivates query-dependent agent architectures ( Liu et al., 2023 ; Zhang et al., 2025 ) . Dia is designed around these findings: solvers reason independently and never see the base model’s candidates or each other, their answers are aggregated directly rather than through a candidate-aware judge, which inherits the judge biases above (Table 3 ), the panel is heterogeneous because homogeneous solvers share the base model’s error modes (Section 4.3.2 ), and it is invoked only on reasoning-stage disagreements.",
+   "zh": "多智能体方法通过让智能体交换并修改答案（Wu et al., 2024；Li et al., 2023；Liang et al., 2024）、在先前输出之上叠加模型（Wang et al., 2025），或采样更多智能体并进行投票（Li et al., 2024）来改进推理。 近期的分析对通信是否带来独立证据提出质疑：智能体会从众于多数意见，尤其是在不确定时，并且经常从正确答案切换到错误答案以与同伴保持一致（Zhu et al., 2025；Cho et al., 2025；Wynn et al., 2025）；辩论的大部分收益来自多数投票而非交流本身（Smit et al., 2024；Choi et al., 2025）；许多智能体系统的失败可追溯至智能体之间的失调与薄弱的验证（Cemri et al., 2025）。 成本是另一个关注点，因为对每个查询都调用完整的智能体系统代价高昂，这促使了依赖查询的智能体架构的出现（Liu et al., 2023；Zhang et al., 2025）。 Dia 正是围绕这些发现设计的：求解器独立推理，从不看到基础模型的候选答案或彼此的答案；它们的答案被直接聚合，而不是通过感知候选答案的裁判来聚合，后者会继承上述裁判偏差（表 3）；求解器面板是异构的，因为同构的求解器会共享基础模型的错误模式（第 4.3.2 节）；并且该系统仅在推理阶段出现分歧时才被调用。",
+   "sents": [
+    {
+     "en": "Multi-agent methods improve reasoning by letting agents exchange and revise answers ( Wu et al., 2024 ; Li et al., 2023 ; Liang et al., 2024 ) , by layering models on earlier outputs ( Wang et al., 2025 ) , or by sampling more agents and voting ( Li et al., 2024 ) .",
+     "zh": "多智能体方法通过让智能体交换并修改答案（Wu et al., 2024；Li et al., 2023；Liang et al., 2024）、在先前输出之上叠加模型（Wang et al., 2025），或采样更多智能体并进行投票（Li et al., 2024）来改进推理。"
+    },
+    {
+     "en": "Recent analyses question whether communication adds independent evidence: agents conform to a majority, especially when uncertain, and frequently switch from a correct answer to an incorrect one to match their peers ( Zhu et al., 2025 ; Cho et al., 2025 ; Wynn et al., 2025 ) ; most of the benefit of debate comes from majority voting rather than from the exchange itself ( Smit et al., 2024 ; Choi et al., 2025 ) ; and many failures of agent systems trace to inter-agent misalignment and weak verification ( Cemri et al., 2025 ) .",
+     "zh": "近期的分析对通信是否带来独立证据提出质疑：智能体会从众于多数意见，尤其是在不确定时，并且经常从正确答案切换到错误答案以与同伴保持一致（Zhu et al., 2025；Cho et al., 2025；Wynn et al., 2025）；辩论的大部分收益来自多数投票而非交流本身（Smit et al., 2024；Choi et al., 2025）；许多智能体系统的失败可追溯至智能体之间的失调与薄弱的验证（Cemri et al., 2025）。"
+    },
+    {
+     "en": "Cost is a further concern, since invoking a full agent system on every query is expensive, which motivates query-dependent agent architectures ( Liu et al., 2023 ; Zhang et al., 2025 ) .",
+     "zh": "成本是另一个关注点，因为对每个查询都调用完整的智能体系统代价高昂，这促使了依赖查询的智能体架构的出现（Liu et al., 2023；Zhang et al., 2025）。"
+    },
+    {
+     "en": "Dia is designed around these findings: solvers reason independently and never see the base model’s candidates or each other, their answers are aggregated directly rather than through a candidate-aware judge, which inherits the judge biases above (Table 3 ), the panel is heterogeneous because homogeneous solvers share the base model’s error modes (Section 4.3.2 ), and it is invoked only on reasoning-stage disagreements.",
+     "zh": "Dia 正是围绕这些发现设计的：求解器独立推理，从不看到基础模型的候选答案或彼此的答案；它们的答案被直接聚合，而不是通过感知候选答案的裁判来聚合，后者会继承上述裁判偏差（表 3）；求解器面板是异构的，因为同构的求解器会共享基础模型的错误模式（第 4.3.2 节）；并且该系统仅在推理阶段出现分歧时才被调用。"
+    }
+   ]
+  },
+  {
+   "en": "We show that model-specific error bias persists across repeated sampling, continued reasoning, and self-evaluation, so that more compute from the same model does not amount to more evidence. Dia uses reasoning-stage disagreement to trigger candidate-blind solving by heterogeneous models and aggregates their answers directly. Across seven benchmarks, it outperforms CoT in 12 of 14 settings and achieves higher average accuracy with fewer tokens than the multi-agent baselines. Ablations show that asking heterogeneous models to compare the base model’s reasoning traces inherits its final-stage preference, and that replacing the heterogeneous panel with repeated samples of the base model sharply reduces arbitration accuracy, so independent solving and solver heterogeneity are both necessary. The gains persist as the base model scales to 80B while the external solvers remain fixed. Test-time scaling should therefore consider where additional evidence comes from and how it is combined, not only how much computation is used.",
+   "zh": "我们证明了模型自身的错误偏倚在重复采样、持续推理和自我评估中持续存在，因此来自同一模型的更多计算量并不等同于更多证据。 Dia 利用推理阶段的分歧来触发由异构模型进行的、不接触候选答案的独立求解，并直接聚合它们的答案。 在七个基准测试中，它在 14 个设置中的 12 个上优于思维链，且与多智能体基线相比，以更少的 token 取得了更高的平均准确率。 消融实验表明，让异构模型比较基线模型的推理过程会继承其后期偏好，而将异构求解器替换为基线模型的重复采样会大幅降低仲裁准确率，因此独立求解与求解器异构性两者缺一不可。 当基线模型扩展到 80B 而外部求解器保持不变时，这些增益依然存在。 因此，测试时扩展应当考虑额外证据来自何处以及如何组合这些证据，而不仅仅是使用了多少计算量。",
+   "sents": [
+    {
+     "en": "We show that model-specific error bias persists across repeated sampling, continued reasoning, and self-evaluation, so that more compute from the same model does not amount to more evidence.",
+     "zh": "我们证明了模型自身的错误偏倚在重复采样、持续推理和自我评估中持续存在，因此来自同一模型的更多计算量并不等同于更多证据。"
+    },
+    {
+     "en": "Dia uses reasoning-stage disagreement to trigger candidate-blind solving by heterogeneous models and aggregates their answers directly.",
+     "zh": "Dia 利用推理阶段的分歧来触发由异构模型进行的、不接触候选答案的独立求解，并直接聚合它们的答案。"
+    },
+    {
+     "en": "Across seven benchmarks, it outperforms CoT in 12 of 14 settings and achieves higher average accuracy with fewer tokens than the multi-agent baselines.",
+     "zh": "在七个基准测试中，它在 14 个设置中的 12 个上优于思维链，且与多智能体基线相比，以更少的 token 取得了更高的平均准确率。"
+    },
+    {
+     "en": "Ablations show that asking heterogeneous models to compare the base model’s reasoning traces inherits its final-stage preference, and that replacing the heterogeneous panel with repeated samples of the base model sharply reduces arbitration accuracy, so independent solving and solver heterogeneity are both necessary.",
+     "zh": "消融实验表明，让异构模型比较基线模型的推理过程会继承其后期偏好，而将异构求解器替换为基线模型的重复采样会大幅降低仲裁准确率，因此独立求解与求解器异构性两者缺一不可。"
+    },
+    {
+     "en": "The gains persist as the base model scales to 80B while the external solvers remain fixed.",
+     "zh": "当基线模型扩展到 80B 而外部求解器保持不变时，这些增益依然存在。"
+    },
+    {
+     "en": "Test-time scaling should therefore consider where additional evidence comes from and how it is combined, not only how much computation is used.",
+     "zh": "因此，测试时扩展应当考虑额外证据来自何处以及如何组合这些证据，而不仅仅是使用了多少计算量。"
+    }
+   ]
+  },
+  {
+   "en": "We confirm that all authors have read and adhered to the ICLR Code of Ethics. This work complies with the ethical principles outlined therein, and no part of this study violates ethical standards.",
+   "zh": "我们确认所有作者均已阅读并遵守 ICLR 伦理准则。 本工作符合其中所述的伦理原则，本研究的任何部分均未违反伦理标准。",
+   "sents": [
+    {
+     "en": "We confirm that all authors have read and adhered to the ICLR Code of Ethics.",
+     "zh": "我们确认所有作者均已阅读并遵守 ICLR 伦理准则。"
+    },
+    {
+     "en": "This work complies with the ethical principles outlined therein, and no part of this study violates ethical standards.",
+     "zh": "本工作符合其中所述的伦理原则，本研究的任何部分均未违反伦理标准。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate seven benchmark families spanning the four reasoning domains introduced in the main text. All evaluation subsets are fixed before inference, and the same canonical inputs are shared across methods and base models.",
+   "zh": "我们评估了七个基准测试族，涵盖正文中介绍的四个推理领域。 所有评估子集在推理之前均已固定，并且相同的规范输入在各个方法和基座模型之间共享。",
+   "sents": [
+    {
+     "en": "We evaluate seven benchmark families spanning the four reasoning domains introduced in the main text.",
+     "zh": "我们评估了七个基准测试族，涵盖正文中介绍的四个推理领域。"
+    },
+    {
+     "en": "All evaluation subsets are fixed before inference, and the same canonical inputs are shared across methods and base models.",
+     "zh": "所有评估子集在推理之前均已固定，并且相同的规范输入在各个方法和基座模型之间共享。"
+    }
+   ]
+  },
+  {
+   "en": "MMLU-Pro ( Wang et al., 2024 ) contains 12,032 test questions from 14 broad knowledge domains. We sample 25 questions from each domain, yielding a balanced 350-question subset. For GPQA ( Rein et al., 2024 ) , we use the full Diamond split of 198 questions. The split contains 19 Biology, 93 Chemistry, and 86 Physics questions.",
+   "zh": "MMLU-Pro（Wang et al., 2024）包含来自14个广泛知识领域的12,032道测试题。 我们从每个领域抽取25道题，得到一个包含350道题的均衡子集。 对于GPQA（Rein et al., 2024），我们使用完整的Diamond划分，共198道题。 该划分包含19道生物学、93道化学和86道物理题目。",
+   "sents": [
+    {
+     "en": "MMLU-Pro ( Wang et al., 2024 ) contains 12,032 test questions from 14 broad knowledge domains.",
+     "zh": "MMLU-Pro（Wang et al., 2024）包含来自14个广泛知识领域的12,032道测试题。"
+    },
+    {
+     "en": "We sample 25 questions from each domain, yielding a balanced 350-question subset.",
+     "zh": "我们从每个领域抽取25道题，得到一个包含350道题的均衡子集。"
+    },
+    {
+     "en": "For GPQA ( Rein et al., 2024 ) , we use the full Diamond split of 198 questions.",
+     "zh": "对于GPQA（Rein et al., 2024），我们使用完整的Diamond划分，共198道题。"
+    },
+    {
+     "en": "The split contains 19 Biology, 93 Chemistry, and 86 Physics questions.",
+     "zh": "该划分包含19道生物学、93道化学和86道物理题目。"
+    }
+   ]
+  },
+  {
+   "en": "For DetectBench ( Gu et al., 2024 ) , we use 279 questions sampled without replacement from the 3,928 questions across the official train, dev, test, test-hard, and test-distract files. For MuSiQue ( Trivedi et al., 2022 ) , we sample 300 answerable questions from the 2,417-question MuSiQue-Ans development pool; the resulting subset contains 163 two-hop, 84 three-hop, and 53 four-hop questions. For 2WikiMultiHopQA ( Ho et al., 2020 ) , we sample 200 questions from the 12,576-example development split. This subset contains 44 bridge-comparison, 48 comparison, 83 compositional, and 25 inference questions.",
+   "zh": "对于 DetectBench（Gu et al., 2024），我们从官方 train、dev、test、test-hard 和 test-distract 文件中的 3,928 个问题里不放回地抽取了 279 个问题。 对于 MuSiQue（Trivedi et al., 2022），我们从包含 2,417 个问题的 MuSiQue-Ans 开发池中抽取了 300 个可回答的问题；所得子集包含 163 个两跳、84 个三跳和 53 个四跳问题。 对于 2WikiMultiHopQA（Ho et al., 2020），我们从包含 12,576 个样本的开发集中抽取了 200 个问题。 该子集包含 44 个桥接比较类、48 个比较类、83 个组合类和 25 个推理类问题。",
+   "sents": [
+    {
+     "en": "For DetectBench ( Gu et al., 2024 ) , we use 279 questions sampled without replacement from the 3,928 questions across the official train, dev, test, test-hard, and test-distract files.",
+     "zh": "对于 DetectBench（Gu et al., 2024），我们从官方 train、dev、test、test-hard 和 test-distract 文件中的 3,928 个问题里不放回地抽取了 279 个问题。"
+    },
+    {
+     "en": "For MuSiQue ( Trivedi et al., 2022 ) , we sample 300 answerable questions from the 2,417-question MuSiQue-Ans development pool; the resulting subset contains 163 two-hop, 84 three-hop, and 53 four-hop questions.",
+     "zh": "对于 MuSiQue（Trivedi et al., 2022），我们从包含 2,417 个问题的 MuSiQue-Ans 开发池中抽取了 300 个可回答的问题；所得子集包含 163 个两跳、84 个三跳和 53 个四跳问题。"
+    },
+    {
+     "en": "For 2WikiMultiHopQA ( Ho et al., 2020 ) , we sample 200 questions from the 12,576-example development split.",
+     "zh": "对于 2WikiMultiHopQA（Ho et al., 2020），我们从包含 12,576 个样本的开发集中抽取了 200 个问题。"
+    },
+    {
+     "en": "This subset contains 44 bridge-comparison, 48 comparison, 83 compositional, and 25 inference questions.",
+     "zh": "该子集包含 44 个桥接比较类、48 个比较类、83 个组合类和 25 个推理类问题。"
+    }
+   ]
+  },
+  {
+   "en": "MATH ( Hendrycks et al., 2021 ) covers seven subjects: Algebra, Counting and Probability, Geometry, Intermediate Algebra, Number Theory, Prealgebra, and Precalculus. We independently sample 100 questions from each of difficulty Levels 3, 4, and 5 from the official test split. This produces three equally sized subsets, or 300 questions in total, and balances the evaluation across difficulty levels.",
+   "zh": "MATH（Hendrycks et al., 2021）涵盖七个科目：代数、计数与概率、几何、中级代数、数论、预备代数和预备微积分。 我们从官方测试集划分中独立地从难度等级 3、4、5 各抽取 100 道题目。 这样得到三个大小相同的子集，共计 300 道题目，并使评估在不同难度等级之间保持均衡。",
+   "sents": [
+    {
+     "en": "MATH ( Hendrycks et al., 2021 ) covers seven subjects: Algebra, Counting and Probability, Geometry, Intermediate Algebra, Number Theory, Prealgebra, and Precalculus.",
+     "zh": "MATH（Hendrycks et al., 2021）涵盖七个科目：代数、计数与概率、几何、中级代数、数论、预备代数和预备微积分。"
+    },
+    {
+     "en": "We independently sample 100 questions from each of difficulty Levels 3, 4, and 5 from the official test split.",
+     "zh": "我们从官方测试集划分中独立地从难度等级 3、4、5 各抽取 100 道题目。"
+    },
+    {
+     "en": "This produces three equally sized subsets, or 300 questions in total, and balances the evaluation across difficulty levels.",
+     "zh": "这样得到三个大小相同的子集，共计 300 道题目，并使评估在不同难度等级之间保持均衡。"
+    }
+   ]
+  },
+  {
+   "en": "MuSR ( Sprague et al., 2024 ) comprises murder mysteries, object placements, and team-allocation tasks. We sample 100 questions from each of the object-placement and team-allocation task families, yielding 200 evaluation questions in total.",
+   "zh": "MuSR（Sprague 等，2024）包含谋杀谜题、物体放置和团队分配任务。 我们从物体放置和团队分配两个任务族中各抽取 100 个问题，共计 200 个评估问题。",
+   "sents": [
+    {
+     "en": "MuSR ( Sprague et al., 2024 ) comprises murder mysteries, object placements, and team-allocation tasks.",
+     "zh": "MuSR（Sprague 等，2024）包含谋杀谜题、物体放置和团队分配任务。"
+    },
+    {
+     "en": "We sample 100 questions from each of the object-placement and team-allocation task families, yielding 200 evaluation questions in total.",
+     "zh": "我们从物体放置和团队分配两个任务族中各抽取 100 个问题，共计 200 个评估问题。"
+    }
+   ]
+  },
+  {
+   "en": "For each dataset we construct a separate training set, sample the base model eight times per question, and label each sample as correct or incorrect. SFT trains the base model for two epochs on the correct samples; DPO then trains for one epoch on preference pairs in which a correct sample is preferred over an incorrect sample of the same question. These baselines test whether repeatedly observed error modes can be learned away, as opposed to bypassed at inference time using complementary external evidence.",
+   "zh": "对于每个数据集，我们构建一个单独的训练集，对每个问题将基模型采样八次，并将每个样本标注为正确或不正确。 SFT 在正确样本上对基模型训练两个轮次；DPO 随后在偏好对上训练一个轮次，其中同一问题的正确样本被优先于不正确样本。 这些基线方法检验反复观察到的错误模式能否被学习消除，而不是在推理时借助互补的外部证据来绕过。",
+   "sents": [
+    {
+     "en": "For each dataset we construct a separate training set, sample the base model eight times per question, and label each sample as correct or incorrect.",
+     "zh": "对于每个数据集，我们构建一个单独的训练集，对每个问题将基模型采样八次，并将每个样本标注为正确或不正确。"
+    },
+    {
+     "en": "SFT trains the base model for two epochs on the correct samples; DPO then trains for one epoch on preference pairs in which a correct sample is preferred over an incorrect sample of the same question.",
+     "zh": "SFT 在正确样本上对基模型训练两个轮次；DPO 随后在偏好对上训练一个轮次，其中同一问题的正确样本被优先于不正确样本。"
+    },
+    {
+     "en": "These baselines test whether repeatedly observed error modes can be learned away, as opposed to bypassed at inference time using complementary external evidence.",
+     "zh": "这些基线方法检验反复观察到的错误模式能否被学习消除，而不是在推理时借助互补的外部证据来绕过。"
+    }
+   ]
+  },
+  {
+   "en": "Table 5 reports the fraction of examples for which the intermediate-stage and final-stage predictions disagree and selective arbitration is invoked. Activation is most frequent on MuSiQue and least frequent on GPQA-Diamond, while the overall rates remain similar across Qwen3-4B and Qwen3-8B.",
+   "zh": "表5报告了中间阶段预测与最终阶段预测不一致、从而触发选择性仲裁的样本比例。 激活在MuSiQue上最频繁，在GPQA-Diamond上最少见，而总体比率在Qwen3-4B和Qwen3-8B之间保持相近。",
+   "sents": [
+    {
+     "en": "Table 5 reports the fraction of examples for which the intermediate-stage and final-stage predictions disagree and selective arbitration is invoked.",
+     "zh": "表5报告了中间阶段预测与最终阶段预测不一致、从而触发选择性仲裁的样本比例。"
+    },
+    {
+     "en": "Activation is most frequent on MuSiQue and least frequent on GPQA-Diamond, while the overall rates remain similar across Qwen3-4B and Qwen3-8B.",
+     "zh": "激活在MuSiQue上最频繁，在GPQA-Diamond上最少见，而总体比率在Qwen3-4B和Qwen3-8B之间保持相近。"
+    }
+   ]
+  },
+  {
+   "en": "We test whether increasing the reviewer ensemble improves arbitration. The base model is fixed to Qwen3-8B. Starting from DeepSeek-v4-Flash, Llama-3.3-70B-Instruct, and GPT-4o-mini, we add Phi-4 and Mistral-Small-3.2-24B to form a five-reviewer ensemble.",
+   "zh": "我们测试增加评审员集成是否能改善仲裁效果。 基础模型固定为 Qwen3-8B。 从 DeepSeek-v4-Flash、Llama-3.3-70B-Instruct 和 GPT-4o-mini 开始，我们加入 Phi-4 和 Mistral-Small-3.2-24B，组成五个评审员的集成。",
+   "sents": [
+    {
+     "en": "We test whether increasing the reviewer ensemble improves arbitration.",
+     "zh": "我们测试增加评审员集成是否能改善仲裁效果。"
+    },
+    {
+     "en": "The base model is fixed to Qwen3-8B.",
+     "zh": "基础模型固定为 Qwen3-8B。"
+    },
+    {
+     "en": "Starting from DeepSeek-v4-Flash, Llama-3.3-70B-Instruct, and GPT-4o-mini, we add Phi-4 and Mistral-Small-3.2-24B to form a five-reviewer ensemble.",
+     "zh": "从 DeepSeek-v4-Flash、Llama-3.3-70B-Instruct 和 GPT-4o-mini 开始，我们加入 Phi-4 和 Mistral-Small-3.2-24B，组成五个评审员的集成。"
+    }
+   ]
+  },
+  {
+   "en": "Increasing the ensemble from three to five reviewers provides no improvement: performance is unchanged on MuSR and 2WikiMultiHopQA and decreases by one correct arbitration on DetectBench. Additional voters therefore do not help when their judgments do not add complementary decision signals.",
+   "zh": "将评审智能体集成从三个增加到五个没有任何改进：在 MuSR 和 2WikiMultiHopQA 上性能保持不变，而在 DetectBench 上正确仲裁数减少一个。 因此，当额外投票者的判断不能补充额外的决策信号时，它们并无帮助。",
+   "sents": [
+    {
+     "en": "Increasing the ensemble from three to five reviewers provides no improvement: performance is unchanged on MuSR and 2WikiMultiHopQA and decreases by one correct arbitration on DetectBench.",
+     "zh": "将评审智能体集成从三个增加到五个没有任何改进：在 MuSR 和 2WikiMultiHopQA 上性能保持不变，而在 DetectBench 上正确仲裁数减少一个。"
+    },
+    {
+     "en": "Additional voters therefore do not help when their judgments do not add complementary decision signals.",
+     "zh": "因此，当额外投票者的判断不能补充额外的决策信号时，它们并无帮助。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 4 illustrates how unrestricted cross-agent communication can overturn initially correct independent solutions. In this DetectBench example, DeepSeek-v4-Flash and Llama-3.3-70B-Instruct both select the gold answer D in the first round. After observing the other agents’ responses, however, both revise their answers to C. Although Qwen3-4B moves in the opposite direction and corrects its answer from C to D, it is outvoted by the three agents that ultimately select C. The second communication round therefore converts a split panel containing two correct solutions into an incorrect majority decision.",
+   "zh": "图4展示了不受限制的智能体间通信如何推翻最初正确的独立解。 在这个 DetectBench 示例中，DeepSeek-v4-Flash 和 Llama-3.3-70B-Instruct 在第一轮都选择了金标准答案 D。 然而，在观察到其他智能体的回复后，两者都将答案修改为 C。 虽然 Qwen3-4B 朝相反方向移动，将答案从 C 更正为 D，但它被最终选择 C 的三个智能体的多数票所压制。 因此，第二轮通信将一个包含两个正确解的分裂小组转变为一个错误的多数决定。",
+   "sents": [
+    {
+     "en": "Figure 4 illustrates how unrestricted cross-agent communication can overturn initially correct independent solutions.",
+     "zh": "图4展示了不受限制的智能体间通信如何推翻最初正确的独立解。"
+    },
+    {
+     "en": "In this DetectBench example, DeepSeek-v4-Flash and Llama-3.3-70B-Instruct both select the gold answer D in the first round.",
+     "zh": "在这个 DetectBench 示例中，DeepSeek-v4-Flash 和 Llama-3.3-70B-Instruct 在第一轮都选择了金标准答案 D。"
+    },
+    {
+     "en": "After observing the other agents’ responses, however, both revise their answers to C.",
+     "zh": "然而，在观察到其他智能体的回复后，两者都将答案修改为 C。"
+    },
+    {
+     "en": "Although Qwen3-4B moves in the opposite direction and corrects its answer from C to D, it is outvoted by the three agents that ultimately select C.",
+     "zh": "虽然 Qwen3-4B 朝相反方向移动，将答案从 C 更正为 D，但它被最终选择 C 的三个智能体的多数票所压制。"
+    },
+    {
+     "en": "The second communication round therefore converts a split panel containing two correct solutions into an incorrect majority decision.",
+     "zh": "因此，第二轮通信将一个包含两个正确解的分裂小组转变为一个错误的多数决定。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 5 shows Dia on the same question. The intermediate-stage prediction is the incorrect option C despite its high confidence, whereas the final-stage prediction reaches the gold answer D. The three candidate-blind solvers independently return D, D, and C, so answer-level voting selects the final-stage prediction and preserves the correct answer. Together, the two examples contrast peer communication that propagates an incorrect answer with independent solving that retains complementary evidence until the final vote.",
+   "zh": "图 5 展示了 Dia 在同一问题上的表现。 中间阶段的预测是错误选项 C，尽管其置信度很高，而最终阶段的预测得出了正确答案 D。 三个候选盲求解器独立返回 D、D 和 C，因此答案级投票选择了最终阶段的预测并保留了正确答案。 总体而言，这两个例子对比了传播错误答案的对等通信与在最终投票前保留互补证据的独立求解。",
+   "sents": [
+    {
+     "en": "Figure 5 shows Dia on the same question.",
+     "zh": "图 5 展示了 Dia 在同一问题上的表现。"
+    },
+    {
+     "en": "The intermediate-stage prediction is the incorrect option C despite its high confidence, whereas the final-stage prediction reaches the gold answer D.",
+     "zh": "中间阶段的预测是错误选项 C，尽管其置信度很高，而最终阶段的预测得出了正确答案 D。"
+    },
+    {
+     "en": "The three candidate-blind solvers independently return D, D, and C, so answer-level voting selects the final-stage prediction and preserves the correct answer.",
+     "zh": "三个候选盲求解器独立返回 D、D 和 C，因此答案级投票选择了最终阶段的预测并保留了正确答案。"
+    },
+    {
+     "en": "Together, the two examples contrast peer communication that propagates an incorrect answer with independent solving that retains complementary evidence until the final vote.",
+     "zh": "总体而言，这两个例子对比了传播错误答案的对等通信与在最终投票前保留互补证据的独立求解。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 6 gives a second qualitative example on MMLU-Pro. The intermediate-stage prediction is E, whereas the final-stage prediction reaches the gold answer C. The three independent solvers return C, B, and C, so the two-to-one vote selects C. This case illustrates how heterogeneous solvers can resolve a reasoning-stage disagreement even when one solver follows a different error mode.",
+   "zh": "图6给出了一个在MMLU-Pro上的第二个定性示例。 中间阶段的预测是E，而最终阶段的预测得出了正确答案C。 三个独立的求解器分别返回C、B和C，因此二比一的投票选择了C。 该案例说明，即使其中一个求解器遵循不同的错误模式，异构求解器也可以解决推理阶段的分歧。",
+   "sents": [
+    {
+     "en": "Figure 6 gives a second qualitative example on MMLU-Pro.",
+     "zh": "图6给出了一个在MMLU-Pro上的第二个定性示例。"
+    },
+    {
+     "en": "The intermediate-stage prediction is E, whereas the final-stage prediction reaches the gold answer C.",
+     "zh": "中间阶段的预测是E，而最终阶段的预测得出了正确答案C。"
+    },
+    {
+     "en": "The three independent solvers return C, B, and C, so the two-to-one vote selects C.",
+     "zh": "三个独立的求解器分别返回C、B和C，因此二比一的投票选择了C。"
+    },
+    {
+     "en": "This case illustrates how heterogeneous solvers can resolve a reasoning-stage disagreement even when one solver follows a different error mode.",
+     "zh": "该案例说明，即使其中一个求解器遵循不同的错误模式，异构求解器也可以解决推理阶段的分歧。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 7 gives a complementary example on MuSR. The intermediate-stage prediction is C, whereas the final-stage prediction reaches the gold answer B. The independent solvers return B, B, and C, so answer-level voting preserves the correct final-stage prediction.",
+   "zh": "图7给出了一个MuSR上的补充示例。 中间阶段的预测是C，而最终阶段的预测达到了正确答案B。 各独立智能体返回B、B和C，因此答案层面的投票保留了正确的最终阶段预测。",
+   "sents": [
+    {
+     "en": "Figure 7 gives a complementary example on MuSR.",
+     "zh": "图7给出了一个MuSR上的补充示例。"
+    },
+    {
+     "en": "The intermediate-stage prediction is C, whereas the final-stage prediction reaches the gold answer B.",
+     "zh": "中间阶段的预测是C，而最终阶段的预测达到了正确答案B。"
+    },
+    {
+     "en": "The independent solvers return B, B, and C, so answer-level voting preserves the correct final-stage prediction.",
+     "zh": "各独立智能体返回B、B和C，因此答案层面的投票保留了正确的最终阶段预测。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 8 shows a GPQA-Diamond example in which the intermediate-stage prediction is the gold answer C, while the final-stage prediction changes to A after applying an incorrect linear-scaling shortcut to the particle-survival probability. The independent solvers return C, C, and A. The two-to-one vote therefore recovers the exponential-decay calculation and preserves the correct intermediate-stage prediction.",
+   "zh": "图 8 展示了一个 GPQA-Diamond 的示例，其中中间阶段的预测是正确答案 C，而在对粒子存活概率应用了错误的线性缩放捷径后，最终阶段的预测变为 A。 各独立求解器分别返回 C、C 和 A。 因此，二比一的投票恢复了指数衰减的计算，并保留了正确的中间阶段预测。",
+   "sents": [
+    {
+     "en": "Figure 8 shows a GPQA-Diamond example in which the intermediate-stage prediction is the gold answer C, while the final-stage prediction changes to A after applying an incorrect linear-scaling shortcut to the particle-survival probability.",
+     "zh": "图 8 展示了一个 GPQA-Diamond 的示例，其中中间阶段的预测是正确答案 C，而在对粒子存活概率应用了错误的线性缩放捷径后，最终阶段的预测变为 A。"
+    },
+    {
+     "en": "The independent solvers return C, C, and A.",
+     "zh": "各独立求解器分别返回 C、C 和 A。"
+    },
+    {
+     "en": "The two-to-one vote therefore recovers the exponential-decay calculation and preserves the correct intermediate-stage prediction.",
+     "zh": "因此，二比一的投票恢复了指数衰减的计算，并保留了正确的中间阶段预测。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 9 gives a mathematical-reasoning example on MATH Level 3. The intermediate-stage prediction is the correct minimum value 6, whereas the completed reasoning trace concludes 7 after an incorrect symmetry argument. The independent solvers return 6, 7, and 6, so their non-unanimous vote selects the intermediate-stage prediction. This case illustrates how heterogeneous evidence can prevent additional reasoning from reinforcing a later mathematical error.",
+   "zh": "图9给出了一个在MATH Level 3上的数学推理示例。 中间阶段的预测是正确的最小值6，而补全后的推理轨迹在经过一个错误的对称性论证后得出7。 各独立求解器返回6、7和6，因此它们非一致的投票选择了中间阶段的预测。 该案例说明了异构证据如何防止额外的推理强化后续的数学错误。",
+   "sents": [
+    {
+     "en": "Figure 9 gives a mathematical-reasoning example on MATH Level 3.",
+     "zh": "图9给出了一个在MATH Level 3上的数学推理示例。"
+    },
+    {
+     "en": "The intermediate-stage prediction is the correct minimum value 6, whereas the completed reasoning trace concludes 7 after an incorrect symmetry argument.",
+     "zh": "中间阶段的预测是正确的最小值6，而补全后的推理轨迹在经过一个错误的对称性论证后得出7。"
+    },
+    {
+     "en": "The independent solvers return 6, 7, and 6, so their non-unanimous vote selects the intermediate-stage prediction.",
+     "zh": "各独立求解器返回6、7和6，因此它们非一致的投票选择了中间阶段的预测。"
+    },
+    {
+     "en": "This case illustrates how heterogeneous evidence can prevent additional reasoning from reinforcing a later mathematical error.",
+     "zh": "该案例说明了异构证据如何防止额外的推理强化后续的数学错误。"
+    }
+   ]
+  },
+  {
+   "en": "This appendix gives the formal versions of Propositions 1 and 2 and their proofs.",
+   "zh": "本附录给出命题 1 和命题 2 的正式表述及其证明。",
+   "sents": null
+  },
+  {
+   "en": "Notation. Fix a question q q with gold answer y ⋆ y^{\\star} in a finite answer set 𝒜 \\mathcal{A} , | 𝒜 | = K |\\mathcal{A}|=K . Solver i i answers by sampling V i ∼ P i ( ⋅ ∣ q ) V_{i}\\sim P_{i}(\\cdot\\mid q) ; write p i = P i ​ ( y ⋆ ∣ q ) p_{i}=P_{i}(y^{\\star}\\mid q) and q i ​ ( w ) = P i ​ ( w ∣ q ) q_{i}(w)=P_{i}(w\\mid q) for w ≠ y ⋆ w\\neq y^{\\star} . For a panel S S of n n solvers let N a = ∑ i ∈ S [ V i = a ] N_{a}=\\sum_{i\\in S}\\mathbf{1}\\!\\left[V_{i}=a\\right] , p ¯ S = 1 n ​ ∑ i ∈ S p i \\bar{p}_{S}=\\frac{1}{n}\\sum_{i\\in S}p_{i} ,",
+   "zh": "记号。 固定一个问题 q q，其标准答案为 y ⋆ y^{\\star}，答案集 𝒜 \\mathcal{A} 为有限集，| 𝒜 | = K |\\mathcal{A}|=K。 求解器 i i 通过采样 V i ∼ P i ( ⋅ ∣ q ) V_{i}\\sim P_{i}(\\cdot\\mid q) 作答；记 p i = P i ​ ( y ⋆ ∣ q ) p_{i}=P_{i}(y^{\\star}\\mid q)，并对 w ≠ y ⋆ w\\neq y^{\\star} 记 q i ​ ( w ) = P i ​ ( w ∣ q ) q_{i}(w)=P_{i}(w\\mid q)。 对于由 n n 个求解器组成的面板 S S，令 N a = ∑ i ∈ S [ V i = a ] N_{a}=\\sum_{i\\in S}\\mathbf{1}\\!\\left[V_{i}=a\\right]，p ¯ S = 1 n ​ ∑ i ∈ S p i \\bar{p}_{S}=\\frac{1}{n}\\sum_{i\\in S}p_{i}，",
+   "sents": [
+    {
+     "en": "Notation.",
+     "zh": "记号。"
+    },
+    {
+     "en": "Fix a question q q with gold answer y ⋆ y^{\\star} in a finite answer set 𝒜 \\mathcal{A} , | 𝒜 | = K |\\mathcal{A}|=K .",
+     "zh": "固定一个问题 q q，其标准答案为 y ⋆ y^{\\star}，答案集 𝒜 \\mathcal{A} 为有限集，| 𝒜 | = K |\\mathcal{A}|=K。"
+    },
+    {
+     "en": "Solver i i answers by sampling V i ∼ P i ( ⋅ ∣ q ) V_{i}\\sim P_{i}(\\cdot\\mid q) ; write p i = P i ​ ( y ⋆ ∣ q ) p_{i}=P_{i}(y^{\\star}\\mid q) and q i ​ ( w ) = P i ​ ( w ∣ q ) q_{i}(w)=P_{i}(w\\mid q) for w ≠ y ⋆ w\\neq y^{\\star} .",
+     "zh": "求解器 i i 通过采样 V i ∼ P i ( ⋅ ∣ q ) V_{i}\\sim P_{i}(\\cdot\\mid q) 作答；记 p i = P i ​ ( y ⋆ ∣ q ) p_{i}=P_{i}(y^{\\star}\\mid q)，并对 w ≠ y ⋆ w\\neq y^{\\star} 记 q i ​ ( w ) = P i ​ ( w ∣ q ) q_{i}(w)=P_{i}(w\\mid q)。"
+    },
+    {
+     "en": "For a panel S S of n n solvers let N a = ∑ i ∈ S [ V i = a ] N_{a}=\\sum_{i\\in S}\\mathbf{1}\\!\\left[V_{i}=a\\right] , p ¯ S = 1 n ​ ∑ i ∈ S p i \\bar{p}_{S}=\\frac{1}{n}\\sum_{i\\in S}p_{i} ,",
+     "zh": "对于由 n n 个求解器组成的面板 S S，令 N a = ∑ i ∈ S [ V i = a ] N_{a}=\\sum_{i\\in S}\\mathbf{1}\\!\\left[V_{i}=a\\right]，p ¯ S = 1 n ​ ∑ i ∈ S p i \\bar{p}_{S}=\\frac{1}{n}\\sum_{i\\in S}p_{i}，"
+    }
+   ]
+  },
+  {
+   "en": "Since ∑ i ∈ S ( 1 − p i ) = n ⁡ ( 1 − p ¯ S ) \\sum_{i\\in S}(1-p_{i})=n(1-\\bar{p}_{S}) , the definition of κ S \\kappa_{S} gives max w ⁡ 1 n ​ ∑ i q i ​ ( w ) = κ S ​ ( 1 − p ¯ S ) \\max_{w}\\frac{1}{n}\\sum_{i}q_{i}(w)=\\kappa_{S}(1-\\bar{p}_{S}) and hence Δ S = p ¯ S − κ S ​ ( 1 − p ¯ S ) \\Delta_{S}=\\bar{p}_{S}-\\kappa_{S}(1-\\bar{p}_{S}) , which is Eq. ( 1 ).",
+   "zh": "由于 ∑ i ∈ S ( 1 − p i ) = n ⁡ ( 1 − p ¯ S ) \\sum_{i\\in S}(1-p_{i})=n(1-\\bar{p}_{S}) ，由 κ S \\kappa_{S} 的定义可得 max w ⁡ 1 n ​ ∑ i q i ​ ( w ) = κ S ​ ( 1 − p ¯ S ) \\max_{w}\\frac{1}{n}\\sum_{i}q_{i}(w)=\\kappa_{S}(1-\\bar{p}_{S}) ，因此 Δ S = p ¯ S − κ S ​ ( 1 − p ¯ S ) \\Delta_{S}=\\bar{p}_{S}-\\kappa_{S}(1-\\bar{p}_{S}) ，即式 ( 1 )。",
+   "sents": null
+  },
+  {
+   "en": "Let V 1 , … , V n V_{1},\\dots,V_{n} be independent conditional on q q . (i) y ⋆ y^{\\star} is the unique maximizer of 𝔼 ⁡ [ N a ] \\mathbb{E}[N_{a}] over a ∈ 𝒜 a\\in\\mathcal{A} if and only if Δ S > 0 \\Delta_{S}>0 . (ii) If Δ S > 0 \\Delta_{S}>0 , then Pr [ ∃ w ≠ y ⋆ : N w ≥ N y ⋆ ] ≤ ( K − 1 ) exp ( − n Δ S 2 / 2 ) \\Pr\\big[\\exists\\,w\\neq y^{\\star}:\\;N_{w}\\geq N_{y^{\\star}}\\big]\\leq(K-1)\\exp\\!\\big(-n\\Delta_{S}^{2}/2\\big) . (iii) If Δ w < 0 \\Delta_{w}<0 for some w ≠ y ⋆ w\\neq y^{\\star} , then Pr [ N y ⋆ > N w ] ≤ exp ( − n Δ w 2 / 2 ) \\Pr\\big[N_{y^{\\star}}>N_{w}\\big]\\leq\\exp\\!\\big(-n\\Delta_{w}^{2}/2\\big) .",
+   "zh": "设 V_{1},\\dots,V_{n} 在给定 q q 的条件下相互独立。 (i) y^{\\star} 是 \\mathbb{E}[N_{a}] 在 a\\in\\mathcal{A} 上的唯一最大化元，当且仅当 \\Delta_{S}>0 。 (ii) 若 \\Delta_{S}>0 ，则 \\Pr\\big[\\exists\\,w\\neq y^{\\star}:\\;N_{w}\\geq N_{y^{\\star}}\\big]\\leq(K-1)\\exp\\!\\big(-n\\Delta_{S}^{2}/2\\big) 。 (iii) 若对某个 w\\neq y^{\\star} 有 \\Delta_{w}<0 ，则 \\Pr\\big[N_{y^{\\star}}>N_{w}\\big]\\leq\\exp\\!\\big(-n\\Delta_{w}^{2}/2\\big) 。",
+   "sents": [
+    {
+     "en": "Let V 1 , … , V n V_{1},\\dots,V_{n} be independent conditional on q q .",
+     "zh": "设 V_{1},\\dots,V_{n} 在给定 q q 的条件下相互独立。"
+    },
+    {
+     "en": "(i) y ⋆ y^{\\star} is the unique maximizer of 𝔼 ⁡ [ N a ] \\mathbb{E}[N_{a}] over a ∈ 𝒜 a\\in\\mathcal{A} if and only if Δ S > 0 \\Delta_{S}>0 .",
+     "zh": "(i) y^{\\star} 是 \\mathbb{E}[N_{a}] 在 a\\in\\mathcal{A} 上的唯一最大化元，当且仅当 \\Delta_{S}>0 。"
+    },
+    {
+     "en": "(ii) If Δ S > 0 \\Delta_{S}>0 , then Pr [ ∃ w ≠ y ⋆ : N w ≥ N y ⋆ ] ≤ ( K − 1 ) exp ( − n Δ S 2 / 2 ) \\Pr\\big[\\exists\\,w\\neq y^{\\star}:\\;N_{w}\\geq N_{y^{\\star}}\\big]\\leq(K-1)\\exp\\!\\big(-n\\Delta_{S}^{2}/2\\big) .",
+     "zh": "(ii) 若 \\Delta_{S}>0 ，则 \\Pr\\big[\\exists\\,w\\neq y^{\\star}:\\;N_{w}\\geq N_{y^{\\star}}\\big]\\leq(K-1)\\exp\\!\\big(-n\\Delta_{S}^{2}/2\\big) 。"
+    },
+    {
+     "en": "(iii) If Δ w < 0 \\Delta_{w}<0 for some w ≠ y ⋆ w\\neq y^{\\star} , then Pr [ N y ⋆ > N w ] ≤ exp ( − n Δ w 2 / 2 ) \\Pr\\big[N_{y^{\\star}}>N_{w}\\big]\\leq\\exp\\!\\big(-n\\Delta_{w}^{2}/2\\big) .",
+     "zh": "(iii) 若对某个 w\\neq y^{\\star} 有 \\Delta_{w}<0 ，则 \\Pr\\big[N_{y^{\\star}}>N_{w}\\big]\\leq\\exp\\!\\big(-n\\Delta_{w}^{2}/2\\big) 。"
+    }
+   ]
+  },
+  {
+   "en": "(i) By linearity, 𝔼 ⁡ [ N a ] = ∑ i ∈ S P i ​ ( a ∣ q ) \\mathbb{E}[N_{a}]=\\sum_{i\\in S}P_{i}(a\\mid q) . Thus 𝔼 ⁡ [ N y ⋆ ] > 𝔼 ⁡ [ N w ] \\mathbb{E}[N_{y^{\\star}}]>\\mathbb{E}[N_{w}] for every w ≠ y ⋆ w\\neq y^{\\star} if and only if Δ w > 0 \\Delta_{w}>0 for every w ≠ y ⋆ w\\neq y^{\\star} , i.e. Δ S > 0 \\Delta_{S}>0 .",
+   "zh": "(i) 由线性性，𝔼 ⁡ [ N a ] = ∑ i ∈ S P i ​ ( a ∣ q ) \\mathbb{E}[N_{a}]=\\sum_{i\\in S}P_{i}(a\\mid q) 。 因此，𝔼 ⁡ [ N y ⋆ ] > 𝔼 ⁡ [ N w ] \\mathbb{E}[N_{y^{\\star}}]>\\mathbb{E}[N_{w}] 对每个 w ≠ y ⋆ w\\neq y^{\\star} 成立，当且仅当 Δ w > 0 \\Delta_{w}>0 对每个 w ≠ y ⋆ w\\neq y^{\\star} 成立，即 Δ S > 0 \\Delta_{S}>0 。",
+   "sents": [
+    {
+     "en": "(i) By linearity, 𝔼 ⁡ [ N a ] = ∑ i ∈ S P i ​ ( a ∣ q ) \\mathbb{E}[N_{a}]=\\sum_{i\\in S}P_{i}(a\\mid q) .",
+     "zh": "(i) 由线性性，𝔼 ⁡ [ N a ] = ∑ i ∈ S P i ​ ( a ∣ q ) \\mathbb{E}[N_{a}]=\\sum_{i\\in S}P_{i}(a\\mid q) 。"
+    },
+    {
+     "en": "Thus 𝔼 ⁡ [ N y ⋆ ] > 𝔼 ⁡ [ N w ] \\mathbb{E}[N_{y^{\\star}}]>\\mathbb{E}[N_{w}] for every w ≠ y ⋆ w\\neq y^{\\star} if and only if Δ w > 0 \\Delta_{w}>0 for every w ≠ y ⋆ w\\neq y^{\\star} , i.e. Δ S > 0 \\Delta_{S}>0 .",
+     "zh": "因此，𝔼 ⁡ [ N y ⋆ ] > 𝔼 ⁡ [ N w ] \\mathbb{E}[N_{y^{\\star}}]>\\mathbb{E}[N_{w}] 对每个 w ≠ y ⋆ w\\neq y^{\\star} 成立，当且仅当 Δ w > 0 \\Delta_{w}>0 对每个 w ≠ y ⋆ w\\neq y^{\\star} 成立，即 Δ S > 0 \\Delta_{S}>0 。"
+    }
+   ]
+  },
+  {
+   "en": "(ii) Fix w ≠ y ⋆ w\\neq y^{\\star} and let X i = [ V i = y ⋆ ] − [ V i = w ] ∈ [ − 1 , 1 ] X_{i}=\\mathbf{1}\\!\\left[V_{i}=y^{\\star}\\right]-\\mathbf{1}\\!\\left[V_{i}=w\\right]\\in[-1,1] . The X i X_{i} are independent with 𝔼 ⁡ [ X i ] = p i − q i ​ ( w ) \\mathbb{E}[X_{i}]=p_{i}-q_{i}(w) , so ∑ i ∈ S X i = N y ⋆ − N w \\sum_{i\\in S}X_{i}=N_{y^{\\star}}-N_{w} has mean n ​ Δ w ≥ n ​ Δ S > 0 n\\Delta_{w}\\geq n\\Delta_{S}>0 . Hoeffding’s inequality for independent variables with range 2 2 gives",
+   "zh": "(ii) 固定 w ≠ y ⋆ w\\neq y^{\\star} 并令 X i = [ V i = y ⋆ ] − [ V i = w ] ∈ [ − 1 , 1 ] X_{i}=\\mathbf{1}\\!\\left[V_{i}=y^{\\star}\\right]-\\mathbf{1}\\!\\left[V_{i}=w\\right]\\in[-1,1] 。 各 X i X_{i} 相互独立且 𝔼 ⁡ [ X i ] = p i − q i ​ ( w ) \\mathbb{E}[X_{i}]=p_{i}-q_{i}(w) ，因此 ∑ i ∈ S X i = N y ⋆ − N w \\sum_{i\\in S}X_{i}=N_{y^{\\star}}-N_{w} 的均值为 n ​ Δ w ≥ n ​ Δ S > 0 n\\Delta_{w}\\geq n\\Delta_{S}>0 。 针对取值范围为 2 2 的独立变量的 Hoeffding 不等式给出",
+   "sents": [
+    {
+     "en": "(ii) Fix w ≠ y ⋆ w\\neq y^{\\star} and let X i = [ V i = y ⋆ ] − [ V i = w ] ∈ [ − 1 , 1 ] X_{i}=\\mathbf{1}\\!\\left[V_{i}=y^{\\star}\\right]-\\mathbf{1}\\!\\left[V_{i}=w\\right]\\in[-1,1] .",
+     "zh": "(ii) 固定 w ≠ y ⋆ w\\neq y^{\\star} 并令 X i = [ V i = y ⋆ ] − [ V i = w ] ∈ [ − 1 , 1 ] X_{i}=\\mathbf{1}\\!\\left[V_{i}=y^{\\star}\\right]-\\mathbf{1}\\!\\left[V_{i}=w\\right]\\in[-1,1] 。"
+    },
+    {
+     "en": "The X i X_{i} are independent with 𝔼 ⁡ [ X i ] = p i − q i ​ ( w ) \\mathbb{E}[X_{i}]=p_{i}-q_{i}(w) , so ∑ i ∈ S X i = N y ⋆ − N w \\sum_{i\\in S}X_{i}=N_{y^{\\star}}-N_{w} has mean n ​ Δ w ≥ n ​ Δ S > 0 n\\Delta_{w}\\geq n\\Delta_{S}>0 .",
+     "zh": "各 X i X_{i} 相互独立且 𝔼 ⁡ [ X i ] = p i − q i ​ ( w ) \\mathbb{E}[X_{i}]=p_{i}-q_{i}(w) ，因此 ∑ i ∈ S X i = N y ⋆ − N w \\sum_{i\\in S}X_{i}=N_{y^{\\star}}-N_{w} 的均值为 n ​ Δ w ≥ n ​ Δ S > 0 n\\Delta_{w}\\geq n\\Delta_{S}>0 。"
+    },
+    {
+     "en": "Hoeffding’s inequality for independent variables with range 2 2 gives",
+     "zh": "针对取值范围为 2 2 的独立变量的 Hoeffding 不等式给出"
+    }
+   ]
+  },
+  {
+   "en": "A union bound over the K − 1 K-1 wrong answers completes the proof.",
+   "zh": "对 K − 1 K-1 个错误答案使用联合界即可完成证明。",
+   "sents": null
+  },
+  {
+   "en": "(iii) With the same X i X_{i} , ∑ i X i \\sum_{i}X_{i} now has mean n ​ Δ w < 0 n\\Delta_{w}<0 , and Pr [ N y ⋆ > N w ] = Pr [ ∑ i X i − 𝔼 ∑ i X i > n | Δ w | ] ≤ exp ( − n Δ w 2 / 2 ) \\Pr[N_{y^{\\star}}>N_{w}]=\\Pr\\big[\\sum_{i}X_{i}-\\mathbb{E}\\sum_{i}X_{i}>n|\\Delta_{w}|\\big]\\leq\\exp(-n\\Delta_{w}^{2}/2) by the one-sided Hoeffding bound. ∎",
+   "zh": "(iii) 在相同的 X i X_{i} 下，∑ i X i \\sum_{i}X_{i} 的均值现在为 n ​ Δ w < 0 n\\Delta_{w}<0 ，且由单边 Hoeffding 不等式可得 Pr [ N y ⋆ > N w ] = Pr [ ∑ i X i − 𝔼 ∑ i X i > n | Δ w | ] ≤ exp ( − n Δ w 2 / 2 ) \\Pr[N_{y^{\\star}}>N_{w}]=\\Pr\\big[\\sum_{i}X_{i}-\\mathbb{E}\\sum_{i}X_{i}>n|\\Delta_{w}|\\big]\\leq\\exp(-n\\Delta_{w}^{2}/2) 。∎",
+   "sents": null
+  },
+  {
+   "en": "Repeated samples from one model m m are i.i.d. from P m ( ⋅ ∣ q ) P_{m}(\\cdot\\mid q) , so for a homogeneous panel p ¯ S = p m \\bar{p}_{S}=p_{m} and κ S = C m ​ ( q ) \\kappa_{S}=C_{m}(q) , and Δ S \\Delta_{S} does not depend on n n . Proposition B.1 then says that self-consistency converges to arg ⁡ max a ​ P m ​ ( a ∣ q ) \\arg\\max_{a}P_{m}(a\\mid q) : it raises accuracy on questions with Δ S > 0 \\Delta_{S}>0 and lowers it on questions with Δ S < 0 \\Delta_{S}<0 , and no sampling budget moves a question between the two sets. Changing the sign requires changing p ¯ S \\bar{p}_{S} or κ S \\kappa_{S} , i.e. changing the models.",
+   "zh": "从同一模型 m m 的重复采样独立同分布于 P m ( ⋅ ∣ q ) P_{m}(\\cdot\\mid q)，因此对于同质面板有 p ¯ S = p m \\bar{p}_{S}=p_{m} 且 κ S = C m ​ ( q ) \\kappa_{S}=C_{m}(q)，而 Δ S \\Delta_{S} 不依赖于 n n。 命题 B.1 于是表明自一致性收敛到 arg ⁡ max a ​ P m ​ ( a ∣ q ) \\arg\\max_{a}P_{m}(a\\mid q)：它在 Δ S > 0 \\Delta_{S}>0 的问题上提高准确率，在 Δ S < 0 \\Delta_{S}<0 的问题上降低准确率，且任何采样预算都无法使一个问题在这两个集合之间移动。 改变符号需要改变 p ¯ S \\bar{p}_{S} 或 κ S \\kappa_{S}，即改变模型。",
+   "sents": [
+    {
+     "en": "Repeated samples from one model m m are i.i.d. from P m ( ⋅ ∣ q ) P_{m}(\\cdot\\mid q) , so for a homogeneous panel p ¯ S = p m \\bar{p}_{S}=p_{m} and κ S = C m ​ ( q ) \\kappa_{S}=C_{m}(q) , and Δ S \\Delta_{S} does not depend on n n .",
+     "zh": "从同一模型 m m 的重复采样独立同分布于 P m ( ⋅ ∣ q ) P_{m}(\\cdot\\mid q)，因此对于同质面板有 p ¯ S = p m \\bar{p}_{S}=p_{m} 且 κ S = C m ​ ( q ) \\kappa_{S}=C_{m}(q)，而 Δ S \\Delta_{S} 不依赖于 n n。"
+    },
+    {
+     "en": "Proposition B.1 then says that self-consistency converges to arg ⁡ max a ​ P m ​ ( a ∣ q ) \\arg\\max_{a}P_{m}(a\\mid q) : it raises accuracy on questions with Δ S > 0 \\Delta_{S}>0 and lowers it on questions with Δ S < 0 \\Delta_{S}<0 , and no sampling budget moves a question between the two sets.",
+     "zh": "命题 B.1 于是表明自一致性收敛到 arg ⁡ max a ​ P m ​ ( a ∣ q ) \\arg\\max_{a}P_{m}(a\\mid q)：它在 Δ S > 0 \\Delta_{S}>0 的问题上提高准确率，在 Δ S < 0 \\Delta_{S}<0 的问题上降低准确率，且任何采样预算都无法使一个问题在这两个集合之间移动。"
+    },
+    {
+     "en": "Changing the sign requires changing p ¯ S \\bar{p}_{S} or κ S \\kappa_{S} , i.e. changing the models.",
+     "zh": "改变符号需要改变 p ¯ S \\bar{p}_{S} 或 κ S \\kappa_{S}，即改变模型。"
+    }
+   ]
+  },
+  {
+   "en": "Since the wrong mass ∑ i ∈ S ( 1 − p i ) \\sum_{i\\in S}(1-p_{i}) is spread over at most K − 1 K-1 answers, κ S ≥ 1 / ( K − 1 ) \\kappa_{S}\\geq 1/(K-1) for every panel. The idealized value κ S ≈ 1 / n \\kappa_{S}\\approx 1/n requires n ≤ K − 1 n\\leq K-1 , comparable wrong mass across solvers, and dominant wrong answers on distinct options. For four-option tasks the floor is 1 / 3 1/3 ; for ten-option or free-form tasks it is much smaller, which is where heterogeneity has the most room to act. Whether this room translates into observed gains also depends on the activation rate, solver strength, task difficulty, and answer normalization, so dataset-level gains should not be read directly from this bound. Adding solvers changes n n , p ¯ S \\bar{p}_{S} and κ S \\kappa_{S} together, so it helps only insofar as it raises Δ S \\Delta_{S} .",
+   "zh": "由于错误质量 ∑ i ∈ S ( 1 − p i ) \\sum_{i\\in S}(1-p_{i}) 最多分布在 K − 1 K-1 个答案上，因此对于每个小组都有 κ S ≥ 1 / ( K − 1 ) \\kappa_{S}\\geq 1/(K-1)。 理想值 κ S ≈ 1 / n \\kappa_{S}\\approx 1/n 要求 n ≤ K − 1 n\\leq K-1、各求解器的错误质量相当，且主要错误答案分布在不同选项上。 对于四选项任务，下限为 1 / 3 1/3；对于十选项或自由作答任务，下限要小得多，这正是异质性发挥最大作用之处。 这种空间是否能转化为实际观测到的收益，还取决于激活率、求解器强度、任务难度和答案归一化，因此不应直接从该界限解读数据集层面的收益。 增加求解器会同时改变 n n、p ¯ S \\bar{p}_{S} 和 κ S \\kappa_{S}，因此只有在其能提升 Δ S \\Delta_{S} 时才有帮助。",
+   "sents": [
+    {
+     "en": "Since the wrong mass ∑ i ∈ S ( 1 − p i ) \\sum_{i\\in S}(1-p_{i}) is spread over at most K − 1 K-1 answers, κ S ≥ 1 / ( K − 1 ) \\kappa_{S}\\geq 1/(K-1) for every panel.",
+     "zh": "由于错误质量 ∑ i ∈ S ( 1 − p i ) \\sum_{i\\in S}(1-p_{i}) 最多分布在 K − 1 K-1 个答案上，因此对于每个小组都有 κ S ≥ 1 / ( K − 1 ) \\kappa_{S}\\geq 1/(K-1)。"
+    },
+    {
+     "en": "The idealized value κ S ≈ 1 / n \\kappa_{S}\\approx 1/n requires n ≤ K − 1 n\\leq K-1 , comparable wrong mass across solvers, and dominant wrong answers on distinct options.",
+     "zh": "理想值 κ S ≈ 1 / n \\kappa_{S}\\approx 1/n 要求 n ≤ K − 1 n\\leq K-1、各求解器的错误质量相当，且主要错误答案分布在不同选项上。"
+    },
+    {
+     "en": "For four-option tasks the floor is 1 / 3 1/3 ; for ten-option or free-form tasks it is much smaller, which is where heterogeneity has the most room to act.",
+     "zh": "对于四选项任务，下限为 1 / 3 1/3；对于十选项或自由作答任务，下限要小得多，这正是异质性发挥最大作用之处。"
+    },
+    {
+     "en": "Whether this room translates into observed gains also depends on the activation rate, solver strength, task difficulty, and answer normalization, so dataset-level gains should not be read directly from this bound.",
+     "zh": "这种空间是否能转化为实际观测到的收益，还取决于激活率、求解器强度、任务难度和答案归一化，因此不应直接从该界限解读数据集层面的收益。"
+    },
+    {
+     "en": "Adding solvers changes n n , p ¯ S \\bar{p}_{S} and κ S \\kappa_{S} together, so it helps only insofar as it raises Δ S \\Delta_{S} .",
+     "zh": "增加求解器会同时改变 n n、p ¯ S \\bar{p}_{S} 和 κ S \\kappa_{S}，因此只有在其能提升 Δ S \\Delta_{S} 时才有帮助。"
+    }
+   ]
+  },
+  {
+   "en": "Suppose that, before answering, every solver in S S observes the same candidate a ∈ 𝒜 a\\in\\mathcal{A} and outputs a a with probability γ c \\gamma_{c} if a = y ⋆ a=y^{\\star} and with probability γ w \\gamma_{w} if a ≠ y ⋆ a\\neq y^{\\star} , and otherwise samples from P i ( ⋅ ∣ q ) P_{i}(\\cdot\\mid q) . Let Δ w ′ \\Delta^{\\prime}_{w} denote the resulting margins. (i) If a = y ⋆ a=y^{\\star} , then Δ w ′ = ( 1 − γ c ) ​ Δ w + γ c ≥ Δ w \\Delta^{\\prime}_{w}=(1-\\gamma_{c})\\Delta_{w}+\\gamma_{c}\\geq\\Delta_{w} for all w w . (ii) If a = w 0 ≠ y ⋆ a=w_{0}\\neq y^{\\star} , then Δ w 0 ′ = ( 1 − γ w ) ​ Δ w 0 − γ w \\Delta^{\\prime}_{w_{0}}=(1-\\gamma_{w})\\Delta_{w_{0}}-\\gamma_{w} and Δ w ′ = ( 1 − γ w ) ​ Δ w \\Delta^{\\prime}_{w}=(1-\\gamma_{w})\\Delta_{w} for w ≠ w 0 w\\neq w_{0} ; in particular Δ w 0 ′ < 0 \\Delta^{\\prime}_{w_{0}}<0 if and only if γ w > Δ w 0 / ( 1 + Δ w 0 ) \\gamma_{w}>\\Delta_{w_{0}}/(1+\\Delta_{w_{0}}) . (iii) If a a is drawn from a source with Pr [ a = y ⋆ ] = r \\Pr[a=y^{\\star}]=r and Pr [ a = w ] = r w \\Pr[a=w]=r_{w} for w ≠ y ⋆ w\\neq y^{\\star} , and γ c = γ w = γ \\gamma_{c}=\\gamma_{w}=\\gamma , then 𝔼 ⁡ [ Δ w ′ ] = ( 1 − γ ) ​ Δ w + γ ⁡ ( r − r w ) \\mathbb{E}[\\Delta^{\\prime}_{w}]=(1-\\gamma)\\Delta_{w}+\\gamma\\,(r-r_{w}) .",
+   "zh": "假设在回答之前，S S 中的每个智能体都观察到相同的候选 a ∈ 𝒜 a\\in\\mathcal{A}，并在 a = y ⋆ a=y^{\\star} 时以概率 γ c \\gamma_{c} 输出 a a，在 a ≠ y ⋆ a\\neq y^{\\star} 时以概率 γ w \\gamma_{w} 输出 a a，否则从 P i ( ⋅ ∣ q ) P_{i}(\\cdot\\mid q) 中采样。 设 Δ w ′ \\Delta^{\\prime}_{w} 表示由此得到的间隔。 (i) 若 a = y ⋆ a=y^{\\star}，则对所有 w w 有 Δ w ′ = ( 1 − γ c ) ​ Δ w + γ c ≥ Δ w \\Delta^{\\prime}_{w}=(1-\\gamma_{c})\\Delta_{w}+\\gamma_{c}\\geq\\Delta_{w}。 (ii) 若 a = w 0 ≠ y ⋆ a=w_{0}\\neq y^{\\star}，则 Δ w 0 ′ = ( 1 − γ w ) ​ Δ w 0 − γ w \\Delta^{\\prime}_{w_{0}}=(1-\\gamma_{w})\\Delta_{w_{0}}-\\gamma_{w}，且对 w ≠ w 0 w\\neq w_{0} 有 Δ w ′ = ( 1 − γ w ) ​ Δ w \\Delta^{\\prime}_{w}=(1-\\gamma_{w})\\Delta_{w}；特别地，Δ w 0 ′ < 0 \\Delta^{\\prime}_{w_{0}}<0 当且仅当 γ w > Δ w 0 / ( 1 + Δ w 0 ) \\gamma_{w}>\\Delta_{w_{0}}/(1+\\Delta_{w_{0}})。 (iii) 若 a a 抽取自满足 Pr [ a = y ⋆ ] = r \\Pr[a=y^{\\star}]=r 且对 w ≠ y ⋆ w\\neq y^{\\star} 有 Pr [ a = w ] = r w \\Pr[a=w]=r_{w} 的来源，且 γ c = γ w = γ \\gamma_{c}=\\gamma_{w}=\\gamma，则 𝔼 ⁡ [ Δ w ′ ] = ( 1 − γ ) ​ Δ w + γ ⁡ ( r − r w ) \\mathbb{E}[\\Delta^{\\prime}_{w}]=(1-\\gamma)\\Delta_{w}+\\gamma\\,(r-r_{w})。",
+   "sents": [
+    {
+     "en": "Suppose that, before answering, every solver in S S observes the same candidate a ∈ 𝒜 a\\in\\mathcal{A} and outputs a a with probability γ c \\gamma_{c} if a = y ⋆ a=y^{\\star} and with probability γ w \\gamma_{w} if a ≠ y ⋆ a\\neq y^{\\star} , and otherwise samples from P i ( ⋅ ∣ q ) P_{i}(\\cdot\\mid q) .",
+     "zh": "假设在回答之前，S S 中的每个智能体都观察到相同的候选 a ∈ 𝒜 a\\in\\mathcal{A}，并在 a = y ⋆ a=y^{\\star} 时以概率 γ c \\gamma_{c} 输出 a a，在 a ≠ y ⋆ a\\neq y^{\\star} 时以概率 γ w \\gamma_{w} 输出 a a，否则从 P i ( ⋅ ∣ q ) P_{i}(\\cdot\\mid q) 中采样。"
+    },
+    {
+     "en": "Let Δ w ′ \\Delta^{\\prime}_{w} denote the resulting margins.",
+     "zh": "设 Δ w ′ \\Delta^{\\prime}_{w} 表示由此得到的间隔。"
+    },
+    {
+     "en": "(i) If a = y ⋆ a=y^{\\star} , then Δ w ′ = ( 1 − γ c ) ​ Δ w + γ c ≥ Δ w \\Delta^{\\prime}_{w}=(1-\\gamma_{c})\\Delta_{w}+\\gamma_{c}\\geq\\Delta_{w} for all w w .",
+     "zh": "(i) 若 a = y ⋆ a=y^{\\star}，则对所有 w w 有 Δ w ′ = ( 1 − γ c ) ​ Δ w + γ c ≥ Δ w \\Delta^{\\prime}_{w}=(1-\\gamma_{c})\\Delta_{w}+\\gamma_{c}\\geq\\Delta_{w}。"
+    },
+    {
+     "en": "(ii) If a = w 0 ≠ y ⋆ a=w_{0}\\neq y^{\\star} , then Δ w 0 ′ = ( 1 − γ w ) ​ Δ w 0 − γ w \\Delta^{\\prime}_{w_{0}}=(1-\\gamma_{w})\\Delta_{w_{0}}-\\gamma_{w} and Δ w ′ = ( 1 − γ w ) ​ Δ w \\Delta^{\\prime}_{w}=(1-\\gamma_{w})\\Delta_{w} for w ≠ w 0 w\\neq w_{0} ; in particular Δ w 0 ′ < 0 \\Delta^{\\prime}_{w_{0}}<0 if and only if γ w > Δ w 0 / ( 1 + Δ w 0 ) \\gamma_{w}>\\Delta_{w_{0}}/(1+\\Delta_{w_{0}}) .",
+     "zh": "(ii) 若 a = w 0 ≠ y ⋆ a=w_{0}\\neq y^{\\star}，则 Δ w 0 ′ = ( 1 − γ w ) ​ Δ w 0 − γ w \\Delta^{\\prime}_{w_{0}}=(1-\\gamma_{w})\\Delta_{w_{0}}-\\gamma_{w}，且对 w ≠ w 0 w\\neq w_{0} 有 Δ w ′ = ( 1 − γ w ) ​ Δ w \\Delta^{\\prime}_{w}=(1-\\gamma_{w})\\Delta_{w}；特别地，Δ w 0 ′ < 0 \\Delta^{\\prime}_{w_{0}}<0 当且仅当 γ w > Δ w 0 / ( 1 + Δ w 0 ) \\gamma_{w}>\\Delta_{w_{0}}/(1+\\Delta_{w_{0}})。"
+    },
+    {
+     "en": "(iii) If a a is drawn from a source with Pr [ a = y ⋆ ] = r \\Pr[a=y^{\\star}]=r and Pr [ a = w ] = r w \\Pr[a=w]=r_{w} for w ≠ y ⋆ w\\neq y^{\\star} , and γ c = γ w = γ \\gamma_{c}=\\gamma_{w}=\\gamma , then 𝔼 ⁡ [ Δ w ′ ] = ( 1 − γ ) ​ Δ w + γ ⁡ ( r − r w ) \\mathbb{E}[\\Delta^{\\prime}_{w}]=(1-\\gamma)\\Delta_{w}+\\gamma\\,(r-r_{w}) .",
+     "zh": "(iii) 若 a a 抽取自满足 Pr [ a = y ⋆ ] = r \\Pr[a=y^{\\star}]=r 且对 w ≠ y ⋆ w\\neq y^{\\star} 有 Pr [ a = w ] = r w \\Pr[a=w]=r_{w} 的来源，且 γ c = γ w = γ \\gamma_{c}=\\gamma_{w}=\\gamma，则 𝔼 ⁡ [ Δ w ′ ] = ( 1 − γ ) ​ Δ w + γ ⁡ ( r − r w ) \\mathbb{E}[\\Delta^{\\prime}_{w}]=(1-\\gamma)\\Delta_{w}+\\gamma\\,(r-r_{w})。"
+    }
+   ]
+  },
+  {
+   "en": "Let γ \\gamma denote γ c \\gamma_{c} if a = y ⋆ a=y^{\\star} and γ w \\gamma_{w} otherwise. Solver i i ’s post-exposure answer distribution is the mixture P i ′ ( b ∣ q ) = ( 1 − γ ) P i ( b ∣ q ) + γ [ b = a ] P^{\\prime}_{i}(b\\mid q)=(1-\\gamma)P_{i}(b\\mid q)+\\gamma\\,\\mathbf{1}\\!\\left[b=a\\right] , so",
+   "zh": "当 a = y ⋆ a=y^{\\star} 时，设 γ \\gamma 表示 γ c \\gamma_{c}，否则表示 γ w \\gamma_{w}。 智能体 i i 暴露后的答案分布为混合分布 P i ′ ( b ∣ q ) = ( 1 − γ ) P i ( b ∣ q ) + γ [ b = a ] P^{\\prime}_{i}(b\\mid q)=(1-\\gamma)P_{i}(b\\mid q)+\\gamma\\,\\mathbf{1}\\!\\left[b=a\\right]，因此",
+   "sents": [
+    {
+     "en": "Let γ \\gamma denote γ c \\gamma_{c} if a = y ⋆ a=y^{\\star} and γ w \\gamma_{w} otherwise.",
+     "zh": "当 a = y ⋆ a=y^{\\star} 时，设 γ \\gamma 表示 γ c \\gamma_{c}，否则表示 γ w \\gamma_{w}。"
+    },
+    {
+     "en": "Solver i i ’s post-exposure answer distribution is the mixture P i ′ ( b ∣ q ) = ( 1 − γ ) P i ( b ∣ q ) + γ [ b = a ] P^{\\prime}_{i}(b\\mid q)=(1-\\gamma)P_{i}(b\\mid q)+\\gamma\\,\\mathbf{1}\\!\\left[b=a\\right] , so",
+     "zh": "智能体 i i 暴露后的答案分布为混合分布 P i ′ ( b ∣ q ) = ( 1 − γ ) P i ( b ∣ q ) + γ [ b = a ] P^{\\prime}_{i}(b\\mid q)=(1-\\gamma)P_{i}(b\\mid q)+\\gamma\\,\\mathbf{1}\\!\\left[b=a\\right]，因此"
+    }
+   ]
+  },
+  {
+   "en": "Subtracting and averaging over i ∈ S i\\in S ,",
+   "zh": "对 i ∈ S i\\in S 进行减法与平均后，",
+   "sents": null
+  },
+  {
+   "en": "(i) With a = y ⋆ a=y^{\\star} and γ = γ c \\gamma=\\gamma_{c} the bracket equals 1 1 for every w w , giving Δ w ′ = ( 1 − γ c ) ​ Δ w + γ c \\Delta^{\\prime}_{w}=(1-\\gamma_{c})\\Delta_{w}+\\gamma_{c} . Since Δ w ≤ 1 \\Delta_{w}\\leq 1 , this is at least Δ w \\Delta_{w} .",
+   "zh": "(i) 当 a = y ⋆ a=y^{\\star} 且 γ = γ c \\gamma=\\gamma_{c} 时，该括号对每个 w w 都等于 1 1，从而得到 Δ w ′ = ( 1 − γ c ) ​ Δ w + γ c \\Delta^{\\prime}_{w}=(1-\\gamma_{c})\\Delta_{w}+\\gamma_{c}。 由于 Δ w ≤ 1 \\Delta_{w}\\leq 1，该值至少为 Δ w \\Delta_{w}。",
+   "sents": [
+    {
+     "en": "(i) With a = y ⋆ a=y^{\\star} and γ = γ c \\gamma=\\gamma_{c} the bracket equals 1 1 for every w w , giving Δ w ′ = ( 1 − γ c ) ​ Δ w + γ c \\Delta^{\\prime}_{w}=(1-\\gamma_{c})\\Delta_{w}+\\gamma_{c} .",
+     "zh": "(i) 当 a = y ⋆ a=y^{\\star} 且 γ = γ c \\gamma=\\gamma_{c} 时，该括号对每个 w w 都等于 1 1，从而得到 Δ w ′ = ( 1 − γ c ) ​ Δ w + γ c \\Delta^{\\prime}_{w}=(1-\\gamma_{c})\\Delta_{w}+\\gamma_{c}。"
+    },
+    {
+     "en": "Since Δ w ≤ 1 \\Delta_{w}\\leq 1 , this is at least Δ w \\Delta_{w} .",
+     "zh": "由于 Δ w ≤ 1 \\Delta_{w}\\leq 1，该值至少为 Δ w \\Delta_{w}。"
+    }
+   ]
+  },
+  {
+   "en": "(ii) With a = w 0 a=w_{0} and γ = γ w \\gamma=\\gamma_{w} the bracket equals − 1 -1 for w = w 0 w=w_{0} and 0 0 otherwise, giving the two stated expressions. Solving ( 1 − γ w ) ​ Δ w 0 − γ w < 0 (1-\\gamma_{w})\\Delta_{w_{0}}-\\gamma_{w}<0 for γ w \\gamma_{w} yields γ w > Δ w 0 / ( 1 + Δ w 0 ) \\gamma_{w}>\\Delta_{w_{0}}/(1+\\Delta_{w_{0}}) .",
+   "zh": "(ii) 取 a = w₀ 且 γ = γ_w 时，该括号在 w = w₀ 时等于 −1，其余情况为 0，由此得到所述的两个表达式。 对 (1 − γ_w)​Δ_{w₀} − γ_w < 0 求解 γ_w，可得 γ_w > Δ_{w₀}/(1 + Δ_{w₀})。",
+   "sents": [
+    {
+     "en": "(ii) With a = w 0 a=w_{0} and γ = γ w \\gamma=\\gamma_{w} the bracket equals − 1 -1 for w = w 0 w=w_{0} and 0 0 otherwise, giving the two stated expressions.",
+     "zh": "(ii) 取 a = w₀ 且 γ = γ_w 时，该括号在 w = w₀ 时等于 −1，其余情况为 0，由此得到所述的两个表达式。"
+    },
+    {
+     "en": "Solving ( 1 − γ w ) ​ Δ w 0 − γ w < 0 (1-\\gamma_{w})\\Delta_{w_{0}}-\\gamma_{w}<0 for γ w \\gamma_{w} yields γ w > Δ w 0 / ( 1 + Δ w 0 ) \\gamma_{w}>\\Delta_{w_{0}}/(1+\\Delta_{w_{0}}) .",
+     "zh": "对 (1 − γ_w)​Δ_{w₀} − γ_w < 0 求解 γ_w，可得 γ_w > Δ_{w₀}/(1 + Δ_{w₀})。"
+    }
+   ]
+  },
+  {
+   "en": "(iii) Taking expectation over a a with γ c = γ w = γ \\gamma_{c}=\\gamma_{w}=\\gamma , 𝔼 [ [ a = y ⋆ ] − [ a = w ] ] = r − r w \\mathbb{E}[\\mathbf{1}\\!\\left[a=y^{\\star}\\right]-\\mathbf{1}\\!\\left[a=w\\right]]=r-r_{w} , and the claim follows by linearity. ∎",
+   "zh": "(iii) 当 γ c = γ w = γ \\gamma_{c}=\\gamma_{w}=\\gamma 时，对 a a 取期望，可得 𝔼 [ [ a = y ⋆ ] − [ a = w ] ] = r − r w \\mathbb{E}[\\mathbf{1}\\!\\left[a=y^{\\star}\\right]-\\mathbf{1}\\!\\left[a=w\\right]]=r-r_{w} ，由线性性即得结论。∎",
+   "sents": null
+  },
+  {
+   "en": "The quantity r − r w r-r_{w} is the source’s own margin against w w , so exposure contracts each solver’s margin toward the source’s margin by the factor γ \\gamma . It raises the expected margin if and only if the source is more reliable than the panel. In Section 2.3 the source is the final-stage prediction with γ ≈ 0.95 \\gamma\\approx 0.95 and a poor margin, and in MAS-Exchange the source is a peer of comparable quality, for which 𝔼 ⁡ [ Δ w ′ ] = Δ w \\mathbb{E}[\\Delta^{\\prime}_{w}]=\\Delta_{w} . Candidate-blind solving is γ c = γ w = 0 \\gamma_{c}=\\gamma_{w}=0 .",
+   "zh": "量 r − r w r-r_{w} 是来源自身相对 w w 的边际，因此曝光以因子 γ \\gamma 将每个求解器的边际向来源的边际收缩。 当且仅当来源比评审组更可靠时，它才会提高期望边际。 在 2.3 节中，来源是最终阶段的预测，其 γ ≈ 0.95 \\gamma\\approx 0.95 且边际较差；而在 MAS-Exchange 中，来源是质量相当的同行智能体，对此有 𝔼 ⁡ [ Δ w ′ ] = Δ w \\mathbb{E}[\\Delta^{\\prime}_{w}]=\\Delta_{w} 。 候选盲求解即 γ c = γ w = 0 \\gamma_{c}=\\gamma_{w}=0 。",
+   "sents": [
+    {
+     "en": "The quantity r − r w r-r_{w} is the source’s own margin against w w , so exposure contracts each solver’s margin toward the source’s margin by the factor γ \\gamma .",
+     "zh": "量 r − r w r-r_{w} 是来源自身相对 w w 的边际，因此曝光以因子 γ \\gamma 将每个求解器的边际向来源的边际收缩。"
+    },
+    {
+     "en": "It raises the expected margin if and only if the source is more reliable than the panel.",
+     "zh": "当且仅当来源比评审组更可靠时，它才会提高期望边际。"
+    },
+    {
+     "en": "In Section 2.3 the source is the final-stage prediction with γ ≈ 0.95 \\gamma\\approx 0.95 and a poor margin, and in MAS-Exchange the source is a peer of comparable quality, for which 𝔼 ⁡ [ Δ w ′ ] = Δ w \\mathbb{E}[\\Delta^{\\prime}_{w}]=\\Delta_{w} .",
+     "zh": "在 2.3 节中，来源是最终阶段的预测，其 γ ≈ 0.95 \\gamma\\approx 0.95 且边际较差；而在 MAS-Exchange 中，来源是质量相当的同行智能体，对此有 𝔼 ⁡ [ Δ w ′ ] = Δ w \\mathbb{E}[\\Delta^{\\prime}_{w}]=\\Delta_{w} 。"
+    },
+    {
+     "en": "Candidate-blind solving is γ c = γ w = 0 \\gamma_{c}=\\gamma_{w}=0 .",
+     "zh": "候选盲求解即 γ c = γ w = 0 \\gamma_{c}=\\gamma_{w}=0 。"
+    }
+   ]
+  },
+  {
+   "en": "When the candidate a a is fixed, the post-exposure votes remain independent conditional on ( q , a ) (q,a) ; exposure changes the margin, not the independence structure. Dependence among solvers arises only when the candidate is itself random and shared, as when agents read one another’s first-round answers in MAS-Exchange. Proposition B.2 (iii) shows that in that case the expected margin of a panel of comparable solvers is unchanged, so any change in vote accuracy is due to the induced dependence; we do not attempt to bound this effect and treat the example in Appendix A.4 as illustrative only.",
+   "zh": "当候选答案 a 固定时，曝光后的投票在给定 ( q , a ) 的条件下仍保持独立；曝光改变的只是票差，而非独立性结构。 求解器之间的依赖只出现在候选答案本身是随机且共享的情形，例如智能体在 MAS-Exchange 中阅读彼此第一轮的回答时。 命题 B.2（iii）表明，在这种情况下，由可比求解器组成的评审团的期望票差不变，因此投票准确率的任何变化都源于诱导出的依赖；我们不试图对该效应给出界，仅将附录 A.4 中的例子作为说明性示例。",
+   "sents": [
+    {
+     "en": "When the candidate a a is fixed, the post-exposure votes remain independent conditional on ( q , a ) (q,a) ; exposure changes the margin, not the independence structure.",
+     "zh": "当候选答案 a 固定时，曝光后的投票在给定 ( q , a ) 的条件下仍保持独立；曝光改变的只是票差，而非独立性结构。"
+    },
+    {
+     "en": "Dependence among solvers arises only when the candidate is itself random and shared, as when agents read one another’s first-round answers in MAS-Exchange.",
+     "zh": "求解器之间的依赖只出现在候选答案本身是随机且共享的情形，例如智能体在 MAS-Exchange 中阅读彼此第一轮的回答时。"
+    },
+    {
+     "en": "Proposition B.2 (iii) shows that in that case the expected margin of a panel of comparable solvers is unchanged, so any change in vote accuracy is due to the induced dependence; we do not attempt to bound this effect and treat the example in Appendix A.4 as illustrative only.",
+     "zh": "命题 B.2（iii）表明，在这种情况下，由可比求解器组成的评审团的期望票差不变，因此投票准确率的任何变化都源于诱导出的依赖；我们不试图对该效应给出界，仅将附录 A.4 中的例子作为说明性示例。"
+    }
+   ]
+  },
+  {
+   "en": "LLMs were used as general-purpose assistance tools in a limited capacity during the preparation of this work. Specifically, they assisted with grammar and spelling correction, mathematical derivations, and implementation support for the proposed method and experiments. The research ideas, methodological choices, experimental design, analysis and interpretation of results, and conclusions were developed and determined by the authors. All LLM-assisted derivations, code, and textual revisions were independently reviewed, tested, and verified by the authors before being incorporated into this work. The authors take full responsibility for the scientific content and final presentation of the paper.",
+   "zh": "在本工作的准备过程中，大语言模型在有限的范围内被用作通用辅助工具。 具体而言，它们协助进行了语法和拼写修正、数学推导，以及为所提出的方法和实验提供实现支持。 研究思路、方法选择、实验设计、结果的分析与解读以及结论均由作者提出并确定。 所有借助大语言模型得到的推导、代码和文本修改，在被纳入本工作之前均由作者独立审查、测试和验证。 作者对论文的科学内容和最终呈现承担全部责任。",
+   "sents": [
+    {
+     "en": "LLMs were used as general-purpose assistance tools in a limited capacity during the preparation of this work.",
+     "zh": "在本工作的准备过程中，大语言模型在有限的范围内被用作通用辅助工具。"
+    },
+    {
+     "en": "Specifically, they assisted with grammar and spelling correction, mathematical derivations, and implementation support for the proposed method and experiments.",
+     "zh": "具体而言，它们协助进行了语法和拼写修正、数学推导，以及为所提出的方法和实验提供实现支持。"
+    },
+    {
+     "en": "The research ideas, methodological choices, experimental design, analysis and interpretation of results, and conclusions were developed and determined by the authors.",
+     "zh": "研究思路、方法选择、实验设计、结果的分析与解读以及结论均由作者提出并确定。"
+    },
+    {
+     "en": "All LLM-assisted derivations, code, and textual revisions were independently reviewed, tested, and verified by the authors before being incorporated into this work.",
+     "zh": "所有借助大语言模型得到的推导、代码和文本修改，在被纳入本工作之前均由作者独立审查、测试和验证。"
+    },
+    {
+     "en": "The authors take full responsibility for the scientific content and final presentation of the paper.",
+     "zh": "作者对论文的科学内容和最终呈现承担全部责任。"
+    }
+   ]
+  }
+ ]
+}
