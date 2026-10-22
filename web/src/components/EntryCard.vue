@@ -4,6 +4,7 @@ import { formatDate } from '../format.js'
 import { tagLabel } from '../i18n.js'
 import { paperId } from '../paperId.js'
 import { isPaperSource } from '../paperSources.js'
+import { getPaperState } from '../paperReadState.js'
 import { sanitizeSummary, safeLink } from '../sanitize.js'
 import { ui } from '../store.js'
 
@@ -124,6 +125,12 @@ const title = computed(() => {
   return e.title
 })
 const tag = computed(() => tagLabel(props.entry.category, ui.showZh))
+
+// 2026-10-10：论文阅读三态角标 —— 只有论文源才有（非论文源连存储都不碰）。
+// '' = 没点开（不显示），'opened' = 点开过（淡色「看过」），'read' = 读完（对勾「已读」）。
+const paperState = computed(() =>
+  isPaperSource(props.entry) ? getPaperState(paperId(props.entry.link)) : '',
+)
 </script>
 
 <template>
@@ -136,9 +143,12 @@ const tag = computed(() => tagLabel(props.entry.category, ui.showZh))
   >
     <div class="meta">
       <span class="tag">{{ tag }}</span>
+      <span v-if="paperState" class="state-badge" :class="paperState">
+        {{ paperState === 'read' ? '✓ 已读' : '· 看过' }}
+      </span>
       <span class="date">{{ date }}</span>
     </div>
-    <h3 class="title">{{ title }}</h3>
+    <h3 class="title" :class="{ read: paperState === 'read' }">{{ title }}</h3>
     <div v-if="guideText" class="summary"><span class="guide-label">导读</span><span v-html="guideText"></span></div>
     <div class="actions">
       <button
@@ -248,6 +258,26 @@ const tag = computed(() => tagLabel(props.entry.category, ui.showZh))
   margin: 0;
   font-size: 17px;
   line-height: 1.4;
+}
+/* 2026-10-10：论文三态角标。没点开不渲染；「看过」淡、压低存在感；
+   「已读」走主题色，标题同时略降透明度 —— 三态一眼分得开。 */
+.state-badge {
+  display: inline-block;
+  font-size: 11px;
+  line-height: 1.6;
+  border-radius: 999px;
+  padding: 1px 8px;
+  white-space: nowrap;
+  border: 1px solid var(--border-2);
+  background: var(--card-2);
+  color: var(--dim);
+}
+.state-badge.read {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.title.read {
+  opacity: 0.72;
 }
 .date {
   font-size: 12px;

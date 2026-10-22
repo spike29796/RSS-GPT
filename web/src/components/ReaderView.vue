@@ -6,6 +6,7 @@
 // 这里只读文件：译文已经在文件里，点某段当场显示，零等待。
 import { computed, onMounted, ref, watch } from 'vue'
 import { formatDate } from '../format.js'
+import { getPaperState, markPaperRead, unmarkPaperRead } from '../paperReadState.js'
 import { safeLink } from '../sanitize.js'
 import { ui } from '../store.js'
 
@@ -121,6 +122,17 @@ watch(() => props.id, (id) => {
   remember(props.entry)
   load(id)
 })
+
+// 2026-10-10：第三态「读完」。正文末尾一个按钮，点了记读完；
+// 再点一下取消 —— 退回「点开过」，不是退回「没点开」（那篇毕竟看过）。
+// 存在浏览器本地（paperReadState.js），刷新/关掉再开仍在。
+const isRead = computed(() => !!props.id && getPaperState(props.id) === 'read')
+
+function toggleRead() {
+  if (!props.id) return
+  if (isRead.value) unmarkPaperRead(props.id)
+  else markPaperRead(props.id)
+}
 </script>
 
 <template>
@@ -176,6 +188,17 @@ watch(() => props.id, (id) => {
         </section>
       </article>
     </template>
+
+    <!-- 2026-10-10：正文末尾的第三态 —— 点了记「读完」，再点取消回「点开过」。
+         译文没生成（missing）时也留着，那篇同样是「读过了」。 -->
+    <div v-if="state !== 'loading' && id" class="read-mark">
+      <button class="done-btn" :class="{ done: isRead }" type="button" @click="toggleRead">
+        {{ isRead ? '已标记读完' : '读完了' }}
+      </button>
+      <p class="done-hint">
+        {{ isRead ? '点一下可取消「读完」标记' : '点一下标记为读完（只记在这台浏览器）' }}
+      </p>
+    </div>
   </div>
 </template>
 
@@ -377,6 +400,48 @@ watch(() => props.id, (id) => {
   border-top: 1px dashed var(--border);
   border-left: 2px solid var(--zh-rule);
 }
+/* 2026-10-10：正文末尾的「读完了」按钮。
+   居中、定宽 —— 窄屏下 App 的两个悬浮球贴在屏幕下角，
+   按钮留在中间就不会被球压住。 */
+.read-mark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  margin-top: 22px;
+  padding: 26px 0 0;
+  border-top: 1px solid var(--border);
+}
+.done-btn {
+  display: block;
+  width: fit-content;
+  min-width: 180px;
+  max-width: 100%;
+  padding: 10px 24px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: none;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.done-btn:hover {
+  background: var(--card-hover);
+}
+.done-btn.done {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+}
+.done-hint {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--dim);
+  text-align: center;
+}
 @media (max-width: 700px) {
   .title {
     font-size: 19px;
@@ -388,6 +453,10 @@ watch(() => props.id, (id) => {
   .sent-zh,
   .para-zh {
     font-size: 15.5px;
+  }
+  /* 悬浮球在窄屏贴在屏幕下角，正文末尾多留点空，别让最后一段压在球下 */
+  .reader {
+    padding-bottom: 72px;
   }
 }
 </style>

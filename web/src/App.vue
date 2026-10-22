@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import Fuse from 'fuse.js'
 import { SOURCES, fetchAllEntries, fetchRecommended, fetchBiliVideos } from './api.js'
 import { parseDate, formatDate, isToday } from './format.js'
@@ -13,6 +13,7 @@ import PlayerOverlay from './components/PlayerOverlay.vue'
 import ReaderView from './components/ReaderView.vue'
 import { paperId } from './paperId.js'
 import { isPaperSource } from './paperSources.js'
+import { markPaperOpened } from './paperReadState.js'
 import { safeLink } from './sanitize.js'
 
 const PAGE_SIZE = 50
@@ -30,6 +31,10 @@ const shown = ref(PAGE_SIZE)
 // 所以路由走 hash（#/read/<id>）。沿用现有手写视图切换，不引 vue-router。
 const readerId = ref('')
 const readerEntry = ref(null)
+// 2026-10-09：进阅读页前记住列表滚到哪了 —— 返回时原地回到那条，
+// 不然「回来了还得重新往下找」等于没修。直达 #/read/<id>（没有来路）时是 null，
+// 那种情况没有可恢复的位置，滚到顶即可。
+const readerReturnY = ref(null)
 // T-026：B站轮播数据。fetch 失败或为空 → 轮播模块整体不渲染（不留空壳）。
 const bili = ref([])
 // T-043：两个区 —— 'rec' = 打分器推荐（≥2 分），'all' = 抓到什么看什么
@@ -153,6 +158,16 @@ function toTop() {
   window.scrollTo(0, 0)
 }
 
+// 2026-10-10：恢复列表原来的滚动位置。
+// 必须等列表重新渲染完（nextTick），再补一帧让图片/字体把页高撑到位 ——
+// 目标位置超出当时的页高会被浏览器截断，落点就会偏上。
+function restoreListScroll(y) {
+  nextTick(() => {
+    window.scrollTo(0, y)
+    requestAnimationFrame(() => window.scrollTo(0, y))
+  })
+}
+
 function openList(source = 'all', category = 'all') {
   activeSource.value = source
   activeCategory.value = category
@@ -190,6 +205,11 @@ function goHome() {
 // id = sha1(link)[:16]，与 paper_translate.py 写出的文件名同口径（web/src/paperId.js）。
 const READ_RE = /^#\/read\/([0-9a-f]{4,64})$/
 
+// 2026-10-10：closeReader 那条兜底计时器的代次。每次进阅读页都 +1；
+// 兜底触发时代次变了就作废 —— 否则「点返回之后 150ms 内又点进同一篇」
+// 会被这条兜底把刚打开的阅读页又踢回列表（hash 一样、view 也还是 read）。
+let readerGen = 0
+
 function openReader(entry) {
   // 2026-10-09：只有论文源才进站内阅读页。其余源没有译文，
   // 点进去只会落到「译文未生成」空页 —— 那不是阅读，是绕路一次。
@@ -199,8 +219,14 @@ function openReader(entry) {
     if (url) window.open(url, '_blank', 'noopener')
     return
   }
-  readerEntry.value = { id: paperId(entry.link), entry: { ...entry, source: entry.source || entry.sourceLabel || '' } }
-  location.hash = `#/read/${readerEntry.value.id}`
+  const id = paperId(entry.link)
+  // 三态①→②：点开就记「看过」。只升不降（读完的不会被降回来）。
+  markPaperOpened(id)
+  readerGen++
+  readerEntry.value = { id, entry: { ...entry, source: entry.source || entry.sourceLabel || '' } }
+  // 记住列表滚到哪了，返回时原地回去
+  readerReturnY.value = window.scrollY
+  location.hash = `#/read/${id}`
 }
 
 // 只有「进来时点的那张卡」才对得上这个 id。直接改地址栏 / 转发进来的链接
@@ -214,18 +240,28 @@ function applyRoute() {
   if (m) {
     readerId.value = m[1]
     view.value = 'read'
-  } else if (view.value === 'read') {
-    // 从阅读页返回：回到进来之前的列表；首次直接开阅读页的，退回首页
-    view.value = entries.value.length ? 'list' : 'home'
+    readerGen++
+    // 深链（直接打开 / 刷新 #/read/<id>）也算「点开过」，与点卡片同口径
+    markPaperOpened(m[1])
+    toTop()
+    return
   }
-  toTop()
+  // 从阅读页返回：回到进来之前的列表，并恢复原来的滚动位置
+  const backY = readerReturnY.value
+  readerReturnY.value = null
+  if (view.value === 'read') view.value = entries.value.length ? 'list' : 'home'
+  if (backY === null) toTop()
+  else restoreListScroll(backY)
 }
 
 function closeReader() {
   const before = location.hash
+  const gen = ++readerGen
   history.back()
-  // 直达 #/read/<id>（没有可回退的历史）时 back() 不会触发 hashchange，兜底清 hash
+  // 直达 #/read/<id>（没有可回退的历史）时 back() 不会触发 hashchange，兜底清 hash。
+  // 代次变了说明这 150ms 里又进过阅读页，这条兜底作废（见 readerGen）。
   setTimeout(() => {
+    if (gen !== readerGen) return
     if (view.value === 'read' && location.hash === before) location.hash = ''
   }, 150)
 }
@@ -235,6 +271,51 @@ onMounted(() => {
   applyRoute() // 支持直接打开 #/read/<id>（刷新后仍停在阅读页）
 })
 onBeforeUnmount(() => window.removeEventListener('hashchange', applyRoute))
+
+// ===== 2026-10-10：左右两个悬浮球 =====
+// 左「返回」= 等价阅读页顶栏的「‹ 返回」（走同一条 closeReader）；
+// 右「回顶」= 一键滚回顶部，列表页与阅读页都有。
+// 「回顶」要滚过一段才出现 —— 停在顶部时它没用，只会挡视线。
+// 阈值取「320px 与可滚距离 35% 中的小者」：短页面（译文只有几段）整页
+// 只能滚 300 来 px，固定 320 的话球永远出不来。
+const scrollTop = ref(0)
+const scrollMax = ref(0)
+function onWindowScroll() {
+  const doc = document.documentElement
+  scrollTop.value = window.scrollY
+  scrollMax.value = Math.max(0, (doc ? doc.scrollHeight : 0) - window.innerHeight)
+  viewW.value = window.innerWidth
+}
+const showTopBall = computed(() => scrollTop.value > Math.min(320, Math.max(60, scrollMax.value * 0.35)))
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+onMounted(() => {
+  // 浏览器自己也会在 history.back() 时还原滚动位置，跟「回到列表原位」的口径
+  // 会打架（它按整页快照还原，我们按记住的 y）。统一关掉，交给 restoreListScroll。
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
+  onWindowScroll()
+  window.addEventListener('scroll', onWindowScroll, { passive: true })
+  window.addEventListener('resize', onWindowScroll)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', onWindowScroll)
+  window.removeEventListener('resize', onWindowScroll)
+})
+
+// 悬浮球的横向落点：贴内容栏外侧的留白，不压正文/卡片。
+// 阅读页内容栏 760 宽（ReaderView 的 max-width），其余视图是 .page 的 1600；
+// 留白 = 视口半宽 - 内容栏半宽 - 球宽 - 间隙。留白不够（窄屏 / 中等宽度）时
+// 不硬挤 —— ballNarrow 切成贴屏幕边缘的小球，仍然可点。
+const viewW = ref(0)
+const ballGapPx = computed(() => {
+  const half = view.value === 'read' ? 380 : 800
+  return viewW.value / 2 - (half + 56)
+})
+const ballNarrow = computed(() => ballGapPx.value < 60)
+const ballGap = computed(() => `${Math.max(10, Math.round(ballGapPx.value))}px`)
 
 function selectSource(name) {
   activeSource.value = name
@@ -370,7 +451,7 @@ function clearMarks() {
 </script>
 
 <template>
-  <div class="page">
+  <div class="page" :style="{ '--ball-gap': ballGap }">
     <!-- ============================================================
          T-052 2026-09-14：UI 复原 —— 回到原始的三视图（首页源卡片 / 列表 / B站）
          理由：意图标注 + 打分器这套实验的结论是「源选得更精」比「筛得更准」更重要，
@@ -571,6 +652,27 @@ function clearMarks() {
     <PlayerOverlay v-if="playerBvid" :bvid="playerBvid" @close="closePlayer" />
     </div>
     <!-- ↑↑↑ 旧 UI 停用区结束 ↑↑↑ -->
+
+    <!-- 2026-10-10：左右悬浮球（fixed，贴内容栏外侧留白；窄屏退化为贴边小尺寸）。
+         左 = 返回列表（只在阅读页出现），右 = 回顶（滚过近一屏才出现）。 -->
+    <button
+      v-if="view === 'read'"
+      class="float-ball left"
+      :class="{ narrow: ballNarrow }"
+      type="button"
+      title="返回列表"
+      aria-label="返回列表"
+      @click="closeReader"
+    >←</button>
+    <button
+      v-if="showTopBall"
+      class="float-ball right"
+      :class="{ narrow: ballNarrow }"
+      type="button"
+      title="回到顶部"
+      aria-label="回到顶部"
+      @click="scrollToTop"
+    >↑</button>
   </div>
 </template>
 
@@ -1211,4 +1313,61 @@ body {
 }
 .score-badge.s3 { background: #46d17a; color: #0b1220; }
 .score-badge.s2 { background: #4d9ef7; color: #0b1220; }
+
+/* ============================================================
+   2026-10-10：左右悬浮球（左返回 / 右回顶）
+   横向落点由 --ball-gap（App 里按当前视图算好）决定：
+   阅读页按 760 宽内容栏算，其余视图按 .page 的 1600 算 —— 都落在正文/卡片外侧的留白里。
+   窄屏没有留白，退化成贴屏幕左右下角的小球，仍可点。
+   ============================================================ */
+.float-ball {
+  position: fixed;
+  z-index: 40;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text-2);
+  font-size: 18px;
+  line-height: 1;
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.float-ball.left { left: var(--ball-gap, 10px); }
+.float-ball.right { right: var(--ball-gap, 10px); }
+.float-ball:hover {
+  background: var(--card-hover);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.float-ball:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* 回顶球滚过一屏才挂载 —— 淡入，别突然弹出来 */
+.float-ball.right { animation: fb-fade-in 0.18s ease-out; }
+@keyframes fb-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+/* 窄屏 / 中等宽度：两侧没有留白可站，退成贴屏幕下角的小球（不压顶栏，拇指够得到） */
+.float-ball.narrow {
+  top: auto;
+  bottom: 16px;
+  transform: none;
+  width: 38px;
+  height: 38px;
+  font-size: 16px;
+  opacity: 0.92;
+}
+.float-ball.narrow.left { left: 6px; }
+.float-ball.narrow.right { right: 6px; }
 </style>
