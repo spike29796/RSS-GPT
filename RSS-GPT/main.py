@@ -83,6 +83,34 @@ def _llm_deadline(sec):
 # the cap must count decompressed bytes, not wire bytes.
 feed_max_bytes = int(get_cfg('cfg', 'feed_max_bytes') or (50 * 1024 * 1024))
 
+# FlClash (the host's proxy client) can stop listening on its mixed port while
+# its process stays alive. Every request then dies with ProxyError and the whole
+# run still exits 0 with nothing collected -- 2026-10-24 all 16 sources hit
+# this. bilibili_collect already bypasses the env proxy for the same reason.
+# Retry direct when the proxy is unreachable, but keep using the proxy when it
+# works: reddit is only reachable through it.
+_direct_session = None
+
+
+def _get_direct_session():
+    global _direct_session
+    if _direct_session is None:
+        _direct_session = requests.Session()
+        _direct_session.trust_env = False
+    return _direct_session
+
+
+def _http_get(url, log_file=None, **kwargs):
+    """GET, falling back to a proxy-free session when the env proxy is unreachable."""
+    try:
+        return requests.get(url, **kwargs)
+    except requests.exceptions.ProxyError as e:
+        if log_file:
+            with open(log_file, 'a', encoding='utf-8') as f:
+                f.write(f"Proxy unreachable, retrying direct: {url} ({e.__class__.__name__})\n")
+        return _get_direct_session().get(url, **kwargs)
+
+
 def fetch_feed(url, log_file):
     feed = None
     headers = {}
@@ -90,7 +118,7 @@ def fetch_feed(url, log_file):
         # Use a fixed modern browser UA: some feeds (e.g. qbitai) reject
         # random or bot-like User-Agent strings with 403.
         headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
-        with requests.get(url, headers=headers, timeout=30, stream=True) as response:
+        with _http_get(url, log_file=log_file, headers=headers, timeout=30, stream=True) as response:
             if response.status_code != 200:
                 with open(log_file, 'a', encoding='utf-8') as f:
                     f.write(f"Fetch error: {response.status_code}\n")
