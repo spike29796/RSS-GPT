@@ -60,12 +60,16 @@ def _strip_fence(text):
 
 
 def _client():
-    """按 main.py 同样的规则建 OpenAI 客户端（含可选代理）。"""
+    """按 main.py 同样的规则建 OpenAI 客户端（含可选代理）。
+
+    key 从 translate_step.api_key() 现取（双 key 轮换）：中途切过 key 之后，
+    下一包立刻用新 key，不必重启。
+    """
     from openai import OpenAI
     import httpx
 
     base = os.environ.get('OPENAI_BASE_URL') or os.environ.get('TRANSLATE_URL')
-    key = (os.environ.get('OPENAI_API_KEY') or os.environ.get('TRANSLATE_API_KEY')
+    key = (translate_step.api_key() or os.environ.get('TRANSLATE_API_KEY')
            or os.environ.get('TRANSLATE_KEY') or 'not-needed')
     proxy = os.environ.get('OPENAI_PROXY')
     kw = {'api_key': key, 'base_url': base}
@@ -130,22 +134,32 @@ def summarize_batch(items, model, categories, default_category, language='zh',
             max_tokens=max_tokens,
             timeout=180,
         )
-        content = resp.choices[0].message.content if getattr(resp, 'choices', None) else None
-        if isinstance(stats, dict):
-            u = getattr(resp, 'usage', None)
-            stats['summary'] = {
-                'prompt': getattr(u, 'prompt_tokens', None),
-                'completion': getattr(u, 'completion_tokens', None),
-                'total': getattr(u, 'total_tokens', None),
-            }
-        if not content or not content.strip():
-            _log(log_file, '模型返回空内容')
-            return None
-        arr = json.loads(_strip_fence(content))
     except Exception as e:
+        translate_step.note_call(False, '%s: %s' % (type(e).__name__, str(e)[:120]))
         _log(log_file, '整包失败（%s: %s），回退逐条'
                        % (type(e).__name__, str(e)[:160]))
         return None
+
+    content = resp.choices[0].message.content if getattr(resp, 'choices', None) else None
+    if isinstance(stats, dict):
+        u = getattr(resp, 'usage', None)
+        stats['summary'] = {
+            'prompt': getattr(u, 'prompt_tokens', None),
+            'completion': getattr(u, 'completion_tokens', None),
+            'total': getattr(u, 'total_tokens', None),
+        }
+    if not content or not content.strip():
+        translate_step.note_call(False, 'empty content')
+        _log(log_file, '模型返回空内容')
+        return None
+    try:
+        arr = json.loads(_strip_fence(content))
+    except Exception as e:
+        translate_step.note_call(False, 'unparsable JSON: %s' % str(e)[:100])
+        _log(log_file, '整包失败（%s: %s），回退逐条'
+                       % (type(e).__name__, str(e)[:160]))
+        return None
+    translate_step.note_call(True)
 
     # 4) 按 id 拆回三行文本。缺项/坏项直接不要，调用方对缺的那些回退逐条。
     out = {}

@@ -14,6 +14,9 @@ import traceback
 import collectors
 import translate_step  # 摘要前置翻译工序（2026-10-07）
 import summary_batch  # 批量摘要：一次请求处理一包条目（2026-10-22）
+# 双 key 轮换 + 打穿退避（2026-10-23）：key 由 translate_step.api_key() 现取，
+# 每次调用的结果交 translate_step.note_call() 记账 —— 两条线共用 key_rotator 里
+# 那一个连续失败计数。
 #from dateutil.parser import parse
 
 def get_cfg(sec, name, default=None):
@@ -225,8 +228,15 @@ def truncate_entries(entries, max_entries):
     return entries
 
 def _redact_secrets(text):
-    """Scrub the API key / base URL out of text before it hits a log file."""
-    for secret in (OPENAI_API_KEY, OPENAI_BASE_URL):
+    """Scrub the API key / base URL out of text before it hits a log file.
+
+    两把 key 一起擦：一轮里可能刚换过 key，日志不该因为换过 key 漏出另一把。
+    """
+    secrets = [OPENAI_API_KEY, OPENAI_BASE_URL]
+    rotator = getattr(translate_step, 'key_rotator', None)
+    if rotator is not None:
+        secrets.extend(getattr(rotator, 'KEYS', {}).values())
+    for secret in secrets:
         if secret:
             text = text.replace(secret, '<redacted>')
     return text
@@ -561,6 +571,17 @@ def entry_complete(record):
 
 
 
+def _openai_client():
+    """按当前该用的 key 建 OpenAI 客户端（含可选代理）。
+
+    key 每次现取，不在导入时缓存：一轮里切过 key 之后，后面的条目立刻用新 key。
+    """
+    kw = {'api_key': translate_step.api_key(), 'base_url': OPENAI_BASE_URL}
+    if OPENAI_PROXY:
+        kw['http_client'] = httpx.Client(proxy=OPENAI_PROXY)
+    return OpenAI(**kw)
+
+
 def gpt_summary(query,model,language,categories,default_category,log_file=None):
     category_list = '、'.join(categories)
     # Input cap: a one-sentence guide needs the lead, not the full article.
@@ -580,20 +601,6 @@ def gpt_summary(query,model,language,categories,default_category,log_file=None):
         {"role": "system", "content": instruction},
         {"role": "user", "content": query},
     ]
-    if not OPENAI_PROXY:
-        client = OpenAI(
-            api_key=OPENAI_API_KEY,
-            base_url=OPENAI_BASE_URL,
-        )
-    else:
-        client = OpenAI(
-            api_key=OPENAI_API_KEY,
-            # Or use the `OPENAI_BASE_URL` env var
-            base_url=OPENAI_BASE_URL,
-            # example: "http://my.test.server.example.com:8083",
-            http_client=httpx.Client(proxy=OPENAI_PROXY),
-            # example:"http://my.test.proxy.example.com",
-        )
     # Bounded retries with exponential backoff: at most LLM_MAX_ATTEMPTS API
     # calls per entry per run. Retried conditions: API errors (e.g. the
     # intermittent 404s some relays return) and empty/None content (reasoning
@@ -603,6 +610,9 @@ def gpt_summary(query,model,language,categories,default_category,log_file=None):
     # an API fault, so no backoff).
     category, summary, title_zh = default_category, None, None
     for attempt in range(LLM_MAX_ATTEMPTS):
+        # 客户端每次现建：重试之间可能刚切过 key（连续失败到 10 次），
+        # 下一次尝试必须用新 key，不能复用上一把。
+        client = _openai_client()
         try:
             completion = client.chat.completions.create(
                 model=model,
@@ -610,6 +620,7 @@ def gpt_summary(query,model,language,categories,default_category,log_file=None):
                 timeout=120,
             )
         except Exception as e:
+            translate_step.note_call(False, '%s: %s' % (type(e).__name__, str(e)[:120]))
             if attempt < LLM_MAX_ATTEMPTS - 1:
                 wait = LLM_BACKOFF_BASE * 2 ** attempt
                 if log_file:
@@ -629,6 +640,7 @@ def gpt_summary(query,model,language,categories,default_category,log_file=None):
                 f.write(f"LLM usage: prompt={u.prompt_tokens} completion={u.completion_tokens} reasoning={reasoning} total={u.total_tokens}\n")
         content = completion.choices[0].message.content if getattr(completion, 'choices', None) else None
         if not content or not content.strip():
+            translate_step.note_call(False, 'empty content')
             if log_file:
                 with open(log_file, 'a', encoding='utf-8') as f:
                     f.write(f"LLM returned empty content (attempt {attempt + 1}/{LLM_MAX_ATTEMPTS})\n")
@@ -638,7 +650,9 @@ def gpt_summary(query,model,language,categories,default_category,log_file=None):
             return default_category, None, None
         category, summary, title_zh = parse_category_and_summary(content, categories, default_category)
         if summary is not None:
+            translate_step.note_call(True)
             return category, summary, title_zh
+        translate_step.note_call(False, 'unparsable summary output')
     return category, summary, title_zh
 
 def write_source_line(ok, name, items, new, note=''):

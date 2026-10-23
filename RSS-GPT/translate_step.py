@@ -22,6 +22,8 @@
     TRANSLATE_MAX_CHARS=3000
     TRANSLATE_NUM_PREDICT=4096                  映射到 max_tokens
     认证复用 OPENAI_API_KEY（反代要 Bearer）
+    2026-10-23 起 key 由 key_rotator 决定（双 key 轮换 + 打穿退避），
+    每次请求现取，不再用模块导入时那份快照
 
 /api/generate 是 Ollama 原生接口，与 OpenAI 格式不通用：换地址不改请求体
 会直接 404，所以这里连请求体一起换成 messages 形态。
@@ -33,12 +35,45 @@ import json
 import os
 import urllib.request
 
+# 双 key 轮换 + 打穿退避（2026-10-23）。两条线共用 key_rotator 里那一个计数；
+# 模块缺失时按老路子走（用 .env 里那把 key、不记账），不拖垮翻译链。
+try:
+    import key_rotator
+except Exception:
+    key_rotator = None
+
 TRANSLATE_URL = os.environ.get('TRANSLATE_URL', '').strip().rstrip('/')
 TRANSLATE_MODEL = os.environ.get('TRANSLATE_MODEL', 'glm-5.3-flash').strip()
 TRANSLATE_TIMEOUT = float(os.environ.get('TRANSLATE_TIMEOUT', '180'))
 TRANSLATE_MAX_CHARS = int(os.environ.get('TRANSLATE_MAX_CHARS', '3000'))
 TRANSLATE_NUM_PREDICT = int(os.environ.get('TRANSLATE_NUM_PREDICT', '4096'))
 TRANSLATE_API_KEY = os.environ.get('OPENAI_API_KEY', '').strip()
+
+
+def api_key():
+    """当前该用的 key。
+
+    必须每次调用时现取：一轮要跑几小时，中途切过 key 之后，同一个进程里
+    后面的请求要立刻用上新 key。轮换器不可用时退回进程启动时读到的 .env 值。
+    """
+    if key_rotator is not None:
+        try:
+            k = key_rotator.current_key()
+            if k:
+                return k
+        except Exception:
+            pass
+    return TRANSLATE_API_KEY
+
+
+def note_call(ok, reason=''):
+    """把一次模型调用的结果交给轮换器（成功 / 失败都记一次）。"""
+    if key_rotator is not None:
+        try:
+            key_rotator.note(ok, reason)
+        except Exception:
+            pass
+
 
 # 术语表：硬性要求，出现即按此译。
 # 只钉子确实会摇摆的词。表太长模型会乱，要加必须拿实测数据说话。
@@ -60,8 +95,9 @@ def _glossary_block():
 
 def _headers():
     h = {'Content-Type': 'application/json'}
-    if TRANSLATE_API_KEY:
-        h['Authorization'] = 'Bearer ' + TRANSLATE_API_KEY
+    key = api_key()
+    if key:
+        h['Authorization'] = 'Bearer ' + key
     return h
 
 
@@ -102,15 +138,19 @@ def translate_to_zh(query, log_file=None):
             headers=_headers(),
         )
         resp = json.loads(urllib.request.urlopen(req, timeout=TRANSLATE_TIMEOUT).read())
-        out = _extract_choice(resp)
-        if not out:
-            _log(log_file, '翻译返回空内容，退回原文')
-            return query
-        _log(log_file, '翻译完成：%d 字符 -> %d 字符' % (len(src), len(out)))
-        return out
     except Exception as e:
+        note_call(False, '%s: %s' % (type(e).__name__, str(e)[:120]))
         _log(log_file, '翻译失败（%s: %s），退回原文' % (type(e).__name__, e))
         return query
+
+    out = _extract_choice(resp)
+    if not out:
+        note_call(False, 'empty content')
+        _log(log_file, '翻译返回空内容，退回原文')
+        return query
+    note_call(True)
+    _log(log_file, '翻译完成：%d 字符 -> %d 字符' % (len(src), len(out)))
+    return out
 
 
 BATCH_SIZE = int(os.environ.get('TRANSLATE_BATCH_SIZE', '10'))
@@ -170,28 +210,39 @@ def translate_batch_to_zh(items, log_file=None, stats=None):
             headers=_headers(),
         )
         resp = json.loads(urllib.request.urlopen(req, timeout=TRANSLATE_TIMEOUT).read())
-        if isinstance(stats, dict):
-            u = resp.get('usage') or {}
-            stats['translate'] = {
-                'prompt': u.get('prompt_tokens'),
-                'completion': u.get('completion_tokens'),
-                'total': u.get('total_tokens'),
-            }
+    except Exception as e:
+        note_call(False, '%s: %s' % (type(e).__name__, str(e)[:120]))
+        _log(log_file, '批量翻译失败（%s: %s），交调用方兜底' % (type(e).__name__, e))
+        return None
+
+    if isinstance(stats, dict):
+        u = resp.get('usage') or {}
+        stats['translate'] = {
+            'prompt': u.get('prompt_tokens'),
+            'completion': u.get('completion_tokens'),
+            'total': u.get('total_tokens'),
+        }
+    try:
         # strict=False：译文里出现裸换行这类控制字符时不至于整包作废。
         arr = json.loads(_strip_fence(_extract_choice(resp)), strict=False)
         out = {}
         for row in arr:
             if isinstance(row, dict) and 'id' in row and (row.get('zh') or '').strip():
                 out[row['id']] = row['zh'].strip()
-        if not out:
-            # 空返回要留证据：可能模型给了空数组，也可能换了结构。
-            _log(log_file, '批量翻译空返回，模型原始输出前 300 字符：%r'
-                 % _extract_choice(resp)[:300])
-        _log(log_file, '批量翻译：%d 条入 -> %d 条出' % (len(payload), len(out)))
-        return out or None
     except Exception as e:
+        note_call(False, 'unparsable batch JSON: %s' % str(e)[:100])
         _log(log_file, '批量翻译失败（%s: %s），交调用方兜底' % (type(e).__name__, e))
         return None
+
+    if not out:
+        # 空返回要留证据：可能模型给了空数组，也可能换了结构。
+        note_call(False, 'empty batch result')
+        _log(log_file, '批量翻译空返回，模型原始输出前 300 字符：%r'
+             % _extract_choice(resp)[:300])
+    else:
+        note_call(True)
+    _log(log_file, '批量翻译：%d 条入 -> %d 条出' % (len(payload), len(out)))
+    return out or None
 
 
 def _log(log_file, msg):

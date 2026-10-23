@@ -118,6 +118,8 @@ import translate_step  # noqa: E402  只 import，不改它
 TRANSLATE_URL = (os.environ.get('TRANSLATE_URL') or DEFAULT_TRANSLATE_URL).strip().rstrip('/')
 TRANSLATE_MODEL = os.environ.get('TRANSLATE_MODEL', 'glm-5.3-flash').strip()
 TRANSLATE_TIMEOUT = float(os.environ.get('TRANSLATE_TIMEOUT', '180'))
+# 只是启动时的快照，排障用；真正发请求时用 translate_step.api_key() 现取
+# （key_rotator 会在连续失败到 10 次时换 key）。
 TRANSLATE_API_KEY = os.environ.get('OPENAI_API_KEY', '').strip()
 
 # 句级翻译的输出比整段翻译长（多了换行和逐句之间的冗余），上限必须显式抬高，
@@ -158,6 +160,9 @@ def _post_generate(prompt, num_predict, timeout):
 
     2026-10-22 从 Ollama 原生 /api/generate 改到这里：那个接口与 OpenAI 格式
     不通用（prompt/options/response 三处都不同），换地址不改请求体会直接 404。
+
+    这里不记 key 的成功/失败账：一次调用的输出来到调用处才知道「算不算正确内容」
+    （translate 看非空，translate_blocks 看句数对不对），记账放在那两个地方。
     """
     body = json.dumps({
         'model': TRANSLATE_MODEL,
@@ -167,8 +172,11 @@ def _post_generate(prompt, num_predict, timeout):
         'max_tokens': num_predict,
     }).encode('utf-8')
     headers = {'Content-Type': 'application/json'}
-    if TRANSLATE_API_KEY:
-        headers['Authorization'] = 'Bearer ' + TRANSLATE_API_KEY
+    # key 每次现取（translate_step.api_key() -> key_rotator）：论文线跑几小时，
+    # 中途切过 key 之后下一段立刻用新 key。
+    key = translate_step.api_key()
+    if key:
+        headers['Authorization'] = 'Bearer ' + key
     req = urllib.request.Request(
         TRANSLATE_URL + '/chat/completions',
         data=body,
@@ -192,9 +200,15 @@ def translate(text):
     这里不能那样 —— 退回原文等于把英文当译文写进文件，前端会重复显示英文）。
     """
     prompt = translate_step._PREFIX + translate_step._glossary_block() + text
-    out = _post_generate(prompt, num_predict=TRANSLATE_NUM_PREDICT, timeout=TRANSLATE_TIMEOUT)
+    try:
+        out = _post_generate(prompt, num_predict=TRANSLATE_NUM_PREDICT, timeout=TRANSLATE_TIMEOUT)
+    except Exception as e:
+        translate_step.note_call(False, '%s: %s' % (type(e).__name__, str(e)[:120]))
+        raise
     if not out:
+        translate_step.note_call(False, 'empty content')
         raise RuntimeError('翻译返回空内容')
+    translate_step.note_call(True)
     return out
 
 
@@ -318,17 +332,25 @@ def translate_blocks(blocks):
     if not blocks:
         return []
     numbered = '\n'.join('%d. %s' % (i + 1, b) for i, b in enumerate(blocks))
-    raw = _post_generate(translate_step._glossary_block() + BLOCK_TRANSLATE_PROMPT + numbered,
-                         num_predict=TRANSLATE_NUM_PREDICT, timeout=TRANSLATE_TIMEOUT)
+    try:
+        raw = _post_generate(translate_step._glossary_block() + BLOCK_TRANSLATE_PROMPT + numbered,
+                             num_predict=TRANSLATE_NUM_PREDICT, timeout=TRANSLATE_TIMEOUT)
+    except Exception as e:
+        translate_step.note_call(False, '%s: %s' % (type(e).__name__, str(e)[:120]))
+        raise
     out = _parse_numbered(raw, len(blocks))
     if out is None:
         arr = _extract_json_array(raw)
         if isinstance(arr, list) and len(arr) == len(blocks):
             out = [str(x).strip() for x in arr]
     if out is None:
+        # 该出 N 句译文却对不上 —— 与「空返回」一样算一次失败
+        translate_step.note_call(False, 'lines/blocks mismatch (want %d)' % len(blocks))
         raise RuntimeError('中文行数与块数不符：期望 %d' % len(blocks))
     if any(not x for x in out):
+        translate_step.note_call(False, 'empty translated line')
         raise RuntimeError('中文译文有空行')
+    translate_step.note_call(True)
     return out
 
 
