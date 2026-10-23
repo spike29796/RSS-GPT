@@ -1,0 +1,1087 @@
+{
+ "id": "59f7553fd3ebb846",
+ "source": "arxiv-llm-eng",
+ "link": "https://arxiv.org/abs/2610.29755v1",
+ "title": "VeruSteer: Learning What to Repair Next in Verus",
+ "title_zh": "VeruSteer：在Verus中学习下一步修复什么",
+ "published": "2026-10-21T13:57:03Z",
+ "translated_at": "2026-10-23T00:54:15Z",
+ "paragraphs": [
+  {
+   "en": "LLM-based verification systems repair Rust proofs by revising programs in response to Verus diagnostics. When several error types are reported, pipelines such as AutoVerus and VeruSAGE select the next repair target using a preset priority. Yet each repair changes the program and the errors that follow, so the same reported types can require different choices at different states. We present VeruSteer, which learns to select error types from the outcomes of alternative repair trajectories. It constructs repair trees offline and compares paths from the same initial program by verification success, repair rounds, and final verification progress. These comparisons supervise a selector that combines step-wise imitation with trajectory preference ranking. The selector uses self-attention over the program, verifier feedback, and earlier selections to rank the currently reported types. It replaces the default priority within a single repair trajectory, keeping the existing repair agents and adding no repair or verifier calls for selection. We evaluate VeruSteer by replaying its choices on stored AutoVerus and VeruSAGE test trees under four generation configurations. Across 1,270 test trees, VeruSteer increases verified outcomes from 185 to 194 (14.57% to 15.28%), gaining 12 successes and losing three for a net improvement of 0.71 percentage points. Among trees where the default fails but a recorded alternative verifies, VeruSteer succeeds on 3 of 4 AutoVerus trees and 9 of 11 VeruSAGE trees. Among trees with recorded alternatives where the default verifies, it retains success on 14 of 15 AutoVerus trees and 12 of 14 VeruSAGE trees. It also finds shorter successful trajectories and improves final progress on some trees where all recorded trajectories fail. These replay results provide evidence that learning repair order from trajectory outcomes can yield a modest overall verification gain with existing repair agents.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Verus ( Lattuada et al., 2023 ) verifies Rust ( Matsakis and Klock, 2014 ) programs against formal specifications, using proof annotations to help an SMT solver discharge the resulting obligations. A verification attempt may fail because the program has compilation or type errors, or because Verus cannot prove an obligation such as an assertion, a loop invariant, or an arithmetic-safety condition. An unproved obligation does not by itself establish a program bug: the program may instead lack the annotations needed to justify it. LLM-based systems such as AutoVerus ( Yang et al., 2025a ) and VeruSAGE ( Yang et al., 2025b ) address these failures through iterative repair. Repair can preserve the existing implementation, specifications, and useful proof annotations while using verifier diagnostics to focus revisions on unresolved obligations, rather than regenerating the entire annotated program.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "When several diagnostics are reported together, a repair pipeline must decide which one to address next. AutoVerus and VeruSAGE classify verifier diagnostics into categories, which we call error types, and invoke a specialized repair agent for the selected type. They make this selection using a preset priority over error types, falling back to diagnostic order when none of the priority-listed types is present. This rule does not consider the program, diagnostic details, or earlier repair attempts. These signals can matter: the program determines how proof obligations depend on one another, diagnostics identify the conditions that remain unproved, and the repair history records which changes have already been tried and what they achieved.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The consequences of target selection extend beyond the current round. In our motivating example, the loop is annotated with the invariant sum == arithmetic_sum(i as nat) ; its body increments i and adds it to sum . Preserving this invariant requires establishing that the old sum plus the incremented index equals arithmetic_sum at the new index. Together with a bound on this mathematical sum, the same relation can justify that the machine-integer addition does not overflow. The invariant failure therefore identifies a proof relation useful to both obligations, making it a promising first repair target in this example. In the recorded tree, the invariant-first branch reaches verification after subsequent assertion and overflow repairs, whereas the overflow-first branch leaves an assertion unproved through the remaining budget (Section 3.1 ). Moreover, later states on the successful trajectory report the same error types but require different selections, so no fixed ordering reproduces that trajectory.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We study how often such differences arise in 3,224 repair trees over 684 tasks, collected with AutoVerus and VeruSAGE (Section 3.2 ). A repair tree records alternative repair sequences from one initial program: nodes are program states with verifier feedback, branches record repairs targeting different reported error types, and each root-to-leaf path is a repair trajectory. Branches within a tree use the same repair configuration and budget. Of the 718 trees with alternative trajectories, 32.0% contain an alternative that verifies where the default fails, verifies in fewer rounds, or ends with greater progress when all trajectories fail. Among states with a uniquely best type under the recorded outcomes, choosing the most frequently best type for each reported set recovers that choice at only 62.0% of states. These observations motivate selecting repair targets from their context and judging choices by the trajectories they produce.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Adaptive target selection already appears in StarVerus ( Jiang et al., 2026 ) , whose LLM planner analyzes the program and diagnostics to choose a repairer. This establishes a precedent for contextual selection, but leaves open how to learn such a policy explicitly from observed repair outcomes. We investigate supervision derived from comparisons of alternative repair trajectories, rather than relying on a prompted planner’s analysis alone. An ordinary run observes the result of its selected target but not where other targets would have led, and the value of a selection may emerge only after several further repairs. Comparing complete trajectories from the same starting program provides evidence about this delayed effect.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We present VeruSteer, a framework for learning error-type selection from repair trajectories. During offline data construction, VeruSteer branches on the reported error types, using the pipeline’s existing agents and acceptance checks to record one repair outcome for each type. The resulting paths expose different repair orders under the same budget. We derive preferences from whether a path verifies, how many rounds a successful path needs, and how much verification progress an unsuccessful path makes. Comparisons within each tree let both successful and failed paths contribute supervision.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "VeruSteer formulates this selection as next-item prediction in sequential recommendation: a trajectory forms the interaction sequence, and error types are the candidate items. Its error type repair selector uses a self-attention encoder over the current program, verifier feedback, and repair history to score the types available at each state. It learns through two objectives: step-wise imitation of preferred trajectories and pairwise ranking based on their outcomes. At deployment, one ranking chooses the next target and the underlying pipeline performs the repair. This follows a single trajectory under the original budget and adds no repair or verifier call for selection.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We evaluate VeruSteer by replaying its choices on stored test trees from both pipelines, with two generation LLMs and two prompting settings. We measure whether it retains outcomes already achieved by the default rule and finds better alternatives when the trees contain them. Where the default fails but an alternative verifies, VeruSteer recovers 75.0% of the available verification improvements on AutoVerus and 81.8% on VeruSAGE. On trees with alternative trajectories where the default verifies, it preserves 93.3% and 85.7% of those successes, respectively. It also finds shorter verified trajectories and improves final progress on trees where no trajectory verifies.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "On VeruSAGE, replacing the selector with Random or rules learned from error types alone reduces recovery of verification opportunities to 43.6–54.5%. Ablations further show that the program and diagnostics, both training losses, and the representations of earlier selections and state order contribute to this recovery.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "This paper makes the following contributions:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Characterizing error selection. We formulate the choice of repair target in terms of trajectory outcomes, and construct a corpus of repair trees that shows both the opportunities missed by preset priorities and how the better choice depends on context.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Learning from alternative trajectories. We develop VeruSteer, which combines preferences from successful and failed repair paths with a sequence model that selects among the currently reported error types of an existing repair pipeline.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Controlled evaluation of repair selection. We compare selectors over the same recorded transitions in AutoVerus and VeruSAGE, measuring default-outcome preservation and alternative recovery, and examine selection strategies, model components, and contextual inputs.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Verus ( Lattuada et al., 2023 ) is a deductive verifier for Rust ( Matsakis and Klock, 2014 ) : developers annotate functions with specifications and proof code, and Verus discharges the resulting verification conditions with the SMT solver Z3 ( De Moura and Bjørner, 2008 ) . A function’s contract consists of requires and ensures clauses, which may call ghost spec functions. Proof code, such as loop invariant and decreases clauses, assertions, and proof lemmas, helps Verus discharge the obligations that the contract and the implementation induce, and is erased before compilation. Before attempting any proof, Verus checks that the program is well-typed and follows Verus’s language rules, such as the separation of ghost and executable code. Each failed check yields a diagnostic, which consists of a message naming the kind of failure (e.g., invariant not satisfied at end of loop body ), a source location, and the offending expression. A single run can report several diagnostics, followed by a summary line such as verification results:: 5 verified, 2 errors . The line counts the verified proof obligations and the reported errors, and a program verifies when it reports no errors.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Writing specifications and proof code by hand takes considerable expertise. LLM-assisted verification systems for Verus automate this work and refine their output in a loop with the verifier. Each round runs Verus on the current program, asks an LLM to edit the program based on the diagnostics, and checks the resulting candidates, until the program verifies, or a round budget runs out. A round therefore involves three decisions: which failure to target, how to repair it, and which candidate to carry forward. Retrieved repository context ( Zhong et al., 2025 ) and counterexamples ( Yang et al., 2026 ) help the LLM understand a failure and construct a repair, while tree search ( Aggarwal et al., 2024 ) and candidate ranking ( Yang et al., 2026 ) decide which candidates to carry forward. The first decision determines which failure the repair round addresses.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Existing systems make this decision in different ways. SAFE’s self-debugging ( Chen et al., 2024b ) and AlphaVerus’s Treefinement ( Aggarwal et al., 2024 ) pass the program and all of its diagnostics to the model and leave the target implicit. AutoVerus ( Yang et al., 2025a ) , VeruSAGE ( Yang et al., 2025b ) , and VeriStruct ( Sun et al., 2025 ) make the choice explicit: they select one diagnostic and dispatch a repair agent or module specialized for its class. Specialization lets each prompt carry class-specific repair guidance. AutoVerus’s overflow agent, for instance, asks for loop invariants that bound every variable in the overflowing expression. All three systems make the choice with a preset priority over error types. StarVerus ( Jiang et al., 2026 ) instead lets an LLM planner make it. Given the current implementation, specifications, diagnostics, and project context, the planner diagnoses a root cause and proposes a repair order over error types, and the first type in that order selects a specialized repairer. The planner’s choice thus adapts to the program and its diagnostics. These approaches do not explicitly learn preferences among error types from comparisons of the downstream outcomes of alternative repair orders.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "In AutoVerus and VeruSAGE, each round classifies diagnostics by error type, selects one type, and invokes the corresponding repair agent (Figure 1 ). The agent uses the selected diagnostic to decide how to edit the program. If the patch passes the pipeline’s acceptance checks, the next round starts from the patched program. Otherwise the round is spent, and the next one starts from the same program.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Both pipelines implement their preset priority as a short hard-coded list, which applies whenever Verus reports several types at once. The list ranks MismatchedType (type mismatches) first, then PreCondFailVecLen (vector-length preconditions), ArithmeticFlow (possible arithmetic overflow), and InvFailFront (invariants failing before the loop). VeruSAGE appends InvFailEnd (invariants failing at the end of the loop body). If none of these types is present, the first diagnostic in Verus’s output is repaired. Type mismatches come first because they keep Verus from attempting any proof. Verus imposes no such order on proof failures, so the list fixes one in advance, the same for every program and every round. The rule thus depends only on which types are present and on the order in which Verus prints its diagnostics.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Consider compute_arith_sum , which sums 1 + 2 + ⋯ + n 1+2+\\cdots+n in a loop using u64 arithmetic. Its loop invariants tie the running sum to the specification function arithmetic_sum and bound it by u64::MAX . In the initial state S 0 S_{0} , Verus reports (see the error messages at the lower left of Figure 2 ) that a loop invariant may fail at the end of the loop body ( InvFailEnd ) and that sum = sum + i may overflow ( ArithmeticFlow ). The default rule (Section 2.2 ) ranks ArithmeticFlow above InvFailEnd , so it repairs the overflow first. Figure 2 shows the repair tree that VeruSAGE with DeepSeek-Chat (five-shot) produces for this program within a budget of five rounds. Besides the default trajectory, the tree contains the trajectories that select a different reported type at some state. Each node’s score [ x , y ] [x,y] comes from the summary line of Verus’s output, where x x is the number of verified proof obligations and y y the number of reported errors. For S 0 S_{0} , the summary line 5 verified, 1 errors gives [ 5 , 1 ] [5,1] . The error count y y is not the number of error types: S 0 S_{0} counts one error, yet its diagnostics fall into two types, InvFailEnd and ArithmeticFlow , which are listed beside the node and on which the tree branches.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The default (red) trajectory selects ArithmeticFlow at S 0 S_{0} and proceeds to S 2 S_{2} , where AssertFail is the only reported type. It repeatedly targets AssertFail in each of the four remaining rounds and ends unverified at S 20 S_{20} . Its score stays at [ 5 , 1 ] [5,1] from S 0 S_{0} to S 20 S_{20} , indicating that none of its five rounds makes measurable progress. The verified (green) trajectory instead selects InvFailEnd at S 0 S_{0} and verifies the program at S 15 S_{15} , with score [ 9 , 0 ] [9,0] , after five rounds. The default rule thus fails to identify a successful repair order that fits within the same budget.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Getting the first choice right is not enough. Along the verified trajectory, S 1 S_{1} , S 3 S_{3} , and S 6 S_{6} all report { AssertFail , ArithmeticFlow }. At S 1 S_{1} and S 3 S_{3} , the verified trajectory selects AssertFail , whereas ArithmeticFlow leads only to the unverified leaves S 19 S_{19} and S 18 S_{18} . At S 6 S_{6} , it selects ArithmeticFlow , whereas AssertFail leads only to the unverified leaves S 16 S_{16} and S 17 S_{17} . The default rule, which ranks ArithmeticFlow above AssertFail , goes wrong at S 1 S_{1} and S 3 S_{3} , and the reverse ranking goes wrong at S 6 S_{6} . No fixed ranking of the two types reproduces the verified trajectory.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We compare scores by preferring larger x x , breaking ties by smaller y y (Section 4.2 ). A higher score in the next state does not necessarily lead to a better final outcome. At S 1 S_{1} , ArithmeticFlow yields S 4 S_{4} with score [ 6 , 3 ] [6,3] , one more verified obligation than S 3 S_{3} with [ 5 , 2 ] [5,2] , yet only AssertFail leads to verification.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "In this tree, the better choice thus varies from state to state, and the outcomes of the subsequent trajectories reveal which choice it is.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The example makes two observations on a single task: the default order can miss a better trajectory, in this case a verified one, and the same set of reported error types can favor different choices at different states. We now examine how widely both observations hold in a corpus of repair trees like the one in Figure 2 . Each tree starts from one initial program repaired by AutoVerus or VeruSAGE. Whenever a state reports several error types, the tree branches once for each type (Section 5.1 ). Its trajectories therefore share the initial program, pipeline, LLM, prompting setting, and repair budget, and differ in their error-type selections, so their outcomes can be compared directly. The corpus contains 3,224 such trees over 684 tasks, collected with two LLMs and two prompting settings (Section 6.1 ).",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We first identify trees in which the default trajectory reaches a state with several reported error types, offering a choice of repair target. Of the 3,224 trees, 718 (22.3%) contain such a state, and all of them record alternative trajectories. In the other 2,506 trees, every selection state on the recorded default trajectory offers only one error type.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We compare trajectories by verification first, then by the number of rounds if both verify, and by the progress of the final state if neither does (more verified proof obligations, then fewer reported errors). Section 4.2 defines this order formally. In 230 of the 718 trees (32.0%), an alternative trajectory is strictly better than the default. This share is similar for AutoVerus (32.7%) and VeruSAGE (31.2%). Of these 230 trees, 67 (9.3% of the 718) show gains in verification or repair efficiency. In 39 of them, as in the example, an alternative verifies a program that the default leaves unverified. In the other 28, both verify, but an alternative needs fewer rounds. In the remaining 163, no trajectory verifies, and an alternative ends with more progress.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We next test the second observation, that the same reported types can favor different choices at different states. A fixed ranking always picks the same type for the same reported types, so it cannot follow such variation. In the example, the better choice for { AssertFail , ArithmeticFlow } was AssertFail at S 1 S_{1} and S 3 S_{3} but ArithmeticFlow at S 6 S_{6} . To measure this across the corpus, we take every state at which a tree tries several types and follow each type to the best trajectory below it. At 4,943 such states, one type leads to a strictly better trajectory than all others, and we call it the best choice. Among them, the states that report the same pair as the example favor ArithmeticFlow at 361 and AssertFail at 276. At 97.0% of the 4,943 states, another of them reports the same types but has a different best choice. Even mapping each set of reported types to its most frequent best choice recovers the best choice at only 62.0% of them. Any fixed ranking maps each set to one type, so it misses the best choice at 38.0% or more of them.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Both observations of the example thus recur across the corpus. These results motivate a selection policy that uses the repair context to choose among reported error types, guided by the outcomes of alternative repair trajectories.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "This section makes the selection studied in Section 3 precise: the repair interaction in which it occurs, the order by which its trajectories are compared, and the information on which it may depend.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "A repair run starts from an initial program c 1 c_{1} that Verus does not verify, with a fixed repair pipeline, LLM, prompting setting, and budget of B B rounds. At round i i , the verifier maps the current program c i c_{i} to",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "where x i x_{i} and y i y_{i} are the numbers of verified proof obligations and reported errors in Verus’s summary line (Section 3.1 ), and e i e_{i} is the full verifier feedback, which contains the diagnostics and the summary line. We call the pair ( c i , e i ) (c_{i},e_{i}) the i i -th state of the run. If c i c_{i} fails to compile, Verus attempts no proof, and we set ( x i , y i ) = ( − 1 , − 1 ) (x_{i},y_{i})=(-1,-1) . The program verifies when Verus completes successfully and reports y i = 0 y_{i}=0 . Otherwise, the pipeline classifies the diagnostics in e i e_{i} using a fixed vocabulary 𝒯 \\mathcal{T} of error types and collects all identified types into the candidate set:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "If this set is nonempty and budget remains, the pipeline selects a target type t i ∈ 𝒯 cand ( i ) t_{i}\\in\\mathcal{T}^{(i)}_{\\mathrm{cand}} . It passes c i c_{i} and the first diagnostic of type t i t_{i} in e i e_{i} to the repair agent for t i t_{i} , which generates candidate revisions of c i c_{i} ( Yang et al., 2025a ; Yang et al., 2025b ) . We write the resulting repair step as:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "where Repair \\operatorname{Repair} generates and checks the candidates under the pipeline’s own rules, which may also depend on earlier rounds, and returns the revision it accepts, or c i c_{i} if it accepts none. Each step consumes one round of the budget, including a step that accepts no candidate and leaves c i + 1 = c i c_{i+1}=c_{i} . The run stops when the program verifies, when no error type can be extracted from the verifier feedback, or after B B rounds. A run with n ≤ B n\\leq B rounds produces a trajectory denoted by:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "which reduces to ( c 1 , e 1 ) (c_{1},e_{1}) when n = 0 n=0 . Its final state ( c n + 1 , e n + 1 ) (c_{n+1},e_{n+1}) comes from checking c n + 1 c_{n+1} with Equation ( 1 ), and this check does not count as a round.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We compare the trajectories of runs with the same setup, that is, the same initial program, pipeline, LLM, prompting setting, and budget. Their outcomes differ in three respects: whether the final program verifies, how many rounds the run takes, and how much progress the final state makes. For a trajectory τ \\tau with n n rounds, let V ⁡ ( τ ) ∈ { 0 , 1 } V(\\tau)\\in\\{0,1\\} indicate whether its final program verifies. The progress score of a state is the pair Q ⁡ ( c i , e i ) := ( x i , y i ) Q(c_{i},e_{i}):=(x_{i},y_{i}) , the score [ x , y ] [x,y] of Section 3.1 . We compare progress scores by prioritizing more verified proof obligations, breaking ties by fewer reported errors: ( x , y ) > ( x ′ , y ′ ) (x,y)>(x^{\\prime},y^{\\prime}) if and only if x > x ′ x>x^{\\prime} or ( x = x ′ ∧ y < y ′ ) (x=x^{\\prime}\\land y<y^{\\prime}) . We write Q ⁡ ( τ ) := Q ⁡ ( c n + 1 , e n + 1 ) Q(\\tau):=Q(c_{n+1},e_{n+1}) for the progress of the final state of τ \\tau . For trajectories τ \\tau and τ ′ \\tau^{\\prime} with n n and n ′ n^{\\prime} rounds, the trajectory preference relation ≻ \\succ , where τ ≻ τ ′ \\tau\\succ\\tau^{\\prime} reads “ τ \\tau is better than τ ′ \\tau^{\\prime} ”, is expressed as:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Verification comes first, since it is the goal of repair. Between two verified trajectories, the one with fewer repair rounds is preferred. Between two unverified ones, the one whose final state makes more progress is better. Figure 3 illustrates the three cases.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Two trajectories are tied when neither is better, for example, when both verify in the same number of rounds. A trajectory is best if no trajectory of a run with the same setup is better. Because the LLM samples the candidates, the same state and target type can lead to different successors, so exhaustively exploring these trajectories is impractical. We therefore compare trajectories recorded in repair trees such as the one in Figure 2 . Each expanded node samples one successor per candidate type (Section 5.1 ), so the recorded root-to-leaf paths form a finite sample of the possible trajectories within budget B B .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The pipeline selects t i t_{i} after Verus checks c i c_{i} and before the repair agent runs. At that point it knows the i i -th state ( c i , e i ) (c_{i},e_{i}) and the repair history ℋ i := ( c 1 , e 1 , t 1 , … , c i − 1 , e i − 1 , t i − 1 ) \\mathcal{H}_{i}:=(c_{1},e_{1},t_{1},\\ldots,c_{i-1},e_{i-1},t_{i-1}) of earlier states and the types selected in them. We call 𝒞 i := ( c i , e i , ℋ i ) \\mathcal{C}_{i}:=(c_{i},e_{i},\\mathcal{H}_{i}) the decision context. It covers the trajectory up to the i i -th state, while the consequences of the choice appear only in later states. A selection policy π \\pi maps each decision context to one of its candidate types, t i = π ⁡ ( 𝒞 i ) ∈ 𝒯 cand ( i ) t_{i}=\\pi(\\mathcal{C}_{i})\\in\\mathcal{T}^{(i)}_{\\mathrm{cand}} . The default rule of Section 2.2 is one such policy. It decides from the candidate set and, when no priority-listed type is reported, from the order of the diagnostics. The trajectory it induces is the default trajectory τ 0 \\tau^{0} .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Problem 1 (Trajectory-Aware Error Selection). Given a repair pipeline and repair trees collected from the training instances, learn a selection policy π \\pi that generalizes to held-out instances by selecting the most appropriate error type for each repair state, thereby producing trajectories with outcomes that are as favorable as possible under ≻ \\succ .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Section 4 defined the decision context 𝒞 i \\mathcal{C}_{i} , the candidate set 𝒯 cand ( i ) \\mathcal{T}^{(i)}_{\\mathrm{cand}} , and the trajectory preference ≻ \\succ , and Problem 1 asks for a selection policy π \\pi learned from recorded repair trees. VeruSteer expands repair trees to obtain alternative trajectories from the same initial program, turns their outcomes under ≻ \\succ into supervision, and trains an error type repair selector to determine which error type should be prioritized for repair in the current decision context (Figure 4 ). At deployment, this model replaces the default rule and leaves the rest of the pipeline unchanged.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "A normal run selects one type at each state, so it never observes where the other candidate types would have led. To observe this, we expand a repair tree 𝒢 \\mathcal{G} from each initial program. At each state ( c i , e i ) (c_{i},e_{i}) , instead of selecting one type, we run the repair step Repair ⁡ ( c i , e i , t ) \\operatorname{Repair}(c_{i},e_{i},t) once for every candidate type t ∈ 𝒯 cand ( i ) t\\in\\mathcal{T}^{(i)}_{\\mathrm{cand}} , with the pipeline’s own agents and acceptance checks. Each step yields a child state, which we expand in the same way. As in a normal run, a step that accepts no candidate yields a child with the parent’s program. A node becomes a leaf when its program verifies, when its feedback yields no candidate type, or when B B rounds have been spent. We set B = 5 B=5 . The underlying pipelines realize most of their repair capability within five rounds, and the budget keeps expansion affordable. Figure 2 shows such a tree: at S 0 S_{0} , it branches once for InvFailEnd and once for ArithmeticFlow .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Each node holds a state with its round, candidate set, and progress score, and each edge holds the type selected at its parent. A root-to-leaf path is therefore a trajectory, and its part up to a node is the decision context of the selection made at that node. Each path provides the decision contexts and selected types along it, together with the outcome of the resulting trajectory.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The path that follows the default rule at every node is the default trajectory τ 0 \\tau^{0} , and the other paths are alternative trajectories. All of them start from the same initial program under the same setup, so ≻ \\succ compares them directly.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The trees supervise the selector through comparisons between trajectories of the same tree. Each comparison is an ordered pair ( τ + , τ − ) (\\tau^{+},\\tau^{-}) with τ + ≻ τ − \\tau^{+}\\succ\\tau^{-} . The preferred trajectory τ + \\tau^{+} verifies where the dispreferred trajectory τ − \\tau^{-} does not, verifies in fewer rounds, or, when neither verifies, ends with more progress.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We form the pairs of every tree by the same rule, which follows the three cases of ≻ \\succ . A verified trajectory is paired with the unverified trajectories and with the slower verified ones. When no trajectory of the tree verifies, a trajectory with the most progress is paired with those that end with less. A tree in which no trajectory beats another, such as a tree with a single path, yields no pair. Whether a trajectory follows the default rule plays no part: τ 0 \\tau^{0} is paired like any other trajectory. For example, the tree in Figure 2 has one verified trajectory, which ends at S 15 S_{15} , and five unverified ones, one of which is the default trajectory. The verified trajectory is τ + \\tau^{+} , and each unverified one is a τ − \\tau^{-} . Each tree contributes at most 1,000 pairs, and we denote the resulting set by 𝒟 pair \\mathcal{D}_{\\mathrm{pair}} .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Each pair carries two kinds of information. The preferred trajectory τ + \\tau^{+} shows which type was selected in each of its decision contexts. The pair as a whole shows which of two trajectories from the same initial program ends better. Section 5.4 trains the selector on both.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The selector implements the policy π \\pi of Problem 1. Given a decision context 𝒞 i \\mathcal{C}_{i} , it scores the error types and selects the highest-scoring type in 𝒯 cand ( i ) \\mathcal{T}^{(i)}_{\\mathrm{cand}} . Since 𝒞 i \\mathcal{C}_{i} contains the earlier states and selections, the choice can depend on the whole repair process so far. Therefore, inspired by sequential recommendation ( Hidasi et al., 2016 ; Kang and McAuley, 2018 ) , we formulate error type selection as a next-item prediction problem, where a trajectory corresponds to an interaction sequence, error types correspond to items, and 𝒯 cand ( i ) \\mathcal{T}^{(i)}_{\\mathrm{cand}} denotes the set of candidate items available at round i i .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The selector reads 𝒞 i \\mathcal{C}_{i} as a sequence of i i positions, one for each state ( c 1 , e 1 ) , … , ( c i , e i ) (c_{1},e_{1}),\\ldots,(c_{i},e_{i}) . Position i i pairs the i i -th state with the error type t i − 1 t_{i-1} selected in the round before it, where t 0 t_{0} is a padding symbol. Its input vector is encoded as follows:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "where BGE ⁡ ( ⋅ ) \\operatorname{BGE}(\\cdot) is a pretrained text embedding model that produces frozen representations of the complete program and verifier feedback, Emb t ⁡ ( ⋅ ) \\operatorname{Emb}_{t}(\\cdot) is a trainable error-type embedding initialized by applying BGE ⁡ ( ⋅ ) \\operatorname{BGE}(\\cdot) to the corresponding error-type name, and 𝐩 j \\mathbf{p}_{j} is a positional embedding. The matrices 𝐖 s \\mathbf{W}_{s} and 𝐖 t \\mathbf{W}_{t} are learnable projection matrices that map the representations into the same dimensional space, [ ⋅ ; ⋅ ] [\\,\\cdot\\,;\\,\\cdot\\,] denotes concatenation, and LN ⁡ ( ⋅ ) \\operatorname{LN}(\\cdot) denotes layer normalization. The program and feedback channels distinguish states that report the same error types, which can favor different choices (Section 3.2 ). Note that the error-type channel records which types the pipeline has already targeted and in which order. The sequence is right-padded to a window length of L = 5 L=5 to match the repair budget.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Subsequently, to model the decision dependencies among states at different rounds in the sequence, we employ a self-attention encoder ( Vaswani et al., 2017 ) to aggregate the sequence into a contextual vector:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "where AttEnc Θ ⁡ ( ⋅ , ⋅ , ⋅ ) \\operatorname{AttEnc}_{\\Theta}(\\cdot\\,;\\,\\cdot,\\cdot) denotes the self-attention encoder network, Θ \\Theta denotes its parameters, and 𝐬 i \\mathbf{s}_{i} denotes the current decision context representation. The causal mask 𝐌 causal \\mathbf{M}_{\\mathrm{causal}} restricts each position to itself and earlier positions, as at actual deployment. The padding mask 𝐌 pad \\mathbf{M}_{\\mathrm{pad}} excludes the positions after a trajectory ends.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "After obtaining 𝐬 i \\mathbf{s}_{i} , we further measure its compatibility with each error type to identify the one best suited to the current decision state. Specifically, each error type is first encoded as an embedding in the same representation space and then scored against 𝐬 i \\mathbf{s}_{i} . The highest-scoring error type is selected as the one to be repaired in the current state, with the selection restricted to the candidate set. This process is formalized as follows:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "This process implements the requirement of Section 4.3 that π \\pi choose among the types that the current feedback reports. Notably, the vocabulary 𝒯 \\mathcal{T} combines the error types defined by our AutoVerus and VeruSAGE data-collection implementations, yielding the 35 types listed in Table 1 . Superscripts mark the default priority ranks from Section 2.2 , and rank 5 applies only to VeruSAGE.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The error-type embedding table consists of embeddings for 35 error types and one padding embedding. Each type embedding is obtained by encoding its corresponding type name, and the configuration of the BGE encoder is provided in Section 6.1 .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "As discussed in Section 5.2 , the selector learns from the two types of information contained in each paired sample ( τ + , τ − ) ∈ 𝒟 pair (\\tau^{+},\\tau^{-})\\in\\mathcal{D}_{\\mathrm{pair}} . Specifically, we optimize the selector by combining a cross-entropy loss with an auxiliary ranking loss. The cross-entropy loss supervises the recorded action at each valid step of τ + \\tau^{+} , whereas the ranking loss incorporates τ − \\tau^{-} as an explicit comparison, providing the selector with supervision on relative repair outcomes in addition to action imitation.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "First, for the cross-entropy loss term, the target at position i i in τ + \\tau^{+} is the error type t i + t_{i}^{+} selected at that position. The stepwise objective applies masked cross-entropy at every valid position:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "where 𝔼 𝒟 pair \\mathbb{E}_{\\mathcal{D}_{\\mathrm{pair}}} denotes the average over training pairs and is estimated using mini-batch averages during training, P ⁡ ( t ∣ 𝒞 i + ) P(t\\mid\\mathcal{C}_{i}^{+}) is the softmax probability distribution computed from the scores f ^ ( ⋅ ∣ 𝒞 i + ) \\hat{f}(\\cdot\\mid\\mathcal{C}_{i}^{+}) restricted to 𝒯 cand + ( i ) \\mathcal{T}^{+(i)}_{\\mathrm{cand}} , and m i m_{i} masks padding positions and positions randomly dropped during training. In our implementation, we use the mask m m to randomly drop 10% of otherwise valid positions as a form of regularization to improve generalization.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Next, for the auxiliary ranking loss, we use the selector’s score of a trajectory’s final selected error type under its final decision context as a surrogate trajectory score, g ⁡ ( τ ) = f ^ ​ ( t last ∣ 𝒞 last ) g(\\tau)=\\hat{f}(t_{\\mathrm{last}}\\mid\\mathcal{C}_{\\mathrm{last}}) . The final decision context includes the preceding states and selections within the input window. Each sampled trajectory pair contributes one ranking term, and we do not construct additional ranking examples from its prefixes. Using the observed outcome preference τ + ≻ τ − \\tau^{+}\\succ\\tau^{-} , the BPR objective ( Rendle et al., 2009 ) encourages g ⁡ ( τ + ) > g ⁡ ( τ − ) g(\\tau^{+})>g(\\tau^{-}) :",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "where σ \\sigma denotes the sigmoid function. Through the self-attention mechanism, this supervision updates the shared parameters that encode repair histories and score candidate actions. It provides an auxiliary preference signal rather than directly optimizing trajectory selection probabilities.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Finally, by combining Equations ( 9 ) and ( 10 ), the overall optimization objective is defined as:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "where Θ \\Theta denotes the parameters of the self-attention encoder, and 𝐰 \\mathbf{w} denotes the remaining learnable parameters, including 𝐖 s \\mathbf{W}_{s} , 𝐖 t \\mathbf{W}_{t} , and 𝐩 i \\mathbf{p}_{i} . In summary, we train a selector using preference pairs collected from the two pipelines.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "At deployment, the pipeline runs as in Section 4.1 , with the selector in place of the default rule. At round i i , VeruSteer builds 𝒞 i \\mathcal{C}_{i} from the run so far, selects t i t_{i} with Equation 8 , and the pipeline executes c i + 1 = Repair ⁡ ( c i , e i , t i ) c_{i+1}=\\operatorname{Repair}(c_{i},e_{i},t_{i}) before the next round. The agents, acceptance checks, and verifier stay unchanged, and the run follows a single trajectory under the original budget. During online execution, VeruSteer neither expands the repair tree nor introduces additional repair or verifier calls. Algorithm 1 summarizes the training and deployment procedures.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "At each decision, inference computes two frozen text embeddings for the current program and verifier feedback, followed by O ⁡ ( L 2 ​ d ) O(L^{2}d) self-attention and O ⁡ ( | 𝒯 cand ( i ) | ​ d ) O(|\\mathcal{T}^{(i)}_{\\mathrm{cand}}|d) candidate scoring for hidden dimension d d .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Our evaluation addresses the following research questions:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Overall performance. How well does VeruSteer preserve and improve the default rule’s repair outcomes?",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Ablation study. How do the error-type selection method, the training losses and input representations, and the input sequence length of VeruSteer affect its repair outcomes?",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Repair progress across rounds. How do the numbers of verified proof obligations and reported errors change over the repair rounds under VeruSteer and under the default rule?",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Choices among reported error types. When a state reports several error types, how do the choices of VeruSteer and their verification outcomes differ from those of the default rule?",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We first describe the pipelines, data, training, and evaluation procedure (Section 6.1 ). We then examine repair outcomes in RQ1, ablate the selector in RQ2, and study repair progress and individual choices in RQ3 and RQ4.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Repair pipelines and LLMs. We use AutoVerus ( Yang et al., 2025a ) and VeruSAGE ( Yang et al., 2025b ) as the underlying repair pipelines. Both select one error type per round and dispatch the repair agent specialized for it (Section 2.2 ). VeruSteer is called at this dispatch point and ranks the types extracted from the current verifier output, with the same agents, acceptance checks, and verifier. The initial programs are generated by DeepSeek-Chat or Qwen-Coder (i.e., Qwen3-Coder-480B-A35B-Instruct), each under zero-shot and five-shot prompting, which gives four generation configurations per pipeline. All repair rounds use DeepSeek-Chat.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Datasets and splits. The StarVerus benchmark contains 762 verification tasks ( Jiang et al., 2026 ) . A task is one benchmark problem, independent of the generation model, prompting setting, and repair pipeline. Each generation configuration produces at most one initial program for a task, so a task has up to four initial programs. Each initial program is repaired by both pipelines. An initial program that already passes Verus has nothing to repair and yields no repair tree. 684 of the 762 tasks have at least one repair tree and form our corpus; the other 78 have none.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Each repair tree is built from one initial program and one repair pipeline. It explores alternative error-type selections from the initial state (Section 5.1 ), and each root-to-leaf path is a repair trajectory. In total, 1,614 initial programs have repair trees, and they yield 3,224 trees: 1,613 for AutoVerus and 1,611 for VeruSAGE. Every tree contains the default trajectory, and 718 of the 3,224 trees also contain alternative trajectories.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We split the 684 tasks into 342 training, 69 validation, and 273 test tasks, approximately 5:1:4. The split is by task: all trees of a task fall in the same split, so no task contributes to both training and evaluation. Table 2 reports the size of each split. The training trees provide 18,885 preference pairs (Section 5.2 ) for training the selector, and the validation trees are used to select its checkpoint.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Implementation and training. For VeruSteer, BGE ⁡ ( ⋅ ) \\operatorname{BGE}(\\cdot) employs the pretrained BGE-M3 1 1 1 https://huggingface.co/BAAI/bge-m3 embedding model ( Chen et al., 2024a ) , which separately encodes the program, verifier feedback, and error type associated with each state into 1,024-dimensional vectors. These representations are then projected into a 64-dimensional space through the projection matrices 𝐖 s \\mathbf{W}_{s} and 𝐖 t \\mathbf{W}_{t} . The self-attention encoder AttEnc Θ ⁡ ( ⋅ ) \\operatorname{AttEnc}_{\\Theta}(\\cdot) consists of a single-head self-attention module followed by a position-wise feed-forward layer, with a dropout rate of 0.1. The complete selector takes an input sequence of length L = 5 L=5 , covering the latest five states. We train the selector on preference-pair data collected from the two pipelines using the objective in Equation ( 11 ). The selector is optimized using Adam. The learning rate is selected from { 10 − 3 , 5 × 10 − 4 , 10 − 4 , 5 × 10 − 5 , 10 − 5 } \\{10^{-3},5\\times 10^{-4},10^{-4},5\\times 10^{-5},10^{-5}\\} , and the weight decay is selected from { 10 − 3 , 10 − 4 , 10 − 5 , 10 − 6 } \\{10^{-3},10^{-4},10^{-5},10^{-6}\\} . The batch size is set to 256. For early stopping and checkpoint selection, we use the validation score G = EM v + 1 2 ​ ( EM s + EM h ) G=\\mathrm{EM}_{v}+\\tfrac{1}{2}(\\mathrm{EM}_{s}+\\mathrm{EM}_{h}) , where EM v \\mathrm{EM}_{v} , EM s \\mathrm{EM}_{s} , and EM h \\mathrm{EM}_{h} are the sequence exact-match rates on the validation set for the verification, shorter-path, and higher-score categories, respectively. A trajectory is an exact match if, given its recorded history prefixes, the selector predicts the recorded action from the legal candidates at every valid step. The verification category receives twice the weight of either other category to reflect its greater importance. Training stops if G G does not improve for ten consecutive epochs or after 50 epochs, and the checkpoint with the highest G G is retained. Each pipeline is evaluated on the test set using its corresponding checkpoint selected on the validation set.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Evaluation protocol. The default rule follows the preset priority over error types of each pipeline (Section 2.2 ). We evaluate a selector by replaying its choices on the stored test trees of the corresponding pipeline. Each tree already records the outcome of repairing every reported type at each state (Section 5.1 ), so replay needs no new LLM or verifier calls. Starting at the root, the selector picks one of the types reported at the current state, and the replay moves to the stored child state for that type. The replay stops at a leaf, that is, when the program verifies, the feedback yields no candidate type, or the budget of B = 5 B=5 rounds is spent. The path from the root to that leaf is the selector’s trajectory. Replaying the default rule returns the stored default trajectory of every test tree.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Evaluation metrics. On each test tree, we compare the selector’s trajectory with the default trajectory under the three cases of Equation 5 , each of which gives one objective. Verification asks whether the final program verifies, that is, whether the stored Verus output for the final state reports zero errors. When both trajectories verify, Shorter path compares their numbers of repair rounds. When both fail, Higher score compares their final progress scores Q Q (Section 4.2 ).",
+   "zh": "评估指标。 在每棵测试树上，我们将选择器的轨迹与默认轨迹在公式 5 的三种情况下进行比较，每种情况对应一个目标。 验证是询问最终程序是否通过验证，即存储的最终状态的 Verus 输出是否报告零错误。 当两条轨迹都通过验证时，Shorter path 比较它们的修复轮数。 当两者都失败时，Higher score 比较它们的最终进度分数 Q Q（第 4.2 节）。",
+   "sents": [
+    {
+     "en": "Evaluation metrics.",
+     "zh": "评估指标。"
+    },
+    {
+     "en": "On each test tree, we compare the selector’s trajectory with the default trajectory under the three cases of Equation 5 , each of which gives one objective.",
+     "zh": "在每棵测试树上，我们将选择器的轨迹与默认轨迹在公式 5 的三种情况下进行比较，每种情况对应一个目标。"
+    },
+    {
+     "en": "Verification asks whether the final program verifies, that is, whether the stored Verus output for the final state reports zero errors.",
+     "zh": "验证是询问最终程序是否通过验证，即存储的最终状态的 Verus 输出是否报告零错误。"
+    },
+    {
+     "en": "When both trajectories verify, Shorter path compares their numbers of repair rounds.",
+     "zh": "当两条轨迹都通过验证时，Shorter path 比较它们的修复轮数。"
+    },
+    {
+     "en": "When both fail, Higher score compares their final progress scores Q Q (Section 4.2 ).",
+     "zh": "当两者都失败时，Higher score 比较它们的最终进度分数 Q Q（第 4.2 节）。"
+    }
+   ]
+  },
+  {
+   "en": "We report each objective on the trees with alternative trajectories, split into Retention and Exploration . Retention contains the trees where the default trajectory is already optimal under the objective, and a selector succeeds if its trajectory is at least as good. Exploration contains the trees with a strictly better alternative trajectory, and a selector succeeds if it improves on the default outcome. The success rate is the share of these trees on which the selector succeeds. RQ1 defines the trees of each group for each objective and reports both pipelines, and RQ2 ablates VeruSteer on the Verification groups of VeruSAGE.",
+   "zh": "我们在带有备选轨迹的树上报告每个目标的指标，分为「保留」（Retention）与「探索」（Exploration）两类。 「保留」包含在该目标下默认轨迹已经是最优的树，若选择器的轨迹至少同样好，则该选择器成功。 「探索」包含存在严格更优的备选轨迹的树，若选择器在默认结果的基础上有所改进，则该选择器成功。 成功率是选择器在这些树上成功的比例。 RQ1 为每个目标定义每个组的树并报告两条流水线，RQ2 在 VeruSAGE 的验证（Verification）组上对 VeruSteer 进行消融实验。",
+   "sents": [
+    {
+     "en": "We report each objective on the trees with alternative trajectories, split into Retention and Exploration .",
+     "zh": "我们在带有备选轨迹的树上报告每个目标的指标，分为「保留」（Retention）与「探索」（Exploration）两类。"
+    },
+    {
+     "en": "Retention contains the trees where the default trajectory is already optimal under the objective, and a selector succeeds if its trajectory is at least as good.",
+     "zh": "「保留」包含在该目标下默认轨迹已经是最优的树，若选择器的轨迹至少同样好，则该选择器成功。"
+    },
+    {
+     "en": "Exploration contains the trees with a strictly better alternative trajectory, and a selector succeeds if it improves on the default outcome.",
+     "zh": "「探索」包含存在严格更优的备选轨迹的树，若选择器在默认结果的基础上有所改进，则该选择器成功。"
+    },
+    {
+     "en": "The success rate is the share of these trees on which the selector succeeds.",
+     "zh": "成功率是选择器在这些树上成功的比例。"
+    },
+    {
+     "en": "RQ1 defines the trees of each group for each objective and reports both pipelines, and RQ2 ablates VeruSteer on the Verification groups of VeruSAGE.",
+     "zh": "RQ1 为每个目标定义每个组的树并报告两条流水线，RQ2 在 VeruSAGE 的验证（Verification）组上对 VeruSteer 进行消融实验。"
+    }
+   ]
+  },
+  {
+   "en": "RQ1 examines whether VeruSteer preserves the outcomes already achieved by the default rule and finds better alternatives when they are available. Table 3 first reports the overall verification benefit on all test trees. AutoVerus improves from 96 to 98 verified trees out of 635, gaining three and losing one, for a net increase of two trees (0.31 percentage points). VeruSAGE improves from 89 to 96 verified trees out of 635, gaining nine and losing two, for a net increase of seven trees (1.10 percentage points). Pooled across both pipelines, this is 185 to 194 verified trees out of 1,270: 12 gained, three lost, and a net increase of nine trees (0.71 percentage points).",
+   "zh": "RQ1 考察 VeruSteer 是否能保持默认规则已经取得的成果，并在存在更优选择时找到它们。 表 3 首先报告了在所有测试树上的总体验证收益。 AutoVerus 在 635 棵树中从 96 棵验证通过提升到 98 棵，新增三棵、失去一棵，净增加两棵（0.31 个百分点）。 VeruSAGE 在 635 棵树中从 89 棵验证通过提升到 96 棵，新增九棵、失去两棵，净增加七棵（1.10 个百分点）。 合并两条流水线来看，在 1,270 棵树中从 185 棵验证通过提升到 194 棵：新增 12 棵、失去三棵，净增加九棵（0.71 个百分点）。",
+   "sents": [
+    {
+     "en": "RQ1 examines whether VeruSteer preserves the outcomes already achieved by the default rule and finds better alternatives when they are available.",
+     "zh": "RQ1 考察 VeruSteer 是否能保持默认规则已经取得的成果，并在存在更优选择时找到它们。"
+    },
+    {
+     "en": "Table 3 first reports the overall verification benefit on all test trees.",
+     "zh": "表 3 首先报告了在所有测试树上的总体验证收益。"
+    },
+    {
+     "en": "AutoVerus improves from 96 to 98 verified trees out of 635, gaining three and losing one, for a net increase of two trees (0.31 percentage points).",
+     "zh": "AutoVerus 在 635 棵树中从 96 棵验证通过提升到 98 棵，新增三棵、失去一棵，净增加两棵（0.31 个百分点）。"
+    },
+    {
+     "en": "VeruSAGE improves from 89 to 96 verified trees out of 635, gaining nine and losing two, for a net increase of seven trees (1.10 percentage points).",
+     "zh": "VeruSAGE 在 635 棵树中从 89 棵验证通过提升到 96 棵，新增九棵、失去两棵，净增加七棵（1.10 个百分点）。"
+    },
+    {
+     "en": "Pooled across both pipelines, this is 185 to 194 verified trees out of 1,270: 12 gained, three lost, and a net increase of nine trees (0.71 percentage points).",
+     "zh": "合并两条流水线来看，在 1,270 棵树中从 185 棵验证通过提升到 194 棵：新增 12 棵、失去三棵，净增加九棵（0.71 个百分点）。"
+    }
+   ]
+  },
+  {
+   "en": "Table 4 then reports the three objectives on the test trees with recorded alternative trajectories, 159 for AutoVerus and 130 for VeruSAGE (Table 2 ). Each objective defines its eligible trees separately. For Verification, Retention contains trees where the default trajectory verifies, and Exploration contains trees where the default trajectory fails and at least one alternative trajectory verifies. For Shorter path, the default trajectory and at least one alternative trajectory verify. Its Retention group contains trees where the default needs no more rounds than any verified alternative, and its Exploration group contains trees with a shorter verified alternative. These trees also belong to Verification Retention. For Higher score, all trajectories fail, and the groups are determined by comparing their final progress scores.",
+   "zh": "表4随后报告了在记录有备选轨迹的测试树上的三个目标，其中AutoVerus有159棵，VeruSAGE有130棵（表2）。 每个目标分别定义其符合条件的树。 对于验证目标，保留组包含默认轨迹能通过验证的树，探索组包含默认轨迹验证失败且至少有一条备选轨迹能通过验证的树。 对于更短路径目标，默认轨迹和至少一条备选轨迹都能通过验证。 其保留组包含默认轨迹所需轮数不超过任何已验证备选轨迹的树，其探索组包含存在更短的已验证备选轨迹的树。 这些树也属于验证保留组。 对于更高分数目标，所有轨迹都验证失败，各组通过比较其最终进度分数来确定。",
+   "sents": [
+    {
+     "en": "Table 4 then reports the three objectives on the test trees with recorded alternative trajectories, 159 for AutoVerus and 130 for VeruSAGE (Table 2 ).",
+     "zh": "表4随后报告了在记录有备选轨迹的测试树上的三个目标，其中AutoVerus有159棵，VeruSAGE有130棵（表2）。"
+    },
+    {
+     "en": "Each objective defines its eligible trees separately.",
+     "zh": "每个目标分别定义其符合条件的树。"
+    },
+    {
+     "en": "For Verification, Retention contains trees where the default trajectory verifies, and Exploration contains trees where the default trajectory fails and at least one alternative trajectory verifies.",
+     "zh": "对于验证目标，保留组包含默认轨迹能通过验证的树，探索组包含默认轨迹验证失败且至少有一条备选轨迹能通过验证的树。"
+    },
+    {
+     "en": "For Shorter path, the default trajectory and at least one alternative trajectory verify.",
+     "zh": "对于更短路径目标，默认轨迹和至少一条备选轨迹都能通过验证。"
+    },
+    {
+     "en": "Its Retention group contains trees where the default needs no more rounds than any verified alternative, and its Exploration group contains trees with a shorter verified alternative.",
+     "zh": "其保留组包含默认轨迹所需轮数不超过任何已验证备选轨迹的树，其探索组包含存在更短的已验证备选轨迹的树。"
+    },
+    {
+     "en": "These trees also belong to Verification Retention.",
+     "zh": "这些树也属于验证保留组。"
+    },
+    {
+     "en": "For Higher score, all trajectories fail, and the groups are determined by comparing their final progress scores.",
+     "zh": "对于更高分数目标，所有轨迹都验证失败，各组通过比较其最终进度分数来确定。"
+    }
+   ]
+  },
+  {
+   "en": "Each cell reports successful trees divided by eligible trees, followed by the success rate. The Retention rate is the share of trees where the selector preserves the default-optimal outcome, and the Exploration rate is the share where it improves on the default. Empty groups are marked with a dash and n = 0 n=0 ; Total pools counts across the four configurations.",
+   "zh": "每个单元格报告成功树数除以符合条件树数的结果，随后是成功率。 保留率是选择器保持默认最优结果的树所占的比例，探索率是选择器在默认基础上有所改进的树所占的比例。 空组用短横线标记且 n = 0 n=0 ；Total 汇总四种配置下的总数。",
+   "sents": [
+    {
+     "en": "Each cell reports successful trees divided by eligible trees, followed by the success rate.",
+     "zh": "每个单元格报告成功树数除以符合条件树数的结果，随后是成功率。"
+    },
+    {
+     "en": "The Retention rate is the share of trees where the selector preserves the default-optimal outcome, and the Exploration rate is the share where it improves on the default.",
+     "zh": "保留率是选择器保持默认最优结果的树所占的比例，探索率是选择器在默认基础上有所改进的树所占的比例。"
+    },
+    {
+     "en": "Empty groups are marked with a dash and n = 0 n=0 ; Total pools counts across the four configurations.",
+     "zh": "空组用短横线标记且 n = 0 n=0 ；Total 汇总四种配置下的总数。"
+    }
+   ]
+  },
+  {
+   "en": "For Verification, the Retention rates are 93.3% on AutoVerus and 85.7% on VeruSAGE, and the Exploration rates are 75.0% and 81.8%. All the drops and missed improvements fall in the five-shot configurations, while all nonempty zero-shot Verification groups show full retention or full recovery.",
+   "zh": "在 Verification 上，AutoVerus 的保留率为 93.3%，VeruSAGE 的保留率为 85.7%，而两者的探索率分别为 75.0% 和 81.8%。 所有下降和遗漏的改进都出现在五样本（five-shot）配置中，而所有非空的零样本（zero-shot）Verification 组都表现出完全保留或完全恢复。",
+   "sents": [
+    {
+     "en": "For Verification, the Retention rates are 93.3% on AutoVerus and 85.7% on VeruSAGE, and the Exploration rates are 75.0% and 81.8%.",
+     "zh": "在 Verification 上，AutoVerus 的保留率为 93.3%，VeruSAGE 的保留率为 85.7%，而两者的探索率分别为 75.0% 和 81.8%。"
+    },
+    {
+     "en": "All the drops and missed improvements fall in the five-shot configurations, while all nonempty zero-shot Verification groups show full retention or full recovery.",
+     "zh": "所有下降和遗漏的改进都出现在五样本（five-shot）配置中，而所有非空的零样本（zero-shot）Verification 组都表现出完全保留或完全恢复。"
+    }
+   ]
+  },
+  {
+   "en": "For Shorter path, the Retention rates are 83.3% on AutoVerus and 70.0% on VeruSAGE, and the Exploration rates are 25.0% (2/8) and 100.0% (3/3). The improvement in repair rounds is therefore more consistent on VeruSAGE, while both pipelines lose some default shorter paths.",
+   "zh": "在 Shorter path 上，AutoVerus 的保留率为 83.3%，VeruSAGE 的保留率为 70.0%，探索率分别为 25.0%（2/8）和 100.0%（3/3）。 因此，在修复轮次上的改进在 VeruSAGE 上更为一致，而两条流水线都会丢失一些默认的更短路径。",
+   "sents": [
+    {
+     "en": "For Shorter path, the Retention rates are 83.3% on AutoVerus and 70.0% on VeruSAGE, and the Exploration rates are 25.0% (2/8) and 100.0% (3/3).",
+     "zh": "在 Shorter path 上，AutoVerus 的保留率为 83.3%，VeruSAGE 的保留率为 70.0%，探索率分别为 25.0%（2/8）和 100.0%（3/3）。"
+    },
+    {
+     "en": "The improvement in repair rounds is therefore more consistent on VeruSAGE, while both pipelines lose some default shorter paths.",
+     "zh": "因此，在修复轮次上的改进在 VeruSAGE 上更为一致，而两条流水线都会丢失一些默认的更短路径。"
+    }
+   ]
+  },
+  {
+   "en": "For Higher score, the Retention rates are 98.0% and 96.2%, and the Exploration rates are 23.7% and 38.5%.",
+   "zh": "对于更高的分数，留存率分别为98.0%和96.2%，探索率分别为23.7%和38.5%。",
+   "sents": null
+  },
+  {
+   "en": "Takeaway. VeruSteer yields nine net additional verified test trees across the two pipelines. On trees with recorded alternatives, it preserves most default outcomes and recovers 3/4 and 9/11 of the available verification opportunities on AutoVerus and VeruSAGE, respectively. It also finds shorter successful trajectories and higher final scores on both pipelines where such alternatives exist.",
+   "zh": "要点总结。 VeruSteer 在两条流水线上共带来九个净增的已验证测试树。 在记录了备选方案的测试树上，它保留了大多数默认结果，并在 AutoVerus 和 VeruSAGE 上分别找回了 3/4 和 9/11 的可用验证机会。 在存在此类备选方案的情况下，它还在两条流水线上都找到了更短的成功轨迹和更高的最终分数。",
+   "sents": [
+    {
+     "en": "Takeaway.",
+     "zh": "要点总结。"
+    },
+    {
+     "en": "VeruSteer yields nine net additional verified test trees across the two pipelines.",
+     "zh": "VeruSteer 在两条流水线上共带来九个净增的已验证测试树。"
+    },
+    {
+     "en": "On trees with recorded alternatives, it preserves most default outcomes and recovers 3/4 and 9/11 of the available verification opportunities on AutoVerus and VeruSAGE, respectively.",
+     "zh": "在记录了备选方案的测试树上，它保留了大多数默认结果，并在 AutoVerus 和 VeruSAGE 上分别找回了 3/4 和 9/11 的可用验证机会。"
+    },
+    {
+     "en": "It also finds shorter successful trajectories and higher final scores on both pipelines where such alternatives exist.",
+     "zh": "在存在此类备选方案的情况下，它还在两条流水线上都找到了更短的成功轨迹和更高的最终分数。"
+    }
+   ]
+  },
+  {
+   "en": "RQ2 asks which parts of VeruSteer account for its gains. We run three ablations on VeruSAGE: the error-type selection method, the training losses and input representations, and the input sequence length. Figures 5 – 7 report the Verification objective of RQ1, pooled over the four generation configurations. The left and middle charts show the Retention and Exploration rates with the numbers of successful and eligible trees, as in Table 4 . The right chart shows the net gain, the Exploration rate minus the Retention drop (100% minus the Retention rate), in percentage points; a larger value means a better trade-off.",
+   "zh": "RQ2 询问 VeruSteer 的收益来自哪些部分。 我们在 VeruSAGE 上进行三项消融实验：错误类型选择方法、训练损失与输入表示，以及输入序列长度。 图 5–7 报告了 RQ1 的验证目标，并在四种生成配置上进行了汇总。 左图和中图展示了留存率与探索率，以及成功树和合格树的数量，与表 4 一致。 右图展示了净收益，即探索率减去留存率下降（100% 减去留存率），以百分点计；数值越大表示权衡越优。",
+   "sents": [
+    {
+     "en": "RQ2 asks which parts of VeruSteer account for its gains.",
+     "zh": "RQ2 询问 VeruSteer 的收益来自哪些部分。"
+    },
+    {
+     "en": "We run three ablations on VeruSAGE: the error-type selection method, the training losses and input representations, and the input sequence length.",
+     "zh": "我们在 VeruSAGE 上进行三项消融实验：错误类型选择方法、训练损失与输入表示，以及输入序列长度。"
+    },
+    {
+     "en": "Figures 5 – 7 report the Verification objective of RQ1, pooled over the four generation configurations.",
+     "zh": "图 5–7 报告了 RQ1 的验证目标，并在四种生成配置上进行了汇总。"
+    },
+    {
+     "en": "The left and middle charts show the Retention and Exploration rates with the numbers of successful and eligible trees, as in Table 4 .",
+     "zh": "左图和中图展示了留存率与探索率，以及成功树和合格树的数量，与表 4 一致。"
+    },
+    {
+     "en": "The right chart shows the net gain, the Exploration rate minus the Retention drop (100% minus the Retention rate), in percentage points; a larger value means a better trade-off.",
+     "zh": "右图展示了净收益，即探索率减去留存率下降（100% 减去留存率），以百分点计；数值越大表示权衡越优。"
+    }
+   ]
+  },
+  {
+   "en": "Ablation on the error-type selection method. Since the best choice for the same reported types varies across states (Section 3.2 ), VeruSteer reads the program, the verifier feedback, and the earlier selections. This ablation asks how a selector should use such context, and compares VeruSteer with three kinds of selectors that all choose among the reported types:",
+   "zh": "对错误类型选择方法的消融实验。 由于同一报告类型在不同状态下的最佳选择各不相同（第 3.2 节），VeruSteer 会读取程序、验证器反馈以及先前的选择。 该消融实验探讨选择器应如何利用此类上下文，并将 VeruSteer 与三种均在报告类型中进行选择的智能体进行比较：",
+   "sents": [
+    {
+     "en": "Ablation on the error-type selection method.",
+     "zh": "对错误类型选择方法的消融实验。"
+    },
+    {
+     "en": "Since the best choice for the same reported types varies across states (Section 3.2 ), VeruSteer reads the program, the verifier feedback, and the earlier selections.",
+     "zh": "由于同一报告类型在不同状态下的最佳选择各不相同（第 3.2 节），VeruSteer 会读取程序、验证器反馈以及先前的选择。"
+    },
+    {
+     "en": "This ablation asks how a selector should use such context, and compares VeruSteer with three kinds of selectors that all choose among the reported types:",
+     "zh": "该消融实验探讨选择器应如何利用此类上下文，并将 VeruSteer 与三种均在报告类型中进行选择的智能体进行比较："
+    }
+   ]
+  },
+  {
+   "en": "Fixed rules choose from the reported types alone, ignoring the program and the feedback.",
+   "zh": "固定规则仅根据所报告的类型进行选择，忽略程序和反馈。",
+   "sents": null
+  },
+  {
+   "en": "Random chooses uniformly at random; we report the mean over five seeds.",
+   "zh": "Random 均匀随机选择；我们报告五个随机种子下的平均值。",
+   "sents": null
+  },
+  {
+   "en": "Learned static priority ranks the types by one global score, the share of pairwise comparisons on the training trees that a type wins under Equation 5 .",
+   "zh": "学习到的静态优先级通过一个全局分数对类型进行排序，该分数是某类型在训练树上依据公式5获胜的成对比较所占的比例。",
+   "sents": null
+  },
+  {
+   "en": "Searched static priority ranks the types by one global order, searched directly for the most verified training trees under replay.",
+   "zh": "基于搜索的静态优先级通过一个全局排序对各类型进行排序，直接搜索重放下经验证次数最多的训练树。",
+   "sents": null
+  },
+  {
+   "en": "Combination rule learns the scores of the learned static priority separately for each set of types reported together.",
+   "zh": "组合规则针对每次一起报告的每组类型，分别学习已学到的静态优先级的分数。",
+   "sents": null
+  },
+  {
+   "en": "Prompt-based context selection asks an LLM to choose the type.",
+   "zh": "基于提示词的上下文选择要求大语言模型（LLM）来选择该类型。",
+   "sents": null
+  },
+  {
+   "en": "Prompt-based selector uses DeepSeek-Flash (temperature 0.3, thinking disabled) with one answer per decision. Its prompt includes the current program, verifier feedback, reported types, repair history, and examples retrieved from training trees.",
+   "zh": "基于提示词的选择器使用 DeepSeek-Flash（temperature 0.3，禁用思考），每次决策仅生成一个答案。 其提示词包含当前程序、验证器反馈、报告的类型、修复历史以及从训练树中检索到的示例。",
+   "sents": [
+    {
+     "en": "Prompt-based selector uses DeepSeek-Flash (temperature 0.3, thinking disabled) with one answer per decision.",
+     "zh": "基于提示词的选择器使用 DeepSeek-Flash（temperature 0.3，禁用思考），每次决策仅生成一个答案。"
+    },
+    {
+     "en": "Its prompt includes the current program, verifier feedback, reported types, repair history, and examples retrieved from training trees.",
+     "zh": "其提示词包含当前程序、验证器反馈、报告的类型、修复历史以及从训练树中检索到的示例。"
+    }
+   ]
+  },
+  {
+   "en": "Learned context selection trains the selector on the training trees, as VeruSteer does, but with a different encoder.",
+   "zh": "学习型上下文选择（Learned context selection）像 VeruSteer 那样在训练树上训练选择器，但使用了不同的编码器。",
+   "sents": null
+  },
+  {
+   "en": "Combination MLP replaces the self-attention encoder with an MLP over the set of reported types, trained with the cross-entropy loss only.",
+   "zh": "组合式 MLP（Combination MLP）用一个作用于已报告类型集合的多层感知机替代自注意力编码器，仅使用交叉熵损失进行训练。",
+   "sents": null
+  },
+  {
+   "en": "State MLP replaces it with an MLP over the program and feedback of the current state, trained with both losses.",
+   "zh": "State MLP 则将其替换为一个基于当前状态的程序与反馈的多层感知机（MLP），并使用两种损失进行训练。",
+   "sents": null
+  },
+  {
+   "en": "Mean-pooled MLP replaces the selector with an MLP applied to the mean-pooled state representations from the latest L = 5 L=5 steps, trained with both losses.",
+   "zh": "Mean-pooled MLP 用一个应用于最近 L = 5 L=5 步状态表示的均值池化的 MLP 替换选择器，并使用两种损失进行训练。",
+   "sents": null
+  },
+  {
+   "en": "Figure 5 shows that VeruSteer outperforms all eight alternatives. It keeps 12 of the 14 default successes (85.7%), which no alternative exceeds, and recovers 9 of the 11 available verification opportunities (81.8%), against at most 6 (54.5%) for the alternatives. Its net gain of 67.5 points is 1.7 times that of the best alternative, the prompt-based selector (40.3 points).",
+   "zh": "图5显示，VeruSteer 的表现优于全部八种备选方案。 它保住了14个默认成功中的12个（85.7%），没有任何备选方案能超过这一数值，并恢复了11个可用验证机会中的9个（81.8%），而备选方案最多只能达到6个（54.5%）。 其67.5分的净增益是最佳备选方案——基于提示词的选择器（40.3分）——的1.7倍。",
+   "sents": [
+    {
+     "en": "Figure 5 shows that VeruSteer outperforms all eight alternatives.",
+     "zh": "图5显示，VeruSteer 的表现优于全部八种备选方案。"
+    },
+    {
+     "en": "It keeps 12 of the 14 default successes (85.7%), which no alternative exceeds, and recovers 9 of the 11 available verification opportunities (81.8%), against at most 6 (54.5%) for the alternatives.",
+     "zh": "它保住了14个默认成功中的12个（85.7%），没有任何备选方案能超过这一数值，并恢复了11个可用验证机会中的9个（81.8%），而备选方案最多只能达到6个（54.5%）。"
+    },
+    {
+     "en": "Its net gain of 67.5 points is 1.7 times that of the best alternative, the prompt-based selector (40.3 points).",
+     "zh": "其67.5分的净增益是最佳备选方案——基于提示词的选择器（40.3分）——的1.7倍。"
+    }
+   ]
+  },
+  {
+   "en": "The fixed rules commit to one type for every state that reports the same types, although the best type for such states differs, and fitting the order directly to the training trajectories does not help: the Searched static priority recovers 5/11 opportunities (45.5%), fewer than the Learned static priority with 6/11 (54.5%). The prompt-based selector reads the context and is the strongest alternative: it keeps 12/14 default successes, as VeruSteer does, and recovers 6/11 opportunities (54.5%), so its net gain of 40.3 points is well above those of the fixed rules (18.8–26.0) and the learned MLPs (5.8–16.9). It still recovers fewer opportunities than VeruSteer (6/11 against 9/11), which is trained on all the trajectory comparisons instead of reading a few retrieved examples.",
+   "zh": "固定规则对所有报告相同类型的状态都采用同一种类型，尽管这类状态的最优类型各不相同，而且直接将顺序拟合到训练轨迹上也无济于事：搜索得到的静态优先级恢复了 5/11 个机会（45.5%），低于学习到的静态优先级的 6/11（54.5%）。 基于提示词的选择器会读取上下文，是最强的替代方案：它与 VeruSteer 一样保住了 12/14 个默认成功，并恢复了 6/11 个机会（54.5%），因此其 40.3 分的净收益远高于固定规则（18.8–26.0）和学习到的 MLP（5.8–16.9）。 它恢复的机会仍然少于 VeruSteer（6/11 对 9/11），因为 VeruSteer 是在所有轨迹比较上训练的，而不是只读取少量检索到的示例。",
+   "sents": [
+    {
+     "en": "The fixed rules commit to one type for every state that reports the same types, although the best type for such states differs, and fitting the order directly to the training trajectories does not help: the Searched static priority recovers 5/11 opportunities (45.5%), fewer than the Learned static priority with 6/11 (54.5%).",
+     "zh": "固定规则对所有报告相同类型的状态都采用同一种类型，尽管这类状态的最优类型各不相同，而且直接将顺序拟合到训练轨迹上也无济于事：搜索得到的静态优先级恢复了 5/11 个机会（45.5%），低于学习到的静态优先级的 6/11（54.5%）。"
+    },
+    {
+     "en": "The prompt-based selector reads the context and is the strongest alternative: it keeps 12/14 default successes, as VeruSteer does, and recovers 6/11 opportunities (54.5%), so its net gain of 40.3 points is well above those of the fixed rules (18.8–26.0) and the learned MLPs (5.8–16.9).",
+     "zh": "基于提示词的选择器会读取上下文，是最强的替代方案：它与 VeruSteer 一样保住了 12/14 个默认成功，并恢复了 6/11 个机会（54.5%），因此其 40.3 分的净收益远高于固定规则（18.8–26.0）和学习到的 MLP（5.8–16.9）。"
+    },
+    {
+     "en": "It still recovers fewer opportunities than VeruSteer (6/11 against 9/11), which is trained on all the trajectory comparisons instead of reading a few retrieved examples.",
+     "zh": "它恢复的机会仍然少于 VeruSteer（6/11 对 9/11），因为 VeruSteer 是在所有轨迹比较上训练的，而不是只读取少量检索到的示例。"
+    }
+   ]
+  },
+  {
+   "en": "Among the learned selectors, the MLPs separate whether the selector can see the history from how it encodes it. State MLP sees only the current state; it keeps 11/14 default successes (78.6%) and recovers 3/11 opportunities (27.3%). Mean-pooled MLP also sees the history and recovers 4/11 (36.4%), but it keeps only 10/14 (71.4%), so its net gain is 7.8 points, against 5.8 for State MLP. Seeing the history thus brings little when it is simply averaged, whereas VeruSteer, whose self-attention encoder reads the same window in order, reaches 67.5 points.",
+   "zh": "在已学习的选择器中，MLP 将「选择器能否看到历史」与「它如何编码历史」区分开来。 State MLP 只能看到当前状态；它保留了 11/14 的默认成功（78.6%），并挽回 3/11 的机会（27.3%）。 Mean-pooled MLP 也能看到历史并挽回 4/11（36.4%），但它只保留了 10/14（71.4%），因此其净收益为 7.8 个百分点，而 State MLP 为 5.8 个百分点。 因此，仅仅对历史做简单平均几乎无益，而 VeruSteer 的自注意力编码器按顺序读取同一窗口，达到 67.5 分。",
+   "sents": [
+    {
+     "en": "Among the learned selectors, the MLPs separate whether the selector can see the history from how it encodes it.",
+     "zh": "在已学习的选择器中，MLP 将「选择器能否看到历史」与「它如何编码历史」区分开来。"
+    },
+    {
+     "en": "State MLP sees only the current state; it keeps 11/14 default successes (78.6%) and recovers 3/11 opportunities (27.3%).",
+     "zh": "State MLP 只能看到当前状态；它保留了 11/14 的默认成功（78.6%），并挽回 3/11 的机会（27.3%）。"
+    },
+    {
+     "en": "Mean-pooled MLP also sees the history and recovers 4/11 (36.4%), but it keeps only 10/14 (71.4%), so its net gain is 7.8 points, against 5.8 for State MLP.",
+     "zh": "Mean-pooled MLP 也能看到历史并挽回 4/11（36.4%），但它只保留了 10/14（71.4%），因此其净收益为 7.8 个百分点，而 State MLP 为 5.8 个百分点。"
+    },
+    {
+     "en": "Seeing the history thus brings little when it is simply averaged, whereas VeruSteer, whose self-attention encoder reads the same window in order, reaches 67.5 points.",
+     "zh": "因此，仅仅对历史做简单平均几乎无益，而 VeruSteer 的自注意力编码器按顺序读取同一窗口，达到 67.5 分。"
+    }
+   ]
+  },
+  {
+   "en": "Ablation on the training losses and input representations for VeruSteer. VeruSteer combines two training losses with several representations of a state. This ablation asks whether each is needed and which goal it serves, by removing them one at a time and training each variant on the same preference pairs:",
+   "zh": "关于 VeruSteer 的训练损失与输入表示的消融实验。 VeruSteer 将两种训练损失与状态的若干表示相结合。 本消融实验通过每次移除其中一个组件，并在相同的偏好对上训练每个变体，来探究每个组件是否必要及其所服务的目标：",
+   "sents": [
+    {
+     "en": "Ablation on the training losses and input representations for VeruSteer.",
+     "zh": "关于 VeruSteer 的训练损失与输入表示的消融实验。"
+    },
+    {
+     "en": "VeruSteer combines two training losses with several representations of a state.",
+     "zh": "VeruSteer 将两种训练损失与状态的若干表示相结合。"
+    },
+    {
+     "en": "This ablation asks whether each is needed and which goal it serves, by removing them one at a time and training each variant on the same preference pairs:",
+     "zh": "本消融实验通过每次移除其中一个组件，并在相同的偏好对上训练每个变体，来探究每个组件是否必要及其所服务的目标："
+    }
+   ]
+  },
+  {
+   "en": "w/o BPR loss drops the pairwise ranking loss, which scores the preferred trajectory above the other one in a pair (Section 5.4 ).",
+   "zh": "w/o BPR loss 去掉了成对排序损失，该损失用于给一对中的偏好轨迹打出高于另一条轨迹的分数（第 5.4 节）。",
+   "sents": null
+  },
+  {
+   "en": "w/o CE loss drops the cross-entropy loss, which imitates the selections along the preferred trajectory step by step.",
+   "zh": "去掉交叉熵损失（w/o CE loss）即去除交叉熵损失，该损失用于逐步模仿沿偏好轨迹所做的选择。",
+   "sents": null
+  },
+  {
+   "en": "w/o error-type emb. drops the embedding of the error types the pipeline has already targeted.",
+   "zh": "w/o error-type emb. 移除了流水线已针对的错误类型的嵌入。",
+   "sents": null
+  },
+  {
+   "en": "w/o positional emb. drops the embedding of the position of a state in the sequence.",
+   "zh": "无位置嵌入（w/o positional emb.）会丢弃状态在序列中位置的嵌入。",
+   "sents": null
+  },
+  {
+   "en": "w/o program emb. drops the embedding of the program.",
+   "zh": "w/o program emb. 去掉了程序的嵌入。",
+   "sents": null
+  },
+  {
+   "en": "w/o feedback emb. drops the embedding of the verifier feedback.",
+   "zh": "w/o feedback emb. 去掉了验证器反馈的嵌入。",
+   "sents": null
+  },
+  {
+   "en": "Figure 6 shows that every removal weakens VeruSteer, and in different ways. Step-wise imitation fits the type chosen at each step of the preferred trajectory; without the CE loss, Exploration falls from 9/11 to 5/11 (45.5%) and Retention from 12/14 to 11/14 (78.6%). Pairwise ranking compares the outcomes of two trajectories; without the BPR loss, Retention falls from 12/14 to 10/14 (71.4%), while Exploration remains 7/11 (63.6%). Removing the CE loss thus costs more Exploration (9/11 to 5/11) than removing the BPR loss (to 7/11), and removing the BPR loss costs more Retention. Step-wise imitation alone finds many better alternatives but cannot tell when leaving the default trajectory is not worth it, and the ranking over whole trajectories supplies that judgment.",
+   "zh": "图6显示，每次移除都会削弱VeruSteer，且削弱方式各不相同。 分步模仿拟合偏好轨迹每一步所选的类型；若去掉CE损失，Exploration从9/11降至5/11（45.5%），Retention从12/14降至11/14（78.6%）。 两两排序比较两条轨迹的结果；若去掉BPR损失，Retention从12/14降至10/14（71.4%），而Exploration保持7/11（63.6%）不变。 因此，去掉CE损失对Exploration的代价（9/11降至5/11）大于去掉BPR损失（降至7/11），而去掉BPR损失对Retention的代价更大。 仅靠分步模仿能找到许多更优的替代方案，但无法判断何时离开默认轨迹并不值得，而对整条轨迹的排序恰好提供了这种判断。",
+   "sents": [
+    {
+     "en": "Figure 6 shows that every removal weakens VeruSteer, and in different ways.",
+     "zh": "图6显示，每次移除都会削弱VeruSteer，且削弱方式各不相同。"
+    },
+    {
+     "en": "Step-wise imitation fits the type chosen at each step of the preferred trajectory; without the CE loss, Exploration falls from 9/11 to 5/11 (45.5%) and Retention from 12/14 to 11/14 (78.6%).",
+     "zh": "分步模仿拟合偏好轨迹每一步所选的类型；若去掉CE损失，Exploration从9/11降至5/11（45.5%），Retention从12/14降至11/14（78.6%）。"
+    },
+    {
+     "en": "Pairwise ranking compares the outcomes of two trajectories; without the BPR loss, Retention falls from 12/14 to 10/14 (71.4%), while Exploration remains 7/11 (63.6%).",
+     "zh": "两两排序比较两条轨迹的结果；若去掉BPR损失，Retention从12/14降至10/14（71.4%），而Exploration保持7/11（63.6%）不变。"
+    },
+    {
+     "en": "Removing the CE loss thus costs more Exploration (9/11 to 5/11) than removing the BPR loss (to 7/11), and removing the BPR loss costs more Retention.",
+     "zh": "因此，去掉CE损失对Exploration的代价（9/11降至5/11）大于去掉BPR损失（降至7/11），而去掉BPR损失对Retention的代价更大。"
+    },
+    {
+     "en": "Step-wise imitation alone finds many better alternatives but cannot tell when leaving the default trajectory is not worth it, and the ranking over whole trajectories supplies that judgment.",
+     "zh": "仅靠分步模仿能找到许多更优的替代方案，但无法判断何时离开默认轨迹并不值得，而对整条轨迹的排序恰好提供了这种判断。"
+    }
+   ]
+  },
+  {
+   "en": "Each representation contributes, since removing any of them lowers the net gain from 67.5 points. The positional embedding, which tells the selector where a state lies in the sequence, matters most: without it the value falls to 14.9 points, as Exploration falls to 4/11 (36.4%) and Retention to 11/14 (78.6%). Removing the feedback comes next, with 24.0 points (Exploration 5/11, Retention 11/14), followed by the error-type embedding, which tells the selector which types were already targeted, with 33.1 points (6/11 and 11/14). The positional and error-type embeddings together encode the repair history, and removing either one cuts the value by half or more. The program embedding matters least: without it the value is still 49.4 points (Exploration 7/11, Retention 12/14), probably because the feedback already names the failing types and where they occur, so the selector can recover part of the program from the remaining inputs.",
+   "zh": "每种表示都有贡献，因为去掉其中任何一种都会使净收益从 67.5 分下降。 位置嵌入的作用最大，它告诉选择器某个状态在序列中的位置：没有它，数值会降到 14.9 分，其中探索（Exploration）降至 4/11（36.4%），保留（Retention）降至 11/14（78.6%）。 其次是去掉反馈，数值为 24.0 分（探索 5/11，保留 11/14），再次是错误类型嵌入，它告诉选择器哪些类型已被处理过，去掉后数值为 33.1 分（6/11 和 11/14）。 位置嵌入和错误类型嵌入共同编码了修复历史，去掉其中任何一个都会使数值减半或更多。 程序嵌入的作用最小：没有它，数值仍有 49.4 分（探索 7/11，保留 12/14），这可能是因为反馈中已经指出了失败的类型及其发生位置，因此选择器可以从其余输入中恢复部分程序信息。",
+   "sents": [
+    {
+     "en": "Each representation contributes, since removing any of them lowers the net gain from 67.5 points.",
+     "zh": "每种表示都有贡献，因为去掉其中任何一种都会使净收益从 67.5 分下降。"
+    },
+    {
+     "en": "The positional embedding, which tells the selector where a state lies in the sequence, matters most: without it the value falls to 14.9 points, as Exploration falls to 4/11 (36.4%) and Retention to 11/14 (78.6%).",
+     "zh": "位置嵌入的作用最大，它告诉选择器某个状态在序列中的位置：没有它，数值会降到 14.9 分，其中探索（Exploration）降至 4/11（36.4%），保留（Retention）降至 11/14（78.6%）。"
+    },
+    {
+     "en": "Removing the feedback comes next, with 24.0 points (Exploration 5/11, Retention 11/14), followed by the error-type embedding, which tells the selector which types were already targeted, with 33.1 points (6/11 and 11/14).",
+     "zh": "其次是去掉反馈，数值为 24.0 分（探索 5/11，保留 11/14），再次是错误类型嵌入，它告诉选择器哪些类型已被处理过，去掉后数值为 33.1 分（6/11 和 11/14）。"
+    },
+    {
+     "en": "The positional and error-type embeddings together encode the repair history, and removing either one cuts the value by half or more.",
+     "zh": "位置嵌入和错误类型嵌入共同编码了修复历史，去掉其中任何一个都会使数值减半或更多。"
+    },
+    {
+     "en": "The program embedding matters least: without it the value is still 49.4 points (Exploration 7/11, Retention 12/14), probably because the feedback already names the failing types and where they occur, so the selector can recover part of the program from the remaining inputs.",
+     "zh": "程序嵌入的作用最小：没有它，数值仍有 49.4 分（探索 7/11，保留 12/14），这可能是因为反馈中已经指出了失败的类型及其发生位置，因此选择器可以从其余输入中恢复部分程序信息。"
+    }
+   ]
+  },
+  {
+   "en": "Ablation on the input sequence length for VeruSteer. VeruSteer reads a window of the latest L = 5 L=5 positions of the trajectory, which matches the budget of B = 5 B=5 rounds. A shorter window leaves out the earlier states of the trajectory, so this ablation asks how long a window the selector needs. We shorten the window to L = 1 , 2 , 3 , 4 L=1,2,3,4 . Position i i pairs the i i -th state with the error type selected in the round before it (Section 5.3 ), so even L = 1 L=1 sees the previous selection and lacks only the earlier states.",
+   "zh": "VeruSteer 输入序列长度的消融实验。 VeruSteer 读取轨迹中最近 L=5 个位置的窗口，这与 B=5 轮的预算相匹配。 较短的窗口会遗漏轨迹中较早的状态，因此该消融实验探究选择器需要多长的窗口。 我们将窗口缩短为 L=1,2,3,4。 位置 i 将第 i 个状态与在其之前一轮中选择出的错误类型配对（见 5.3 节），因此即使 L=1 也能看到上一次的选择，只是缺少更早的状态。",
+   "sents": [
+    {
+     "en": "Ablation on the input sequence length for VeruSteer.",
+     "zh": "VeruSteer 输入序列长度的消融实验。"
+    },
+    {
+     "en": "VeruSteer reads a window of the latest L = 5 L=5 positions of the trajectory, which matches the budget of B = 5 B=5 rounds.",
+     "zh": "VeruSteer 读取轨迹中最近 L=5 个位置的窗口，这与 B=5 轮的预算相匹配。"
+    },
+    {
+     "en": "A shorter window leaves out the earlier states of the trajectory, so this ablation asks how long a window the selector needs.",
+     "zh": "较短的窗口会遗漏轨迹中较早的状态，因此该消融实验探究选择器需要多长的窗口。"
+    },
+    {
+     "en": "We shorten the window to L = 1 , 2 , 3 , 4 L=1,2,3,4 .",
+     "zh": "我们将窗口缩短为 L=1,2,3,4。"
+    },
+    {
+     "en": "Position i i pairs the i i -th state with the error type selected in the round before it (Section 5.3 ), so even L = 1 L=1 sees the previous selection and lacks only the earlier states.",
+     "zh": "位置 i 将第 i 个状态与在其之前一轮中选择出的错误类型配对（见 5.3 节），因此即使 L=1 也能看到上一次的选择，只是缺少更早的状态。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 7 shows that a longer window improves Exploration. Exploration is 5/11, 4/11, 6/11, and 8/11 for L = 1 L=1 to 4 4 , and 9/11 for VeruSteer, so that the net gain grows from 16.9 points at L = 1 L=1 to 67.5 points at L = 5 L=5 . Retention varies irregularly with L L (10/14, 13/14, 11/14, and 12/14 for L = 1 L=1 to 4 4 , against 12/14 for VeruSteer). L = 2 L=2 has the highest Retention but the lowest Exploration, so it keeps most default outcomes at the cost of finding few better alternatives. Retention thus depends on how often a selector departs from the default trajectory as well as on how well it chooses, and the net gain shows that a longer window improves the trade-off between the two.",
+   "zh": "图7表明，更长的窗口能提升探索（Exploration）。 探索在 L=1 到 L=4 时分别为 5/11、4/11、6/11 和 8/11，而 VeruSteer 为 9/11，因此净增益从 L=1 时的 16.9 分增长到 L=5 时的 67.5 分。 保留（Retention）随 L 的变化不规则（L=1 到 L=4 时分别为 10/14、13/14、11/14 和 12/14，而 VeruSteer 为 12/14）。 L=2 具有最高的保留率但最低的探索率，因此它以找到更少更优备选方案为代价，保留了大多数默认结果。 因此，保留既取决于选择器偏离默认轨迹的频率，也取决于其选择的优劣程度，而净增益表明更长的窗口能改善二者之间的权衡。",
+   "sents": [
+    {
+     "en": "Figure 7 shows that a longer window improves Exploration.",
+     "zh": "图7表明，更长的窗口能提升探索（Exploration）。"
+    },
+    {
+     "en": "Exploration is 5/11, 4/11, 6/11, and 8/11 for L = 1 L=1 to 4 4 , and 9/11 for VeruSteer, so that the net gain grows from 16.9 points at L = 1 L=1 to 67.5 points at L = 5 L=5 .",
+     "zh": "探索在 L=1 到 L=4 时分别为 5/11、4/11、6/11 和 8/11，而 VeruSteer 为 9/11，因此净增益从 L=1 时的 16.9 分增长到 L=5 时的 67.5 分。"
+    },
+    {
+     "en": "Retention varies irregularly with L L (10/14, 13/14, 11/14, and 12/14 for L = 1 L=1 to 4 4 , against 12/14 for VeruSteer).",
+     "zh": "保留（Retention）随 L 的变化不规则（L=1 到 L=4 时分别为 10/14、13/14、11/14 和 12/14，而 VeruSteer 为 12/14）。"
+    },
+    {
+     "en": "L = 2 L=2 has the highest Retention but the lowest Exploration, so it keeps most default outcomes at the cost of finding few better alternatives.",
+     "zh": "L=2 具有最高的保留率但最低的探索率，因此它以找到更少更优备选方案为代价，保留了大多数默认结果。"
+    },
+    {
+     "en": "Retention thus depends on how often a selector departs from the default trajectory as well as on how well it chooses, and the net gain shows that a longer window improves the trade-off between the two.",
+     "zh": "因此，保留既取决于选择器偏离默认轨迹的频率，也取决于其选择的优劣程度，而净增益表明更长的窗口能改善二者之间的权衡。"
+    }
+   ]
+  },
+  {
+   "en": "Takeaway. The gains of VeruSteer come from what its selector reads, and each part of it contributes. All eight alternative selectors leave the net gain at 40.3 points or less, against 67.5 for VeruSteer; the best of them reads the context in a prompt, and retaining history through mean pooling reaches only 7.8. Removing either loss or any input representation lowers it to between 14.9 and 49.4, and the two losses divide the work, with step-wise imitation serving Exploration and pairwise ranking serving Retention. A longer window of earlier selections raises it steadily, from 16.9 points at L = 1 L=1 to 67.5 at L = 5 L=5 .",
+   "zh": "核心结论。 VeruSteer 的收益来自其选择器所读取的内容，且每一部分都有贡献。 全部八种替代选择器的净增益都不超过 40.3 分，而 VeruSteer 为 67.5 分；其中最好的读取提示词中的上下文，而通过平均池化保留历史记录只能达到 7.8。 移除任一损失或任一输入表示都会使其降至 14.9 到 49.4 之间，且两个损失各有分工：逐步模仿服务于 Exploration（探索），成对排序服务于 Retention（保持）。 更长的早期选择窗口使其稳步提升，从 L = 1 L=1 时的 16.9 分提升到 L = 5 L=5 时的 67.5 分。",
+   "sents": [
+    {
+     "en": "Takeaway.",
+     "zh": "核心结论。"
+    },
+    {
+     "en": "The gains of VeruSteer come from what its selector reads, and each part of it contributes.",
+     "zh": "VeruSteer 的收益来自其选择器所读取的内容，且每一部分都有贡献。"
+    },
+    {
+     "en": "All eight alternative selectors leave the net gain at 40.3 points or less, against 67.5 for VeruSteer; the best of them reads the context in a prompt, and retaining history through mean pooling reaches only 7.8.",
+     "zh": "全部八种替代选择器的净增益都不超过 40.3 分，而 VeruSteer 为 67.5 分；其中最好的读取提示词中的上下文，而通过平均池化保留历史记录只能达到 7.8。"
+    },
+    {
+     "en": "Removing either loss or any input representation lowers it to between 14.9 and 49.4, and the two losses divide the work, with step-wise imitation serving Exploration and pairwise ranking serving Retention.",
+     "zh": "移除任一损失或任一输入表示都会使其降至 14.9 到 49.4 之间，且两个损失各有分工：逐步模仿服务于 Exploration（探索），成对排序服务于 Retention（保持）。"
+    },
+    {
+     "en": "A longer window of earlier selections raises it steadily, from 16.9 points at L = 1 L=1 to 67.5 at L = 5 L=5 .",
+     "zh": "更长的早期选择窗口使其稳步提升，从 L = 1 L=1 时的 16.9 分提升到 L = 5 L=5 时的 67.5 分。"
+    }
+   ]
+  },
+  {
+   "en": "RQ3 asks whether the gains in RQ1 reflect steady progress during repair or only a difference in the final outcome. Figure 8 tracks Rounds 1–5 on the test trees that contain both default and alternative trajectories (159 for AutoVerus, 130 for VeruSAGE). It reports the mean number of verified proof obligations and the mean number of reported errors, the two components of the progress score Q Q (Section 4.2 ), each for the default rule and VeruSteer on the same trees. A trajectory that terminates early keeps its final state in the later rounds, and invalid negative error counts are excluded from the error averages.",
+   "zh": "RQ3 探究的是 RQ1 中的收益是反映了修复过程中的稳步进展，还是仅仅体现了最终结果上的差异。 图 8 跟踪了同时包含默认轨迹和替代轨迹的测试树（AutoVerus 为 159 棵，VeruSAGE 为 130 棵）上第 1–5 轮的表现。 它报告了已验证证明义务的平均数量和已报告错误的平均数量，即进度得分 Q Q 的两个组成部分（第 4.2 节），并且分别针对同一些树上的默认规则和 VeruSteer 进行统计。 提前终止的轨迹会在后续轮次中保持其最终状态，无效的负错误计数被排除在错误平均值之外。",
+   "sents": [
+    {
+     "en": "RQ3 asks whether the gains in RQ1 reflect steady progress during repair or only a difference in the final outcome.",
+     "zh": "RQ3 探究的是 RQ1 中的收益是反映了修复过程中的稳步进展，还是仅仅体现了最终结果上的差异。"
+    },
+    {
+     "en": "Figure 8 tracks Rounds 1–5 on the test trees that contain both default and alternative trajectories (159 for AutoVerus, 130 for VeruSAGE).",
+     "zh": "图 8 跟踪了同时包含默认轨迹和替代轨迹的测试树（AutoVerus 为 159 棵，VeruSAGE 为 130 棵）上第 1–5 轮的表现。"
+    },
+    {
+     "en": "It reports the mean number of verified proof obligations and the mean number of reported errors, the two components of the progress score Q Q (Section 4.2 ), each for the default rule and VeruSteer on the same trees.",
+     "zh": "它报告了已验证证明义务的平均数量和已报告错误的平均数量，即进度得分 Q Q 的两个组成部分（第 4.2 节），并且分别针对同一些树上的默认规则和 VeruSteer 进行统计。"
+    },
+    {
+     "en": "A trajectory that terminates early keeps its final state in the later rounds, and invalid negative error counts are excluded from the error averages.",
+     "zh": "提前终止的轨迹会在后续轮次中保持其最终状态，无效的负错误计数被排除在错误平均值之外。"
+    }
+   ]
+  },
+  {
+   "en": "VeruSteer has more verified proof obligations than the default rule from the first round onward and keeps the lead. The gap is already 0.031 on AutoVerus and 0.062 on VeruSAGE at Round 1, and it reaches 0.082 and 0.085 at Round 5, so the final improvement (1.050 against 0.969 on AutoVerus, 0.762 against 0.677 on VeruSAGE) builds up over the rounds and does not appear only at the end. The error count shows the same pattern. On VeruSAGE, VeruSteer has fewer reported errors than the default at every round, by 0.05 to 0.09, and ends at 1.04 against 1.10. On AutoVerus, it has fewer errors at Rounds 1, 2, and 5, ending at 1.31 against 1.35, and it differs from the default by less than 0.01 at Rounds 3 and 4. On both pipelines, VeruSteer thus ends the repair with more verified proof obligations and fewer reported errors than the default, so the higher score is not bought with additional errors.",
+   "zh": "从第一轮开始，VeruSteer 的已验证证明义务就多于默认规则，并始终保持领先。 在第 1 轮，差距在 AutoVerus 上已达 0.031，在 VeruSAGE 上已达 0.062；到第 5 轮分别达到 0.082 和 0.085，因此最终提升（AutoVerus 上 1.050 对 0.969，VeruSAGE 上 0.762 对 0.677）是逐轮累积形成的，并非只在最后出现。 错误数量也呈现同样的模式。 在 VeruSAGE 上，VeruSteer 在每一轮的报告错误都比默认规则少 0.05 到 0.09，最终为 1.04 对 1.10。 在 AutoVerus 上，它在第 1、2 和 5 轮的错误更少，最终为 1.31 对 1.35，而在第 3 和 4 轮与默认规则的差异小于 0.01。 因此，在两条流水线上，VeruSteer 在修复结束时都比默认规则拥有更多已验证证明义务和更少报告错误，说明更高的分数并非以额外错误为代价换来的。",
+   "sents": [
+    {
+     "en": "VeruSteer has more verified proof obligations than the default rule from the first round onward and keeps the lead.",
+     "zh": "从第一轮开始，VeruSteer 的已验证证明义务就多于默认规则，并始终保持领先。"
+    },
+    {
+     "en": "The gap is already 0.031 on AutoVerus and 0.062 on VeruSAGE at Round 1, and it reaches 0.082 and 0.085 at Round 5, so the final improvement (1.050 against 0.969 on AutoVerus, 0.762 against 0.677 on VeruSAGE) builds up over the rounds and does not appear only at the end.",
+     "zh": "在第 1 轮，差距在 AutoVerus 上已达 0.031，在 VeruSAGE 上已达 0.062；到第 5 轮分别达到 0.082 和 0.085，因此最终提升（AutoVerus 上 1.050 对 0.969，VeruSAGE 上 0.762 对 0.677）是逐轮累积形成的，并非只在最后出现。"
+    },
+    {
+     "en": "The error count shows the same pattern.",
+     "zh": "错误数量也呈现同样的模式。"
+    },
+    {
+     "en": "On VeruSAGE, VeruSteer has fewer reported errors than the default at every round, by 0.05 to 0.09, and ends at 1.04 against 1.10.",
+     "zh": "在 VeruSAGE 上，VeruSteer 在每一轮的报告错误都比默认规则少 0.05 到 0.09，最终为 1.04 对 1.10。"
+    },
+    {
+     "en": "On AutoVerus, it has fewer errors at Rounds 1, 2, and 5, ending at 1.31 against 1.35, and it differs from the default by less than 0.01 at Rounds 3 and 4.",
+     "zh": "在 AutoVerus 上，它在第 1、2 和 5 轮的错误更少，最终为 1.31 对 1.35，而在第 3 和 4 轮与默认规则的差异小于 0.01。"
+    },
+    {
+     "en": "On both pipelines, VeruSteer thus ends the repair with more verified proof obligations and fewer reported errors than the default, so the higher score is not bought with additional errors.",
+     "zh": "因此，在两条流水线上，VeruSteer 在修复结束时都比默认规则拥有更多已验证证明义务和更少报告错误，说明更高的分数并非以额外错误为代价换来的。"
+    }
+   ]
+  },
+  {
+   "en": "Takeaway. The advantage of VeruSteer builds up steadily during repair and does not appear only in the final outcome. On both pipelines, it leads the default rule in verified proof obligations from Round 1 and widens the lead to 0.082 on AutoVerus and 0.085 on VeruSAGE by Round 5, while also ending with fewer reported errors (1.31 against 1.35 and 1.04 against 1.10).",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Figure 9 groups multi-error states by their candidate set, pooling both pipelines and all generation configurations over the full corpus, including training tasks. It shows the ten most frequent candidate sets with positive observed verification-rate differences, providing a descriptive view of policy behavior rather than a test of generalization. Panel (a) reports each selector’s choice distribution, counting each state once per tree; panel (b) reports the associated final verification-rate difference, VeruSteer minus default, in percentage points (pp). The two selectors contribute different state populations, so these are descriptive comparisons rather than paired effects of changing a choice at the same state.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The default rule usually concentrates on one type, while VeruSteer often departs from that choice. For MismatchedType + Other , the default always selects MismatchedType , whereas VeruSteer selects Other in 87.74% of its decisions. The associated verification rates are 2 / 3618 2/3618 and 17 / 685 17/685 , respectively, a difference of 2.43 pp. The displayed differences range from 0.72 to 26.04 pp, with the largest for ArithmeticFlow + AssertFail + InvFailEnd .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Takeaway. VeruSteer makes context-dependent choices among reported error types, departing from the default rule’s near-deterministic selections. In the candidate sets shown, these choices are associated with 0.72–26.04 percentage-point higher final verification rates. These observations illustrate how contextual selection can identify repair opportunities beyond preset error-type priorities.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "This section discusses what the results mean for verification automation, the limitations and directions that follow, and the threats to the validity of the evaluation.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Repair order is a separate, learnable part of verification automation. Work on LLM-based repair for Verus mostly strengthens what happens once a failure is targeted, through retrieved context, counterexamples, tree search, and candidate ranking (Sections 2.2 and 8.1 ). Which reported error type to repair next is a different axis, and improving it leaves the repair agents untouched: with the same agents, acceptance checks, verifier, and budget, VeruSteer recovers 75.0% and 81.8% of the available verification opportunities on AutoVerus and VeruSAGE (RQ1). The repair trees show why this can be learned, since the best choice varies with the state even for the same reported types (Section 3.2 ). A pipeline can therefore treat error-type selection as a policy learned from repair outcomes, instead of a priority list fixed when the pipeline is written.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Casting error selection as sequential recommendation makes the repair history usable. VeruSteer reads a trajectory as an interaction sequence, error types as items, and the reported types of each round as the candidate set (Section 5.3 ), so the choice of a repair target becomes next-item prediction conditioned on the decision context, which includes the earlier states and selections. RQ2 shows that the borrowed components matter: a selector that reads only the current state recovers 3 of the 11 verification opportunities (27.3%) against 9 of 11 (81.8%) for VeruSteer, the net gain grows from 16.9 points with a window of one state to 67.5 points with the full window of L = 5 L=5 , and the pairwise ranking keeps the Retention drop at 14.3% where its removal doubles it to 28.6%. Only the choice of which failure to target is learned here, while the other two decisions of a repair round, how to repair it and which candidate to carry forward, stay with the pipeline (Section 2.2 ). We expect the same casting to fit other LLM pipelines that dispatch an agent from a candidate set that changes every round, although we evaluate only the two Verus pipelines.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Verifier outcomes supply supervision and a controlled evaluation without manual labels. Verus decides every outcome mechanically, so alternative trajectories from the same program can be compared directly by verification, repair rounds, and progress (Section 4.2 ). Successful and failed trajectories alike then yield preferences, and the 18,885 preference pairs in the training partition need no manual annotation, with VeruSteer also improving final progress on trees where no recorded trajectory verifies (RQ1). The stored trees can be replayed without new LLM or verifier calls, so every selector is compared on the same recorded transitions (Section 6.1 ). Reporting Retention and Exploration separately keeps this comparison informative, since a selector can look competitive in one and lose in the other: the learned static priority recovers 6 of the 11 verification opportunities (54.5%), the most that any of the eight alternative selectors recovers, yet keeps only 9 of the 14 default successes (64.3%), fewer than any of them (RQ2).",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The selector learns only which failure to repair. A repair round makes three decisions: which failure to target, how to repair it, and which candidate to carry forward (Section 2.2 ), and VeruSteer learns only the first. It acts only at states that report several error types, since a single reported type leaves nothing to select. The other two decisions stay inside the repair agent, which picks a repair method and generates several candidate patches, and our trees keep only the patch it accepts, so they do not show what a different method or a different candidate would have led to. Learning these decisions would need trees that keep such alternatives.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Supervision comes from a finite and costly exploration. At each state, a tree samples the repair of each reported error type once and keeps the accepted result as the successor, so another LLM sample could give a different successor. A preferred trajectory is therefore the best one we observed, not a proven optimum, and a failed trajectory may still contain good intermediate choices. Sampling each repair several times would make the preferences more reliable, but building a tree already costs much more than following one trajectory, since it repairs the program once for every reported type at every state. The trees also have to be rebuilt when the repair LLM, the agents, or the Verus version change, and applying VeruSteer to another pipeline needs a mapping from its diagnostics to the 35 error types of Table 1 , since any other diagnostic is reported only as Other . A live pipeline, where every round draws fresh LLM samples, would test these preferences beyond the recorded transitions.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Repair budget. We build the trees under a budget of B = 5 B=5 rounds, which keeps the expansion affordable, so the preferences encode which trajectory is better within five rounds. A choice that does not pay off by round five may still lead to a longer successful proof, and a gain at five rounds may not hold with more rounds. The window length L L cannot make up for this: it sets how many of the latest states the selector reads, not how long a repair it has seen, so a longer window does not teach the selector about longer repairs. Learning them requires trees collected under a larger budget, whose cost grows with every extra round.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Internal validity. We split by task, so no test task appears in training or validation, and we select checkpoints on the validation trees only. The test trees are not independent samples, since trees of one task share its problem: the 289 test trees with alternative trajectories come from 101 tasks. Each trained variant is a single checkpoint and the prompt-based selector a single sampled run, so differences between selectors include training and sampling randomness, which we do not measure. We report the number of trees beside every rate, and read differences of a few trees as indications of the trend rather than precise effects.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Construct validity. Verification success means that a program passes the verifier against the supplied specification, not that the specification is adequate. We therefore audited the verified test leaves against their root programs: all report zero errors, none adds a proof-bypassing construct such as assume , admit , or external_body , and the few AutoVerus leaves that change a specification element are not among the verifications that VeruSteer gains over the default rule. The progress score and the number of repair rounds are surrogates as well, since neither measures functional coverage, assurance strength, elapsed time, or human effort.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "External validity. The evaluation covers 684 of the 762 StarVerus tasks that have repair trees, with two repair pipelines, initial programs from DeepSeek-Chat and Qwen-Coder, and DeepSeek-Chat for all repair rounds, so it does not describe an end-to-end benchmark of generation and repair. Replay compares every selector on the same recorded transitions, which keeps the comparison between selectors fair, but a fresh LLM call may produce another patch.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "AutoVerus ( Yang et al., 2025a ) generates Verus proof annotations and repairs failures through agents specialized by error type. VeruSAGE ( Yang et al., 2025b ) extends this approach to system-level proofs: its planner uses code, diagnostics, and earlier attempts to choose repair actions, and its candidate selector chooses a patch or reverts to an earlier candidate. Although these decisions use context and history, the error type to target still follows a preset priority. VeruSteer learns this target-selection decision, while the underlying pipeline handles repair actions and candidate selection (Section 2.2 ).",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "StarVerus ( Jiang et al., 2026 ) is the closest prior work on repair-target selection. Its prompted LLM planner analyzes the program, diagnostics, and project context to propose an order over error types. Adaptive target selection therefore has a precedent. VeruSteer studies how to learn this decision from repair outcomes: it trains a dedicated selector on preferences between alternative trajectories from the same initial program. A study of Verus specification failures in Asterinas Vostd ( Liu et al., 2026 ) reports obscured root causes, regressions, and stalled repairs, further motivating evaluation across successive repair steps.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Other Verus systems improve repair context or generation. RAGVerus ( Zhong et al., 2025 ) retrieves repository context, and ExVerus ( Yang et al., 2026 ) uses counterexamples to guide repairs of a targeted failure and rank candidate patches. SAFE ( Chen et al., 2024b ) and AlphaVerus ( Aggarwal et al., 2024 ) bootstrap generators from verified outputs, while VeriStruct ( Sun et al., 2025 ) supports generation and repair for data-structure modules. These techniques improve the context and repair operations available to a pipeline; VeruSteer addresses how to choose among concurrently reported error types.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "For other verifiers, Preguss ( Wang et al., 2025 ; Wang et al., 2026 ) uses static analysis to identify verification units in C programs and orders their specification synthesis along the call graph. Its ordering operates over program units before synthesis; VeruSteer’s choices respond to changing diagnostics within a repair loop. Laurel ( Mugnier et al., 2025 ) generates helper assertions for Dafny ( Leino, 2010 ) using error locations and similar proofs. Related systems synthesize specifications ( Wen et al., 2024 ; Ma et al., 2024 ) , loop invariants ( Liu et al., 2024a ; Liu et al., 2024b ; Chen et al., 2025 ) , or formalizations of natural-language requirements ( Cosler et al., 2023 ; Su et al., 2026 ) . Benchmarks and datasets for verified code and proof generation ( Loughridge et al., 2024 ; Ye et al., 2025 ; Bursuc et al., 2025 ; Chakraborty et al., 2024 ; Cao et al., 2025 ) provide tasks and reference artifacts for training and evaluation. Our supervision additionally requires alternative error-selection trajectories from a common initial program, which we collect as repair trees on the StarVerus tasks (Section 6.1 ).",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Learned rankers use verification outcomes to prioritize candidates. iRank ( Chakraborty et al., 2023 ) learns a contrastive reranker for LLM-generated loop invariants to prioritize valid candidates and reduce verifier calls. Quarry ( Zhang et al., 2026 ) learns a pairwise linear difficulty model from recursive proof outcomes to rank Rocq goal decompositions during search. VeruSteer instead ranks reported error types based on the current state and repair history, using preferences between complete repair trajectories from the same initial program.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Learning also guides multi-step proof construction. TacTok ( First et al., 2020 ) predicts Coq tactics from proof states and partial scripts, while TacticZero ( Wu et al., 2021 ) learns tactic and argument selection and backtracking in HOL4. ReProver ( Yang et al., 2023 ) retrieves premises for tactic generation, and ReForm ( Yan et al., 2025 ) trains Dafny specification generators with verifier feedback. VeruSteer uses state, history, and outcome signals to select targets for existing repair agents. BeeR ( Lin et al., 2026 ) also studies selection order, combining confidence-based alarm inspection with cluster exploration guided by human feedback.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Online search explores alternative continuations. AlphaVerus’s Treefinement ( Aggarwal et al., 2024 ) searches refinement trees for new tasks; counterexample-guided synthesis ( Polgreen et al., 2020 ) and neural search guidance ( Kobayashi et al., 2025 ) use failed candidates to guide search. VeruSteer explores alternatives offline for supervision, then follows one repair trajectory without extra repair or verifier calls for selection.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "GRU4Rec ( Hidasi et al., 2016 ) and SASRec ( Kang and McAuley, 2018 ) predict a user’s next item from interaction history using recurrent networks and causal self-attention ( Vaswani et al., 2017 ) , respectively. BPR ( Rendle et al., 2009 ) learns rankings from pairwise preferences in implicit feedback. VeruSteer draws on SASRec for sequential encoding and BPR for pairwise ranking, adapting both to error-type selection (Section 5 ). Each sequence position combines the program, diagnostics, and preceding selection; available items are the currently reported error types. Supervision comes from verifier outcomes: a step-wise loss imitates preferred trajectories, and a pairwise loss ranks trajectories from the same initial program. These established techniques support learning error selection from the outcomes of alternative repair orders.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We presented VeruSteer, which learns which verifier-error type to repair next from the outcomes of alternative repair trajectories. Offline repair trees provide preferences among paths from the same initial program, and a sequence model uses the program, verifier feedback, and earlier selections to choose the next target. The selector operates within the existing repair loop with its specialized agents and verification checks. Evaluation on stored AutoVerus and VeruSAGE test trees shows that VeruSteer preserves most default verification successes and recovers successful alternatives, with some losses in retention. It also finds shorter successful paths and improves progress on unsuccessful ones. The strategy comparisons and ablations show the value of context and trajectory supervision for these choices. These findings support learning repair order as a separate part of verification automation, allowing existing repair agents to benefit from the outcomes of their alternative executions.",
+   "zh": "",
+   "sents": null
+  }
+ ]
+}

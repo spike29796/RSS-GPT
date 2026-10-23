@@ -1,0 +1,646 @@
+{
+ "id": "51be220ead38dac2",
+ "source": "arxiv-llm-eng",
+ "link": "https://arxiv.org/abs/2610.30016v1",
+ "title": "Code Comprehensor: Hierarchical Documentation and Cross-Modal Retrieval for Large Repositories",
+ "title_zh": "代码理解器：面向大型代码仓库的分层文档生成与跨模态检索",
+ "published": "2026-10-21T16:45:43Z",
+ "translated_at": "2026-10-23T00:57:00Z",
+ "paragraphs": [
+  {
+   "en": "Understanding large, complex, and rapidly evolving code bases remains a core challenge for software engineering at scale, hindering onboarding, maintenance, refactoring, and impact analysis. Providing this information to a Large-Language Model (LLM) is another hurdle, as the LLM must understand not only the required code method but also its associated methods in the grand scheme of the repository. We propose Code Comprehensor, a hybrid retrieval–reasoning framework combining (i) a code dependency callgraph, (ii) CodeScribe, which uses code-aware LLMs to generate hierarchical documentation across repository call graphs, and (iii) CodeContrast, a CLIP-style dual-encoder model trained on CodeScribe output to learn aligned text-code embeddings. CodeContrast enables fast, semantically precise retrieval of relevant code-context neighborhoods, which serve as grounded evidence for an MCP-based LLM orchestrator answering domain-specific queries. Evaluation on OpenCV and a proprietary 5M-LOC repository shows that CodeScribe-derived supervision significantly improves cross-modal retrieval in text-to-code accuracy over baseline approaches. Richer textual supervision (hierarchical documentation, parent/sibling context, and LLM-generated synthetic questions) consistently enhances performance across both repositories. LLM-as-a-judge evaluation using the popular RAGAS of the Code Comprehensor output yields above 90% faithfulness scores.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Enterprises typically have large code repositories that have been developed and maintained over the years. The ability to document and understand such complex repositories has been a challenge [ 1 , 2 ] . Code complexity creates dependencies on senior engineers’ expertise to understand and navigate such repositories, and introduces inefficiencies in the Software Development Life Cycle (SDLC) [ 3 ] . The growth of Large Language Models (LLM) in recent years and their ability to understand and explain code introduce the possibility of making this process more efficient [ 4 ] . This growth will lead to greater productivity in developing new features and maintaining and debugging existing ones.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "However, the ability to use LLMs to document and understand large repositories in a reliable, replicable fashion requires careful design and consideration. Despite the large context window of many modern LLMs [ 5 ] , code repositories often will consume a much larger number of tokens. For example, [ 6 ] gives Lines of Code (LOC) for some public repositories, and token sizes will be much larger. Proprietary code repositories are often large in terms of LOC. For example, one of the repositories mentioned in this paper is larger than most listed in [ 6 ] . More importantly, just because an LLM can process a large number of tokens does not mean an LLM should access the entire repository for every question. In addition to cost implications, large context sizes are known to give poorer results [ 7 , 8 ] .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Additionally, code repositories often contain identical or very similar files, methods, and variables across different parts of the code base, and using probabilistic machinery like an LLM is unlikely to be reliable or replicable. In view of this, it is important to design systems that enable LLMs to navigate code repositories more consistently and deterministically. Regarding this issue, some studies discuss using the inherent structure of code, as captured in the call graph, to drive documentation. Work by [ 9 ] discusses using a static-analysis-based call tree to generate documentation for large-scale repositories recursively. A similar approach to generate initial and incremental documentation has been followed by other works [ 10 ] . A hierarchical engine for document generation and querying has also been studied [ 11 ] . Recently, Google released a repository to document code [ 12 ] ; however, to the best of our knowledge, the system’s design has not been disclosed. The common aspect of these repositories is the use of either the Abstract Syntax Tree (AST) [ 13 ] or the call-graph. However, if one wants to build more than just static documentation, a broader and more comprehensive approach is needed. Previous work [ 14 , 15 ] has looked at cross-modal contrastive learning for code search; however, without deep domain-level documentation mapping methods to domain and code structure, the effectiveness of such cross-modal retrieval on large, complex repositories is limited.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We present Code Comprehensor , an end-to-end system that combines four main components: (i) CodeGraph , a call graph generated via static analysis and exposed through API endpoints for traversal and chunking; (ii) CodeScribe , a hierarchical documentation engine that recursively processes directory-structured code, supports multiple documentation chapters and custom prompts per directory, and outputs PlantUML diagrams; (iii) a custom data processing module that parses CodeScribe output into relational records linking methods to parent/sibling context; and (iv) CodeContrast , a CLIP-based dual-encoder contrastive model using InfoNCE loss for asymmetric text-to-code and code-to-text retrieval with multi-positive learning support.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "CodeScribe operates on a repository directory structure with configurable chapter-based perspectives (e.g., code description, algorithms, data flow). For each start method (in-degree zero in the method subgraph), CodeScribe retrieves the Depth-First-Search (DFS) traversal tree via CodeGraph, chunks it if necessary using post-order traversal to preserve hierarchy, and generates documentation. CodeScribe supports both full and incremental (git-commit-driven) documentation runs.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "CodeContrast leverages the structured training data from CodeScribe parsing to train a retrieval model. We adopt CLIP’s dual-encoder architecture for efficient pre-computed embeddings and asymmetric modalities. The InfoNCE objective learns well-separated embedding spaces and extends naturally to multi-positive scenarios.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Finally, a Model Context Protocol (MCP) based orchestration layer integrates CodeGraph, CodeScribe, and CodeContrast into an agentic system accessible via an Integrated Development Environment (IDE). This Master Agent invokes specialized agents (RAG over CodeScribe output, CodeGraph traversal, CodeContrast retrieval) to answer domain-specific queries on code repositories.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The core contributions of this paper are as follows:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "A post-order chunking algorithm that enables LLM documentation of arbitrarily large call trees while preserving structural hierarchy.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "A multi-granularity training data construction pipeline that leverages parent-sibling relationships from documentation structure and LLM-generated synthetic questions for enhanced retrieval performance.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Code Comprehensor: an integrated end-to-end system combining CodeGraph, CodeScribe, and CodeContrast components for large-scale repository understanding and retrieval.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Empirical evidence that hierarchical documentation-derived supervision improves cross-modal code retrieval by at least 9% Top-1 accuracy over baseline approaches.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The remainder of the paper is structured as follows. We briefly summarize previous work in Section II . We discuss the System Architecture in Section III , the detailed methodology in Section IV , and present results in Section V . We conclude with a discussion, threats to validity, and future works in Sections VI , VII , and VIII , respectively.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Code search and retrieval has been an active area of research for understanding large repositories. Recent work has focused on neural approaches combining text and code embeddings. Sun et al. [ 16 ] presented context-aware code translation for code search, while Chai et al. [ 17 ] explored cross-domain deep code search using meta-learning techniques. Mathew and Stolee [ 18 ] investigated cross-language code search, and Mao et al. [ 19 ] proposed self-supervised query reformulation for improved retrieval. More recently, Wang et al. [ 20 ] examined fusion of multiple code searchers, and Shi et al. [ 21 ] introduced CoCoSoDa for effective contrastive learning on code search tasks. Large-scale contrastive pre-training for code retrieval has been explored by Li et al. [ 22 ] , who developed CodeRetriever. Comprehensive surveys on code search have been provided by Di Grazia and Pradel [ 23 ] and Sun et al. [ 24 ] .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Documentation generation at repository scale has emerged as a critical need for understanding complex systems. Luo et al. [ 25 ] introduced RepoAgent, which combines static analysis with LLM-driven documentation. Hoang et al. [ 26 ] developed CodeWiki, a framework for generating hierarchical documentation. Sounthiraraj et al. [ 27 ] proposed a hierarchical engine for structured document generation and querying.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Contrastive learning has proven effective for learning aligned embeddings of code and text. Neelakantan et al. [ 28 ] introduced text and code embeddings using contrastive methods. Li et al. [ 22 ] leveraged contrastive learning in CodeRetriever for large-scale pre-training. Shi et al. [ 21 ] proposed CoCoSoDa with a momentum encoder design.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Code Comprehensor extends prior work in three key ways. First, unlike code search methods that operate on isolated code snippets (e.g., CodeRetriever, CoCoSoDa), our system first generates hierarchical documentation that captures inter-method relationships through call graph analysis and multi-perspective documentation generation, then trains a contrastive model on this enriched representation. Prior work on code retrieval has focused primarily on Python and Java; CodeRetriever and CoCoSoDa lack publicly available implementations for C/C++ repositories, limiting direct empirical comparison on the systems programming domain where our work is evaluated. Second, unlike RepoAgent, which focuses solely on documentation generation, our system uses the generated documentation as a structured training signal for a retrieval model, enabling efficient inference-time retrieval without requiring LLM calls per query. Third, we employ a post-order chunking algorithm to handle arbitrarily large call trees while preserving structural hierarchy, enabling scalable documentation and retrieval on repositories exceeding 5M lines of code.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Figure 1 shows the overall system architecture for Code Comprehensor. Git repositories are first cloned into our system, and the CodeGraph is generated using static analysis. This CodeGraph is then consumed in CodeScribe, which uses two additional external information sources: prompts and configuration files. These are discussed in detail in Section IV-B . The output of CodeScribe, called “Synthesized Technical Descriptions” (SynTD), is consumed by CodeContrast. CodeScribe uses recursive synthesis (shown as “S” in Figure 1 ) indicated by the self-loop. To enable an end user (or an external system/agent) to interact with the documentation, multiple custom agents are built. The end user interacts with the Master Agent (MA) via an MCP gateway. The MA is an LLM-based orchestrator that calls multiple specialized agents. The CodeScribe Agent is an RAG-based system on the SynTD. There is a CodeContrast agent that can invoke API calls on the trained contrastive model. The CodeGraph agent can perform custom traversals on the CodeGraph via an exposed API.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Given a natural-language question from the user (an Engineer in this example), the MA retrieves relevant code blocks from the CodeContrast agent using Text → \\rightarrow Code-based retrieval. The MA retrieves the hierarchy of the relevant methods from the CodeGraph agent and obtains their documentation using the CodeScribe Agent. Finally, the MA composes a natural-language response to the end user and adds relevant diagrams and code blocks to provide a more comprehensive answer. The end user can interact further with the MA with follow-up questions. The Engineer can also ask questions, such as explanations of specific files, methods, or classes, and their relevance to the overall system. In such a case, MA uses the Code → \\rightarrow Text retrieval from the CM agent. It also identifies the method or file hierarchy from the CodeGraph agent and the documentation from the CodeScribe Agent. The MA decides which type of retrieval to invoke from the CodeContrast agent. This system allows for seamless end-to-end navigation and interpretation of the repository.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "To create the CodeGraph, a static analysis of the code repository is first performed. Static analysis identifies all code files and their corresponding methods. Dependencies are resolved via compile commands or, if unavailable, with reasonable heuristics. Node types are files and methods, and in object-oriented languages, other node types, such as classes, are added. Comments written by the developer for the methods are also extracted as attributes for the method nodes in CodeGraph, along with the method signatures. For methods without a developer-written comment, an LLM is prompted to generate one. The actual method body is also available as an attribute on the method. Since the same method can appear in multiple files, nodes are named “ method_name:::file_name ” where “:::” is chosen as the separator since it is unlikely to appear elsewhere. In object-oriented languages, nodes are named “ method_name:::file_name ::::line_number” to handle operator overloading. Method names include the namespace and class name, where relevant, as fully qualified names. The Tree-Sitter library [ 29 ] is used for parsing, though other approaches can be used. The CodeGraph generation, of course, needs (programming) language-specific parsing. The CodeGraph structure is generic, and the rest of the processing in the entire system is language-agnostic.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The CodeGraph is saved as a Python Networkx [ 30 ] library object. This CodeGraph is also exposed through a FastAPI service [ 31 ] . Several endpoints are exposed via the FastAPI service. Most are standard endpoints for graph traversal, e.g., Breadth-First-Search (BFS) and Depth-First-Search (DFS), along with the “invokes” edge in both forward and reverse directions. The resultant CodeGraph and the endpoints are used to generate the documents using CodeScribe.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "CodeScribe documentation is driven by the repository’s directory structure because that is the natural way developers navigate it. The output of CodeScribe is Markdown files in a directory structure that replicates the code repository’s directories. CodeScribe has configuration files that allow one to exclude irrelevant directories and include only file name extensions that are present. Every directory can have one or more perspectives to document the code, called “chapters” (e.g., code description, algorithms, data flow, interfaces). For each chapter, a custom prompt is generated, with flexibility to customize per directory. CodeScribe can also consume configuration information, such as abbreviation lists for specialized domains.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The system prompts are designed with three key principles: (1) LLM output is constrained to generate documents at hierarchical levels of abstraction, summarizing at appropriate semantic boundaries; (2) quoted code segments are marked with metadata (method name, file path, language) to enable downstream parsing and tracing back to source; (3) consistency across documentation perspectives ensures coherent multi-chapter views of the same code units. These design choices are critical for downstream parsing and contrastive model training.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "When processing any directory, CodeScribe invokes CodeGraph to find all files in the directory and the methods they contain. Next, among the methods it identifies, start methods are those with an in-degree of zero in the method-only subgraph (a subgraph consisting only of methods). These methods are invoked by the external system (outside the scope of the current module graph). For each start method, the DFS traversal tree is retrieved via an endpoint on the CodeGraph API. The DFS traversal endpoint generates a key for each element in the DFS walk, and this information is included in the LLM’s context. The context also includes the method definitions in the DFS tree. Thus, there is one Markdown output file per chapter and per start method. The documents for each start method are then combined for a summarized document at the directory level. Optionally, via a configuration file, summarizations for directory hierarchies are also done.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "However, in large repositories, it is common to find trees that exceed the allowable context window, especially since method definitions are included. It is important to note that context sizes include output tokens, and there must be a reasonable allowance left for the LLM to generate sufficiently detailed documentation. This requires that the DFS walk trees be properly chunked. Hence, we build a chunking process that allows customizable chunk sizes. To handle such large trees, we implement an algorithm that uses recursive post-order traversal to process the DFS tree. For each node, we first process all children recursively, collecting any remaining chunks. We then check if the current node plus all child remainders fit within the primary context limit. If so, we merge them. If not, we finalize each child remainder as an independent chunk and keep only the current node. Finally, if the resulting chunk exceeds the primary limit plus a buffer, we split it into overflow chunks and return the remaining tail.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The chunks are presented to the LLM as context, and the output of the previous chunk is added to future chunks in the context in a recursive generation process. The output of intermediate chunks is temporary and not included in the final documentation. Our algorithm ensures that when the LLM processes a parent caller, it possesses a high-level functional summary of all callee implementations, even if the source code of those children is not included in the current active window. This rolling summarization effectively compresses the global DFS walk state, allowing the model to generate accurate parent-level documentation without having to guess the behavior of its dependencies.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "CodeScribe can also process incrementals based on git commit IDs. This process can be done by identifying the last processed git commit and identifying files that have changed. Further to this, the methods in these impacted files are identified and checked against the previous version of the graph to see if they have changed. If they have, then the root/start methods of the trees they belong to are identified. This method is shown in Figure 2 . Once this is done, CodeScribe asks the LLM to modify only the start methods and any summarization documents generated for this. This process allows incremental processing at any frequency, from periodic intervals such as weekly to integration with Continuous Integration/Continuous Development (CI/CD) pipelines. CodeScribe’s output is then parsed into a more palatable data format for CodeContrast.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "As mentioned before, CodeScribe generates Markdown output that mimics the repository’s directory structure. The documents contain a mixture of the following:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Hierarchical section headers denoting algorithms and module structure.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Inline code blocks annotated with method names, file paths, and programming language identifiers.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "PlantUML diagram specifications embedded within fenced code blocks.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Free-form textual descriptions providing domain context, algorithmic rationale, and inter-component relationships.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "To utilize this data for training CodeContrast, the Markdown files undergo several processes:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "A custom recursive parser was implemented to convert Markdown documents into nested JSON structures. The headers and subheaders of the Markdown file become the keys of the JSON file. Non-header content is aggregated under an arbitrary key at the appropriate nesting level. This approach preserves the hierarchical organization of the original documentation while enabling programmatic traversal.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Each leaf node in the resulting JSON tree is processed to separate the code blocks from the text segments. A regex-based extractor identifies fenced code blocks (delimited by triple backticks) and captures both the language identifier and the source code. The remaining text, after code block removal, is retained as a description. The extraction procedure traverses the JSON tree recursively, assigning a dot-separated depth identifier (e.g., 1.2.3) to each node. This depth encoding enables the subsequent identification of parent-child and sibling relationships among extracted entries, which is critical for constructing the relational features of the final dataset.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Each extracted code block is classified into one of three categories based on its content:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Code : Blocks containing annotated source code with explicit method name and file path metadata (extracted via inline comments from CodeScribe).",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "UML : Blocks identified as PlantUML specifications, detected by the presence of @startuml directives or the PlantUML language identifier.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Pseudocode : Code blocks lacking method name and file path annotations, treated as pseudocode or algorithmic sketches.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "For each code entry, the pipeline constructs a rich set of relational features by using the depth-encoded tree structure from CodeScribe:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Parent context : Textual descriptions from the immediate parent node, providing high-level context.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Sibling context : Method names, comments, file paths, and code of entries sharing the same parent, capturing co-located functionality.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Module-level context : Aggregated commentary from text-only nodes that lack direct child code blocks, serving as overarching module documentation.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "These relational features are designed to provide the contrastive learning model with multi-granularity contextual signals linking code to its surrounding documentation. The parsed records are merged with the call graph data created earlier, using the same composite key of the form “ method_name:::file_path ”",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Large repositories often have sparse, inconsistent, or outdated data (e.g., missing comments, legacy documentation, or domain-specific abbreviations). Moreover, real developer queries often take the form of questions rather than direct text descriptions. Therefore, to improve coverage and better match downstream retrieval and reasoning workloads, synthetic questions generated from the parsed records are augmented, with code included only as a grounding aid.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Synthetic questions are constructed with two explicit objectives:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Intent diversity : cover common developer intents such as purpose/behavior, parameter usage, edge cases, and preconditions, error handling, and interactions within a local module context.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Retrieval grounding : include repository-specific terminology (parameter names, types, macros, struct/enum identifiers, and field names) to improve retrievability, while explicitly discouraging “keyword dumping”.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "In our pipeline, the semantic intent of each question is primarily driven by the available documentation signal. At the same time, the method signature and a bounded code snippet are used as auxiliary sources for terminology anchors.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Each synthetic question set is generated for a single code entry produced by Section IV-C .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "For a given entry, the generation payload consists of:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Documentation signal : one consolidated text slice corresponding to a selected comment level or hierarchical comment fields when available.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Code signal : the method signature and a bounded code snippet (provided for terminology only, with explicit instructions not to copy verbatim). We provide a signature with the symbol name removed.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The generator, therefore, receives a comment-driven description of behavior, augmented with a limited amount of code-local context.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "To encourage grounded and retrievable questions, we extract candidate anchors from the entry:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Behavior anchors ( BEHAVIOR_ANCHORS ): action-level intent tokens (verbs) that constrain question semantics.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Parameter anchors ( PARAM_TERMS ): parameter names and salient type tokens parsed from the function signature.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Context anchors ( CONTEXT_TERMS ): repository- and domain-specific terminology mined from the documentation slice and the bounded code context.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Key terms ( KEY_TERMS ): a capped union of parameter and context anchors, used as a lexical grounding constraint while limiting the total number of enforced tokens to avoid keyword stuffing.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We use a code-capable instruction-following LLM to generate synthetic questions. 1 1 1 We use [GEN_MODEL] with decoding parameters [TEMP] , [TOP_P] , and [MAX_TOKENS] .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "For each entry, the prompt instructs the generator to produce developer-style questions with the following rules:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Reflect the described behavior and constraints from the documentation signal;",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "includes at least two terminology anchors (preferably one from PARAM_TERMS and one from CONTEXT_TERMS when available), and at least three verbatim hits from KEY_TERMS ;",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Include at least one BEHAVIOR_ANCHORS (e.g., validate , initialize , convert , decode ) to reduce purely token-driven outputs, while discouraging keyword dumping;",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Enforce interrogative form (each question ends with ‘?’);",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Avoid copying code verbatim and avoid dataset-specific identifiers (e.g., <path>:<line> strings).",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "This design yields questions whose intent is comment-driven, while code-derived anchors improve grounding and retrieval utility. Listing 3 shows an example prompt used for synthetic question generation. We instruct the model to produce exactly three developer-style questions for each method.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We apply lightweight filtering to improve precision and reduce noise:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Format and alignment checks : enforce strict JSON output and validate echoed tags; discard malformed outputs.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Deduplication : remove exact and near-duplicate questions within the same ID.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Informativeness : discard questions that do not contain the required anchors or fall below a minimum length.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "To assess retrieval generalization beyond trivial lexical shortcuts, we additionally evaluate a post-processed variant where function-name tokens are removed from questions.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "CodeContrast is a custom dual-encoder contrastive learning system [ 32 ] that aligns natural-language documentation embeddings with source-code embeddings. The system is designed for a code retrieval task: given a textual query (e.g., documentation or comments), retrieve the most relevant code snippet from a corpus, and vice versa. It uses PyTorch’s Fully Sharded Data Parallel (FSDP) [ 33 ] for distributed multi-GPU training, supports both SentenceTransformer (SBERT) [ 34 ] and normal BERT Transformer [ 35 ] backbones, and includes a full pipeline from data preparation through training, embedding store creation, and evaluation. The full architecture is shown in Figure 4 .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "This module serves as the initial stage of the data‑processing pipeline. It loads a JSON input file that is created from Section IV-C , and applies validation and filtering logic to produce structured entries containing code, documentation, unique identifiers, and query types. This induces a one-to-many supervision structure: one code unit corresponds to many valid textual descriptions:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "a single code unit (method signature and bounded code snippet), and",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "multiple text views (raw documentation, hierarchical context, and synthetic questions), each tagged by a query_type .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "During this step, the system also flags entries that may cause issues, such as those with insufficient documentation or code that is too long to process effectively. Once everything is cleaned and organized, the module splits the data into training, validation, and test sets and then saves the final outputs.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The embedding system supports several backbone options. In one setup, we use SBERT encoders, which produce sentence embeddings directly. In another, we use Transformer models such as BERT, where we create fixed-size representations either by averaging the contextual token embeddings or by taking the final token embedding. To make sure these different backbones produce vectors of the same size, we optionally add a projection layer that maps everything to a shared dimension d d . All embeddings are then ℓ 2 \\ell_{2} -normalized onto the unit hypersphere, enabling cosine similarity to be computed by dot product.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "A dual‑encoder framework integrates these embedding models in a unified contrastive learning setup. Each encoder processes either a text query or a code snippet, and both are trained jointly using a similarity objective that is adjusted by a temperature parameter. Because training runs across several devices, we gather embeddings from all GPUs to form a single global similarity matrix. This lets the model compare every item in the batch to all others, increasing the number of negative examples and effectively creating a much larger batch. In practice, this leads to more stable training and stronger contrastive representations.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We use the Fully Sharded Data Parallel (FSDP) paradigm for training - this runs across multiple devices, so we bring all embeddings and labels together into one global batch before computing the similarity matrix. This gives the model a much larger set of negatives and keeps the contrastive comparisons consistent across GPUs. To make this work, we use a differentiable all‑gather operation that allows gradients to flow through the gathered tensors, which keeps the entire contrastive objective fully trainable even in a distributed setup. For safety, any rank that produces an empty batch still participates in the gather using placeholder tensors. This avoids synchronization issues and prevents the training process from stalling.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Multiple text views may describe the same underlying code unit, and these code-text pairs may appear multiple times within a batch, depending on sampling. Therefore, positives using identifier labels are defined. Let ℓ i \\ell_{i} denote the class label derived from id i \\texttt{id}_{i} . For each text anchor t i t_{i} , the set of positive code indices is P ⁡ ( i ) = { j ∣ ℓ j = ℓ i } P(i)=\\{j\\mid\\ell_{j}=\\ell_{i}\\} . The Text → \\rightarrow Code loss uses a multi-positive InfoNCE objective with log-sum-exp aggregation:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Similarly, for Code → \\rightarrow Text we swap roles and apply the same objective to 𝐒 ⊤ \\mathbf{S}^{\\top} :",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We evaluate retrieval performance in both directions using metrics derived from the cross-modal similarity matrix 𝐒 \\mathbf{S} . For each query, we define the top matches as the candidates with the highest matching similarity scores, and report Top- k k accuracy. Recall@K measures how many of the relevant items are successfully retrieved within the topK results out of the total number of relevant items. We also report direction-specific metrics by evaluating both 𝐒 \\mathbf{S} (Text → \\rightarrow Code) and 𝐒 ⊤ \\mathbf{S}^{\\top} (Code → \\rightarrow Text).",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The objective of the testing phase is to assess how effectively the model retrieves the correct code function when provided with a natural language query (Text → \\rightarrow Code), and how well it identifies the appropriate textual description when given a code snippet (Code → \\rightarrow Text). The evaluation uses a held‑out test set consisting of methods paired with their corresponding text–code samples. Each sample includes a function along with all associated textual descriptions, such as raw docstrings, brief comments, self‑comments, and synthetic questions. None of the test methods or their synthetic variants are included in the training data, which ensures fair and unbiased assessment. Two types of tests are conducted. The first is the non‑synthetic test, which pairs each code sample with its original human‑authored (or LLM-authored when absent) textual descriptions. The second is the synthetic test, which augments each original pair with LLM-generated questions derived from the same function, as described in Section IV-D .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "In addition to testing for the accuracy of CodeContrast, we also do an evaluation for testing the output of the Code Comprehensor system by using LLM-as-a-judge for the output of the MA. As this is a subjective evaluation, we use the RAGAS framework [ 36 ] . In particular, we use the Answer Correctness (AC) and Faithfulness (FF) metrics of this framework; earlier studies have shown that these have the best correlation with ground truth [ 37 ] . This evaluation is done on a subset of the synthetic questions; the generated answer from the MA is compared with the ground-truth answer used at the time the synthetic questions were generated.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We evaluate our results on two repositories. One of them (called Repo-A) is a proprietary C-language repository in a large telecommunications organization, having over 5 million Lines of Code (LOC) in ‘‘.c” and ‘‘.h” files only. In addition, to ensure replicability, we run our experiments using OpenCV 2 2 2 https://github.com/opencv/opencv . OpenCV has about 1.2 million LOC across its ”.c”, ”.h”, and ”.cpp” files. We use Anthropic Sonnet 4.5 as the LLM for CodeScribe and Anthropic Sonnet 4.0 for all other generation tasks (missing comments, synthetic questions).",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "CodeScribe output quality can be verified subjectively. Subject Matter Experts (SMEs) have verified the results of the proprietary repository and have expressed satisfaction with the output. For OpenCV, the authors did a manual comparison themselves, as they are quite conversant with the library.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We compare the output with CodeWiki [ 12 ] , which is publicly available for OpenCV. For example, in the section on 3D calibration, one of the important features available in OpenCV, CodeScribe provides a modular representation of its important components and discussions on each of them separately. This is shown in Figure 5 , which is much more informative than the corresponding module 3 3 3 https://codewiki.google/github.com/opencv/opencv#core-modules-and-algorithms-camera-calibration-and-3d-reconstruction in CodeWiki.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The documentation is largely correct and useful, but somewhat verbose. This documentation may be very helpful for an agent to consume; in some cases, it can be challenging for humans to browse. However, the Master Agent can interactively expand or summarize the documentation, along with additional context from the other agents. Additionally, CodeScribe generates component diagrams that provide a systematic understanding of the repository’s contents.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The practical deployment of Code Comprehensor requires an understanding of resource requirements. CodeScribe generation for OpenCV (1.2M LOC) required approximately 48 hours and $3,200 USD in LLM API costs using Sonnet 4.5. For Repo-A (5M LOC), the generation required approximately 8 days and a few thousand USD. CodeContrast training on 4 NVIDIA A100 GPUs converged in 15 epochs over approximately 24 hours. Inference is significantly more efficient: CodeContrast retrieval requires only a forward pass through the text encoder followed by cosine similarity computation against pre-computed code embeddings, achieving < < 50 ms latency per query. The full Master Agent pipeline (text-to-code retrieval + context assembly + LLM response generation) averages 3-5 seconds per query, depending on the result set size and the complexity of the response synthesis. These costs are one-time for initial documentation generation and model training; incremental updates (triggered by code changes) cost significantly less per month.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "self_comment : The CodeScribe-generated description of the method itself (self-level documentation).",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "doc_brief_merged : The original developer-written docstring/brief comment merged with any existing documentation.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "qa_doc_gen : Synthetic questions generated from CodeScribe-produced documentation.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "qa_doc_raw : Synthetic questions generated from the raw/original developer documentation.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "qa_self : Synthetic questions generated from the self-comment level documentation.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "qa_parent : Synthetic questions generated from parent-level context documentation.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "qa_sibling : Synthetic questions generated from sibling-level context documentation.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "To study how different levels of natural language supervision influence cross-modal retrieval, we define three dataset configurations, D1 through D3. Each configuration adds an additional layer of textual descriptions to the same code elements. This gradual buildup allows us to clearly observe how various comment types and question-answer styles affect the model’s ability to generalize.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "This configuration uses only the method’s source code paired with its corresponding docstring or brief functional description. Docstrings provide a concise, developer‑written explanation of what the method does and form the foundational text modality for contrastive learning. They represent the simplest and most common documentation layer in code repositories.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "D2 augments D1 by adding self‑comments, which were extracted from the CodeScribe data (Refer Section IV-C ). These comments offer finer‑grained insights into the how and why of the code’s behavior. The model is then trained on text that will have self‑comments added to the text corpus.",
+   "zh": "D2 通过添加自注释对 D1 进行增强，这些自注释提取自 CodeScribe 数据（参见第 IV-C 节）。 这些注释提供了对代码行为的方式与原因的更细粒度洞察。 然后在将自注释添加到文本语料库后的文本上训练模型。",
+   "sents": [
+    {
+     "en": "D2 augments D1 by adding self‑comments, which were extracted from the CodeScribe data (Refer Section IV-C ).",
+     "zh": "D2 通过添加自注释对 D1 进行增强，这些自注释提取自 CodeScribe 数据（参见第 IV-C 节）。"
+    },
+    {
+     "en": "These comments offer finer‑grained insights into the how and why of the code’s behavior.",
+     "zh": "这些注释提供了对代码行为的方式与原因的更细粒度洞察。"
+    },
+    {
+     "en": "The model is then trained on text that will have self‑comments added to the text corpus.",
+     "zh": "然后在将自注释添加到文本语料库后的文本上训练模型。"
+    }
+   ]
+  },
+  {
+   "en": "D3 introduces higher‑level relational documentation by adding parent and sibling comments extracted from the CodeScribe output. This stage also includes QA derived from these comment types, enabling the model to learn abstractions that span across method boundaries and reflect multi‑method interactions. D3, therefore, represents the richest supervision setting, capturing both local method semantics and global contextual semantics.",
+   "zh": "D3 通过添加从 CodeScribe 输出中提取的父级与同级注释，引入了更高层次的关系型文档。 该阶段还包括从这些注释类型派生的问答（QA），使模型能够学习跨越方法边界并反映多方法交互的抽象。 因此，D3 代表了最丰富的监督设置，同时捕捉了局部方法语义和全局上下文语义。",
+   "sents": [
+    {
+     "en": "D3 introduces higher‑level relational documentation by adding parent and sibling comments extracted from the CodeScribe output.",
+     "zh": "D3 通过添加从 CodeScribe 输出中提取的父级与同级注释，引入了更高层次的关系型文档。"
+    },
+    {
+     "en": "This stage also includes QA derived from these comment types, enabling the model to learn abstractions that span across method boundaries and reflect multi‑method interactions.",
+     "zh": "该阶段还包括从这些注释类型派生的问答（QA），使模型能够学习跨越方法边界并反映多方法交互的抽象。"
+    },
+    {
+     "en": "D3, therefore, represents the richest supervision setting, capturing both local method semantics and global contextual semantics.",
+     "zh": "因此，D3 代表了最丰富的监督设置，同时捕捉了局部方法语义和全局上下文语义。"
+    }
+   ]
+  },
+  {
+   "en": "Table III presents the agentic evaluation results for the MA using RAGAS metrics. The high FF scores indicate strong grounding of the generated responses in the retrieved context. The comparatively lower AC scores are influenced by the limited number of claims in both the ground-truth and generated responses, which results in a small denominator during metric computation and increases score sensitivity to individual mismatches.",
+   "zh": "表 III 展示了使用 RAGAS 指标对多智能体系统进行智能体式评估的结果。 较高的 FF 分数表明生成的回复在检索到的上下文中有很强的依据。 相对较低的 AC 分数受到真实标注与生成回复中主张数量有限的影响，这导致指标计算时分母较小，并使分数对个别不匹配更加敏感。",
+   "sents": [
+    {
+     "en": "Table III presents the agentic evaluation results for the MA using RAGAS metrics.",
+     "zh": "表 III 展示了使用 RAGAS 指标对多智能体系统进行智能体式评估的结果。"
+    },
+    {
+     "en": "The high FF scores indicate strong grounding of the generated responses in the retrieved context.",
+     "zh": "较高的 FF 分数表明生成的回复在检索到的上下文中有很强的依据。"
+    },
+    {
+     "en": "The comparatively lower AC scores are influenced by the limited number of claims in both the ground-truth and generated responses, which results in a small denominator during metric computation and increases score sensitivity to individual mismatches.",
+     "zh": "相对较低的 AC 分数受到真实标注与生成回复中主张数量有限的影响，这导致指标计算时分母较小，并使分数对个别不匹配更加敏感。"
+    }
+   ]
+  },
+  {
+   "en": "The results across both repositories demonstrate the nuanced benefits of incorporating CodeScribe-generated information into the CodeContrast pipeline. In Table I , the Top-1 accuracy overall for OpenCV is 66.05% for D2 and is 80.64% for D3, showing an improvement of 14.59%. Similarly, for Repo-A, we get 8.72% improvement (67.6% for D2 and 76.18% for D3). In Table II , for non-synthetic tests on human-authored descriptions, D2 achieves superior performance: on OpenCV’s doc_brief_merged category, D2 achieves Top-1 accuracy of 96.43% while D3 achieves 93.94%. This indicates that adding parent/sibling context and synthetic QA can reduce performance when evaluating against developer-authored comments.",
+   "zh": "两个代码库的结果都表明，将 CodeScribe 生成的信息纳入 CodeContrast 流水线能带来细致的收益。 在表 I 中，OpenCV 的整体 Top-1 准确率在 D2 上为 66.05%，在 D3 上为 80.64%，提升了 14.59%。 类似地，对于 Repo-A，我们获得了 8.72% 的提升（D2 为 67.6%，D3 为 76.18%）。 在表 II 中，针对基于人工撰写描述的非合成测试，D2 表现更优：在 OpenCV 的 doc_brief_merged 类别上，D2 达到了 96.43% 的 Top-1 准确率，而 D3 为 93.94%。 这表明，在针对开发者撰写的注释进行评估时，添加父级/同级上下文和合成 QA 可能会降低性能。",
+   "sents": [
+    {
+     "en": "The results across both repositories demonstrate the nuanced benefits of incorporating CodeScribe-generated information into the CodeContrast pipeline.",
+     "zh": "两个代码库的结果都表明，将 CodeScribe 生成的信息纳入 CodeContrast 流水线能带来细致的收益。"
+    },
+    {
+     "en": "In Table I , the Top-1 accuracy overall for OpenCV is 66.05% for D2 and is 80.64% for D3, showing an improvement of 14.59%.",
+     "zh": "在表 I 中，OpenCV 的整体 Top-1 准确率在 D2 上为 66.05%，在 D3 上为 80.64%，提升了 14.59%。"
+    },
+    {
+     "en": "Similarly, for Repo-A, we get 8.72% improvement (67.6% for D2 and 76.18% for D3).",
+     "zh": "类似地，对于 Repo-A，我们获得了 8.72% 的提升（D2 为 67.6%，D3 为 76.18%）。"
+    },
+    {
+     "en": "In Table II , for non-synthetic tests on human-authored descriptions, D2 achieves superior performance: on OpenCV’s doc_brief_merged category, D2 achieves Top-1 accuracy of 96.43% while D3 achieves 93.94%.",
+     "zh": "在表 II 中，针对基于人工撰写描述的非合成测试，D2 表现更优：在 OpenCV 的 doc_brief_merged 类别上，D2 达到了 96.43% 的 Top-1 准确率，而 D3 为 93.94%。"
+    },
+    {
+     "en": "This indicates that adding parent/sibling context and synthetic QA can reduce performance when evaluating against developer-authored comments.",
+     "zh": "这表明，在针对开发者撰写的注释进行评估时，添加父级/同级上下文和合成 QA 可能会降低性能。"
+    }
+   ]
+  },
+  {
+   "en": "However, for synthetic test queries, D3 demonstrates consistent improvements over D2 across all Top- K K values for complex query categories ( qa_doc_gen , qa_doc_raw , qa_self , qa_parent , qa_sibling ). This improvement compensates for the drop in accuracy in doc_brief_merged discussed earlier. To ensure that function names in synthetic questions do not lead to data leakage, we remove function-name tokens from questions - the results in Table II are using these post-processed questions.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The larger architecture explains these complementary benefits. CodeScribe introduces a structured way of summarizing code at different levels of abstraction through call graph traversal, recursive document synthesis, and chapter-based documentation prompts. The parsing pipeline converts these hierarchical documents into structured records that preserve parent and sibling relationships. These relational signals help the contrastive model learn contextual relationships between methods. D2 excels when queries closely match human-authored documentation, while D3 provides benefits for high-variability or indirectly-specified queries that require broader semantic reasoning.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "In practice, the expected query distribution should inform configuration selection: D2 is recommended for applications where queries directly correspond to method documentation (e.g., documentation search), while D3 is better suited for diverse developer queries requiring understanding of broader system context. The practical deployment should measure performance on the target query distribution.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Internal Validity: Our evaluation is limited to two repositories, both in the systems programming domain (C and C++). LLM non-determinism and the use of different model versions (Sonnet 4.5 vs 4.0) across pipeline stages may introduce variability. We used Sonnet 4.5 for CodeScribe to ensure high-quality reasoning over large code contexts, and Sonnet 4.0 for simpler generation tasks (missing comments, synthetic questions) to balance quality and cost; this choice may introduce distributional differences in the training data.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Additionally, the train/test split is performed at the method level, but parent and sibling context fields in training entries may reference code from held-out test methods. To mitigate this: (1) sibling context includes only method names and brief comments, not full code bodies; (2) the code encoder sees only the target method’s body, not surrounding context; (3) removing cross-references to test methods from training context fields changes Top-1 accuracy by less than 1% on OpenCV, confirming minimal impact.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "External Validity: We cannot claim language-agnostic generalization without evaluation on Java, Python, Go, Rust, and other languages. While the methodology (CodeGraph, CodeScribe, CodeContrast) is language-agnostic by design, empirical validation is limited to C/C++ systems programming. This is a significant limitation acknowledged in the Conclusion.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Construct Validity: We evaluate the retrieval component in isolation using Top-K and Recall metrics as proxies for “code comprehension.” The final agentic evaluation is conducted using the RAGAS framework, specifically two metrics: FF and AC.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Conclusion Validity: The D3 configuration simultaneously adds both parent/sibling context and synthetic QA. Without an intermediate configuration isolating each component, we cannot definitively attribute improvements solely to either source without additional ablation studies. The lack of fine-tuned models for agentic evaluation of code-based question answering may affect the RAGAS evaluation results.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "In this work, we presented Code Comprehensor, a unified retrieval–reasoning framework for understanding large and complex software repositories. The system integrates hierarchical documentation generation via CodeScribe and a dual‑encoder CLIP model to enable precise, scalable code comprehension. Our approach systematically combines call‑graph traversal, structured multi-level documentation, and a rich text–code alignment pipeline to produce a repository‑scale knowledge representation that can be consumed by an agentic orchestration layer. Evaluations on two large repositories, including OpenCV and one proprietary industrial codebase, show complementary benefits across different query distributions: D2 improves retrieval for natural human-authored descriptions (96.43% Top-1 on OpenCV), while D3 provides additional gains for high-variability synthetic query scenarios (80.64% Top-1 on synthetic text → \\rightarrow code), with the choice of configuration depending on the expected deployment query distribution. The Code Comprehensor evaluation shows FF scores above 90%, indicating the quality of the MA-generated response.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Our experimental results are for one C (proprietary) repository and one C++ repository (OpenCV), both in the systems programming domain. See Section VII for a detailed discussion of validity threats. An experimental evaluation across a broader set of languages (Java, Python, Go, etc.) and application domains would be important for validating generalization. Given that CodeScribe relies on LLM generation, niche languages that are less well-represented in LLM training data may pose challenges.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Future work will expand multimodal capabilities by integrating structural graphs, sequence diagrams, and visual artifacts. This could better capture relationships and control flows that are difficult to express in text, improving retrieval relevance. Additionally, using the CodeGraph as an extra modality would allow the retrieval to be guided by the proximity of nodes in the graph and not just semantic retrieval. Such a process would help improve the answer correctness of the master agent because relevant methods would be retrieved by the CodeGraph agent. Also, synthetic question generation can be refined through improved prompting, richer intent modeling, curriculum-based generation, and adversarial techniques to enhance generalization.",
+   "zh": "",
+   "sents": null
+  }
+ ]
+}

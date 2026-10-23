@@ -1,0 +1,420 @@
+{
+ "id": "8aadc4a99c016871",
+ "source": "arxiv-llm-eng",
+ "link": "https://arxiv.org/abs/2610.29969v1",
+ "title": "FaultGene: LLM-Assisted Fault-Augmented Test Generation for Hardware-in-the-Loop Validation of Autonomous Driving Systems",
+ "title_zh": "FaultGene：面向自动驾驶系统硬件在环验证的LLM辅助故障增强测试生成",
+ "published": "2026-10-21T16:20:57Z",
+ "translated_at": "2026-10-23T00:51:20Z",
+ "paragraphs": [
+  {
+   "en": "Reliable validation of autonomous driving cyber-physical systems requires testing not only nominal driving behavior but also failures arising from faults in sensing and embedded computation. Physical road testing provides realistic system behavior but is costly and difficult to reproduce, while simulation enables scalable evaluation but cannot fully capture hardware-dependent behavior and fault propagation. Hardware-in-the-loop (HIL) validation bridges this gap by executing the driving stack on real embedded hardware within a simulated environment. However, preparing fault-augmented scenarios for HIL testing remains largely a manual process, limiting test coverage, scalability, and efficiency.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We present FaultGene, an LLM-assisted framework for automated generation of executable fault-augmented tests for HIL fault-resilience validation. Given a baseline Scenic/CARLA scenario and a structured fault specification, FaultGene generates a fault-augmented test case that captures the effects of HIL-level fault injection. During offline refinement, semantic-consistency checks and execution-level feedback are used to correct candidates that fail to preserve the intended scenario context or produce the desired fault-induced degradation, and to construct high-quality supervision for fine-tuning. The resulting generator then produces fault-augmented tests directly at deployment time without requiring manually engineered reference executions or repeated refinement loops.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "On held-out scenario–fault combinations, FaultGene improves semantic alignment and executability over one-shot LLM generation across both modular and end-to-end autonomous driving architectures. It also preserves the main sensor- and compute-fault sensitivity trends observed in HIL evaluation, capturing hardware-level fault effects beyond simulation-based verification and falsification alone. Compared with conventional manual fault-scenario engineering, FaultGene reduces estimated fault-scenario preparation time by 72×, enabling scalable HIL-based dependability validation.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The rapid advancement of Automated Driving Systems (ADS) has created an urgent need for testing environments that can reliably expose safety-critical failures [ 1 ] . Road testing provides high-fidelity evaluation but is costly, time-consuming, difficult to reproduce, and limited in its ability to systematically exercise rare fault conditions. Simulation-based testing offers scalable and reproducible alternatives through controllable scenario generation using platforms such as CARLA [ 2 ] . Existing probabilistic, constraint-based, and search-based approaches [ 3 , 4 ] further expand the scenario space for systematic verification. However, simulation alone cannot fully capture hardware-dependent effects, such as timing variations, scheduling jitter, and embedded computation faults, motivating hardware-in-the-loop (HIL) testing, where the driving stack executes on real hardware within a simulated environment.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Despite these advantages, preparing fault-augmented scenarios for HIL testing remains a practical bottleneck. A fault-oriented test must define both the driving context and the intended sensor or compute fault while preserving scenario semantics and producing meaningful system-level effects. Manually constructing scenarios across fault types, activation times, and severities is labor-intensive and difficult to scale.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Large language models (LLMs) offer a potential solution by translating high-level specifications into executable scenario programs [ 5 ] . However, one-shot generation may produce scenarios that violate the intended context, fail to compile or execute, or fail to expose the specified fault meaningfully. These limitations motivate combining LLM-based generation with execution-guided refinement grounded in HIL behavior.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "This paper presents FaultGene , an LLM-assisted framework for automated generation of fault-augmented HIL test cases. Given a baseline Scenic [ 3 ] /CARLA scenario and a structured specification of fault type, activation timing, and severity, FaultGene generates a fault-augmented test while preserving the underlying driving context. The framework integrates structured LLM generation with execution-guided refinement in the Autonomous Driving Digital Twin (ADDT) environment [ 6 ] . HIL executions provide fault-grounded reference behavior and system-level feedback that are used offline to refine generated scenarios and construct supervision for fine-tuning the generator. After tuning, the generator produces fault-augmented tests in a single pass without reference executions or iterative refinement during deployment.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We evaluate FaultGene on held-out scenario–fault combinations across modular and end-to-end AD architectures. Experimental results show improved scenario validity and executability over one-shot LLM generation, while the generated tests reproduce the main sensor- and compute-fault sensitivity trends observed in ADDT. Compared with conventional manual fault-scenario engineering, FaultGene reduces fault-engineering effort by 72 × \\times per fault type.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "In summary, this work makes the following contributions:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "An LLM-assisted framework for automatically transforming baseline driving scenarios and structured fault specifications into executable fault-augmented test cases;",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "A feedback-driven refinement and tuning mechanism that uses execution feedback as supervision to improve semantic consistency and fault-induced system behavior;",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "An empirical evaluation showing improved scenario validity, ADDT-consistent fault trends, and higher testing efficiency compared with conventional HIL workflows.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Digital-twin-based hardware-in-the-loop (HIL) validation enables controlled evaluation of autonomous driving systems under realistic sensing, compute, and communication disturbances. Digital twins model the vehicle, environment, and traffic context [ 7 , 8 ] , while HIL co-simulation executes perception, planning, and control on real embedded hardware, exposing timing effects, scheduling jitter, and fault propagation that simulation-only studies may miss [ 9 , 10 , 11 ] . Fault injection has been used to assess neural-network-based autonomous driving components: APPRAISER [ 12 ] and DNN accelerator fault-injection frameworks [ 13 ] examine model-level vulnerability, while AVFI and Kayotee [ 14 , 15 ] inject faults across perception, planning, and control in simulated environments. However, these approaches generally do not jointly address fault-oriented scenario generation and realistic embedded execution.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Autonomous-driving scenario generation has explored probabilistic and constraint-based specification, systematic search, and optimization. Scenic [ 3 ] enables probabilistic and constraint-based scenario specification, while VerifAI [ 4 ] performs simulation-based verification and falsification over parameterized scenario spaces; their combination has been used to identify challenging scenarios [ 16 ] , alongside optimization- and adversarial-search-based approaches [ 17 ] . Works have also explored learning scenario representations from driving videos, such as [ 18 ] . More recently, LLMs have been applied to driving-scenario description and generation. DriveGPT4 [ 19 ] and Talk2Drive [ 20 ] support language-based driving representation and interaction, vision-language approaches derive structured scenarios from driving videos [ 21 ] , and DriveArena [ 22 ] and LMDrive [ 23 ] explore LLM-based scenario expansion and reasoning over traffic interactions and environmental conditions. Nevertheless, these methods typically rely on predefined scenario spaces or text-/simulation-level generation and do not directly construct fault-augmented scenarios from structured hardware-fault specifications or validate their fault-induced effects on real embedded hardware. FaultGene addresses this gap by treating fault-augmented test generation as a program-level generation and refinement problem grounded in HIL execution.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "In this section, we introduce the Autonomous Driving Digital Twin (ADDT) [ 6 ] , the HIL validation environment used throughout this work.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "As shown in Fig. 1 , ADDT consists of a simulation system and an AD computing system connected through Ethernet. The simulator streams sensor data to the AD system and receives control commands, enabling closed-loop execution in the virtual environment.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Software. The simulation system is built on CARLA [ 2 ] , an open-source AD simulator based on Unreal Engine [ 24 ] . OpenSCENARIO [ 25 ] and Scenic [ 3 ] specify and parameterize the traffic scenarios.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Hardware. The simulator runs on a workstation with an Intel i7-9800X CPU and an NVIDIA RTX 2080 Ti GPU.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The AD stack (AD architectures are described in Section V ) runs on an NVIDIA Jetson Xavier or Orin, processing six 480p or three 720p camera streams at 10 Hz and producing control commands at 100 Hz.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We evaluate three representative driving scenarios: vehicle following, large-curvature turning, and overtaking. Fig. 2 shows their configurations and parameters, including vehicle speeds and inter-vehicle distances.",
+   "zh": "我们评估了三种典型的驾驶场景：跟车、大曲率转弯和超车。 图2展示了这些场景的配置和参数，包括车速和车间距离。",
+   "sents": [
+    {
+     "en": "We evaluate three representative driving scenarios: vehicle following, large-curvature turning, and overtaking.",
+     "zh": "我们评估了三种典型的驾驶场景：跟车、大曲率转弯和超车。"
+    },
+    {
+     "en": "Fig. 2 shows their configurations and parameters, including vehicle speeds and inter-vehicle distances.",
+     "zh": "图2展示了这些场景的配置和参数，包括车速和车间距离。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate resilience by injecting faults into the sensing and computing paths of the HIL pipeline.",
+   "zh": "我们通过向硬件在环（HIL）流水线的感知与计算路径中注入故障来评估韧性。",
+   "sents": null
+  },
+  {
+   "en": "Sensor fault injection. ADDT models temporal and spatial sensing faults:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Temporal faults: Controlled timestamp delays are introduced into sensor streams. Delays exceeding the perception model’s out-of-order tolerance are treated as frame drops.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Spatial faults: Position and orientation perturbations are applied to the ground-truth extrinsic parameters to emulate sensor misalignment with controllable severity.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Computing hardware fault injection. ADDT supports closed-loop CPU and GPU fault injection for studying memory and data-path errors [ 26 , 27 ] . CPU faults are injected with LLFI [ 28 ] , while GPU faults are injected with NVBitFI [ 29 ] . Both tools introduce register-level bit flips at specified locations and values, allowing the resulting errors to propagate through subsequent AD computations. This approach follows prior fault-injection studies [ 27 , 26 ] .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "FaultGene is an LLM-based framework for generating executable fault-augmented tests for autonomous-driving fault-resilience validation. An overview of the framework is shown in Fig. 3 . Given a baseline Scenic/CARLA scenario and a structured fault specification, it produces constrained scenario variants that can be executed in CARLA or through a CARLA-based HIL setup, such as the ADDT HIL environment described in Section III .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "FaultGene has two phases. During offline framework construction, a prompt-based generator produces candidate fault-augmented Scenic programs, while ScenarioFeat extracts semantic attributes from execution videos. Generated executions are compared with manually engineered ADDT HIL references, and detected mismatches guide prompt refinement and supervision construction. After fine-tuning, the deployed generator produces tests in one pass without accessing manually engineered references, execution feedback, or refinement loops.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "ScenarioFeat is a prompt-engineered module that extracts semantic features from manually engineered reference and FaultGene-generated executions. It uses Qwen2.5-VL-7B-Instruct as its base vision-language model.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "For an execution video V V , ScenarioFeat extracts a predefined semantic feature vector describing the driving context and safety-relevant behavior, including road environment, surrounding-object interactions, obstacle relationships, and vehicle maneuvers such as cut-in behavior:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "where c i ​ ( V ) ∈ [ 0 , 1 ] c_{i}(V)\\in[0,1] denotes the predicted confidence score for feature category i i .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "ScenarioFeat is prompt-engineered using representative execution videos and expected feature annotations. It does not generate scenarios; instead, it provides a structured semantic representation for comparing generated executions with manually engineered references.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "FaultGene is a text-only LLM, instantiated with Qwen3-14B-Instruct, that transforms a baseline Scenic scenario and structured fault specification into a fault-augmented Scenic program. Formally,",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "where S 0 S_{0} is the baseline scenario, F F is the fault specification, and π θ \\pi_{\\theta} is the generator.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The input includes S 0 S_{0} , F F , and constraints requiring valid Scenic syntax and preservation of the original driving context. The fault specification defines the fault type, activation condition, and severity. FaultGene modifies the scenario while preserving its road layout, actor identities, and intended maneuver semantics. Because the output is structured Scenic code rather than free-form text, it can be syntax-checked and executed directly in CARLA or CARLA-based HIL setups such as ADDT.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Each generated scenario S F S_{F} is executed through the HIL loop with the under-test AD system and compared with the corresponding manually fault-engineered ADDT HIL execution. The reference provides offline HIL grounding for supervision construction and is not required at deployment.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Let V ref V_{\\mathrm{ref}} and V F V_{F} denote the reference and generated execution videos. ScenarioFeat extracts their semantic feature vectors:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The feature mismatch vector is defined as",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "A generated execution is semantically inconsistent if",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "for any feature i i . The threshold τ i \\tau_{i} controls the tradeoff between semantic preservation and scenario diversity and is used only during offline refinement.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We separately assess fault relevance using near-collision events, inter-vehicle clearance, maneuver interruption, collision outcome, and task completion. Let M ⁡ ( S F ) M(S_{F}) denote the resulting metric vector. A scenario is fault-relevant if",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "where Ω \\Omega denotes safety-relevant degradation without trivial invalidity, such as deadlock, early termination, or failure to trigger the fault.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Together, these checks determine whether the scenario preserves the intended context, implements the requested fault, and allows it to manifest during execution.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Candidates that fail either semantic or fault-relevance checks, or fail to compile or execute successfully, are refined offline. The mismatch is converted into structured feedback covering Scenic syntax and compilation, physical or semantic validity, fault-specification consistency, and execution-level fault manifestation. Depending on the failure, the feedback may request corrected actor placement, adjusted activation timing, stronger fault severity, or removal of unintended deadlocks and early termination.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Let Δ ⁡ ( S F ) \\Delta(S_{F}) denote the aggregated semantic and execution mismatch relative to the manually engineered reference. Starting from S F ( 0 ) S_{F}^{(0)} , the generator produces the next candidate as",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Here, Refine ⁡ ( ⋅ ) \\mathrm{Refine}(\\cdot) denotes rule-guided LLM regeneration using the original baseline scenario, fault specification, current candidate, and structured feedback prompts. It is not a reinforcement-learning policy or an external optimizer that directly edits the Scenic program.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The resulting scenario S F ⋆ S_{F}^{\\star} is retained as the corrected target for ( S 0 , F ) (S_{0},F) . Repeating this process over N N framework-construction examples yields",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We then fine-tune the original generator π θ \\pi_{\\theta} on 𝒟 ref \\mathcal{D}_{\\mathrm{ref}} using supervised fine-tuning (SFT). Each training example uses the baseline scenario and fault specification ( S 0 , F ) (S_{0},F) as input and the corresponding refined Scenic program S F ⋆ S_{F}^{\\star} as the target. The trainable LoRA parameters are optimized with teacher-forced causal language modeling:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "where s t ⋆ s_{t}^{\\star} is the t t -th token of S F ⋆ S_{F}^{\\star} and s < t ⋆ s_{<t}^{\\star} denotes its preceding tokens. The baseline scenario and fault specification provide the conditioning context, while the loss is computed over the target Scenic program.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Although the loss is evaluated token by token, the model is conditioned on the complete ( S 0 , F ) (S_{0},F) pair and the preceding program context. Across diverse training examples, the shared parameters learn reusable transformations, including which scenario elements to preserve, how to encode the specified fault, and how to adjust actor timing and interactions to produce valid and fault-relevant Scenic programs. The objective therefore learns the conditional mapping",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The refined target S F ⋆ S_{F}^{\\star} is used rather than the manually engineered HIL reference because it converts execution-level behavioral supervision into an input-aligned program target. Since S F ⋆ S_{F}^{\\star} is generated from the ( S 0 , F ) (S_{0},F) pair and refined against the reference, SFT can directly learn the desired program transformation, following the broader paradigm of using validated or refined generated outputs as supervision [ 30 , 31 ] .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "This SFT process absorbs the offline corrections into the trainable LoRA parameters, producing the finalized generator π θ ⋆ \\pi_{\\theta^{\\star}} . Its generalization is evaluated on held-out scenario–fault combinations excluded from refinement and fine-tuning.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "After fine-tuning, the deployed model generates",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "where θ ⋆ \\theta^{\\star} denotes the fine-tuned model parameters and ( S 0 , F ) (S_{0},F) is a new baseline scenario–fault specification pair. The generated Scenic program is syntax-checked and compiled for execution with CARLA or a CARLA-based HIL setup.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Because the offline corrections are absorbed through fine-tuning, deployment does not require a manually engineered reference, ScenarioFeat comparison, execution feedback, or repeated refinement. FaultGene therefore generates fault-augmented tests in one pass.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "*The semantic alignment score is computed as the average feature agreement between the generated and reference executions.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Simulation Environment. We use CARLA [ 2 ] , an open-source platform for the development and validation of autonomous driving systems. CARLA provides a realistic physics engine and high-fidelity environmental rendering, enabling the generation of reproducible driving scenarios for our evaluation.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Scenario Description. We use Scenic [ 3 ] to describe driving scenarios. Its Python-like syntax provides a structured representation that is well suited for LLM-based scenario generation and prompt engineering. Scenic also integrates directly with CARLA and supports the specification of complex vehicle configurations, traffic interactions, and environmental conditions, making it suitable for program-level scenario generation.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Autonomous Driving Systems Under Test. We evaluate FaultGene on two complementary autonomous driving architectures: a modular stack that explicitly separates perception, planning, and control, and an end-to-end system that directly maps sensor observations to driving commands. This distinction allows us to evaluate FaultGene across different system organizations and fault-propagation paths.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Modular AD stack: The modular system consists of a FastBEV [ 32 ] perception module, an MLP-based planner trained on nuPlan [ 33 ] , and a PID controller. The modules communicate through ROS [ 34 ] and execute on the embedded HIL platform, enabling evaluation of fault propagation across modules.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "End-to-end PilotNet: The end-to-end system uses PilotNet [ 35 ] , a CNN-based model designed for lane-keeping that directly maps front-camera images to steering commands. We use PilotNet as a simple representative of end-to-end driving, providing a complementary architecture for evaluating FaultGene through an end-to-end driving pipeline without explicit perception, planning, and control modules.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Dataset split and evaluation protocol. We construct the refinement dataset from 600 baseline scenario–fault combinations and reserve 200 disjoint combinations for held-out evaluation. No held-out is used during refinement or fine-tuning.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Fine-Tuning Setup. FaultGene is fine-tuned using QLoRA-based supervised fine-tuning [ 36 ] . The training set consists of 600 baseline scenario–fault combinations, each paired with its corresponding refined Scenic program S F ⋆ S_{F}^{\\star} from refinement. During fine-tuning, the pretrained Qwen3-14B base model is kept frozen and loaded in 4-bit quantized form, while trainable LoRA adapters are optimized on these input–target pairs.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "In this section, we evaluate FaultGene on held-out scenario–fault combinations from three perspectives: scenario validity and executability, consistency with known fault-sensitivity trends, and overall testing efficiency.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We first evaluate whether fine-tuned FaultGene generator produces valid and executable tests and how iterative refinement and fine-tuning affect semantic alignment and execution quality. A test is considered valid if it compiles successfully in Scenic and executes without runtime failure. Table I summarizes the results for a modular autonomous driving stack and an end-to-end system based on PilotNet [ 35 ] , demonstrating that the same framework supports different AD architectures.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Compilation validity and executability. For the modular stack, one-shot generation without refinement achieves only 68% compilation success, with failures mainly caused by syntax errors or invalid parameter combinations. Among compiled scenarios, 81% complete closed-loop execution, while the remaining failures primarily result from physically infeasible initializations, including overlapping vehicles and deadlocked traffic configurations. With fine-tuned FaultGene, compilation success rises to 96% and execution success to 93%, indicating that execution-guided correction and fine-tuning resolve many invalid cases.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "A similar pattern appears for the end-to-end system. Without refinement, 71% of generated scenarios compile successfully, and 74% of compiled scenarios complete execution. With fine-tuned FaultGene, compilation and execution success increase to 94% and 90%, respectively, showing that the refinement benefits both modular and end-to-end systems.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Assumptions: Each scenario run requires 2 min of setup and 10 min of HIL execution. Manual fault-scenario preparation is estimated at 12 h per fault type, while FaultGene requires 10 min per fault type for single-pass generation using the fine-tuned generator. Thus, for R R total runs and K K fault types, T manual = 0.2 ​ R + 12 ​ K T_{\\mathrm{manual}}=0.2R+12K and T FG = 0.2 ​ R + K / 6 T_{\\mathrm{FG}}=0.2R+K/6 hours.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "*FaultGene generation is followed by execution on the same ADDT HIL platform.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Semantic alignment. ScenarioFeat measures whether generated fault-augmented scenarios preserve the intended behavior by scoring predefined scenario feature categories. As shown in Table I , one-shot generation achieves semantic alignment scores of 0.45 and 0.43 for the modular and end-to-end systems, respectively. Fine-tuned FaultGene improves these scores to 0.89 and 0.86, indicating that refinement and fine-tuning improve both executability and preservation of the intended scenario structure and behavior.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "A key question is whether FaultGene-generated tests preserve the system-level fault-sensitivity trends previously observed in ADDT. We therefore compare the qualitative sensor- and compute-fault behaviors exposed by FaultGene with those reported in ADDT. The objective is not to reproduce identical mission success values, but to preserve relative vulnerability patterns across scenarios and software modules.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Sensor-fault consistency. Table II compares ADDT and FaultGene under different camera frame-drop rates. In both evaluations, the impact of sensor faults is scenario dependent: vehicle following is comparatively robust, large-curve turning shows moderate degradation, and overtaking is the most sensitive. Although the absolute success rates differ, FaultGene preserves this overall ordering as the drop rate increases.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "In particular, overtaking degrades more rapidly than vehicle following and large-curve turning, reflecting the stronger dependence of interaction-heavy maneuvers on temporally consistent sensing. This agreement indicates that FaultGene preserves the scenario-dependent sensor-fault behavior observed in ADDT.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The same consistency is observed for the end-to-end system: FaultGene follows the ADDT degradation trends for both normal lane keeping and large-curve turning across increasing drop rates. Since PilotNet is designed primarily for lane-keeping, the end-to-end evaluation focuses on these two scenarios.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Compute-fault consistency. We evaluate compute-fault consistency on the modular architecture. Fig. 4 compares compute-fault sensitivity across the three scenarios and multiple fault locations. FaultGene preserves the main trend observed in ADDT: faults injected into later pipeline stages cause greater mission-success degradation, while perception faults are comparatively less damaging. This pattern is especially clear in large-curvature turning and overtaking, where control-node faults cause the sharpest degradation as the number of injected faults increases.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Across modules, perception faults generally produce smaller mission-success drops, planning faults have an intermediate effect, and control faults are the most harmful because they directly affect vehicle actuation. Although the absolute values differ, FaultGene follows the same progression across scenarios, modules, and fault counts, indicating that the generated tests preserve the fault-propagation patterns observed under ADDT HIL execution.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Scenario-specific sensitivity. FaultGene also preserves the scenario-level conclusions reported in ADDT. Overtaking shows greater sensitivity to planning faults because lane-change-like maneuvers depend strongly on timely decision making. Large-curvature turning is particularly vulnerable to control faults, where late-stage actuation errors quickly cause failure. Vehicle following is more stable overall but retains the same module-level ranking.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Table III estimates the deployment-stage efficiency of FaultGene for a campaign of 1,000 scenario runs across 20 fault types. FaultGene reduces fault-scenario preparation from 12 h to 10 min per fault type, yielding a 72 × \\times preparation-time speedup. With the same HIL setup and execution time for both workflows, the estimated total campaign time decreases from 440 h to 203.33 h, corresponding to a 2.16 × \\times speedup and 53.8% reduction in total time.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "ADDT and FaultGene use the same hardware configuration, including a simulation workstation, an NVIDIA Jetson Xavier/Orin, and standard HIL networking, with an estimated hardware cost below $5,000. In contrast, an autonomous driving test vehicle, such as a Tesla Model Y, typically costs more than $50,000, excluding insurance, maintenance, calibration, and safety personnel. Thus, FaultGene retains ADDT’s approximately 10 × \\times hardware-cost advantage over physical testing while reducing deployment-stage test-preparation effort. Compared with simulation-only testing, it executes the AD stack on real embedded hardware, enabling evaluation of hardware-dependent effects such as compute faults, timing behavior, and fault propagation.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "This paper presented FaultGene, an LLM-based framework for generating fault-augmented tests for HIL resilience validation. Given a baseline Scenic/CARLA scenario and structured fault specification, FaultGene generates executable tests for closed-loop evaluation across modular and end-to-end AD architectures. Manual ADDT references and execution feedback are used only for offline supervision construction and fine-tuning, while deployment requires neither reference executions nor iterative refinement. On held-out scenario–fault combinations, FaultGene improves semantic alignment, compilation, and execution success over one-shot generation while preserving the main HIL sensor- and compute-fault sensitivity trends.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "FaultGene reduces manual Scenic editing and fault-augmented tests construction to providing a baseline scenario and fault specification. Although evaluated on ADS, the framework can be adapted to other CPS by replacing the scenario representation, execution metrics, and fault-injection interfaces with domain-specific counterparts. Similarly, although the current evaluation uses LLFI and NVBitFI, FaultGene is not tied to these tools and can incorporate other fault-injection backends. A current limitation is that timing effects are evaluated after generation rather than incorporated into the generation objective. Future work will integrate HIL timing measurements and broader fault-injection backends into the feedback process to expose both safety- and timing-critical failures.",
+   "zh": "",
+   "sents": null
+  }
+ ]
+}

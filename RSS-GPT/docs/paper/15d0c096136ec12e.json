@@ -1,0 +1,461 @@
+{
+ "id": "15d0c096136ec12e",
+ "source": "arxiv-llm-eng",
+ "link": "https://arxiv.org/abs/2610.29147v1",
+ "title": "VERDICT: Multi-Agent Parallel Modular Verification",
+ "title_zh": "VERDICT：多智能体并行模块化验证",
+ "published": "2026-10-21T03:33:10Z",
+ "translated_at": "2026-10-23T01:00:08Z",
+ "paragraphs": [
+  {
+   "en": "Deductive verification scales to large software systems through modular reasoning , where formal contracts summarize the behavior of individual functions and enable their independent verification. Its central bottleneck is specification synthesis : constructing the contracts required for modular verification. Recent advances in large language models (LLMs) have enabled automated specification synthesis at unprecedented scale. However, existing approaches remain fundamentally bottom-up , requiring callees to be verified before their callers. This dependency limits parallelism and provides no principled mechanism for resolving interprocedural inconsistencies that propagate across call chains.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We present Verdict , a multi-agent framework for parallelizing modular deductive verification of large-scale programs. Verdict is built on two key principles. First, assumption-based parallel specification synthesis assigns an agent to each function and allows it to proceed immediately using assumed contracts for its callees, enabling verification to proceed in parallel across the program. Second, bidirectional interprocedural conflict reconciliation resolves the inconsistencies introduced by these assumptions: when a synthesized contract contradicts an assumption, agents propagate the necessary revisions both up and down the call graph until the contracts converge. Experimental results on real-world C programs show that Verdict synthesizes higher-quality specifications than existing approaches while substantially reducing verification time. In particular, Verdict is the first approach that scales to the complete 20,000-line X.509 parser, ruling out nearly all the potential runtime errors within hours, whereas prior tools like Preguss fall far short even after days of execution.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Automated verification of large-scale software is an essential yet long-standing challenge in both formal methods and software engineering. A key enabler for modern deductive verifiers to scale to real-world systems is modularization [ 1 ] : Each module (typically a function) is associated with a contract —comprising preconditions and postconditions—that captures the semantic behavior of the function. Once a function is verified against its contract, every call to it simply invokes the contract rather than re-examining its implementation. Consequently, the primary human effort in verifying a large-scale program boils down to specification synthesis [ 2 ] , namely, to construct both function contracts and auxiliary intraprocedural annotations, such as loop invariants and assertions. Crafting these comprehensive formal specifications for large-scale programs with non-trivial call hierarchies is notoriously difficult and has long relied on deep expertise [ 3 , 4 ] .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Recent efforts—notably Preguss [ 5 ] and SpecSyn [ 6 ] —approach the problem by leveraging large language models (LLMs) to automate the synthesis of specifications through a divide-and-conquer strategy: On the “divide” side, the entire program is decomposed into a sequence of verification units (V-Units), each containing only a small set of functions. By restricting each LLM query to such a localized context, they effectively sidestep the long-context reasoning bottleneck [ 7 , 8 ] —LLMs’ well-known tendency to lose relevant information and degrade as their input context grows, due to attention dispersion [ 9 , 10 ] . On the “conquer” side, these V-Units are validated in a bottom-up order [ 11 , 5 , 6 ] , i.e., callees before callers, which is a natural extension of the modularization principle of deductive verification (see Section II-C ).",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Despite its widespread adoption, this bottom-up paradigm exhibits two fundamental limitations. (I) Restricted parallelism : While units at the same call level can be verified in parallel, units across different levels must follow a strict callees-before-callers order. Consequently, the verification of higher-level callers remains idle until all lower-level callees have been verified, thus leaving substantial parallelism unexploited. (II) The absence of a principled mechanism for reconciling interprocedural conflicts : The verification of a caller may require a weaker precondition or a stronger postcondition of a callee, while modifications to a callee’s contract may invalidate the caller’s proof obligations, thus forcing the revision of the caller’s own contract accordingly. Resolving such conflicts often requires bidirectional propagation of contract adjustments across the call graph. For instance, a change to a leaf function may ripple upward through all transitive callers, each of which must be re-verified and may, in turn, trigger further rounds of contract refinement. However, the statically partitioned and locally scoped verification units employed by traditional bottom-up approaches—each with visibility into only a bounded portion of the program—provide no systematic support for such dynamic, cross-unit coordination. See Section III for concrete examples illustrating the two limitations.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "In response to the aforementioned challenges, we present Verdict 1 1 1 Implementation and data are publicly available [ 12 ] . , a multi-agent framework that essentially parallelizes the modular deductive verification of large-scale programs. At the core of Verdict are two key architectural components: (i) a parallel specification-synthesis mechanism and (ii) an interprocedural conflict-reconciliation protocol . The former addresses Challenge (I) : Verdict abandons the sequential bottom-up workflow and instead assigns each function a persistent agent responsible for maintaining its contract. Rather than waiting for callees to publish their specifications, agents proceed by assuming contracts for unresolved callees ( Section V-B ), thereby enabling concurrent specification synthesis across all levels of the call graph. Our second component addresses Challenge (II) : Verdict coordinates agents through a typed event protocol. A Supply event propagates a callee’s contract change upward to its callers, while a Demand event propagates a caller’s specification request downward to its callees ( Section V-C ). These events cascade bidirectionally along the call chains, and thus provide a conflict-reconciliation mechanism across arbitrary call distances.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We have implemented Verdict on top of the Claude Agent SDK [ 13 ] with Frama-C/Wp [ 14 ] as the underlying deductive verifier. Frama-C/Wp certifies that a C program satisfies a certain program property, notably, the absence of runtime errors (RTEs) such as invalid memory access or division by zero [ 15 ] . Evaluation on 15 real-world benchmarks reveals that Verdict substantially outperforms state-of-the-art baselines, Preguss and SpecSyn, in both specification quality and verification time. In particular, increasing the number of agents improves efficiency, while specification quality converges within a small refinement budget, indicating that the two objectives improve together rather than trade off. Moreover, Verdict enables almost fully automated RTE-freeness verification of the complete X.509 certificate parser, with over 20,000 lines of code (LoC), in a few hours—a task that previously required months of expert manual effort [ 4 ] .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Contributions. Our main contributions are as follows.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We identify two fundamental limitations of the divide-and-conquer, bottom-up paradigm for LLM-assisted specification synthesis for large-scale real-world programs.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We present Verdict , a multi-agent framework that overcomes these limitations by replacing sequential bottom-up synthesis with assumption-based parallel dispatch and event-driven bidirectional reconciliation.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We implement Verdict and show that it substantially outperforms state-of-the-art baselines in both specification quality and efficiency. Verdict is, to the best of our knowledge, the first automated approach capable of proving RTE-freeness for real-world programs with over 20,000 LoC, which has previously been limited to programs of roughly 1,000 LoC (cf. Preguss [ 5 ] ).",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Modularization is the common wisdom for handling large-scale software systems with increasing complexity [ 1 , Chapt. 9] . In deductive verification, modularization is achieved through the design-by-contract principle [ 16 ] : Each function is annotated with a contract that abstracts away its concrete implementation. Such a contract typically consists of preconditions —the obligations that must be satisfied at the call site—and postconditions —the guarantees established upon return. Verifying a function f f against its contract then amounts to proving the Hoare triple",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "where P P is the precondition, and Q Q is the postcondition. The Hoare triple is valid iff every execution of f f starting from a state satisfying P P terminates in a state satisfying Q Q .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Figure 1 illustrates modular verification on a small C program. The function swap is annotated with a contract expressed in the ANSI/ISO C Specification Language (ACSL) [ 17 ] that (i) requires the memory locations a + i and a + j to be validly writable (precondition ϕ 1 \\phi_{1} ), and (ii) ensures the values at these positions are exchanged (postcondition ϕ 2 \\phi_{2} ), while also declaring that only these two locations are modified (frame condition ϕ 3 \\phi_{3} , a special case of postconditions). Once swap is verified against this contract, i.e., the deductive verifier (e.g., Frama-C/Wp [ 14 ] ) proves { ϕ 1 } ​ swap ​ { ϕ 2 ∧ ϕ 3 } \\{\\phi_{1}\\}\\;\\texttt{swap}\\;\\{\\phi_{2}\\land\\phi_{3}\\} , every call to swap can soundly be replaced by its contract.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The caller reverse is annotated with its own contract, which requires a valid array and a non-negative length ( ϕ 4 \\phi_{4} ), ensures the array is reversed ( ϕ 5 \\phi_{5} ), and declares the entire array as modified ( ϕ 6 \\phi_{6} ). Consequently, when verifying reverse (i.e., { ϕ 4 } ​ reverse ​ { ϕ 5 ∧ ϕ 6 } \\{\\phi_{4}\\}\\;\\texttt{reverse}\\;\\{\\phi_{5}\\land\\phi_{6}\\} ) which invokes swap at ι 3 \\iota_{3} within a loop, the verifier need only check that the arguments at ι 3 \\iota_{3} satisfy ϕ 1 \\phi_{1} , and can then assume ϕ 2 \\phi_{2} and ϕ 3 \\phi_{3} after the call, without ever inspecting swap ’s body again. For brevity, we omit the loop contract (e.g., loop invariants, variants, and frame conditions) at ι 2 \\iota_{2} , though such intraprocedural annotations are necessary for the verifier to establish the contract of reverse .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The purpose of establishing contracts is to prove program properties , in our case, the absence of runtime errors [ 15 ] . A substantial portion of them can be encoded as first-order logic assertions , such as α 1 \\alpha_{1} at ι 1 \\iota_{1} and α 2 \\alpha_{2} after ι 4 \\iota_{4} in Fig. 1 (a). Validating α 1 \\alpha_{1} —that a + i and a + j are valid for writing—depends on the precondition ϕ 1 \\phi_{1} of swap ; validating α 2 \\alpha_{2} —that the array a has been reversed—depends on the postcondition ϕ 5 \\phi_{5} and ϕ 6 \\phi_{6} of reverse . We call these assertion-encoded properties—whether machine-generated [ 18 ] or human-crafted— proof goals ; a proof goal is discharged only when the assertion and all the specifications it depends on are jointly proved.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "A natural consequence of the design-by-contract principle ( Sections II-A and II-B ) is that callers cannot be fully verified until their callees’ contracts are established . This gives rise to the bottom-up verification paradigm, widely adopted in recent LLM-based specification synthesis [ 11 , 5 , 6 ] : specifications are constructed for leaf functions first, and verified contracts propagate upward along the call graph. In Fig. 1 , one must first verify swap (proving that it exchanges two array elements, ϕ 2 \\phi_{2} ), then reverse (proving array reversal, ϕ 5 \\phi_{5} , using swap ’s contract at ι 3 \\iota_{3} ), and finally main (proving α 2 \\alpha_{2} , which depends on ϕ 5 \\phi_{5} and ϕ 6 \\phi_{6} ). Moreover, satisfying callee preconditions is the primary driver for constructing caller preconditions: reverse imposes ϕ 4 \\phi_{4} precisely to discharge ϕ 1 \\phi_{1} of swap at ι 3 \\iota_{3} .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The bottom-up paradigm fundamentally limits parallelism. Consider Fig. 1 , verifying swap and reverse involves two time-consuming processes: LLM inference (generating and refining candidate specifications) and verifier validation ( Frama-C/Wp checking candidate specifications); these two processes are tightly interleaved within each verification unit’s guess-and-check cycle [ 19 ] . Moreover, the bottom-up ordering forces these cycles into a rigid sequence: swap must complete before reverse can begin, and reverse before main . Consequently, at any moment, only one level of the call graph actively progresses, while units at higher levels remain idle.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Verdict is motivated by a simple but consequential insight: since verification is modular—a function’s proof depends only on its callees’ contracts, not their implementations—we can begin verifying a caller under assumed contracts for its callees, without waiting for those callees’ verification to finish. In our approach, each function is assigned a dedicated Agent responsible for (i) generating assumed contracts for its callees from their call-site contexts and function bodies, (ii) constructing its own contract and intraprocedural specifications and publishing them, and (iii) when a callee’s agent later publishes a contract that conflicts with the assumed one, determining the appropriate reconciling strategy (detailed in Section III-B ). Figure 2 illustrates this principle: the agents for swap , reverse , and main launch concurrently; each makes assumptions about its callees (e.g., the reverse agent assumes a contract for swap ) and proceeds to verify. Because these agents operate independently, the system achieves substantial parallelism: given sufficient resources, every function in a large program can begin verification simultaneously.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "As observed in recent work [ 5 , 20 , 6 ] , LLMs rarely produce correct specifications in a single attempt for programs with non-trivial call hierarchies. These approaches therefore embed repair mechanisms that iteratively refine invalid specifications via verification feedback. Low-level errors—syntactic mistakes (e.g., misspelled variables) or missing intraprocedural annotations (e.g., loop invariants)—are localized and relatively easy to fix. The deeper challenge lies in reconciling interprocedural conflicts : when a proof goal in one function cannot be discharged, the root cause often resides not in its own specification but in a deficient contract elsewhere in the call chain. We identify three canonical forms of interprocedural conflicts and construct representative scenarios for each by introducing intentional specification deficiencies into the example of Fig. 1 . Figure 3 summarizes these forms and their reconciling measures:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Conflict A: Callee’s postcondition is too weak. Suppose reverse is initially published with only a trivial postcondition ϕ 7 ≡ \\true \\phi_{7}\\equiv\\texttt{\\textbackslash{}true} ( Fig. 3 (a)). When the agent for main attempts to discharge α 2 \\alpha_{2} , it finds that ϕ 7 \\phi_{7} provides no usable information. The only remedy is to demand that reverse strengthen its postcondition to the full reversal formula ϕ 5 \\phi_{5} . This demand flows downward along the call graph. In a deeper graph, such demands can propagate, as illustrated in Fig. 4 (a): to prove ϕ 5 \\phi_{5} , reverse may need stronger postconditions from swap (e.g., that swap modifies exactly the two indexed elements), triggering a chain of downward refinements.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Conflict B: Callee’s precondition is too strong. Consider a variant in which swap carries a defensive precondition ϕ 8 ≡ i ≥ j \\phi_{8}\\equiv\\texttt{i}\\geq\\texttt{j} ( Fig. 3 (b)). When reverse verifies its call site swap(a, i, n-1-i) at ι 3 \\iota_{3} , it must prove ϕ 8 [ i ↦ i , j ↦ n-1-i ] \\phi_{8}[\\texttt{i}\\mapsto\\texttt{i},\\texttt{j}\\mapsto\\texttt{n-1-i}] , i.e., i ≥ n-1-i \\texttt{i}\\geq\\texttt{n-1-i} , which fails for every iteration where i < (n-1)/2 \\texttt{i}<\\texttt{(n-1)/2} . The conflict is resolved by a precondition weakening demand : reverse requests that swap remove ϕ 8 \\phi_{8} . Same as reconciling Conflict A, this demand flows from caller to callee ( Fig. 4 (a)); accepting it may force the callee to re-prove its internal goals under the weaker assumption, potentially cascading further down.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Conflict C: Caller’s precondition is too weak. The third form arises when no change to a callee suffices—the caller must instead strengthen its own contract ( Fig. 3 (c)). Suppose reverse is initially published with only the weak precondition ϕ 9 ≡ n ≥ 0 \\phi_{9}\\equiv\\texttt{n}\\geq\\texttt{0} , omitting memory validity. To prove the call-site precondition ϕ 1 \\phi_{1} of swap at ι 3 \\iota_{3} , the verifier needs 𝚟𝚊𝚕𝚒𝚍 ⁡ ( a + (0..n-1) ) \\mathtt{valid}(\\texttt{a}+\\texttt{(0..n-1)}) , which ϕ 9 \\phi_{9} does not supply. reverse must therefore strengthen its own precondition to ϕ 4 ≡ n ≥ 0 ∧ 𝚟𝚊𝚕𝚒𝚍 ⁡ ( a + (0..n-1) ) \\phi_{4}\\equiv\\texttt{n}\\geq\\texttt{0}\\land\\mathtt{valid}(\\texttt{a}+\\texttt{(0..n-1)}) . This change cascades upward ( Fig. 4 (a)): every caller of reverse must now establish ϕ 4 \\phi_{4} at the call site, and if its own precondition is too weak to do so, the same conflict reappears one level higher—potentially cascading along an arbitrary prefix of the call chain.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Why do bottom-up approaches struggle at reconciling interprocedural conflicts? Crucially, the three conflict forms do not arise in isolation. Figure 4 (b) illustrates the interleaving with an abstracted call chain: a Conflict A demand propagates f8 → 𝐴 \\xrightarrow{A} f9 → 𝐴 \\xrightarrow{A} f10 , 2 2 2 We denote reconciling directions by labeled arrows: → 𝑋 \\xrightarrow{X} , where X ∈ { A , B , C } X\\in\\{A,B,C\\} denotes the type of the conflict. strengthening f10 ’s postcondition; but to prove that stronger postcondition, f10 must first strengthen its own precondition (Conflict C), which cascades upward as f10 → 𝐶 \\xrightarrow{C} f11 → 𝐶 \\xrightarrow{C} f12 → 𝐶 \\xrightarrow{C} f13 ; and if the new precondition is overly aggressive, it can trigger Conflict B at a neighboring call site ( f13 → 𝐵 \\xrightarrow{B} f12 ). In short, the three forms interleave along the call graph. Reconciling them thus requires two capabilities: (i) the ability to modify contracts bidirectionally —downward to callees (for Conflicts A and B) and upward to callers (for Conflict C)—in an interleaved manner; and (ii) the ability to reach functions arbitrarily far from the original conflict point, since a single initial deficiency can trigger adjustments across multiple call levels. The bottom-up, divide-and-conquer paradigm lacks both. First, it enforces a strictly upward flow: specifications are constructed for callees and then consumed by callers, with no mechanism for a caller to request refinement of an already-sealed callee contract—precisely what Conflict A and B require. Second, each verification unit exposes only a small, locally bounded set of functions; propagating a repair across arbitrary call levels is simply beyond what any such unit can express. These two limitations stem from the bottom-up design itself, not from any particular instantiation.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Verdict overcomes the aforementioned limitations of the bottom-up paradigm with two key components, as depicted in Figure 5 . First, each function is assigned a persistent Agent that owns its specification and can begin verification immediately under assumed contracts for unpublished callees. Second, a Runtime Orchestrator coordinates these agents through typed events— Event Supply for upward cascades and Event Demand for downward requests—and enforces a four-state machine per agent whose transitions are triggered exclusively by these events. This design achieves parallelism without ordering constraints while providing the infrastructure for bidirectional conflict reconciliation. We elaborate on the above two components in the subsequent sections, respectively.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Verdict decomposes the input program into Verification Units (V-Units), one per function. Each V-Unit bundles a host function with its direct callees, where the host’s contract and intraprocedural specifications are writable by its assigned agent, while the callees’ contracts are read-only by the same agent. This exclusive ownership model is essential: Since each function is owned by exactly one agent, any request to revise its contract is routed to that agent alone, which determines the guarantees the contract should provide, thus making cross-agent coordination traceable. Without exclusive ownership, multiple callers could modify the same contract concurrently, and thereby produce inconsistent revisions.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "An agent encounters a dilemma upon its first launch: its callees may not yet have published contracts, but waiting for them would forfeit the parallelism promised in Section III-A . Verdict addresses this issue via assumption-based verification : The agent constructs provisional assumed contracts for any callee with an unpublished contract directly from that callee’s body, and proceeds to generate and verify its own specification under these assumptions.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The verification procedure then follows a disciplined cycle: The agent reads the host function’s body together with currently published contracts of its callees, hypothesizes contracts for the remaining ones, generates ACSL annotations (including function contracts and intraprocedural specifications), and invokes Frama-C/Wp for targeted verification. It then records the status of each verification obligation (VO). Three categories of VOs are tracked: (i) proof goals within the host function (e.g., RTE assertions), (ii) host’s specification clauses (postconditions, frame conditions, and loop contracts), and (iii) callee preconditions that must be discharged at each call site.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "After its initial cycle, an agent enters an idle state and will be re-awakened only when the orchestrator delivers a pertinent event. Two types of events drive the bidirectional reconciliation:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Upward cascading : An Event Supply signals that a callee has published a new contract version. The host agent re-verifies the affected VOs against the updated contract; 3 3 3 The re-verification can sometimes be avoided by comparing the logical strength of the updated contract against its old version. if they still hold, the callee’s change is compatible with the agent’s existing proof, and the agent returns to idle.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Downward request : An Event Demand carries a structured request from a caller: The caller requires a specific property from the callee to discharge one of its own VOs, and has verified that the property suffices under an assumed contract. The corresponding callee agent assesses whether the requested property is provable given its current implementation; if so, it incorporates the property into its contract and publishes it.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "When either event reveals a conflict—the new callee contract invalidates the agent’s proof, or the demanded property cannot be established—the agent proceeds with reconciliation. First, it attempts an intraprocedural fix; for instance, a refined loop invariant may suffice to re-establish the altered callee contract or accommodate the demanded property. When the agent deems such a fix impossible, it has two further options: (i) strengthening its precondition and publishing a revised contract, which in turn triggers Event Supply for its callers and propagates the change upward; and (ii) issuing demands to its own callees —requesting a stronger postcondition or a weaker precondition—which triggers Event Demand for those callees and propagates the conflict downward.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Note that these two options are non-exclusive : an agent may pursue both, and in either case, the reconciliation generates new events that activate further agents. Thus, although a Supply travels only upward and a Demand only downward, each can trigger the other: a Demand reaching a callee may lead it to strengthen its precondition and raise a Supply to its callers, and vice versa. This interleaving of events across the call graph achieves the bidirectional reconciliation.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "To coordinate the concurrent execution of all agents, the orchestrator models each agent as a four-state machine, as shown in Fig. 6 (a). The states of an agent 𝒜 \\mathcal{A} capture its progress throughout the verification lifecycle:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "WORK : 𝒜 \\mathcal{A} actively verifies its specification against the current version of its callee contracts (cf. Sections V-B and V-C );",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "IDLE : 𝒜 \\mathcal{A} has completed its current cycle and awaits events;",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "WAIT : 𝒜 \\mathcal{A} has received an event and is queued for execution;",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "TERM : 𝒜 \\mathcal{A} has permanently exited the scheduling queue.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The orchestrator governs five transitions between these states. When agent 𝒜 \\mathcal{A} finishes its verification cycle, it moves from WORK to IDLE (transition \\raisebox{-.87pt}{\\texttt{A}}⃝). The orchestrator then inspects whether any event (Supply or Demand) is pending for 𝒜 \\mathcal{A} ; if so, it attaches the event to 𝒜 \\mathcal{A} and advances 𝒜 \\mathcal{A} to WAIT (transition \\raisebox{-.87pt}{\\texttt{B}}⃝). When a slot in the concurrency pool —which caps the number of agents that may run simultaneously; set by hyper-parameter max_parallel —becomes available, the orchestrator dispatches a WAIT agent into WORK (transition \\raisebox{-.87pt}{\\texttt{C}}⃝). If the pool is full, 𝒜 \\mathcal{A} remains in state WAIT (transition \\raisebox{-.87pt}{\\texttt{D}}⃝). Finally, if 𝒜 \\mathcal{A} has exhausted its cycle budget —the maximum number of WORK rounds it is permitted to perform; set by hyper-parameter max_cycles —it transitions from WAIT to TERM (transition \\raisebox{-.87pt}{\\texttt{E}}⃝), permanently exiting the scheduling queue.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Figure 6 (e) depicts the scheduling procedure on the call graph of Fig. 6 (b) across nine steps, with max_parallel = 4 \\texttt{max\\_parallel}=4 . Agents are enqueued in reverse topological order of the call graph such that, under limited concurrency, agents deeper in the call chain are dispatched first—intuitively, resolving callees before callers reduces the number of revivals. We use this concrete example to illustrate how the state machine and the events interact to drive convergence.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "All four agents are launched concurrently and enter WAIT , each carrying an Event Available (denoted as A in Fig. 6 )—a special signal from the orchestrator that a concurrency-pool slot has been assigned. When the pool admits all four, they transition to WORK and execute their first assumption-based verification cycle.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "After all agents return to IDLE , the orchestrator attaches events. In the event pool of \\raisebox{-.87pt}{\\texttt{3}}⃝, each label below an event indicates the source agent who triggers the event, and each arrow points to the target agent that will be revived, as per Fig. 6 (c). Intuitively, f1 / f2 / f3 publish new contracts (upward Supply), while f4 demands property adjustments from f1 and f3 (downward Demand). In \\raisebox{-.87pt}{\\texttt{4}}⃝, f2 —whose verification has no conflicts and receives no events—remains IDLE . The others enter WORK in \\raisebox{-.87pt}{\\texttt{5}}⃝.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "After the three agents complete, new events emerge as shown in Fig. 6 (d): two Event Supply from f1 and f3 target f4 ; one Event Demand from f3 targets f2 . In \\raisebox{-.87pt}{\\texttt{7}}⃝, f2 and f4 enter WAIT while f1 and f3 remain IDLE . After f2 and f4 complete in \\raisebox{-.87pt}{\\texttt{8}}⃝, no further events are generated. Upon step \\raisebox{-.87pt}{\\texttt{9}}⃝, all agents are IDLE with an empty event pool —the orchestrator terminates.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The orchestrator terminates under either of two conditions: (1) the scheduling queue contains only IDLE or TERM agents and the event pool is empty; or (2) all agents have transitioned to TERM , at which point remaining events are discarded since no agent remains to consume them. Termination is guaranteed by construction. Each agent is subject to a cycle budget and each WORK round runs within a finite time limit. Consequently, every agent eventually either settles into IDLE with no pending events or exhausts its budget and stays permanently in TERM .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "An agent converges if the following conditions hold upon termination of the orchestrator: (i) it rests in IDLE , (ii) every obligation it tracks is discharged, and (iii) no pending event targets it. To demonstrate soundness, let G = ( V , E ) G=(V,E) be the call graph of the program, with each v ∈ V v\\in V a function and each ( v i , v j ) ∈ E (v_{i},v_{j})\\in E a call from v i v_{i} to v j v_{j} . For any subgraph H ⊆ G H\\subseteq G , denote by 𝒜 H \\mathcal{A}_{H} the set of agents responsible for the functions in H H . Let V 0 ⊆ V ⁡ ( H ) V_{0}\\subseteq V(H) be the entry functions—those not called by any other function in H H . Then, the orchestrator is sound in the following sense: For all H ⊆ G H\\subseteq G , whenever all agents in 𝒜 H \\mathcal{A}_{H} converge, the proof goals of H H are valid if the preconditions of every function in V 0 V_{0} are satisfied.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We implement Verdict 4 4 4 The implementation and experimental data are available at [ 12 ] . and evaluate it by addressing the following research questions (RQs):",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "RQ1 : How does Verdict compare against state-of-the-art LLM-based specification-synthesis approaches?",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "RQ2 : What are the effects of Verdict ’s scheduling hyper-parameters ( Section VI-A ) on its performance?",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "RQ3 : To what extent do the two mechanisms ( Sections V-B and V-C ) of Verdict contribute to its effectiveness?",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Verdict is implemented atop the Claude Agent SDK [ 13 ] with asyncio -based concurrency. Each agent invokes Frama-C/Wp [ 14 ] with the SMT solvers Z3 [ 21 ] , cvc5 [ 22 ] , and Alt-Ergo [ 23 ] for deductive verification.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Since Verdict is built on the Claude Agent SDK, we employ two Claude models: Sonnet 4.6 [ 24 ] and Opus 4.5 [ 25 ] . All LLM sampling parameters are left at their API defaults. By default, we set the hyper-parameters max_parallel = 8 \\texttt{max\\_parallel}=8 and max_cycles = 24 \\texttt{max\\_cycles}=24 , except for benchmark x509-parser-full where we use max_parallel = 16 \\texttt{max\\_parallel}=16 given its scale. We repeat all RQ1 experiments three times and report the mean to account for LLM non-determinism. For RQ2 and RQ3, we run a single trial with both models for cross-validation. All experiments are conducted on an Ubuntu 24.04 server with 2 AMD EPYC 7542 processors (128 threads in total) and 120 GiB of RAM.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We compare Verdict against two state-of-the-art LLM-based specification-synthesis tools— Preguss [ 5 ] and SpecSyn [ 6 ] , as detailed in Section IX —which can handle programs with non-trivial call graphs by adopting the divide-and-conquer, bottom-up paradigm. Both baselines use the same LLMs as Verdict to ensure a fair comparison.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We assemble our benchmark set from the evaluation corpora of Preguss and SpecSyn. Specifically, we omit benchmarks of trivial size, e.g., Frama-C-Problems and SV-COMP, as well as atomthreads , whose complex data structures (e.g., linked lists) require inductive predicates and thus lie beyond the scope of Verdict and the baselines. The benchmark set is supplemented by two additional modules extracted from the ANSSI X.509 certificate parser [ 4 ] . As collected in Table I , the benchmarks vary widely in call-chain depth (0 to 16) and program size (7 to 210 functions).",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We run Frama-C/Wp —under the same configuration with consistent memory model, solver timeout (30 s), and prover set—on each tool’s output (programs with annotated specifications) and report the fraction of discharged proof goals in two categories: rte (runtime-error goals generated by Frama-C/Rte [ 18 ] ) and spec (tool-generated loop contracts, postconditions, frame conditions, and callee-precondition obligations at call sites). We additionally report end-to-end wall-clock time.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Table I reports the experimental results of Verdict against Preguss and SpecSyn. In general, we observe two distinct advantages of Verdict over these baselines:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Across both models, Verdict discharges the largest fraction of proof goals in both categories . Pooled over all goals (Opus), it reaches 99.9% on rte and 94.5% on spec, against 89.8%/75.3% for Preguss and 72.5%/84.7% for SpecSyn, with consistent Sonnet results. In particular, Verdict discharges 100% runtime-error goals on 12 of the 15 benchmarks under both models, compared with 6 for Preguss and 3 for SpecSyn. The two baselines also reflect their respective design emphases: Preguss , being RTE-guided, scores markedly higher on rte than on spec; whereas SpecSyn, which optimizes specification strength, exhibits the opposite skew. Notably, Verdict surpasses each baseline on its own stronger dimension , i.e., Preguss ’s rte and SpecSyn’s spec.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Verdict ’s lead is most pronounced for programs with deep call chains , where interprocedural specifications are hard to synthesize. For instance, on the full X.509 parser with depth 16, conflicts must be reconciled across many call levels, and the baselines drop to 58.3%/59.6% (rte/spec) for Preguss and 23.5%/45.8% for SpecSyn, while Verdict achieves 100%/90.6%. This advantage stems from the bidirectional reconciliation mechanism, which we isolate in RQ3. On shallow programs dominated by local reasoning, e.g., cgl and zpl , the three tools are far closer, all approaching 100%.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "With Opus, Verdict is the most efficient tool on 12/15 benchmarks, with a geometric-mean time of 12 minutes, compared to 25 for Preguss and 81 for SpecSyn. Moreover, Verdict ’s advantage increases with program size and call-chain depth: Its modest 1.4 × 1.4{\\times} speedup over Preguss on small, shallow programs ( punity ; #Fn =15, Dep =1) grows to 2.8 × 2.8{\\times} on larger yet still shallow ones ( hypatia ; #Fn =55, Dep =3), reaches 4.1 × 4.1{\\times} with deep calls ( x509-parser-2 ; Dep =10), and culminates at 12.4 × 12.4{\\times} on x509-parser-full ( #Fn =210, Dep =16; 339 vs. 4,209 min).",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Verdict exposes two hyper-parameters ( Section VI-A ): max_parallel ( m ​ p mp ) and max_cycles ( m ​ c mc ). We evaluate their effect on six representative benchmarks (see Fig. 7 ) spanning shallow to deep call chains.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We fix m ​ c = 24 mc=24 and vary m ​ p ∈ { 1 , 2 , 4 , 8 , 16 , 32 } mp\\in\\{1,2,4,8,16,32\\} . When m ​ p = 1 mp=1 , Verdict reduces to the sequential bottom-up order, verifying one function at a time. We measure the gain as the parallel speedup T 1 / T m ​ p T_{1}/T_{mp} , i.e., the wall-clock time at m ​ p = 1 mp=1 divided by the time with m ​ p mp agents. As depicted in Fig. 7 , the speedup grows steadily along m ​ p mp : with Opus, hypatia rises from 1.8 × \\times at m ​ p = 2 mp{=}2 to 11.9 × \\times at m ​ p = 32 mp{=}32 , and x509-parser-2 falls from 150 to 21 min, a 7 × \\times gain; Across the 6 benchmarks, the geometric-mean speedup at m ​ p = 32 mp{=}32 is 4.9 × \\times . Sonnet yields similar observations.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Note that these parallel speedups are sub-linear : all curves exhibit only gentle growth and remain below the ideal scaling of T 1 / T m ​ p = m ​ p T_{1}/T_{mp}{=}mp . hypatia ( Dep =3) stays closest to this bound, with a slope of roughly three-quarters of the ideal, whereas x509-parser-2 ( Dep =10) increases at barely half that rate. This gap stems from the cost of interprocedural reconciliation. With few agent slots, the schedule remains close to the dependency order: a callee typically publishes a contract before its callers start, so little reconciliation is required. As m ​ p mp increases, more agents start working during the initial dispatch ( Section VI-B ) before their callees have published contracts, leaving those assumed contracts to be resolved afterward through reconciliation . Thus, we have",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "where the reconciliation overhead T rec T_{\\mathrm{rec}} grows with increasing parallelism. Figure 8 isolates this effect on two benchmarks with distinct call-chain depths. On x509-parser-2 (Dep=10), the gap between the initial-dispatch and eventual curves is substantial: the initial-dispatch potential reaches 19 × \\times at m ​ p = 32 mp{=}32 , but reconciliation drags the eventual speedup back to 7 × \\times . On hypatia (Dep=3), where functions exhibit limited interdependence, the gap remains much narrower and the eventual speedup climbs to 12 × \\times . This reconciliation is thus not wasted effort but the price of correctness at speed : Verdict spends it resolving interprocedural conflicts that ripple through deep call chains (see Section III-B ).",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The cycle budget m ​ c mc caps how many refinement rounds each agent may perform. With m ​ p = 8 mp=8 and m ​ c ∈ { 1 , 2 , 4 , 8 , 16 , 24 } mc\\in\\{1,2,4,8,16,24\\} , we track two rates: the external discharge rate , i.e., the fraction of rte and spec goals verified independently by Frama-C/Wp ; and the internal convergence rate , i.e., the fraction of converged agents ( Section VI-D ).",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Figure 9 depicts both rates against m ​ c mc . The convergence rate rises sharply from a low base: the deep-chain X.509 submodules sit under half at m ​ c = 1 mc{=}1 and top out by m ​ c ≈ 8 mc{\\approx}8 , whereas the shallow-chain benchmarks reach saturation by m ​ c ≈ 2 mc{\\approx}2 to 4. This indicates that the number of refinement rounds required grows with call-chain depth. This is the same depth-driven reconciliation effect observed in Fig. 8 , manifested there in wall-clock time and here in refinement iterations. The externally verified discharge rate improves on the same schedule, with mean spec discharge increasing from ≈ 90 % {\\approx}90\\% to ≈ 99 % {\\approx}99\\% by m ​ c ≈ 8 mc{\\approx}8 under both models. Internal convergence and external quality thus plateau in tandem: Verdict ’s notion of completion closely tracks the quality certified by Frama-C/Wp .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We perform an ablation study to quantify each mechanism’s individual contribution to Verdict ’s specification quality and efficiency. Specifically, we evaluate four configurations across the six RQ2 benchmarks: the full system, no-assumption ( − - asm, an agent can rely only on a callee’s published contract, not on an assumed one), no-demand ( − - dem, an agent can no longer raise an Event Demand ) 5 5 5 Event Supply is not ablated to retain soundness of verification: It triggers an agent to re-verify its proof whenever a callee publishes a new contract. , and no-both ( − - both).",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The results split cleanly by call-chain depth; see Fig. 10 . On the four shallow programs ( contiki , hypatia , voronoi , sokol ; Dep ≤ 4 \\leq 4 ), all configurations cluster in the top-left corner with near-perfect quality, so ablation barely registers. The cost is concentrated in the two X.509 submodules (depth 8 and 10), where we analyze each mechanism in turn.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Under no-demand, the deep-chain point moves down the quality axis: Specification discharge rate drops from 99.7% to 81% (Opus) and 84% (Sonnet). The no-both configuration yields similar outcomes. In fact, without Event Demand, an agent can no longer ask a callee to repair a cross-level conflict (Conflict A or B in Section III-B ), exposing precisely the failure mode that the bottom-up paradigm cannot avoid.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Under no-assumption, the deep-chain point instead shifts rightward, maintaining quality above 99% while the number of Demand Events increases sharply, from 28 (11) to 49 (48) with Opus (Sonnet). Without optimistic assumptions about callees that have not yet published, each dependency must be resolved sequentially via Event Demands, eliminating the parallelism that assumed contracts are designed to enable ( Section III-A ).",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We measure specification quality as the fraction of proof goals discharged by a unified, external Frama-C/Wp configuration. A more rigorous alternative, as adopted in Preguss [ 5 ] , would be to manually refine the generated specifications until 100% discharge is achieved, and then measure the human effort required. We opted against this for two reasons: (i) it is prohibitively expensive on the benchmarks where the comparison is most informative—on x509-parser-full , both baselines leave a substantial number of goals undischarged, making manual validation significantly more labor-intensive than on smaller programs; and (ii) even on the subset of benchmarks that already achieve 100% discharge—where no human intervention is required— Verdict still leads (12 of 15 on rte, compared to 6 for Preguss and 3 for SpecSyn). The discharge rate is therefore a reasonable metric, since a tool that discharges more goals leaves arguably less work for subsequent manual refinement.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Verdict ’s design is not yet fully exploited in its current instantiation; we outline three directions it opens up at the levels of scheduling, architecture, and specification.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "RQ2 has identified reconciliation—the rounds in which each agent resolves its optimistic assumptions after its callees publish—as the primary source of the gap between eventual and ideal speedup ( Fig. 8 ). Verdict currently executes these reconciliation rounds in a synchronous manner ( Section VI-B ), completing one round before starting the next. Allowing a revived agent to resume immediately upon receiving its triggering event, rather than waiting for the next round boundary, would enable overlap across consecutive rounds, thereby reducing this tail effect and bringing the eventual speedup closer to the ideal.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Verdict assigns one agent to every function ( Section III-A ). This choice maximizes parallelism and keeps each agent’s context small, thereby mitigating the long-context reasoning bottleneck. Because agents proceed under assumed contracts and later reconcile them through events, even cyclic dependencies that admit no bottom-up order are handled at this level of granularity: mutually recursive functions within a strongly connected component (SCC) of the call graph resolve their dependencies via Supply and Demand events until their contracts converge. The cost of this design is that every interprocedural dependency becomes a cross-agent negotiation mediated by assumed contracts and proof demands. The functions that are most tightly coupled are therefore also those that trigger the most renegotiation, contributing disproportionately to tail latency. This raises a natural question of whether function-level granularity is the right choice. An alternative is to assign a single agent to a region of tightly coupled functions , such as an entire SCC. Such an agent could discharge internal dependencies locally, invoking assumed contracts and proof demands only across region boundaries. In general, an appropriate granularity must balance three forces: parallelism, which favors finer units; coordination overhead, which favors coarser units; and per-agent context size, which grows with region size. How to partition the call graph to strike this balance remains open.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Verdict , like the baselines, targets the absence of RTEs alongside the contracts, loop invariants, and frame conditions that establish it. Programs with recursive, unbounded data structures, e.g., linked lists and trees, additionally require inductive predicates and lemmas, which remain challenging for current LLM-based synthesis. Equipping agents to construct such artifacts is a natural way to broaden the class of properties that Verdict can certify.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "LLM-based specification synthesis [ 11 , 20 , 5 , 6 , 26 , 27 , 28 , 29 ] has undergone a recent surge of interest due to its potential for automating deductive verification [ 2 ] . These approaches adopt a common guess-and-check paradigm: an LLM proposes candidate specifications (e.g., function contracts, loop invariants, assertions), a deductive verifier checks them, and verification failures are fed back for iterative refinement.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Existing approaches can be broadly divided by scale. The majority target intraprocedural or single-function settings: AutoSpec [ 11 ] and SLD-Spec [ 30 ] decompose programs into extended call graphs with mask-based placeholder substitution; SpecGen [ 20 ] applies mutations to per-method JML [ 31 ] specifications; Laurel [ 28 ] localizes missing Dafny [ 32 ] assertions from verifier error messages; LORIS [ 33 ] improves loop invariant synthesis by formally justifying the LLM’s natural-language reasoning steps; AutoVerus [ 27 ] and Msg [ 26 ] employ multi-agent architectures for Rust/Verus and Move, respectively, but still operate one function at a time. Although these systems achieve impressive per-function success rates, they are limited to functions with shallow or no call dependencies.",
+   "zh": "现有方法大致可以按规模划分。 大多数方法面向过程内或单函数场景：AutoSpec [ 11 ] 和 SLD-Spec [ 30 ] 将程序分解为扩展调用图并进行基于掩码的占位符替换；SpecGen [ 20 ] 对每个方法的 JML [ 31 ] 规约施加变异；Laurel [ 28 ] 从验证器的错误消息中定位缺失的 Dafny [ 32 ] 断言；LORIS [ 33 ] 通过形式化地论证大语言模型的自然语言推理步骤来改进循环不变式的合成；AutoVerus [ 27 ] 和 Msg [ 26 ] 分别针对 Rust/Verus 和 Move 采用多智能体架构，但仍然一次只处理一个函数。 尽管这些系统取得了令人瞩目的单函数成功率，但它们仅限于调用依赖较浅或没有调用依赖的函数。",
+   "sents": [
+    {
+     "en": "Existing approaches can be broadly divided by scale.",
+     "zh": "现有方法大致可以按规模划分。"
+    },
+    {
+     "en": "The majority target intraprocedural or single-function settings: AutoSpec [ 11 ] and SLD-Spec [ 30 ] decompose programs into extended call graphs with mask-based placeholder substitution; SpecGen [ 20 ] applies mutations to per-method JML [ 31 ] specifications; Laurel [ 28 ] localizes missing Dafny [ 32 ] assertions from verifier error messages; LORIS [ 33 ] improves loop invariant synthesis by formally justifying the LLM’s natural-language reasoning steps; AutoVerus [ 27 ] and Msg [ 26 ] employ multi-agent architectures for Rust/Verus and Move, respectively, but still operate one function at a time.",
+     "zh": "大多数方法面向过程内或单函数场景：AutoSpec [ 11 ] 和 SLD-Spec [ 30 ] 将程序分解为扩展调用图并进行基于掩码的占位符替换；SpecGen [ 20 ] 对每个方法的 JML [ 31 ] 规约施加变异；Laurel [ 28 ] 从验证器的错误消息中定位缺失的 Dafny [ 32 ] 断言；LORIS [ 33 ] 通过形式化地论证大语言模型的自然语言推理步骤来改进循环不变式的合成；AutoVerus [ 27 ] 和 Msg [ 26 ] 分别针对 Rust/Verus 和 Move 采用多智能体架构，但仍然一次只处理一个函数。"
+    },
+    {
+     "en": "Although these systems achieve impressive per-function success rates, they are limited to functions with shallow or no call dependencies.",
+     "zh": "尽管这些系统取得了令人瞩目的单函数成功率，但它们仅限于调用依赖较浅或没有调用依赖的函数。"
+    }
+   ]
+  },
+  {
+   "en": "Two systems stand out for tackling interprocedural specification synthesis at scale : Preguss [ 5 ] decomposes programs into V-Units—a static, two-layer program context. SpecSyn [ 6 ] partitions programs into SCCs together with their necessary dependencies, yielding similarly small, locally bounded units. Both approaches adopt a divide-and-conquer, bottom-up strategy: restricting each unit avoids long-context reasoning, while verifying callees before callers attains soundness. Such a strategy, however, imposes fundamental limitations as detailed in Section III . A verification unit can refine only the specifications of functions within its static boundary; influencing functions beyond that boundary requires restarting the entire bottom-up process. Consequently, neither system can propagate specification demands across multiple call levels, preventing the interleaved conflict reconciliation as presented in Section III-B . Verdict addresses these limitations through the mechanisms of assumption-based verification and bidirectional interprocedural conflict reconciliation ( Section V ).",
+   "zh": "有两个系统在大规模过程间规约合成方面表现突出：Preguss [ 5 ] 将程序分解为 V-Unit——一种静态的两层程序上下文。 SpecSyn [ 6 ] 将程序划分为 SCC 及其必要的依赖关系，从而得到类似的规模小、局部有界的单元。 两种方法都采用分治、自底向上的策略：限制每个单元的范围避免了长上下文推理，而先验证被调用者再验证调用者则保证了正确性。 然而，如第 III 节所述，这种策略带来了根本性的局限。 一个验证单元只能对其静态边界内的函数规约进行精化；若要影响该边界之外的函数，则需要重新启动整个自底向上的过程。 因此，两种系统都无法跨多个调用层级传播规约需求，从而无法实现第 III-B 节所提出的交错式冲突调和。 Verdict 通过基于假设的验证和双向过程间冲突调和这两种机制（第 V 节）解决了这些局限。",
+   "sents": [
+    {
+     "en": "Two systems stand out for tackling interprocedural specification synthesis at scale : Preguss [ 5 ] decomposes programs into V-Units—a static, two-layer program context.",
+     "zh": "有两个系统在大规模过程间规约合成方面表现突出：Preguss [ 5 ] 将程序分解为 V-Unit——一种静态的两层程序上下文。"
+    },
+    {
+     "en": "SpecSyn [ 6 ] partitions programs into SCCs together with their necessary dependencies, yielding similarly small, locally bounded units.",
+     "zh": "SpecSyn [ 6 ] 将程序划分为 SCC 及其必要的依赖关系，从而得到类似的规模小、局部有界的单元。"
+    },
+    {
+     "en": "Both approaches adopt a divide-and-conquer, bottom-up strategy: restricting each unit avoids long-context reasoning, while verifying callees before callers attains soundness.",
+     "zh": "两种方法都采用分治、自底向上的策略：限制每个单元的范围避免了长上下文推理，而先验证被调用者再验证调用者则保证了正确性。"
+    },
+    {
+     "en": "Such a strategy, however, imposes fundamental limitations as detailed in Section III .",
+     "zh": "然而，如第 III 节所述，这种策略带来了根本性的局限。"
+    },
+    {
+     "en": "A verification unit can refine only the specifications of functions within its static boundary; influencing functions beyond that boundary requires restarting the entire bottom-up process.",
+     "zh": "一个验证单元只能对其静态边界内的函数规约进行精化；若要影响该边界之外的函数，则需要重新启动整个自底向上的过程。"
+    },
+    {
+     "en": "Consequently, neither system can propagate specification demands across multiple call levels, preventing the interleaved conflict reconciliation as presented in Section III-B .",
+     "zh": "因此，两种系统都无法跨多个调用层级传播规约需求，从而无法实现第 III-B 节所提出的交错式冲突调和。"
+    },
+    {
+     "en": "Verdict addresses these limitations through the mechanisms of assumption-based verification and bidirectional interprocedural conflict reconciliation ( Section V ).",
+     "zh": "Verdict 通过基于假设的验证和双向过程间冲突调和这两种机制（第 V 节）解决了这些局限。"
+    }
+   ]
+  },
+  {
+   "en": "FM-Agent [ 34 ] also departs from the bottom-up paradigm, but in the opposite direction: It generates specifications top-down , inferring each callee’s contract from its callers and using LLM-based Hoare-style reasoning to detect bugs against natural-language specifications. FM-Agent is not our baseline since it targets bug finding rather than deductive verification.",
+   "zh": "FM-Agent [34] 同样脱离了自底向上的范式，但方向相反：它自顶向下生成规约，从调用方推断每个被调用者的契约，并使用基于大语言模型的 Hoare 风格推理，依据自然语言规约检测缺陷。 FM-Agent 不是我们的基线方法，因为它的目标是缺陷查找而非演绎验证。",
+   "sents": [
+    {
+     "en": "FM-Agent [ 34 ] also departs from the bottom-up paradigm, but in the opposite direction: It generates specifications top-down , inferring each callee’s contract from its callers and using LLM-based Hoare-style reasoning to detect bugs against natural-language specifications.",
+     "zh": "FM-Agent [34] 同样脱离了自底向上的范式，但方向相反：它自顶向下生成规约，从调用方推断每个被调用者的契约，并使用基于大语言模型的 Hoare 风格推理，依据自然语言规约检测缺陷。"
+    },
+    {
+     "en": "FM-Agent is not our baseline since it targets bug finding rather than deductive verification.",
+     "zh": "FM-Agent 不是我们的基线方法，因为它的目标是缺陷查找而非演绎验证。"
+    }
+   ]
+  },
+  {
+   "en": "We have presented Verdict , a multi-agent framework that parallelizes modular deductive verification by replacing the sequential bottom-up paradigm with assumption-based parallel dispatch and event-driven bidirectional reconciliation. We showcase that Verdict substantially outperforms state-of-the-art baselines in both specification quality and efficiency, and enables the almost fully automated RTE-freeness verification of real-world programs with over 20,000 LoC, which has previously been limited to the size of 1,000 LoC.",
+   "zh": "我们提出了 Verdict，一个多智能体框架，它通过基于假设的并行分发和事件驱动的双向协调取代了顺序自底向上的范式，从而实现模块化演绎验证的并行化。 我们展示了 Verdict 在规约质量和效率上均大幅优于最先进的基线方法，并能对超过 20,000 行代码的真实程序实现几乎全自动的 RTE 无Error性验证，而以往该方法仅限于 1,000 行代码以内的规模。",
+   "sents": [
+    {
+     "en": "We have presented Verdict , a multi-agent framework that parallelizes modular deductive verification by replacing the sequential bottom-up paradigm with assumption-based parallel dispatch and event-driven bidirectional reconciliation.",
+     "zh": "我们提出了 Verdict，一个多智能体框架，它通过基于假设的并行分发和事件驱动的双向协调取代了顺序自底向上的范式，从而实现模块化演绎验证的并行化。"
+    },
+    {
+     "en": "We showcase that Verdict substantially outperforms state-of-the-art baselines in both specification quality and efficiency, and enables the almost fully automated RTE-freeness verification of real-world programs with over 20,000 LoC, which has previously been limited to the size of 1,000 LoC.",
+     "zh": "我们展示了 Verdict 在规约质量和效率上均大幅优于最先进的基线方法，并能对超过 20,000 行代码的真实程序实现几乎全自动的 RTE 无Error性验证，而以往该方法仅限于 1,000 行代码以内的规模。"
+    }
+   ]
+  }
+ ]
+}

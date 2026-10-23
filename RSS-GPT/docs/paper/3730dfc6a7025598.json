@@ -1,0 +1,1674 @@
+{
+ "id": "3730dfc6a7025598",
+ "source": "arxiv-agent",
+ "link": "https://arxiv.org/abs/2610.21755v1",
+ "title": "DeciCAD: Harness-Grounded Learning of Action Policies for CAD Agents",
+ "title_zh": "DeciCAD：基于智能体框架的 CAD 智能体动作策略学习",
+ "published": "2026-10-15T12:11:43Z",
+ "translated_at": "2026-10-23T00:50:08Z",
+ "paragraphs": [
+  {
+   "en": "Large Language Model agents operate through closed-loop action policies whose decision space is defined by an agent harness. We investigate how this operating space shapes agent behavior and policy learning in computer-aided design (CAD), a professional domain characterized by persistent state, geometric constraints, and long-horizon procedures. We instantiate this perspective in DeciCAD , a domain-native harness that exposes semantic CAD actions, decision-oriented observations, environment feedback, and persistent state transitions. Building on this harness, we develop a learning pipeline that extracts causal decision supervision from interaction trajectories and improves the policy through supervised fine-tuning (SFT) and geometry-grounded online reinforcement learning (RL). Across four CAD benchmarks, DeciCAD achieves the best F1 and intersection over union (IoU) while reducing model-output tokens by 45–88% relative to a general-purpose coding harness. Under matched supervision, its SFT policy improves F1 from 0.6883 to 0.7437 and outperforms the coding policy; subsequent online RL further raises geometry availability from 66.5% to 73.5% and F1 to 0.7880. These results demonstrate that the decision space induced by a harness materially affects both agent execution and policy learning in CAD.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "1 University of Science and Technology of China",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Large Language Models (LLMs) are increasingly being used as agents to operate professional software and complete long-horizon tasks ( Achiam et al. 2023 ; Naveed et al. 2025 ; Guo et al. 2024 ) . Computer-aided design (CAD) is a particularly demanding setting for such agents ( Willis et al. 2020 ; Wu et al. 2021 ) . Unlike one-shot content generation, CAD modeling requires a sequence of state-dependent operations over a persistent design document. An agent must create and modify sketches, constraints, features, and geometric objects; inspect intermediate results; recover from execution failures; and maintain references across long interaction trajectories. In this process, the model outputs are interpreted as actions: each action changes the current CAD state, produces execution feedback, and conditions the next decision ( Yao et al. 2023 ; Schick et al. 2023 ) . The effectiveness of a CAD agent therefore depends not only on the underlying model and its reasoning strategy, but also on how CAD actions, states, and execution outcomes are represented to the model.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Such a model–environment boundary is defined by an agent harness ( Yang et al. 2024 ) . In CAD, a harness determines which design operations the model can express, which parts of the evolving design state it can inspect, and how execution outcomes are returned for subsequent decisions. A general-purpose coding harness may expose the CAD system through programs, libraries, and runtime feedback, whereas a domain-native harness may expose structured CAD actions and object-level observations. Consequently, even when the model, task, and CAD backend remain fixed, different harnesses can present the model with substantially different decision spaces, as illustrated in Figure 1 . Existing work has studied CAD code generation, tool-using agents, execution repair, and interactive modeling ( Mallis et al. 2024 ; Guan et al. 2025 ; Doris et al. 2025 ; Wang et al. 2025 ; Barkley et al. 2026 ; Gong et al. 2026 ) , but the harness itself is typically treated as implementation infrastructure rather than as a variable that shapes both agent execution and policy learning. This raises a central question: How should a CAD agent harness represent actions and states so that it preserves the decisions required for complex modeling while avoiding representation burden that is irrelevant to the task?",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "This trade-off is important in CAD. A fine-grained coding interface gives the model broad control over the underlying software, but the same CAD operation can often be expressed through many programs, command sequences, variable names, temporary objects, and API combinations. These implementations may produce the same geometric state transition, but they appear as different generation and supervision targets. The model must then spend capacity on implementation choices that do not affect the intended state transition. A semantic interface can remove many of these choices by representing the intended operation directly. However, excessive compression can hide state differences that require different actions or remove operations needed for correct modeling and error recovery. A useful harness must therefore reduce irrelevant representation choices while preserving the actions and observations needed for correct decisions.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "To make this trade-off explicit, we formalize the model-facing interface as a Harness-Induced CAD Decision Space : a harness maps model outputs to executable operations, maps internal CAD states to model-visible observations, and returns execution results as feedback, thereby determining which operations the agent can perform, which state differences and failures it can identify, and which policies it can execute and learn. We then introduce the Semantic Decision Bottleneck as a design principle for this space: it compresses behaviorally equivalent implementations and removes state information that does not affect the next decision, while preserving the actions and observations needed to reach the target geometry and recover from errors.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Following this principle, we develop DeciCAD , a domain-native harness for closed-loop CAD agents. DeciCAD represents task-relevant design transitions as semantic CAD actions, grounds these actions in a persistent CAD document, and returns structured execution feedback together with decision-oriented observations. We further develop a harness-grounded learning pipeline that reconstructs causally conditioned action supervision from successful and recovered interaction trajectories, initializes CAD action policies through supervised fine-tuning (SFT), and supports online reinforcement learning (RL) using policy-generated trajectories and geometry-grounded rewards. Figure 2 summarizes this execution and learning loop.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Across four CAD benchmarks, DeciCAD consistently produces more accurate final geometry than competitive CAD agents and a general-purpose coding harness, while reducing model-output tokens by 45–88% relative to the coding harness on text-to-CAD tasks. Observation ablations show that showing more CAD state does not always help: unfiltered state inflates the input context, and coarse feedback strips out what the agent needs in order to recover. With matched training settings, open-weight models trained in the DeciCAD decision space learn stronger long-horizon CAD action policies than the same models trained through code-level interaction.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Our contributions are summarized as follows:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We define the Harness-Induced CAD Decision Space and introduce the Semantic Decision Bottleneck as a design principle for CAD agent interfaces. We design DeciCAD , which combines semantic CAD actions, compact observations, structured feedback, and persistent object state.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We develop a harness-grounded policy-learning pipeline that reconstructs causally conditioned supervision from interaction trajectories, initializes policies through SFT, and supports geometry-grounded online RL.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Experiments across four benchmarks verify DeciCAD improves geometric accuracy, token efficiency, error recovery, and long-horizon policy learnability significantly.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Our work connects agent interaction interfaces, decision-preserving abstraction, and policy learning in interactive CAD environments. We review these directions through the common question of how an agent’s operating representation affects execution and learning.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Tool-augmented language models connect generation to executable operations ( Parisi et al. 2022 ; Karpas et al. 2022 ; Schick et al. 2023 ) , while API-Bank, Gorilla, and ToolLLM extend tool learning to executable dialogues and large API ecosystems ( Li et al. 2023 ; Patil et al. 2023 ; Qin et al. 2024 ) . ReAct interleaves reasoning, actions, and observations ( Yao et al. 2023 ) ; SWE-agent, WebArena, and OSWorld further show that interaction design affects behavior in stateful coding, web, and computer environments ( Yang et al. 2024 ; Zhou et al. 2024 ; Xie et al. 2024 ) . They establish the empirical importance of interfaces, but generally treat them as tool provision or runtime infrastructure. We instead study the harness as the joint action–state representation that defines the policy space presented to the model.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "This view is related to abstraction in sequential decision-making. MDP homomorphisms and state-abstraction theory characterize when compressed representations preserve transition, reward, value, or policy structure ( Ravindran and Barto 2003 ; Li et al. 2006 ; Abel et al. 2016 ; Abel et al. 2020 ) ; the Information Bottleneck similarly retains target-relevant information while suppressing irrelevant input dependence ( Tishby et al. 2000 ) . Classical abstractions operate within an already specified decision process. An LLM harness instead jointly defines model actions, visible observations, execution bindings, and feedback semantics. Our Harness-Induced Decision Space describes this transformation, and the Semantic Decision Bottleneck constrains its compression by decision preservation.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "CAD generation has been studied through construction sequences, executable programs, and interactive actions. DeepCAD and Fusion 360 Gallery represent structured modeling histories ( Wu et al. 2021 ; Willis et al. 2020 ) , while Text2CAD and CADmium learn parametric command sequences from language ( Khan et al. 2024 ; Govindarajan et al. 2026 ) . CAD-Coder systems generate executable CAD code ( Guan et al. 2025 ; Doris et al. 2025 ) , and CADFusion, CADSmith, and CADDesigner incorporate rendering, execution repair, or multi-agent feedback ( Wang et al. 2025 ; Barkley et al. 2026 ; Fan et al. 2025 ) . Code is expressive, but also makes program organization and API realization part of the model output.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Interactive systems instead place decisions in evolving design state. CAD-Assistant combines a Python interpreter with FreeCAD operations ( Mallis et al. 2024 ) ; ToolCAD trains tool-using CAD agents from demonstrations and online curriculum learning ( Gong et al. 2026 ) ; CADMate learns sequential assembly actions using geometric and physical rewards ( Chen et al. 2026 ) . Our contribution is complementary: under fixed models, tasks, and terminal geometry, we compare the decision spaces induced by domain-semantic actions and a general-purpose coding harness.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Tool policies commonly acquire initial capability from generated or curated demonstrations ( Schick et al. 2023 ; Li et al. 2023 ; Qin et al. 2024 ) . In a stateful environment, however, action validity depends on the preceding trajectory and feedback; imitation therefore encounters distribution shift when student-induced states depart from teacher trajectories ( Ross et al. 2011 ) . Online methods address this gap using execution outcomes on states visited by the learned policy ( Feng et al. 2025 ; Qian et al. 2025 ) , including curriculum reinforcement learning in CAD ( Gong et al. 2026 ) . We align causal supervision, student rollouts, and environment feedback within the same Harness-Induced Decision Space, enabling a controlled study of how representation affects both imitation and online learning.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The harness determines how the closed CAD loop is presented to the language model: whether the model writes general-purpose code or selects a semantic CAD action, which part of the current design is shown, and how execution failures are reported. We formalize this interaction, formulate the Semantic Decision Bottleneck, instantiate it in DeciCAD , and use the same representation for SFT and online RL.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We use g g to denote one concrete CAD task, which may contain a natural language instruction, optional initial state or reference image, and a final design criterion. At step t t , its internal state s t ∈ 𝒮 s_{t}\\in\\mathcal{S} includes the current document, feature structure, geometry, parameters, and dependencies; note that this is the CAD system’s internal configuration, rather than text shown to the LLM. An element u t ∈ 𝒰 u_{t}\\in\\mathcal{U} is a backend operation, and s t + 1 ∼ P ( ⋅ ∣ s t , u t ) s_{t+1}\\sim P(\\cdot\\mid s_{t},u_{t}) describes how the document changes after its execution. Task g g specifies an initial-state distribution μ g \\mu_{g} , a maximum number of interaction steps H H , and reward r g ​ ( s t , u t , s t + 1 ) r_{g}(s_{t},u_{t},s_{t+1}) . This process describes what the CAD system can execute. It does not yet describe what the language model is allowed to say or see.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "A language model does not directly issue an internal backend operation u t u_{t} , nor does it receive the full backend state s t s_{t} . A harness provides the model-facing interface between the two. We represent it as",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "whose components have direct operational meanings:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "𝒜 ℋ \\mathcal{A}_{\\mathcal{H}} is the set of admissible model-level actions exposed by the harness. In a coding harness, an action may be a Python program. In DeciCAD , it is a typed operation, such as Extrude(sketch=S3, distance=10mm) .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "β ℋ \\beta_{\\mathcal{H}} interprets the model output in the current CAD document and binds it to an executable backend operation.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "O ℋ O_{\\mathcal{H}} determines what the model receives after execution, including compact descriptions of success, failure, and affected design objects.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The harness thus translates between model outputs, backend operations, and model-visible execution evidence without replacing the CAD kernel.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Here, a t a_{t} is what the model emits, u t u_{t} is what the CAD backend executes, and y t + 1 y_{t+1} is what the model sees afterward. The model chooses its next action from the visible history",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "This contains the task specification and previous model actions and harness responses, but not the hidden backend state s t s_{t} . Read-only inspection is also represented as an action, keeping information gathering and geometry-changing operations in the same closed loop.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Combining backend execution and harness response gives the induced transition kernel",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We call the model-facing interaction defined by Eqs. ( 2 )–( 3 ) the Harness-Induced CAD Decision Space , comprising the actions, responses, and interaction histories exposed by the harness.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The distinction is important. A coding harness and DeciCAD may call the same CAD kernel yet induce different sequential prediction problems. The former requires choices about program structure, API calls, and error handling; the latter requires choices about CAD operations and their geometric parameters, with different evidence after each step.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The preceding formulation exposes two sources of unnecessary difficulty. On the output side, many syntactically different programs can realize the same CAD change. On the input side, the CAD backend contains much more information than each decision requires. A useful harness should compress both directions without removing a necessary operation or hiding a distinction that changes the correct next action. Figure 3 illustrates this trade-off.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Let V g , t ∗ ​ ( s ) V^{*}_{g,t}(s) be the best return achievable from backend state s s at step t t , and let Q g , t ∗ ​ ( s , u ) Q^{*}_{g,t}(s,u) be the return obtained by first executing backend operation u u and then acting optimally. A harness is action-sufficient if",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "for every task-reachable state. The harness need not expose every low-level CAD command under Eq. ( 4 ), only an action realizing an optimal next operation when needed.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "A harness response need not reveal the backend state, so one visible history may be consistent with several backend states, as in a partially observable decision process ( Kaelbling et al. 1998 ) . Define",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "as the backend states consistent with h t h_{t} . We call h t h_{t} reachable when this set is nonempty. For a backend state s s , let",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "These are the model actions optimal at s s . The harness is observation-sufficient if the states in Eq. ( 5 ) share an action from the sets in Eq. ( 6 ):",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The harness may map two backend states to the same visible history when the same next action is optimal in both; it must distinguish them when they require incompatible next actions. A generic “operation failed” message is therefore insufficient if different failures require different repairs.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "A harness that is both action-sufficient and observation-sufficient is decision-sufficient . Any selection from the intersection in Eq. ( 7 ) depends only on h t h_{t} and, by action sufficiency, is optimal at the true state; backward induction gives 𝔼 s 0 ∼ μ g ​ [ V g , 0 ∗ ​ ( s 0 ) ] \\mathbb{E}_{s_{0}\\sim\\mu_{g}}[V^{*}_{g,0}(s_{0})] for the resulting history-dependent policy. An inexpressible operation therefore violates action sufficiency, whereas a response merging states that require incompatible repairs violates observation sufficiency.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Action and observation sufficiency specify what a harness must preserve, but do not uniquely determine its model-facing representation. Among decision-sufficient interfaces, we prefer those that reduce unnecessary burden on both model output and input. We refer to this principle as the Semantic Decision Bottleneck : compressing action representations and visible context while retaining the distinctions required for correct action selection and error recovery. DeciCAD instantiates this principle through domain-specific action schemas, concise execution feedback, and targeted inspection operations that retrieve additional state only when needed. A formal preference relation over decision-sufficient harnesses is provided in the appendix.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "DeciCAD implements the preceding design principle through semantic actions, state-grounded execution, and decision-oriented responses. These three components correspond directly to 𝒜 ℋ \\mathcal{A}_{\\mathcal{H}} , β ℋ \\beta_{\\mathcal{H}} , and O ℋ O_{\\mathcal{H}} in Eq. ( 1 ).",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "where ω t \\omega_{t} identifies a typed CAD operation and 𝐱 t \\mathbf{x}_{t} contains its structured arguments. These actions express design intent such as sketch and constraint editing, parametric features, Boolean operations, transformations, inspection, and artifact persistence ( Willis et al. 2020 ; Wu et al. 2021 ; Mallis et al. 2024 ) . Using these transitions as the policy-action unit removes distinctions caused solely by program organization, variable naming, or API expansion, while typed parameters and state preconditions retain the information needed for execution.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The binding map β ℋ \\beta_{\\mathcal{H}} resolves each domain action against the CAD document that exists at that moment and invokes the corresponding backend transition. All accepted actions modify the same persistent document, and stable model-visible identifiers let later actions refer to previously created entities. If parsing, reference resolution, precondition checking, or backend execution fails, the harness keeps the document recoverable and reports the failure. Action semantics are thus grounded in actual CAD transitions rather than textual well-formedness alone.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "After executing a t a_{t} , DeciCAD returns y t + 1 = ( e t , o t + 1 ) , y_{t+1}=(e_{t},o_{t+1}), where e t e_{t} summarizes the execution consequence and o t + 1 o_{t+1} contains additional state information needed for subsequent decisions. The response indicates whether the action executed, which objects were modified, which postconditions hold, and where a failure occurred. When more information is needed, inspection actions retrieve object hierarchy, constraints, parameters, dependencies, local measurements, or terminal artifacts.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "A complete state dump repeatedly injects irrelevant context; overly generic feedback can instead map states requiring different recovery actions to the same observation. DeciCAD uses compact consequence-related evidence by default and exposes targeted inspection actions so that the policy acquires additional evidence only when the next decision requires it. Detailed action schemas, reference mechanisms, backend adaptation, and runtime isolation are provided in the appendix.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The resulting DeciCAD interaction loop is",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "which concretely instantiates Eq. ( 2 ).",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Execution and learning use the same CAD decision space. Teacher supervision, student rollouts, and environment optimization retain the same action semantics, persistent references, and feedback protocol. For each accepted teacher trajectory under harness ℋ \\mathcal{H} , we reconstruct the causal history h n , t h_{n,t} visible immediately before action a n , t a_{n,t} . The resulting pairs form 𝒟 SFT ℋ = { ( h n , t , a n , t ) } n , t \\mathcal{D}_{\\mathrm{SFT}}^{\\mathcal{H}}=\\{(h_{n,t},a_{n,t})\\}_{n,t} , and we optimize",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Later feedback, actions, and terminal evaluation never enter the input, preserving causal conditioning in sequential imitation ( Ross et al. 2011 ; Qin et al. 2024 ) . Recovered failures are retained because their error state, feedback, and corrective action provide genuine CAD recovery supervision.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Uniform decision sampling would overweight long trajectories, repeated inspection, and frequent operations. We therefore stratify causal decisions by task difficulty, design stage, preceding execution outcome, and target action type, preserving modeling, inspection, and recovery decisions under their original histories.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "SFT covers teacher-visited CAD states, whereas closed-loop execution reaches states induced by student actions. We therefore sample current-policy rollouts by the same harness and optimize groups containing evaluable terminal geometry. Geometry quality supplies the primary group-relative signal; execution and protocol evidence describe the trajectory but cannot make an all-failure group trainable. Reference-regularized Group Relative Policy Optimization (GRPO) with curriculum sampling instantiates this update ( Bengio et al. 2009 ; Shao et al. 2024 ; Qian et al. 2025 ; Gong et al. 2026 ) ; reward coefficients, sampling schedules, and optimizer settings are deferred to the appendix.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Our evaluation follows the methodological chain developed above. We ask whether a semantic CAD decision space preserves the capabilities required for complex modeling, whether its benefits are associated with lower task-irrelevant representation burden, and whether different harness-induced policy spaces exhibit different finite-data learnability and online improvement.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We evaluate harness-level capability, in increasing calibrated difficulty, on CADPrompt ( Alrashedy et al. 2025 ) , a hard subset of CADInstruct ( Lv and Bao 2025 ) , and two P3D-derived benchmarks: P3D-Text-to-3D from Text2CAD and the multimodal P3D-Assembly-3D from the Fusion 360 Gallery ( Khan et al. 2024 ; Willis et al. 2020 ) .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We assign each task a calibrated difficulty that combines semantic complexity, reference-mesh complexity, and description ambiguity, and divide each benchmark into seven equal-frequency quantiles Q ​ 1 Q1 – Q ​ 7 Q7 . Quantiles therefore express relative difficulty within a benchmark rather than the same absolute complexity across benchmarks. The full definition and the distribution of each benchmark are given in Appendix D.1 and Figure 10 .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Using identical task inputs and Claude Opus 4.7 ( Anthropic 2026b ) , DeciCAD is compared with zero-shot CadQuery generation, CADSmith, CAD-Assistant, and Claude Code ( Anthropic 2026a ) . We study policy learning on the standard train–test split of Text2CAD/DeepCAD ( Khan et al. 2024 ; Wu et al. 2021 ) , fixing Qwen3.5-9B ( Qwen Team 2026 ) as the student and Claude Sonnet 4.6 ( Anthropic 2026c ) as the teacher in both the Coding and DeciCAD decision spaces. Generated and reference meshes are normalized, center-aligned, and rigidly registered.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We report Chamfer Distance (CD), surface F1, volumetric Intersection over Union (IoU), and Geometry Availability. F1, IoU, and CD are computed over valid assets; Geometry Availability measures the percentage of tasks entering geometric evaluation. Harness-level and ablation tables scale CD, F1, and IoU by 100, whereas policy-learning tables report their original values. These point-set and occupancy-based measures follow established 3D reconstruction evaluation practice ( Fan et al. 2017 ; Mescheder et al. 2019 ) . To measure representation cost, we report model-visible input and generated output tokens averaged per task; provider-specific cache statistics are excluded. Across tables, best results are bold and second best are underlined. Policy learning for both DeciCAD and the coding harness used eight NVIDIA H800 GPUs; complete configurations are provided in the appendix.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Table 1 compares the same frontier model under different CAD representations and interaction mechanisms. DeciCAD matches or exceeds the strongest coding harness in geometric fidelity while producing evaluable assets across all four benchmarks.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "To check that this advantage is not driven only by easy tasks, we divide each benchmark into seven calibrated difficulty quantiles and report end-to-end F1, which assigns zero to missing or invalid outputs (Figure 4 ). DeciCAD and Claude Code have similar slopes on CADPrompt and both decline slowly on P3D-Assembly-3D; DeciCAD is flatter on P3D-Text-to-3D, indicating a more stable advantage under complex textual constraints. Across the individual cells, DeciCAD leads 14 of the 28 dataset–quantile combinations and exceeds Claude Code at the hardest quantile of every benchmark, where missing operations and unresolved state ambiguity would be most visible. Semantic CAD actions therefore preserve the transitions needed for complex modeling while supporting more reliable final geometry. The full quantile heatmaps and difficulty distributions are provided in the appendix.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We test both sides of the Semantic Decision Bottleneck: output scaling characterizes action representation, while observation ablations test whether compression preserves decision-relevant state.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Token totals in Table 1 depend on trajectory length, feedback history, and caching, and therefore do not by themselves identify the source of the output reduction. Figure 5 compares interaction turns with cumulative output at the task level. Claude Code exhibits consistently positive log-linear slopes of approximately 0.022 0.022 – 0.069 0.069 , whereas DeciCAD ’s slopes range from approximately − 0.001 -0.001 to 0.015 0.015 : its output remains comparatively stable as trajectories lengthen. The reduction does not arise from early termination. DeciCAD trajectories may still be long, but each prediction contains an action and its arguments rather than an expanded implementation, which identifies action representation, rather than shortened reasoning, as the source of the efficiency gain.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Table 2 isolates observation sufficiency on P3D-Text-to-3D. More raw state degrades geometry despite increasing context, whereas removing active inspection or coarsening failure semantics hides distinctions needed by subsequent actions. Effective compression therefore retains decision-identifying evidence rather than simply minimizing or maximizing observation volume. Together, both sides support a decision-sufficient space with lower representation burden.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Frontier models can operate both harnesses, but the corresponding policies need not be equally learnable by a smaller student. We reconstruct causal decision supervision from harness-matched teacher trajectories and compare Qwen3.5-9B policies on the complete Text2CAD test set.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Table 3 compares Base and SFT policies within each induced decision space.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "SFT substantially improves the coding policy, showing that the student can acquire program construction, execution, and repair behavior. Under matched supervision, however, the DeciCAD policy produces more evaluable assets and better geometry across all reported metrics. Coding supervision must resolve geometric intent together with program structure, API choice, and implementation form, whereas DeciCAD binds supervision directly to state-conditioned domain actions. The result supports harness-dependent learnability under finite supervision.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Starting from each SFT policy, we sample student rollouts in its own induced decision space, and apply reference-regularized GRPO with geometry-grounded rewards. The student model, task exposure, samples per task, and evaluator are matched. Improvement is judged by the frozen unseen-task evaluation rather than training reward, trajectory length, or token consumption.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Table 4 shows that online feedback improves DeciCAD across availability and all three geometric metrics, whereas the coding policy does not realize the same gains under the matched inference budget, supporting harness-dependent online learnability.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "To compare the learning paths, we map the external effects of both harnesses into six shared categories: Construct, Inspect, Recover, Invalid Reference, No Progress, and Persist, and report events per 100 decisions (Figure 6 ). Coding SFT increases Inspect from 51.6 to 72.1 events per 100 decisions, while Construct and Recover both decline. GRPO restores part of the construction and recovery behavior, but No Progress rises from 18.9 to 30.4, showing that more repair attempts do not consistently produce geometric progress. In DeciCAD , SFT reduces Invalid Reference and No Progress from 18.0 and 33.4 to 4.6 and 21.8, and GRPO further reduces them to 2.1 and 8.8 while retaining dense construction behavior. Coding supervision therefore mainly changes execution, inspection, and repair behavior, whereas DeciCAD learning more directly changes CAD state transitions and suppresses interactions that fail to advance the model.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We formalized Harness-Induced CAD Decision Spaces and instantiated the Semantic Decision Bottleneck in DeciCAD through semantic actions, persistent state, and decision-oriented feedback. Across execution, SFT, and online RL, DeciCAD preserves complex modeling capability while reducing irrelevant burden and enabling more learnable and optimizable policies. Together, these findings show that a harness determines both the CAD operations a model can execute and the distinctions its policy must learn, while environment feedback improves that policy within the same decision representation. This establishes harness design as central to CAD agents. Our study has limitations. The harness comparison uses one CAD backend and one frontier model, policy learning uses one student model on one dataset, and mesh-based metrics do not capture editability, constraint satisfaction, or feature-tree validity. Extending the comparison to further backends, models, and CAD-native correctness measures is left to future work.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "This appendix complements the main text with the theoretical, implementation, experimental, and system details needed to connect the Harness-Induced CAD Decision Space to its realization in DeciCAD . The remainder of this document is organized as follows:",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Appendix B completes the theoretical analysis of decision sufficiency and the Semantic Decision Bottleneck, including the conditions under which action and observation compression preserve optimal CAD decisions.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Appendix C explains how DeciCAD instantiates these conditions through semantic CAD actions, state grounding, compact execution feedback, and active hierarchical inspection.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Appendix D provides the complete evaluation protocol and additional evidence for harness comparison, causal SFT, and geometry-grounded online RL.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Appendix E presents DeciCAD as an interactive Agentic CAD system, covering its user workflow, multi-agent control plane, backend SDK, the official FreeCAD integration, and the supported backends.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Together, these appendices connect the formal decision-space argument to its software realization and to the empirical evidence reported in the main text.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The main text models a harness as the decision interface between a language model and a CAD backend. It characterizes decision sufficiency through the actions that the interface can express and the state distinctions retained by its observations, connecting partial observability with value-preserving state abstraction ( Kaelbling et al. 1998 ; Ravindran and Barto 2003 ; Li et al. 2006 ; Abel et al. 2016 ) . This section completes the corresponding theoretical argument and then formalizes the compression preference underlying the Semantic Decision Bottleneck. Figure 7 summarizes the resulting criterion: interface compression is desirable only within the decision-sufficient region.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We first restate the objects needed for the analysis. A finite-horizon CAD task g g specifies an initial-state distribution μ g \\mu_{g} , a horizon H H , and a reward r g ​ ( s t , u t , s t + 1 ) r_{g}(s_{t},u_{t},s_{t+1}) . The CAD backend has state s t ∈ 𝒮 s_{t}\\in\\mathcal{S} , admits backend operations u t ∈ 𝒰 u_{t}\\in\\mathcal{U} , and evolves according to the standard controlled-transition formalism ( Sutton and Barto 2018 ) :",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "A state is task-reachable if it can be reached from s 0 ∼ μ g s_{0}\\sim\\mu_{g} within H H steps by operations admissible for the task.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The model does not act on this backend process directly. A harness",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "exposes model actions a t ∈ 𝒜 ℋ a_{t}\\in\\mathcal{A}_{\\mathcal{H}} , binds them to backend operations through β ℋ \\beta_{\\mathcal{H}} , and returns model-visible responses through O ℋ O_{\\mathcal{H}} . One closed-loop step is",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Let V g , t ∗ ​ ( s ) V^{*}_{g,t}(s) be the optimal return available from backend state s s at step t t , and Q g , t ∗ ​ ( s , u ) Q^{*}_{g,t}(s,u) the return from first applying backend operation u u and then acting optimally. The harness is action-sufficient when",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "at every task-reachable state. This condition requires the model-facing action space to retain an executable realization of an optimal backend operation, not every operation or every surface form.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Because s t s_{t} is hidden from the policy, define the states consistent with a visible history as",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "A history is reachable when this set is nonempty. The model actions that are optimal at a particular backend state are",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We assume that this set is nonempty at every task-reachable state. The harness is observation-sufficient when",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "for every reachable h t h_{t} and t < H t<H . Thus, hidden states may share a visible representation precisely when they retain a common optimal next action. A harness satisfying Eqs. ( 12 ) and ( 15 ) is decision-sufficient .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "If a harness ℋ \\mathcal{H} is action-sufficient at every task-reachable state and observation-sufficient at every reachable history, then there exists a policy π ℋ ∗ \\pi^{*}_{\\mathcal{H}} depending only on the model-visible history h t h_{t} that attains V g , t ∗ ​ ( s t ) V^{*}_{g,t}(s_{t}) at every reachable decision point. Its expected return from the initial-state distribution is therefore",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Thus, the harness preserves the optimal return available through the CAD backend.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "For any reachable history h t h_{t} , Eq. ( 15 ) permits selecting an action a ∗ ​ ( h t ) a^{*}(h_{t}) from the common intersection. The true backend state s t s_{t} is necessarily an element of ℬ ℋ ​ ( h t ) \\mathcal{B}_{\\mathcal{H}}(h_{t}) ; hence a ∗ ​ ( h t ) a^{*}(h_{t}) is optimal for every backend state consistent with what the model has observed. Action sufficiency in Eq. ( 12 ) then ensures that the bound operation β ℋ ​ ( a ∗ ​ ( h t ) , s t ) \\beta_{\\mathcal{H}}(a^{*}(h_{t}),s_{t}) attains V g , t ∗ ​ ( s t ) V^{*}_{g,t}(s_{t}) . Backward induction from the terminal step shows that the history-dependent policy defined by a ∗ ​ ( h t ) a^{*}(h_{t}) attains the optimal continuation value at every reachable decision point. Taking the expectation over s 0 ∼ μ g s_{0}\\sim\\mu_{g} gives the expected value stated above. ∎",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The theorem clarifies what a model-facing CAD interface must retain. The model does not require direct access to the complete backend state or to every low-level command. It requires an executable representation of an optimal operation whenever one is needed, together with observations that distinguish backend states whenever those states demand incompatible next actions.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The two conditions also describe distinct failure boundaries. If action sufficiency fails at a reachable state, no action exposed by the harness can attain V g , t ∗ ​ ( s ) V^{*}_{g,t}(s) ; increasing model capacity or adding policy data cannot recover an operation absent from the interface. If observation sufficiency fails at a reachable history, the states consistent with that history share no optimal model action. Any policy conditioned only on the visible history must therefore be suboptimal for at least one of them. The resulting expected loss depends on how often the aliased states occur and on the value gap between the chosen and optimal operations.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Missing actions and state aliasing consequently constrain different sides of the harness-induced decision space. The former limits what the policy can execute; the latter limits what it can distinguish. These boundaries determine which action and observation details may be compressed while preserving the optimal CAD policy.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Decision sufficiency specifies what a harness must preserve, but does not uniquely determine how those capabilities are represented to the model. Two harnesses may connect to the same CAD backend and support the same task-level operations while exposing different numbers of implementation choices, different state granularity, and different forms of execution feedback. The Semantic Decision Bottleneck compares these decision-sufficient representations, adapting the compression principle of the information bottleneck to a model-facing action–observation interface ( Tishby et al. 2000 ) .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "We call a transformation from harness ℋ 2 \\mathcal{H}_{2} to harness ℋ 1 \\mathcal{H}_{1} a decision-preserving compression when it satisfies two conditions. On the action side, model actions may be merged only when, at every task-reachable state where they are admissible, their bound backend operations induce the same distribution over next states and the same task reward for every transition of nonzero probability. The compressed harness must also retain an executable representation of every consequence needed to attain Eq. ( 12 ). This removes differences in syntax or implementation without changing a decision-relevant CAD consequence. On the observation side, visible histories may be identified only when all backend states consistent with any of those histories still share an optimal action in the compressed harness. This is precisely the criterion in Eq. ( 15 ), evaluated after the histories are identified. The action condition retains an optimal executable consequence at every task-reachable state, while the observation condition retains a common optimal action for every compressed history. They therefore preserve action and observation sufficiency, respectively.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "For decision-sufficient harnesses, we write",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "if ℋ 1 \\mathcal{H}_{1} can be obtained from ℋ 2 \\mathcal{H}_{2} through a decision-preserving compression. The relation expresses a representation preference under fixed decision capability: ℋ 1 \\mathcal{H}_{1} does not require the model to distinguish action implementations or visible states that are irrelevant to optimal CAD decisions in ℋ 2 \\mathcal{H}_{2} .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Decision-preserving compressions can be applied successively: each step retains the action consequences and state distinctions required by Eqs. ( 12 ) and ( 15 ). The relation therefore supports comparing harnesses by removable semantic structure without selecting a particular action syntax or observation format as canonical.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The Semantic Decision Bottleneck is the decision-sufficient frontier of this relation. A harness lies on the frontier when every further semantic compression violates at least one sufficiency condition. Further action compression crosses this frontier when it removes the only representation of an operation required by Eq. ( 12 ). Further observation compression crosses it when the common-action intersection becomes empty, aliasing states that demand incompatible next actions. The relation need not select a unique frontier harness: different action vocabularies or observation organizations may be incomparable while preserving the same optimal CAD capability. The bottleneck is therefore neither a unique interface nor the shortest one in characters or tokens; it is the frontier of semantic compression subject to preserving the optimal decision policy.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Equation ( 16 ) concerns semantic redundancy rather than token count itself. In a language-model interface, redundant action implementations and state descriptions often increase model input or output, so token use provides an observable measure of representation burden. Nevertheless, semantic compression and token compression are not equivalent. We therefore evaluate a harness jointly by task performance, observation ablations, and token consumption. Nor does the relation by itself guarantee easier optimization for every finite model; the matched SFT and online RL experiments in the main text test whether the induced representation improves policy learning in practice.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "A natural direction for future work is to treat harness construction as an explicit multi-objective optimization problem. Let L in L_{\\mathrm{in}} and L out L_{\\mathrm{out}} denote the numbers of model-facing input and output tokens, respectively, and let N inspect N_{\\mathrm{inspect}} denote the number of targeted inspection operations. One may seek a Pareto-efficient harness according to",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "where ℌ suff \\mathfrak{H}_{\\mathrm{suff}} is the set of harnesses satisfying both action and observation sufficiency, and the expectations are taken over the task distribution and policy-induced trajectories. Different deployment settings may scalarize these objectives using different weights: for example, interactive systems may penalize inspection latency more heavily, whereas resource-constrained deployments may prioritize context and generation length. More broadly, the harness and policy could be optimized jointly, subject to semantic sufficiency constraints. We leave automated exploration of this harness–policy Pareto frontier to future work.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The main text characterizes a decision-sufficient CAD harness through action and observation sufficiency. This section follows an actual modeling decision through DeciCAD to show how these conditions are instantiated. The model first expresses geometric intent in a semantic action space, the harness grounds that intent in the current CAD state, and the environment returns the execution evidence needed for the next decision. Together, these mechanisms determine the CAD policies that the model can learn and execute.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "A modeling policy first requires an action vocabulary capable of expressing design intent. DeciCAD represents each model output as a CAD action with geometric arguments. The vocabulary covers documents and artifacts, sketches and constraints, solid features, Booleans and patterns, edge treatments, object placement, assembly, and state inspection. Each action exposes the variables that determine the CAD state transition. An extrusion, for example, specifies its profile, material mode, extent, and direction, while object resolution and CAD API invocation remain within the harness. This feature-oriented organization follows structured construction histories used in parametric CAD corpora while exposing them as executable interaction steps ( Wu et al. 2021 ; Willis et al. 2020 ; Khan et al. 2024 ) .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The following abstract interface summarizes the model-visible action space. Ref<T> denotes a stable environment-generated object reference that subsequent actions can reuse; the expression after -> describes the geometric postcondition returned after execution.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "This representation identifies behaviorally equivalent choices of variable names, control flow, and API syntax as the same action, while retaining the parameters that determine geometric outcome. Stable references compose these actions: a sketch can produce a solid feature; that solid can participate in Booleans, transformations, and edge treatments; and parts can enter an assembly and receive constraints. Each action describes a local geometric transition, while an action sequence incrementally constructs the full design. For the task distribution considered in this work, this compositional closure allows long-horizon modeling policies to remain within one semantic action space, instantiating action sufficiency in the main text.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Semantic actions specify what the model can select; state grounding determines what a selection means in the current design. A point, direction, or rotation has a unique geometric meaning only relative to an explicit coordinate frame. DeciCAD therefore interprets all action arguments under a shared spatial contract. Linear quantities use millimeters and angular quantities use degrees. Documents use a right-handed world frame with (+X) right, (+Y) back, and (+Z) up, and rotations follow the right-hand rule. Two-dimensional geometry lies in the right-handed local frame of its sketch, while solid placement explicitly selects world or parent coordinates. System instructions state these rules, typed arguments mark the space of each value, and the execution layer reports authoritative frames read from the actual CAD placement.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The spatial contract fixes the meaning of arguments, while object references fix their targets. Documents, entities, and reusable topological elements have stable identifiers returned by creation or inspection and reused unchanged in later actions. The harness resolves these references in the current document, executes the native CAD operation, and verifies action-specific postconditions. A valid result is committed to the persistent document so that later actions operate on the resulting state; a failed result preserves the previous state or marks the execution outcome as unknown.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Action grounding is therefore more than a lookup from a tool name to a backend function. The shared spatial contract determines parameter semantics, stable references determine the operated objects, and transactions with postcondition checks determine whether an action actually took effect. Every successful action in the model history corresponds to a verified transition in the persistent CAD document. Together, these constraints implement the binding map defined in the main text.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "After an action executes, the model must continue from the resulting environment state. Expanding the complete CAD document repeatedly introduces objects and properties irrelevant to the current decision, whereas reporting only call-level success cannot support geometric judgment or recovery. DeciCAD separates these needs: passive execution feedback describes the state transition that just occurred, while active hierarchical inspection retrieves local state needed by the next decision.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The harness returns success or failure after every action. A success response contains affected objects, action-specific postconditions, and the document generation. A failure response contains an error category, the relevant argument or object, and a recovery direction. Invalid input, missing references, geometric failure, conflict, timeout, and unknown outcome remain distinct because they call for different next actions.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "For example, a successful extrusion returns its generated feature, owning body, and solid count; invalid arguments identify the responsible field; and an unknown outcome directs the model to inspect the document before acting again. These distinctions determine whether the policy should continue modeling, revise an argument, or first verify state. Passive feedback therefore retains causal evidence for local continuation and recovery while keeping each step compact.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Passive feedback focuses on the action just completed, but later decisions may depend on a broader portion of the design. An edge treatment may require locating topological edges with particular geometry, while an assembly mate may require checking component placement and connectivity. For these cases, InspectList first discovers relevant state. The model selects a bounded collection—such as entities, children, topology, sketch geometry, constraints, dependencies, or assembly interference—and receives stable references with compact summaries through filtering and pagination. InspectGet then reads the canonical detail of one precise reference, including identity, placement or local frame, bounding box, shape or constraint summary, relations, and validity.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The two inspection levels answer, respectively, which objects are relevant to the current decision and what the authoritative state of one target is. A policy can first list the topological edges of a solid, select candidates from their summaries, retrieve exact geometric properties, and reuse the same reference in a fillet action. Separating discovery from retrieval bounds each observation while allowing the model to recover state distinctions that change the next action. Passive feedback and active inspection thereby instantiate observation sufficiency in the main text.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Across this loop, DeciCAD coordinates compression of model-facing actions and observations. Semantic actions merge behaviorally equivalent implementation forms, while the spatial contract, stable references, and execution verification ensure that the compressed actions still denote well-defined CAD transitions. Passive feedback omits the complete internal state, and active inspection restores local distinctions when a decision requires them. Compression therefore remains constrained by action and observation sufficiency.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Together, these mechanisms instantiate the Semantic Decision Bottleneck from the main text. The model generates CAD decisions rather than their expanded implementations and observes state evidence supporting the next decision rather than the full internal representation of the CAD system. Coordinating actions, grounding, and observations in the same closed loop reduces representation burden without removing the decision paths required for task completion and error recovery.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "In the concrete code organization, these mechanisms are separated into three connected components. The harness runtime organizes the decision loop across model invocation, action execution, and feedback. An interface-contract layer defines semantic actions, geometric representations, and execution results. A backend execution layer binds those contracts to native operations in a specific CAD system. This organization allows the interaction policy, the model-visible interface, and CAD execution logic to evolve independently. A new CAD backend implements the same action and feedback contracts while preserving the model-facing decision space.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "This section completes the evaluation protocol used in the main text and further analyzes how the harness affects CAD capability, interaction representation, and policy learning. The main text reports aggregate geometry results, difficulty trends, output scaling, observation ablations, policy performance, and learned behavior. Here we provide the protocols and evidence not shown in the main text: difficulty calibration and per-quantile geometry, the geometry–context trade-off, qualitative assets, supervision construction, online-RL design, and a per-task trajectory example. All analyses retain the frozen tasks, models, and evaluator from the main experiments.",
+   "zh": "本节补充主文所使用的评估协议，并进一步分析测试框架如何影响CAD能力、交互表示与策略学习。 主文报告了总体几何结果、难度趋势、输出规模、观测消融、策略性能以及学到的行为。 我们在此提供主文未展示的协议与证据：难度校准与分位数几何、几何与上下文的权衡、定性素材、监督构建、在线强化学习设计，以及一个逐任务轨迹示例。 所有分析均沿用主实验中冻结的任务、模型与评估器。",
+   "sents": [
+    {
+     "en": "This section completes the evaluation protocol used in the main text and further analyzes how the harness affects CAD capability, interaction representation, and policy learning.",
+     "zh": "本节补充主文所使用的评估协议，并进一步分析测试框架如何影响CAD能力、交互表示与策略学习。"
+    },
+    {
+     "en": "The main text reports aggregate geometry results, difficulty trends, output scaling, observation ablations, policy performance, and learned behavior.",
+     "zh": "主文报告了总体几何结果、难度趋势、输出规模、观测消融、策略性能以及学到的行为。"
+    },
+    {
+     "en": "Here we provide the protocols and evidence not shown in the main text: difficulty calibration and per-quantile geometry, the geometry–context trade-off, qualitative assets, supervision construction, online-RL design, and a per-task trajectory example.",
+     "zh": "我们在此提供主文未展示的协议与证据：难度校准与分位数几何、几何与上下文的权衡、定性素材、监督构建、在线强化学习设计，以及一个逐任务轨迹示例。"
+    },
+    {
+     "en": "All analyses retain the frozen tasks, models, and evaluator from the main experiments.",
+     "zh": "所有分析均沿用主实验中冻结的任务、模型与评估器。"
+    }
+   ]
+  },
+  {
+   "en": "We first specify the common benchmarks, baselines, difficulty calibration, geometry evaluator, and policy-learning protocol underlying the subsequent analyses.",
+   "zh": "我们首先给出后续分析所依据的通用基准、基线方法、难度校准、几何评估器以及策略学习协议。",
+   "sents": null
+  },
+  {
+   "en": "The harness-level evaluation covers four CAD settings. CADPrompt uses its complete evaluation set. We manually reviewed CADInstruct and P3D-Text-to-3D and fixed their most challenging subsets before running any method. P3D-Assembly-3D comprises multimodal assembly tasks that provide both textual requirements and target images. Together, the benchmarks cover parametric part modeling, complex text-conditioned geometry, and multi-component assembly ( Alrashedy et al. 2025 ; Lv and Bao 2025 ; Khan et al. 2024 ; Willis et al. 2020 ) .",
+   "zh": "智能体框架层面的评估涵盖四种 CAD 设定。 CADPrompt 使用其完整的评估集。 在运行任何方法之前，我们人工审查了 CADInstruct 和 P3D-Text-to-3D，并修正了它们最具挑战性的子集。 P3D-Assembly-3D 包含同时提供文本需求和目标图像的多模态装配任务。 这些基准测试共同覆盖了参数化零件建模、复杂文本条件几何以及多组件装配 ( Alrashedy et al. 2025 ; Lv and Bao 2025 ; Khan et al. 2024 ; Willis et al. 2020 ) 。",
+   "sents": [
+    {
+     "en": "The harness-level evaluation covers four CAD settings.",
+     "zh": "智能体框架层面的评估涵盖四种 CAD 设定。"
+    },
+    {
+     "en": "CADPrompt uses its complete evaluation set.",
+     "zh": "CADPrompt 使用其完整的评估集。"
+    },
+    {
+     "en": "We manually reviewed CADInstruct and P3D-Text-to-3D and fixed their most challenging subsets before running any method.",
+     "zh": "在运行任何方法之前，我们人工审查了 CADInstruct 和 P3D-Text-to-3D，并修正了它们最具挑战性的子集。"
+    },
+    {
+     "en": "P3D-Assembly-3D comprises multimodal assembly tasks that provide both textual requirements and target images.",
+     "zh": "P3D-Assembly-3D 包含同时提供文本需求和目标图像的多模态装配任务。"
+    },
+    {
+     "en": "Together, the benchmarks cover parametric part modeling, complex text-conditioned geometry, and multi-component assembly ( Alrashedy et al. 2025 ; Lv and Bao 2025 ; Khan et al. 2024 ; Willis et al. 2020 ) .",
+     "zh": "这些基准测试共同覆盖了参数化零件建模、复杂文本条件几何以及多组件装配 ( Alrashedy et al. 2025 ; Lv and Bao 2025 ; Khan et al. 2024 ; Willis et al. 2020 ) 。"
+    }
+   ]
+  },
+  {
+   "en": "Table 5 summarizes the input modality and task type of each benchmark. Together they span text-conditioned part modeling and multimodal assembly with progressively richer geometric and relational requirements.",
+   "zh": "表 5 总结了每个基准测试的输入模态和任务类型。 它们共同涵盖了文本条件驱动的部件建模以及多模态装配，其几何和关系要求逐步变得更加丰富。",
+   "sents": [
+    {
+     "en": "Table 5 summarizes the input modality and task type of each benchmark.",
+     "zh": "表 5 总结了每个基准测试的输入模态和任务类型。"
+    },
+    {
+     "en": "Together they span text-conditioned part modeling and multimodal assembly with progressively richer geometric and relational requirements.",
+     "zh": "它们共同涵盖了文本条件驱动的部件建模以及多模态装配，其几何和关系要求逐步变得更加丰富。"
+    }
+   ]
+  },
+  {
+   "en": "We compare zero-shot CadQuery, CADSmith, CAD-Assistant, Claude Code, and DeciCAD . Zero-shot emits a complete CadQuery program in one response. CADSmith coordinates planning, program generation, and verification across multiple agents. CAD-Assistant iteratively revises a design through a Python interpreter and external CAD operations. Claude Code provides a general coding harness for CadQuery generation, execution, and repair. DeciCAD instead exposes semantic CAD actions and object-level environment feedback ( Mallis et al. 2024 ; Barkley et al. 2026 ; Anthropic 2026a ) . Harness-level experiments use Claude Opus 4.7, identical task inputs and geometry evaluation, and only the system instructions required by each interface ( Anthropic 2026b ) .",
+   "zh": "我们比较了零样本的 CadQuery、CADSmith、CAD-Assistant、Claude Code 和 DeciCAD。 零样本方式在单次响应中生成完整的 CadQuery 程序。 CADSmith 通过多个智能体协调规划、程序生成与验证。 CAD-Assistant 通过 Python 解释器和外部 CAD 操作迭代地修改设计。 Claude Code 提供了一个用于 CadQuery 生成、执行和修复的通用编程框架。 DeciCAD 则暴露语义化的 CAD 操作和对象级的环境反馈（Mallis et al. 2024；Barkley et al. 2026；Anthropic 2026a）。 框架层面的实验使用 Claude Opus 4.7、完全相同的任务输入与几何评估，以及每种接口所需的系统指令（Anthropic 2026b）。",
+   "sents": [
+    {
+     "en": "We compare zero-shot CadQuery, CADSmith, CAD-Assistant, Claude Code, and DeciCAD .",
+     "zh": "我们比较了零样本的 CadQuery、CADSmith、CAD-Assistant、Claude Code 和 DeciCAD。"
+    },
+    {
+     "en": "Zero-shot emits a complete CadQuery program in one response.",
+     "zh": "零样本方式在单次响应中生成完整的 CadQuery 程序。"
+    },
+    {
+     "en": "CADSmith coordinates planning, program generation, and verification across multiple agents.",
+     "zh": "CADSmith 通过多个智能体协调规划、程序生成与验证。"
+    },
+    {
+     "en": "CAD-Assistant iteratively revises a design through a Python interpreter and external CAD operations.",
+     "zh": "CAD-Assistant 通过 Python 解释器和外部 CAD 操作迭代地修改设计。"
+    },
+    {
+     "en": "Claude Code provides a general coding harness for CadQuery generation, execution, and repair.",
+     "zh": "Claude Code 提供了一个用于 CadQuery 生成、执行和修复的通用编程框架。"
+    },
+    {
+     "en": "DeciCAD instead exposes semantic CAD actions and object-level environment feedback ( Mallis et al. 2024 ; Barkley et al. 2026 ; Anthropic 2026a ) .",
+     "zh": "DeciCAD 则暴露语义化的 CAD 操作和对象级的环境反馈（Mallis et al. 2024；Barkley et al. 2026；Anthropic 2026a）。"
+    },
+    {
+     "en": "Harness-level experiments use Claude Opus 4.7, identical task inputs and geometry evaluation, and only the system instructions required by each interface ( Anthropic 2026b ) .",
+     "zh": "框架层面的实验使用 Claude Opus 4.7、完全相同的任务输入与几何评估，以及每种接口所需的系统指令（Anthropic 2026b）。"
+    }
+   ]
+  },
+  {
+   "en": "Aggregate means alone do not locate a method’s boundary on complex tasks. For task x x , let s sem ​ ( x ) s_{\\mathrm{sem}}(x) denote semantic complexity, s mesh ​ ( x ) s_{\\mathrm{mesh}}(x) reference-mesh complexity, and a ⁡ ( x ) a(x) description ambiguity. We first define geometric complexity and then combine it with ambiguity:",
+   "zh": "仅凭聚合均值无法在复杂任务上定位方法的边界。 对于任务 x x ，令 s sem ​ ( x ) s_{\\mathrm{sem}}(x) 表示语义复杂度，s mesh ​ ( x ) s_{\\mathrm{mesh}}(x) 表示参考网格复杂度，a ⁡ ( x ) a(x) 表示描述歧义度。 我们首先定义几何复杂度，然后将其与歧义度相结合：",
+   "sents": [
+    {
+     "en": "Aggregate means alone do not locate a method’s boundary on complex tasks.",
+     "zh": "仅凭聚合均值无法在复杂任务上定位方法的边界。"
+    },
+    {
+     "en": "For task x x , let s sem ​ ( x ) s_{\\mathrm{sem}}(x) denote semantic complexity, s mesh ​ ( x ) s_{\\mathrm{mesh}}(x) reference-mesh complexity, and a ⁡ ( x ) a(x) description ambiguity.",
+     "zh": "对于任务 x x ，令 s sem ​ ( x ) s_{\\mathrm{sem}}(x) 表示语义复杂度，s mesh ​ ( x ) s_{\\mathrm{mesh}}(x) 表示参考网格复杂度，a ⁡ ( x ) a(x) 表示描述歧义度。"
+    },
+    {
+     "en": "We first define geometric complexity and then combine it with ambiguity:",
+     "zh": "我们首先定义几何复杂度，然后将其与歧义度相结合："
+    }
+   ]
+  },
+  {
+   "en": "The coefficients are fixed across benchmarks. The interaction term assigns higher difficulty when complex geometry is also described ambiguously. We compute d ⁡ ( x ) d(x) by the same rule for every sample and form seven equal-frequency quantiles Q ​ 1 Q1 – Q ​ 7 Q7 within each dataset. Quantiles thus represent relative difficulty within a benchmark rather than identical absolute complexity across benchmarks.",
+   "zh": "各系数在所有基准中保持固定。 当复杂几何同时被模糊描述时，交互项会赋予更高的难度。 我们对每个样本按同一规则计算 d ⁡ ( x ) d(x)，并在每个数据集内构成七个等频分位数 Q ​ 1 Q1 – Q ​ 7 Q7。 因此，分位数表示的是基准内部的相对难度，而非跨基准相同的绝对复杂度。",
+   "sents": [
+    {
+     "en": "The coefficients are fixed across benchmarks.",
+     "zh": "各系数在所有基准中保持固定。"
+    },
+    {
+     "en": "The interaction term assigns higher difficulty when complex geometry is also described ambiguously.",
+     "zh": "当复杂几何同时被模糊描述时，交互项会赋予更高的难度。"
+    },
+    {
+     "en": "We compute d ⁡ ( x ) d(x) by the same rule for every sample and form seven equal-frequency quantiles Q ​ 1 Q1 – Q ​ 7 Q7 within each dataset.",
+     "zh": "我们对每个样本按同一规则计算 d ⁡ ( x ) d(x)，并在每个数据集内构成七个等频分位数 Q ​ 1 Q1 – Q ​ 7 Q7。"
+    },
+    {
+     "en": "Quantiles thus represent relative difficulty within a benchmark rather than identical absolute complexity across benchmarks.",
+     "zh": "因此，分位数表示的是基准内部的相对难度，而非跨基准相同的绝对复杂度。"
+    }
+   ]
+  },
+  {
+   "en": "Generated and reference assets are converted to a common mesh representation, scale-normalized, center-aligned, and rigidly aligned by ICP. Chamfer Distance (CD) and surface F1 use 10,000 10{,}000 uniformly sampled surface points per asset; the F1 nearest-neighbor threshold and IoU voxel resolution are both 0.01 0.01 . Geometry Availability is the fraction of tasks producing a nonempty, parseable asset that enters geometry evaluation. F1, IoU, and CD are computed over those valid assets. For the difficulty-stratified Figures 8 and 4 , we additionally report end-to-end F1: missing, unparsable, or invalid outputs are assigned F1=0. Availability and conditional geometry quality are kept separate rather than collapsed into a single success score. The surface-distance and occupancy measures follow established point-set and implicit-geometry evaluation practice ( Fan et al. 2017 ; Mescheder et al. 2019 ) .",
+   "zh": "生成的资产和参考资产会被转换为统一的网格表示，进行尺度归一化、中心对齐，并通过 ICP 进行刚性对齐。 倒角距离（CD）和表面 F1 对每个资产使用 10,000 个均匀采样的表面点；F1 的最近邻阈值和 IoU 的体素分辨率均为 0.01。 几何可用性是指产生非空且可解析、并进入几何评估的资产的任务所占的比例。 F1、IoU 和 CD 在这些有效资产上计算。 对于按难度分层的图 8 和图 4，我们额外报告端到端 F1：缺失、不可解析或无效的输出被赋值为 F1=0。 可用性和条件几何质量保持相互独立，而不是合并为单一的成功分数。 表面距离和占据度量遵循已有的点集和隐式几何评估实践（Fan et al. 2017；Mescheder et al. 2019）。",
+   "sents": [
+    {
+     "en": "Generated and reference assets are converted to a common mesh representation, scale-normalized, center-aligned, and rigidly aligned by ICP.",
+     "zh": "生成的资产和参考资产会被转换为统一的网格表示，进行尺度归一化、中心对齐，并通过 ICP 进行刚性对齐。"
+    },
+    {
+     "en": "Chamfer Distance (CD) and surface F1 use 10,000 10{,}000 uniformly sampled surface points per asset; the F1 nearest-neighbor threshold and IoU voxel resolution are both 0.01 0.01 .",
+     "zh": "倒角距离（CD）和表面 F1 对每个资产使用 10,000 个均匀采样的表面点；F1 的最近邻阈值和 IoU 的体素分辨率均为 0.01。"
+    },
+    {
+     "en": "Geometry Availability is the fraction of tasks producing a nonempty, parseable asset that enters geometry evaluation.",
+     "zh": "几何可用性是指产生非空且可解析、并进入几何评估的资产的任务所占的比例。"
+    },
+    {
+     "en": "F1, IoU, and CD are computed over those valid assets.",
+     "zh": "F1、IoU 和 CD 在这些有效资产上计算。"
+    },
+    {
+     "en": "For the difficulty-stratified Figures 8 and 4 , we additionally report end-to-end F1: missing, unparsable, or invalid outputs are assigned F1=0.",
+     "zh": "对于按难度分层的图 8 和图 4，我们额外报告端到端 F1：缺失、不可解析或无效的输出被赋值为 F1=0。"
+    },
+    {
+     "en": "Availability and conditional geometry quality are kept separate rather than collapsed into a single success score.",
+     "zh": "可用性和条件几何质量保持相互独立，而不是合并为单一的成功分数。"
+    },
+    {
+     "en": "The surface-distance and occupancy measures follow established point-set and implicit-geometry evaluation practice ( Fan et al. 2017 ; Mescheder et al. 2019 ) .",
+     "zh": "表面距离和占据度量遵循已有的点集和隐式几何评估实践（Fan et al. 2017；Mescheder et al. 2019）。"
+    }
+   ]
+  },
+  {
+   "en": "Table 6 reports the shared policy-learning configuration. The two harness tracks use the same student and teacher models, LoRA capacity, context limits, checkpoint schedule, and hardware.",
+   "zh": "表 6 报告了共享的策略学习配置。 两个评测框架轨道使用相同的学生模型与教师模型、LoRA 容量、上下文限制、检查点计划和硬件。",
+   "sents": [
+    {
+     "en": "Table 6 reports the shared policy-learning configuration.",
+     "zh": "表 6 报告了共享的策略学习配置。"
+    },
+    {
+     "en": "The two harness tracks use the same student and teacher models, LoRA capacity, context limits, checkpoint schedule, and hardware.",
+     "zh": "两个评测框架轨道使用相同的学生模型与教师模型、LoRA 容量、上下文限制、检查点计划和硬件。"
+    }
+   ]
+  },
+  {
+   "en": "Policy learning uses the Text2CAD/DeepCAD 800/200 train–test split. Claude Sonnet 4.6 generates teacher trajectories independently in the coding harness and DeciCAD ; Qwen3.5-9B is the shared student. Both tracks use the same task descriptions, reference geometry, CAD environment, and evaluator. The final test set is excluded from trajectory selection, balancing, hyperparameter adjustment, reward design, and checkpoint selection.",
+   "zh": "策略学习采用 Text2CAD/DeepCAD 的 800/200 训练–测试划分。 Claude Sonnet 4.6 在编码环境和 DeciCAD 中独立生成教师轨迹；Qwen3.5-9B 是共享的学生智能体。 两条技术路线使用相同的任务描述、参考几何、CAD 环境和评估器。 最终测试集不用于轨迹筛选、数据平衡、超参数调整、奖励设计和检查点选择。",
+   "sents": [
+    {
+     "en": "Policy learning uses the Text2CAD/DeepCAD 800/200 train–test split.",
+     "zh": "策略学习采用 Text2CAD/DeepCAD 的 800/200 训练–测试划分。"
+    },
+    {
+     "en": "Claude Sonnet 4.6 generates teacher trajectories independently in the coding harness and DeciCAD ; Qwen3.5-9B is the shared student.",
+     "zh": "Claude Sonnet 4.6 在编码环境和 DeciCAD 中独立生成教师轨迹；Qwen3.5-9B 是共享的学生智能体。"
+    },
+    {
+     "en": "Both tracks use the same task descriptions, reference geometry, CAD environment, and evaluator.",
+     "zh": "两条技术路线使用相同的任务描述、参考几何、CAD 环境和评估器。"
+    },
+    {
+     "en": "The final test set is excluded from trajectory selection, balancing, hyperparameter adjustment, reward design, and checkpoint selection.",
+     "zh": "最终测试集不用于轨迹筛选、数据平衡、超参数调整、奖励设计和检查点选择。"
+    }
+   ]
+  },
+  {
+   "en": "SFT and online RL use BF16 LoRA. The SFT tracks share learning rate, batch configuration, context length, and LoRA settings. GRPO begins from the selected SFT checkpoint for each harness and samples student rollouts through the same interface used during supervision.",
+   "zh": "SFT 和在线 RL 使用 BF16 LoRA。 各 SFT 轨道共享学习率、批处理配置、上下文长度和 LoRA 设置。 GRPO 从每个评估框架所选的 SFT 检查点开始，并通过与监督阶段相同的接口采样智能体的推演结果。",
+   "sents": [
+    {
+     "en": "SFT and online RL use BF16 LoRA.",
+     "zh": "SFT 和在线 RL 使用 BF16 LoRA。"
+    },
+    {
+     "en": "The SFT tracks share learning rate, batch configuration, context length, and LoRA settings.",
+     "zh": "各 SFT 轨道共享学习率、批处理配置、上下文长度和 LoRA 设置。"
+    },
+    {
+     "en": "GRPO begins from the selected SFT checkpoint for each harness and samples student rollouts through the same interface used during supervision.",
+     "zh": "GRPO 从每个评估框架所选的 SFT 检查点开始，并通过与监督阶段相同的接口采样智能体的推演结果。"
+    }
+   ]
+  },
+  {
+   "en": "We extend the aggregate comparison in the main text along task difficulty, model-visible context, and representative output geometry.",
+   "zh": "我们在正文的总体比较基础上，沿任务难度、模型可见上下文以及代表性输出几何结构进行扩展。",
+   "sents": null
+  },
+  {
+   "en": "Figure 10 shows the calibrated difficulty distributions. CADPrompt concentrates in the lower range, CADInstruct and P3D-Text-to-3D shift toward greater complexity, and P3D-Assembly-3D occupies the highest range. This ordering reflects the additional need to preserve component identity, relative placement, and cross-object relations in assembly.",
+   "zh": "图10展示了校准后的难度分布。 CADPrompt集中在较低区间，CADInstruct和P3D-Text-to-3D偏向更高的复杂度，而P3D-Assembly-3D处于最高区间。 这一排序反映了在装配中还需要保留组件身份、相对位置以及跨对象关系。",
+   "sents": [
+    {
+     "en": "Figure 10 shows the calibrated difficulty distributions.",
+     "zh": "图10展示了校准后的难度分布。"
+    },
+    {
+     "en": "CADPrompt concentrates in the lower range, CADInstruct and P3D-Text-to-3D shift toward greater complexity, and P3D-Assembly-3D occupies the highest range.",
+     "zh": "CADPrompt集中在较低区间，CADInstruct和P3D-Text-to-3D偏向更高的复杂度，而P3D-Assembly-3D处于最高区间。"
+    },
+    {
+     "en": "This ordering reflects the additional need to preserve component identity, relative placement, and cross-object relations in assembly.",
+     "zh": "这一排序反映了在装配中还需要保留组件身份、相对位置以及跨对象关系。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 8 expands the aggregate F1 results across Q ​ 1 Q1 – Q ​ 7 Q7 . DeciCAD leads 14 of the 28 dataset–quantile cells, more than any baseline, and exceeds Claude Code at Q ​ 7 Q7 on every benchmark. It ranks first in five of seven P3D-Assembly-3D quantiles and leads from Q ​ 5 Q5 through Q ​ 7 Q7 on CADInstruct. On P3D-Text-to-3D, its F1 remains ahead of Claude Code at both Q ​ 4 Q4 (42.7 versus 30.5) and Q ​ 7 Q7 (42.4 versus 35.4).",
+   "zh": "图 8 展示了 Q1–Q7 上聚合 F1 结果的展开情况。 DeciCAD 在 28 个数据集–分位单元格中领先 14 个，多于任何基线，并且在每个基准的 Q7 上都超过 Claude Code。 它在 P3D-Assembly-3D 的七个分位中五个排名第一，并在 CADInstruct 上从 Q5 到 Q7 保持领先。 在 P3D-Text-to-3D 上，其 F1 在 Q4（42.7 对 30.5）和 Q7（42.4 对 35.4）均领先于 Claude Code。",
+   "sents": [
+    {
+     "en": "Figure 8 expands the aggregate F1 results across Q ​ 1 Q1 – Q ​ 7 Q7 .",
+     "zh": "图 8 展示了 Q1–Q7 上聚合 F1 结果的展开情况。"
+    },
+    {
+     "en": "DeciCAD leads 14 of the 28 dataset–quantile cells, more than any baseline, and exceeds Claude Code at Q ​ 7 Q7 on every benchmark.",
+     "zh": "DeciCAD 在 28 个数据集–分位单元格中领先 14 个，多于任何基线，并且在每个基准的 Q7 上都超过 Claude Code。"
+    },
+    {
+     "en": "It ranks first in five of seven P3D-Assembly-3D quantiles and leads from Q ​ 5 Q5 through Q ​ 7 Q7 on CADInstruct.",
+     "zh": "它在 P3D-Assembly-3D 的七个分位中五个排名第一，并在 CADInstruct 上从 Q5 到 Q7 保持领先。"
+    },
+    {
+     "en": "On P3D-Text-to-3D, its F1 remains ahead of Claude Code at both Q ​ 4 Q4 (42.7 versus 30.5) and Q ​ 7 Q7 (42.4 versus 35.4).",
+     "zh": "在 P3D-Text-to-3D 上，其 F1 在 Q4（42.7 对 30.5）和 Q7（42.4 对 35.4）均领先于 Claude Code。"
+    }
+   ]
+  },
+  {
+   "en": "The aggregate advantage is therefore not driven only by easy tasks. If the semantic action space omitted operations required by complex designs, performance would deteriorate systematically at high difficulty. Its competitive Q ​ 7 Q7 behavior instead indicates that compressing implementation-level choices retains the necessary CAD transitions. CADInstruct remains non-monotonic, so difficulty serves as a stratification variable rather than a deterministic predictor of failure.",
+   "zh": "因此，总体优势并非仅由简单任务驱动。 如果语义动作空间省略了复杂设计所需的操作，那么在高难度下性能将出现系统性下降。 相反，其具有竞争力的 Q7 表明，压缩实现层面的选择仍能保留必要的 CAD 转移。 CADInstruct 仍呈非单调性，因此难度仅作为分层变量，而非失败的确定性预测因子。",
+   "sents": [
+    {
+     "en": "The aggregate advantage is therefore not driven only by easy tasks.",
+     "zh": "因此，总体优势并非仅由简单任务驱动。"
+    },
+    {
+     "en": "If the semantic action space omitted operations required by complex designs, performance would deteriorate systematically at high difficulty.",
+     "zh": "如果语义动作空间省略了复杂设计所需的操作，那么在高难度下性能将出现系统性下降。"
+    },
+    {
+     "en": "Its competitive Q ​ 7 Q7 behavior instead indicates that compressing implementation-level choices retains the necessary CAD transitions.",
+     "zh": "相反，其具有竞争力的 Q7 表明，压缩实现层面的选择仍能保留必要的 CAD 转移。"
+    },
+    {
+     "en": "CADInstruct remains non-monotonic, so difficulty serves as a stratification variable rather than a deterministic predictor of failure.",
+     "zh": "CADInstruct 仍呈非单调性，因此难度仅作为分层变量，而非失败的确定性预测因子。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 4 in the main text summarizes these quantile trends with linear fits. Because CADInstruct is non-monotonic, its slope is used only as a compact summary of the heatmap.",
+   "zh": "正文中的图4通过线性拟合总结了这些分位数趋势。 由于CADInstruct并非单调，其斜率仅作为热力图的紧凑摘要使用。",
+   "sents": [
+    {
+     "en": "Figure 4 in the main text summarizes these quantile trends with linear fits.",
+     "zh": "正文中的图4通过线性拟合总结了这些分位数趋势。"
+    },
+    {
+     "en": "Because CADInstruct is non-monotonic, its slope is used only as a compact summary of the heatmap.",
+     "zh": "由于CADInstruct并非单调，其斜率仅作为热力图的紧凑摘要使用。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 9 jointly compares geometric quality and model-visible input tokens. On the three text-to-CAD benchmarks, DeciCAD occupies a stronger performance–cost region than Claude Code: it attains higher F1 while consuming substantially less input context. The geometric advantage therefore cannot be attributed to exposing the model to a larger interaction history. P3D-Assembly-3D is more demanding for both harnesses because multi-object references and repeated state updates enlarge the context, yet DeciCAD retains a competitive trade-off. Together with the output-side analysis below, these results separate representation efficiency from trajectory truncation or reduced task coverage.",
+   "zh": "图9同时比较了几何质量与模型可见的输入token数。 在三个文本到CAD的基准上，DeciCAD占据了比Claude Code更强的性能-成本区域：它在消耗显著更少输入上下文的同时取得了更高的F1。 因此，几何上的优势不能归因于让模型接触到更大的交互历史。 P3D-Assembly-3D对两个框架都更有挑战性，因为多对象引用和反复的状态更新会扩大上下文，但DeciCAD仍保持了有竞争力的权衡。 结合下文的输出侧分析，这些结果将表示效率与轨迹截断或任务覆盖缩减区分开来。",
+   "sents": [
+    {
+     "en": "Figure 9 jointly compares geometric quality and model-visible input tokens.",
+     "zh": "图9同时比较了几何质量与模型可见的输入token数。"
+    },
+    {
+     "en": "On the three text-to-CAD benchmarks, DeciCAD occupies a stronger performance–cost region than Claude Code: it attains higher F1 while consuming substantially less input context.",
+     "zh": "在三个文本到CAD的基准上，DeciCAD占据了比Claude Code更强的性能-成本区域：它在消耗显著更少输入上下文的同时取得了更高的F1。"
+    },
+    {
+     "en": "The geometric advantage therefore cannot be attributed to exposing the model to a larger interaction history.",
+     "zh": "因此，几何上的优势不能归因于让模型接触到更大的交互历史。"
+    },
+    {
+     "en": "P3D-Assembly-3D is more demanding for both harnesses because multi-object references and repeated state updates enlarge the context, yet DeciCAD retains a competitive trade-off.",
+     "zh": "P3D-Assembly-3D对两个框架都更有挑战性，因为多对象引用和反复的状态更新会扩大上下文，但DeciCAD仍保持了有竞争力的权衡。"
+    },
+    {
+     "en": "Together with the output-side analysis below, these results separate representation efficiency from trajectory truncation or reduced task coverage.",
+     "zh": "结合下文的输出侧分析，这些结果将表示效率与轨迹截断或任务覆盖缩减区分开来。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 5 in the main text compares interaction turns with cumulative output at the task level and shows that the output reduction does not arise from early termination.",
+   "zh": "正文中的图 5 在任务层面比较了交互轮次与累计输出，表明输出的减少并非源于提前终止。",
+   "sents": null
+  },
+  {
+   "en": "We group decisions as Planning, Modeling, or Verification according to their external effect. Figure 11 shows that DeciCAD consistently devotes a larger share of observable decisions to Modeling across datasets and difficulty levels, whereas Claude Code devotes a larger combined share to Planning and Verification.",
+   "zh": "我们根据外部影响将决策分为规划、建模或验证三类。 图 11 显示，在不同数据集和难度级别上，DeciCAD 始终将更大比例的可观测决策用于建模，而 Claude Code 则将更大比例的决策合并用于规划和验证。",
+   "sents": [
+    {
+     "en": "We group decisions as Planning, Modeling, or Verification according to their external effect.",
+     "zh": "我们根据外部影响将决策分为规划、建模或验证三类。"
+    },
+    {
+     "en": "Figure 11 shows that DeciCAD consistently devotes a larger share of observable decisions to Modeling across datasets and difficulty levels, whereas Claude Code devotes a larger combined share to Planning and Verification.",
+     "zh": "图 11 显示，在不同数据集和难度级别上，DeciCAD 始终将更大比例的可观测决策用于建模，而 Claude Code 则将更大比例的决策合并用于规划和验证。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 12 shows representative assets from P3D-Text-to-3D and CADPrompt. Zero-shot and lightweight specialized agents more often omit local features or produce unevaluable artifacts. Claude Code usually recovers the global shape but may retain geometric-detail errors despite executable code. DeciCAD more consistently preserves the requested profiles, openings, and repeated features, matching the aggregate trends in F1, IoU, and Availability.",
+   "zh": "图 12 展示了来自 P3D-Text-to-3D 和 CADPrompt 的代表性资产。 零样本和轻量级专用智能体更经常遗漏局部特征或产生无法评估的工件。 Claude Code 通常能恢复全局形状，但即使代码可执行，也可能保留几何细节上的错误。 DeciCAD 更一致地保留了所要求的轮廓、开口和重复特征，与 F1、IoU 和可用性上的总体趋势相符。",
+   "sents": [
+    {
+     "en": "Figure 12 shows representative assets from P3D-Text-to-3D and CADPrompt.",
+     "zh": "图 12 展示了来自 P3D-Text-to-3D 和 CADPrompt 的代表性资产。"
+    },
+    {
+     "en": "Zero-shot and lightweight specialized agents more often omit local features or produce unevaluable artifacts.",
+     "zh": "零样本和轻量级专用智能体更经常遗漏局部特征或产生无法评估的工件。"
+    },
+    {
+     "en": "Claude Code usually recovers the global shape but may retain geometric-detail errors despite executable code.",
+     "zh": "Claude Code 通常能恢复全局形状，但即使代码可执行，也可能保留几何细节上的错误。"
+    },
+    {
+     "en": "DeciCAD more consistently preserves the requested profiles, openings, and repeated features, matching the aggregate trends in F1, IoU, and Availability.",
+     "zh": "DeciCAD 更一致地保留了所要求的轮廓、开口和重复特征，与 F1、IoU 和可用性上的总体趋势相符。"
+    }
+   ]
+  },
+  {
+   "en": "We next describe how closed-loop teacher trajectories are converted into causal supervision and how the resulting policies are selected and evaluated.",
+   "zh": "接下来我们描述闭环教师轨迹如何被转换为因果监督，以及如何对所得到的策略进行选择与评估。",
+   "sents": null
+  },
+  {
+   "en": "Policy supervision must preserve the decision conditions under which each action was produced. For every teacher action a t a_{t} , we reconstruct the model-visible history h t h_{t} immediately before that action, including the system instruction, task, preceding model actions, tool results, and available tool schema. The target is the teacher’s next coding response or semantic CAD action. When a trajectory contains a local failure, the failure result remains in the history and supervision is applied to the subsequent recovery decision. This causal construction follows the principle that interactive policies must be trained on histories induced by preceding actions rather than on future trajectory information ( Ross et al. 2011 ; Qin et al. 2024 ) .",
+   "zh": "策略监督必须保留生成每个动作时的决策条件。 对于每个教师动作 a t a_{t}，我们重建该动作发生之前模型可见的历史 h t h_{t}，包括系统指令、任务、先前的模型动作、工具结果以及可用的工具模式。 监督目标是教师的下一个编码响应或语义 CAD 动作。 当轨迹中包含局部失败时，失败结果会保留在历史中，并且监督应用于随后的恢复决策。 这种因果式构建遵循以下原则：交互式策略必须在由先前动作诱导的历史上训练，而不是基于未来的轨迹信息（Ross et al. 2011; Qin et al. 2024）。",
+   "sents": [
+    {
+     "en": "Policy supervision must preserve the decision conditions under which each action was produced.",
+     "zh": "策略监督必须保留生成每个动作时的决策条件。"
+    },
+    {
+     "en": "For every teacher action a t a_{t} , we reconstruct the model-visible history h t h_{t} immediately before that action, including the system instruction, task, preceding model actions, tool results, and available tool schema.",
+     "zh": "对于每个教师动作 a t a_{t}，我们重建该动作发生之前模型可见的历史 h t h_{t}，包括系统指令、任务、先前的模型动作、工具结果以及可用的工具模式。"
+    },
+    {
+     "en": "The target is the teacher’s next coding response or semantic CAD action.",
+     "zh": "监督目标是教师的下一个编码响应或语义 CAD 动作。"
+    },
+    {
+     "en": "When a trajectory contains a local failure, the failure result remains in the history and supervision is applied to the subsequent recovery decision.",
+     "zh": "当轨迹中包含局部失败时，失败结果会保留在历史中，并且监督应用于随后的恢复决策。"
+    },
+    {
+     "en": "This causal construction follows the principle that interactive policies must be trained on histories induced by preceding actions rather than on future trajectory information ( Ross et al. 2011 ; Qin et al. 2024 ) .",
+     "zh": "这种因果式构建遵循以下原则：交互式策略必须在由先前动作诱导的历史上训练，而不是基于未来的轨迹信息（Ross et al. 2011; Qin et al. 2024）。"
+    }
+   ]
+  },
+  {
+   "en": "Both datasets originate from the official Text2CAD training split. Claude Sonnet 4.6 executes the same tasks independently through the Coding and DeciCAD harnesses, and the resulting assets are evaluated against the same target geometry. Geometry- and protocol-audited trajectories are then expanded into causal decision examples ( Khan et al. 2024 ; Anthropic 2026c ; Qwen Team 2026 ) . The DeciCAD dataset contains 642 audited tasks, divided by task identity into 542 training and 100 development tasks. Each task retains at most 11 regular and three corrective decisions covering initialization, core modeling, inspection, recovery, and artifact persistence. The Coding dataset contains 499 geometry-valid tasks, of which 471 are used for training and 28 for development, yielding 3,651 training targets and 207 development targets; 336 training targets follow an observed execution error.",
+   "zh": "两个数据集均来自官方 Text2CAD 训练集划分。 Claude Sonnet 4.6 通过 Coding 和 DeciCAD 两个执行框架独立完成相同任务，生成的资产针对同一目标几何体进行评估。 经几何与协议审计的轨迹随后被扩展为因果决策样本（Khan 等，2024；Anthropic，2026c；Qwen 团队，2026）。 DeciCAD 数据集包含 642 个经过审计的任务，按任务身份划分为 542 个训练任务和 100 个开发任务。 每个任务最多保留 11 条常规决策和 3 条纠正决策，涵盖初始化、核心建模、检查、恢复以及产物持久化。 Coding 数据集包含 499 个几何有效的任务，其中 471 个用于训练、28 个用于开发，共产生 3,651 个训练目标和 207 个开发目标；其中 336 个训练目标伴随有观测到的执行错误。",
+   "sents": [
+    {
+     "en": "Both datasets originate from the official Text2CAD training split.",
+     "zh": "两个数据集均来自官方 Text2CAD 训练集划分。"
+    },
+    {
+     "en": "Claude Sonnet 4.6 executes the same tasks independently through the Coding and DeciCAD harnesses, and the resulting assets are evaluated against the same target geometry.",
+     "zh": "Claude Sonnet 4.6 通过 Coding 和 DeciCAD 两个执行框架独立完成相同任务，生成的资产针对同一目标几何体进行评估。"
+    },
+    {
+     "en": "Geometry- and protocol-audited trajectories are then expanded into causal decision examples ( Khan et al. 2024 ; Anthropic 2026c ; Qwen Team 2026 ) .",
+     "zh": "经几何与协议审计的轨迹随后被扩展为因果决策样本（Khan 等，2024；Anthropic，2026c；Qwen 团队，2026）。"
+    },
+    {
+     "en": "The DeciCAD dataset contains 642 audited tasks, divided by task identity into 542 training and 100 development tasks.",
+     "zh": "DeciCAD 数据集包含 642 个经过审计的任务，按任务身份划分为 542 个训练任务和 100 个开发任务。"
+    },
+    {
+     "en": "Each task retains at most 11 regular and three corrective decisions covering initialization, core modeling, inspection, recovery, and artifact persistence.",
+     "zh": "每个任务最多保留 11 条常规决策和 3 条纠正决策，涵盖初始化、核心建模、检查、恢复以及产物持久化。"
+    },
+    {
+     "en": "The Coding dataset contains 499 geometry-valid tasks, of which 471 are used for training and 28 for development, yielding 3,651 training targets and 207 development targets; 336 training targets follow an observed execution error.",
+     "zh": "Coding 数据集包含 499 个几何有效的任务，其中 471 个用于训练、28 个用于开发，共产生 3,651 个训练目标和 207 个开发目标；其中 336 个训练目标伴随有观测到的执行错误。"
+    }
+   ]
+  },
+  {
+   "en": "The two tracks share the source tasks, teacher and student models, causal truncation, context limit, and optimization protocol, while retaining the natural granularity of their respective decision spaces. DeciCAD examples are stratified by task difficulty, CAD stage, accumulated document state, preceding action and outcome, history pattern, and target action class. Generic query and computation actions are capped, whereas geometry-changing, inspection, and recovery actions retain their causal histories. Coding data follow the same task-level filtering principle and prioritize genuine recovery responses.",
+   "zh": "两条轨道共享相同的源任务、教师与学生模型、因果截断、上下文长度限制和优化协议，同时保留各自决策空间的自然粒度。 DeciCAD 示例按任务难度、CAD 阶段、累积文档状态、前置动作及其结果、历史模式和目标动作类别进行分层。 通用查询与计算动作设有上限，而改变几何、检查和恢复类动作则保留其因果历史。 代码数据遵循相同的任务级过滤原则，并优先保留真实的恢复响应。",
+   "sents": [
+    {
+     "en": "The two tracks share the source tasks, teacher and student models, causal truncation, context limit, and optimization protocol, while retaining the natural granularity of their respective decision spaces.",
+     "zh": "两条轨道共享相同的源任务、教师与学生模型、因果截断、上下文长度限制和优化协议，同时保留各自决策空间的自然粒度。"
+    },
+    {
+     "en": "DeciCAD examples are stratified by task difficulty, CAD stage, accumulated document state, preceding action and outcome, history pattern, and target action class.",
+     "zh": "DeciCAD 示例按任务难度、CAD 阶段、累积文档状态、前置动作及其结果、历史模式和目标动作类别进行分层。"
+    },
+    {
+     "en": "Generic query and computation actions are capped, whereas geometry-changing, inspection, and recovery actions retain their causal histories.",
+     "zh": "通用查询与计算动作设有上限，而改变几何、检查和恢复类动作则保留其因果历史。"
+    },
+    {
+     "en": "Coding data follow the same task-level filtering principle and prioritize genuine recovery responses.",
+     "zh": "代码数据遵循相同的任务级过滤原则，并优先保留真实的恢复响应。"
+    }
+   ]
+  },
+  {
+   "en": "Table 7 records the audited task coverage and target construction used for the two SFT tracks. These counts reflect the executable supervision available in each harness-induced decision space.",
+   "zh": "表7记录了两个SFT赛道所使用的经审计的任务覆盖范围与目标构建。 这些数量反映了在每个由测试框架诱导的决策空间中可获得的可执行监督。",
+   "sents": [
+    {
+     "en": "Table 7 records the audited task coverage and target construction used for the two SFT tracks.",
+     "zh": "表7记录了两个SFT赛道所使用的经审计的任务覆盖范围与目标构建。"
+    },
+    {
+     "en": "These counts reflect the executable supervision available in each harness-induced decision space.",
+     "zh": "这些数量反映了在每个由测试框架诱导的决策空间中可获得的可执行监督。"
+    }
+   ]
+  },
+  {
+   "en": "Both tracks save a checkpoint every 25 optimizer steps. Training and token-level validation loss monitor optimization, while the final checkpoint is selected on frozen development tasks using closed-loop Availability, F1, IoU, and CD.",
+   "zh": "两条轨道每 25 个优化器步骤保存一次检查点。 训练损失与词元级验证损失用于监控优化过程，而最终检查点则依据闭环可用性（Availability）、F1、IoU 和 CD 在冻结的开发任务上选出。",
+   "sents": [
+    {
+     "en": "Both tracks save a checkpoint every 25 optimizer steps.",
+     "zh": "两条轨道每 25 个优化器步骤保存一次检查点。"
+    },
+    {
+     "en": "Training and token-level validation loss monitor optimization, while the final checkpoint is selected on frozen development tasks using closed-loop Availability, F1, IoU, and CD.",
+     "zh": "训练损失与词元级验证损失用于监控优化过程，而最终检查点则依据闭环可用性（Availability）、F1、IoU 和 CD 在冻结的开发任务上选出。"
+    }
+   ]
+  },
+  {
+   "en": "SFT equips both Qwen3.5-9B policies with closed-loop CAD capability, but the learned outcomes differ. Coding SFT raises Availability from 12.5 % 12.5\\% to 60.5 % 60.5\\% , F1 from 0.5902 0.5902 to 0.6460 0.6460 , and IoU from 0.5871 0.5871 to 0.6286 0.6286 , while CD changes from 0.00972 0.00972 to 0.01130 0.01130 . The student therefore acquires program construction, execution, and repair, although local geometric error remains after the large coverage expansion. DeciCAD SFT raises Availability from 61.5 % 61.5\\% to 66.5 % 66.5\\% , F1 from 0.6883 0.6883 to 0.7437 0.7437 , and IoU from 0.6487 0.6487 to 0.6631 0.6631 , while reducing CD from 0.01023 0.01023 to 0.00782 0.00782 . Semantic CAD supervision thus improves both asset coverage and the geometry of valid outputs. The aggregate stage-wise geometry results and the resulting policy behavior are reported in the main text; below we detail the online optimization that produces them.",
+   "zh": "SFT 使两个 Qwen3.5-9B 智能体策略都具备了闭环 CAD 能力，但学习到的成果有所不同。 代码 SFT 将 Availability 从 12.5 % 12.5\\% 提升至 60.5 % 60.5\\%，F1 从 0.5902 0.5902 提升至 0.6460 0.6460，IoU 从 0.5871 0.5871 提升至 0.6286 0.6286，而 CD 从 0.00972 0.00972 变为 0.01130 0.01130。 因此，学生智能体获得了程序构建、执行与修复能力，尽管在覆盖率大幅扩展后局部几何误差仍然存在。 DeciCAD SFT 将 Availability 从 61.5 % 61.5\\% 提升至 66.5 % 66.5\\%，F1 从 0.6883 0.6883 提升至 0.7437 0.7437，IoU 从 0.6487 0.6487 提升至 0.6631 0.6631，同时将 CD 从 0.01023 0.01023 降至 0.00782 0.00782。 因此，语义 CAD 监督同时提升了资产覆盖率和有效输出的几何质量。 总体的分阶段几何结果以及由此产生的策略行为已在正文中报告；下文我们详细介绍产生这些结果的在线优化过程。",
+   "sents": [
+    {
+     "en": "SFT equips both Qwen3.5-9B policies with closed-loop CAD capability, but the learned outcomes differ.",
+     "zh": "SFT 使两个 Qwen3.5-9B 智能体策略都具备了闭环 CAD 能力，但学习到的成果有所不同。"
+    },
+    {
+     "en": "Coding SFT raises Availability from 12.5 % 12.5\\% to 60.5 % 60.5\\% , F1 from 0.5902 0.5902 to 0.6460 0.6460 , and IoU from 0.5871 0.5871 to 0.6286 0.6286 , while CD changes from 0.00972 0.00972 to 0.01130 0.01130 .",
+     "zh": "代码 SFT 将 Availability 从 12.5 % 12.5\\% 提升至 60.5 % 60.5\\%，F1 从 0.5902 0.5902 提升至 0.6460 0.6460，IoU 从 0.5871 0.5871 提升至 0.6286 0.6286，而 CD 从 0.00972 0.00972 变为 0.01130 0.01130。"
+    },
+    {
+     "en": "The student therefore acquires program construction, execution, and repair, although local geometric error remains after the large coverage expansion.",
+     "zh": "因此，学生智能体获得了程序构建、执行与修复能力，尽管在覆盖率大幅扩展后局部几何误差仍然存在。"
+    },
+    {
+     "en": "DeciCAD SFT raises Availability from 61.5 % 61.5\\% to 66.5 % 66.5\\% , F1 from 0.6883 0.6883 to 0.7437 0.7437 , and IoU from 0.6487 0.6487 to 0.6631 0.6631 , while reducing CD from 0.01023 0.01023 to 0.00782 0.00782 .",
+     "zh": "DeciCAD SFT 将 Availability 从 61.5 % 61.5\\% 提升至 66.5 % 66.5\\%，F1 从 0.6883 0.6883 提升至 0.7437 0.7437，IoU 从 0.6487 0.6487 提升至 0.6631 0.6631，同时将 CD 从 0.01023 0.01023 降至 0.00782 0.00782。"
+    },
+    {
+     "en": "Semantic CAD supervision thus improves both asset coverage and the geometry of valid outputs.",
+     "zh": "因此，语义 CAD 监督同时提升了资产覆盖率和有效输出的几何质量。"
+    },
+    {
+     "en": "The aggregate stage-wise geometry results and the resulting policy behavior are reported in the main text; below we detail the online optimization that produces them.",
+     "zh": "总体的分阶段几何结果以及由此产生的策略行为已在正文中报告；下文我们详细介绍产生这些结果的在线优化过程。"
+    }
+   ]
+  },
+  {
+   "en": "Starting from the selected SFT policies, we detail the curriculum, reward, and update constraints used for online optimization before analyzing the learned behavior.",
+   "zh": "从选定的 SFT 策略出发，我们详细说明用于在线优化的课程、奖励与更新约束，然后再分析所学到的行为。",
+   "sents": null
+  },
+  {
+   "en": "Online RL continues from states induced by the current student. Training tasks serve four roles: completion_frontier tasks frequently fail to form a valid asset; recovery tasks expose locally recoverable failures; quality_frontier tasks complete but admit geometric improvement; and anchor tasks are solved reliably and constrain forgetting. The first stage emphasizes completion and recovery to expand valid-asset coverage. Its policy becomes the frozen parent of a second, geometry-oriented stage. The final second-stage iteration samples 16 tasks—12 quality-frontier, two completion-frontier, and two anchor tasks—with eight rollouts per task. This ordering combines curriculum learning with group-relative online optimization used in tool-learning policies ( Bengio et al. 2009 ; Shao et al. 2024 ; Qian et al. 2025 ; Gong et al. 2026 ) .",
+   "zh": "在线强化学习从当前学生所处的状态继续进行。 训练任务承担四种角色：completion_frontier 任务常常无法形成有效资产；recovery 任务暴露可局部恢复的失败；quality_frontier 任务虽能完成但存在几何改进空间；而 anchor 任务可被可靠求解，并用于约束遗忘。 第一阶段侧重完成与恢复，以扩大有效资产的覆盖范围。 其策略成为第二阶段（面向几何的阶段）的冻结父策略。 第二阶段的最后一次迭代采样 16 个任务——12 个质量前沿任务、2 个完成前沿任务和 2 个锚点任务——每个任务进行八次 rollout。 这一排序将课程学习与工具学习策略中使用的组相对在线优化相结合（ Bengio et al. 2009 ; Shao et al. 2024 ; Qian et al. 2025 ; Gong et al. 2026 )。",
+   "sents": [
+    {
+     "en": "Online RL continues from states induced by the current student.",
+     "zh": "在线强化学习从当前学生所处的状态继续进行。"
+    },
+    {
+     "en": "Training tasks serve four roles: completion_frontier tasks frequently fail to form a valid asset; recovery tasks expose locally recoverable failures; quality_frontier tasks complete but admit geometric improvement; and anchor tasks are solved reliably and constrain forgetting.",
+     "zh": "训练任务承担四种角色：completion_frontier 任务常常无法形成有效资产；recovery 任务暴露可局部恢复的失败；quality_frontier 任务虽能完成但存在几何改进空间；而 anchor 任务可被可靠求解，并用于约束遗忘。"
+    },
+    {
+     "en": "The first stage emphasizes completion and recovery to expand valid-asset coverage.",
+     "zh": "第一阶段侧重完成与恢复，以扩大有效资产的覆盖范围。"
+    },
+    {
+     "en": "Its policy becomes the frozen parent of a second, geometry-oriented stage.",
+     "zh": "其策略成为第二阶段（面向几何的阶段）的冻结父策略。"
+    },
+    {
+     "en": "The final second-stage iteration samples 16 tasks—12 quality-frontier, two completion-frontier, and two anchor tasks—with eight rollouts per task.",
+     "zh": "第二阶段的最后一次迭代采样 16 个任务——12 个质量前沿任务、2 个完成前沿任务和 2 个锚点任务——每个任务进行八次 rollout。"
+    },
+    {
+     "en": "This ordering combines curriculum learning with group-relative online optimization used in tool-learning policies ( Bengio et al. 2009 ; Shao et al. 2024 ; Qian et al. 2025 ; Gong et al. 2026 ) .",
+     "zh": "这一排序将课程学习与工具学习策略中使用的组相对在线优化相结合（ Bengio et al. 2009 ; Shao et al. 2024 ; Qian et al. 2025 ; Gong et al. 2026 )。"
+    }
+   ]
+  },
+  {
+   "en": "Each group contains three conservative, three standard, and two exploratory rollouts with ( T , p ) = ( 0.65 , 0.90 ) (T,p)=(0.65,0.90) , ( 0.90 , 0.95 ) (0.90,0.95) , and ( 1.10 , 0.98 ) (1.10,0.98) , respectively. Interaction budgets increase with task stage from 32, 40, and 48 to 64 decisions. Both stages retain the same harness, tool contracts, and terminal evaluator; the second stage changes policy preference within the existing CAD decision space.",
+   "zh": "每组包含三次保守型、三次标准型和两次探索型 rollout，其 (T,p) 分别为 (0.65,0.90)、(0.90,0.95) 和 (1.10,0.98)。 交互预算随任务阶段递增，从 32、40 和 48 个决策增加到 64 个决策。 两个阶段保留相同的 harness、工具契约和终端评估器；第二阶段仅在现有 CAD 决策空间内改变策略偏好。",
+   "sents": [
+    {
+     "en": "Each group contains three conservative, three standard, and two exploratory rollouts with ( T , p ) = ( 0.65 , 0.90 ) (T,p)=(0.65,0.90) , ( 0.90 , 0.95 ) (0.90,0.95) , and ( 1.10 , 0.98 ) (1.10,0.98) , respectively.",
+     "zh": "每组包含三次保守型、三次标准型和两次探索型 rollout，其 (T,p) 分别为 (0.65,0.90)、(0.90,0.95) 和 (1.10,0.98)。"
+    },
+    {
+     "en": "Interaction budgets increase with task stage from 32, 40, and 48 to 64 decisions.",
+     "zh": "交互预算随任务阶段递增，从 32、40 和 48 个决策增加到 64 个决策。"
+    },
+    {
+     "en": "Both stages retain the same harness, tool contracts, and terminal evaluator; the second stage changes policy preference within the existing CAD decision space.",
+     "zh": "两个阶段保留相同的 harness、工具契约和终端评估器；第二阶段仅在现有 CAD 决策空间内改变策略偏好。"
+    }
+   ]
+  },
+  {
+   "en": "For a rollout with valid terminal geometry, the normalized geometry reward is",
+   "zh": "对于具有有效终止几何的展开，归一化几何奖励为",
+   "sents": null
+  },
+  {
+   "en": "where w F = 0.45 w_{F}=0.45 , w I = 0.35 w_{I}=0.35 , w C = 0.20 w_{C}=0.20 , p F = p I = 2 p_{F}=p_{I}=2 , and τ C = 0.002 \\tau_{C}=0.002 . Squaring retains discrimination in the high-quality region, and the exponential maps unbounded CD to [ 0 , 1 ] [0,1] . Missing or unparsable assets, and assets with R geo < 0.15 R_{\\mathrm{geo}}<0.15 , receive zero geometry reward.",
+   "zh": "其中 w F = 0.45 w_{F}=0.45，w I = 0.35 w_{I}=0.35，w C = 0.20 w_{C}=0.20，p F = p I = 2 p_{F}=p_{I}=2，且 τ C = 0.002 \\tau_{C}=0.002。 平方运算在高质量区域保留了区分度，而指数函数将无界的 CD 映射到 [ 0 , 1 ] [0,1]。 缺失或无法解析的资产，以及 R geo < 0.15 R_{\\mathrm{geo}}<0.15 的资产，其几何奖励为零。",
+   "sents": [
+    {
+     "en": "where w F = 0.45 w_{F}=0.45 , w I = 0.35 w_{I}=0.35 , w C = 0.20 w_{C}=0.20 , p F = p I = 2 p_{F}=p_{I}=2 , and τ C = 0.002 \\tau_{C}=0.002 .",
+     "zh": "其中 w F = 0.45 w_{F}=0.45，w I = 0.35 w_{I}=0.35，w C = 0.20 w_{C}=0.20，p F = p I = 2 p_{F}=p_{I}=2，且 τ C = 0.002 \\tau_{C}=0.002。"
+    },
+    {
+     "en": "Squaring retains discrimination in the high-quality region, and the exponential maps unbounded CD to [ 0 , 1 ] [0,1] .",
+     "zh": "平方运算在高质量区域保留了区分度，而指数函数将无界的 CD 映射到 [ 0 , 1 ] [0,1]。"
+    },
+    {
+     "en": "Missing or unparsable assets, and assets with R geo < 0.15 R_{\\mathrm{geo}}<0.15 , receive zero geometry reward.",
+     "zh": "缺失或无法解析的资产，以及 R geo < 0.15 R_{\\mathrm{geo}}<0.15 的资产，其几何奖励为零。"
+    }
+   ]
+  },
+  {
+   "en": "Process evidence describes observable CAD progress. At decision t t , let v t v_{t} , c t c_{t} , r t r_{t} , and b t b_{t} indicate a valid call, a new state change, recovery from the preceding failure, and repeated failure or no-progress regression. Then",
+   "zh": "过程证据描述可观察的 CAD 进展。 在决策时刻 t，令 v t v_{t} 、c t c_{t} 、r t r_{t} 和 b t b_{t} 分别表示有效调用、新的状态变化、从前一次失败中恢复，以及重复失败或无进展的退化。那么",
+   "sents": [
+    {
+     "en": "Process evidence describes observable CAD progress.",
+     "zh": "过程证据描述可观察的 CAD 进展。"
+    },
+    {
+     "en": "At decision t t , let v t v_{t} , c t c_{t} , r t r_{t} , and b t b_{t} indicate a valid call, a new state change, recovery from the preceding failure, and repeated failure or no-progress regression. Then",
+     "zh": "在决策时刻 t，令 v t v_{t} 、c t c_{t} 、r t r_{t} 和 b t b_{t} 分别表示有效调用、新的状态变化、从前一次失败中恢复，以及重复失败或无进展的退化。那么"
+    }
+   ]
+  },
+  {
+   "en": "and trajectory process reward is its decision-wise mean. Protocol reward is the valid-call fraction. The second-stage reward is",
+   "zh": "且轨迹过程奖励是其按决策取的平均值。 协议奖励为有效调用比例。 第二阶段奖励为",
+   "sents": [
+    {
+     "en": "and trajectory process reward is its decision-wise mean.",
+     "zh": "且轨迹过程奖励是其按决策取的平均值。"
+    },
+    {
+     "en": "Protocol reward is the valid-call fraction.",
+     "zh": "协议奖励为有效调用比例。"
+    },
+    {
+     "en": "The second-stage reward is",
+     "zh": "第二阶段奖励为"
+    }
+   ]
+  },
+  {
+   "en": "with ( η , ρ , ξ ) = ( 0.94 , 0.05 , 0.01 ) (\\eta,\\rho,\\xi)=(0.94,0.05,0.01) . Zero-geometry gating places the terminal asset first, while the smaller process and protocol terms distinguish no-progress behavior, invalid calls, and executable modeling sequences.",
+   "zh": "其中 ( η , ρ , ξ ) = ( 0.94 , 0.05 , 0.01 ) (\\eta,\\rho,\\xi)=(0.94,0.05,0.01) 。 零几何门控将终端资产置于首位，而较小的过程项与协议项则区分无进展行为、无效调用以及可执行的建模序列。",
+   "sents": [
+    {
+     "en": "with ( η , ρ , ξ ) = ( 0.94 , 0.05 , 0.01 ) (\\eta,\\rho,\\xi)=(0.94,0.05,0.01) .",
+     "zh": "其中 ( η , ρ , ξ ) = ( 0.94 , 0.05 , 0.01 ) (\\eta,\\rho,\\xi)=(0.94,0.05,0.01) 。"
+    },
+    {
+     "en": "Zero-geometry gating places the terminal asset first, while the smaller process and protocol terms distinguish no-progress behavior, invalid calls, and executable modeling sequences.",
+     "zh": "零几何门控将终端资产置于首位，而较小的过程项与协议项则区分无进展行为、无效调用以及可执行的建模序列。"
+    }
+   ]
+  },
+  {
+   "en": "Eight rollouts of one task form a GRPO group. A group enters optimization only if at least one rollout has nonzero geometry reward and its reward standard deviation is at least 0.02 0.02 . This excludes all-failure groups whose trajectories differ only in procedural score.",
+   "zh": "同一任务的八次轨迹采样（rollout）构成一个 GRPO 组。 只有当组内至少有一次轨迹采样获得非零几何奖励，且其奖励标准差至少为 0.02 0.02 时，该组才会进入优化。 这排除了那些轨迹仅在过程得分上存在差异的全失败组。",
+   "sents": [
+    {
+     "en": "Eight rollouts of one task form a GRPO group.",
+     "zh": "同一任务的八次轨迹采样（rollout）构成一个 GRPO 组。"
+    },
+    {
+     "en": "A group enters optimization only if at least one rollout has nonzero geometry reward and its reward standard deviation is at least 0.02 0.02 .",
+     "zh": "只有当组内至少有一次轨迹采样获得非零几何奖励，且其奖励标准差至少为 0.02 0.02 时，该组才会进入优化。"
+    },
+    {
+     "en": "This excludes all-failure groups whose trajectories differ only in procedural score.",
+     "zh": "这排除了那些轨迹仅在过程得分上存在差异的全失败组。"
+    }
+   ]
+  },
+  {
+   "en": "The second stage combines completion and quality advantage at 0.15 : 0.85 0.15:0.85 . Quality-frontier and anchor candidates must satisfy an absolute quality floor and remain within the tolerance of the frozen parent anchor. Each group retains at most one positive and one negative trajectory, balancing task influence. The policy objective uses learning rate 3 × 10 − 9 3\\times 10^{-9} , two-sided clip 0.03 0.03 , and token-level KL coefficient β = 0.10 \\beta=0.10 to the frozen first-stage parent. A stop action receives positive credit only when geometry exceeds both an absolute threshold and a high within-group quantile; premature termination receives negative credit.",
+   "zh": "第二阶段以 0.15 : 0.85 的权重组合完成度优势与质量优势。 质量前沿候选与锚点候选必须满足绝对质量下限，并保持在冻结父锚点的容差范围内。 每组最多保留一条正向轨迹和一条负向轨迹，以平衡任务影响力。 策略目标使用学习率 3 × 10 − 9、双侧裁剪 0.03，以及相对于冻结的第一阶段父模型的 token 级 KL 系数 β = 0.10。 只有当几何指标同时超过绝对阈值和组内高分位数时，停止动作才获得正向信用；过早终止则获得负向信用。",
+   "sents": [
+    {
+     "en": "The second stage combines completion and quality advantage at 0.15 : 0.85 0.15:0.85 .",
+     "zh": "第二阶段以 0.15 : 0.85 的权重组合完成度优势与质量优势。"
+    },
+    {
+     "en": "Quality-frontier and anchor candidates must satisfy an absolute quality floor and remain within the tolerance of the frozen parent anchor.",
+     "zh": "质量前沿候选与锚点候选必须满足绝对质量下限，并保持在冻结父锚点的容差范围内。"
+    },
+    {
+     "en": "Each group retains at most one positive and one negative trajectory, balancing task influence.",
+     "zh": "每组最多保留一条正向轨迹和一条负向轨迹，以平衡任务影响力。"
+    },
+    {
+     "en": "The policy objective uses learning rate 3 × 10 − 9 3\\times 10^{-9} , two-sided clip 0.03 0.03 , and token-level KL coefficient β = 0.10 \\beta=0.10 to the frozen first-stage parent.",
+     "zh": "策略目标使用学习率 3 × 10 − 9、双侧裁剪 0.03，以及相对于冻结的第一阶段父模型的 token 级 KL 系数 β = 0.10。"
+    },
+    {
+     "en": "A stop action receives positive credit only when geometry exceeds both an absolute threshold and a high within-group quantile; premature termination receives negative credit.",
+     "zh": "只有当几何指标同时超过绝对阈值和组内高分位数时，停止动作才获得正向信用；过早终止则获得负向信用。"
+    }
+   ]
+  },
+  {
+   "en": "The learned second-stage LoRA increment is finally applied to the parent at strength 0.375 0.375 . We preserve the adapter weights and change LoRA alpha from 64 to 24, scaling the learned offset by 24 / 64 = 0.375 24/64=0.375 . This continuous control retains the parent’s coverage and recovery behavior while adding the quality preference learned in the second stage.",
+   "zh": "学习到的第二阶段 LoRA 增量最终以 0.375 0.375 的强度应用于父模型。 我们保留适配器权重，并将 LoRA alpha 从 64 改为 24，将学习到的偏移按 24 / 64 = 0.375 24/64=0.375 进行缩放。 这种连续控制保留了父模型的覆盖与恢复行为，同时加入了第二阶段学习到的质量偏好。",
+   "sents": [
+    {
+     "en": "The learned second-stage LoRA increment is finally applied to the parent at strength 0.375 0.375 .",
+     "zh": "学习到的第二阶段 LoRA 增量最终以 0.375 0.375 的强度应用于父模型。"
+    },
+    {
+     "en": "We preserve the adapter weights and change LoRA alpha from 64 to 24, scaling the learned offset by 24 / 64 = 0.375 24/64=0.375 .",
+     "zh": "我们保留适配器权重，并将 LoRA alpha 从 64 改为 24，将学习到的偏移按 24 / 64 = 0.375 24/64=0.375 进行缩放。"
+    },
+    {
+     "en": "This continuous control retains the parent’s coverage and recovery behavior while adding the quality preference learned in the second stage.",
+     "zh": "这种连续控制保留了父模型的覆盖与恢复行为，同时加入了第二阶段学习到的质量偏好。"
+    }
+   ]
+  },
+  {
+   "en": "DeciCAD GRPO raises Availability from 66.5 % 66.5\\% to 73.5 % 73.5\\% , F1 from 0.7437 0.7437 to 0.7880 0.7880 , and IoU from 0.6631 0.6631 to 0.7036 0.7036 , while reducing CD from 0.00782 0.00782 to 0.00570 0.00570 . Coding GRPO raises Availability from 60.5 % 60.5\\% to 65.5 % 65.5\\% , but F1 falls from 0.6460 0.6460 to 0.6253 0.6253 , IoU from 0.6286 0.6286 to 0.5987 0.5987 , and CD increases from 0.01130 0.01130 to 0.02253 0.02253 . Thus, identical terminal geometry feedback expands executable coverage in both harnesses, while stable geometry improvement depends on how credit propagates through the harness-induced decision space.",
+   "zh": "DeciCAD GRPO 将可用率从 66.5 % 66.5\\% 提升至 73.5 % 73.5\\%，F1 从 0.7437 0.7437 提升至 0.7880 0.7880，IoU 从 0.6631 0.6631 提升至 0.7036 0.7036，同时将 CD 从 0.00782 0.00782 降低至 0.00570 0.00570。 Coding GRPO 将可用率从 60.5 % 60.5\\% 提升至 65.5 % 65.5\\%，但 F1 从 0.6460 0.6460 下降至 0.6253 0.6253，IoU 从 0.6286 0.6286 下降至 0.5987 0.5987，且 CD 从 0.01130 0.01130 增加至 0.02253 0.02253。 因此，相同的终端几何反馈在两种框架中都扩展了可执行的覆盖范围，而稳定的几何改进则取决于信用如何在框架所诱发的决策空间中传播。",
+   "sents": [
+    {
+     "en": "DeciCAD GRPO raises Availability from 66.5 % 66.5\\% to 73.5 % 73.5\\% , F1 from 0.7437 0.7437 to 0.7880 0.7880 , and IoU from 0.6631 0.6631 to 0.7036 0.7036 , while reducing CD from 0.00782 0.00782 to 0.00570 0.00570 .",
+     "zh": "DeciCAD GRPO 将可用率从 66.5 % 66.5\\% 提升至 73.5 % 73.5\\%，F1 从 0.7437 0.7437 提升至 0.7880 0.7880，IoU 从 0.6631 0.6631 提升至 0.7036 0.7036，同时将 CD 从 0.00782 0.00782 降低至 0.00570 0.00570。"
+    },
+    {
+     "en": "Coding GRPO raises Availability from 60.5 % 60.5\\% to 65.5 % 65.5\\% , but F1 falls from 0.6460 0.6460 to 0.6253 0.6253 , IoU from 0.6286 0.6286 to 0.5987 0.5987 , and CD increases from 0.01130 0.01130 to 0.02253 0.02253 .",
+     "zh": "Coding GRPO 将可用率从 60.5 % 60.5\\% 提升至 65.5 % 65.5\\%，但 F1 从 0.6460 0.6460 下降至 0.6253 0.6253，IoU 从 0.6286 0.6286 下降至 0.5987 0.5987，且 CD 从 0.01130 0.01130 增加至 0.02253 0.02253。"
+    },
+    {
+     "en": "Thus, identical terminal geometry feedback expands executable coverage in both harnesses, while stable geometry improvement depends on how credit propagates through the harness-induced decision space.",
+     "zh": "因此，相同的终端几何反馈在两种框架中都扩展了可执行的覆盖范围，而稳定的几何改进则取决于信用如何在框架所诱发的决策空间中传播。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 6 in the main text reports policy behavior under six shared categories. Construct creates or modifies geometric implementation; Inspect executes code, reads state, or checks a result; Recover changes action after an explicit failure and restores progress; Invalid Reference and No Progress record invalid targets and repeated non-progress; and Persist saves or exports the terminal asset. Events are counted per 100 external decisions so that trajectories of different lengths are comparable.",
+   "zh": "正文中的图 6 报告了六个共享类别下的行为表现。 构造（Construct）创建或修改几何实现；检查（Inspect）执行代码、读取状态或检查结果；恢复（Recover）在显式失败后更改动作并恢复进度；无效引用（Invalid Reference）和无进展（No Progress）记录无效目标和重复的无进展；持久化（Persist）保存或导出最终资产。 事件按每 100 次外部决策进行计数，以便不同长度的轨迹可以比较。",
+   "sents": [
+    {
+     "en": "Figure 6 in the main text reports policy behavior under six shared categories.",
+     "zh": "正文中的图 6 报告了六个共享类别下的行为表现。"
+    },
+    {
+     "en": "Construct creates or modifies geometric implementation; Inspect executes code, reads state, or checks a result; Recover changes action after an explicit failure and restores progress; Invalid Reference and No Progress record invalid targets and repeated non-progress; and Persist saves or exports the terminal asset.",
+     "zh": "构造（Construct）创建或修改几何实现；检查（Inspect）执行代码、读取状态或检查结果；恢复（Recover）在显式失败后更改动作并恢复进度；无效引用（Invalid Reference）和无进展（No Progress）记录无效目标和重复的无进展；持久化（Persist）保存或导出最终资产。"
+    },
+    {
+     "en": "Events are counted per 100 external decisions so that trajectories of different lengths are comparable.",
+     "zh": "事件按每 100 次外部决策进行计数，以便不同长度的轨迹可以比较。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 13 grounds the aggregate difference in one shared task. Coding SFT produces no completed trajectory. Coding GRPO emits an asset after repeated runs and repairs, but the output collapses to a thin plate unlike the reference structure. DeciCAD SFT enters the domain modeling process but repeated failed Sketch actions leave no evaluable asset. DeciCAD GRPO instead completes a chain of creation, sketching, extrusion, persistence, export, and inspection, producing terminal geometry consistent with the reference. The example clarifies that recovery count alone does not imply useful recovery: subsequent actions must continue to advance the actual CAD state.",
+   "zh": "图13通过一个共享任务具体展现了这一总体差异。 编码SFT未能产出任何已完成的轨迹。 编码GRPO在多次运行和修复后生成了一个资产，但输出坍缩为一块薄板，与参考结构明显不同。 DeciCAD SFT进入了领域建模流程，但反复失败的Sketch操作导致没有任何可评估的资产。 DeciCAD GRPO则完成了创建、草图、拉伸、保存、导出和检查的完整链条，生成了与参考一致的终端几何体。 该示例表明，恢复次数本身并不意味着有效的恢复：后续操作必须持续推动实际的CAD状态向前推进。",
+   "sents": [
+    {
+     "en": "Figure 13 grounds the aggregate difference in one shared task.",
+     "zh": "图13通过一个共享任务具体展现了这一总体差异。"
+    },
+    {
+     "en": "Coding SFT produces no completed trajectory.",
+     "zh": "编码SFT未能产出任何已完成的轨迹。"
+    },
+    {
+     "en": "Coding GRPO emits an asset after repeated runs and repairs, but the output collapses to a thin plate unlike the reference structure.",
+     "zh": "编码GRPO在多次运行和修复后生成了一个资产，但输出坍缩为一块薄板，与参考结构明显不同。"
+    },
+    {
+     "en": "DeciCAD SFT enters the domain modeling process but repeated failed Sketch actions leave no evaluable asset.",
+     "zh": "DeciCAD SFT进入了领域建模流程，但反复失败的Sketch操作导致没有任何可评估的资产。"
+    },
+    {
+     "en": "DeciCAD GRPO instead completes a chain of creation, sketching, extrusion, persistence, export, and inspection, producing terminal geometry consistent with the reference.",
+     "zh": "DeciCAD GRPO则完成了创建、草图、拉伸、保存、导出和检查的完整链条，生成了与参考一致的终端几何体。"
+    },
+    {
+     "en": "The example clarifies that recovery count alone does not imply useful recovery: subsequent actions must continue to advance the actual CAD state.",
+     "zh": "该示例表明，恢复次数本身并不意味着有效的恢复：后续操作必须持续推动实际的CAD状态向前推进。"
+    }
+   ]
+  },
+  {
+   "en": "Aggregate geometry, behavior statistics, and trajectory-level evidence jointly define the scope of online improvement. GRPO increases valid-asset coverage and reduces invalid references and repeated non-progress, while small features in long-horizon tasks remain limited by terminal reward resolution. F1 and IoU measure surface and volumetric agreement, and CD adds local distance, but feature count, topological correspondence, repeated structures, and constraint relations can still differ under similar terminal scores. We therefore use closed-loop geometry as the primary evidence and the observed behavior and assets to show how improvement forms within each harness decision space.",
+   "zh": "聚合几何、行为统计与轨迹层面的证据共同界定了在线改进的范围。 GRPO 提升了有效资产的覆盖率，减少了无效引用和重复的无进展行为，而长程任务中的细小特征仍受限于终端奖励的分辨率。 F1 和 IoU 衡量表面与体积上的一致性，CD 补充了局部距离信息，但在相似的终端得分下，特征数量、拓扑对应关系、重复结构和约束关系仍可能存在差异。 因此，我们以闭环几何作为主要证据，并结合观察到的行为与资产，说明改进如何在每个 harness 的决策空间内形成。",
+   "sents": [
+    {
+     "en": "Aggregate geometry, behavior statistics, and trajectory-level evidence jointly define the scope of online improvement.",
+     "zh": "聚合几何、行为统计与轨迹层面的证据共同界定了在线改进的范围。"
+    },
+    {
+     "en": "GRPO increases valid-asset coverage and reduces invalid references and repeated non-progress, while small features in long-horizon tasks remain limited by terminal reward resolution.",
+     "zh": "GRPO 提升了有效资产的覆盖率，减少了无效引用和重复的无进展行为，而长程任务中的细小特征仍受限于终端奖励的分辨率。"
+    },
+    {
+     "en": "F1 and IoU measure surface and volumetric agreement, and CD adds local distance, but feature count, topological correspondence, repeated structures, and constraint relations can still differ under similar terminal scores.",
+     "zh": "F1 和 IoU 衡量表面与体积上的一致性，CD 补充了局部距离信息，但在相似的终端得分下，特征数量、拓扑对应关系、重复结构和约束关系仍可能存在差异。"
+    },
+    {
+     "en": "We therefore use closed-loop geometry as the primary evidence and the observed behavior and assets to show how improvement forms within each harness decision space.",
+     "zh": "因此，我们以闭环几何作为主要证据，并结合观察到的行为与资产，说明改进如何在每个 harness 的决策空间内形成。"
+    }
+   ]
+  },
+  {
+   "en": "DeciCAD is distributed as a terminal-native Agentic CAD application. It organizes model providers, specialized agents, CAD backends, and project resources in one workspace, allowing a user to create, modify, inspect, assemble, and export native CAD documents through natural-language interaction. This section presents the resulting product workflow, its support for long-horizon multi-agent projects, the backend SDK available to developers, and our official FreeCAD integration. Its streamed action–observation loop follows the interaction pattern established by language agents while grounding each domain action in persistent CAD state ( Yao et al. 2023 ; Yang et al. 2024 ) .",
+   "zh": "DeciCAD 是一款以终端原生形态发布的智能体化（Agentic）CAD 应用程序。 它将模型提供方、专用智能体、CAD 后端与项目资源组织在同一工作区中，使用户能够通过自然语言交互来创建、修改、检查、装配并导出原生 CAD 文档。 本节介绍最终形成的产品工作流、其对长周期多智能体项目的支持、面向开发者的后端 SDK，以及我们的官方 FreeCAD 集成。 其流式传输的动作–观察循环遵循语言智能体所确立的交互模式，同时将每个领域动作锚定在持久的 CAD 状态之上 ( Yao et al. 2023 ; Yang et al. 2024 ) 。",
+   "sents": [
+    {
+     "en": "DeciCAD is distributed as a terminal-native Agentic CAD application.",
+     "zh": "DeciCAD 是一款以终端原生形态发布的智能体化（Agentic）CAD 应用程序。"
+    },
+    {
+     "en": "It organizes model providers, specialized agents, CAD backends, and project resources in one workspace, allowing a user to create, modify, inspect, assemble, and export native CAD documents through natural-language interaction.",
+     "zh": "它将模型提供方、专用智能体、CAD 后端与项目资源组织在同一工作区中，使用户能够通过自然语言交互来创建、修改、检查、装配并导出原生 CAD 文档。"
+    },
+    {
+     "en": "This section presents the resulting product workflow, its support for long-horizon multi-agent projects, the backend SDK available to developers, and our official FreeCAD integration.",
+     "zh": "本节介绍最终形成的产品工作流、其对长周期多智能体项目的支持、面向开发者的后端 SDK，以及我们的官方 FreeCAD 集成。"
+    },
+    {
+     "en": "Its streamed action–observation loop follows the interaction pattern established by language agents while grounding each domain action in persistent CAD state ( Yao et al. 2023 ; Yang et al. 2024 ) .",
+     "zh": "其流式传输的动作–观察循环遵循语言智能体所确立的交互模式，同时将每个领域动作锚定在持久的 CAD 状态之上 ( Yao et al. 2023 ; Yang et al. 2024 ) 。"
+    }
+   ]
+  },
+  {
+   "en": "DeciCAD provides native release packages for macOS, Linux, and Windows and uses a managed installer for application updates. Running decicad inside a project opens that directory as the active workspace; decicad --project /path/to/project selects it explicitly. During initial setup, the application configures a model provider and requests trust before accessing project files or CAD resources.",
+   "zh": "DeciCAD 为 macOS、Linux 和 Windows 提供原生发行包，并使用托管安装程序进行应用更新。 在某个项目目录中运行 decicad 会将该目录打开为活动工作区；decicad --project /path/to/project 则可显式选择它。 在初始设置过程中，应用会配置一个模型提供方，并在访问项目文件或 CAD 资源之前请求信任。",
+   "sents": [
+    {
+     "en": "DeciCAD provides native release packages for macOS, Linux, and Windows and uses a managed installer for application updates.",
+     "zh": "DeciCAD 为 macOS、Linux 和 Windows 提供原生发行包，并使用托管安装程序进行应用更新。"
+    },
+    {
+     "en": "Running decicad inside a project opens that directory as the active workspace; decicad --project /path/to/project selects it explicitly.",
+     "zh": "在某个项目目录中运行 decicad 会将该目录打开为活动工作区；decicad --project /path/to/project 则可显式选择它。"
+    },
+    {
+     "en": "During initial setup, the application configures a model provider and requests trust before accessing project files or CAD resources.",
+     "zh": "在初始设置过程中，应用会配置一个模型提供方，并在访问项目文件或 CAD 资源之前请求信任。"
+    }
+   ]
+  },
+  {
+   "en": "The composer accepts part modeling, assembly, geometric revision, inspection, and export requests. An @ reference attaches a project resource such as an image or specification, while $ loads an inline CAD skill that supplies task-specific procedures. Slash commands expose runtime controls in the same interface: /model selects the provider, model, and reasoning effort; /backend installs, activates, updates, and checks a CAD backend; and /status summarizes the current runtime and token usage. Figure 14 shows these operations in the terminal interface.",
+   "zh": "Composer（作曲家）接受零件建模、装配、几何修改、检查和导出请求。 @ 引用可附加项目资源（如图片或规格说明），而 $ 可加载提供任务特定流程的内联 CAD 技能。 斜杠命令在同一界面中提供运行时控制：/model 选择提供商、模型和推理强度；/backend 安装、激活、更新并检查 CAD 后端；/status 总结当前的运行时和 token 使用情况。 图 14 展示了终端界面中的这些操作。",
+   "sents": [
+    {
+     "en": "The composer accepts part modeling, assembly, geometric revision, inspection, and export requests.",
+     "zh": "Composer（作曲家）接受零件建模、装配、几何修改、检查和导出请求。"
+    },
+    {
+     "en": "An @ reference attaches a project resource such as an image or specification, while $ loads an inline CAD skill that supplies task-specific procedures.",
+     "zh": "@ 引用可附加项目资源（如图片或规格说明），而 $ 可加载提供任务特定流程的内联 CAD 技能。"
+    },
+    {
+     "en": "Slash commands expose runtime controls in the same interface: /model selects the provider, model, and reasoning effort; /backend installs, activates, updates, and checks a CAD backend; and /status summarizes the current runtime and token usage.",
+     "zh": "斜杠命令在同一界面中提供运行时控制：/model 选择提供商、模型和推理强度；/backend 安装、激活、更新并检查 CAD 后端；/status 总结当前的运行时和 token 使用情况。"
+    },
+    {
+     "en": "Figure 14 shows these operations in the terminal interface.",
+     "zh": "图 14 展示了终端界面中的这些操作。"
+    }
+   ]
+  },
+  {
+   "en": "Model actions and environment results then appear in temporal order. File and image reads identify the evidence used by the model, skill loads expose the selected domain procedure, and CAD calls report their execution state and compact result. Successful calls immediately update the persistent document; failed calls return information that supports argument correction, targeted inspection, or selection of another action. The user can interrupt execution or add a follow-up request at any point, and subsequent actions continue from the current CAD state rather than regenerating the artifact from scratch.",
+   "zh": "随后，模型动作与环境结果按时间顺序依次呈现。 文件和图像读取用于标识模型所使用的证据，技能加载用于展示所选的领域流程，而 CAD 调用则报告其执行状态和精简结果。 成功的调用会立即更新持久化文档；失败的调用则返回有助于修正参数、进行针对性检查或选择其他动作的信息。 用户可以在任意时刻中断执行或追加后续请求，且后续动作会从当前 CAD 状态继续，而不是从头重新生成产物。",
+   "sents": [
+    {
+     "en": "Model actions and environment results then appear in temporal order.",
+     "zh": "随后，模型动作与环境结果按时间顺序依次呈现。"
+    },
+    {
+     "en": "File and image reads identify the evidence used by the model, skill loads expose the selected domain procedure, and CAD calls report their execution state and compact result.",
+     "zh": "文件和图像读取用于标识模型所使用的证据，技能加载用于展示所选的领域流程，而 CAD 调用则报告其执行状态和精简结果。"
+    },
+    {
+     "en": "Successful calls immediately update the persistent document; failed calls return information that supports argument correction, targeted inspection, or selection of another action.",
+     "zh": "成功的调用会立即更新持久化文档；失败的调用则返回有助于修正参数、进行针对性检查或选择其他动作的信息。"
+    },
+    {
+     "en": "The user can interrupt execution or add a follow-up request at any point, and subsequent actions continue from the current CAD state rather than regenerating the artifact from scratch.",
+     "zh": "用户可以在任意时刻中断执行或追加后续请求，且后续动作会从当前 CAD 状态继续，而不是从头重新生成产物。"
+    }
+   ]
+  },
+  {
+   "en": "The resulting artifact is also available in the native CAD application. Users can inspect the three-dimensional view and access the created Body, Sketch, Feature, Assembly, and Component objects in the document tree. The document can be saved in its native editable format or exported as a standard geometry asset, preserving a path from agent generation to manual inspection and continued engineering work.",
+   "zh": "生成的成品也可以在原生 CAD 应用程序中打开。 用户可以查看三维视图，并在文档树中访问创建的 Body、Sketch、Feature、Assembly 和 Component 对象。 文档可以以其原生可编辑格式保存，或导出为标准几何资产，从而保留从智能体生成到人工检查及后续工程工作的路径。",
+   "sents": [
+    {
+     "en": "The resulting artifact is also available in the native CAD application.",
+     "zh": "生成的成品也可以在原生 CAD 应用程序中打开。"
+    },
+    {
+     "en": "Users can inspect the three-dimensional view and access the created Body, Sketch, Feature, Assembly, and Component objects in the document tree.",
+     "zh": "用户可以查看三维视图，并在文档树中访问创建的 Body、Sketch、Feature、Assembly 和 Component 对象。"
+    },
+    {
+     "en": "The document can be saved in its native editable format or exported as a standard geometry asset, preserving a path from agent generation to manual inspection and continued engineering work.",
+     "zh": "文档可以以其原生可编辑格式保存，或导出为标准几何资产，从而保留从智能体生成到人工检查及后续工程工作的路径。"
+    }
+   ]
+  },
+  {
+   "en": "The interactive loop is supported by an application-level control plane that coordinates agents, tools, resources, permissions, and persistent project state. CAD backends execute domain operations, but they do not decide which agent may act, which calls may run concurrently, or whether an action was based on a current document revision. Keeping these responsibilities in the control plane allows the same orchestration policy to operate across compatible CAD systems.",
+   "zh": "交互循环由一个应用级控制平面提供支持，该控制平面协调智能体、工具、资源、权限和持久化项目状态。 CAD 后端执行领域操作，但它们不决定哪个智能体可以行动、哪些调用可以并发运行，或某个动作是否基于当前文档修订版本。 将这些职责保留在控制平面中，可以使同一套编排策略在兼容的 CAD 系统之间通用。",
+   "sents": [
+    {
+     "en": "The interactive loop is supported by an application-level control plane that coordinates agents, tools, resources, permissions, and persistent project state.",
+     "zh": "交互循环由一个应用级控制平面提供支持，该控制平面协调智能体、工具、资源、权限和持久化项目状态。"
+    },
+    {
+     "en": "CAD backends execute domain operations, but they do not decide which agent may act, which calls may run concurrently, or whether an action was based on a current document revision.",
+     "zh": "CAD 后端执行领域操作，但它们不决定哪个智能体可以行动、哪些调用可以并发运行，或某个动作是否基于当前文档修订版本。"
+    },
+    {
+     "en": "Keeping these responsibilities in the control plane allows the same orchestration policy to operate across compatible CAD systems.",
+     "zh": "将这些职责保留在控制平面中，可以使同一套编排策略在兼容的 CAD 系统之间通用。"
+    }
+   ]
+  },
+  {
+   "en": "For larger projects, a leader agent retains the user conversation and overall goal while delegating bounded subtasks to four built-in roles. The Designer turns functional and geometric intent into a feature and interface plan; the Modeler owns one complete part or a dependency-ordered modeling stage; the Assembler inserts components and manages placements, grounding, mates, and solve state; and the Verifier performs an independent, predominantly read-only evidence pass over the final document and exported assets. Each child receives the original request together with a bounded assignment, separate context, role-specific instructions, tool allowlist, and interaction budget. A child cannot recursively create more agents or modify the leader’s task board. Its final response is returned as evidence together with the resources changed during execution, leaving acceptance and follow-up decisions with the leader.",
+   "zh": "对于较大的项目，一个领导智能体会保留用户对话和总体目标，同时将边界明确的子任务委派给四个内置角色。 设计者角色将功能与几何意图转化为特征和接口规划；建模者角色负责一个完整的零件或按依赖顺序排列的建模阶段；装配者角色负责插入组件并管理放置、固定、配合与求解状态；验证者角色则对最终文档和导出的资源执行一次独立的、以只读为主的证据检查。 每个子智能体都会收到原始请求以及一个边界明确的任务分配、独立上下文、角色专属指令、工具允许清单和交互预算。 子智能体不能递归地创建更多智能体，也不能修改领导智能体的任务看板。 其最终回复会作为证据连同执行期间更改的资源一并返回，由领导智能体负责验收和后续决策。",
+   "sents": [
+    {
+     "en": "For larger projects, a leader agent retains the user conversation and overall goal while delegating bounded subtasks to four built-in roles.",
+     "zh": "对于较大的项目，一个领导智能体会保留用户对话和总体目标，同时将边界明确的子任务委派给四个内置角色。"
+    },
+    {
+     "en": "The Designer turns functional and geometric intent into a feature and interface plan; the Modeler owns one complete part or a dependency-ordered modeling stage; the Assembler inserts components and manages placements, grounding, mates, and solve state; and the Verifier performs an independent, predominantly read-only evidence pass over the final document and exported assets.",
+     "zh": "设计者角色将功能与几何意图转化为特征和接口规划；建模者角色负责一个完整的零件或按依赖顺序排列的建模阶段；装配者角色负责插入组件并管理放置、固定、配合与求解状态；验证者角色则对最终文档和导出的资源执行一次独立的、以只读为主的证据检查。"
+    },
+    {
+     "en": "Each child receives the original request together with a bounded assignment, separate context, role-specific instructions, tool allowlist, and interaction budget.",
+     "zh": "每个子智能体都会收到原始请求以及一个边界明确的任务分配、独立上下文、角色专属指令、工具允许清单和交互预算。"
+    },
+    {
+     "en": "A child cannot recursively create more agents or modify the leader’s task board.",
+     "zh": "子智能体不能递归地创建更多智能体，也不能修改领导智能体的任务看板。"
+    },
+    {
+     "en": "Its final response is returned as evidence together with the resources changed during execution, leaving acceptance and follow-up decisions with the leader.",
+     "zh": "其最终回复会作为证据连同执行期间更改的资源一并返回，由领导智能体负责验收和后续决策。"
+    }
+   ]
+  },
+  {
+   "en": "Multi-stage work is represented by a compact project task graph. Tasks record their status, description, dependencies, blocking relations, and completion evidence. This graph separates conversational planning from execution state: the leader can recover which components are ready, which assembly step is blocked, and which verification remains after context compaction or session resumption. Dependency updates are serialized by the control plane, preventing two agents from concurrently producing inconsistent task-board transitions.",
+   "zh": "多阶段工作由一个精简的项目任务图表示。 任务记录其状态、描述、依赖关系、阻塞关系和完成证据。 该图将对话式规划与执行状态分离：在上下文压缩或会话恢复之后，领导者可以恢复哪些组件已就绪、哪个组装步骤被阻塞，以及哪些验证工作尚未完成。 依赖更新由控制平面串行化，防止两个智能体并发地产生不一致的任务板状态转换。",
+   "sents": [
+    {
+     "en": "Multi-stage work is represented by a compact project task graph.",
+     "zh": "多阶段工作由一个精简的项目任务图表示。"
+    },
+    {
+     "en": "Tasks record their status, description, dependencies, blocking relations, and completion evidence.",
+     "zh": "任务记录其状态、描述、依赖关系、阻塞关系和完成证据。"
+    },
+    {
+     "en": "This graph separates conversational planning from execution state: the leader can recover which components are ready, which assembly step is blocked, and which verification remains after context compaction or session resumption.",
+     "zh": "该图将对话式规划与执行状态分离：在上下文压缩或会话恢复之后，领导者可以恢复哪些组件已就绪、哪个组装步骤被阻塞，以及哪些验证工作尚未完成。"
+    },
+    {
+     "en": "Dependency updates are serialized by the control plane, preventing two agents from concurrently producing inconsistent task-board transitions.",
+     "zh": "依赖更新由控制平面串行化，防止两个智能体并发地产生不一致的任务板状态转换。"
+    }
+   ]
+  },
+  {
+   "en": "Every tool specification declares static resource behavior, including the arguments that identify reads, writes, observations, creations, or filesystem materialization. Before execution, the resource manager resolves those fields to concrete document, entity, topology, assembly, or file keys. Each agent also maintains the revisions it has actually observed. A write is authorized only when its dependent resources have been observed at their current revisions; if another agent has modified one of them, the stale write is rejected with a recoverable conflict and the agent must inspect the updated state. File edits follow the same rule and require a complete prior read. This observation-based authorization prevents a plausible but outdated model context from silently overwriting newer CAD or project state.",
+   "zh": "每个工具规范都声明静态资源行为，包括用于标识读取、写入、观察、创建或文件系统实体化的参数。 在执行之前，资源管理器会将这些字段解析为具体的文档、实体、拓扑、装配或文件键。 每个智能体还会维护它实际观察到的修订版本。 只有当写入所依赖的资源已在当前修订版本上被观察过时，该写入才会被授权；如果另一个智能体已修改其中某个资源，则过期的写入会被拒绝并返回可恢复的冲突，该智能体必须检查更新后的状态。 文件编辑遵循同样的规则，并要求事先完成完整的读取。 这种基于观察的授权机制可以防止看似合理但已过时的模型上下文悄悄覆盖较新的 CAD 或项目状态。",
+   "sents": [
+    {
+     "en": "Every tool specification declares static resource behavior, including the arguments that identify reads, writes, observations, creations, or filesystem materialization.",
+     "zh": "每个工具规范都声明静态资源行为，包括用于标识读取、写入、观察、创建或文件系统实体化的参数。"
+    },
+    {
+     "en": "Before execution, the resource manager resolves those fields to concrete document, entity, topology, assembly, or file keys.",
+     "zh": "在执行之前，资源管理器会将这些字段解析为具体的文档、实体、拓扑、装配或文件键。"
+    },
+    {
+     "en": "Each agent also maintains the revisions it has actually observed.",
+     "zh": "每个智能体还会维护它实际观察到的修订版本。"
+    },
+    {
+     "en": "A write is authorized only when its dependent resources have been observed at their current revisions; if another agent has modified one of them, the stale write is rejected with a recoverable conflict and the agent must inspect the updated state.",
+     "zh": "只有当写入所依赖的资源已在当前修订版本上被观察过时，该写入才会被授权；如果另一个智能体已修改其中某个资源，则过期的写入会被拒绝并返回可恢复的冲突，该智能体必须检查更新后的状态。"
+    },
+    {
+     "en": "File edits follow the same rule and require a complete prior read.",
+     "zh": "文件编辑遵循同样的规则，并要求事先完成完整的读取。"
+    },
+    {
+     "en": "This observation-based authorization prevents a plausible but outdated model context from silently overwriting newer CAD or project state.",
+     "zh": "这种基于观察的授权机制可以防止看似合理但已过时的模型上下文悄悄覆盖较新的 CAD 或项目状态。"
+    }
+   ]
+  },
+  {
+   "en": "Independent child assignments can be emitted together and run concurrently. Tool specifications additionally assign calls to execution lanes and mark them as parallel or exclusive. After resource resolution, write scopes are sorted and locked in a deterministic order; calls with disjoint scopes proceed in parallel, while overlapping CAD writes are serialized. Authorization is revalidated immediately before execution to close the interval between scheduling and dispatch. A successful backend result reports concrete RuntimeResourceEffects ; the control plane commits these effects, advances resource generations, records the responsible agent, and invalidates stale observations held elsewhere. A failed call does not claim a state transition. If transport fails after a potentially mutating call, the affected scope is conservatively invalidated so that later decisions re-inspect it.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "This protocol supports useful concurrency without treating the CAD document as an ordinary shared text buffer. Different Modelers may construct independent parts simultaneously, after which an Assembler consumes their committed outputs. Calls that touch the same body, assembly, or output file are ordered, and each downstream agent receives only the document revisions known to be valid at delegation time.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Workspace trust and permission checks are evaluated before protected files or CAD resources are exposed to an agent. The user remains the authority for access that crosses the active project boundary or carries elevated effects. Because permissions are evaluated in the application rather than reimplemented by every backend, adding a CAD integration does not create a second, backend-specific authorization path.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The control plane projects model messages, tool calls, execution outcomes, permissions, resource commits, task changes, and compaction events onto an append-only rollout. The same event stream drives the terminal interface and provides the state required for replay and session restoration. /resume reconstructs an earlier project session, while /compact replaces older interaction with a bounded summary and keeps recent decisions available to the model. Durable memory is extracted from completed root rollouts with links to its source turns, separating persistent design facts from transient dialogue. Skills add reusable CAD procedures, hooks connect project workflows to agent and tool lifecycle events, and a project-level AGENTS.md carries coordinate conventions, naming rules, and delivery requirements into subsequent sessions. Together, these services allow long-running CAD work to remain recoverable, inspectable, and governed by one consistent project state.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The DeciCAD SDK is the contract boundary shared by the application and backend implementations. It defines canonical tool names, typed input and output models, geometry types, opaque object references, permission requirements, runtime resource effects, structured success values, and model-facing errors. The application remains responsible for model interaction, agent orchestration, permissions, sessions, and resource coordination. A backend developer maps the canonical state transitions to the native API of a target CAD system.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "This separation makes the SDK a semantic contract rather than a convenience wrapper around one vendor API. Canonical tools are grouped into document, inspection, entity, sketch, solid, and assembly domains. Their Pydantic models normalize units, frames, geometric values, operation modes, and result shapes, while DocumentRef and EntityRef preserve backend-owned object identity as opaque values. A backend imports these specifications instead of copying or redefining them. Consequently, field descriptions, model-facing tool schemas, resource declarations, and output validation remain identical across integrations, while implementation instructions can still describe behavior specific to the target CAD application.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "A backend first imports a canonical ToolSpec and binds it to an async implementation with @tool . Inputs have already passed the spec’s Pydantic validation before execution. The implementation returns the canonical output model together with accurate RuntimeResourceEffects ; these effects let the application update resource versions, permissions, and locks. Recoverable CAD failures use a compact ToolError , keeping operational failures distinct from backend defects and transport errors. The following example summarizes the binding used for native document creation.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Minimal binding of a canonical SDK tool to a native CAD operation.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The backend then declares a manifest containing its backend, SDK, protocol, and tool-contract versions. A BackendServer registers the complete canonical tool roster and exposes a health check for the target CAD runtime, as illustrated in Listing . During activation, a BackendClient starts the isolated process and verifies the manifest, protocol version, tool registry, contract digest, and health response. Only after this initialization does it bind remote executors as ordinary SDK tools inside DeciCAD .",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Registering tool domains and exposing backend health through the SDK server.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The server reserves standard output for newline-delimited JSON-RPC frames and sends operational diagnostics to standard error, keeping transport parseable under subprocess supervision. It refuses to initialize when a canonical tool is missing, a tool name is duplicated, an imported spec differs from the SDK, or the manifest targets incompatible SDK, protocol, or tool-contract versions. Successful results are validated against the exact output model before they cross the process boundary; operational failure results contain a ToolError and cannot claim resource effects.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "These constraints reduce the work required from a backend developer. The SDK provides model schemas, validation, RPC framing, process lifecycle, contract negotiation, error serialization, and the client-side Tool bindings. The developer concentrates on object resolution, native CAD calls, readiness, and accurate resource effects. A real BackendClient / BackendServer initialization test exercises the same registry and wire contract used by the product, catching integration drift before an agent can invoke the backend. The application and backend may then be released independently whenever their declared contracts remain compatible; an incompatible release fails explicitly at activation instead of producing ambiguous behavior midway through a modeling task.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Our official reference backend instantiates this SDK boundary for FreeCAD, and all experiments in this paper use this backend. The backend manager shown in Figure 14 controls its installation, activation, health checking, update, and removal through an isolated managed environment. In development mode, the setup command also installs a FreeCAD Addon into the versioned user directory discovered from the actual FreeCAD runtime, supporting system, portable, and custom installations.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The integration uses two local communication layers. The SDK BackendClient communicates with an independent backend process; that process connects through an authenticated loopback bridge to FreeCAD’s embedded Python runtime. The bridge executes CAD operations on the FreeCAD GUI thread, wraps document writes in native transactions, and encodes the result under the canonical output model. The bridge panel exposes connection state, dynamic endpoint, protocol version, age of the last authenticated request, and start, stop, restart, and automatic-start controls, while the application sees only the stable SDK contract. Keeping the bridge protocol separate is necessary because FreeCAD owns the embedded interpreter and GUI event loop; it also keeps FreeCAD object lookup, argument decoding, result encoding, transaction handling, and native diagnostics out of the application process.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Table 8 summarizes the complete canonical operation set currently implemented by the reference backend. Stable opaque references connect documents, entities, geometry, topology, features, and assembly objects across calls. Successful tools report concrete resource effects, and failures are mapped into shared error categories, so the general agent and resource runtime do not depend on the FreeCAD Python API.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Inspection is hierarchical rather than a full document dump. Paginated list operations expose document structure and stable references, after which get operations retrieve detailed properties, placement, geometry, topology, or assembly state only for selected objects. Modeling tools return compact native results and resource effects immediately after execution. This supports the same active and passive observation pattern used by the DeciCAD decision loop while retaining direct access to FreeCAD’s editable feature history.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Figure 15 shows a document state produced through this path. The three-dimensional solid is accompanied by its body, additive features, and sketch in the FreeCAD tree, rather than being exposed only as a flattened mesh or image.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "For batch evaluation and data collection, multiple workers run isolated FreeCAD and backend processes with separate bridge endpoints, authentication tokens, instance identifiers, and result caches. A worker resets and verifies all open documents before accepting another episode. This isolation prevents CAD state from leaking across tasks while retaining the same backend contract used by the interactive product.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "Parallelism is therefore process-isolated rather than implemented by issuing concurrent CAD operations inside one FreeCAD instance. Each worker owns one FreeCAD process, one Addon bridge, and one matching backend process. Distinct endpoint descriptor files lead to independent dynamic loopback ports and authentication tokens. This design supports parallel interactive services, trajectory collection, and benchmark evaluation without sharing mutable FreeCAD state across tasks.",
+   "zh": "",
+   "sents": null
+  },
+  {
+   "en": "The same SDK contract also supports two commercial CAD systems, SolidWorks and AutoCAD. Each backend declares the capabilities it implements, and the application loads the corresponding tools when it connects; agent orchestration, permissions, resource coordination, and sessions are shared across all backends. Table 9 summarizes the capabilities supported by the three backends.",
+   "zh": "",
+   "sents": null
+  }
+ ]
+}
