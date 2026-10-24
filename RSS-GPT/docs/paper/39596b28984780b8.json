@@ -1,0 +1,1482 @@
+{
+ "id": "39596b28984780b8",
+ "source": "arxiv-agent",
+ "link": "https://arxiv.org/abs/2610.31483v1",
+ "title": "Training Small Language Models for Transferable Tool Selection",
+ "title_zh": "训练小型语言模型实现可迁移的工具选择",
+ "published": "2026-10-22T16:07:49Z",
+ "translated_at": "2026-10-24T12:33:16Z",
+ "paragraphs": [
+  {
+   "en": "As LLM agents operate over corpora of more than ten thousand tools, selecting the right tool for a complex multi-step user instruction becomes a central bottleneck. Tool descriptions cannot all fit in context, and relevance-based retrievers only rank tools without knowing which are actually needed. Recent work instead leverages proprietary commercial LLMs like Claude or ChatGPT to drive a retriever, decomposing the instruction and selecting over retrieved candidates. We show that a small, open model can be trained via reinforcement learning to perform the same functionality. On ToolBench, a Qwen3-8B model post-trained with our recipe outperforms Llama-4-Maverick (402B). In addition, the trained model transfers directly to different retrievers and generalizes to new tool corpora in different domains.",
+   "zh": "当大语言模型智能体在包含上万工具的语料库上运行时，如何为复杂的多步骤用户指令选择正确的工具成为一个核心瓶颈。 工具描述无法全部放入上下文中，而基于相关性的检索器只能对工具进行排序，并不知道哪些工具是实际需要的。 近期的工作转而利用 Claude 或 ChatGPT 等专有商业大语言模型来驱动检索器，对指令进行分解，并在检索到的候选项中进行选择。 我们证明，可以通过强化学习训练一个小型开源模型来执行相同的功能。 在 ToolBench 上，按照我们的方法训练后的 Qwen3-8B 模型优于 Llama-4-Maverick（402B）。 此外，训练后的模型可以直接迁移到不同的检索器，并能泛化到不同领域的新工具语料库。",
+   "sents": [
+    {
+     "en": "As LLM agents operate over corpora of more than ten thousand tools, selecting the right tool for a complex multi-step user instruction becomes a central bottleneck.",
+     "zh": "当大语言模型智能体在包含上万工具的语料库上运行时，如何为复杂的多步骤用户指令选择正确的工具成为一个核心瓶颈。"
+    },
+    {
+     "en": "Tool descriptions cannot all fit in context, and relevance-based retrievers only rank tools without knowing which are actually needed.",
+     "zh": "工具描述无法全部放入上下文中，而基于相关性的检索器只能对工具进行排序，并不知道哪些工具是实际需要的。"
+    },
+    {
+     "en": "Recent work instead leverages proprietary commercial LLMs like Claude or ChatGPT to drive a retriever, decomposing the instruction and selecting over retrieved candidates.",
+     "zh": "近期的工作转而利用 Claude 或 ChatGPT 等专有商业大语言模型来驱动检索器，对指令进行分解，并在检索到的候选项中进行选择。"
+    },
+    {
+     "en": "We show that a small, open model can be trained via reinforcement learning to perform the same functionality.",
+     "zh": "我们证明，可以通过强化学习训练一个小型开源模型来执行相同的功能。"
+    },
+    {
+     "en": "On ToolBench, a Qwen3-8B model post-trained with our recipe outperforms Llama-4-Maverick (402B).",
+     "zh": "在 ToolBench 上，按照我们的方法训练后的 Qwen3-8B 模型优于 Llama-4-Maverick（402B）。"
+    },
+    {
+     "en": "In addition, the trained model transfers directly to different retrievers and generalizes to new tool corpora in different domains.",
+     "zh": "此外，训练后的模型可以直接迁移到不同的检索器，并能泛化到不同领域的新工具语料库。"
+    }
+   ]
+  },
+  {
+   "en": "Large language model (LLM) agents increasingly solve user tasks by invoking external tools (or APIs) 1 1 1 ToolBench ( Qin et al., 2024 ) uses “tool” for a RapidAPI service that groups several APIs. In this paper the unit being selected is always an individual API, which we call a tool. e.g., sending an email, booking a flight, or fetching data from the web, rather than producing an answer from the model’s learned knowledge alone. As agents are applied to real software ecosystems, the number of callable tools has grown to well over ten thousand in some public tool corpora ( Qin et al., 2024 ; Shi et al., 2025 ) , and enterprises add proprietary tools for internal use. At this scale, the model’s context overflows if every tool description is placed in it, so selecting the right tool becomes a bottleneck that precedes the actual execution.",
+   "zh": "大语言模型（LLM）智能体越来越多地通过调用外部工具（或 API）来解决用户任务 1 1 1 ToolBench（Qin et al., 2024）将分组了多个 API 的 RapidAPI 服务称为“工具”。 在本文中，被选择的单元始终是单个 API，我们将其称为工具，例如发送电子邮件、预订航班或从网络获取数据，而不是仅依靠模型学到的知识来产生答案。 随着智能体被应用于真实的软件生态系统中，在一些公开工具语料库中可调用的工具数量已增长到远超一万个（Qin et al., 2024；Shi et al., 2025），并且企业还会添加供内部使用的专有工具。 在这种规模下，如果把每个工具的描述都放入模型的上下文中，上下文就会溢出，因此选择合适的工具成为先于实际执行的一个瓶颈。",
+   "sents": [
+    {
+     "en": "Large language model (LLM) agents increasingly solve user tasks by invoking external tools (or APIs) 1 1 1 ToolBench ( Qin et al., 2024 ) uses “tool” for a RapidAPI service that groups several APIs.",
+     "zh": "大语言模型（LLM）智能体越来越多地通过调用外部工具（或 API）来解决用户任务 1 1 1 ToolBench（Qin et al., 2024）将分组了多个 API 的 RapidAPI 服务称为“工具”。"
+    },
+    {
+     "en": "In this paper the unit being selected is always an individual API, which we call a tool. e.g., sending an email, booking a flight, or fetching data from the web, rather than producing an answer from the model’s learned knowledge alone.",
+     "zh": "在本文中，被选择的单元始终是单个 API，我们将其称为工具，例如发送电子邮件、预订航班或从网络获取数据，而不是仅依靠模型学到的知识来产生答案。"
+    },
+    {
+     "en": "As agents are applied to real software ecosystems, the number of callable tools has grown to well over ten thousand in some public tool corpora ( Qin et al., 2024 ; Shi et al., 2025 ) , and enterprises add proprietary tools for internal use.",
+     "zh": "随着智能体被应用于真实的软件生态系统中，在一些公开工具语料库中可调用的工具数量已增长到远超一万个（Qin et al., 2024；Shi et al., 2025），并且企业还会添加供内部使用的专有工具。"
+    },
+    {
+     "en": "At this scale, the model’s context overflows if every tool description is placed in it, so selecting the right tool becomes a bottleneck that precedes the actual execution.",
+     "zh": "在这种规模下，如果把每个工具的描述都放入模型的上下文中，上下文就会溢出，因此选择合适的工具成为先于实际执行的一个瓶颈。"
+    }
+   ]
+  },
+  {
+   "en": "The classical solution is a retriever , which scores each tool by its similarity to the user instruction and returns a small set of high-scoring candidates for the agent to choose from. Retrievers come in two broad families. Lexical retrievers such as BM25 (Best Matching 25) ( Robertson and Zaragoza, 2009 ) score a tool by how many query terms appear in its documentation, weighting rarer terms more heavily, and apply to any corpus without training. Dense retrievers such as COLT ( Qu et al., 2024 ) instead embed the instruction and each tool description into a shared vector space with an encoder trained on the target corpus, and rank tools by embedding similarity. LLMs have also been introduced to assist a fixed retriever by rewriting queries ( Chen et al., 2024 ; Kachuee et al., 2025 ) , expanding documents ( Lu et al., 2026 ; Senthil et al., 2026 ; Wu et al., 2025 ) , or re-ranking candidates ( Zheng et al., 2024b ) . However, a retriever can only assign a relevance-based ranking over tools; it does not know which of them the task actually requires. This is especially problematic when the user instruction contains multiple substeps and requires multiple tools.",
+   "zh": "经典的解决方案是检索器，它根据每个工具与用户指令的相似度进行打分，并返回少量高分候选工具供智能体选择。 检索器大致分为两大类。 诸如 BM25（Best Matching 25）（Robertson and Zaragoza, 2009）之类的词汇检索器根据查询词在工具文档中出现的数量为工具打分，对较罕见的词给予更高的权重，并且无需训练即可应用于任何语料库。 诸如 COLT（Qu et al., 2024）之类的稠密检索器则将在目标语料库上训练得到的编码器用于把指令和每个工具描述嵌入到一个共享向量空间中，并根据嵌入相似度对工具进行排序。 研究者还引入了大语言模型来辅助固定的检索器，方式包括重写查询（Chen et al., 2024；Kachuee et al., 2025）、扩展文档（Lu et al., 2026；Senthil et al., 2026；Wu et al., 2025）或对候选工具进行重排序（Zheng et al., 2024b）。 然而，检索器只能给出基于相关性的工具排序，它并不知道任务实际需要其中哪些工具。 当用户指令包含多个子步骤且需要多个工具时，这一问题尤为突出。",
+   "sents": [
+    {
+     "en": "The classical solution is a retriever , which scores each tool by its similarity to the user instruction and returns a small set of high-scoring candidates for the agent to choose from.",
+     "zh": "经典的解决方案是检索器，它根据每个工具与用户指令的相似度进行打分，并返回少量高分候选工具供智能体选择。"
+    },
+    {
+     "en": "Retrievers come in two broad families.",
+     "zh": "检索器大致分为两大类。"
+    },
+    {
+     "en": "Lexical retrievers such as BM25 (Best Matching 25) ( Robertson and Zaragoza, 2009 ) score a tool by how many query terms appear in its documentation, weighting rarer terms more heavily, and apply to any corpus without training.",
+     "zh": "诸如 BM25（Best Matching 25）（Robertson and Zaragoza, 2009）之类的词汇检索器根据查询词在工具文档中出现的数量为工具打分，对较罕见的词给予更高的权重，并且无需训练即可应用于任何语料库。"
+    },
+    {
+     "en": "Dense retrievers such as COLT ( Qu et al., 2024 ) instead embed the instruction and each tool description into a shared vector space with an encoder trained on the target corpus, and rank tools by embedding similarity.",
+     "zh": "诸如 COLT（Qu et al., 2024）之类的稠密检索器则将在目标语料库上训练得到的编码器用于把指令和每个工具描述嵌入到一个共享向量空间中，并根据嵌入相似度对工具进行排序。"
+    },
+    {
+     "en": "LLMs have also been introduced to assist a fixed retriever by rewriting queries ( Chen et al., 2024 ; Kachuee et al., 2025 ) , expanding documents ( Lu et al., 2026 ; Senthil et al., 2026 ; Wu et al., 2025 ) , or re-ranking candidates ( Zheng et al., 2024b ) .",
+     "zh": "研究者还引入了大语言模型来辅助固定的检索器，方式包括重写查询（Chen et al., 2024；Kachuee et al., 2025）、扩展文档（Lu et al., 2026；Senthil et al., 2026；Wu et al., 2025）或对候选工具进行重排序（Zheng et al., 2024b）。"
+    },
+    {
+     "en": "However, a retriever can only assign a relevance-based ranking over tools; it does not know which of them the task actually requires.",
+     "zh": "然而，检索器只能给出基于相关性的工具排序，它并不知道任务实际需要其中哪些工具。"
+    },
+    {
+     "en": "This is especially problematic when the user instruction contains multiple substeps and requires multiple tools.",
+     "zh": "当用户指令包含多个子步骤且需要多个工具时，这一问题尤为突出。"
+    }
+   ]
+  },
+  {
+   "en": "To address this, recent work places the LLM at the center of the selection workflow and uses the retriever as a meta-tool invoked on demand. Instead of consuming a single ranked list produced in one pass, the LLM drives retrieval across turns in a ReAct-style loop ( Braunschweiler et al., 2025 ; Lumer et al., 2025a ; Lumer et al., 2026 ) : a Plan stage decomposes the user instruction into substeps, a Retrieve stage fetches a set of relevant candidates, and a Select stage chooses the tools it judges necessary, repeating until the instruction is covered. Because the model, not the ranking function, decides which retrieved tools are required, this design directly handles the multi-substep, multi-tool instructions that a relevance ranking alone cannot address. Existing work performs tool selection with proprietary commercial models such as Claude or ChatGPT under careful prompt tuning. Since tool selection is a recurring sub-routine of the agentic tool-calling pipeline, we ask whether a small model can perform the task.",
+   "zh": "为解决这一问题，近期的工作将大语言模型置于选择工作流的中心，并把检索器作为一种按需调用的元工具。 大语言模型不再一次性消费单轮生成的排序列表，而是以 ReAct 风格的循环在多轮中驱动检索（Braunschweiler et al., 2025 ; Lumer et al., 2025a ; Lumer et al., 2026）：规划阶段将用户指令分解为若干子步骤，检索阶段获取一组相关候选，选择阶段挑选它认为必要的工具，如此重复直到指令被覆盖。 由于是由模型而非排序函数来决定需要哪些检索到的工具，这一设计能够直接处理仅靠相关性排序无法应对的多子步骤、多工具指令。 现有工作在细致的提示词调优下，使用 Claude 或 ChatGPT 等专有商业模型来执行工具选择。 由于工具选择是智能体工具调用流程中反复出现的子程序，我们想探究一个小模型能否完成这一任务。",
+   "sents": [
+    {
+     "en": "To address this, recent work places the LLM at the center of the selection workflow and uses the retriever as a meta-tool invoked on demand.",
+     "zh": "为解决这一问题，近期的工作将大语言模型置于选择工作流的中心，并把检索器作为一种按需调用的元工具。"
+    },
+    {
+     "en": "Instead of consuming a single ranked list produced in one pass, the LLM drives retrieval across turns in a ReAct-style loop ( Braunschweiler et al., 2025 ; Lumer et al., 2025a ; Lumer et al., 2026 ) : a Plan stage decomposes the user instruction into substeps, a Retrieve stage fetches a set of relevant candidates, and a Select stage chooses the tools it judges necessary, repeating until the instruction is covered.",
+     "zh": "大语言模型不再一次性消费单轮生成的排序列表，而是以 ReAct 风格的循环在多轮中驱动检索（Braunschweiler et al., 2025 ; Lumer et al., 2025a ; Lumer et al., 2026）：规划阶段将用户指令分解为若干子步骤，检索阶段获取一组相关候选，选择阶段挑选它认为必要的工具，如此重复直到指令被覆盖。"
+    },
+    {
+     "en": "Because the model, not the ranking function, decides which retrieved tools are required, this design directly handles the multi-substep, multi-tool instructions that a relevance ranking alone cannot address.",
+     "zh": "由于是由模型而非排序函数来决定需要哪些检索到的工具，这一设计能够直接处理仅靠相关性排序无法应对的多子步骤、多工具指令。"
+    },
+    {
+     "en": "Existing work performs tool selection with proprietary commercial models such as Claude or ChatGPT under careful prompt tuning.",
+     "zh": "现有工作在细致的提示词调优下，使用 Claude 或 ChatGPT 等专有商业模型来执行工具选择。"
+    },
+    {
+     "en": "Since tool selection is a recurring sub-routine of the agentic tool-calling pipeline, we ask whether a small model can perform the task.",
+     "zh": "由于工具选择是智能体工具调用流程中反复出现的子程序，我们想探究一个小模型能否完成这一任务。"
+    }
+   ]
+  },
+  {
+   "en": "While an off-the-shelf small model performs poorly on its own, fine-tuning specifically for tool selection is a viable solution. However, this raises the key technical challenge of transferability :",
+   "zh": "虽然现成的小模型单独使用时表现不佳，但专门针对工具选择进行微调是一个可行的解决方案。 然而，这带来了可迁移性方面的关键技术挑战：",
+   "sents": [
+    {
+     "en": "While an off-the-shelf small model performs poorly on its own, fine-tuning specifically for tool selection is a viable solution.",
+     "zh": "虽然现成的小模型单独使用时表现不佳，但专门针对工具选择进行微调是一个可行的解决方案。"
+    },
+    {
+     "en": "However, this raises the key technical challenge of transferability :",
+     "zh": "然而，这带来了可迁移性方面的关键技术挑战："
+    }
+   ]
+  },
+  {
+   "en": "Transferability across tool domains. A tool-selection model trained on one domain of tools should be usable directly on another, so that a separate model need not be trained for every tool corpus.",
+   "zh": "跨工具领域的可迁移性。 在某一工具领域上训练的工具选择模型应当能够直接用于另一个领域，从而无需为每个工具语料库单独训练一个模型。",
+   "sents": [
+    {
+     "en": "Transferability across tool domains.",
+     "zh": "跨工具领域的可迁移性。"
+    },
+    {
+     "en": "A tool-selection model trained on one domain of tools should be usable directly on another, so that a separate model need not be trained for every tool corpus.",
+     "zh": "在某一工具领域上训练的工具选择模型应当能够直接用于另一个领域，从而无需为每个工具语料库单独训练一个模型。"
+    }
+   ]
+  },
+  {
+   "en": "Transferability across retrievers. Some tools carry specific tool names and thus favor exact string matching, whereas other tools are better found by semantic matching, so the preferred retriever depends on the underlying tool corpus. We want the model to work under a new retriever without retraining.",
+   "zh": "跨检索器的可迁移性。 有些工具带有特定的工具名称，因而更适合精确字符串匹配，而另一些工具则更适合通过语义匹配来找到，因此首选的检索器取决于底层工具语料库。 我们希望模型在不重新训练的情况下能够在新的检索器下工作。",
+   "sents": [
+    {
+     "en": "Transferability across retrievers.",
+     "zh": "跨检索器的可迁移性。"
+    },
+    {
+     "en": "Some tools carry specific tool names and thus favor exact string matching, whereas other tools are better found by semantic matching, so the preferred retriever depends on the underlying tool corpus.",
+     "zh": "有些工具带有特定的工具名称，因而更适合精确字符串匹配，而另一些工具则更适合通过语义匹配来找到，因此首选的检索器取决于底层工具语料库。"
+    },
+    {
+     "en": "We want the model to work under a new retriever without retraining.",
+     "zh": "我们希望模型在不重新训练的情况下能够在新的检索器下工作。"
+    }
+   ]
+  },
+  {
+   "en": "These challenges are tractable under the studied framework because tool selection is built on the generalizable skills of the underlying LLM: decomposing the user instruction and matching a tool description to it. The LLM needs no domain-specific knowledge, and the workflow stays invariant to different retrievers. We therefore fine-tune Qwen3 models ( Yang et al., 2025 ) with reinforcement learning to acquire these skills, and transfer them to new domains and retrievers (Figure 2 ).",
+   "zh": "在所研究的框架下，这些挑战是可解决的，因为工具选择建立在底层大语言模型的通用技能之上：分解用户指令并将工具描述与之匹配。 大语言模型不需要领域特定的知识，工作流对不同检索器保持不变。 因此，我们通过强化学习微调 Qwen3 模型（Yang et al., 2025）来习得这些技能，并将其迁移到新的领域和检索器（图 2）。",
+   "sents": [
+    {
+     "en": "These challenges are tractable under the studied framework because tool selection is built on the generalizable skills of the underlying LLM: decomposing the user instruction and matching a tool description to it.",
+     "zh": "在所研究的框架下，这些挑战是可解决的，因为工具选择建立在底层大语言模型的通用技能之上：分解用户指令并将工具描述与之匹配。"
+    },
+    {
+     "en": "The LLM needs no domain-specific knowledge, and the workflow stays invariant to different retrievers.",
+     "zh": "大语言模型不需要领域特定的知识，工作流对不同检索器保持不变。"
+    },
+    {
+     "en": "We therefore fine-tune Qwen3 models ( Yang et al., 2025 ) with reinforcement learning to acquire these skills, and transfer them to new domains and retrievers (Figure 2 ).",
+     "zh": "因此，我们通过强化学习微调 Qwen3 模型（Yang et al., 2025）来习得这些技能，并将其迁移到新的领域和检索器（图 2）。"
+    }
+   ]
+  },
+  {
+   "en": "Training a small LLM for tool selection. We fine-tune off-the-shelf Qwen3 models (1.7B, 4B, and 8B) with RL. On ToolBench, their performance exceeds that of Llama-4-Maverick (402B) ( Meta AI, 2025 ) with prompt tuning.",
+   "zh": "训练一个小型大语言模型用于工具选择。 我们使用强化学习对现成的 Qwen3 模型（1.7B、4B 和 8B）进行微调。 在 ToolBench 上，其性能超过了经过提示词调优的 Llama-4-Maverick（402B）（Meta AI, 2025）。",
+   "sents": [
+    {
+     "en": "Training a small LLM for tool selection.",
+     "zh": "训练一个小型大语言模型用于工具选择。"
+    },
+    {
+     "en": "We fine-tune off-the-shelf Qwen3 models (1.7B, 4B, and 8B) with RL.",
+     "zh": "我们使用强化学习对现成的 Qwen3 模型（1.7B、4B 和 8B）进行微调。"
+    },
+    {
+     "en": "On ToolBench, their performance exceeds that of Llama-4-Maverick (402B) ( Meta AI, 2025 ) with prompt tuning.",
+     "zh": "在 ToolBench 上，其性能超过了经过提示词调优的 Llama-4-Maverick（402B）（Meta AI, 2025）。"
+    }
+   ]
+  },
+  {
+   "en": "Domain transferability. The trained LLM transfers zero-shot across tool corpora: trained on ToolBench G3, it selects tools on G2, Gorilla, CRAFT, and TaskBench with no additional training.",
+   "zh": "领域可迁移性。 训练后的LLM可以在不同工具语料库之间进行零样本迁移：在ToolBench G3上训练后，它无需额外训练即可在G2、Gorilla、CRAFT和TaskBench上选择工具。",
+   "sents": [
+    {
+     "en": "Domain transferability.",
+     "zh": "领域可迁移性。"
+    },
+    {
+     "en": "The trained LLM transfers zero-shot across tool corpora: trained on ToolBench G3, it selects tools on G2, Gorilla, CRAFT, and TaskBench with no additional training.",
+     "zh": "训练后的LLM可以在不同工具语料库之间进行零样本迁移：在ToolBench G3上训练后，它无需额外训练即可在G2、Gorilla、CRAFT和TaskBench上选择工具。"
+    }
+   ]
+  },
+  {
+   "en": "Retriever transferability. A model trained over BM25 drives a domain-specialized dense retriever (COLT) at inference without retraining, retaining its learned selection behavior.",
+   "zh": "检索器的可迁移性。 在 BM25 上训练的模型能够在推理时驱动领域专用的稠密检索器（COLT），而无需重新训练，同时保留其已学习到的选择行为。",
+   "sents": [
+    {
+     "en": "Retriever transferability.",
+     "zh": "检索器的可迁移性。"
+    },
+    {
+     "en": "A model trained over BM25 drives a domain-specialized dense retriever (COLT) at inference without retraining, retaining its learned selection behavior.",
+     "zh": "在 BM25 上训练的模型能够在推理时驱动领域专用的稠密检索器（COLT），而无需重新训练，同时保留其已学习到的选择行为。"
+    }
+   ]
+  },
+  {
+   "en": "Conventional approaches treat tool selection as a single-shot retrieval over tool descriptions. ToolBench trains a Sentence-BERT retriever ( Qin et al., 2024 ) ; ToolRet benchmarks tool retrieval and shows that general-purpose IR encoders transfer poorly to tools ( Shi et al., 2025 ) ; COLT adds a query–tool–scene graph to optimize for completeness ( Qu et al., 2024 ) ; ToolGen represents each tool as a vocabulary token ( Wang et al., 2025 ) ; ToolRerank adds hierarchy-aware reranking ( Zheng et al., 2024b ) ; and Gao and Zhang (2025) size the returned set per task instead of a fixed top- k k . Beyond retrieval, MetaTool ( Huang et al., 2024 ) benchmarks whether a model knows when and which tool to use.",
+   "zh": "传统方法将工具选择视为对工具描述的单次检索。 ToolBench 训练了一个 Sentence-BERT 检索器（Qin et al., 2024）；ToolRet 对工具检索进行基准测试，并表明通用信息检索编码器向工具迁移的效果不佳（Shi et al., 2025）；COLT 引入查询–工具–场景图以优化完整性（Qu et al., 2024）；ToolGen 将每个工具表示为一个词表标记（Wang et al., 2025）；ToolRerank 增加了层次感知的重排序（Zheng et al., 2024b）；而 Gao and Zhang (2025) 根据任务确定返回集合的大小，而非使用固定的 top-k。 在检索之外，MetaTool（Huang et al., 2024）对模型是否知道何时以及使用哪个工具进行了基准测试。",
+   "sents": [
+    {
+     "en": "Conventional approaches treat tool selection as a single-shot retrieval over tool descriptions.",
+     "zh": "传统方法将工具选择视为对工具描述的单次检索。"
+    },
+    {
+     "en": "ToolBench trains a Sentence-BERT retriever ( Qin et al., 2024 ) ; ToolRet benchmarks tool retrieval and shows that general-purpose IR encoders transfer poorly to tools ( Shi et al., 2025 ) ; COLT adds a query–tool–scene graph to optimize for completeness ( Qu et al., 2024 ) ; ToolGen represents each tool as a vocabulary token ( Wang et al., 2025 ) ; ToolRerank adds hierarchy-aware reranking ( Zheng et al., 2024b ) ; and Gao and Zhang (2025) size the returned set per task instead of a fixed top- k k .",
+     "zh": "ToolBench 训练了一个 Sentence-BERT 检索器（Qin et al., 2024）；ToolRet 对工具检索进行基准测试，并表明通用信息检索编码器向工具迁移的效果不佳（Shi et al., 2025）；COLT 引入查询–工具–场景图以优化完整性（Qu et al., 2024）；ToolGen 将每个工具表示为一个词表标记（Wang et al., 2025）；ToolRerank 增加了层次感知的重排序（Zheng et al., 2024b）；而 Gao and Zhang (2025) 根据任务确定返回集合的大小，而非使用固定的 top-k。"
+    },
+    {
+     "en": "Beyond retrieval, MetaTool ( Huang et al., 2024 ) benchmarks whether a model knows when and which tool to use.",
+     "zh": "在检索之外，MetaTool（Huang et al., 2024）对模型是否知道何时以及使用哪个工具进行了基准测试。"
+    }
+   ]
+  },
+  {
+   "en": "An LLM can also improve a fixed retriever. It can expand tool documents offline ( Lu et al., 2026 ; Senthil et al., 2026 ; Wu et al., 2025 ; Lumer et al., 2025b ) , rewrite the query for single-pass retrieval ( Chen et al., 2024 ; Kachuee et al., 2025 ) , or operate the retriever across turns: iterative LLM feedback ( Xu et al., 2024 ) , mid-conversation re-querying ( Lumer et al., 2025a ) , short-term tool memory ( Lumer et al., 2026 ) , and ReAct-style retrieval with one query per decomposed substep ( Braunschweiler et al., 2025 ) . Our workflow follows the multi-turn design, but trains a small model instead of prompting a large one.",
+   "zh": "大语言模型还可以改进固定的检索器。 它可以离线扩展工具文档（Lu et al., 2026；Senthil et al., 2026；Wu et al., 2025；Lumer et al., 2025b），为单次检索改写查询（Chen et al., 2024；Kachuee et al., 2025），或者跨多轮操作检索器：迭代式大语言模型反馈（Xu et al., 2024）、对话中途重新查询（Lumer et al., 2025a）、短期工具记忆（Lumer et al., 2026），以及每个分解子步骤执行一次查询的 ReAct 式检索（Braunschweiler et al., 2025）。 我们的工作流遵循多轮设计，但训练一个小模型而不是提示一个大模型。",
+   "sents": [
+    {
+     "en": "An LLM can also improve a fixed retriever.",
+     "zh": "大语言模型还可以改进固定的检索器。"
+    },
+    {
+     "en": "It can expand tool documents offline ( Lu et al., 2026 ; Senthil et al., 2026 ; Wu et al., 2025 ; Lumer et al., 2025b ) , rewrite the query for single-pass retrieval ( Chen et al., 2024 ; Kachuee et al., 2025 ) , or operate the retriever across turns: iterative LLM feedback ( Xu et al., 2024 ) , mid-conversation re-querying ( Lumer et al., 2025a ) , short-term tool memory ( Lumer et al., 2026 ) , and ReAct-style retrieval with one query per decomposed substep ( Braunschweiler et al., 2025 ) .",
+     "zh": "它可以离线扩展工具文档（Lu et al., 2026；Senthil et al., 2026；Wu et al., 2025；Lumer et al., 2025b），为单次检索改写查询（Chen et al., 2024；Kachuee et al., 2025），或者跨多轮操作检索器：迭代式大语言模型反馈（Xu et al., 2024）、对话中途重新查询（Lumer et al., 2025a）、短期工具记忆（Lumer et al., 2026），以及每个分解子步骤执行一次查询的 ReAct 式检索（Braunschweiler et al., 2025）。"
+    },
+    {
+     "en": "Our workflow follows the multi-turn design, but trains a small model instead of prompting a large one.",
+     "zh": "我们的工作流遵循多轮设计，但训练一个小模型而不是提示一个大模型。"
+    }
+   ]
+  },
+  {
+   "en": "Standard RL assumes a fixed action set, whereas our actions are tools from a corpus that could change between training and deployment. Prior work handles large or changing action sets by learning action representations ( Dulac-Arnold et al., 2015 ; Chandak et al., 2019 ; Chandak et al., 2020 ) , and generalizes zero-shot to unseen actions by inferring their representations from action information acquired separately from the task ( Jain et al., 2020 ; Jain et al., 2022 ) . Our Select stage is such a policy over a varying action set of the retrieved tools, with each represented by its documentation. The LLM supplies these representations implicitly without a separately trained action encoder.",
+   "zh": "标准强化学习假设动作集合是固定的，而我们的动作是来自语料库的工具，该语料库在训练与部署之间可能发生变化。 已有工作通过学习动作表示来处理大型或变化的动作集（Dulac-Arnold et al., 2015；Chandak et al., 2019；Chandak et al., 2020），并通过从独立于任务获取的动作信息中推断其表示，实现对未见动作的零样本泛化（Jain et al., 2020；Jain et al., 2022）。 我们的 Select 阶段就是在这样一个由检索到的工具构成的变化动作集上的策略，其中每个动作都由其文档表示。 大语言模型隐式地提供这些表示，而无需单独训练的动作编码器。",
+   "sents": [
+    {
+     "en": "Standard RL assumes a fixed action set, whereas our actions are tools from a corpus that could change between training and deployment.",
+     "zh": "标准强化学习假设动作集合是固定的，而我们的动作是来自语料库的工具，该语料库在训练与部署之间可能发生变化。"
+    },
+    {
+     "en": "Prior work handles large or changing action sets by learning action representations ( Dulac-Arnold et al., 2015 ; Chandak et al., 2019 ; Chandak et al., 2020 ) , and generalizes zero-shot to unseen actions by inferring their representations from action information acquired separately from the task ( Jain et al., 2020 ; Jain et al., 2022 ) .",
+     "zh": "已有工作通过学习动作表示来处理大型或变化的动作集（Dulac-Arnold et al., 2015；Chandak et al., 2019；Chandak et al., 2020），并通过从独立于任务获取的动作信息中推断其表示，实现对未见动作的零样本泛化（Jain et al., 2020；Jain et al., 2022）。"
+    },
+    {
+     "en": "Our Select stage is such a policy over a varying action set of the retrieved tools, with each represented by its documentation.",
+     "zh": "我们的 Select 阶段就是在这样一个由检索到的工具构成的变化动作集上的策略，其中每个动作都由其文档表示。"
+    },
+    {
+     "en": "The LLM supplies these representations implicitly without a separately trained action encoder.",
+     "zh": "大语言模型隐式地提供这些表示，而无需单独训练的动作编码器。"
+    }
+   ]
+  },
+  {
+   "en": "DeepAgent ( Li et al., 2026 ) trains an end-to-end deep reasoning agent covering tool discovery and execution. Zhang et al. (2024) derive DPO preferences for single-shot query rewriting from a frozen retriever’s rankings, and ToolRL ( Qian et al., 2025 ) studies reward design for tool learning. None of them study transferability in tool selection. Beyond tool selection, RL has also been applied to other search problems: open-domain QA ( Jin et al., 2025 ; Song et al., 2025 ; Chen et al., 2025 ; Sun et al., 2025 ) , query generation ( Jiang et al., 2025 ) , web agents ( Zheng et al., 2025 ; Li et al., 2025 ; Qi et al., 2025 ) , and retriever training from agent trajectories ( Zhou et al., 2026 ) .",
+   "zh": "DeepAgent（Li et al., 2026）训练了一个端到端的深度推理智能体，涵盖工具发现与执行。Zhang et al. （2024）基于冻结检索器的排序结果，为单轮查询改写推导 DPO 偏好，而 ToolRL（Qian et al., 2025）研究了工具学习的奖励设计。 它们都没有研究工具选择中的可迁移性。 除工具选择之外，强化学习还被应用于其他搜索问题：开放域问答（Jin et al., 2025；Song et al., 2025；Chen et al., 2025；Sun et al., 2025）、查询生成（Jiang et al., 2025）、网络智能体（Zheng et al., 2025；Li et al., 2025；Qi et al., 2025），以及从智能体轨迹训练检索器（Zhou et al., 2026）。",
+   "sents": [
+    {
+     "en": "DeepAgent ( Li et al., 2026 ) trains an end-to-end deep reasoning agent covering tool discovery and execution. Zhang et al.",
+     "zh": "DeepAgent（Li et al., 2026）训练了一个端到端的深度推理智能体，涵盖工具发现与执行。Zhang et al."
+    },
+    {
+     "en": "(2024) derive DPO preferences for single-shot query rewriting from a frozen retriever’s rankings, and ToolRL ( Qian et al., 2025 ) studies reward design for tool learning.",
+     "zh": "（2024）基于冻结检索器的排序结果，为单轮查询改写推导 DPO 偏好，而 ToolRL（Qian et al., 2025）研究了工具学习的奖励设计。"
+    },
+    {
+     "en": "None of them study transferability in tool selection.",
+     "zh": "它们都没有研究工具选择中的可迁移性。"
+    },
+    {
+     "en": "Beyond tool selection, RL has also been applied to other search problems: open-domain QA ( Jin et al., 2025 ; Song et al., 2025 ; Chen et al., 2025 ; Sun et al., 2025 ) , query generation ( Jiang et al., 2025 ) , web agents ( Zheng et al., 2025 ; Li et al., 2025 ; Qi et al., 2025 ) , and retriever training from agent trajectories ( Zhou et al., 2026 ) .",
+     "zh": "除工具选择之外，强化学习还被应用于其他搜索问题：开放域问答（Jin et al., 2025；Song et al., 2025；Chen et al., 2025；Sun et al., 2025）、查询生成（Jiang et al., 2025）、网络智能体（Zheng et al., 2025；Li et al., 2025；Qi et al., 2025），以及从智能体轨迹训练检索器（Zhou et al., 2026）。"
+    }
+   ]
+  },
+  {
+   "en": "Given a user instruction x x and a tool corpus 𝒯 \\mathcal{T} too large to fit in the model’s context, tool selection asks for the subset T ⊆ 𝒯 T\\subseteq\\mathcal{T} of tools that x x requires. Rather than training a corpus-specific dense retriever, we let a single small model π \\pi operate a lightweight, corpus-agnostic retriever ℛ \\mathcal{R} to find these tools. We first define the workflow through which π \\pi drives ℛ \\mathcal{R} (§ 3.1 ), and then describe how π \\pi is trained: supervised fine-tuning (§ 3.2 ) followed by reinforcement learning (§ 3.3 ). Unless otherwise stated, ℛ \\mathcal{R} is BM25 ( Robertson and Zaragoza, 2009 ) , which requires no training and applies to any corpus. The transfer to new tool domains in § 4 therefore comes from the trained model rather than from a retriever fitted to the target corpus.",
+   "zh": "给定用户指令 x 和一个过大而无法放入模型上下文的工具库 𝒯，工具选择要求找出 x 所需的工具子集 T ⊆ 𝒯。 我们不训练针对特定语料库的稠密检索器，而是让单个小型模型 π 操作一个轻量的、与语料库无关的检索器 ℛ 来找到这些工具。 我们首先定义 π 驱动 ℛ 的工作流程（§ 3.1），然后描述 π 的训练方式：先进行监督微调（§ 3.2），再进行强化学习（§ 3.3）。 除非另有说明，ℛ 为 BM25（Robertson and Zaragoza, 2009），它无需训练且适用于任何语料库。 因此，§ 4 中向新工具领域的迁移来自训练得到的模型，而不是来自针对目标语料库拟合的检索器。",
+   "sents": [
+    {
+     "en": "Given a user instruction x x and a tool corpus 𝒯 \\mathcal{T} too large to fit in the model’s context, tool selection asks for the subset T ⊆ 𝒯 T\\subseteq\\mathcal{T} of tools that x x requires.",
+     "zh": "给定用户指令 x 和一个过大而无法放入模型上下文的工具库 𝒯，工具选择要求找出 x 所需的工具子集 T ⊆ 𝒯。"
+    },
+    {
+     "en": "Rather than training a corpus-specific dense retriever, we let a single small model π \\pi operate a lightweight, corpus-agnostic retriever ℛ \\mathcal{R} to find these tools.",
+     "zh": "我们不训练针对特定语料库的稠密检索器，而是让单个小型模型 π 操作一个轻量的、与语料库无关的检索器 ℛ 来找到这些工具。"
+    },
+    {
+     "en": "We first define the workflow through which π \\pi drives ℛ \\mathcal{R} (§ 3.1 ), and then describe how π \\pi is trained: supervised fine-tuning (§ 3.2 ) followed by reinforcement learning (§ 3.3 ).",
+     "zh": "我们首先定义 π 驱动 ℛ 的工作流程（§ 3.1），然后描述 π 的训练方式：先进行监督微调（§ 3.2），再进行强化学习（§ 3.3）。"
+    },
+    {
+     "en": "Unless otherwise stated, ℛ \\mathcal{R} is BM25 ( Robertson and Zaragoza, 2009 ) , which requires no training and applies to any corpus.",
+     "zh": "除非另有说明，ℛ 为 BM25（Robertson and Zaragoza, 2009），它无需训练且适用于任何语料库。"
+    },
+    {
+     "en": "The transfer to new tool domains in § 4 therefore comes from the trained model rather than from a retriever fitted to the target corpus.",
+     "zh": "因此，§ 4 中向新工具领域的迁移来自训练得到的模型，而不是来自针对目标语料库拟合的检索器。"
+    }
+   ]
+  },
+  {
+   "en": "The LLM drives the retriever through a three-stage workflow (Figure 1 and Algorithm 1 ): a Plan stage decomposes the user instruction into substeps, a Retrieve stage fetches relevant candidates, and a Select stage chooses the tools it judges necessary, repeating until the instruction is covered.",
+   "zh": "大语言模型通过一个三阶段工作流驱动检索器（图 1 和算法 1）：规划阶段将用户指令分解为子步骤，检索阶段获取相关候选，选择阶段选出它判断必要的工具，并重复此过程直到指令被完全覆盖。",
+   "sents": null
+  },
+  {
+   "en": "A user instruction often contains several requests. For instance, “book a flight from San Francisco to New York City and find a hotel in New York City” naturally splits into two. Because the retriever scores tools against the whole query, the terms of one request interfere with retrieval for the other. The model therefore first decomposes the instruction into an ordered list of substeps, each a short natural-language description of a single required capability.",
+   "zh": "用户指令通常包含多个请求。 例如，“预订一张从旧金山到纽约的航班并在纽约找一家酒店”自然地拆分为两个请求。 由于检索器是针对整个查询对工具进行评分，一个请求的词条会干扰另一个请求的检索。 因此，模型首先将该指令分解为一个有序的子步骤列表，每个子步骤是对单个所需能力的简短自然语言描述。",
+   "sents": [
+    {
+     "en": "A user instruction often contains several requests.",
+     "zh": "用户指令通常包含多个请求。"
+    },
+    {
+     "en": "For instance, “book a flight from San Francisco to New York City and find a hotel in New York City” naturally splits into two.",
+     "zh": "例如，“预订一张从旧金山到纽约的航班并在纽约找一家酒店”自然地拆分为两个请求。"
+    },
+    {
+     "en": "Because the retriever scores tools against the whole query, the terms of one request interfere with retrieval for the other.",
+     "zh": "由于检索器是针对整个查询对工具进行评分，一个请求的词条会干扰另一个请求的检索。"
+    },
+    {
+     "en": "The model therefore first decomposes the instruction into an ordered list of substeps, each a short natural-language description of a single required capability.",
+     "zh": "因此，模型首先将该指令分解为一个有序的子步骤列表，每个子步骤是对单个所需能力的简短自然语言描述。"
+    }
+   ]
+  },
+  {
+   "en": "For each substep, the retriever scores all tool descriptions against the substep text in a single query. We keep tools scoring above a threshold τ \\tau and truncate them to the top K K , which filters out irrelevant tools and bounds the context loaded at the Select stage. Unless otherwise stated, τ = 3 \\tau=3 and K = 15 K=15 . We train with BM25, but any retriever that scores tools against a substep, such as COLT ( Qu et al., 2024 ) , a dense retriever trained on the ToolBench corpus, can be substituted at test time without retraining.",
+   "zh": "对于每个子步骤，检索器在单次查询中将所有工具描述与该子步骤文本进行打分。 我们保留得分高于阈值 τ \\tau 的工具，并将其截断为前 K K 个，从而过滤掉不相关的工具，并限制 Select 阶段加载的上下文规模。 除非另有说明，τ = 3 \\tau=3 且 K = 15 K=15 。 我们使用 BM25 进行训练，但任何能够针对子步骤对工具打分的检索器（例如在 ToolBench 语料库上训练的稠密检索器 COLT ( Qu et al., 2024 ) ）都可以在测试时直接替换使用，无需重新训练。",
+   "sents": [
+    {
+     "en": "For each substep, the retriever scores all tool descriptions against the substep text in a single query.",
+     "zh": "对于每个子步骤，检索器在单次查询中将所有工具描述与该子步骤文本进行打分。"
+    },
+    {
+     "en": "We keep tools scoring above a threshold τ \\tau and truncate them to the top K K , which filters out irrelevant tools and bounds the context loaded at the Select stage.",
+     "zh": "我们保留得分高于阈值 τ \\tau 的工具，并将其截断为前 K K 个，从而过滤掉不相关的工具，并限制 Select 阶段加载的上下文规模。"
+    },
+    {
+     "en": "Unless otherwise stated, τ = 3 \\tau=3 and K = 15 K=15 .",
+     "zh": "除非另有说明，τ = 3 \\tau=3 且 K = 15 K=15 。"
+    },
+    {
+     "en": "We train with BM25, but any retriever that scores tools against a substep, such as COLT ( Qu et al., 2024 ) , a dense retriever trained on the ToolBench corpus, can be substituted at test time without retraining.",
+     "zh": "我们使用 BM25 进行训练，但任何能够针对子步骤对工具打分的检索器（例如在 ToolBench 语料库上训练的稠密检索器 COLT ( Qu et al., 2024 ) ）都可以在测试时直接替换使用，无需重新训练。"
+    }
+   ]
+  },
+  {
+   "en": "The descriptions of the candidate tools are loaded into the LLM’s context, and the LLM selects the tool that best fulfills the substep. This assumes that each substep can be solved by exactly one tool and that substeps are independent, i.e., no substep needs the output of another. The selected tools are accumulated across substeps, and their union is returned as the final tool set. The same model π \\pi serves both LLM stages under two different prompts (Appendix D ). We write π Plan \\pi_{\\textsc{Plan}} and π Select \\pi_{\\textsc{Select}} only to indicate which prompt is used. Each LLM call is stateless and sees only the user instruction ( Plan ) or the current substep with its ≤ K \\leq K candidates ( Select ), so the per-call context is bounded regardless of corpus size or plan length.",
+   "zh": "候选工具的描述被加载到 LLM 的上下文中，由 LLM 选择最能完成该子步骤的工具。 这假设每个子步骤恰好可以由一个工具解决，且各子步骤相互独立，即没有子步骤需要另一个子步骤的输出。 所选工具在各子步骤之间累积，其并集作为最终工具集返回。 同一个模型 π \\pi 在两个 LLM 阶段中通过两个不同的提示词来使用（见附录 D ）。 我们写 π Plan \\pi_{\\textsc{Plan}} 和 π Select \\pi_{\\textsc{Select}} 只是为了表明使用了哪个提示词。 每次 LLM 调用都是无状态的，只看到用户指令（ Plan ）或当前子步骤及其 ≤ K \\leq K 个候选（ Select ），因此无论语料库规模或计划长度如何，单次调用的上下文都是有界的。",
+   "sents": [
+    {
+     "en": "The descriptions of the candidate tools are loaded into the LLM’s context, and the LLM selects the tool that best fulfills the substep.",
+     "zh": "候选工具的描述被加载到 LLM 的上下文中，由 LLM 选择最能完成该子步骤的工具。"
+    },
+    {
+     "en": "This assumes that each substep can be solved by exactly one tool and that substeps are independent, i.e., no substep needs the output of another.",
+     "zh": "这假设每个子步骤恰好可以由一个工具解决，且各子步骤相互独立，即没有子步骤需要另一个子步骤的输出。"
+    },
+    {
+     "en": "The selected tools are accumulated across substeps, and their union is returned as the final tool set.",
+     "zh": "所选工具在各子步骤之间累积，其并集作为最终工具集返回。"
+    },
+    {
+     "en": "The same model π \\pi serves both LLM stages under two different prompts (Appendix D ).",
+     "zh": "同一个模型 π \\pi 在两个 LLM 阶段中通过两个不同的提示词来使用（见附录 D ）。"
+    },
+    {
+     "en": "We write π Plan \\pi_{\\textsc{Plan}} and π Select \\pi_{\\textsc{Select}} only to indicate which prompt is used.",
+     "zh": "我们写 π Plan \\pi_{\\textsc{Plan}} 和 π Select \\pi_{\\textsc{Select}} 只是为了表明使用了哪个提示词。"
+    },
+    {
+     "en": "Each LLM call is stateless and sees only the user instruction ( Plan ) or the current substep with its ≤ K \\leq K candidates ( Select ), so the per-call context is bounded regardless of corpus size or plan length.",
+     "zh": "每次 LLM 调用都是无状态的，只看到用户指令（ Plan ）或当前子步骤及其 ≤ K \\leq K 个候选（ Select ），因此无论语料库规模或计划长度如何，单次调用的上下文都是有界的。"
+    }
+   ]
+  },
+  {
+   "en": "Reinforcement learning from an off-the-shelf base model is slow to start as the base model rarely completes the workflow successfully, so we warm-start the policy with supervised fine-tuning (SFT) on synthetic trajectories before the RL stage (§ 3.3 ). We use Llama-4-Maverick as the teacher model to create the training examples.",
+   "zh": "直接从现成的基座模型开始强化学习启动很慢，因为基座模型很少能成功完成整个工作流，因此我们在强化学习阶段之前，先在合成轨迹上使用监督微调（SFT）对策略进行热启动（§ 3.3）。 我们使用 Llama-4-Maverick 作为教师模型来创建训练样例。",
+   "sents": [
+    {
+     "en": "Reinforcement learning from an off-the-shelf base model is slow to start as the base model rarely completes the workflow successfully, so we warm-start the policy with supervised fine-tuning (SFT) on synthetic trajectories before the RL stage (§ 3.3 ).",
+     "zh": "直接从现成的基座模型开始强化学习启动很慢，因为基座模型很少能成功完成整个工作流，因此我们在强化学习阶段之前，先在合成轨迹上使用监督微调（SFT）对策略进行热启动（§ 3.3）。"
+    },
+    {
+     "en": "We use Llama-4-Maverick as the teacher model to create the training examples.",
+     "zh": "我们使用 Llama-4-Maverick 作为教师模型来创建训练样例。"
+    }
+   ]
+  },
+  {
+   "en": "We assume access to a reference gold tool set for each query in the training data, but this set can be noisy. For instance, ToolBench ( Qin et al., 2024 ) collects gold tools from a reference solution trajectory, so some gold tools are not determined by anything the user wrote, and others are redundant near-duplicates. Training on such tools would teach the agent to select tools that the instruction does not call for. Therefore, our filter keeps a (query, gold tool) pair only if the tool can be identified from the query alone. A deterministic first pass keeps any pair whose query and tool documentation share a content word. The remaining pairs go to the teacher model, which keeps only those whose query contains a paraphrase or synonym of the tool’s function. The resulting curated gold set is used for both training and evaluation.",
+   "zh": "我们假设可以访问训练数据中每个查询的参考黄金工具集，但该集合可能含有噪声。 例如，ToolBench（Qin et al., 2024）从参考解法轨迹中收集黄金工具，因此一些黄金工具并非由用户所写的内容决定，而另一些则是冗余的近似重复项。 在这样的工具上训练会让智能体学会选择指令并未要求的工具。 因此，我们的过滤器仅在工具可以仅凭查询本身确定时，才保留该（查询，黄金工具）对。 确定性的第一遍筛选会保留查询与工具文档共享实词的任何对。 其余对交给教师模型，教师模型仅保留那些查询中包含工具功能的改写或同义表达的对。 由此得到的筛选后的黄金集同时用于训练和评估。",
+   "sents": [
+    {
+     "en": "We assume access to a reference gold tool set for each query in the training data, but this set can be noisy.",
+     "zh": "我们假设可以访问训练数据中每个查询的参考黄金工具集，但该集合可能含有噪声。"
+    },
+    {
+     "en": "For instance, ToolBench ( Qin et al., 2024 ) collects gold tools from a reference solution trajectory, so some gold tools are not determined by anything the user wrote, and others are redundant near-duplicates.",
+     "zh": "例如，ToolBench（Qin et al., 2024）从参考解法轨迹中收集黄金工具，因此一些黄金工具并非由用户所写的内容决定，而另一些则是冗余的近似重复项。"
+    },
+    {
+     "en": "Training on such tools would teach the agent to select tools that the instruction does not call for.",
+     "zh": "在这样的工具上训练会让智能体学会选择指令并未要求的工具。"
+    },
+    {
+     "en": "Therefore, our filter keeps a (query, gold tool) pair only if the tool can be identified from the query alone.",
+     "zh": "因此，我们的过滤器仅在工具可以仅凭查询本身确定时，才保留该（查询，黄金工具）对。"
+    },
+    {
+     "en": "A deterministic first pass keeps any pair whose query and tool documentation share a content word.",
+     "zh": "确定性的第一遍筛选会保留查询与工具文档共享实词的任何对。"
+    },
+    {
+     "en": "The remaining pairs go to the teacher model, which keeps only those whose query contains a paraphrase or synonym of the tool’s function.",
+     "zh": "其余对交给教师模型，教师模型仅保留那些查询中包含工具功能的改写或同义表达的对。"
+    },
+    {
+     "en": "The resulting curated gold set is used for both training and evaluation.",
+     "zh": "由此得到的筛选后的黄金集同时用于训练和评估。"
+    }
+   ]
+  },
+  {
+   "en": "Given the surviving gold tools, the teacher model decomposes each user instruction into substeps, matching each substep to one of them. It may emit fewer substeps than gold tools, because some gold tools, though relevant, are unnecessary for the instruction. These unused gold tools are removed from the gold set as an additional round of filtering.",
+   "zh": "给定留存的黄金工具，教师模型将每条用户指令分解为子步骤，并将每个子步骤匹配到其中一个工具。 它可能生成少于黄金工具数量的子步骤，因为某些黄金工具虽然相关，但对指令而言并非必要。 这些未被使用的黄金工具将作为额外一轮过滤从黄金集合中移除。",
+   "sents": [
+    {
+     "en": "Given the surviving gold tools, the teacher model decomposes each user instruction into substeps, matching each substep to one of them.",
+     "zh": "给定留存的黄金工具，教师模型将每条用户指令分解为子步骤，并将每个子步骤匹配到其中一个工具。"
+    },
+    {
+     "en": "It may emit fewer substeps than gold tools, because some gold tools, though relevant, are unnecessary for the instruction.",
+     "zh": "它可能生成少于黄金工具数量的子步骤，因为某些黄金工具虽然相关，但对指令而言并非必要。"
+    },
+    {
+     "en": "These unused gold tools are removed from the gold set as an additional round of filtering.",
+     "zh": "这些未被使用的黄金工具将作为额外一轮过滤从黄金集合中移除。"
+    }
+   ]
+  },
+  {
+   "en": "The generated substeps and the gold tools determine the tool-selection trajectory, but we still generate reasoning text so that the model can more easily learn how to act in the Plan and Select stages. For Plan , given the user instruction and the generated substeps, the teacher model writes the reasoning that justifies the decomposition. We do not reuse the teacher’s reasoning from the decomposition step itself, because the teacher saw the gold tools there and its reasoning would leak them. For Select , the teacher model writes the reasoning that justifies picking the gold tool among the candidates retrieved for the generated substep. A validation step flags any reasoning that names a tool outside the candidate set or leaks candidate indices, and triggers regeneration when a violation occurs.",
+   "zh": "生成的子步骤和标准工具共同决定了工具选择轨迹，但我们仍然生成推理文本，以便模型更容易学习如何在 Plan 和 Select 阶段行动。 对于 Plan，给定用户指令和生成的子步骤，教师模型撰写论证该分解合理性的推理。 我们不复用教师在分解步骤本身的推理，因为教师在那里看到了标准工具，其推理会泄露它们。 对于 Select，教师模型撰写论证在为生成子步骤检索到的候选中选择标准工具的推理。 验证步骤会标记任何提到候选集之外的工具或泄露候选索引的推理，并在出现违规时触发重新生成。",
+   "sents": [
+    {
+     "en": "The generated substeps and the gold tools determine the tool-selection trajectory, but we still generate reasoning text so that the model can more easily learn how to act in the Plan and Select stages.",
+     "zh": "生成的子步骤和标准工具共同决定了工具选择轨迹，但我们仍然生成推理文本，以便模型更容易学习如何在 Plan 和 Select 阶段行动。"
+    },
+    {
+     "en": "For Plan , given the user instruction and the generated substeps, the teacher model writes the reasoning that justifies the decomposition.",
+     "zh": "对于 Plan，给定用户指令和生成的子步骤，教师模型撰写论证该分解合理性的推理。"
+    },
+    {
+     "en": "We do not reuse the teacher’s reasoning from the decomposition step itself, because the teacher saw the gold tools there and its reasoning would leak them.",
+     "zh": "我们不复用教师在分解步骤本身的推理，因为教师在那里看到了标准工具，其推理会泄露它们。"
+    },
+    {
+     "en": "For Select , the teacher model writes the reasoning that justifies picking the gold tool among the candidates retrieved for the generated substep.",
+     "zh": "对于 Select，教师模型撰写论证在为生成子步骤检索到的候选中选择标准工具的推理。"
+    },
+    {
+     "en": "A validation step flags any reasoning that names a tool outside the candidate set or leaks candidate indices, and triggers regeneration when a violation occurs.",
+     "zh": "验证步骤会标记任何提到候选集之外的工具或泄露候选索引的推理，并在出现违规时触发重新生成。"
+    }
+   ]
+  },
+  {
+   "en": "We collect the reasoning and actions generated during data curation in JSON format and form (prompt, reasoning + action) pairs for all rounds of LLM generation (prompt templates in Appendix D ). We then apply standard SFT so that the model learns the basic thinking pattern and output format for both the Plan and Select stages, preparing it for RL (§ 3.3 ).",
+   "zh": "我们以 JSON 格式收集数据整理过程中产生的推理与动作，并为 LLM 生成的所有轮次构建（提示词，推理 + 动作）对（提示词模板见附录 D）。 然后我们采用标准的 SFT，使模型学习 Plan 和 Select 两个阶段的基本思维模式与输出格式，为后续的强化学习做好准备（§ 3.3）。",
+   "sents": [
+    {
+     "en": "We collect the reasoning and actions generated during data curation in JSON format and form (prompt, reasoning + action) pairs for all rounds of LLM generation (prompt templates in Appendix D ).",
+     "zh": "我们以 JSON 格式收集数据整理过程中产生的推理与动作，并为 LLM 生成的所有轮次构建（提示词，推理 + 动作）对（提示词模板见附录 D）。"
+    },
+    {
+     "en": "We then apply standard SFT so that the model learns the basic thinking pattern and output format for both the Plan and Select stages, preparing it for RL (§ 3.3 ).",
+     "zh": "然后我们采用标准的 SFT，使模型学习 Plan 和 Select 两个阶段的基本思维模式与输出格式，为后续的强化学习做好准备（§ 3.3）。"
+    }
+   ]
+  },
+  {
+   "en": "Starting from the SFT checkpoint, we further train the model with RL for better performance (§ 4 ). For training stability, we decouple Plan and Select into separate stages: when training Select , we use the high-quality substeps generated by the teacher model instead of the model’s own plans. Each stage is then a single stateless LLM call with its own reward, so we can train it with standard GRPO ( Shao et al., 2024 ) . The remaining question is how to design the Plan and Select rewards without additional human annotation.",
+   "zh": "从 SFT 检查点出发，我们进一步用强化学习（RL）训练模型以获得更好的性能（§ 4）。 为了训练稳定性，我们将 Plan 和 Select 解耦为两个独立阶段：训练 Select 时，我们使用教师模型生成的高质量子步骤，而不是模型自身的规划。 每个阶段都是一次无状态的 LLM 调用，并拥有自己的奖励，因此我们可以用标准的 GRPO（Shao et al., 2024）来训练它。 剩下的问题是如何在无需额外人工标注的情况下设计 Plan 和 Select 的奖励。",
+   "sents": [
+    {
+     "en": "Starting from the SFT checkpoint, we further train the model with RL for better performance (§ 4 ).",
+     "zh": "从 SFT 检查点出发，我们进一步用强化学习（RL）训练模型以获得更好的性能（§ 4）。"
+    },
+    {
+     "en": "For training stability, we decouple Plan and Select into separate stages: when training Select , we use the high-quality substeps generated by the teacher model instead of the model’s own plans.",
+     "zh": "为了训练稳定性，我们将 Plan 和 Select 解耦为两个独立阶段：训练 Select 时，我们使用教师模型生成的高质量子步骤，而不是模型自身的规划。"
+    },
+    {
+     "en": "Each stage is then a single stateless LLM call with its own reward, so we can train it with standard GRPO ( Shao et al., 2024 ) .",
+     "zh": "每个阶段都是一次无状态的 LLM 调用，并拥有自己的奖励，因此我们可以用标准的 GRPO（Shao et al., 2024）来训练它。"
+    },
+    {
+     "en": "The remaining question is how to design the Plan and Select rewards without additional human annotation.",
+     "zh": "剩下的问题是如何在无需额外人工标注的情况下设计 Plan 和 Select 的奖励。"
+    }
+   ]
+  },
+  {
+   "en": "The Plan stage is rewarded based on substep text quality, which is reflected by the candidate set retrieved with this text. A plan is good when every gold tool is retrieved by one substep at a high rank and there are no redundant substeps. Therefore, we treat the substeps as a set and measure its precision and recall against the gold tools.",
+   "zh": "规划（Plan）阶段根据子步骤文本的质量获得奖励，该质量通过使用此文本检索到的候选集来体现。 当每个黄金工具都能在较高的排名下被某个子步骤检索到，且没有冗余子步骤时，该规划才是好的。 因此，我们将子步骤视为一个集合，并针对黄金工具衡量其精确率（precision）和召回率（recall）。",
+   "sents": [
+    {
+     "en": "The Plan stage is rewarded based on substep text quality, which is reflected by the candidate set retrieved with this text.",
+     "zh": "规划（Plan）阶段根据子步骤文本的质量获得奖励，该质量通过使用此文本检索到的候选集来体现。"
+    },
+    {
+     "en": "A plan is good when every gold tool is retrieved by one substep at a high rank and there are no redundant substeps.",
+     "zh": "当每个黄金工具都能在较高的排名下被某个子步骤检索到，且没有冗余子步骤时，该规划才是好的。"
+    },
+    {
+     "en": "Therefore, we treat the substeps as a set and measure its precision and recall against the gold tools.",
+     "zh": "因此，我们将子步骤视为一个集合，并针对黄金工具衡量其精确率（precision）和召回率（recall）。"
+    }
+   ]
+  },
+  {
+   "en": "Suppose the user instruction has N N gold tools, and the planning stage emits n n substeps. Running substep i i through the retriever yields a ranked candidate list A i A_{i} . We try to match every list A i A_{i} with a gold tool. We walk the substeps i i in order and scan each A i A_{i} in descending order of score. The first gold tool that has not been matched previously is matched to A i A_{i} , and we move on to the next substep. If no such gold tool is found, A i A_{i} is unmatched.",
+   "zh": "假设用户指令有 N N 个金标准工具，规划阶段产出 n n 个子步骤。 将子步骤 i i 送入检索器会得到一个按分数排序的候选列表 A i A_{i}。 我们尝试将每个列表 A i A_{i} 与一个金标准工具匹配。 我们按顺序遍历子步骤 i i，并按分数从高到低的顺序扫描每个 A i A_{i}。 遇到的第一个尚未被匹配过的金标准工具会与 A i A_{i} 匹配，然后我们继续处理下一个子步骤。 如果没有找到这样的金标准工具，则 A i A_{i} 未被匹配。",
+   "sents": [
+    {
+     "en": "Suppose the user instruction has N N gold tools, and the planning stage emits n n substeps.",
+     "zh": "假设用户指令有 N N 个金标准工具，规划阶段产出 n n 个子步骤。"
+    },
+    {
+     "en": "Running substep i i through the retriever yields a ranked candidate list A i A_{i} .",
+     "zh": "将子步骤 i i 送入检索器会得到一个按分数排序的候选列表 A i A_{i}。"
+    },
+    {
+     "en": "We try to match every list A i A_{i} with a gold tool.",
+     "zh": "我们尝试将每个列表 A i A_{i} 与一个金标准工具匹配。"
+    },
+    {
+     "en": "We walk the substeps i i in order and scan each A i A_{i} in descending order of score.",
+     "zh": "我们按顺序遍历子步骤 i i，并按分数从高到低的顺序扫描每个 A i A_{i}。"
+    },
+    {
+     "en": "The first gold tool that has not been matched previously is matched to A i A_{i} , and we move on to the next substep.",
+     "zh": "遇到的第一个尚未被匹配过的金标准工具会与 A i A_{i} 匹配，然后我们继续处理下一个子步骤。"
+    },
+    {
+     "en": "If no such gold tool is found, A i A_{i} is unmatched.",
+     "zh": "如果没有找到这样的金标准工具，则 A i A_{i} 未被匹配。"
+    }
+   ]
+  },
+  {
+   "en": "Let n cov n_{\\text{cov}} be the number of matched substeps. Then precision is the fraction of substeps that are matched:",
+   "zh": "设 n_{\\text{cov}} 为匹配的子步骤数量。 那么精确率就是被匹配的子步骤所占的比例：",
+   "sents": [
+    {
+     "en": "Let n cov n_{\\text{cov}} be the number of matched substeps.",
+     "zh": "设 n_{\\text{cov}} 为匹配的子步骤数量。"
+    },
+    {
+     "en": "Then precision is the fraction of substeps that are matched:",
+     "zh": "那么精确率就是被匹配的子步骤所占的比例："
+    }
+   ]
+  },
+  {
+   "en": "Precision penalizes unmatched substeps, encouraging every substep to match a unique tool.",
+   "zh": "精确率会惩罚未匹配的子步骤，促使每个子步骤匹配一个唯一的工具。",
+   "sents": null
+  },
+  {
+   "en": "Let i 1 , i 2 , ⋯ , i n cov i_{1},i_{2},\\cdots,i_{n_{\\text{cov}}} be the substeps that are matched with a gold tool, and the matched gold tool appears in rank ρ j \\rho_{j} for substep i j i_{j} . Recall is the fraction of gold tools covered, graded by rank:",
+   "zh": "设 i 1 , i 2 , ⋯ , i_{n_cov} 为与黄金工具匹配的子步骤，且对于子步骤 i_j，匹配到的黄金工具出现在第 ρ_j 位。 召回率是黄金工具被覆盖的比例，并按排名分级：",
+   "sents": [
+    {
+     "en": "Let i 1 , i 2 , ⋯ , i n cov i_{1},i_{2},\\cdots,i_{n_{\\text{cov}}} be the substeps that are matched with a gold tool, and the matched gold tool appears in rank ρ j \\rho_{j} for substep i j i_{j} .",
+     "zh": "设 i 1 , i 2 , ⋯ , i_{n_cov} 为与黄金工具匹配的子步骤，且对于子步骤 i_j，匹配到的黄金工具出现在第 ρ_j 位。"
+    },
+    {
+     "en": "Recall is the fraction of gold tools covered, graded by rank:",
+     "zh": "召回率是黄金工具被覆盖的比例，并按排名分级："
+    }
+   ]
+  },
+  {
+   "en": "Recall encourages every gold tool to be matched at a higher rank, i.e., the retriever is more confident with the gold tool.",
+   "zh": "召回率（Recall）鼓励每个金标准工具在更高排名处被匹配到，即检索器对金标准工具更具信心。",
+   "sents": null
+  },
+  {
+   "en": "The planning reward combines precision and recall by their harmonic mean, i.e., F 1 F_{1} score:",
+   "zh": "规划奖励通过调和平均数（即 F 1 F_{1} 分数）结合了精确率与召回率：",
+   "sents": null
+  },
+  {
+   "en": "Selection is scored by exact match against the substep’s gold. Because each substep targets a single gold tool g g (§ 3.1 ), the Select reward is",
+   "zh": "选择步骤通过与子步骤标准答案的精确匹配来评分。 由于每个子步骤只对应一个标准工具 g g（§ 3.1），选择（Select）奖励为",
+   "sents": [
+    {
+     "en": "Selection is scored by exact match against the substep’s gold.",
+     "zh": "选择步骤通过与子步骤标准答案的精确匹配来评分。"
+    },
+    {
+     "en": "Because each substep targets a single gold tool g g (§ 3.1 ), the Select reward is",
+     "zh": "由于每个子步骤只对应一个标准工具 g g（§ 3.1），选择（Select）奖励为"
+    }
+   ]
+  },
+  {
+   "en": "which is 1 1 only when the policy picks exactly the gold and nothing else. This terminal reward is, per substep, the quantity the evaluation exact-match metric measures.",
+   "zh": "当策略恰好选中金标准且不选任何其他内容时，它才为 1 1。 这个终止奖励在每个子步骤上正是评估精确匹配指标所度量的量。",
+   "sents": [
+    {
+     "en": "which is 1 1 only when the policy picks exactly the gold and nothing else.",
+     "zh": "当策略恰好选中金标准且不选任何其他内容时，它才为 1 1。"
+    },
+    {
+     "en": "This terminal reward is, per substep, the quantity the evaluation exact-match metric measures.",
+     "zh": "这个终止奖励在每个子步骤上正是评估精确匹配指标所度量的量。"
+    }
+   ]
+  },
+  {
+   "en": "Our experiments answer three questions about the trained agent. (i) Success Rate. How does a small, locally-hosted tool-selection agent compare against inference-only baselines that drive the same task with a much larger, general-purpose model accessed by prompting alone (§ 4.1 )? (ii) Domain generalization. Does an agent trained on a single tool corpus transfer, with no retraining, to unseen corpora and domains (§ 4.2 )? (iii) Retriever generalization. Is the learned policy tied to the retriever it trained on, or can the retrieval backend be swapped at test time for a stronger, domain-specialized one (§ 4.3 )? To answer these questions, we train the Qwen3 model family at three model scales (1.7B, 4B, and 8B) on the ToolBench G3 ( Qin et al., 2024 ) training split, which contains 21,361 user instructions over a corpus of 1,419 APIs for the model to select. Each user instruction in this benchmark requires multiple tools and can be decomposed into several independent substeps, so it aligns with our assumption.",
+   "zh": "我们的实验回答了关于训练后智能体的三个问题。(i) 成功率。 一个小型的、本地部署的工具选择智能体，与仅通过推理的基线相比表现如何？后者仅依靠提示词驱动，使用体量大得多的通用模型完成相同任务（§ 4.1）？ (ii) 领域泛化。 在单一工具语料库上训练的智能体，能否在不重新训练的情况下迁移到未见过的语料库和领域（§ 4.2）？ (iii) 检索器泛化。 学到的策略是否与训练时使用的检索器绑定，还是可以在测试时将检索后端替换为更强的、领域专用的检索器（§ 4.3）？ 为了回答这些问题，我们在 ToolBench G3（Qin et al., 2024）训练集上以三种模型规模（1.7B、4B 和 8B）训练 Qwen3 模型系列，该训练集包含 21,361 条用户指令，模型需从中包含 1,419 个 API 的语料库中进行选择。 该基准中的每条用户指令都需要多个工具，并可分解为若干独立的子步骤，因此符合我们的假设。",
+   "sents": [
+    {
+     "en": "Our experiments answer three questions about the trained agent. (i) Success Rate.",
+     "zh": "我们的实验回答了关于训练后智能体的三个问题。(i) 成功率。"
+    },
+    {
+     "en": "How does a small, locally-hosted tool-selection agent compare against inference-only baselines that drive the same task with a much larger, general-purpose model accessed by prompting alone (§ 4.1 )?",
+     "zh": "一个小型的、本地部署的工具选择智能体，与仅通过推理的基线相比表现如何？后者仅依靠提示词驱动，使用体量大得多的通用模型完成相同任务（§ 4.1）？"
+    },
+    {
+     "en": "(ii) Domain generalization.",
+     "zh": "(ii) 领域泛化。"
+    },
+    {
+     "en": "Does an agent trained on a single tool corpus transfer, with no retraining, to unseen corpora and domains (§ 4.2 )?",
+     "zh": "在单一工具语料库上训练的智能体，能否在不重新训练的情况下迁移到未见过的语料库和领域（§ 4.2）？"
+    },
+    {
+     "en": "(iii) Retriever generalization.",
+     "zh": "(iii) 检索器泛化。"
+    },
+    {
+     "en": "Is the learned policy tied to the retriever it trained on, or can the retrieval backend be swapped at test time for a stronger, domain-specialized one (§ 4.3 )?",
+     "zh": "学到的策略是否与训练时使用的检索器绑定，还是可以在测试时将检索后端替换为更强的、领域专用的检索器（§ 4.3）？"
+    },
+    {
+     "en": "To answer these questions, we train the Qwen3 model family at three model scales (1.7B, 4B, and 8B) on the ToolBench G3 ( Qin et al., 2024 ) training split, which contains 21,361 user instructions over a corpus of 1,419 APIs for the model to select.",
+     "zh": "为了回答这些问题，我们在 ToolBench G3（Qin et al., 2024）训练集上以三种模型规模（1.7B、4B 和 8B）训练 Qwen3 模型系列，该训练集包含 21,361 条用户指令，模型需从中包含 1,419 个 API 的语料库中进行选择。"
+    },
+    {
+     "en": "Each user instruction in this benchmark requires multiple tools and can be decomposed into several independent substeps, so it aligns with our assumption.",
+     "zh": "该基准中的每条用户指令都需要多个工具，并可分解为若干独立的子步骤，因此符合我们的假设。"
+    }
+   ]
+  },
+  {
+   "en": "We report evaluation results on the test split of ToolBench G3, which contains 2,124 user instructions. Success rate is defined with an exact-match metric: tool selection on one user instruction is considered successful if and only if the selected tool set matches exactly with the filtered gold tool set of § 3.2 , and the success rate is averaged over all tested user instructions. Prior work on tool retrieval mostly reports ranking metrics over the retrieved list, such as Recall@ K K and NDCG@ K K ( Qin et al., 2024 ; Qu et al., 2024 ; Shi et al., 2025 ) , or completeness, whether every gold tool appears in the top- K K ( Qu et al., 2024 ; Shi et al., 2025 ) . These credit a candidate list that contains the gold tools. Our metric is stricter: the agent must commit to a set, and both a missing tool and an extra tool count as a failure.",
+   "zh": "我们报告了在 ToolBench G3 测试集划分上的评估结果，该测试集包含 2,124 条用户指令。 成功率采用精确匹配指标定义：当且仅当针对某条用户指令所选的工具集合与 § 3.2 中过滤后的黄金工具集合完全一致时，该指令上的工具选择才被视为成功，成功率在所有被测用户指令上取平均。 以往关于工具检索的工作大多报告检索列表上的排序指标，例如 Recall@ K K 和 NDCG@ K K（Qin et al., 2024；Qu et al., 2024；Shi et al., 2025），或者完备性，即每个黄金工具是否都出现在 top- K K 中（Qu et al., 2024；Shi et al., 2025）。 这些指标会认可包含黄金工具的候选列表。 我们的指标更为严格：智能体必须确定地给出一个集合，无论是缺少工具还是多出工具都算作失败。",
+   "sents": [
+    {
+     "en": "We report evaluation results on the test split of ToolBench G3, which contains 2,124 user instructions.",
+     "zh": "我们报告了在 ToolBench G3 测试集划分上的评估结果，该测试集包含 2,124 条用户指令。"
+    },
+    {
+     "en": "Success rate is defined with an exact-match metric: tool selection on one user instruction is considered successful if and only if the selected tool set matches exactly with the filtered gold tool set of § 3.2 , and the success rate is averaged over all tested user instructions.",
+     "zh": "成功率采用精确匹配指标定义：当且仅当针对某条用户指令所选的工具集合与 § 3.2 中过滤后的黄金工具集合完全一致时，该指令上的工具选择才被视为成功，成功率在所有被测用户指令上取平均。"
+    },
+    {
+     "en": "Prior work on tool retrieval mostly reports ranking metrics over the retrieved list, such as Recall@ K K and NDCG@ K K ( Qin et al., 2024 ; Qu et al., 2024 ; Shi et al., 2025 ) , or completeness, whether every gold tool appears in the top- K K ( Qu et al., 2024 ; Shi et al., 2025 ) .",
+     "zh": "以往关于工具检索的工作大多报告检索列表上的排序指标，例如 Recall@ K K 和 NDCG@ K K（Qin et al., 2024；Qu et al., 2024；Shi et al., 2025），或者完备性，即每个黄金工具是否都出现在 top- K K 中（Qu et al., 2024；Shi et al., 2025）。"
+    },
+    {
+     "en": "These credit a candidate list that contains the gold tools.",
+     "zh": "这些指标会认可包含黄金工具的候选列表。"
+    },
+    {
+     "en": "Our metric is stricter: the agent must commit to a set, and both a missing tool and an extra tool count as a failure.",
+     "zh": "我们的指标更为严格：智能体必须确定地给出一个集合，无论是缺少工具还是多出工具都算作失败。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 3 shows the effect of training: we compare the success rate of the untrained Qwen3 model, the model after SFT, and the model after SFT followed by RL (SFT+RL), at three scales. An untrained model performs poorly under our Plan – Retrieve – Select workflow. This is expected, as the model has not learned how to decompose user instructions and select tools. SFT alone raises the success rate above 30% at every scale, and RL improves it further (e.g., from 36.2% to 41.5% at 8B).",
+   "zh": "图 3 展示了训练的效果：我们在三个规模上比较了未经训练的 Qwen3 模型、经过 SFT 的模型以及经过 SFT 再加上 RL（SFT+RL）的模型的成功率。 未经训练的模型在我们的「规划 – 检索 – 选择」工作流下表现不佳。 这是符合预期的，因为模型尚未学会如何分解用户指令并选择工具。 仅使用 SFT 就能使每个规模下的成功率提升到 30% 以上，而 RL 进一步提升了成功率（例如在 8B 规模下从 36.2% 提升到 41.5%）。",
+   "sents": [
+    {
+     "en": "Figure 3 shows the effect of training: we compare the success rate of the untrained Qwen3 model, the model after SFT, and the model after SFT followed by RL (SFT+RL), at three scales.",
+     "zh": "图 3 展示了训练的效果：我们在三个规模上比较了未经训练的 Qwen3 模型、经过 SFT 的模型以及经过 SFT 再加上 RL（SFT+RL）的模型的成功率。"
+    },
+    {
+     "en": "An untrained model performs poorly under our Plan – Retrieve – Select workflow.",
+     "zh": "未经训练的模型在我们的「规划 – 检索 – 选择」工作流下表现不佳。"
+    },
+    {
+     "en": "This is expected, as the model has not learned how to decompose user instructions and select tools.",
+     "zh": "这是符合预期的，因为模型尚未学会如何分解用户指令并选择工具。"
+    },
+    {
+     "en": "SFT alone raises the success rate above 30% at every scale, and RL improves it further (e.g., from 36.2% to 41.5% at 8B).",
+     "zh": "仅使用 SFT 就能使每个规模下的成功率提升到 30% 以上，而 RL 进一步提升了成功率（例如在 8B 规模下从 36.2% 提升到 41.5%）。"
+    }
+   ]
+  },
+  {
+   "en": "We further compare our SFT+RL model against the larger Llama-4-Maverick by prompting. We use four workflows to run Llama-4-Maverick, all with few-shot prompts and greedy decoding:",
+   "zh": "我们进一步将我们的 SFT+RL 模型与更大的 Llama-4-Maverick 通过提示（prompting）方式进行比较。 我们使用四种工作流来运行 Llama-4-Maverick，均采用少样本（few-shot）提示和贪心解码：",
+   "sents": [
+    {
+     "en": "We further compare our SFT+RL model against the larger Llama-4-Maverick by prompting.",
+     "zh": "我们进一步将我们的 SFT+RL 模型与更大的 Llama-4-Maverick 通过提示（prompting）方式进行比较。"
+    },
+    {
+     "en": "We use four workflows to run Llama-4-Maverick, all with few-shot prompts and greedy decoding:",
+     "zh": "我们使用四种工作流来运行 Llama-4-Maverick，均采用少样本（few-shot）提示和贪心解码："
+    }
+   ]
+  },
+  {
+   "en": "ReAct , a ReAct style workflow following ToolReAGt ( Braunschweiler et al., 2025 ) . We use BM25 retriever and include plan decomposition to make a fair comparison with our workflow. After the same Plan stage as in our workflow, a ReAct loop is run for each substep: in every turn it writes its own search query, observes the BM25 top- K K candidates for that query, and either searches again (up to four times) or commits one tool. The union over substeps is the prediction. This differs from our workflow in two ways: 1) the model writes the retrieval query rather than reusing the substep text; 2) a substep may issue several retrievals rather than one.",
+   "zh": "ReAct：一种遵循 ReAct 风格的工作流，参考 ToolReAGt（Braunschweiler et al., 2025）。 我们使用 BM25 检索器并加入计划分解，以便与我们的工作流进行公平比较。 在与我们工作流相同的计划阶段之后，对每个子步骤运行一个 ReAct 循环：在每一轮中，它自己撰写检索查询，观察该查询的 BM25 前 K 个候选结果，然后要么再次检索（最多四次），要么确定提交一个工具。 各子步骤结果的并集即为预测。 这与我们的工作流有两点不同：1）该模型自行撰写检索查询，而不是复用子步骤文本；2）一个子步骤可以发起多次检索，而不是一次。",
+   "sents": [
+    {
+     "en": "ReAct , a ReAct style workflow following ToolReAGt ( Braunschweiler et al., 2025 ) .",
+     "zh": "ReAct：一种遵循 ReAct 风格的工作流，参考 ToolReAGt（Braunschweiler et al., 2025）。"
+    },
+    {
+     "en": "We use BM25 retriever and include plan decomposition to make a fair comparison with our workflow.",
+     "zh": "我们使用 BM25 检索器并加入计划分解，以便与我们的工作流进行公平比较。"
+    },
+    {
+     "en": "After the same Plan stage as in our workflow, a ReAct loop is run for each substep: in every turn it writes its own search query, observes the BM25 top- K K candidates for that query, and either searches again (up to four times) or commits one tool.",
+     "zh": "在与我们工作流相同的计划阶段之后，对每个子步骤运行一个 ReAct 循环：在每一轮中，它自己撰写检索查询，观察该查询的 BM25 前 K 个候选结果，然后要么再次检索（最多四次），要么确定提交一个工具。"
+    },
+    {
+     "en": "The union over substeps is the prediction.",
+     "zh": "各子步骤结果的并集即为预测。"
+    },
+    {
+     "en": "This differs from our workflow in two ways: 1) the model writes the retrieval query rather than reusing the substep text; 2) a substep may issue several retrievals rather than one.",
+     "zh": "这与我们的工作流有两点不同：1）该模型自行撰写检索查询，而不是复用子步骤文本；2）一个子步骤可以发起多次检索，而不是一次。"
+    }
+   ]
+  },
+  {
+   "en": "Hierarchical search , following AnyTool ( Du et al., 2024 ) . No retriever is needed. Instead, the model walks the ToolBench taxonomy from category to tool to API, and a self-reflection turn re-enters the tree when the selection looks incomplete.",
+   "zh": "层级搜索，遵循 AnyTool（Du et al., 2024）。无需检索器。 相反，模型沿着 ToolBench 分类体系从类别到工具再到 API 逐级浏览，当选择看起来不完整时，一次自我反思回合会重新进入该树结构。",
+   "sents": [
+    {
+     "en": "Hierarchical search , following AnyTool ( Du et al., 2024 ) . No retriever is needed.",
+     "zh": "层级搜索，遵循 AnyTool（Du et al., 2024）。无需检索器。"
+    },
+    {
+     "en": "Instead, the model walks the ToolBench taxonomy from category to tool to API, and a self-reflection turn re-enters the tree when the selection looks incomplete.",
+     "zh": "相反，模型沿着 ToolBench 分类体系从类别到工具再到 API 逐级浏览，当选择看起来不完整时，一次自我反思回合会重新进入该树结构。"
+    }
+   ]
+  },
+  {
+   "en": "Search-R1-style ( Jin et al., 2025 ) : a single flat reasoning stream that interleaves <think> , <search> over BM25 (top-10 per search, up to six searches), and a final <answer> holding the tool set, without decomposition.",
+   "zh": "Search-R1 风格（Jin et al., 2025）：单一扁平的推理流，在 BM25 上交替使用 <think>、<search>（每次搜索返回前 10 条结果，最多搜索 6 次），并在最终以 <answer> 持有工具集，不进行任何分解。",
+   "sents": null
+  },
+  {
+   "en": "Our workflow (§ 3.1 ), with the untrained Maverick as planner and selector.",
+   "zh": "我们的工作流程（§ 3.1），以未训练的 Maverick 作为规划器和选择器。",
+   "sents": null
+  },
+  {
+   "en": "Table 1 shows that the Search-R1-style workflow pairs best with the untrained large model, reaching 30.6% success rate. However, this result still lags behind that of our trained model. Even the smallest 1.7B model can be trained to reach 37.6% success rate. Our workflow reaches only 10.1% success rate for Llama-4-Maverick, which further emphasizes the necessity of training when using our workflow. Given the same Llama-4-Maverick model, ReAct exceeds our workflow by 18%, at the cost of up to five model calls per substep instead of one.",
+   "zh": "表1表明，Search-R1 风格的工作流与未经训练的大模型搭配效果最佳，成功率达到 30.6%。 然而，这一结果仍落后于我们训练的模型。 即使是最小的 1.7B 模型，经过训练也能达到 37.6% 的成功率。 我们的工作流在 Llama-4-Maverick 上仅达到 10.1% 的成功率，这进一步强调了在使用我们的工作流时进行训练的必要性。 在同样使用 Llama-4-Maverick 模型的情况下，ReAct 以每子步最多五次模型调用而非一次为代价，超出我们的工作流 18%。",
+   "sents": [
+    {
+     "en": "Table 1 shows that the Search-R1-style workflow pairs best with the untrained large model, reaching 30.6% success rate.",
+     "zh": "表1表明，Search-R1 风格的工作流与未经训练的大模型搭配效果最佳，成功率达到 30.6%。"
+    },
+    {
+     "en": "However, this result still lags behind that of our trained model.",
+     "zh": "然而，这一结果仍落后于我们训练的模型。"
+    },
+    {
+     "en": "Even the smallest 1.7B model can be trained to reach 37.6% success rate.",
+     "zh": "即使是最小的 1.7B 模型，经过训练也能达到 37.6% 的成功率。"
+    },
+    {
+     "en": "Our workflow reaches only 10.1% success rate for Llama-4-Maverick, which further emphasizes the necessity of training when using our workflow.",
+     "zh": "我们的工作流在 Llama-4-Maverick 上仅达到 10.1% 的成功率，这进一步强调了在使用我们的工作流时进行训练的必要性。"
+    },
+    {
+     "en": "Given the same Llama-4-Maverick model, ReAct exceeds our workflow by 18%, at the cost of up to five model calls per substep instead of one.",
+     "zh": "在同样使用 Llama-4-Maverick 模型的情况下，ReAct 以每子步最多五次模型调用而非一次为代价，超出我们的工作流 18%。"
+    }
+   ]
+  },
+  {
+   "en": "A tool-selection agent is only useful if it works on corpora it was not trained on, so we test the models trained on ToolBench G3 directly on four benchmarks. We choose them to probe two independent axes of transferability: how far the tool corpus and domain shift from the training distribution, and whether the task needs a single tool or several . ToolBench G2 is the mildest shift: a larger, mostly-disjoint split of the same RapidAPI universe (11,474 tools, only ∼ \\sim 9% shared with G3) in the same multi-tool scenario. Gorilla ( Patil et al., 2024 ) and CRAFT ( Yuan et al., 2024 ) come from entirely different tool repositories and domains, exercising a much larger vocabulary shift. All user instructions in both benchmarks have exactly one gold tool, so no Plan stage is needed and thus we focus on the transferability of the Select stage. Finally TaskBench ( Shen et al., 2024 ) is the multi-tool out-of-domain case: tasks from entirely different domains that each require several tools, evaluated over each split’s own tool inventory, so it is a comprehensive evaluation of both planning and selection.",
+   "zh": "工具选择智能体只有在未训练过的语料库上也能工作才有用，因此我们将基于 ToolBench G3 训练的模型直接在四个基准上进行测试。 我们选择这些基准是为了考察两个独立的可迁移性维度：工具语料库和领域偏离训练分布的程度，以及任务需要单个工具还是多个工具。 ToolBench G2 是最轻微的偏移：它是同一 RapidAPI 宇宙中一个更大且基本不相交的划分（11,474 个工具，与 G3 仅约 ∼ \\sim 9% 共享），且处于相同的多工具场景中。 Gorilla（Patil et al., 2024）和 CRAFT（Yuan et al., 2024）来自完全不同的工具仓库和领域，带来大得多的词汇表偏移。 两个基准中的所有用户指令都恰好对应一个金标工具，因此无需 Plan 阶段，从而我们将重点放在 Select 阶段的可迁移性上。 最后，TaskBench（Shen et al., 2024）是多工具域外案例：来自完全不同领域且各自需要多个工具的任务，并在每个划分自身的工具清单上进行评估，因此它是对规划与选择能力的综合评估。",
+   "sents": [
+    {
+     "en": "A tool-selection agent is only useful if it works on corpora it was not trained on, so we test the models trained on ToolBench G3 directly on four benchmarks.",
+     "zh": "工具选择智能体只有在未训练过的语料库上也能工作才有用，因此我们将基于 ToolBench G3 训练的模型直接在四个基准上进行测试。"
+    },
+    {
+     "en": "We choose them to probe two independent axes of transferability: how far the tool corpus and domain shift from the training distribution, and whether the task needs a single tool or several .",
+     "zh": "我们选择这些基准是为了考察两个独立的可迁移性维度：工具语料库和领域偏离训练分布的程度，以及任务需要单个工具还是多个工具。"
+    },
+    {
+     "en": "ToolBench G2 is the mildest shift: a larger, mostly-disjoint split of the same RapidAPI universe (11,474 tools, only ∼ \\sim 9% shared with G3) in the same multi-tool scenario.",
+     "zh": "ToolBench G2 是最轻微的偏移：它是同一 RapidAPI 宇宙中一个更大且基本不相交的划分（11,474 个工具，与 G3 仅约 ∼ \\sim 9% 共享），且处于相同的多工具场景中。"
+    },
+    {
+     "en": "Gorilla ( Patil et al., 2024 ) and CRAFT ( Yuan et al., 2024 ) come from entirely different tool repositories and domains, exercising a much larger vocabulary shift.",
+     "zh": "Gorilla（Patil et al., 2024）和 CRAFT（Yuan et al., 2024）来自完全不同的工具仓库和领域，带来大得多的词汇表偏移。"
+    },
+    {
+     "en": "All user instructions in both benchmarks have exactly one gold tool, so no Plan stage is needed and thus we focus on the transferability of the Select stage.",
+     "zh": "两个基准中的所有用户指令都恰好对应一个金标工具，因此无需 Plan 阶段，从而我们将重点放在 Select 阶段的可迁移性上。"
+    },
+    {
+     "en": "Finally TaskBench ( Shen et al., 2024 ) is the multi-tool out-of-domain case: tasks from entirely different domains that each require several tools, evaluated over each split’s own tool inventory, so it is a comprehensive evaluation of both planning and selection.",
+     "zh": "最后，TaskBench（Shen et al., 2024）是多工具域外案例：来自完全不同领域且各自需要多个工具的任务，并在每个划分自身的工具清单上进行评估，因此它是对规划与选择能力的综合评估。"
+    }
+   ]
+  },
+  {
+   "en": "The results are shown in Table 2 . On ToolBench G2 the trained agent transfers, though below its in-domain G3 score ( ∼ \\sim 24% vs. 40% at 4B). The 8 × 8\\times larger, mostly-disjoint corpus adds distractors and pushes gold deeper into the BM25 ranking. Even so, it beats the strongest untrained baseline (Maverick + Search-R1, 20.8%). The same checkpoints have a clear transfer advantage on single-tool benchmarks (Gorilla and CRAFT) over Llama-4-Maverick, so the Select stage transfers across domains. The only exception happens on TaskBench, in which Llama-4-Maverick with the Search-R1-style workflow gives an 8 pp higher success rate than our method. This shows that the Plan stage requires some domain knowledge and thus the Search-R1-style workflow, which requires no decomposition, performs better. Nonetheless, our small model still beats Llama-4-Maverick on ReAct and our workflow, which both include a Plan stage.",
+   "zh": "结果如表 2 所示。 在 ToolBench G2 上，训练后的智能体能够迁移，尽管低于其域内 G3 分数（4B 模型上约为 24%，对比 40%）。 规模大 8 倍且大多不相交的语料库增加了干扰项，并将正确答案推向 BM25 排名的更深处。 即便如此，它仍优于最强的未训练基线（Maverick + Search-R1，20.8%）。 相同的检查点在单工具基准（Gorilla 和 CRAFT）上比 Llama-4-Maverick 具有明显的迁移优势，因此 Select 阶段可以跨域迁移。 唯一的例外出现在 TaskBench 上，其中使用 Search-R1 风格工作流的 Llama-4-Maverick 比我们的方法高出 8 个百分点的成功率。 这表明 Plan 阶段需要一定的领域知识，因此无需分解的 Search-R1 风格工作流表现更好。 尽管如此，我们的小模型在 ReAct 和我们的工作流这两种都包含 Plan 阶段的方法上仍优于 Llama-4-Maverick。",
+   "sents": [
+    {
+     "en": "The results are shown in Table 2 .",
+     "zh": "结果如表 2 所示。"
+    },
+    {
+     "en": "On ToolBench G2 the trained agent transfers, though below its in-domain G3 score ( ∼ \\sim 24% vs. 40% at 4B).",
+     "zh": "在 ToolBench G2 上，训练后的智能体能够迁移，尽管低于其域内 G3 分数（4B 模型上约为 24%，对比 40%）。"
+    },
+    {
+     "en": "The 8 × 8\\times larger, mostly-disjoint corpus adds distractors and pushes gold deeper into the BM25 ranking.",
+     "zh": "规模大 8 倍且大多不相交的语料库增加了干扰项，并将正确答案推向 BM25 排名的更深处。"
+    },
+    {
+     "en": "Even so, it beats the strongest untrained baseline (Maverick + Search-R1, 20.8%).",
+     "zh": "即便如此，它仍优于最强的未训练基线（Maverick + Search-R1，20.8%）。"
+    },
+    {
+     "en": "The same checkpoints have a clear transfer advantage on single-tool benchmarks (Gorilla and CRAFT) over Llama-4-Maverick, so the Select stage transfers across domains.",
+     "zh": "相同的检查点在单工具基准（Gorilla 和 CRAFT）上比 Llama-4-Maverick 具有明显的迁移优势，因此 Select 阶段可以跨域迁移。"
+    },
+    {
+     "en": "The only exception happens on TaskBench, in which Llama-4-Maverick with the Search-R1-style workflow gives an 8 pp higher success rate than our method.",
+     "zh": "唯一的例外出现在 TaskBench 上，其中使用 Search-R1 风格工作流的 Llama-4-Maverick 比我们的方法高出 8 个百分点的成功率。"
+    },
+    {
+     "en": "This shows that the Plan stage requires some domain knowledge and thus the Search-R1-style workflow, which requires no decomposition, performs better.",
+     "zh": "这表明 Plan 阶段需要一定的领域知识，因此无需分解的 Search-R1 风格工作流表现更好。"
+    },
+    {
+     "en": "Nonetheless, our small model still beats Llama-4-Maverick on ReAct and our workflow, which both include a Plan stage.",
+     "zh": "尽管如此，我们的小模型在 ReAct 和我们的工作流这两种都包含 Plan 阶段的方法上仍优于 Llama-4-Maverick。"
+    }
+   ]
+  },
+  {
+   "en": "Our models are trained over BM25. The Retrieve step is an interface that returns a ranked candidate set, and any retriever that scores the corpus against a substep can fill it. We test this by swapping BM25 for COLT ( Qu et al., 2024 ) , a dense retriever trained specifically on the ToolBench corpus , and evaluate the models directly on the test split of ToolBench G3, without additional training. Figure 4 reports the success rate under each retriever.",
+   "zh": "我们的模型基于 BM25 进行训练。 检索步骤是一个返回排序后候选集合的接口，任何针对子步骤对语料库进行评分的检索器都可以充当该角色。 我们通过将 BM25 替换为 COLT（Qu et al., 2024）来测试这一点，COLT 是一个专门在 ToolBench 语料库上训练的稠密检索器，我们直接在 ToolBench G3 的测试集划分上评估模型，而无需额外的训练。 图 4 报告了在每个检索器下的成功率。",
+   "sents": [
+    {
+     "en": "Our models are trained over BM25.",
+     "zh": "我们的模型基于 BM25 进行训练。"
+    },
+    {
+     "en": "The Retrieve step is an interface that returns a ranked candidate set, and any retriever that scores the corpus against a substep can fill it.",
+     "zh": "检索步骤是一个返回排序后候选集合的接口，任何针对子步骤对语料库进行评分的检索器都可以充当该角色。"
+    },
+    {
+     "en": "We test this by swapping BM25 for COLT ( Qu et al., 2024 ) , a dense retriever trained specifically on the ToolBench corpus , and evaluate the models directly on the test split of ToolBench G3, without additional training.",
+     "zh": "我们通过将 BM25 替换为 COLT（Qu et al., 2024）来测试这一点，COLT 是一个专门在 ToolBench 语料库上训练的稠密检索器，我们直接在 ToolBench G3 的测试集划分上评估模型，而无需额外的训练。"
+    },
+    {
+     "en": "Figure 4 reports the success rate under each retriever.",
+     "zh": "图 4 报告了在每个检索器下的成功率。"
+    }
+   ]
+  },
+  {
+   "en": "Swapping in COLT improves the success rate at every scale. This is because COLT is an expert retriever for ToolBench, and our model inherits the stronger retriever’s recall without any retraining. We nevertheless train with BM25 because it requires no corpus-specific training, which ensures that the transfer results above do not depend on a strong in-domain retriever.",
+   "zh": "换用 COLT 后，在所有规模上成功率均有所提升。 这是因为 COLT 是针对 ToolBench 的专家级检索器，而我们的模型无需任何重新训练就继承了这一更强检索器的召回能力。 尽管如此，我们仍然使用 BM25 进行训练，因为它不需要针对语料库的训练，这确保了上述迁移结果并不依赖于强大的领域内检索器。",
+   "sents": [
+    {
+     "en": "Swapping in COLT improves the success rate at every scale.",
+     "zh": "换用 COLT 后，在所有规模上成功率均有所提升。"
+    },
+    {
+     "en": "This is because COLT is an expert retriever for ToolBench, and our model inherits the stronger retriever’s recall without any retraining.",
+     "zh": "这是因为 COLT 是针对 ToolBench 的专家级检索器，而我们的模型无需任何重新训练就继承了这一更强检索器的召回能力。"
+    },
+    {
+     "en": "We nevertheless train with BM25 because it requires no corpus-specific training, which ensures that the transfer results above do not depend on a strong in-domain retriever.",
+     "zh": "尽管如此，我们仍然使用 BM25 进行训练，因为它不需要针对语料库的训练，这确保了上述迁移结果并不依赖于强大的领域内检索器。"
+    }
+   ]
+  },
+  {
+   "en": "The ablation studies are all evaluated on the test split of ToolBench G3.",
+   "zh": "消融实验均在 ToolBench G3 的测试集上进行评估。",
+   "sents": null
+  },
+  {
+   "en": "Planner. We ablate the model used for the Plan stage, by replacing the trained 8B model with: 1) the untrained Qwen3-8B; 2) Llama-4-Maverick. We hold the Retrieve and Select stages fixed. As shown in Figure 9 , the trained planner is the best of the three. The much larger Maverick planner performs worst , indicating that training, not model scale, drives planning quality on this task.",
+   "zh": "规划器。 我们对用于规划（Plan）阶段的模型进行消融实验，将训练后的 8B 模型替换为：1) 未训练的 Qwen3-8B；2) Llama-4-Maverick。 我们保持检索（Retrieve）和选择（Select）阶段不变。 如图 9 所示，训练后的规划器是三者中表现最好的。 规模大得多的 Maverick 规划器表现最差，这表明是训练而非模型规模驱动了该任务上的规划质量。",
+   "sents": [
+    {
+     "en": "Planner.",
+     "zh": "规划器。"
+    },
+    {
+     "en": "We ablate the model used for the Plan stage, by replacing the trained 8B model with: 1) the untrained Qwen3-8B; 2) Llama-4-Maverick.",
+     "zh": "我们对用于规划（Plan）阶段的模型进行消融实验，将训练后的 8B 模型替换为：1) 未训练的 Qwen3-8B；2) Llama-4-Maverick。"
+    },
+    {
+     "en": "We hold the Retrieve and Select stages fixed.",
+     "zh": "我们保持检索（Retrieve）和选择（Select）阶段不变。"
+    },
+    {
+     "en": "As shown in Figure 9 , the trained planner is the best of the three.",
+     "zh": "如图 9 所示，训练后的规划器是三者中表现最好的。"
+    },
+    {
+     "en": "The much larger Maverick planner performs worst , indicating that training, not model scale, drives planning quality on this task.",
+     "zh": "规模大得多的 Maverick 规划器表现最差，这表明是训练而非模型规模驱动了该任务上的规划质量。"
+    }
+   ]
+  },
+  {
+   "en": "Candidate set size. We sweep the retrieved candidate set size K K , i.e., the number of candidates handed to the Select stage, on the fixed 8B checkpoint. Success rate increases with K K up to K = 20 K=20 and does not improve further at K = 30 K=30 (Figure 9 ): a larger set is more likely to contain the gold tool, but additional candidates also act as distractors. We set K = 15 K=15 as our training and evaluation configuration to balance context consumption and performance.",
+   "zh": "候选集大小。 我们在固定的 8B 检查点上对检索候选集大小 K K（即传递给 Select 阶段的候选数量）进行了扫描。 成功率随 K K 增加而上升，直到 K = 20 K=20，而在 K = 30 K=30 时不再进一步提升（图 9）：更大的候选集更可能包含正确的工具，但额外的候选也会充当干扰项。 我们将 K = 15 K=15 设为训练和评估配置，以平衡上下文消耗与性能。",
+   "sents": [
+    {
+     "en": "Candidate set size.",
+     "zh": "候选集大小。"
+    },
+    {
+     "en": "We sweep the retrieved candidate set size K K , i.e., the number of candidates handed to the Select stage, on the fixed 8B checkpoint.",
+     "zh": "我们在固定的 8B 检查点上对检索候选集大小 K K（即传递给 Select 阶段的候选数量）进行了扫描。"
+    },
+    {
+     "en": "Success rate increases with K K up to K = 20 K=20 and does not improve further at K = 30 K=30 (Figure 9 ): a larger set is more likely to contain the gold tool, but additional candidates also act as distractors.",
+     "zh": "成功率随 K K 增加而上升，直到 K = 20 K=20，而在 K = 30 K=30 时不再进一步提升（图 9）：更大的候选集更可能包含正确的工具，但额外的候选也会充当干扰项。"
+    },
+    {
+     "en": "We set K = 15 K=15 as our training and evaluation configuration to balance context consumption and performance.",
+     "zh": "我们将 K = 15 K=15 设为训练和评估配置，以平衡上下文消耗与性能。"
+    }
+   ]
+  },
+  {
+   "en": "Selector. We replace the Select stage with a fixed selection rule that commits the retriever’s top-1 tool for each substep. Against the same BM25 retriever the pipeline uses, the learned selector improves success by about 13% over taking the top-1 candidate (Figure 9 ), because the highest-scoring BM25 candidate is often not the tool the substep requires.",
+   "zh": "选择器。 我们将选择阶段替换为固定选择规则，即对每个子步骤直接选用检索器排名第一的工具。 在与流水线相同的 BM25 检索器下，学习到的选择器相比直接取排名第一的候选工具可将成功率提升约 13%（图 9），因为 BM25 得分最高的候选工具往往并非该子步骤所需的工具。",
+   "sents": [
+    {
+     "en": "Selector.",
+     "zh": "选择器。"
+    },
+    {
+     "en": "We replace the Select stage with a fixed selection rule that commits the retriever’s top-1 tool for each substep.",
+     "zh": "我们将选择阶段替换为固定选择规则，即对每个子步骤直接选用检索器排名第一的工具。"
+    },
+    {
+     "en": "Against the same BM25 retriever the pipeline uses, the learned selector improves success by about 13% over taking the top-1 candidate (Figure 9 ), because the highest-scoring BM25 candidate is often not the tool the substep requires.",
+     "zh": "在与流水线相同的 BM25 检索器下，学习到的选择器相比直接取排名第一的候选工具可将成功率提升约 13%（图 9），因为 BM25 得分最高的候选工具往往并非该子步骤所需的工具。"
+    }
+   ]
+  },
+  {
+   "en": "SFT warm-up. To test whether the SFT stage is necessary, we run our RL recipe directly from the off-the-shelf 8B model, with no SFT initialization, which is viable because the base already completes the workflow with a non-zero success rate for GRPO to bootstrap from. Direct RL lifts the base model performance from 20.5% to 35.7%, but lands at a similar level to SFT only (36.2%) and below the full SFT+RL recipe (41.5%), supporting the value of SFT as a warm-up procedure (Figure 9 ).",
+   "zh": "SFT 预热。 为了检验 SFT 阶段是否必要，我们直接从现成的 8B 模型运行我们的强化学习方案，不进行 SFT 初始化。这样做是可行的，因为基础模型本身已经能以非零的成功率完成该工作流，从而可供 GRPO 从中启动。 直接强化学习将基础模型的性能从 20.5% 提升到 35.7%，但仅达到与仅用 SFT（36.2%）相当的水平，且低于完整的 SFT+强化学习方案（41.5%），这支持了 SFT 作为预热步骤的价值（图 9）。",
+   "sents": [
+    {
+     "en": "SFT warm-up.",
+     "zh": "SFT 预热。"
+    },
+    {
+     "en": "To test whether the SFT stage is necessary, we run our RL recipe directly from the off-the-shelf 8B model, with no SFT initialization, which is viable because the base already completes the workflow with a non-zero success rate for GRPO to bootstrap from.",
+     "zh": "为了检验 SFT 阶段是否必要，我们直接从现成的 8B 模型运行我们的强化学习方案，不进行 SFT 初始化。这样做是可行的，因为基础模型本身已经能以非零的成功率完成该工作流，从而可供 GRPO 从中启动。"
+    },
+    {
+     "en": "Direct RL lifts the base model performance from 20.5% to 35.7%, but lands at a similar level to SFT only (36.2%) and below the full SFT+RL recipe (41.5%), supporting the value of SFT as a warm-up procedure (Figure 9 ).",
+     "zh": "直接强化学习将基础模型的性能从 20.5% 提升到 35.7%，但仅达到与仅用 SFT（36.2%）相当的水平，且低于完整的 SFT+强化学习方案（41.5%），这支持了 SFT 作为预热步骤的价值（图 9）。"
+    }
+   ]
+  },
+  {
+   "en": "Tool selection over a large tool corpus is a recurring sub-routine of agentic tool calling, and prior work runs it by prompting proprietary models to operate a retriever. We showed that this capability can be trained into a small open model. Under a minimal Plan – Retrieve – Select workflow, supervised warm-up on teacher-written trajectories followed by RL with a retrieval-based planning reward and an exact-match selection reward lifts Qwen3 models of 1.7B to 8B parameters past Llama-4-Maverick (402B) on ToolBench G3, with no human annotation beyond the gold tool sets. Because the skills involved, i.e., instruction decomposition and tool selection from description, are not tied to a specific tool corpus, the same checkpoints transfer without retraining to new tool domains and to new retrievers, inheriting the stronger retriever’s recall. We hope this work encourages further study of tool selection with small LLMs.",
+   "zh": "在大规模工具语料上进行工具选择是智能体工具调用中反复出现的子例程，先前的工作通过提示专有模型来操作检索器来完成这一任务。 我们证明了这种能力可以被训练到小规模开源模型中。 在一个极简的规划–检索–选择工作流下，先对教师撰写的轨迹进行监督式热身，再使用基于检索的规划奖励和精确匹配选择奖励进行强化学习，使参数量从 1.7B 到 8B 的 Qwen3 模型在 ToolBench G3 上超越了 Llama-4-Maverick（402B），且除黄金工具集外无需任何人工标注。 由于所涉及的技能，即指令分解和根据描述进行工具选择，并不依赖于特定的工具语料，相同的检查点无需重新训练即可迁移到新的工具领域和新的检索器上，并继承更强检索器的召回能力。 我们希望这项工作能鼓励对小规模大语言模型工具选择的进一步研究。",
+   "sents": [
+    {
+     "en": "Tool selection over a large tool corpus is a recurring sub-routine of agentic tool calling, and prior work runs it by prompting proprietary models to operate a retriever.",
+     "zh": "在大规模工具语料上进行工具选择是智能体工具调用中反复出现的子例程，先前的工作通过提示专有模型来操作检索器来完成这一任务。"
+    },
+    {
+     "en": "We showed that this capability can be trained into a small open model.",
+     "zh": "我们证明了这种能力可以被训练到小规模开源模型中。"
+    },
+    {
+     "en": "Under a minimal Plan – Retrieve – Select workflow, supervised warm-up on teacher-written trajectories followed by RL with a retrieval-based planning reward and an exact-match selection reward lifts Qwen3 models of 1.7B to 8B parameters past Llama-4-Maverick (402B) on ToolBench G3, with no human annotation beyond the gold tool sets.",
+     "zh": "在一个极简的规划–检索–选择工作流下，先对教师撰写的轨迹进行监督式热身，再使用基于检索的规划奖励和精确匹配选择奖励进行强化学习，使参数量从 1.7B 到 8B 的 Qwen3 模型在 ToolBench G3 上超越了 Llama-4-Maverick（402B），且除黄金工具集外无需任何人工标注。"
+    },
+    {
+     "en": "Because the skills involved, i.e., instruction decomposition and tool selection from description, are not tied to a specific tool corpus, the same checkpoints transfer without retraining to new tool domains and to new retrievers, inheriting the stronger retriever’s recall.",
+     "zh": "由于所涉及的技能，即指令分解和根据描述进行工具选择，并不依赖于特定的工具语料，相同的检查点无需重新训练即可迁移到新的工具领域和新的检索器上，并继承更强检索器的召回能力。"
+    },
+    {
+     "en": "We hope this work encourages further study of tool selection with small LLMs.",
+     "zh": "我们希望这项工作能鼓励对小规模大语言模型工具选择的进一步研究。"
+    }
+   ]
+  },
+  {
+   "en": "We thank Tal Lancewicki for discussion and valuable feedback during the project. This work was partially supported by the National Science Foundation under Grant CCF-2106778.",
+   "zh": "我们感谢 Tal Lancewicki 在项目期间提供的讨论和宝贵反馈。 本工作部分受到美国国家科学基金会 CCF-2106778 资助的支持。",
+   "sents": [
+    {
+     "en": "We thank Tal Lancewicki for discussion and valuable feedback during the project.",
+     "zh": "我们感谢 Tal Lancewicki 在项目期间提供的讨论和宝贵反馈。"
+    },
+    {
+     "en": "This work was partially supported by the National Science Foundation under Grant CCF-2106778.",
+     "zh": "本工作部分受到美国国家科学基金会 CCF-2106778 资助的支持。"
+    }
+   ]
+  },
+  {
+   "en": "Links to all models, benchmarks, and software used in this paper are collected in Appendix B (Table 5 ).",
+   "zh": "本文所用所有模型、基准测试及软件的链接均收集于附录 B（表 5）。",
+   "sents": null
+  },
+  {
+   "en": "We train Qwen3-1.7B, Qwen3-4B, and Qwen3-8B. Qwen3 can emit a <think> block before its answer, and our trained models use this block for the brief reasoning that precedes each JSON action: the SFT targets place the teacher-written rationale inside <think> … </think> followed by the action (Appendix D ), and the SFT and SFT+RL models are run with thinking enabled during SFT, RL, and evaluation. The reasoning they produce is therefore the short, task-specific rationale learned in SFT and shaped by RL, not Qwen3’s open-ended native deliberation. The untrained Qwen3 models (the Base rows of § 4.1 , the untrained planner of § 4.4 , and the RL-only ablation, which starts from the base model) are instead run with thinking disabled ( enable_thinking=False ), because the base model’s native thinking block routinely exhausted the generation budget before producing an action. A single model serves both the Plan and Select stages.",
+   "zh": "我们训练 Qwen3-1.7B、Qwen3-4B 和 Qwen3-8B。 Qwen3 可以在回答前输出一个 <think> 块，我们训练的模型利用该块进行每个 JSON 动作之前的简短推理：SFT 目标将教师撰写的推理过程置于 <think> … </think> 中，其后紧接动作（附录 D），并且 SFT 模型和 SFT+RL 模型在 SFT、RL 和评估期间均在启用思考的情况下运行。 因此，模型产生的推理是 SFT 中学习、并由 RL 塑形的简短且针对任务的理由，而非 Qwen3 原生的开放式思考。 未训练的 Qwen3 模型（§4.1 的 Base 行、§4.4 的未训练规划器，以及从基座模型出发的 RL-only 消融实验）则在禁用思考的情况下运行（enable_thinking=False），因为基座模型的原生思考块常常在生成动作之前就耗尽生成预算。 单一模型同时服务于 Plan 和 Select 两个阶段。",
+   "sents": [
+    {
+     "en": "We train Qwen3-1.7B, Qwen3-4B, and Qwen3-8B.",
+     "zh": "我们训练 Qwen3-1.7B、Qwen3-4B 和 Qwen3-8B。"
+    },
+    {
+     "en": "Qwen3 can emit a <think> block before its answer, and our trained models use this block for the brief reasoning that precedes each JSON action: the SFT targets place the teacher-written rationale inside <think> … </think> followed by the action (Appendix D ), and the SFT and SFT+RL models are run with thinking enabled during SFT, RL, and evaluation.",
+     "zh": "Qwen3 可以在回答前输出一个 <think> 块，我们训练的模型利用该块进行每个 JSON 动作之前的简短推理：SFT 目标将教师撰写的推理过程置于 <think> … </think> 中，其后紧接动作（附录 D），并且 SFT 模型和 SFT+RL 模型在 SFT、RL 和评估期间均在启用思考的情况下运行。"
+    },
+    {
+     "en": "The reasoning they produce is therefore the short, task-specific rationale learned in SFT and shaped by RL, not Qwen3’s open-ended native deliberation.",
+     "zh": "因此，模型产生的推理是 SFT 中学习、并由 RL 塑形的简短且针对任务的理由，而非 Qwen3 原生的开放式思考。"
+    },
+    {
+     "en": "The untrained Qwen3 models (the Base rows of § 4.1 , the untrained planner of § 4.4 , and the RL-only ablation, which starts from the base model) are instead run with thinking disabled ( enable_thinking=False ), because the base model’s native thinking block routinely exhausted the generation budget before producing an action.",
+     "zh": "未训练的 Qwen3 模型（§4.1 的 Base 行、§4.4 的未训练规划器，以及从基座模型出发的 RL-only 消融实验）则在禁用思考的情况下运行（enable_thinking=False），因为基座模型的原生思考块常常在生成动作之前就耗尽生成预算。"
+    },
+    {
+     "en": "A single model serves both the Plan and Select stages.",
+     "zh": "单一模型同时服务于 Plan 和 Select 两个阶段。"
+    }
+   ]
+  },
+  {
+   "en": "Llama-4-Maverick is a mixture-of-experts model with 128 experts, 17B active parameters, and 402B total parameters, so it is roughly two orders of magnitude larger than our largest trained model in total parameters and twice as large in active parameters. It plays two roles. It is the teacher for gold filtering, plan decomposition, and reasoning generation in the data curation pipeline of § 3.2 , and it is the prompted model behind all four inference-only baselines of § 4.1 .",
+   "zh": "Llama-4-Maverick 是一个混合专家模型，拥有 128 个专家、170 亿激活参数和 4020 亿总参数，因此其总参数规模大约比我们训练的最大模型大两个数量级，激活参数则是其两倍。它扮演两个角色。 它既是 § 3.2 数据筛选流程中用于黄金答案过滤、计划分解和推理生成的教师模型，也是 § 4.1 中全部四个纯推理基线背后的提示模型。",
+   "sents": [
+    {
+     "en": "Llama-4-Maverick is a mixture-of-experts model with 128 experts, 17B active parameters, and 402B total parameters, so it is roughly two orders of magnitude larger than our largest trained model in total parameters and twice as large in active parameters. It plays two roles.",
+     "zh": "Llama-4-Maverick 是一个混合专家模型，拥有 128 个专家、170 亿激活参数和 4020 亿总参数，因此其总参数规模大约比我们训练的最大模型大两个数量级，激活参数则是其两倍。它扮演两个角色。"
+    },
+    {
+     "en": "It is the teacher for gold filtering, plan decomposition, and reasoning generation in the data curation pipeline of § 3.2 , and it is the prompted model behind all four inference-only baselines of § 4.1 .",
+     "zh": "它既是 § 3.2 数据筛选流程中用于黄金答案过滤、计划分解和推理生成的教师模型，也是 § 4.1 中全部四个纯推理基线背后的提示模型。"
+    }
+   ]
+  },
+  {
+   "en": "The default retriever is BM25 implemented with the bm25s library ( Lù, 2024 ) (Lucene scoring variant) using k 1 = 1.8 k_{1}=1.8 and b = 1.0 b=1.0 , English stopword removal, and no stemming. Each tool is indexed by its serialized documentation entry (tool and API name, description, and parameter fields). Candidates are kept if their score exceeds τ \\tau and then truncated to the top K K ( τ = 3 \\tau=3 , K = 15 K=15 unless stated otherwise in Table 3 ). The same configuration is used for the planning reward, for SFT data generation, and at evaluation. For the retriever-swap experiment (§ 4.3 ) we use the public COLT checkpoint for G3 ( Qu et al., 2024 ) , a Contriever encoder ( Izacard et al., 2021 ) trained on the ToolBench G3 training split, together with its graph-propagated tool embeddings; the retriever returns dot-product similarity scores.",
+   "zh": "默认检索器是用 bm25s 库实现的 BM25（Lù, 2024）（Lucene 打分变体），参数为 k 1 = 1.8 k_{1}=1.8 和 b = 1.0 b=1.0，移除英文停用词，不做词干化。 每个工具通过其序列化的文档条目（工具与 API 名称、描述以及参数字段）建立索引。 得分超过 τ \\tau 的候选将被保留，然后截断为前 K K 个（τ = 3 \\tau=3，K = 15 K=15，除非表 3 中另有说明）。 相同的配置用于规划奖励、SFT 数据生成以及评估。 对于检索器替换实验（§ 4.3），我们使用面向 G3 的公开 COLT 检查点（Qu et al., 2024），这是一个在 ToolBench G3 训练划分上训练的 Contriever 编码器（Izacard et al., 2021），并配合其图传播的工具嵌入；该检索器返回点积相似度分数。",
+   "sents": [
+    {
+     "en": "The default retriever is BM25 implemented with the bm25s library ( Lù, 2024 ) (Lucene scoring variant) using k 1 = 1.8 k_{1}=1.8 and b = 1.0 b=1.0 , English stopword removal, and no stemming.",
+     "zh": "默认检索器是用 bm25s 库实现的 BM25（Lù, 2024）（Lucene 打分变体），参数为 k 1 = 1.8 k_{1}=1.8 和 b = 1.0 b=1.0，移除英文停用词，不做词干化。"
+    },
+    {
+     "en": "Each tool is indexed by its serialized documentation entry (tool and API name, description, and parameter fields).",
+     "zh": "每个工具通过其序列化的文档条目（工具与 API 名称、描述以及参数字段）建立索引。"
+    },
+    {
+     "en": "Candidates are kept if their score exceeds τ \\tau and then truncated to the top K K ( τ = 3 \\tau=3 , K = 15 K=15 unless stated otherwise in Table 3 ).",
+     "zh": "得分超过 τ \\tau 的候选将被保留，然后截断为前 K K 个（τ = 3 \\tau=3，K = 15 K=15，除非表 3 中另有说明）。"
+    },
+    {
+     "en": "The same configuration is used for the planning reward, for SFT data generation, and at evaluation.",
+     "zh": "相同的配置用于规划奖励、SFT 数据生成以及评估。"
+    },
+    {
+     "en": "For the retriever-swap experiment (§ 4.3 ) we use the public COLT checkpoint for G3 ( Qu et al., 2024 ) , a Contriever encoder ( Izacard et al., 2021 ) trained on the ToolBench G3 training split, together with its graph-propagated tool embeddings; the retriever returns dot-product similarity scores.",
+     "zh": "对于检索器替换实验（§ 4.3），我们使用面向 G3 的公开 COLT 检查点（Qu et al., 2024），这是一个在 ToolBench G3 训练划分上训练的 Contriever 编码器（Izacard et al., 2021），并配合其图传播的工具嵌入；该检索器返回点积相似度分数。"
+    }
+   ]
+  },
+  {
+   "en": "Table 3 summarizes the corpora. ToolBench G3 ( Qin et al., 2024 ) is the training benchmark: its corpus has 1,419 RapidAPI tools, the training split has 21,361 user instructions, and the test split has 2,124. Every instruction requires multiple tools and decomposes into several independent substeps. All training, the main results, the ablations, and the retriever-swap experiment use G3. ToolBench G2 is a larger, mostly disjoint split of the same RapidAPI universe (11,474 tools, about 9% shared with G3) in the same multi-tool setting; we evaluate the 7,238 test instructions that survive the same gold filtering as G3 (§ 3.2 ). Gorilla ( Patil et al., 2024 ) covers tool calls to three machine-learning model hubs, with one source split each ( huggingface , pytorch , tensor ; 500, 43, and 55 instructions). CRAFT ( Yuan et al., 2024 ) covers tool use for math, tabular, and visual question answering ( math-algebra , tabmwp , vqa ; 280, 174, and 200 instructions). Every Gorilla and CRAFT instruction has exactly one gold tool. TaskBench ( Shen et al., 2024 ) is the multi-tool out-of-domain case: three source splits ( daily , multimedia , huggingface ; 103 instructions in total), each with its own small inventory of 23–40 tools, where each instruction requires several tools (2.6 on average). ToolBench G2 and G3 use the retrieval splits released with ToolBench. Gorilla, CRAFT, and TaskBench use the packaging of ToolRet ( Shi et al., 2025 ) , which provides instruction-framed queries and a unified corpus format; we restrict each split’s corpus to its own source’s tool inventory rather than ToolRet’s merged corpus, matching the original benchmarks. All user instructions and tool documentation in every benchmark are in English. The G3 test split has 2,373 instructions, of which 2,124 (89.5%) survive the gold filtering of § 3.2 ; the G2 test split has 8,250, of which 7,238 (87.7%) survive. Gorilla, CRAFT, and TaskBench are evaluated on their original gold labels without filtering.",
+   "zh": "表3总结了各语料库。 ToolBench G3（Qin et al., 2024）是训练基准：其语料库包含1,419个RapidAPI工具，训练集包含21,361条用户指令，测试集包含2,124条。 每条指令都需要多个工具，并分解为若干独立的子步骤。 所有训练、主要结果、消融实验以及检索器替换实验均使用G3。 ToolBench G2是同一RapidAPI工具集的一个更大且基本不相交的划分（11,474个工具，约9%与G3共享），采用同样的多工具设定；我们评估经过与G3相同的黄金过滤（§3.2）后保留下来的7,238条测试指令。 Gorilla（Patil et al., 2024）涵盖对三个机器学习模型中心的工具调用，各有一个人源划分（huggingface、pytorch、tensor；分别为500、43和55条指令）。 CRAFT（Yuan et al., 2024）涵盖数学、表格和视觉问答的工具使用（math-algebra、tabmwp、vqa；分别为280、174和200条指令）。 每条Gorilla和CRAFT指令都恰好有一个黄金工具。 TaskBench（Shen et al., 2024）是多工具的域外案例：三个人源划分（daily、multimedia、huggingface；共103条指令），每个划分拥有各自23–40个工具的小型工具清单，每条指令需要多个工具（平均2.6个）。 ToolBench G2和G3使用ToolBench随附发布的检索划分。 Gorilla、CRAFT和TaskBench采用ToolRet（Shi et al., 2025）的打包方式，其提供以指令形式表述的查询和统一的语料库格式；我们将每个划分的语料库限定为其自身来源的工具清单，而非ToolRet的合并语料库，以与原始基准保持一致。 每个基准中的所有用户指令和工具文档均为英文。 G3测试集有2,373条指令，其中2,124条（89.5%）通过了§3.2的黄金过滤；G2测试集有8,250条，其中7,238条（87.7%）通过。 Gorilla、CRAFT和TaskBench在其原始黄金标注上进行评估，不做过滤。",
+   "sents": [
+    {
+     "en": "Table 3 summarizes the corpora.",
+     "zh": "表3总结了各语料库。"
+    },
+    {
+     "en": "ToolBench G3 ( Qin et al., 2024 ) is the training benchmark: its corpus has 1,419 RapidAPI tools, the training split has 21,361 user instructions, and the test split has 2,124.",
+     "zh": "ToolBench G3（Qin et al., 2024）是训练基准：其语料库包含1,419个RapidAPI工具，训练集包含21,361条用户指令，测试集包含2,124条。"
+    },
+    {
+     "en": "Every instruction requires multiple tools and decomposes into several independent substeps.",
+     "zh": "每条指令都需要多个工具，并分解为若干独立的子步骤。"
+    },
+    {
+     "en": "All training, the main results, the ablations, and the retriever-swap experiment use G3.",
+     "zh": "所有训练、主要结果、消融实验以及检索器替换实验均使用G3。"
+    },
+    {
+     "en": "ToolBench G2 is a larger, mostly disjoint split of the same RapidAPI universe (11,474 tools, about 9% shared with G3) in the same multi-tool setting; we evaluate the 7,238 test instructions that survive the same gold filtering as G3 (§ 3.2 ).",
+     "zh": "ToolBench G2是同一RapidAPI工具集的一个更大且基本不相交的划分（11,474个工具，约9%与G3共享），采用同样的多工具设定；我们评估经过与G3相同的黄金过滤（§3.2）后保留下来的7,238条测试指令。"
+    },
+    {
+     "en": "Gorilla ( Patil et al., 2024 ) covers tool calls to three machine-learning model hubs, with one source split each ( huggingface , pytorch , tensor ; 500, 43, and 55 instructions).",
+     "zh": "Gorilla（Patil et al., 2024）涵盖对三个机器学习模型中心的工具调用，各有一个人源划分（huggingface、pytorch、tensor；分别为500、43和55条指令）。"
+    },
+    {
+     "en": "CRAFT ( Yuan et al., 2024 ) covers tool use for math, tabular, and visual question answering ( math-algebra , tabmwp , vqa ; 280, 174, and 200 instructions).",
+     "zh": "CRAFT（Yuan et al., 2024）涵盖数学、表格和视觉问答的工具使用（math-algebra、tabmwp、vqa；分别为280、174和200条指令）。"
+    },
+    {
+     "en": "Every Gorilla and CRAFT instruction has exactly one gold tool.",
+     "zh": "每条Gorilla和CRAFT指令都恰好有一个黄金工具。"
+    },
+    {
+     "en": "TaskBench ( Shen et al., 2024 ) is the multi-tool out-of-domain case: three source splits ( daily , multimedia , huggingface ; 103 instructions in total), each with its own small inventory of 23–40 tools, where each instruction requires several tools (2.6 on average).",
+     "zh": "TaskBench（Shen et al., 2024）是多工具的域外案例：三个人源划分（daily、multimedia、huggingface；共103条指令），每个划分拥有各自23–40个工具的小型工具清单，每条指令需要多个工具（平均2.6个）。"
+    },
+    {
+     "en": "ToolBench G2 and G3 use the retrieval splits released with ToolBench.",
+     "zh": "ToolBench G2和G3使用ToolBench随附发布的检索划分。"
+    },
+    {
+     "en": "Gorilla, CRAFT, and TaskBench use the packaging of ToolRet ( Shi et al., 2025 ) , which provides instruction-framed queries and a unified corpus format; we restrict each split’s corpus to its own source’s tool inventory rather than ToolRet’s merged corpus, matching the original benchmarks.",
+     "zh": "Gorilla、CRAFT和TaskBench采用ToolRet（Shi et al., 2025）的打包方式，其提供以指令形式表述的查询和统一的语料库格式；我们将每个划分的语料库限定为其自身来源的工具清单，而非ToolRet的合并语料库，以与原始基准保持一致。"
+    },
+    {
+     "en": "All user instructions and tool documentation in every benchmark are in English.",
+     "zh": "每个基准中的所有用户指令和工具文档均为英文。"
+    },
+    {
+     "en": "The G3 test split has 2,373 instructions, of which 2,124 (89.5%) survive the gold filtering of § 3.2 ; the G2 test split has 8,250, of which 7,238 (87.7%) survive.",
+     "zh": "G3测试集有2,373条指令，其中2,124条（89.5%）通过了§3.2的黄金过滤；G2测试集有8,250条，其中7,238条（87.7%）通过。"
+    },
+    {
+     "en": "Gorilla, CRAFT, and TaskBench are evaluated on their original gold labels without filtering.",
+     "zh": "Gorilla、CRAFT和TaskBench在其原始黄金标注上进行评估，不做过滤。"
+    }
+   ]
+  },
+  {
+   "en": "All training uses the ToolBench G3 ( Qin et al., 2024 ) training split only. The split has 21,361 instructions with 57,836 (instruction, gold tool) pairs, i.e., 2.71 gold tools per instruction. The gold tool filtering of § 3.2 keeps 54,695 pairs (94.6%); the plan decomposition step then drops a further 1,928 gold tools that the teacher judges unnecessary for the instruction. In total 1,268 instructions (5.9%) are discarded, either because no gold tool survives or because the teacher fails the output validation three times, leaving 20,093 curated training instructions. The SFT corpus built from them contains 19,841 Plan examples and 38,293 Select examples, each a single (prompt, reasoning + action) pair. A held-out slice of 119 training instructions (with its 783 SFT examples) serves as a validation set during development. The RL prompt set is derived from the same curated instructions: one Plan prompt per instruction and one Select prompt per teacher-written substep.",
+   "zh": "所有训练仅使用 ToolBench G3（Qin et al., 2024）训练集划分。 该划分包含 21,361 条指令和 57,836 个（指令，金标准工具）对，即每条指令对应 2.71 个金标准工具。 § 3.2 的金标准工具过滤保留了 54,695 个对（94.6%）；随后的计划分解步骤又去除了 1,928 个被教师判定为对该指令不必要的金标准工具。 总共有 1,268 条指令（5.9%）被丢弃，原因或是在没有金标准工具幸存，或是教师的输出验证三次未通过，最终留下 20,093 条经筛选的训练指令。 由此构建的 SFT 语料库包含 19,841 个 Plan 样例和 38,293 个 Select 样例，每个样例都是单个（提示词，推理 + 动作）对。 119 条训练指令（及其 783 个 SFT 样例）的留存切片在开发过程中用作验证集。 RL 提示词集源自同样的经筛选指令：每条指令一个 Plan 提示词，每个教师编写的子步骤一个 Select 提示词。",
+   "sents": [
+    {
+     "en": "All training uses the ToolBench G3 ( Qin et al., 2024 ) training split only.",
+     "zh": "所有训练仅使用 ToolBench G3（Qin et al., 2024）训练集划分。"
+    },
+    {
+     "en": "The split has 21,361 instructions with 57,836 (instruction, gold tool) pairs, i.e., 2.71 gold tools per instruction.",
+     "zh": "该划分包含 21,361 条指令和 57,836 个（指令，金标准工具）对，即每条指令对应 2.71 个金标准工具。"
+    },
+    {
+     "en": "The gold tool filtering of § 3.2 keeps 54,695 pairs (94.6%); the plan decomposition step then drops a further 1,928 gold tools that the teacher judges unnecessary for the instruction.",
+     "zh": "§ 3.2 的金标准工具过滤保留了 54,695 个对（94.6%）；随后的计划分解步骤又去除了 1,928 个被教师判定为对该指令不必要的金标准工具。"
+    },
+    {
+     "en": "In total 1,268 instructions (5.9%) are discarded, either because no gold tool survives or because the teacher fails the output validation three times, leaving 20,093 curated training instructions.",
+     "zh": "总共有 1,268 条指令（5.9%）被丢弃，原因或是在没有金标准工具幸存，或是教师的输出验证三次未通过，最终留下 20,093 条经筛选的训练指令。"
+    },
+    {
+     "en": "The SFT corpus built from them contains 19,841 Plan examples and 38,293 Select examples, each a single (prompt, reasoning + action) pair.",
+     "zh": "由此构建的 SFT 语料库包含 19,841 个 Plan 样例和 38,293 个 Select 样例，每个样例都是单个（提示词，推理 + 动作）对。"
+    },
+    {
+     "en": "A held-out slice of 119 training instructions (with its 783 SFT examples) serves as a validation set during development.",
+     "zh": "119 条训练指令（及其 783 个 SFT 样例）的留存切片在开发过程中用作验证集。"
+    },
+    {
+     "en": "The RL prompt set is derived from the same curated instructions: one Plan prompt per instruction and one Select prompt per teacher-written substep.",
+     "zh": "RL 提示词集源自同样的经筛选指令：每条指令一个 Plan 提示词，每个教师编写的子步骤一个 Select 提示词。"
+    }
+   ]
+  },
+  {
+   "en": "We fine-tune all parameters with LLaMA-Factory ( Zheng et al., 2024a ) using DeepSpeed ZeRO-3 ( Rajbhandari et al., 2020 ) in bf16. Hyperparameters are listed in Table 4 .",
+   "zh": "我们使用 LLaMA-Factory（Zheng et al., 2024a）并借助 DeepSpeed ZeRO-3（Rajbhandari et al., 2020）以 bf16 精度对所有参数进行微调。 超参数列于表 4。",
+   "sents": [
+    {
+     "en": "We fine-tune all parameters with LLaMA-Factory ( Zheng et al., 2024a ) using DeepSpeed ZeRO-3 ( Rajbhandari et al., 2020 ) in bf16.",
+     "zh": "我们使用 LLaMA-Factory（Zheng et al., 2024a）并借助 DeepSpeed ZeRO-3（Rajbhandari et al., 2020）以 bf16 精度对所有参数进行微调。"
+    },
+    {
+     "en": "Hyperparameters are listed in Table 4 .",
+     "zh": "超参数列于表 4。"
+    }
+   ]
+  },
+  {
+   "en": "We use GRPO ( Shao et al., 2024 ) as implemented in VeRL ( Sheng et al., 2025 ) , with rollouts generated by vLLM ( Kwon et al., 2023 ) , starting from the SFT checkpoint. Hyperparameters are listed in Table 4 , and are identical across the three model scales.",
+   "zh": "我们使用 VeRL（Sheng et al., 2025）中实现的 GRPO（Shao et al., 2024），由 vLLM（Kwon et al., 2023）生成 rollout，并从 SFT 检查点开始。 超参数列于表 4，且在三个模型规模上完全相同。",
+   "sents": [
+    {
+     "en": "We use GRPO ( Shao et al., 2024 ) as implemented in VeRL ( Sheng et al., 2025 ) , with rollouts generated by vLLM ( Kwon et al., 2023 ) , starting from the SFT checkpoint.",
+     "zh": "我们使用 VeRL（Sheng et al., 2025）中实现的 GRPO（Shao et al., 2024），由 vLLM（Kwon et al., 2023）生成 rollout，并从 SFT 检查点开始。"
+    },
+    {
+     "en": "Hyperparameters are listed in Table 4 , and are identical across the three model scales.",
+     "zh": "超参数列于表 4，且在三个模型规模上完全相同。"
+    }
+   ]
+  },
+  {
+   "en": "Training uses VeRL at commit e52747a4 (v0.8.0 plus 147 commits), vLLM 0.11.0, PyTorch 2.8.0 with CUDA 12.8, Transformers 4.56.1, DeepSpeed 0.18.4, and FlashAttention 2.8.1. Evaluation uses a separate environment with vLLM 0.22.1, PyTorch 2.11.0, Transformers 5.10.2, bm25s 0.3.9, and sentence-transformers 5.5.1 for the COLT encoder. All reported numbers are produced with the evaluation environment.",
+   "zh": "训练使用 VeRL（提交号 e52747a4，即 v0.8.0 加 147 个提交）、vLLM 0.11.0、PyTorch 2.8.0 与 CUDA 12.8、Transformers 4.56.1、DeepSpeed 0.18.4 以及 FlashAttention 2.8.1。 评估使用单独的环境，包括 vLLM 0.22.1、PyTorch 2.11.0、Transformers 5.10.2、bm25s 0.3.9，以及用于 COLT 编码器的 sentence-transformers 5.5.1。 所有报告的数值均由评估环境产生。",
+   "sents": [
+    {
+     "en": "Training uses VeRL at commit e52747a4 (v0.8.0 plus 147 commits), vLLM 0.11.0, PyTorch 2.8.0 with CUDA 12.8, Transformers 4.56.1, DeepSpeed 0.18.4, and FlashAttention 2.8.1.",
+     "zh": "训练使用 VeRL（提交号 e52747a4，即 v0.8.0 加 147 个提交）、vLLM 0.11.0、PyTorch 2.8.0 与 CUDA 12.8、Transformers 4.56.1、DeepSpeed 0.18.4 以及 FlashAttention 2.8.1。"
+    },
+    {
+     "en": "Evaluation uses a separate environment with vLLM 0.22.1, PyTorch 2.11.0, Transformers 5.10.2, bm25s 0.3.9, and sentence-transformers 5.5.1 for the COLT encoder.",
+     "zh": "评估使用单独的环境，包括 vLLM 0.22.1、PyTorch 2.11.0、Transformers 5.10.2、bm25s 0.3.9，以及用于 COLT 编码器的 sentence-transformers 5.5.1。"
+    },
+    {
+     "en": "All reported numbers are produced with the evaluation environment.",
+     "zh": "所有报告的数值均由评估环境产生。"
+    }
+   ]
+  },
+  {
+   "en": "All results report the exact-match success rate of § 4.1 : an instruction counts as a success if and only if the union of selected tool IDs over all substeps equals the filtered gold tool set. A missing tool, an extra tool, or an unparseable action all count as failures. All models are decoded greedily (temperature 0), with at most 2,048 new tokens per call and at most 8 substeps per plan. All numbers are from a single run; repeated runs of the same checkpoint differ by one to two instructions because of non-deterministic batched inference.",
+   "zh": "所有结果均报告 §4.1 的精确匹配成功率：当且仅当所有子步骤所选工具 ID 的并集等于过滤后的标准工具集时，该指令才计为成功。 缺失工具、多余工具或动作无法解析均计为失败。 所有模型均采用贪心解码（温度为 0），每次调用最多生成 2,048 个新 token，每个计划最多 8 个子步骤。 所有数字均来自单次运行；由于批量推理的非确定性，同一检查点的重复运行结果相差一至两条指令。",
+   "sents": [
+    {
+     "en": "All results report the exact-match success rate of § 4.1 : an instruction counts as a success if and only if the union of selected tool IDs over all substeps equals the filtered gold tool set.",
+     "zh": "所有结果均报告 §4.1 的精确匹配成功率：当且仅当所有子步骤所选工具 ID 的并集等于过滤后的标准工具集时，该指令才计为成功。"
+    },
+    {
+     "en": "A missing tool, an extra tool, or an unparseable action all count as failures.",
+     "zh": "缺失工具、多余工具或动作无法解析均计为失败。"
+    },
+    {
+     "en": "All models are decoded greedily (temperature 0), with at most 2,048 new tokens per call and at most 8 substeps per plan.",
+     "zh": "所有模型均采用贪心解码（温度为 0），每次调用最多生成 2,048 个新 token，每个计划最多 8 个子步骤。"
+    },
+    {
+     "en": "All numbers are from a single run; repeated runs of the same checkpoint differ by one to two instructions because of non-deterministic batched inference.",
+     "zh": "所有数字均来自单次运行；由于批量推理的非确定性，同一检查点的重复运行结果相差一至两条指令。"
+    }
+   ]
+  },
+  {
+   "en": "The main results (Table 1 , Figure 3 ) are on the G3 test split over the full G3 corpus (Table 3 ), with BM25, τ = 3 \\tau=3 , and K = 15 K=15 as in training. The ablations of § 4.4 use the same split and the 8B SFT+RL checkpoint; the candidate-set sweep (Figure 9 ) evaluates K ∈ { 5 , 10 , 15 , 20 , 30 } K\\in\\{5,10,15,20,30\\} with everything else fixed.",
+   "zh": "主要结果（表 1、图 3）是在完整 G3 语料库（表 3）的 G3 测试划分上得出的，使用与训练时相同的 BM25、τ=3 和 K=15。 第 4.4 节的消融实验使用相同的划分和 8B SFT+RL 检查点；候选集扫描（图 9）在保持其他条件不变的情况下评估 K∈{5,10,15,20,30}。",
+   "sents": [
+    {
+     "en": "The main results (Table 1 , Figure 3 ) are on the G3 test split over the full G3 corpus (Table 3 ), with BM25, τ = 3 \\tau=3 , and K = 15 K=15 as in training.",
+     "zh": "主要结果（表 1、图 3）是在完整 G3 语料库（表 3）的 G3 测试划分上得出的，使用与训练时相同的 BM25、τ=3 和 K=15。"
+    },
+    {
+     "en": "The ablations of § 4.4 use the same split and the 8B SFT+RL checkpoint; the candidate-set sweep (Figure 9 ) evaluates K ∈ { 5 , 10 , 15 , 20 , 30 } K\\in\\{5,10,15,20,30\\} with everything else fixed.",
+     "zh": "第 4.4 节的消融实验使用相同的划分和 8B SFT+RL 检查点；候选集扫描（图 9）在保持其他条件不变的情况下评估 K∈{5,10,15,20,30}。"
+    }
+   ]
+  },
+  {
+   "en": "All four protocols of § 4.1 prompt the same Llama-4-Maverick (Appendix A.1 ) with greedy decoding and at most 1,024 new tokens per call (2,048 for our workflow).",
+   "zh": "§ 4.1 的全部四种协议均以贪心解码方式提示同一个 Llama-4-Maverick（附录 A.1），每次调用最多生成 1,024 个新 token（我们的工作流为 2,048 个）。",
+   "sents": null
+  },
+  {
+   "en": "ReAct first decomposes the instruction into at most five substeps with a prompt that includes two few-shot decomposition examples, then runs one ReAct loop per substep over BM25: Each turn the model sees the substep, its search history, and the top-10 results of its latest search, and chooses to search again, select one tool, or skip; the loop may issue at most four searches before committing.",
+   "zh": "ReAct 首先通过一个包含两个少样本分解示例的提示词，将指令分解为最多五个子步骤，然后在 BM25 上为每个子步骤运行一次 ReAct 循环：每一轮，智能体会看到该子步骤、其搜索历史以及其最新搜索的前 10 条结果，并选择再次搜索、选择一个工具，或跳过；该循环在提交答案之前最多可执行四次搜索。",
+   "sents": null
+  },
+  {
+   "en": "Hierarchical search follows AnyTool ( Du et al., 2024 ) : the model descends the ToolBench category → \\to tool → \\to API taxonomy (G3: 36 categories and 241 tools; G2: 49 categories and 3,391 tools), choosing at most 3 categories, 6 tools per category, and 15 APIs per tool, with API descriptions truncated to 200 characters, and re-enters the tree after one self-reflection round.",
+   "zh": "分层搜索遵循 AnyTool（Du et al., 2024）：模型沿 ToolBench 的类别 → \\to 工具 → \\to API 分类树逐层下探（G3：36 个类别和 241 个工具；G2：49 个类别和 3,391 个工具），最多选择 3 个类别、每个类别 6 个工具、每个工具 15 个 API，API 描述截断为 200 个字符，并在一轮自我反思后重新进入该树。",
+   "sents": null
+  },
+  {
+   "en": "Search-R1-style follows Jin et al. (2025) : a single generation interleaving <think> , <search> (BM25 top-10 per search, at most six searches), and a final <answer> containing the tool set, with no decomposition; the prompt includes one three-turn worked example, and generation is stopped at each </search> tag so the model cannot fabricate retrieval results.",
+   "zh": "Search-R1 风格遵循 Jin 等人 (2025)：单次生成中交替使用 <think>、<search>（每次搜索返回 BM25 前 10 条，最多搜索六次）以及包含工具集合的最终 <answer>，不进行任务分解；提示词中包含一个三轮的示例演示，并且生成在每个 </search> 标签处停止，以防止模型编造检索结果。",
+   "sents": [
+    {
+     "en": "Search-R1-style follows Jin et al.",
+     "zh": "Search-R1 风格遵循 Jin 等人"
+    },
+    {
+     "en": "(2025) : a single generation interleaving <think> , <search> (BM25 top-10 per search, at most six searches), and a final <answer> containing the tool set, with no decomposition; the prompt includes one three-turn worked example, and generation is stopped at each </search> tag so the model cannot fabricate retrieval results.",
+     "zh": "(2025)：单次生成中交替使用 <think>、<search>（每次搜索返回 BM25 前 10 条，最多搜索六次）以及包含工具集合的最终 <answer>，不进行任务分解；提示词中包含一个三轮的示例演示，并且生成在每个 </search> 标签处停止，以防止模型编造检索结果。"
+    }
+   ]
+  },
+  {
+   "en": "Our workflow runs the untrained Maverick as both planner and selector with the prompts of Appendix D and no few-shot examples.",
+   "zh": "我们的工作流使用未经训练的 Maverick 同时作为规划器和选择器运行，采用附录 D 中的提示词，且不使用少样本示例。",
+   "sents": null
+  },
+  {
+   "en": "Retrieval settings per benchmark are given in Table 3 .",
+   "zh": "每个基准测试的检索设置见表 3。",
+   "sents": null
+  },
+  {
+   "en": "For the COLT experiment (§ 4.3 ) we replace BM25 scores with COLT similarity scores (Appendix A.1 ) inside the Retrieve stage. Because COLT scores are on a different scale from BM25, the threshold is set to τ = 0.6 \\tau=0.6 ; K = 15 K=15 is unchanged. The model checkpoints and prompts are identical to the BM25 runs.",
+   "zh": "对于 COLT 实验（§ 4.3），我们在检索（Retrieve）阶段中将 BM25 分数替换为 COLT 相似度分数（附录 A.1）。 由于 COLT 分数与 BM25 分数处于不同的量级，阈值设为 τ = 0.6 \\tau=0.6；K = 15 K=15 保持不变。 模型检查点与提示词与 BM25 运行时完全相同。",
+   "sents": [
+    {
+     "en": "For the COLT experiment (§ 4.3 ) we replace BM25 scores with COLT similarity scores (Appendix A.1 ) inside the Retrieve stage.",
+     "zh": "对于 COLT 实验（§ 4.3），我们在检索（Retrieve）阶段中将 BM25 分数替换为 COLT 相似度分数（附录 A.1）。"
+    },
+    {
+     "en": "Because COLT scores are on a different scale from BM25, the threshold is set to τ = 0.6 \\tau=0.6 ; K = 15 K=15 is unchanged.",
+     "zh": "由于 COLT 分数与 BM25 分数处于不同的量级，阈值设为 τ = 0.6 \\tau=0.6；K = 15 K=15 保持不变。"
+    },
+    {
+     "en": "The model checkpoints and prompts are identical to the BM25 runs.",
+     "zh": "模型检查点与提示词与 BM25 运行时完全相同。"
+    }
+   ]
+  },
+  {
+   "en": "Table 5 lists the public location and license of every model checkpoint, benchmark, and software framework used in this paper.",
+   "zh": "表5列出了本文中使用的每个模型检查点、基准测试和软件框架的公开位置和许可证。",
+   "sents": null
+  },
+  {
+   "en": "All models, benchmarks, and software in Table 5 are used for non-commercial research, consistent with their licenses and, where stated, their intended use. The benchmarks are used for the purpose they were released for, namely evaluating tool retrieval and selection. Llama-4-Maverick is used as a teacher to generate the SFT supervision of § 3.2 and as a prompted baseline, under the Llama 4 Community License. The COLT checkpoint is used only for the retriever-swap evaluation of § 4.3 . Where a resource declares no license (Table 5 ), we use it only for research evaluation and do not redistribute it. All data are English tool documentation and synthetic user instructions created by the benchmark authors; we did not collect any new data from people.",
+   "zh": "表 5 中的所有模型、基准测试和软件均用于非商业研究，符合其许可证规定，并在有说明的情况下符合其预期用途。 这些基准测试仅用于其发布时的目的，即评估工具的检索与选择。 在 Llama 4 社区许可证条款下，Llama-4-Maverick 被用作教师模型来生成 § 3.2 中的 SFT 监督信号，并作为一个基于提示的基线。 COLT 检查点仅用于 § 4.3 的检索器替换评估。 对于未声明许可证的资源（表 5），我们仅将其用于研究评估，不对其进行再分发。 所有数据均为英文工具文档以及基准测试作者创建的合成用户指令；我们没有从任何人那里收集任何新数据。",
+   "sents": [
+    {
+     "en": "All models, benchmarks, and software in Table 5 are used for non-commercial research, consistent with their licenses and, where stated, their intended use.",
+     "zh": "表 5 中的所有模型、基准测试和软件均用于非商业研究，符合其许可证规定，并在有说明的情况下符合其预期用途。"
+    },
+    {
+     "en": "The benchmarks are used for the purpose they were released for, namely evaluating tool retrieval and selection.",
+     "zh": "这些基准测试仅用于其发布时的目的，即评估工具的检索与选择。"
+    },
+    {
+     "en": "Llama-4-Maverick is used as a teacher to generate the SFT supervision of § 3.2 and as a prompted baseline, under the Llama 4 Community License.",
+     "zh": "在 Llama 4 社区许可证条款下，Llama-4-Maverick 被用作教师模型来生成 § 3.2 中的 SFT 监督信号，并作为一个基于提示的基线。"
+    },
+    {
+     "en": "The COLT checkpoint is used only for the retriever-swap evaluation of § 4.3 .",
+     "zh": "COLT 检查点仅用于 § 4.3 的检索器替换评估。"
+    },
+    {
+     "en": "Where a resource declares no license (Table 5 ), we use it only for research evaluation and do not redistribute it.",
+     "zh": "对于未声明许可证的资源（表 5），我们仅将其用于研究评估，不对其进行再分发。"
+    },
+    {
+     "en": "All data are English tool documentation and synthetic user instructions created by the benchmark authors; we did not collect any new data from people.",
+     "zh": "所有数据均为英文工具文档以及基准测试作者创建的合成用户指令；我们没有从任何人那里收集任何新数据。"
+    }
+   ]
+  },
+  {
+   "en": "This work creates three derived artifacts: the curated gold tool sets and teacher-written SFT trajectories for ToolBench G3 and G2 (§ 3.2 ), the trained Qwen3 checkpoints, and the training and evaluation code. Because the SFT data are generated with Llama-4-Maverick, the trained checkpoints are derivatives of Llama outputs. None of these artifacts are released, and they are used only for the experiments reported here. The intended use of the trained models is research on tool selection; they are not validated for deployment in agents that execute consequential actions. All information needed to re-implement the pipeline, including prompts (Appendix D ), hyperparameters (Table 4 ), software versions (Appendix A.2 ), and data statistics, is reported in this paper.",
+   "zh": "本工作创建了三个派生产物：为 ToolBench G3 和 G2 精心整理的黄金工具集以及教师撰写的 SFT 轨迹（§ 3.2）、训练得到的 Qwen3 检查点，以及训练与评估代码。 由于 SFT 数据由 Llama-4-Maverick 生成，训练得到的检查点是 Llama 输出的衍生品。 这些产物均未公开发布，仅用于本文所报告的实验。 训练得到模型的预期用途是工具选择研究；它们尚未经过验证，不可用于执行重大后果动作的智能体部署。 重新实现该流程所需的全部信息，包括提示词（附录 D）、超参数（表 4）、软件版本（附录 A.2）以及数据统计，均已在本文中报告。",
+   "sents": [
+    {
+     "en": "This work creates three derived artifacts: the curated gold tool sets and teacher-written SFT trajectories for ToolBench G3 and G2 (§ 3.2 ), the trained Qwen3 checkpoints, and the training and evaluation code.",
+     "zh": "本工作创建了三个派生产物：为 ToolBench G3 和 G2 精心整理的黄金工具集以及教师撰写的 SFT 轨迹（§ 3.2）、训练得到的 Qwen3 检查点，以及训练与评估代码。"
+    },
+    {
+     "en": "Because the SFT data are generated with Llama-4-Maverick, the trained checkpoints are derivatives of Llama outputs.",
+     "zh": "由于 SFT 数据由 Llama-4-Maverick 生成，训练得到的检查点是 Llama 输出的衍生品。"
+    },
+    {
+     "en": "None of these artifacts are released, and they are used only for the experiments reported here.",
+     "zh": "这些产物均未公开发布，仅用于本文所报告的实验。"
+    },
+    {
+     "en": "The intended use of the trained models is research on tool selection; they are not validated for deployment in agents that execute consequential actions.",
+     "zh": "训练得到模型的预期用途是工具选择研究；它们尚未经过验证，不可用于执行重大后果动作的智能体部署。"
+    },
+    {
+     "en": "All information needed to re-implement the pipeline, including prompts (Appendix D ), hyperparameters (Table 4 ), software versions (Appendix A.2 ), and data statistics, is reported in this paper.",
+     "zh": "重新实现该流程所需的全部信息，包括提示词（附录 D）、超参数（表 4）、软件版本（附录 A.2）以及数据统计，均已在本文中报告。"
+    }
+   ]
+  },
+  {
+   "en": "For completeness we list the exact prompts used for each stage of the evaluation workflow (§ 3.1 ). Every LLM call is stateless: it consists of one system prompt and one user message, re-rendered from structured state, so the model never sees a growing transcript. Placeholders in {braces} are filled in by the workflow at render time.",
+   "zh": "为完整起见，我们列出评估工作流各阶段（§ 3.1）所使用的确切提示词。 每次大语言模型调用都是无状态的：它由一个系统提示词和一条用户消息组成，均从结构化状态重新渲染，因此模型永远不会看到不断增长的对话记录。 {大括号}中的占位符由工作流在渲染时填充。",
+   "sents": [
+    {
+     "en": "For completeness we list the exact prompts used for each stage of the evaluation workflow (§ 3.1 ).",
+     "zh": "为完整起见，我们列出评估工作流各阶段（§ 3.1）所使用的确切提示词。"
+    },
+    {
+     "en": "Every LLM call is stateless: it consists of one system prompt and one user message, re-rendered from structured state, so the model never sees a growing transcript.",
+     "zh": "每次大语言模型调用都是无状态的：它由一个系统提示词和一条用户消息组成，均从结构化状态重新渲染，因此模型永远不会看到不断增长的对话记录。"
+    },
+    {
+     "en": "Placeholders in {braces} are filled in by the workflow at render time.",
+     "zh": "{大括号}中的占位符由工作流在渲染时填充。"
+    }
+   ]
+  },
+  {
+   "en": "A single call decomposes the user task into an ordered list of substeps.",
+   "zh": "一次调用即可将用户任务分解为一个有序的子步骤列表。",
+   "sents": null
+  },
+  {
+   "en": "A single call over the ≤ K \\leq K retrieved candidates, the only stage in which full tool documentation enters the context. The optional leading User task line restores query detail that the decomposition may have dropped.",
+   "zh": "对 ≤ K \\leq K 个检索到的候选进行单次调用，这是唯一一个完整工具文档进入上下文的阶段。 可选的前置「User task」行恢复了查询分解可能丢失的查询细节。",
+   "sents": [
+    {
+     "en": "A single call over the ≤ K \\leq K retrieved candidates, the only stage in which full tool documentation enters the context.",
+     "zh": "对 ≤ K \\leq K 个检索到的候选进行单次调用，这是唯一一个完整工具文档进入上下文的阶段。"
+    },
+    {
+     "en": "The optional leading User task line restores query detail that the decomposition may have dropped.",
+     "zh": "可选的前置「User task」行恢复了查询分解可能丢失的查询细节。"
+    }
+   ]
+  }
+ ]
+}
