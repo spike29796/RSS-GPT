@@ -41,6 +41,15 @@ import time
 import urllib.request
 from datetime import datetime, timezone
 
+# 论文标题里偶尔有 GBK 表示不了的字符（例如 Æ）。这个脚本是被计划/循环拉起来跑的，
+# stdout 默认跟着控制台代码页走（中文 Windows 上是 GBK），print 一撞上就抛 UnicodeEncodeError，
+# 整批直接退出、一篇都翻不成。固定成 UTF-8 并让编码错误降级，标题再怪也打不死一批。
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 DOCS_DIR = os.path.join(HERE, 'docs')
 PAPER_DIR = os.path.join(DOCS_DIR, 'paper')
