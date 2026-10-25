@@ -1,0 +1,2310 @@
+{
+ "id": "207e9470ee93f260",
+ "source": "arxiv-video",
+ "link": "https://arxiv.org/abs/2610.02153v1",
+ "title": "MosaiChunk: Compositing Spatio-Temporal Memory for Autoregressive Video Generation",
+ "title_zh": "MosaiChunk: 组合时空记忆机制以进行自回归视频生成",
+ "published": "2026-10-01T17:51:05Z",
+ "translated_at": "2026-10-25T04:41:36Z",
+ "paragraphs": [
+  {
+   "en": "Long-horizon autoregressive video generation is limited by a finite context window. When an object or scene falls out of context, its fine-grained visual details may be lost and difficult to recover upon reappearance. To retain access to such visual details, we introduce MosaiChunk , a spatio-temporal memory mechanism that composes a mosaic of selected historical key–value (KV) entries across space and time. Our approach is motivated by the observation that a frozen video generator can directly consume such non-contiguous historical KV and recover the corresponding visual content. We therefore keep the generator fixed and learn only a lightweight router that determines which historical sections to include in the mosaic under a fixed active-memory budget. We further introduce RememBench , a benchmark of long-horizon revisits with prompt-driven text-to-video (T2V) and camera-driven image-to-video (I2V) splits. Our experiments show that MosaiChunk consistently improves revisit consistency over both sliding-window inference and whole-chunk retrieval under matched memory budgets, across both T2V and I2V settings. All code and data will be released.",
+   "zh": "长时程自回归视频生成受到有限上下文窗口的限制。 当某个物体或场景离开上下文后，其细粒度的视觉细节可能丢失，并在重新出现时难以恢复。 为了保留对这些视觉细节的访问能力，我们提出了 MosaiChunk，这是一种时空记忆机制，可在空间和时间上组合由精选的历史键值（KV）条目构成的马赛克。 我们的方法源于一个观察：冻结的视频生成器可以直接消费这种非连续的历史 KV 并恢复相应的视觉内容。 因此，我们保持生成器固定不变，仅学习一个轻量级路由器，在固定的活跃内存预算下决定将哪些历史片段纳入马赛克。 我们进一步提出了 RememBench，这是一个长时程重访基准，包含由提示驱动的文生视频（T2V）和由相机驱动的图生视频（I2V）两个划分。 我们的实验表明，在相同的内存预算下，MosaiChunk 在 T2V 和 I2V 两种设置中，均能持续提升重访一致性，优于滑动窗口推理和整块检索两种基线。 所有代码和数据都将开源发布。",
+   "sents": [
+    {
+     "en": "Long-horizon autoregressive video generation is limited by a finite context window.",
+     "zh": "长时程自回归视频生成受到有限上下文窗口的限制。"
+    },
+    {
+     "en": "When an object or scene falls out of context, its fine-grained visual details may be lost and difficult to recover upon reappearance.",
+     "zh": "当某个物体或场景离开上下文后，其细粒度的视觉细节可能丢失，并在重新出现时难以恢复。"
+    },
+    {
+     "en": "To retain access to such visual details, we introduce MosaiChunk , a spatio-temporal memory mechanism that composes a mosaic of selected historical key–value (KV) entries across space and time.",
+     "zh": "为了保留对这些视觉细节的访问能力，我们提出了 MosaiChunk，这是一种时空记忆机制，可在空间和时间上组合由精选的历史键值（KV）条目构成的马赛克。"
+    },
+    {
+     "en": "Our approach is motivated by the observation that a frozen video generator can directly consume such non-contiguous historical KV and recover the corresponding visual content.",
+     "zh": "我们的方法源于一个观察：冻结的视频生成器可以直接消费这种非连续的历史 KV 并恢复相应的视觉内容。"
+    },
+    {
+     "en": "We therefore keep the generator fixed and learn only a lightweight router that determines which historical sections to include in the mosaic under a fixed active-memory budget.",
+     "zh": "因此，我们保持生成器固定不变，仅学习一个轻量级路由器，在固定的活跃内存预算下决定将哪些历史片段纳入马赛克。"
+    },
+    {
+     "en": "We further introduce RememBench , a benchmark of long-horizon revisits with prompt-driven text-to-video (T2V) and camera-driven image-to-video (I2V) splits.",
+     "zh": "我们进一步提出了 RememBench，这是一个长时程重访基准，包含由提示驱动的文生视频（T2V）和由相机驱动的图生视频（I2V）两个划分。"
+    },
+    {
+     "en": "Our experiments show that MosaiChunk consistently improves revisit consistency over both sliding-window inference and whole-chunk retrieval under matched memory budgets, across both T2V and I2V settings.",
+     "zh": "我们的实验表明，在相同的内存预算下，MosaiChunk 在 T2V 和 I2V 两种设置中，均能持续提升重访一致性，优于滑动窗口推理和整块检索两种基线。"
+    },
+    {
+     "en": "All code and data will be released.",
+     "zh": "所有代码和数据都将开源发布。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 1: In text-to-video generation, prompts like “Close the tin, then reopen it.” illustrate a well-known problem: once a frame (e.g. tin with cookie) is dropped from the context sliding window, its contents are forgotten and must be hallucinated (top). We introduce MosaiChunk (bottom), a spatio-temporal memory mechanism that conditions a video generation model on composed historical KV sections (pink for the cookie, yellow for the tin, and gray for the background). Our mechanism preserves fine-grained visual details over long-horizon rollouts, such as the star cookie’s appearance when the tin closes and reopens.",
+   "zh": "图1：在文本到视频生成中，诸如「关上铁盒，然后重新打开它。」这样的提示词展现了一个众所周知的问题：一旦某帧（例如装着饼干的铁盒）从上下文滑动窗口中移出，其内容就会被遗忘，只能靠幻觉来补全（上）。 我们提出 MosaiChunk（下），这是一种时空记忆机制，它使视频生成模型能够以组合的历史 KV 区段为条件（粉色代表饼干，黄色代表铁盒，灰色代表背景）。 我们的机制能在长时程推演中保留细粒度的视觉细节，例如铁盒关上再重新打开时星星饼干的外观。",
+   "sents": [
+    {
+     "en": "Figure 1: In text-to-video generation, prompts like “Close the tin, then reopen it.” illustrate a well-known problem: once a frame (e.g. tin with cookie) is dropped from the context sliding window, its contents are forgotten and must be hallucinated (top).",
+     "zh": "图1：在文本到视频生成中，诸如「关上铁盒，然后重新打开它。」这样的提示词展现了一个众所周知的问题：一旦某帧（例如装着饼干的铁盒）从上下文滑动窗口中移出，其内容就会被遗忘，只能靠幻觉来补全（上）。"
+    },
+    {
+     "en": "We introduce MosaiChunk (bottom), a spatio-temporal memory mechanism that conditions a video generation model on composed historical KV sections (pink for the cookie, yellow for the tin, and gray for the background).",
+     "zh": "我们提出 MosaiChunk（下），这是一种时空记忆机制，它使视频生成模型能够以组合的历史 KV 区段为条件（粉色代表饼干，黄色代表铁盒，灰色代表背景）。"
+    },
+    {
+     "en": "Our mechanism preserves fine-grained visual details over long-horizon rollouts, such as the star cookie’s appearance when the tin closes and reopens.",
+     "zh": "我们的机制能在长时程推演中保留细粒度的视觉细节，例如铁盒关上再重新打开时星星饼干的外观。"
+    }
+   ]
+  },
+  {
+   "en": "“Nothing comes from nothing.” — The Sound of Music (1965)",
+   "zh": "“无中不能生有。” —— 《音乐之声》（1965）",
+   "sents": null
+  },
+  {
+   "en": "The visual world is full of recurrence: objects return, surfaces reappear from new viewpoints, and details established at one moment become relevant again much later. For decades, vision and graphics methods have exploited this structure by constructing new imagery from visual elements that have already been observed—reusing patches, frames, and regions rather than synthesizing every detail from scratch ( Schödl et al., 2000 ; Efros & Freeman, 2001 ; Jojic et al., 2003 ; Isola & Liu, 2013 ) . In this work, we ask: can the same principle of visual reuse support persistent memory in autoregressive video generation?",
+   "zh": "视觉世界充满了重现性：物体会再次出现，表面会从新的视角重新显现，而某一时刻确立的细节也会在很久之后再次变得相关。 数十年来，视觉与图形学方法一直利用这种结构，通过已经观察到的视觉元素来构建新的图像——复用图像块、帧和区域，而不是从零开始合成每一个细节（Schödl et al., 2000；Efros & Freeman, 2001；Jojic et al., 2003；Isola & Liu, 2013）。 在本工作中，我们提出这样一个问题：同样的视觉复用原则能否支持自回归视频生成中的持久记忆？",
+   "sents": [
+    {
+     "en": "The visual world is full of recurrence: objects return, surfaces reappear from new viewpoints, and details established at one moment become relevant again much later.",
+     "zh": "视觉世界充满了重现性：物体会再次出现，表面会从新的视角重新显现，而某一时刻确立的细节也会在很久之后再次变得相关。"
+    },
+    {
+     "en": "For decades, vision and graphics methods have exploited this structure by constructing new imagery from visual elements that have already been observed—reusing patches, frames, and regions rather than synthesizing every detail from scratch ( Schödl et al., 2000 ; Efros & Freeman, 2001 ; Jojic et al., 2003 ; Isola & Liu, 2013 ) .",
+     "zh": "数十年来，视觉与图形学方法一直利用这种结构，通过已经观察到的视觉元素来构建新的图像——复用图像块、帧和区域，而不是从零开始合成每一个细节（Schödl et al., 2000；Efros & Freeman, 2001；Jojic et al., 2003；Isola & Liu, 2013）。"
+    },
+    {
+     "en": "In this work, we ask: can the same principle of visual reuse support persistent memory in autoregressive video generation?",
+     "zh": "在本工作中，我们提出这样一个问题：同样的视觉复用原则能否支持自回归视频生成中的持久记忆？"
+    }
+   ]
+  },
+  {
+   "en": "Consider the example illustrated in Figure 1 , where a video model is prompted to show a biscuit tin, close it, and reopen it a few seconds later. When the tin reopens, the model should be able to reuse the biscuit’s previously generated appearance, since it has already established what is inside. Yet long-horizon autoregressive video generation typically relies on sliding-window inference, which keeps the active cache bounded by retaining only the most recent entries and evicting older ones. Once the biscuit leaves this window, the generator loses direct access to that specific appearance, and may synthesize a different biscuit when the tin reopens.",
+   "zh": "考虑图 1 所示的示例，其中视频模型被提示展示一个饼干罐，将其关上，并在几秒后重新打开。 当罐子重新打开时，模型应能复用先前已生成的饼干外观，因为它已经确定了罐内之物。 然而长时程自回归视频生成通常依赖滑动窗口推理，该方法只保留最近的条目并淘汰较旧的条目，从而使活跃缓存保持有界。 一旦饼干离开该窗口，生成器便失去了对该特定外观的直接访问，可能会在罐子重新打开时合成一块不同的饼干。",
+   "sents": [
+    {
+     "en": "Consider the example illustrated in Figure 1 , where a video model is prompted to show a biscuit tin, close it, and reopen it a few seconds later.",
+     "zh": "考虑图 1 所示的示例，其中视频模型被提示展示一个饼干罐，将其关上，并在几秒后重新打开。"
+    },
+    {
+     "en": "When the tin reopens, the model should be able to reuse the biscuit’s previously generated appearance, since it has already established what is inside.",
+     "zh": "当罐子重新打开时，模型应能复用先前已生成的饼干外观，因为它已经确定了罐内之物。"
+    },
+    {
+     "en": "Yet long-horizon autoregressive video generation typically relies on sliding-window inference, which keeps the active cache bounded by retaining only the most recent entries and evicting older ones.",
+     "zh": "然而长时程自回归视频生成通常依赖滑动窗口推理，该方法只保留最近的条目并淘汰较旧的条目，从而使活跃缓存保持有界。"
+    },
+    {
+     "en": "Once the biscuit leaves this window, the generator loses direct access to that specific appearance, and may synthesize a different biscuit when the tin reopens.",
+     "zh": "一旦饼干离开该窗口，生成器便失去了对该特定外观的直接访问，可能会在罐子重新打开时合成一块不同的饼干。"
+    }
+   ]
+  },
+  {
+   "en": "The simplest solution would be to keep the entire generated history active, but this quickly becomes impractical: as the rollout grows, so do both the KV cache and the cost of attending to it. The challenge is therefore not to remember everything, but to recover a small set of historical KV needed for the current continuation. Recent approaches address this problem by retrieving the most relevant historical chunks, typically according to similarity with the current context ( Cai et al., 2025 ; Yi et al., 2026 ) . However, chunks bundle the keys and values of multiple frames, while the reusable visual content may occupy only a small subset of entries within these chunks.",
+   "zh": "最简单的方案是保留整个生成历史的全部激活状态，但这很快变得不切实际：随着 rollout 增长，KV 缓存及其注意力计算的开销都会随之增加。 因此，挑战不在于记住所有内容，而在于恢复当前续写所需的少量历史 KV。 近期的方法通过检索最相关的历史块来解决这一问题，通常依据与当前上下文的相似度进行检索（Cai et al., 2025; Yi et al., 2026）。 然而，块将多个帧的键和值捆绑在一起，而可复用的视觉内容可能只占这些块内条目的一小部分。",
+   "sents": [
+    {
+     "en": "The simplest solution would be to keep the entire generated history active, but this quickly becomes impractical: as the rollout grows, so do both the KV cache and the cost of attending to it.",
+     "zh": "最简单的方案是保留整个生成历史的全部激活状态，但这很快变得不切实际：随着 rollout 增长，KV 缓存及其注意力计算的开销都会随之增加。"
+    },
+    {
+     "en": "The challenge is therefore not to remember everything, but to recover a small set of historical KV needed for the current continuation.",
+     "zh": "因此，挑战不在于记住所有内容，而在于恢复当前续写所需的少量历史 KV。"
+    },
+    {
+     "en": "Recent approaches address this problem by retrieving the most relevant historical chunks, typically according to similarity with the current context ( Cai et al., 2025 ; Yi et al., 2026 ) .",
+     "zh": "近期的方法通过检索最相关的历史块来解决这一问题，通常依据与当前上下文的相似度进行检索（Cai et al., 2025; Yi et al., 2026）。"
+    },
+    {
+     "en": "However, chunks bundle the keys and values of multiple frames, while the reusable visual content may occupy only a small subset of entries within these chunks.",
+     "zh": "然而，块将多个帧的键和值捆绑在一起，而可复用的视觉内容可能只占这些块内条目的一小部分。"
+    }
+   ]
+  },
+  {
+   "en": "Accordingly, we introduce MosaiChunk , which constructs a new kind of memory “chunk” by assembling a mosaic of selected historical keys and values that come from different spatial regions and different moments in the generated history. For example, historical KV sections corresponding to the biscuit are composited with more recent sections corresponding to the tin and background in Figure 1 . Our memory mechanism is enabled by the observation that a frozen video generator can already consume such non-contiguous historical KV and use it to recover the corresponding visual content. This allows us to keep the generator fixed and train only a lightweight router to retrieve and compose the historical sections most relevant to each continuation, thereby preserving previously established visual details under a fixed active-memory budget.",
+   "zh": "为此，我们提出 MosaiChunk，它通过将来自不同空间区域、不同生成历史时刻的选定历史键值（keys 和 values）拼接成一幅马赛克，构建出一种全新的记忆“块”（chunk）。 例如，在图 1 中，对应饼干的历史 KV 区段会与对应罐子和背景的较新区段合成在一起。 我们的记忆机制源于这样一个观察：一个冻结的视频生成器已经能够处理这种非连续的历史 KV，并利用它恢复相应的视觉内容。 这使我们能够保持生成器固定不变，仅训练一个轻量级路由器来检索并组合与每次续写最相关的历史区段，从而在固定的活跃记忆预算下保留先前建立的视觉细节。",
+   "sents": [
+    {
+     "en": "Accordingly, we introduce MosaiChunk , which constructs a new kind of memory “chunk” by assembling a mosaic of selected historical keys and values that come from different spatial regions and different moments in the generated history.",
+     "zh": "为此，我们提出 MosaiChunk，它通过将来自不同空间区域、不同生成历史时刻的选定历史键值（keys 和 values）拼接成一幅马赛克，构建出一种全新的记忆“块”（chunk）。"
+    },
+    {
+     "en": "For example, historical KV sections corresponding to the biscuit are composited with more recent sections corresponding to the tin and background in Figure 1 .",
+     "zh": "例如，在图 1 中，对应饼干的历史 KV 区段会与对应罐子和背景的较新区段合成在一起。"
+    },
+    {
+     "en": "Our memory mechanism is enabled by the observation that a frozen video generator can already consume such non-contiguous historical KV and use it to recover the corresponding visual content.",
+     "zh": "我们的记忆机制源于这样一个观察：一个冻结的视频生成器已经能够处理这种非连续的历史 KV，并利用它恢复相应的视觉内容。"
+    },
+    {
+     "en": "This allows us to keep the generator fixed and train only a lightweight router to retrieve and compose the historical sections most relevant to each continuation, thereby preserving previously established visual details under a fixed active-memory budget.",
+     "zh": "这使我们能够保持生成器固定不变，仅训练一个轻量级路由器来检索并组合与每次续写最相关的历史区段，从而在固定的活跃记忆预算下保留先前建立的视觉细节。"
+    }
+   ]
+  },
+  {
+   "en": "Because temporally neighboring sections can have similar keys, direct similarity-based retrieval can favor recent content and miss older content needed when previously seen objects or scenes reappear. To reduce this recency bias, we train the router’s descriptor encoder through self-distillation, where both teacher and student use the same frozen backbone and noisy latent, differing only in their far memory. The teacher receives oracle memory containing whole departure chunks with the content to be redrawn; the student receives a smaller memory assembled by the router. Matching their denoising velocity predictions trains the descriptors that determine section selection and weighting. Because the targets come from the backbone’s own predictions on rollout latents, this oracle-memory distillation requires no rendered or recorded ground-truth target videos.",
+   "zh": "由于时间上相邻的分区可能具有相似的键，直接基于相似度的检索会偏向近期内容，从而遗漏当之前见过的物体或场景重现时所需的较旧内容。 为了减少这种近期性偏差，我们通过自蒸馏训练路由器的描述符编码器，其中教师与学生使用相同的冻结主干和噪声潜变量，区别仅在于它们的远期记忆。 教师接收包含待重绘内容所在的完整离开分块的oracle记忆；学生接收由路由器组装的较小记忆。 匹配二者的去噪速度预测，可以训练出决定分区选择与加权的描述符。 由于目标来自主干自身对rollout潜变量的预测，这种oracle记忆蒸馏无需渲染或录制的真值目标视频。",
+   "sents": [
+    {
+     "en": "Because temporally neighboring sections can have similar keys, direct similarity-based retrieval can favor recent content and miss older content needed when previously seen objects or scenes reappear.",
+     "zh": "由于时间上相邻的分区可能具有相似的键，直接基于相似度的检索会偏向近期内容，从而遗漏当之前见过的物体或场景重现时所需的较旧内容。"
+    },
+    {
+     "en": "To reduce this recency bias, we train the router’s descriptor encoder through self-distillation, where both teacher and student use the same frozen backbone and noisy latent, differing only in their far memory.",
+     "zh": "为了减少这种近期性偏差，我们通过自蒸馏训练路由器的描述符编码器，其中教师与学生使用相同的冻结主干和噪声潜变量，区别仅在于它们的远期记忆。"
+    },
+    {
+     "en": "The teacher receives oracle memory containing whole departure chunks with the content to be redrawn; the student receives a smaller memory assembled by the router.",
+     "zh": "教师接收包含待重绘内容所在的完整离开分块的oracle记忆；学生接收由路由器组装的较小记忆。"
+    },
+    {
+     "en": "Matching their denoising velocity predictions trains the descriptors that determine section selection and weighting.",
+     "zh": "匹配二者的去噪速度预测，可以训练出决定分区选择与加权的描述符。"
+    },
+    {
+     "en": "Because the targets come from the backbone’s own predictions on rollout latents, this oracle-memory distillation requires no rendered or recorded ground-truth target videos.",
+     "zh": "由于目标来自主干自身对rollout潜变量的预测，这种oracle记忆蒸馏无需渲染或录制的真值目标视频。"
+    }
+   ]
+  },
+  {
+   "en": "To evaluate MosaiChunk , we introduce RememBench , a benchmark of long-horizon revisits , in which previously seen content comes back into view. Such revisits provide a concrete test of a video model’s memory: the returning content should preserve the details established earlier in the rollout. Autoregressive video models such as RAVEN-adapted MiniMax-H3 (H3-AR) ( MiniMax, 2026 ; Lu et al., 2026 ) and LingBot-World-Infinity ( Gao et al., 2026 ) support long interactive rollouts through prompt updates and camera controls. We leverage these interfaces to construct complementary prompt-driven T2V and camera-driven I2V splits. Compared with an existing whole-chunk retrieval and conditioning baseline, MosaiChunk improves median revisit CLIP similarity from 0.841 0.841 to 0.936 0.936 on T2V and from 0.807 0.807 to 0.863 0.863 on I2V after the camera turns 180 ∘ 180^{\\circ} away and then back.",
+   "zh": "为了评估 MosaiChunk，我们提出了 RememBench，一个长时程重访（long-horizon revisits）基准，其中先前出现过的内容会再次进入视野。 这类重访为视频模型的记忆能力提供了一个具体的测试：重新出现的内容应当保留在 rollout 早期确立的细节。 诸如 RAVEN 改造版 MiniMax-H3（H3-AR）（MiniMax, 2026；Lu et al., 2026）和 LingBot-World-Infinity（Gao et al., 2026）这样的自回归视频模型，通过提示更新和相机控制支持长时交互 rollout。 我们利用这些接口构建了互补的由提示驱动的 T2V 和由相机驱动的 I2V 两个划分。 与现有的整块检索与条件化基线相比，MosaiChunk 在相机转开 180° 再转回后，将中位数重访 CLIP 相似度在 T2V 上从 0.841 提升至 0.936，在 I2V 上从 0.807 提升至 0.863。",
+   "sents": [
+    {
+     "en": "To evaluate MosaiChunk , we introduce RememBench , a benchmark of long-horizon revisits , in which previously seen content comes back into view.",
+     "zh": "为了评估 MosaiChunk，我们提出了 RememBench，一个长时程重访（long-horizon revisits）基准，其中先前出现过的内容会再次进入视野。"
+    },
+    {
+     "en": "Such revisits provide a concrete test of a video model’s memory: the returning content should preserve the details established earlier in the rollout.",
+     "zh": "这类重访为视频模型的记忆能力提供了一个具体的测试：重新出现的内容应当保留在 rollout 早期确立的细节。"
+    },
+    {
+     "en": "Autoregressive video models such as RAVEN-adapted MiniMax-H3 (H3-AR) ( MiniMax, 2026 ; Lu et al., 2026 ) and LingBot-World-Infinity ( Gao et al., 2026 ) support long interactive rollouts through prompt updates and camera controls.",
+     "zh": "诸如 RAVEN 改造版 MiniMax-H3（H3-AR）（MiniMax, 2026；Lu et al., 2026）和 LingBot-World-Infinity（Gao et al., 2026）这样的自回归视频模型，通过提示更新和相机控制支持长时交互 rollout。"
+    },
+    {
+     "en": "We leverage these interfaces to construct complementary prompt-driven T2V and camera-driven I2V splits.",
+     "zh": "我们利用这些接口构建了互补的由提示驱动的 T2V 和由相机驱动的 I2V 两个划分。"
+    },
+    {
+     "en": "Compared with an existing whole-chunk retrieval and conditioning baseline, MosaiChunk improves median revisit CLIP similarity from 0.841 0.841 to 0.936 0.936 on T2V and from 0.807 0.807 to 0.863 0.863 on I2V after the camera turns 180 ∘ 180^{\\circ} away and then back.",
+     "zh": "与现有的整块检索与条件化基线相比，MosaiChunk 在相机转开 180° 再转回后，将中位数重访 CLIP 相似度在 T2V 上从 0.841 提升至 0.936，在 I2V 上从 0.807 提升至 0.863。"
+    }
+   ]
+  },
+  {
+   "en": "In summary, our contributions include: (i) a compositional visual memory mechanism that retrieves historical KV sections under a fixed active budget; (ii) a self-distillation strategy for learning KV section descriptions without rendered ground-truth target videos; and (iii) RememBench , a benchmark of long-horizon revisits with prompt-driven T2V and camera-driven I2V splits.",
+   "zh": "总之，我们的贡献包括：(i) 一种组合式视觉记忆机制，可在固定的活跃预算下检索历史 KV 区段；(ii) 一种自蒸馏策略，用于在无需渲染的真实目标视频的情况下学习 KV 区段描述；(iii) RememBench，一个包含提示驱动的 T2V 和相机驱动的 I2V 划分的长期重访基准。",
+   "sents": null
+  },
+  {
+   "en": "Autoregressive video generation. Recent work has developed autoregressive video diffusion models for streaming and long-horizon generation. Diffusion Forcing ( Chen et al., 2024 ) combines causal prediction with independently noised tokens, while CausVid ( Yin et al., 2025 ) distills a bidirectional teacher into a few-step causal generator. Subsequent methods improve rollout training: Self Forcing ( Huang et al., 2025 ) uses self-generated histories, MV-Forcing ( Fiebelman et al., 2026 ) extends self-forcing to joint temporal and view-wise autoregression, RAVEN ( Lu et al., 2026 ) allows later-chunk losses to supervise historical representations, and LongLive ( Yang et al., 2025 ) trains on longer rollouts with prompt transitions. Sliding-window inference nevertheless evicts historical KV needed for revisits. We address this through learned retrieval under a fixed active cache budget.",
+   "zh": "自回归视频生成。 近期工作已开发出用于流式和长时程生成的自回归视频扩散模型。 Diffusion Forcing（Chen 等，2024）将因果预测与独立加噪的 token 相结合，而 CausVid（Yin 等，2025）将一个双向教师模型蒸馏为少步因果生成器。 后续方法改进了滚动生成训练：Self Forcing（Huang 等，2025）使用自生成的历史，MV-Forcing（Fiebelman 等，2026）将 self-forcing 扩展到时间与视角的联合自回归，RAVEN（Lu 等，2026）允许后续片段的损失监督历史表示，LongLive（Yang 等，2025）则在更长的滚动生成上进行训练并带提示切换。 然而，滑动窗口推理会驱逐重访所需的历史 KV。 我们通过在固定活跃缓存预算下学习检索来解决这一问题。",
+   "sents": [
+    {
+     "en": "Autoregressive video generation.",
+     "zh": "自回归视频生成。"
+    },
+    {
+     "en": "Recent work has developed autoregressive video diffusion models for streaming and long-horizon generation.",
+     "zh": "近期工作已开发出用于流式和长时程生成的自回归视频扩散模型。"
+    },
+    {
+     "en": "Diffusion Forcing ( Chen et al., 2024 ) combines causal prediction with independently noised tokens, while CausVid ( Yin et al., 2025 ) distills a bidirectional teacher into a few-step causal generator.",
+     "zh": "Diffusion Forcing（Chen 等，2024）将因果预测与独立加噪的 token 相结合，而 CausVid（Yin 等，2025）将一个双向教师模型蒸馏为少步因果生成器。"
+    },
+    {
+     "en": "Subsequent methods improve rollout training: Self Forcing ( Huang et al., 2025 ) uses self-generated histories, MV-Forcing ( Fiebelman et al., 2026 ) extends self-forcing to joint temporal and view-wise autoregression, RAVEN ( Lu et al., 2026 ) allows later-chunk losses to supervise historical representations, and LongLive ( Yang et al., 2025 ) trains on longer rollouts with prompt transitions.",
+     "zh": "后续方法改进了滚动生成训练：Self Forcing（Huang 等，2025）使用自生成的历史，MV-Forcing（Fiebelman 等，2026）将 self-forcing 扩展到时间与视角的联合自回归，RAVEN（Lu 等，2026）允许后续片段的损失监督历史表示，LongLive（Yang 等，2025）则在更长的滚动生成上进行训练并带提示切换。"
+    },
+    {
+     "en": "Sliding-window inference nevertheless evicts historical KV needed for revisits.",
+     "zh": "然而，滑动窗口推理会驱逐重访所需的历史 KV。"
+    },
+    {
+     "en": "We address this through learned retrieval under a fixed active cache budget.",
+     "zh": "我们通过在固定活跃缓存预算下学习检索来解决这一问题。"
+    }
+   ]
+  },
+  {
+   "en": "Long-term visual memory. Prior methods extend visual memory through frame retrieval or geometric organization of past observations ( Yu et al., 2025 ; Xiao et al., 2025 ; Wu et al., 2025a ) , or through compressed and learned memory representations ( Zhang et al., 2025 ; Hong et al., 2025 ; Wu et al., 2025b ) . Within native KV representations, cache-management methods reduce storage and attention costs through quantization, token selection, merging, and compaction ( Xi et al., 2026 ; Chen et al., 2026 ; Luo et al., 2026 ; Ji et al., 2026 ; Li et al., 2026 ; Yi et al., 2025 ) .",
+   "zh": "长期视觉记忆。 已有方法通过帧检索或对过去观测进行几何组织来扩展视觉记忆（Yu et al., 2025；Xiao et al., 2025；Wu et al., 2025a），或通过压缩式和可学习的记忆表示来扩展视觉记忆（Zhang et al., 2025；Hong et al., 2025；Wu et al., 2025b）。 在原生 KV 表示方面，缓存管理方法通过量化、token 选择、合并与压缩来降低存储和注意力开销（Xi et al., 2026；Chen et al., 2026；Luo et al., 2026；Ji et al., 2026；Li et al., 2026；Yi et al., 2025）。",
+   "sents": [
+    {
+     "en": "Long-term visual memory.",
+     "zh": "长期视觉记忆。"
+    },
+    {
+     "en": "Prior methods extend visual memory through frame retrieval or geometric organization of past observations ( Yu et al., 2025 ; Xiao et al., 2025 ; Wu et al., 2025a ) , or through compressed and learned memory representations ( Zhang et al., 2025 ; Hong et al., 2025 ; Wu et al., 2025b ) .",
+     "zh": "已有方法通过帧检索或对过去观测进行几何组织来扩展视觉记忆（Yu et al., 2025；Xiao et al., 2025；Wu et al., 2025a），或通过压缩式和可学习的记忆表示来扩展视觉记忆（Zhang et al., 2025；Hong et al., 2025；Wu et al., 2025b）。"
+    },
+    {
+     "en": "Within native KV representations, cache-management methods reduce storage and attention costs through quantization, token selection, merging, and compaction ( Xi et al., 2026 ; Chen et al., 2026 ; Luo et al., 2026 ; Ji et al., 2026 ; Li et al., 2026 ; Yi et al., 2025 ) .",
+     "zh": "在原生 KV 表示方面，缓存管理方法通过量化、token 选择、合并与压缩来降低存储和注意力开销（Xi et al., 2026；Chen et al., 2026；Luo et al., 2026；Ji et al., 2026；Li et al., 2026；Yi et al., 2025）。"
+    }
+   ]
+  },
+  {
+   "en": "Retrieval-based methods select historical context using content similarity, camera/action correspondence, or learned selection mechanisms, retrieving frames, chunks, or blocks to condition subsequent generation ( Cai et al., 2025 ; Yi et al., 2026 ; Wu et al., 2026 ; Zhao et al., 2026 ) . Training these memory mechanisms can involve jointly optimizing memory selection and the generator, or fine-tuning the generator on revisit sequences ( Zhao et al., 2026 ; Xue et al., 2026 ; Chen et al., 2026 ) . In contrast, MosaiChunk retrieves fine-grained, content-based sections of original KV under a fixed active cache budget. We keep the backbone frozen and train only the selector using denoising predictions under oracle context, without rendered ground-truth target videos.",
+   "zh": "基于检索的方法通过内容相似性、相机/动作对应关系或学习到的选择机制来选取历史上下文，检索出帧、块或区块以作为后续生成的条件（Cai et al., 2025；Yi et al., 2026；Wu et al., 2026；Zhao et al., 2026）。 训练这些记忆机制可以是对记忆选择与生成器进行联合优化，或是在重访序列上微调生成器（Zhao et al., 2026；Xue et al., 2026；Chen et al., 2026）。 与之不同，MosaiChunk 在固定的活跃缓存预算下检索原始 KV 中细粒度的、基于内容的片段。 我们保持骨干网络冻结，仅使用去噪预测在神谕上下文下训练选择器，无需渲染真值目标视频。",
+   "sents": [
+    {
+     "en": "Retrieval-based methods select historical context using content similarity, camera/action correspondence, or learned selection mechanisms, retrieving frames, chunks, or blocks to condition subsequent generation ( Cai et al., 2025 ; Yi et al., 2026 ; Wu et al., 2026 ; Zhao et al., 2026 ) .",
+     "zh": "基于检索的方法通过内容相似性、相机/动作对应关系或学习到的选择机制来选取历史上下文，检索出帧、块或区块以作为后续生成的条件（Cai et al., 2025；Yi et al., 2026；Wu et al., 2026；Zhao et al., 2026）。"
+    },
+    {
+     "en": "Training these memory mechanisms can involve jointly optimizing memory selection and the generator, or fine-tuning the generator on revisit sequences ( Zhao et al., 2026 ; Xue et al., 2026 ; Chen et al., 2026 ) .",
+     "zh": "训练这些记忆机制可以是对记忆选择与生成器进行联合优化，或是在重访序列上微调生成器（Zhao et al., 2026；Xue et al., 2026；Chen et al., 2026）。"
+    },
+    {
+     "en": "In contrast, MosaiChunk retrieves fine-grained, content-based sections of original KV under a fixed active cache budget.",
+     "zh": "与之不同，MosaiChunk 在固定的活跃缓存预算下检索原始 KV 中细粒度的、基于内容的片段。"
+    },
+    {
+     "en": "We keep the backbone frozen and train only the selector using denoising predictions under oracle context, without rendered ground-truth target videos.",
+     "zh": "我们保持骨干网络冻结，仅使用去噪预测在神谕上下文下训练选择器，无需渲染真值目标视频。"
+    }
+   ]
+  },
+  {
+   "en": "Representing visual content with reusable components. Earlier work synthesizes images and videos by reusing visual fragments, from texture patches and video frames ( Efros & Freeman, 2001 ; Schödl et al., 2000 ) to regions retrieved for completion and scene composition ( Wexler et al., 2004 ; Hays & Efros, 2007 ; Isola & Liu, 2013 ) . Related approaches capture recurring appearance through epitomic representations ( Jojic et al., 2003 ) , discover objects from local-feature statistics ( Sivic et al., 2005 ) , or measure similarity through composition ( Boiman & Irani, 2006 ) . We adopt this perspective of decomposing visual content into reusable components, organizing historical KV into content-based sections that can be retrieved and composed across time.",
+   "zh": "用可复用的组件来表示视觉内容。 早期工作通过复用视觉片段来合成图像和视频，从纹理块和视频帧（Efros & Freeman, 2001；Schödl et al., 2000）到为补全和场景合成检索到的区域（Wexler et al., 2004；Hays & Efros, 2007；Isola & Liu, 2013）。 相关方法通过表象表示捕捉重复出现的外观（Jojic et al., 2003），从局部特征统计中发现物体（Sivic et al., 2005），或通过组合来度量相似性（Boiman & Irani, 2006）。 我们采用这种将视觉内容分解为可复用组件的视角，把历史 KV 组织成基于内容的分区，使其能够跨时间被检索和组合。",
+   "sents": [
+    {
+     "en": "Representing visual content with reusable components.",
+     "zh": "用可复用的组件来表示视觉内容。"
+    },
+    {
+     "en": "Earlier work synthesizes images and videos by reusing visual fragments, from texture patches and video frames ( Efros & Freeman, 2001 ; Schödl et al., 2000 ) to regions retrieved for completion and scene composition ( Wexler et al., 2004 ; Hays & Efros, 2007 ; Isola & Liu, 2013 ) .",
+     "zh": "早期工作通过复用视觉片段来合成图像和视频，从纹理块和视频帧（Efros & Freeman, 2001；Schödl et al., 2000）到为补全和场景合成检索到的区域（Wexler et al., 2004；Hays & Efros, 2007；Isola & Liu, 2013）。"
+    },
+    {
+     "en": "Related approaches capture recurring appearance through epitomic representations ( Jojic et al., 2003 ) , discover objects from local-feature statistics ( Sivic et al., 2005 ) , or measure similarity through composition ( Boiman & Irani, 2006 ) .",
+     "zh": "相关方法通过表象表示捕捉重复出现的外观（Jojic et al., 2003），从局部特征统计中发现物体（Sivic et al., 2005），或通过组合来度量相似性（Boiman & Irani, 2006）。"
+    },
+    {
+     "en": "We adopt this perspective of decomposing visual content into reusable components, organizing historical KV into content-based sections that can be retrieved and composed across time.",
+     "zh": "我们采用这种将视觉内容分解为可复用组件的视角，把历史 KV 组织成基于内容的分区，使其能够跨时间被检索和组合。"
+    }
+   ]
+  },
+  {
+   "en": "We first examine how a frozen video backbone can use non-contiguous historical KV entries (Section 3.1 ). This observation motivates MosaiChunk ’s memory architecture and the training strategy for its descriptor encoder (Section 3.2 ).",
+   "zh": "我们首先研究冻结的视频骨干网络如何使用非连续的历史 KV 条目（第 3.1 节）。 这一观察启发了 MosaiChunk 的记忆架构及其描述符编码器的训练策略（第 3.2 节）。",
+   "sents": [
+    {
+     "en": "We first examine how a frozen video backbone can use non-contiguous historical KV entries (Section 3.1 ).",
+     "zh": "我们首先研究冻结的视频骨干网络如何使用非连续的历史 KV 条目（第 3.1 节）。"
+    },
+    {
+     "en": "This observation motivates MosaiChunk ’s memory architecture and the training strategy for its descriptor encoder (Section 3.2 ).",
+     "zh": "这一观察启发了 MosaiChunk 的记忆架构及其描述符编码器的训练策略（第 3.2 节）。"
+    }
+   ]
+  },
+  {
+   "en": "Autoregressive video models generate one chunk at a time, attending to cached keys and values (KV) from earlier chunks. Under sliding-window inference, the backbone is conditioned on the most recent chunks, as well as a fixed attention sink used to stabilize generation; we omit this additional sink from the explanations below for simplicity.",
+   "zh": "自回归视频模型一次生成一个分块，并关注较早分块缓存的键和值（KV）。 在滑动窗口推理下，主干网络以最近的分块以及一个用于稳定生成的固定注意力汇聚点（attention sink）为条件；为简单起见，我们在下文的解释中省略了这个额外的汇聚点。",
+   "sents": [
+    {
+     "en": "Autoregressive video models generate one chunk at a time, attending to cached keys and values (KV) from earlier chunks.",
+     "zh": "自回归视频模型一次生成一个分块，并关注较早分块缓存的键和值（KV）。"
+    },
+    {
+     "en": "Under sliding-window inference, the backbone is conditioned on the most recent chunks, as well as a fixed attention sink used to stabilize generation; we omit this additional sink from the explanations below for simplicity.",
+     "zh": "在滑动窗口推理下，主干网络以最近的分块以及一个用于稳定生成的固定注意力汇聚点（attention sink）为条件；为简单起见，我们在下文的解释中省略了这个额外的汇聚点。"
+    }
+   ]
+  },
+  {
+   "en": "To condition generation on more distant memory, existing retrieval methods select past chunks as additional context ( Cai et al., 2025 ; Yi et al., 2026 ) . But are whole chunks necessary? We test whether a video generator can be conditioned on non-contiguous chunks, providing targeted KV sections as additional context. We select only the KV entries that represent the relevant content as far memory. We ask if these entries can steer the generation and bring that content back.",
+   "zh": "为了让生成以更久远的记忆为条件，现有的检索方法会选择过去的片段作为额外上下文（Cai et al., 2025；Yi et al., 2026）。 但真的需要整个片段吗？ 我们测试了视频生成器能否以不连续的片段为条件，将针对性的 KV 部分作为额外上下文提供。 我们只选择代表相关内容的 KV 条目作为远期记忆。 我们探究这些条目能否引导生成过程，并将相关内容带回来。",
+   "sents": [
+    {
+     "en": "To condition generation on more distant memory, existing retrieval methods select past chunks as additional context ( Cai et al., 2025 ; Yi et al., 2026 ) .",
+     "zh": "为了让生成以更久远的记忆为条件，现有的检索方法会选择过去的片段作为额外上下文（Cai et al., 2025；Yi et al., 2026）。"
+    },
+    {
+     "en": "But are whole chunks necessary?",
+     "zh": "但真的需要整个片段吗？"
+    },
+    {
+     "en": "We test whether a video generator can be conditioned on non-contiguous chunks, providing targeted KV sections as additional context.",
+     "zh": "我们测试了视频生成器能否以不连续的片段为条件，将针对性的 KV 部分作为额外上下文提供。"
+    },
+    {
+     "en": "We select only the KV entries that represent the relevant content as far memory.",
+     "zh": "我们只选择代表相关内容的 KV 条目作为远期记忆。"
+    },
+    {
+     "en": "We ask if these entries can steer the generation and bring that content back.",
+     "zh": "我们探究这些条目能否引导生成过程，并将相关内容带回来。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 2 illustrates this intervention. We retain a copy of an earlier chunk’s KV before eviction and manually mark the cookie region in one frame. We map this region to latent positions and select the corresponding cached keys and values. We supply them alongside the sliding window when the tin opens again. As illustrated in the figure, the generated frame preserves the cookie’s pink, star-shaped appearance, demonstrating that a frozen autoregressive video generator can directly reuse a non-contiguous subset of its own previously cached KV, even after those entries have left the active context. This observation motivates our approach, detailed below, which reuses non-contiguous KV chunks for providing video generation with rich, yet minimal, historical context.",
+   "zh": "图 2 展示了这一干预操作。 我们在驱逐前保留较早分块 KV 的一份副本，并手动标记其中一帧中的饼干区域。 我们将该区域映射到潜在位置，并选择对应的缓存键和值。 当时间窗口再次开启时，我们将它们与滑动窗口一同提供。 如图所示，生成的帧保留了饼干的粉色星形外观，这表明一个冻结的自回归视频生成器可以直接复用其自身先前缓存 KV 中非连续的子集，即使这些条目已经离开活跃上下文。 这一观察启发了我们下文详述的方法，该方法复用非连续的 KV 分块，为视频生成提供丰富却极简的历史上下文。",
+   "sents": [
+    {
+     "en": "Figure 2 illustrates this intervention.",
+     "zh": "图 2 展示了这一干预操作。"
+    },
+    {
+     "en": "We retain a copy of an earlier chunk’s KV before eviction and manually mark the cookie region in one frame.",
+     "zh": "我们在驱逐前保留较早分块 KV 的一份副本，并手动标记其中一帧中的饼干区域。"
+    },
+    {
+     "en": "We map this region to latent positions and select the corresponding cached keys and values.",
+     "zh": "我们将该区域映射到潜在位置，并选择对应的缓存键和值。"
+    },
+    {
+     "en": "We supply them alongside the sliding window when the tin opens again.",
+     "zh": "当时间窗口再次开启时，我们将它们与滑动窗口一同提供。"
+    },
+    {
+     "en": "As illustrated in the figure, the generated frame preserves the cookie’s pink, star-shaped appearance, demonstrating that a frozen autoregressive video generator can directly reuse a non-contiguous subset of its own previously cached KV, even after those entries have left the active context.",
+     "zh": "如图所示，生成的帧保留了饼干的粉色星形外观，这表明一个冻结的自回归视频生成器可以直接复用其自身先前缓存 KV 中非连续的子集，即使这些条目已经离开活跃上下文。"
+    },
+    {
+     "en": "This observation motivates our approach, detailed below, which reuses non-contiguous KV chunks for providing video generation with rich, yet minimal, historical context.",
+     "zh": "这一观察启发了我们下文详述的方法，该方法复用非连续的 KV 分块，为视频生成提供丰富却极简的历史上下文。"
+    }
+   ]
+  },
+  {
+   "en": "Section 3.1 shows that selecting non-contiguous historical KV entries for the relevant content can produce a consistent rollout. Our goal is to automatically identify and compose the right historical KV entries under a fixed active-cache budget. In what follows, we first describe the architecture of our memory router. We then introduce our self-distillation scheme for learning a section descriptor space in which past sections are matched and retrieved.",
+   "zh": "第3.1节表明，为相关内容选择非连续的历史KV条目可以产生一致的展开效果。 我们的目标是在固定的活跃缓存预算下，自动识别并组合正确的历史KV条目。 在下文中，我们首先描述我们的记忆路由器的架构。 随后，我们介绍用于学习小节描述符空间的自蒸馏方案，在该空间中可以对过往小节进行匹配与检索。",
+   "sents": [
+    {
+     "en": "Section 3.1 shows that selecting non-contiguous historical KV entries for the relevant content can produce a consistent rollout.",
+     "zh": "第3.1节表明，为相关内容选择非连续的历史KV条目可以产生一致的展开效果。"
+    },
+    {
+     "en": "Our goal is to automatically identify and compose the right historical KV entries under a fixed active-cache budget.",
+     "zh": "我们的目标是在固定的活跃缓存预算下，自动识别并组合正确的历史KV条目。"
+    },
+    {
+     "en": "In what follows, we first describe the architecture of our memory router.",
+     "zh": "在下文中，我们首先描述我们的记忆路由器的架构。"
+    },
+    {
+     "en": "We then introduce our self-distillation scheme for learning a section descriptor space in which past sections are matched and retrieved.",
+     "zh": "随后，我们介绍用于学习小节描述符空间的自蒸馏方案，在该空间中可以对过往小节进行匹配与检索。"
+    }
+   ]
+  },
+  {
+   "en": "Memory architecture. Our memory router follows a three-stage design: it encodes and stores generated chunks as fine-grained sections, scores historical sections against the latest query, and composes a MosaiChunk from the selected sections; an overview is provided in Figure 3 .",
+   "zh": "记忆架构。 我们的记忆路由器采用三阶段设计：它将生成的分块编码并存储为细粒度的分段，针对最新查询对历史分段进行评分，并从选定的分段组成一个 MosaiChunk；整体流程见图 3。",
+   "sents": [
+    {
+     "en": "Memory architecture.",
+     "zh": "记忆架构。"
+    },
+    {
+     "en": "Our memory router follows a three-stage design: it encodes and stores generated chunks as fine-grained sections, scores historical sections against the latest query, and composes a MosaiChunk from the selected sections; an overview is provided in Figure 3 .",
+     "zh": "我们的记忆路由器采用三阶段设计：它将生成的分块编码并存储为细粒度的分段，针对最新查询对历史分段进行评分，并从选定的分段组成一个 MosaiChunk；整体流程见图 3。"
+    }
+   ]
+  },
+  {
+   "en": "Stage 1: Encode and store. Since we want to select groups of historical KV entries with some specific semantic meaning, we partition each chunk’s unrotated KV into equal-size groups using balanced k k -means and call these groups sections . We observe that the KV entries for each section exhibit strong temporal redundancy: sections from neighboring chunks are always similar. Therefore, we train a lightweight descriptor encoder that maps the pooled keys of each section s s to a descriptor d ⁡ ( s ) d(s) . The descriptor space learns an anti-recency bias so that similarity over descriptors reflects semantic relatedness rather than temporal proximity. The section bank stores these sections of verbatim KV entries and their descriptors in CPU memory.",
+   "zh": "阶段 1：编码与存储。 由于我们希望选取具有某些特定语义含义的历史 KV 条目组，我们使用平衡 k k -means 将每个分块的未旋转 KV 划分为等大小的组，并将这些组称为节（sections）。 我们观察到每个节的 KV 条目表现出强时间冗余性：相邻分块的节总是相似的。 因此，我们训练一个轻量级描述符编码器，将每个节 s s 的池化键映射为描述符 d ⁡ ( s ) d(s) 。 描述符空间学习到一种反近期偏差，使得描述符上的相似度反映语义相关性而非时间邻近性。 节库将这些逐字 KV 条目的节及其描述符存储在 CPU 内存中。",
+   "sents": [
+    {
+     "en": "Stage 1: Encode and store.",
+     "zh": "阶段 1：编码与存储。"
+    },
+    {
+     "en": "Since we want to select groups of historical KV entries with some specific semantic meaning, we partition each chunk’s unrotated KV into equal-size groups using balanced k k -means and call these groups sections .",
+     "zh": "由于我们希望选取具有某些特定语义含义的历史 KV 条目组，我们使用平衡 k k -means 将每个分块的未旋转 KV 划分为等大小的组，并将这些组称为节（sections）。"
+    },
+    {
+     "en": "We observe that the KV entries for each section exhibit strong temporal redundancy: sections from neighboring chunks are always similar.",
+     "zh": "我们观察到每个节的 KV 条目表现出强时间冗余性：相邻分块的节总是相似的。"
+    },
+    {
+     "en": "Therefore, we train a lightweight descriptor encoder that maps the pooled keys of each section s s to a descriptor d ⁡ ( s ) d(s) .",
+     "zh": "因此，我们训练一个轻量级描述符编码器，将每个节 s s 的池化键映射为描述符 d ⁡ ( s ) d(s) 。"
+    },
+    {
+     "en": "The descriptor space learns an anti-recency bias so that similarity over descriptors reflects semantic relatedness rather than temporal proximity.",
+     "zh": "描述符空间学习到一种反近期偏差，使得描述符上的相似度反映语义相关性而非时间邻近性。"
+    },
+    {
+     "en": "The section bank stores these sections of verbatim KV entries and their descriptors in CPU memory.",
+     "zh": "节库将这些逐字 KV 条目的节及其描述符存储在 CPU 内存中。"
+    }
+   ]
+  },
+  {
+   "en": "Stage 2: Score historical sections. For retrieval when generating chunk c t c_{t} , the sections of the latest generated chunk c t − 1 c_{t-1} form the query set 𝒬 \\mathcal{Q} , and the historical sections outside the sliding window form the candidate set ℋ \\mathcal{H} . The goal is to retrieve sections from ℋ \\mathcal{H} given all sections in 𝒬 \\mathcal{Q} . We compute similarity between the descriptors of 𝒬 \\mathcal{Q} and ℋ \\mathcal{H} . The router scores each candidate h ∈ ℋ h\\in\\mathcal{H} as:",
+   "zh": "阶段 2：为历史小节打分。 在生成块 c t c_{t} 时进行检索，最新生成的块 c t − 1 c_{t-1} 的小节构成查询集 𝒬 \\mathcal{Q} ，滑动窗口之外的历史小节构成候选集 ℋ \\mathcal{H} 。 目标是给定 𝒬 \\mathcal{Q} 中的所有小节，从 ℋ \\mathcal{H} 中检索相关小节。 我们计算 𝒬 \\mathcal{Q} 与 ℋ \\mathcal{H} 的描述符之间的相似度。 路由器按如下方式为每个候选 h ∈ ℋ h\\in\\mathcal{H} 打分：",
+   "sents": [
+    {
+     "en": "Stage 2: Score historical sections.",
+     "zh": "阶段 2：为历史小节打分。"
+    },
+    {
+     "en": "For retrieval when generating chunk c t c_{t} , the sections of the latest generated chunk c t − 1 c_{t-1} form the query set 𝒬 \\mathcal{Q} , and the historical sections outside the sliding window form the candidate set ℋ \\mathcal{H} .",
+     "zh": "在生成块 c t c_{t} 时进行检索，最新生成的块 c t − 1 c_{t-1} 的小节构成查询集 𝒬 \\mathcal{Q} ，滑动窗口之外的历史小节构成候选集 ℋ \\mathcal{H} 。"
+    },
+    {
+     "en": "The goal is to retrieve sections from ℋ \\mathcal{H} given all sections in 𝒬 \\mathcal{Q} .",
+     "zh": "目标是给定 𝒬 \\mathcal{Q} 中的所有小节，从 ℋ \\mathcal{H} 中检索相关小节。"
+    },
+    {
+     "en": "We compute similarity between the descriptors of 𝒬 \\mathcal{Q} and ℋ \\mathcal{H} .",
+     "zh": "我们计算 𝒬 \\mathcal{Q} 与 ℋ \\mathcal{H} 的描述符之间的相似度。"
+    },
+    {
+     "en": "The router scores each candidate h ∈ ℋ h\\in\\mathcal{H} as:",
+     "zh": "路由器按如下方式为每个候选 h ∈ ℋ h\\in\\mathcal{H} 打分："
+    }
+   ]
+  },
+  {
+   "en": "The score measures a candidate’s highest descriptor similarity to any query section. High-scoring sections therefore retrieve historical content relevant to the latest chunk.",
+   "zh": "该分数衡量候选内容与任一查询部分之间的最高描述符相似度。 因此，得分高的部分会检索到与最新数据块相关的历史内容。",
+   "sents": [
+    {
+     "en": "The score measures a candidate’s highest descriptor similarity to any query section.",
+     "zh": "该分数衡量候选内容与任一查询部分之间的最高描述符相似度。"
+    },
+    {
+     "en": "High-scoring sections therefore retrieve historical content relevant to the latest chunk.",
+     "zh": "因此，得分高的部分会检索到与最新数据块相关的历史内容。"
+    }
+   ]
+  },
+  {
+   "en": "Stage 3: Extract and compose. The router ranks all candidate sections together and selects the global top- N N . Since sections have equal size, the far-memory budget determines N N . A softmax over all candidate scores gives a weight for each section. We normalize the selected weights to unit mean and use them to scale the selected sections’ values. We then concatenate their KV into a MosaiChunk , which serves as far memory for chunk t t . The frozen DiT reads the MosaiChunk alongside the sliding window. We sweep multiple values of N N in our evaluations, where a larger N N corresponds to a larger MosaiChunk budget and broader coverage of the history.",
+   "zh": "阶段 3：提取与组合。 路由器对所有候选分节统一排序，并选出全局前 N N 个。 由于各分节大小相同，远端记忆预算决定了 N N。 对所有候选得分做 softmax，为每个分节给出一个权重。 我们将所选权重归一化为单位均值，并用它们来缩放所选分节的值。 然后我们将它们的 KV 拼接为一个 MosaiChunk，作为分块 t t 的远端记忆。 冻结的 DiT 在读取滑动窗口的同时读取 MosaiChunk。 我们在评估中遍历多个 N N 取值，其中较大的 N N 对应更大的 MosaiChunk 预算以及对历史更广的覆盖。",
+   "sents": [
+    {
+     "en": "Stage 3: Extract and compose.",
+     "zh": "阶段 3：提取与组合。"
+    },
+    {
+     "en": "The router ranks all candidate sections together and selects the global top- N N .",
+     "zh": "路由器对所有候选分节统一排序，并选出全局前 N N 个。"
+    },
+    {
+     "en": "Since sections have equal size, the far-memory budget determines N N .",
+     "zh": "由于各分节大小相同，远端记忆预算决定了 N N。"
+    },
+    {
+     "en": "A softmax over all candidate scores gives a weight for each section.",
+     "zh": "对所有候选得分做 softmax，为每个分节给出一个权重。"
+    },
+    {
+     "en": "We normalize the selected weights to unit mean and use them to scale the selected sections’ values.",
+     "zh": "我们将所选权重归一化为单位均值，并用它们来缩放所选分节的值。"
+    },
+    {
+     "en": "We then concatenate their KV into a MosaiChunk , which serves as far memory for chunk t t .",
+     "zh": "然后我们将它们的 KV 拼接为一个 MosaiChunk，作为分块 t t 的远端记忆。"
+    },
+    {
+     "en": "The frozen DiT reads the MosaiChunk alongside the sliding window.",
+     "zh": "冻结的 DiT 在读取滑动窗口的同时读取 MosaiChunk。"
+    },
+    {
+     "en": "We sweep multiple values of N N in our evaluations, where a larger N N corresponds to a larger MosaiChunk budget and broader coverage of the history.",
+     "zh": "我们在评估中遍历多个 N N 取值，其中较大的 N N 对应更大的 MosaiChunk 预算以及对历史更广的覆盖。"
+    }
+   ]
+  },
+  {
+   "en": "Training the descriptor encoder. We train the descriptor encoder through self-distillation, teaching a student conditioned on a composed MosaiChunk to match the denoising velocity of the same frozen generator acting as a teacher with richer far memory that entails the historical content to be revisited.",
+   "zh": "训练描述符编码器。 我们通过自蒸馏训练描述符编码器，让一个以组合后的 MosaiChunk 为条件的 学生智能体去匹配同一个冻结生成器的去噪速度，该生成器作为拥有更丰富远期记忆的教师，其中包含可供回顾的历史内容。",
+   "sents": [
+    {
+     "en": "Training the descriptor encoder.",
+     "zh": "训练描述符编码器。"
+    },
+    {
+     "en": "We train the descriptor encoder through self-distillation, teaching a student conditioned on a composed MosaiChunk to match the denoising velocity of the same frozen generator acting as a teacher with richer far memory that entails the historical content to be revisited.",
+     "zh": "我们通过自蒸馏训练描述符编码器，让一个以组合后的 MosaiChunk 为条件的 学生智能体去匹配同一个冻结生成器的去噪速度，该生成器作为拥有更丰富远期记忆的教师，其中包含可供回顾的历史内容。"
+    }
+   ]
+  },
+  {
+   "en": "Both the teacher and the student run one pass through the same frozen DiT with the same noisy latent and sliding window. Only the far memory differs, as shown in Figure 4 . The teacher receives whole historical chunks that fully cover the historical content to be redrawn. We identify these chunks from the input prompt schedule for T2V models or matching input camera poses for I2V models. The student receives the router’s MosaiChunk under a smaller memory budget. It must therefore select useful sections rather than copy all of the teacher’s context. Let θ \\theta denote the parameters of the descriptor encoder, v T v_{T} the teacher’s denoising velocity prediction, and v S ​ ( θ ) v_{S}(\\theta) the student’s prediction. We minimize their mean squared error over training chunks and noise levels:",
+   "zh": "教师与学生在同一个冻结的 DiT 上，使用相同的噪声潜变量和滑动窗口各进行一次前向传播。 唯一不同的是远端记忆，如图 4 所示。 教师接收完整的历史分块，这些分块完整覆盖了需要重绘的历史内容。 对于 T2V 模型，我们从输入提示词调度中识别这些分块；对于 I2V 模型，则通过匹配输入相机位姿来识别。 学生在更小的记忆预算下接收路由器的 MosaiChunk。 因此，学生必须选择有用的片段，而不是复制教师的全部上下文。 设 θ \\theta 表示描述符编码器的参数，v T v_{T} 表示教师的去噪速度预测，v S ​ ( θ ) v_{S}(\\theta) 表示学生的预测。 我们在训练分块和噪声水平上最小化二者的均方误差：",
+   "sents": [
+    {
+     "en": "Both the teacher and the student run one pass through the same frozen DiT with the same noisy latent and sliding window.",
+     "zh": "教师与学生在同一个冻结的 DiT 上，使用相同的噪声潜变量和滑动窗口各进行一次前向传播。"
+    },
+    {
+     "en": "Only the far memory differs, as shown in Figure 4 .",
+     "zh": "唯一不同的是远端记忆，如图 4 所示。"
+    },
+    {
+     "en": "The teacher receives whole historical chunks that fully cover the historical content to be redrawn.",
+     "zh": "教师接收完整的历史分块，这些分块完整覆盖了需要重绘的历史内容。"
+    },
+    {
+     "en": "We identify these chunks from the input prompt schedule for T2V models or matching input camera poses for I2V models.",
+     "zh": "对于 T2V 模型，我们从输入提示词调度中识别这些分块；对于 I2V 模型，则通过匹配输入相机位姿来识别。"
+    },
+    {
+     "en": "The student receives the router’s MosaiChunk under a smaller memory budget.",
+     "zh": "学生在更小的记忆预算下接收路由器的 MosaiChunk。"
+    },
+    {
+     "en": "It must therefore select useful sections rather than copy all of the teacher’s context.",
+     "zh": "因此，学生必须选择有用的片段，而不是复制教师的全部上下文。"
+    },
+    {
+     "en": "Let θ \\theta denote the parameters of the descriptor encoder, v T v_{T} the teacher’s denoising velocity prediction, and v S ​ ( θ ) v_{S}(\\theta) the student’s prediction.",
+     "zh": "设 θ \\theta 表示描述符编码器的参数，v T v_{T} 表示教师的去噪速度预测，v S ​ ( θ ) v_{S}(\\theta) 表示学生的预测。"
+    },
+    {
+     "en": "We minimize their mean squared error over training chunks and noise levels:",
+     "zh": "我们在训练分块和噪声水平上最小化二者的均方误差："
+    }
+   ]
+  },
+  {
+   "en": "The teacher prediction is a fixed target. Gradients pass through the student’s value weights to the descriptor encoder, not through the discrete top- N N indices. The stored KV and backbone parameters remain unchanged. Since the backbone itself supplies the target, training requires no rendered ground-truth target videos.",
+   "zh": "教师预测是一个固定的目标。 梯度通过智能体的价值权重传向描述符编码器，而不经过离散的 top-N N 索引。 存储的 KV 与主干网络参数保持不变。 由于目标由主干网络自身提供，训练无需渲染的真实目标视频。",
+   "sents": [
+    {
+     "en": "The teacher prediction is a fixed target.",
+     "zh": "教师预测是一个固定的目标。"
+    },
+    {
+     "en": "Gradients pass through the student’s value weights to the descriptor encoder, not through the discrete top- N N indices.",
+     "zh": "梯度通过智能体的价值权重传向描述符编码器，而不经过离散的 top-N N 索引。"
+    },
+    {
+     "en": "The stored KV and backbone parameters remain unchanged.",
+     "zh": "存储的 KV 与主干网络参数保持不变。"
+    },
+    {
+     "en": "Since the backbone itself supplies the target, training requires no rendered ground-truth target videos.",
+     "zh": "由于目标由主干网络自身提供，训练无需渲染的真实目标视频。"
+    }
+   ]
+  },
+  {
+   "en": "Since teacher and student differ only in far memory, the self-distillation signal directly supervises memory selection and weighting. The teacher’s whole chunks come from a much earlier visit to the same content, so matching its predictions encourages the student to recover useful details from older history. This encourages an anti-recency bias to emerge in the learned descriptor space: sections are favored for their relevant content rather than their recency alone.",
+   "zh": "由于教师模型与学生模型仅在远期记忆上不同，自蒸馏信号能直接监督记忆的选择与加权。 教师模型的整体片段来自对同一内容更早的一次访问，因此匹配其预测会促使学生模型从更早的历史中恢复有用的细节。 这促使在学到的描述符空间中涌现出一种反近期偏好：段落的取舍依据是其相关内容，而非仅仅因为其时间上的临近。",
+   "sents": [
+    {
+     "en": "Since teacher and student differ only in far memory, the self-distillation signal directly supervises memory selection and weighting.",
+     "zh": "由于教师模型与学生模型仅在远期记忆上不同，自蒸馏信号能直接监督记忆的选择与加权。"
+    },
+    {
+     "en": "The teacher’s whole chunks come from a much earlier visit to the same content, so matching its predictions encourages the student to recover useful details from older history.",
+     "zh": "教师模型的整体片段来自对同一内容更早的一次访问，因此匹配其预测会促使学生模型从更早的历史中恢复有用的细节。"
+    },
+    {
+     "en": "This encourages an anti-recency bias to emerge in the learned descriptor space: sections are favored for their relevant content rather than their recency alone.",
+     "zh": "这促使在学到的描述符空间中涌现出一种反近期偏好：段落的取舍依据是其相关内容，而非仅仅因为其时间上的临近。"
+    }
+   ]
+  },
+  {
+   "en": "Existing benchmarks such as WBench ( Ying et al., 2026 ) , WorldMark ( Xu et al., 2026 ) , and PersistBench ( He et al., 2026 ) evaluate video quality and consistency, but do not systematically test long-horizon revisits in which frames establishing the target content’s appearance are evicted from the model’s sliding window. We therefore introduce RememBench , a benchmark with two splits for evaluating consistency across such revisits in autoregressive video models. Revisits are driven by prompts in the T2V split and by camera motion in the I2V split. Additional benchmark construction details and first-frame visualizations are provided in Supplementary Sections B.1 and B.2 , respectively.",
+   "zh": "现有基准如 WBench（Ying et al., 2026）、WorldMark（Xu et al., 2026）和 PersistBench（He et al., 2026）评估视频质量与一致性，但并未系统性地测试长程重访场景，即建立目标内容外观的帧已被从模型的滑动窗口中移除的情况。 因此，我们提出 RememBench，一个包含两个划分的基准，用于评估自回归视频模型在这类重访中的一致性。 在 T2V 划分中，重访由提示词驱动；在 I2V 划分中，重访由相机运动驱动。 额外的基准构建细节和首帧可视化分别见补充材料 B.1 节和 B.2 节。",
+   "sents": [
+    {
+     "en": "Existing benchmarks such as WBench ( Ying et al., 2026 ) , WorldMark ( Xu et al., 2026 ) , and PersistBench ( He et al., 2026 ) evaluate video quality and consistency, but do not systematically test long-horizon revisits in which frames establishing the target content’s appearance are evicted from the model’s sliding window.",
+     "zh": "现有基准如 WBench（Ying et al., 2026）、WorldMark（Xu et al., 2026）和 PersistBench（He et al., 2026）评估视频质量与一致性，但并未系统性地测试长程重访场景，即建立目标内容外观的帧已被从模型的滑动窗口中移除的情况。"
+    },
+    {
+     "en": "We therefore introduce RememBench , a benchmark with two splits for evaluating consistency across such revisits in autoregressive video models.",
+     "zh": "因此，我们提出 RememBench，一个包含两个划分的基准，用于评估自回归视频模型在这类重访中的一致性。"
+    },
+    {
+     "en": "Revisits are driven by prompts in the T2V split and by camera motion in the I2V split.",
+     "zh": "在 T2V 划分中，重访由提示词驱动；在 I2V 划分中，重访由相机运动驱动。"
+    },
+    {
+     "en": "Additional benchmark construction details and first-frame visualizations are provided in Supplementary Sections B.1 and B.2 , respectively.",
+     "zh": "额外的基准构建细节和首帧可视化分别见补充材料 B.1 节和 B.2 节。"
+    }
+   ]
+  },
+  {
+   "en": "The T2V split. The split contains 100 samples with scenarios disjoint from router training. Each model input extends Ring Forcing’s three-stage appear–disappear–reappear design ( Xue et al., 2026 ) to four prompt segments, with a separate segment keeping the object out of sight.",
+   "zh": "T2V 划分。 该划分包含 100 个样本，其场景与路由器训练所用场景互不重叠。 每个模型输入将 Ring Forcing 的「出现–消失–重现」三阶段设计（Xue et al., 2026）扩展为四段提示，其中额外一段使目标保持在视野之外。",
+   "sents": [
+    {
+     "en": "The T2V split.",
+     "zh": "T2V 划分。"
+    },
+    {
+     "en": "The split contains 100 samples with scenarios disjoint from router training.",
+     "zh": "该划分包含 100 个样本，其场景与路由器训练所用场景互不重叠。"
+    },
+    {
+     "en": "Each model input extends Ring Forcing’s three-stage appear–disappear–reappear design ( Xue et al., 2026 ) to four prompt segments, with a separate segment keeping the object out of sight.",
+     "zh": "每个模型输入将 Ring Forcing 的「出现–消失–重现」三阶段设计（Xue et al., 2026）扩展为四段提示，其中额外一段使目标保持在视野之外。"
+    }
+   ]
+  },
+  {
+   "en": "The I2V split. The split contains 150 scenes: 50 indoor and 100 outdoor. Each model input includes an initial frame from DL3DV ( Ling et al., 2023 ) , a prompt describing the scene, and a camera trajectory. We sample more diverse camera trajectories not seen during training: all 150 scenes have in-place rotation trajectories with 90 ∘ 90^{\\circ} , 180 ∘ 180^{\\circ} , and 360 ∘ 360^{\\circ} settings. The 100 outdoor scenes additionally have trajectories combining these rotations with translation.",
+   "zh": "I2V 划分集。 该划分集包含 150 个场景：50 个室内场景和 100 个室外场景。 每个模型输入包括一张来自 DL3DV（Ling et al., 2023）的初始帧、一段描述场景的提示词，以及一条相机轨迹。 我们采样了更多训练时未见过的多样化相机轨迹：全部 150 个场景都带有 90 ∘ 90^{\\circ}、180 ∘ 180^{\\circ} 和 360 ∘ 360^{\\circ} 设置的原地旋转轨迹。 这 100 个室外场景还额外带有将这些旋转与平移相结合的轨迹。",
+   "sents": [
+    {
+     "en": "The I2V split.",
+     "zh": "I2V 划分集。"
+    },
+    {
+     "en": "The split contains 150 scenes: 50 indoor and 100 outdoor.",
+     "zh": "该划分集包含 150 个场景：50 个室内场景和 100 个室外场景。"
+    },
+    {
+     "en": "Each model input includes an initial frame from DL3DV ( Ling et al., 2023 ) , a prompt describing the scene, and a camera trajectory.",
+     "zh": "每个模型输入包括一张来自 DL3DV（Ling et al., 2023）的初始帧、一段描述场景的提示词，以及一条相机轨迹。"
+    },
+    {
+     "en": "We sample more diverse camera trajectories not seen during training: all 150 scenes have in-place rotation trajectories with 90 ∘ 90^{\\circ} , 180 ∘ 180^{\\circ} , and 360 ∘ 360^{\\circ} settings.",
+     "zh": "我们采样了更多训练时未见过的多样化相机轨迹：全部 150 个场景都带有 90 ∘ 90^{\\circ}、180 ∘ 180^{\\circ} 和 360 ∘ 360^{\\circ} 设置的原地旋转轨迹。"
+    },
+    {
+     "en": "The 100 outdoor scenes additionally have trajectories combining these rotations with translation.",
+     "zh": "这 100 个室外场景还额外带有将这些旋转与平移相结合的轨迹。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate whether MosaiChunk provides useful fine-grained historical information beyond a sliding window and compare it with existing retrieval mechanisms that condition on whole chunks, testing whether section-level memory better preserves visual details. We conduct both comparisons on the T2V and I2V splits of RememBench , using the frozen H3-AR backbone for T2V and LingBot-World-Infinity for I2V. Video comparisons are available in the Video Viewer .",
+   "zh": "我们评估 MosaiChunk 是否能提供滑动窗口之外有用的细粒度历史信息，并将其与现有的以整个分块为条件的检索机制进行比较，以测试分节级记忆是否能更好地保留视觉细节。 我们在 RememBench 的 T2V 和 I2V 划分上进行这两项比较，T2V 使用冻结的 H3-AR 骨干，I2V 使用 LingBot-World-Infinity。 视频比较可在 Video Viewer 中查看。",
+   "sents": [
+    {
+     "en": "We evaluate whether MosaiChunk provides useful fine-grained historical information beyond a sliding window and compare it with existing retrieval mechanisms that condition on whole chunks, testing whether section-level memory better preserves visual details.",
+     "zh": "我们评估 MosaiChunk 是否能提供滑动窗口之外有用的细粒度历史信息，并将其与现有的以整个分块为条件的检索机制进行比较，以测试分节级记忆是否能更好地保留视觉细节。"
+    },
+    {
+     "en": "We conduct both comparisons on the T2V and I2V splits of RememBench , using the frozen H3-AR backbone for T2V and LingBot-World-Infinity for I2V.",
+     "zh": "我们在 RememBench 的 T2V 和 I2V 划分上进行这两项比较，T2V 使用冻结的 H3-AR 骨干，I2V 使用 LingBot-World-Infinity。"
+    },
+    {
+     "en": "Video comparisons are available in the Video Viewer .",
+     "zh": "视频比较可在 Video Viewer 中查看。"
+    }
+   ]
+  },
+  {
+   "en": "Baseline. We compare MosaiChunk with the sliding-window baseline (Base) and Mixture of Contexts (MoC) ( Cai et al., 2025 ) , a whole-chunk retrieval mechanism. We adapt MoC on each frozen backbone. Across baselines, T2V runs share prompts and noise seeds; I2V runs share conditioning frames and camera trajectories.",
+   "zh": "基线。 我们将 MosaiChunk 与滑动窗口基线（Base）和上下文混合（Mixture of Contexts, MoC）（Cai et al., 2025）进行比较，后者是一种整块检索机制。 我们在每个冻结骨干网络上适配 MoC。 在各基线中，T2V 运行共享提示词和噪声种子；I2V 运行共享条件帧和相机轨迹。",
+   "sents": [
+    {
+     "en": "Baseline.",
+     "zh": "基线。"
+    },
+    {
+     "en": "We compare MosaiChunk with the sliding-window baseline (Base) and Mixture of Contexts (MoC) ( Cai et al., 2025 ) , a whole-chunk retrieval mechanism.",
+     "zh": "我们将 MosaiChunk 与滑动窗口基线（Base）和上下文混合（Mixture of Contexts, MoC）（Cai et al., 2025）进行比较，后者是一种整块检索机制。"
+    },
+    {
+     "en": "We adapt MoC on each frozen backbone.",
+     "zh": "我们在每个冻结骨干网络上适配 MoC。"
+    },
+    {
+     "en": "Across baselines, T2V runs share prompts and noise seeds; I2V runs share conditioning frames and camera trajectories.",
+     "zh": "在各基线中，T2V 运行共享提示词和噪声种子；I2V 运行共享条件帧和相机轨迹。"
+    }
+   ]
+  },
+  {
+   "en": "Notation. Let ℱ c \\mathcal{F}_{c} denote the far memory used to generate chunk c c , and ∥ ℱ c ∥ \\lVert\\mathcal{F}_{c}\\rVert its budget in video-chunk equivalents. For example, ∥ ℱ c ∥ = 1 \\lVert\\mathcal{F}_{c}\\rVert=1 means that the size of the far memory is equivalent to one video chunk. We evaluate budgets of one and two chunks.",
+   "zh": "记号。 设 ℱ c \\mathcal{F}_{c} 表示用于生成块 c c 的远端记忆，∥ ℱ c ∥ \\lVert\\mathcal{F}_{c}\\rVert 表示其以视频块为单位的预算。 例如，∥ ℱ c ∥ = 1 \\lVert\\mathcal{F}_{c}\\rVert=1 表示远端记忆的大小相当于一个视频块。 我们评估了一个和两个视频块的预算。",
+   "sents": [
+    {
+     "en": "Notation.",
+     "zh": "记号。"
+    },
+    {
+     "en": "Let ℱ c \\mathcal{F}_{c} denote the far memory used to generate chunk c c , and ∥ ℱ c ∥ \\lVert\\mathcal{F}_{c}\\rVert its budget in video-chunk equivalents.",
+     "zh": "设 ℱ c \\mathcal{F}_{c} 表示用于生成块 c c 的远端记忆，∥ ℱ c ∥ \\lVert\\mathcal{F}_{c}\\rVert 表示其以视频块为单位的预算。"
+    },
+    {
+     "en": "For example, ∥ ℱ c ∥ = 1 \\lVert\\mathcal{F}_{c}\\rVert=1 means that the size of the far memory is equivalent to one video chunk.",
+     "zh": "例如，∥ ℱ c ∥ = 1 \\lVert\\mathcal{F}_{c}\\rVert=1 表示远端记忆的大小相当于一个视频块。"
+    },
+    {
+     "en": "We evaluate budgets of one and two chunks.",
+     "zh": "我们评估了一个和两个视频块的预算。"
+    }
+   ]
+  },
+  {
+   "en": "Metric. CLIP similarity and LPIPS assess consistency between departure and revisit frames. T2V pairs are manually marked; I2V pairs use the conditioning frame and a revisit selected from Pi3X-reconstructed camera poses ( Wang et al., 2026 ) . TempSSIM (consecutive-frame SSIM ( Wang et al., 2004 ) ) and Local Scene Drift (Drift) ( Wu et al., 2026 ) measure rollout quality. We report medians over scenes. More details are provided in Supplementary Material Section B.3 .",
+   "zh": "指标。 CLIP 相似度和 LPIPS 评估出发帧与重访帧之间的一致性。 T2V 数据对采用人工标注；I2V 数据对使用条件帧以及从 Pi3X 重建的相机位姿中选取的一次重访（Wang et al., 2026）。 TempSSIM（连续帧 SSIM（Wang et al., 2004））和局部场景漂移（Drift）（Wu et al., 2026）用于衡量 rollout 质量。 我们报告各场景上的中位数。 更多细节见补充材料 B.3 节。",
+   "sents": [
+    {
+     "en": "Metric.",
+     "zh": "指标。"
+    },
+    {
+     "en": "CLIP similarity and LPIPS assess consistency between departure and revisit frames.",
+     "zh": "CLIP 相似度和 LPIPS 评估出发帧与重访帧之间的一致性。"
+    },
+    {
+     "en": "T2V pairs are manually marked; I2V pairs use the conditioning frame and a revisit selected from Pi3X-reconstructed camera poses ( Wang et al., 2026 ) .",
+     "zh": "T2V 数据对采用人工标注；I2V 数据对使用条件帧以及从 Pi3X 重建的相机位姿中选取的一次重访（Wang et al., 2026）。"
+    },
+    {
+     "en": "TempSSIM (consecutive-frame SSIM ( Wang et al., 2004 ) ) and Local Scene Drift (Drift) ( Wu et al., 2026 ) measure rollout quality.",
+     "zh": "TempSSIM（连续帧 SSIM（Wang et al., 2004））和局部场景漂移（Drift）（Wu et al., 2026）用于衡量 rollout 质量。"
+    },
+    {
+     "en": "We report medians over scenes.",
+     "zh": "我们报告各场景上的中位数。"
+    },
+    {
+     "en": "More details are provided in Supplementary Material Section B.3 .",
+     "zh": "更多细节见补充材料 B.3 节。"
+    }
+   ]
+  },
+  {
+   "en": "Table 1 shows that MosaiChunk improves median CLIP over Base by 0.144 0.144 and 0.185 0.185 at budgets of one and two chunks, respectively, and over MoC by 0.067 0.067 and 0.095 0.095 . LPIPS shows the same ordering. These results support allocating the retrieval budget to content-relevant sections rather than whole chunks. At each budget, TempSSIM and Drift differ by less than 0.01 0.01 across methods, indicating similar rollout quality under these metrics. Figure 5 illustrates these differences at the two-chunk budget. Only MosaiChunk preserves the vegetables and their arrangement after the refrigerator reopens, and retains the cupboard’s contents after its doors reopen.",
+   "zh": "表 1 显示，MosaiChunk 在预算为一个分块和两个分块时，中位数 CLIP 分别比 Base 提高 0.144 0.144 和 0.185 0.185，比 MoC 分别提高 0.067 0.067 和 0.095 0.095。 LPIPS 呈现相同的排序。 这些结果支持将检索预算分配给与内容相关的分段，而不是整个分块。 在每个预算下，各方法之间的 TempSSIM 和 Drift 差异均小于 0.01 0.01，表明在这些指标下的推演质量相近。 图 5 展示了在两个分块预算下的这些差异。 只有 MosaiChunk 在冰箱重新打开后仍保留蔬菜及其摆放，并在橱柜门重新打开后保留橱柜内的物品。",
+   "sents": [
+    {
+     "en": "Table 1 shows that MosaiChunk improves median CLIP over Base by 0.144 0.144 and 0.185 0.185 at budgets of one and two chunks, respectively, and over MoC by 0.067 0.067 and 0.095 0.095 .",
+     "zh": "表 1 显示，MosaiChunk 在预算为一个分块和两个分块时，中位数 CLIP 分别比 Base 提高 0.144 0.144 和 0.185 0.185，比 MoC 分别提高 0.067 0.067 和 0.095 0.095。"
+    },
+    {
+     "en": "LPIPS shows the same ordering.",
+     "zh": "LPIPS 呈现相同的排序。"
+    },
+    {
+     "en": "These results support allocating the retrieval budget to content-relevant sections rather than whole chunks.",
+     "zh": "这些结果支持将检索预算分配给与内容相关的分段，而不是整个分块。"
+    },
+    {
+     "en": "At each budget, TempSSIM and Drift differ by less than 0.01 0.01 across methods, indicating similar rollout quality under these metrics.",
+     "zh": "在每个预算下，各方法之间的 TempSSIM 和 Drift 差异均小于 0.01 0.01，表明在这些指标下的推演质量相近。"
+    },
+    {
+     "en": "Figure 5 illustrates these differences at the two-chunk budget.",
+     "zh": "图 5 展示了在两个分块预算下的这些差异。"
+    },
+    {
+     "en": "Only MosaiChunk preserves the vegetables and their arrangement after the refrigerator reopens, and retains the cupboard’s contents after its doors reopen.",
+     "zh": "只有 MosaiChunk 在冰箱重新打开后仍保留蔬菜及其摆放，并在橱柜门重新打开后保留橱柜内的物品。"
+    }
+   ]
+  },
+  {
+   "en": "Table 2 reports 180 ∘ 180^{\\circ} turns with and without translation. At a one-chunk budget, MosaiChunk improves median CLIP over Base by 0.072 0.072 under rotation and 0.060 0.060 with translation, and over MoC by 0.033 0.033 and 0.036 0.036 . At two chunks, the corresponding gains are 0.070 0.070 and 0.049 0.049 over Base, and 0.056 0.056 and 0.032 0.032 over MoC. LPIPS again improves in all four settings. At each budget and trajectory, TempSSIM and Drift differ by less than 0.01 0.01 across methods. Results for 90 ∘ 90^{\\circ} and 360 ∘ 360^{\\circ} turns are provided in Supplementary Material Section C.2 . Figure 6 shows two 180 ∘ 180^{\\circ} examples in which MosaiChunk more faithfully recovers the garden entrance’s archway and the playroom’s layout and wall decorations than either baseline.",
+   "zh": "表2报告了带平移与不带平移的 180 ∘ 180^{\\circ} 转向的结果。 在单块预算下，MosaiChunk 在旋转情形下将中位 CLIP 比 Base 提升 0.072 0.072，在带平移情形下提升 0.060 0.060，比 MoC 分别提升 0.033 0.033 和 0.036 0.036。 在两块预算下，相对 Base 的相应提升分别为 0.070 0.070 和 0.049 0.049，相对 MoC 的提升分别为 0.056 0.056 和 0.032 0.032。 LPIPS 在全部四种设置下均有所改善。 在每个预算和每条轨迹下，各方法之间的 TempSSIM 和 Drift 差异均小于 0.01 0.01。 90 ∘ 90^{\\circ} 和 360 ∘ 360^{\\circ} 转向的结果见补充材料 C.2 节。 图6展示了两个 180 ∘ 180^{\\circ} 的示例，其中 MosaiChunk 比两个基线都更忠实地恢复了花园入口的拱门以及游戏室的布局和墙面装饰。",
+   "sents": [
+    {
+     "en": "Table 2 reports 180 ∘ 180^{\\circ} turns with and without translation.",
+     "zh": "表2报告了带平移与不带平移的 180 ∘ 180^{\\circ} 转向的结果。"
+    },
+    {
+     "en": "At a one-chunk budget, MosaiChunk improves median CLIP over Base by 0.072 0.072 under rotation and 0.060 0.060 with translation, and over MoC by 0.033 0.033 and 0.036 0.036 .",
+     "zh": "在单块预算下，MosaiChunk 在旋转情形下将中位 CLIP 比 Base 提升 0.072 0.072，在带平移情形下提升 0.060 0.060，比 MoC 分别提升 0.033 0.033 和 0.036 0.036。"
+    },
+    {
+     "en": "At two chunks, the corresponding gains are 0.070 0.070 and 0.049 0.049 over Base, and 0.056 0.056 and 0.032 0.032 over MoC.",
+     "zh": "在两块预算下，相对 Base 的相应提升分别为 0.070 0.070 和 0.049 0.049，相对 MoC 的提升分别为 0.056 0.056 和 0.032 0.032。"
+    },
+    {
+     "en": "LPIPS again improves in all four settings.",
+     "zh": "LPIPS 在全部四种设置下均有所改善。"
+    },
+    {
+     "en": "At each budget and trajectory, TempSSIM and Drift differ by less than 0.01 0.01 across methods.",
+     "zh": "在每个预算和每条轨迹下，各方法之间的 TempSSIM 和 Drift 差异均小于 0.01 0.01。"
+    },
+    {
+     "en": "Results for 90 ∘ 90^{\\circ} and 360 ∘ 360^{\\circ} turns are provided in Supplementary Material Section C.2 .",
+     "zh": "90 ∘ 90^{\\circ} 和 360 ∘ 360^{\\circ} 转向的结果见补充材料 C.2 节。"
+    },
+    {
+     "en": "Figure 6 shows two 180 ∘ 180^{\\circ} examples in which MosaiChunk more faithfully recovers the garden entrance’s archway and the playroom’s layout and wall decorations than either baseline.",
+     "zh": "图6展示了两个 180 ∘ 180^{\\circ} 的示例，其中 MosaiChunk 比两个基线都更忠实地恢复了花园入口的拱门以及游戏室的布局和墙面装饰。"
+    }
+   ]
+  },
+  {
+   "en": "In addition, we evaluate I2V generation on two public benchmarks, WBench ( Ying et al., 2026 ) and WorldMark ( Xu et al., 2026 ) (Table 3 ). At both budgets, MosaiChunk improves every consistency score in Table 3 over the sliding-window baseline while maintaining video quality. Full results and metric descriptions are provided in Supplementary Material Section C.2 .",
+   "zh": "此外，我们在两个公开基准 WBench（Ying et al., 2026）和 WorldMark（Xu et al., 2026）上评估了 I2V 生成（表 3）。 在两种预算下，MosaiChunk 在表 3 中的每一项一致性指标上都优于滑动窗口基线，同时保持了视频质量。 完整结果和指标说明见补充材料 C.2 节。",
+   "sents": [
+    {
+     "en": "In addition, we evaluate I2V generation on two public benchmarks, WBench ( Ying et al., 2026 ) and WorldMark ( Xu et al., 2026 ) (Table 3 ).",
+     "zh": "此外，我们在两个公开基准 WBench（Ying et al., 2026）和 WorldMark（Xu et al., 2026）上评估了 I2V 生成（表 3）。"
+    },
+    {
+     "en": "At both budgets, MosaiChunk improves every consistency score in Table 3 over the sliding-window baseline while maintaining video quality.",
+     "zh": "在两种预算下，MosaiChunk 在表 3 中的每一项一致性指标上都优于滑动窗口基线，同时保持了视频质量。"
+    },
+    {
+     "en": "Full results and metric descriptions are provided in Supplementary Material Section C.2 .",
+     "zh": "完整结果和指标说明见补充材料 C.2 节。"
+    }
+   ]
+  },
+  {
+   "en": "We ablate two key design choices in our memory architecture: (1) learning a descriptor space for retrieval and (2) selecting sections globally under a shared memory budget. All variants use the same section partition and frozen backbone, evaluated on 150 I2V rotation scenes at one- and two-chunk far-memory budgets (Table 4 ).",
+   "zh": "我们对记忆架构中的两个关键设计选择进行了消融实验：(1) 学习一个用于检索的描述符空间，以及 (2) 在共享记忆预算下全局选择分段。 所有变体使用相同的分段划分和冻结的主干网络，在一个分段和两个分段的远记忆预算下，在 150 个 I2V 旋转场景上进行评估（表 4）。",
+   "sents": [
+    {
+     "en": "We ablate two key design choices in our memory architecture: (1) learning a descriptor space for retrieval and (2) selecting sections globally under a shared memory budget.",
+     "zh": "我们对记忆架构中的两个关键设计选择进行了消融实验：(1) 学习一个用于检索的描述符空间，以及 (2) 在共享记忆预算下全局选择分段。"
+    },
+    {
+     "en": "All variants use the same section partition and frozen backbone, evaluated on 150 I2V rotation scenes at one- and two-chunk far-memory budgets (Table 4 ).",
+     "zh": "所有变体使用相同的分段划分和冻结的主干网络，在一个分段和两个分段的远记忆预算下，在 150 个 I2V 旋转场景上进行评估（表 4）。"
+    }
+   ]
+  },
+  {
+   "en": "Learning the descriptor space. As discussed in Section 3.2 , temporally neighboring sections have similar keys. Directly matching pooled keys can therefore favor recent sections over older content needed at a revisit. We train the descriptor encoder to counter this recency bias. We replace learned descriptors with mean-pooled keys and score their cosine similarity, keeping global top- N N selection and using uniform value weights. The learned router achieves higher CLIP and lower LPIPS at both budgets.",
+   "zh": "学习描述子空间。 如第 3.2 节所述，时间上相邻的片段具有相似的键。 因此，直接匹配池化后的键会使近期片段优于重访时所需的较早内容。 我们训练描述子编码器来对抗这种近因偏差。 我们用平均池化的键替换学习到的描述子，并计算其余弦相似度作为得分，同时保留全局 Top-N N 选择，并使用均匀的值权重。 在两种预算下，学习到的路由器都取得了更高的 CLIP 和更低的 LPIPS。",
+   "sents": [
+    {
+     "en": "Learning the descriptor space.",
+     "zh": "学习描述子空间。"
+    },
+    {
+     "en": "As discussed in Section 3.2 , temporally neighboring sections have similar keys.",
+     "zh": "如第 3.2 节所述，时间上相邻的片段具有相似的键。"
+    },
+    {
+     "en": "Directly matching pooled keys can therefore favor recent sections over older content needed at a revisit.",
+     "zh": "因此，直接匹配池化后的键会使近期片段优于重访时所需的较早内容。"
+    },
+    {
+     "en": "We train the descriptor encoder to counter this recency bias.",
+     "zh": "我们训练描述子编码器来对抗这种近因偏差。"
+    },
+    {
+     "en": "We replace learned descriptors with mean-pooled keys and score their cosine similarity, keeping global top- N N selection and using uniform value weights.",
+     "zh": "我们用平均池化的键替换学习到的描述子，并计算其余弦相似度作为得分，同时保留全局 Top-N N 选择，并使用均匀的值权重。"
+    },
+    {
+     "en": "The learned router achieves higher CLIP and lower LPIPS at both budgets.",
+     "zh": "在两种预算下，学习到的路由器都取得了更高的 CLIP 和更低的 LPIPS。"
+    }
+   ]
+  },
+  {
+   "en": "Selecting sections under a shared budget. We retrain the router with MoC-style per-query top- k k selection ( Cai et al., 2025 ) under the same memory budget. Intuitively, content that never leaves view may remain in the sliding window, so retrieving k k sections for every query can spend budget on information the backbone already has; global selection instead devotes the budget to relevant content missing from local context. Global top- N N again improves both metrics at both budgets, making the full design the best-performing variant in Table 4 .",
+   "zh": "在共享预算下选择章节。 我们在相同内存预算下，使用 MoC 风格的每查询 top- k k 选择（Cai et al., 2025）重新训练路由器。 直观地说，始终留在视野内的内容可以保留在滑动窗口中，因此为每个查询检索 k k 个章节可能会把预算花费在骨干网络已经拥有的信息上；而全局选择则将预算用于局部上下文中缺失的相关内容。 全局 top- N N 在两种预算下都再次提升了两个指标，使完整设计成为表 4 中表现最佳的变体。",
+   "sents": [
+    {
+     "en": "Selecting sections under a shared budget.",
+     "zh": "在共享预算下选择章节。"
+    },
+    {
+     "en": "We retrain the router with MoC-style per-query top- k k selection ( Cai et al., 2025 ) under the same memory budget.",
+     "zh": "我们在相同内存预算下，使用 MoC 风格的每查询 top- k k 选择（Cai et al., 2025）重新训练路由器。"
+    },
+    {
+     "en": "Intuitively, content that never leaves view may remain in the sliding window, so retrieving k k sections for every query can spend budget on information the backbone already has; global selection instead devotes the budget to relevant content missing from local context.",
+     "zh": "直观地说，始终留在视野内的内容可以保留在滑动窗口中，因此为每个查询检索 k k 个章节可能会把预算花费在骨干网络已经拥有的信息上；而全局选择则将预算用于局部上下文中缺失的相关内容。"
+    },
+    {
+     "en": "Global top- N N again improves both metrics at both budgets, making the full design the best-performing variant in Table 4 .",
+     "zh": "全局 top- N N 在两种预算下都再次提升了两个指标，使完整设计成为表 4 中表现最佳的变体。"
+    }
+   ]
+  },
+  {
+   "en": "Since camera poses are available in I2V, we also test a pose-guided variant of our router, following pose-based retrieval methods ( Yi et al., 2026 ) . We further evaluate fractional far-memory budgets of 0.5 0.5 and 1.5 1.5 chunks and report the budget curve. Both studies are provided in Supplementary Material Section C.3 .",
+   "zh": "由于 I2V 中相机位姿是可用的，我们参照基于位姿的检索方法（Yi et al., 2026），还测试了路由器的一种位姿引导变体。 我们进一步评估了 0.5 和 1.5 个分块的分数型远内存预算，并报告了预算曲线。 两项研究均见补充材料第 C.3 节。",
+   "sents": [
+    {
+     "en": "Since camera poses are available in I2V, we also test a pose-guided variant of our router, following pose-based retrieval methods ( Yi et al., 2026 ) .",
+     "zh": "由于 I2V 中相机位姿是可用的，我们参照基于位姿的检索方法（Yi et al., 2026），还测试了路由器的一种位姿引导变体。"
+    },
+    {
+     "en": "We further evaluate fractional far-memory budgets of 0.5 0.5 and 1.5 1.5 chunks and report the budget curve.",
+     "zh": "我们进一步评估了 0.5 和 1.5 个分块的分数型远内存预算，并报告了预算曲线。"
+    },
+    {
+     "en": "Both studies are provided in Supplementary Material Section C.3 .",
+     "zh": "两项研究均见补充材料第 C.3 节。"
+    }
+   ]
+  },
+  {
+   "en": "We presented MosaiChunk , a spatio-temporal memory mechanism for preserving visual content across long-horizon revisits, and RememBench for evaluating this capability. Our self-distillation scheme trains the router using the same frozen backbone with richer historical context as the teacher. While the router improves visual memory, generation remains constrained by the teacher’s capabilities. Because the backbone’s weights remain fixed, our method inherits its limitations in instruction following and its learned generative distribution. Future video models could instead build memory directly into the generator, learning during pre-training or post-training to natively reuse visual content from earlier in the generated history, even after it has left the active context.",
+   "zh": "我们提出了 MosaiChunk，一种用于在长时程重访中保持视觉内容的时空记忆机制，并提出了用于评估这一能力的 RememBench。 我们的自蒸馏方案使用同一个冻结主干网络作为教师，并以更丰富的历史上下文来训练路由器。 尽管路由器改善了视觉记忆，但生成仍受教师模型能力的限制。 由于主干网络的权重保持固定，我们的方法继承了其在指令遵循方面的局限性及其习得的生成分布。 未来的视频模型可以直接将记忆内建于生成器中，在预训练或后训练期间学习原生地复用生成历史中较早出现的视觉内容，即使该内容已离开活跃上下文。",
+   "sents": [
+    {
+     "en": "We presented MosaiChunk , a spatio-temporal memory mechanism for preserving visual content across long-horizon revisits, and RememBench for evaluating this capability.",
+     "zh": "我们提出了 MosaiChunk，一种用于在长时程重访中保持视觉内容的时空记忆机制，并提出了用于评估这一能力的 RememBench。"
+    },
+    {
+     "en": "Our self-distillation scheme trains the router using the same frozen backbone with richer historical context as the teacher.",
+     "zh": "我们的自蒸馏方案使用同一个冻结主干网络作为教师，并以更丰富的历史上下文来训练路由器。"
+    },
+    {
+     "en": "While the router improves visual memory, generation remains constrained by the teacher’s capabilities.",
+     "zh": "尽管路由器改善了视觉记忆，但生成仍受教师模型能力的限制。"
+    },
+    {
+     "en": "Because the backbone’s weights remain fixed, our method inherits its limitations in instruction following and its learned generative distribution.",
+     "zh": "由于主干网络的权重保持固定，我们的方法继承了其在指令遵循方面的局限性及其习得的生成分布。"
+    },
+    {
+     "en": "Future video models could instead build memory directly into the generator, learning during pre-training or post-training to natively reuse visual content from earlier in the generated history, even after it has left the active context.",
+     "zh": "未来的视频模型可以直接将记忆内建于生成器中，在预训练或后训练期间学习原生地复用生成历史中较早出现的视觉内容，即使该内容已离开活跃上下文。"
+    }
+   ]
+  },
+  {
+   "en": "We used generative AI tools to assist with data construction, research-code implementation and debugging, interpreting experimental results, and manuscript preparation. Specifically for data generation, a Claude agent wrote T2V prompt scenarios, while Qwen2.5-VL-7B assisted with I2V scene filtering and captioning, as described in Supplementary Section B.1 . An author manually reviewed all AI-assisted text, code, data, and output visualizations. The authors remain responsible for the accuracy and integrity of the methods, results, and conclusions reported in this work.",
+   "zh": "我们使用生成式 AI 工具辅助数据构建、研究代码的实现与调试、实验结果解读以及论文撰写。 具体在数据生成方面，一个 Claude 智能体编写了 T2V 提示词场景，而 Qwen2.5-VL-7B 协助进行 I2V 场景筛选与字幕描述，详见补充材料 B.1 节。 作者手动审查了所有 AI 辅助生成的文本、代码、数据和输出可视化结果。 本文所报告的方法、结果和结论的准确性与完整性仍由作者负责。",
+   "sents": [
+    {
+     "en": "We used generative AI tools to assist with data construction, research-code implementation and debugging, interpreting experimental results, and manuscript preparation.",
+     "zh": "我们使用生成式 AI 工具辅助数据构建、研究代码的实现与调试、实验结果解读以及论文撰写。"
+    },
+    {
+     "en": "Specifically for data generation, a Claude agent wrote T2V prompt scenarios, while Qwen2.5-VL-7B assisted with I2V scene filtering and captioning, as described in Supplementary Section B.1 .",
+     "zh": "具体在数据生成方面，一个 Claude 智能体编写了 T2V 提示词场景，而 Qwen2.5-VL-7B 协助进行 I2V 场景筛选与字幕描述，详见补充材料 B.1 节。"
+    },
+    {
+     "en": "An author manually reviewed all AI-assisted text, code, data, and output visualizations.",
+     "zh": "作者手动审查了所有 AI 辅助生成的文本、代码、数据和输出可视化结果。"
+    },
+    {
+     "en": "The authors remain responsible for the accuracy and integrity of the methods, results, and conclusions reported in this work.",
+     "zh": "本文所报告的方法、结果和结论的准确性与完整性仍由作者负责。"
+    }
+   ]
+  },
+  {
+   "en": "MosaiChunk trains only a lightweight memory router while keeping the pretrained video backbone frozen. It selects and composes historical KV entries without updating the generator’s parameters. The method therefore inherits limitations of its pretrained backbone and source data, including potential biases and harmful behaviors. We do not identify additional ethical concerns specific to the proposed memory router.",
+   "zh": "MosaiChunk 仅训练一个轻量级记忆路由器，同时保持预训练的视频主干网络冻结。 它在不更新生成器参数的情况下选择并组合历史 KV 条目。 因此，该方法继承了其预训练主干网络和源数据的局限性，包括潜在的偏见和有害行为。 我们未发现针对所提出的记忆路由器的其他伦理问题。",
+   "sents": [
+    {
+     "en": "MosaiChunk trains only a lightweight memory router while keeping the pretrained video backbone frozen.",
+     "zh": "MosaiChunk 仅训练一个轻量级记忆路由器，同时保持预训练的视频主干网络冻结。"
+    },
+    {
+     "en": "It selects and composes historical KV entries without updating the generator’s parameters.",
+     "zh": "它在不更新生成器参数的情况下选择并组合历史 KV 条目。"
+    },
+    {
+     "en": "The method therefore inherits limitations of its pretrained backbone and source data, including potential biases and harmful behaviors.",
+     "zh": "因此，该方法继承了其预训练主干网络和源数据的局限性，包括潜在的偏见和有害行为。"
+    },
+    {
+     "en": "We do not identify additional ethical concerns specific to the proposed memory router.",
+     "zh": "我们未发现针对所提出的记忆路由器的其他伦理问题。"
+    }
+   ]
+  },
+  {
+   "en": "Section 3 describes the memory architecture and the self-distillation objective. Supplementary Sections A.1 and A.2 provide implementation and training details, including hyperparameters and hardware. Supplementary Section B.1 documents the data sources, filtering procedures, prompts, and camera trajectories used to construct RememBench , while Section B.3 specifies generation settings, baseline adaptations, matched memory budgets, revisit-pair selection, and metrics. We will publicly release our code, data, and trained router checkpoints to facilitate reproduction and further research.",
+   "zh": "第3节描述了记忆架构与自蒸馏目标。 补充材料A.1节和A.2节提供了实现与训练细节，包括超参数和硬件。 补充材料B.1节记录了用于构建RememBench的数据来源、过滤流程、提示词和相机轨迹，而B.3节则说明了生成设置、基线适配、匹配的记忆预算、重访对选择以及评估指标。 我们将公开发布代码、数据和训练好的路由器检查点，以便于复现和进一步研究。",
+   "sents": [
+    {
+     "en": "Section 3 describes the memory architecture and the self-distillation objective.",
+     "zh": "第3节描述了记忆架构与自蒸馏目标。"
+    },
+    {
+     "en": "Supplementary Sections A.1 and A.2 provide implementation and training details, including hyperparameters and hardware.",
+     "zh": "补充材料A.1节和A.2节提供了实现与训练细节，包括超参数和硬件。"
+    },
+    {
+     "en": "Supplementary Section B.1 documents the data sources, filtering procedures, prompts, and camera trajectories used to construct RememBench , while Section B.3 specifies generation settings, baseline adaptations, matched memory budgets, revisit-pair selection, and metrics.",
+     "zh": "补充材料B.1节记录了用于构建RememBench的数据来源、过滤流程、提示词和相机轨迹，而B.3节则说明了生成设置、基线适配、匹配的记忆预算、重访对选择以及评估指标。"
+    },
+    {
+     "en": "We will publicly release our code, data, and trained router checkpoints to facilitate reproduction and further research.",
+     "zh": "我们将公开发布代码、数据和训练好的路由器检查点，以便于复现和进一步研究。"
+    }
+   ]
+  },
+  {
+   "en": "We refer readers to the interactive visualizations in the Video Viewer , which show text-to-video (T2V) and image-to-video (I2V) results. In this document, we provide implementation details (Section A ), describe benchmark construction, scene visualizations, and evaluation protocols (Section B ), and present additional results (Section C ).",
+   "zh": "我们建议读者参阅 Video Viewer 中的交互式可视化，其中展示了文本生成视频（T2V）和图像生成视频（I2V）的结果。 在本文档中，我们提供实现细节（A 节），介绍基准测试的构建、场景可视化与评估协议（B 节），并展示更多结果（C 节）。",
+   "sents": [
+    {
+     "en": "We refer readers to the interactive visualizations in the Video Viewer , which show text-to-video (T2V) and image-to-video (I2V) results.",
+     "zh": "我们建议读者参阅 Video Viewer 中的交互式可视化，其中展示了文本生成视频（T2V）和图像生成视频（I2V）的结果。"
+    },
+    {
+     "en": "In this document, we provide implementation details (Section A ), describe benchmark construction, scene visualizations, and evaluation protocols (Section B ), and present additional results (Section C ).",
+     "zh": "在本文档中，我们提供实现细节（A 节），介绍基准测试的构建、场景可视化与评估协议（B 节），并展示更多结果（C 节）。"
+    }
+   ]
+  },
+  {
+   "en": "Contents A Implementation Details A A.1 Memory Router . A.1 A.2 Self-Distillation . A.2 B Benchmark Details B B.1 Dataset Construction . B.1 B.2 Visualization of First Frames . B.2 B.3 Detailed Evaluation Protocol . B.3 C Additional Results C C.1 Extra Qualitative Results . C.1 C.2 Extra Quantitative Results . C.2 C.3 Extra Ablations . C.3 C.4 KV Transplantation . C.4",
+   "zh": "目录 A 实现细节 A A.1 记忆路由器 . A.1 A.2 自蒸馏 . A.2 B 基准测试细节 B B.1 数据集构建 . B.1 B.2 首帧可视化 . B.2 B.3 详细评估协议 . B.3 C 附加结果 C C.1 更多定性结果 . C.1 C.2 更多定量结果 . C.2 C.3 更多消融实验 . C.3 C.4 KV 移植 . C.4",
+   "sents": [
+    {
+     "en": "Contents A Implementation Details A A.1 Memory Router .",
+     "zh": "目录 A 实现细节 A A.1 记忆路由器 ."
+    },
+    {
+     "en": "A.1 A.2 Self-Distillation .",
+     "zh": "A.1 A.2 自蒸馏 ."
+    },
+    {
+     "en": "A.2 B Benchmark Details B B.1 Dataset Construction .",
+     "zh": "A.2 B 基准测试细节 B B.1 数据集构建 ."
+    },
+    {
+     "en": "B.1 B.2 Visualization of First Frames .",
+     "zh": "B.1 B.2 首帧可视化 ."
+    },
+    {
+     "en": "B.2 B.3 Detailed Evaluation Protocol .",
+     "zh": "B.2 B.3 详细评估协议 ."
+    },
+    {
+     "en": "B.3 C Additional Results C C.1 Extra Qualitative Results .",
+     "zh": "B.3 C 附加结果 C C.1 更多定性结果 ."
+    },
+    {
+     "en": "C.1 C.2 Extra Quantitative Results .",
+     "zh": "C.1 C.2 更多定量结果 ."
+    },
+    {
+     "en": "C.2 C.3 Extra Ablations .",
+     "zh": "C.2 C.3 更多消融实验 ."
+    },
+    {
+     "en": "C.3 C.4 KV Transplantation . C.4",
+     "zh": "C.3 C.4 KV 移植 . C.4"
+    }
+   ]
+  },
+  {
+   "en": "MosaiChunk adds a trainable memory router to a frozen autoregressive video generator. The router composes historical KV sections into a MosaiChunk under a fixed far-memory budget. The frozen generator reads it alongside a sliding window of two recent chunks and a fixed attention sink . We use RAVEN-adapted MiniMax-H3 (H3-AR) for text-to-video (T2V) and LingBot-World-Infinity for image-to-video (I2V) ( MiniMax, 2026 ; Lu et al., 2026 ; Gao et al., 2026 ) . We observed content leakage through a visual sink in H3-AR, but not in LingBot-World-Infinity. We therefore retain text tokens as the attention sink for H3-AR and the first video chunk’s tokens for LingBot-World-Infinity.",
+   "zh": "MosaiChunk 在冻结的自回归视频生成器中加入了一个可训练的记忆路由器。 该路由器在固定的远记忆预算下，将历史 KV 区段组合成一个 MosaiChunk。 冻结的生成器在读取它时，还会同时读取由两个最近区块组成的滑动窗口和一个固定的注意力汇聚点（attention sink）。 文生视频（T2V）我们使用经 RAVEN 适配的 MiniMax-H3（H3-AR），图生视频（I2V）使用 LingBot-World-Infinity（MiniMax, 2026；Lu et al., 2026；Gao et al., 2026）。 我们观察到 H3-AR 中存在通过视觉汇聚点造成的内容泄露，但 LingBot-World-Infinity 中没有。 因此，我们为 H3-AR 保留文本词元作为注意力汇聚点，而为 LingBot-World-Infinity 保留第一个视频区块的词元作为注意力汇聚点。",
+   "sents": [
+    {
+     "en": "MosaiChunk adds a trainable memory router to a frozen autoregressive video generator.",
+     "zh": "MosaiChunk 在冻结的自回归视频生成器中加入了一个可训练的记忆路由器。"
+    },
+    {
+     "en": "The router composes historical KV sections into a MosaiChunk under a fixed far-memory budget.",
+     "zh": "该路由器在固定的远记忆预算下，将历史 KV 区段组合成一个 MosaiChunk。"
+    },
+    {
+     "en": "The frozen generator reads it alongside a sliding window of two recent chunks and a fixed attention sink .",
+     "zh": "冻结的生成器在读取它时，还会同时读取由两个最近区块组成的滑动窗口和一个固定的注意力汇聚点（attention sink）。"
+    },
+    {
+     "en": "We use RAVEN-adapted MiniMax-H3 (H3-AR) for text-to-video (T2V) and LingBot-World-Infinity for image-to-video (I2V) ( MiniMax, 2026 ; Lu et al., 2026 ; Gao et al., 2026 ) .",
+     "zh": "文生视频（T2V）我们使用经 RAVEN 适配的 MiniMax-H3（H3-AR），图生视频（I2V）使用 LingBot-World-Infinity（MiniMax, 2026；Lu et al., 2026；Gao et al., 2026）。"
+    },
+    {
+     "en": "We observed content leakage through a visual sink in H3-AR, but not in LingBot-World-Infinity.",
+     "zh": "我们观察到 H3-AR 中存在通过视觉汇聚点造成的内容泄露，但 LingBot-World-Infinity 中没有。"
+    },
+    {
+     "en": "We therefore retain text tokens as the attention sink for H3-AR and the first video chunk’s tokens for LingBot-World-Infinity.",
+     "zh": "因此，我们为 H3-AR 保留文本词元作为注意力汇聚点，而为 LingBot-World-Infinity 保留第一个视频区块的词元作为注意力汇聚点。"
+    }
+   ]
+  },
+  {
+   "en": "Stage 1: Encode and store. We partition each chunk’s unrotated KV into equal-size groups, called sections , using balanced k k -means. Equal section sizes let the number of selected sections determine the KV budget. Clustering uses keys before rotary positional encoding (RoPE), at layer 25 25 of H3-AR’s 50 50 layers and layer 20 20 of LingBot-World-Infinity’s 40 40 layers. The same section partition applies to all layers; sections may span non-contiguous positions and multiple frames. Table 5 lists their sizes and the layers used for descriptors.",
+   "zh": "阶段一：编码与存储。 我们使用平衡 k k-均值将每个分块未旋转的 KV 划分为大小相等的组，称为节（section）。 节大小相等使得所选节的数量可以决定 KV 预算。 聚类使用旋转位置编码（RoPE）之前的键，取 H3-AR 的 50 50 层中的第 25 25 层以及 LingBot-World-Infinity 的 40 40 层中的第 20 20 层。 同一节划分适用于所有层；节可以跨越非连续位置和多个帧。 表 5 列出了它们的大小以及用于描述符的层。",
+   "sents": [
+    {
+     "en": "Stage 1: Encode and store.",
+     "zh": "阶段一：编码与存储。"
+    },
+    {
+     "en": "We partition each chunk’s unrotated KV into equal-size groups, called sections , using balanced k k -means.",
+     "zh": "我们使用平衡 k k-均值将每个分块未旋转的 KV 划分为大小相等的组，称为节（section）。"
+    },
+    {
+     "en": "Equal section sizes let the number of selected sections determine the KV budget.",
+     "zh": "节大小相等使得所选节的数量可以决定 KV 预算。"
+    },
+    {
+     "en": "Clustering uses keys before rotary positional encoding (RoPE), at layer 25 25 of H3-AR’s 50 50 layers and layer 20 20 of LingBot-World-Infinity’s 40 40 layers.",
+     "zh": "聚类使用旋转位置编码（RoPE）之前的键，取 H3-AR 的 50 50 层中的第 25 25 层以及 LingBot-World-Infinity 的 40 40 层中的第 20 20 层。"
+    },
+    {
+     "en": "The same section partition applies to all layers; sections may span non-contiguous positions and multiple frames.",
+     "zh": "同一节划分适用于所有层；节可以跨越非连续位置和多个帧。"
+    },
+    {
+     "en": "Table 5 lists their sizes and the layers used for descriptors.",
+     "zh": "表 5 列出了它们的大小以及用于描述符的层。"
+    }
+   ]
+  },
+  {
+   "en": "To compute each section’s descriptor, we pool its unrotated keys at layers 12 , 25 , 38 12,25,38 for H3-AR and 10 , 20 , 30 10,20,30 for LingBot-World-Infinity. Each token’s keys across attention heads form one vector. Elementwise mean, maximum, and minimum over the section’s tokens capture average responses and extremes that averaging would lose ( Gao et al., 2025 ) . These three statistics at three layers yield nine pooled key vectors. The descriptor encoder normalizes their scales, projects them to width 1024 1024 , adds embeddings identifying the source layer and statistic, and refines them with a shared residual MLP (hidden width 2048 2048 , GELU). Separate output projections give query and key descriptor sets d Q ​ ( s ) d_{Q}(s) and d K ​ ( s ) d_{K}(s) , each with nine vectors, so the same section can serve either role in comparison.",
+   "zh": "为了计算每个片段的描述符，我们在 H3-AR 的第 12、25、38 层以及 LingBot-World-Infinity 的第 10、20、30 层对其未旋转的键进行池化。 每个词元在各注意力头上的键组成一个向量。 对该片段的所有词元进行逐元素均值、最大值和最小值统计，可以捕捉平均响应以及仅用平均会丢失的极值（Gao et al., 2025）。 这三种统计量在三个层上共得到九个池化后的键向量。 描述符编码器对它们进行尺度归一化，将其投影到宽度 1024，加上标识来源层和统计量的嵌入，再用一个共享的残差 MLP（隐藏宽度 2048，GELU）进行精细化处理。 通过各自独立的输出投影，得到查询描述符集 d_Q(s) 和键描述符集 d_K(s)，每个集合包含九个向量，因此同一片段可以在比较中扮演任一角色。",
+   "sents": [
+    {
+     "en": "To compute each section’s descriptor, we pool its unrotated keys at layers 12 , 25 , 38 12,25,38 for H3-AR and 10 , 20 , 30 10,20,30 for LingBot-World-Infinity.",
+     "zh": "为了计算每个片段的描述符，我们在 H3-AR 的第 12、25、38 层以及 LingBot-World-Infinity 的第 10、20、30 层对其未旋转的键进行池化。"
+    },
+    {
+     "en": "Each token’s keys across attention heads form one vector.",
+     "zh": "每个词元在各注意力头上的键组成一个向量。"
+    },
+    {
+     "en": "Elementwise mean, maximum, and minimum over the section’s tokens capture average responses and extremes that averaging would lose ( Gao et al., 2025 ) .",
+     "zh": "对该片段的所有词元进行逐元素均值、最大值和最小值统计，可以捕捉平均响应以及仅用平均会丢失的极值（Gao et al., 2025）。"
+    },
+    {
+     "en": "These three statistics at three layers yield nine pooled key vectors.",
+     "zh": "这三种统计量在三个层上共得到九个池化后的键向量。"
+    },
+    {
+     "en": "The descriptor encoder normalizes their scales, projects them to width 1024 1024 , adds embeddings identifying the source layer and statistic, and refines them with a shared residual MLP (hidden width 2048 2048 , GELU).",
+     "zh": "描述符编码器对它们进行尺度归一化，将其投影到宽度 1024，加上标识来源层和统计量的嵌入，再用一个共享的残差 MLP（隐藏宽度 2048，GELU）进行精细化处理。"
+    },
+    {
+     "en": "Separate output projections give query and key descriptor sets d Q ​ ( s ) d_{Q}(s) and d K ​ ( s ) d_{K}(s) , each with nine vectors, so the same section can serve either role in comparison.",
+     "zh": "通过各自独立的输出投影，得到查询描述符集 d_Q(s) 和键描述符集 d_K(s)，每个集合包含九个向量，因此同一片段可以在比较中扮演任一角色。"
+    }
+   ]
+  },
+  {
+   "en": "To keep full historical KV off the GPU, the section bank stores verbatim KV entries from all backbone layers in bfloat16 on the CPU, together with each section’s token indices. Stored history grows with the rollout; the DiT’s active KV budget remains fixed.",
+   "zh": "为了将完整的历史 KV 移出 GPU，区段库在 CPU 上以 bfloat16 格式逐字存储来自所有骨干层的 KV 条目，并同时保存每个区段的 token 索引。 存储的历史随 rollout 增长；而 DiT 的活跃 KV 预算保持不变。",
+   "sents": [
+    {
+     "en": "To keep full historical KV off the GPU, the section bank stores verbatim KV entries from all backbone layers in bfloat16 on the CPU, together with each section’s token indices.",
+     "zh": "为了将完整的历史 KV 移出 GPU，区段库在 CPU 上以 bfloat16 格式逐字存储来自所有骨干层的 KV 条目，并同时保存每个区段的 token 索引。"
+    },
+    {
+     "en": "Stored history grows with the rollout; the DiT’s active KV budget remains fixed.",
+     "zh": "存储的历史随 rollout 增长；而 DiT 的活跃 KV 预算保持不变。"
+    }
+   ]
+  },
+  {
+   "en": "Stage 2: Score historical sections. When generating chunk t t , sections of the latest generated chunk t − 1 t-1 form the query set 𝒬 \\mathcal{Q} . Historical sections outside the sliding window and attention sink form the candidate set ℋ \\mathcal{H} .",
+   "zh": "阶段 2：为历史章节打分。 在生成第 t 个分块时，最新生成的第 t−1 个分块的各章节构成查询集 𝒬。 滑动窗口和注意力汇聚（attention sink）之外的历史章节构成候选集 ℋ。",
+   "sents": [
+    {
+     "en": "Stage 2: Score historical sections.",
+     "zh": "阶段 2：为历史章节打分。"
+    },
+    {
+     "en": "When generating chunk t t , sections of the latest generated chunk t − 1 t-1 form the query set 𝒬 \\mathcal{Q} .",
+     "zh": "在生成第 t 个分块时，最新生成的第 t−1 个分块的各章节构成查询集 𝒬。"
+    },
+    {
+     "en": "Historical sections outside the sliding window and attention sink form the candidate set ℋ \\mathcal{H} .",
+     "zh": "滑动窗口和注意力汇聚（attention sink）之外的历史章节构成候选集 ℋ。"
+    }
+   ]
+  },
+  {
+   "en": "Before comparison, we center key descriptor vectors within ℋ \\mathcal{H} for each source layer and pooling statistic, to remove components shared across sections. We normalize query and centered key vectors to unit length for cosine similarity. For descriptor sets A A and B B , sim ⁡ ( A , B ) \\operatorname{sim}(A,B) averages the best cosine match in B B for each of A A ’s nine vectors. Each candidate receives the score",
+   "zh": "在比较之前，我们将每个源层和池化统计的关键描述符向量在 ℋ \\mathcal{H} 内居中，以去除各章节之间共享的成分。 我们将查询向量和居中后的关键向量归一化为单位长度，以计算余弦相似度。 对于描述符集合 A A 和 B B ，sim ⁡ ( A , B ) \\operatorname{sim}(A,B) 对 A A 的九个向量中的每一个，取其在 B B 中的最佳余弦匹配并求平均。 每个候选获得该分数",
+   "sents": [
+    {
+     "en": "Before comparison, we center key descriptor vectors within ℋ \\mathcal{H} for each source layer and pooling statistic, to remove components shared across sections.",
+     "zh": "在比较之前，我们将每个源层和池化统计的关键描述符向量在 ℋ \\mathcal{H} 内居中，以去除各章节之间共享的成分。"
+    },
+    {
+     "en": "We normalize query and centered key vectors to unit length for cosine similarity.",
+     "zh": "我们将查询向量和居中后的关键向量归一化为单位长度，以计算余弦相似度。"
+    },
+    {
+     "en": "For descriptor sets A A and B B , sim ⁡ ( A , B ) \\operatorname{sim}(A,B) averages the best cosine match in B B for each of A A ’s nine vectors.",
+     "zh": "对于描述符集合 A A 和 B B ，sim ⁡ ( A , B ) \\operatorname{sim}(A,B) 对 A A 的九个向量中的每一个，取其在 B B 中的最佳余弦匹配并求平均。"
+    },
+    {
+     "en": "Each candidate receives the score",
+     "zh": "每个候选获得该分数"
+    }
+   ]
+  },
+  {
+   "en": "This favors sections that match a current query while complementing the content that is missing from the sliding window.",
+   "zh": "这有利于选择那些匹配当前查询、同时补充滑动窗口中缺失内容的章节。",
+   "sents": null
+  },
+  {
+   "en": "Stage 3: Extract and compose. We rank all candidate sections by their scores and select as many as the far-memory budget allows. One- and two-chunk budgets allow 40 40 and 80 80 sections for T2V, and 48 48 and 96 96 for I2V, respectively. Their stored token indices retrieve the verbatim KV entries at every backbone layer.",
+   "zh": "阶段三：抽取与组合。 我们按得分对所有候选章节进行排序，并选取远记忆预算允许的尽可能多的章节。 单块和双块预算在 T2V 下分别允许 40 40 和 80 80 个章节，在 I2V 下分别允许 48 48 和 96 96 个章节。 其存储的 token 索引在每一个骨干层的位置检索逐字的 KV 条目。",
+   "sents": [
+    {
+     "en": "Stage 3: Extract and compose.",
+     "zh": "阶段三：抽取与组合。"
+    },
+    {
+     "en": "We rank all candidate sections by their scores and select as many as the far-memory budget allows.",
+     "zh": "我们按得分对所有候选章节进行排序，并选取远记忆预算允许的尽可能多的章节。"
+    },
+    {
+     "en": "One- and two-chunk budgets allow 40 40 and 80 80 sections for T2V, and 48 48 and 96 96 for I2V, respectively.",
+     "zh": "单块和双块预算在 T2V 下分别允许 40 40 和 80 80 个章节，在 I2V 下分别允许 48 48 和 96 96 个章节。"
+    },
+    {
+     "en": "Their stored token indices retrieve the verbatim KV entries at every backbone layer.",
+     "zh": "其存储的 token 索引在每一个骨干层的位置检索逐字的 KV 条目。"
+    }
+   ]
+  },
+  {
+   "en": "Softmax converts all candidate scores into weights, giving higher-scoring sections larger weights. We normalize the selected weights to average 1 1 and use them to scale each section’s values. This differentiable weighting lets the denoising loss train the descriptor encoder through the frozen DiT.",
+   "zh": "Softmax 将所有候选分数转换为权重，使分数更高的部分获得更大的权重。 我们将选中的权重归一化，使其平均值为 1 1，并用它们来缩放每个部分的值。 这种可微的加权方式使去噪损失能够通过冻结的 DiT 来训练描述符编码器。",
+   "sents": [
+    {
+     "en": "Softmax converts all candidate scores into weights, giving higher-scoring sections larger weights.",
+     "zh": "Softmax 将所有候选分数转换为权重，使分数更高的部分获得更大的权重。"
+    },
+    {
+     "en": "We normalize the selected weights to average 1 1 and use them to scale each section’s values.",
+     "zh": "我们将选中的权重归一化，使其平均值为 1 1，并用它们来缩放每个部分的值。"
+    },
+    {
+     "en": "This differentiable weighting lets the denoising loss train the descriptor encoder through the frozen DiT.",
+     "zh": "这种可微的加权方式使去噪损失能够通过冻结的 DiT 来训练描述符编码器。"
+    }
+   ]
+  },
+  {
+   "en": "We preserve each selected token’s spatial coordinates and adjust its temporal RoPE coordinates to place it before the sliding window, fitting the backbone’s context layout. For N N selected sections, let K i , V i K_{i},V_{i} denote section i i ’s KV after this positional adjustment, and w i w_{i} its value weight. At each backbone layer, the MosaiChunk keys and values are",
+   "zh": "我们保留每个被选中token的空间坐标，并调整其时间RoPE坐标，将其置于滑动窗口之前，以适配骨干网络的上下文布局。 对于选中的N个片段，令K_{i},V_{i}表示片段i经过该位置调整后的KV，w_{i}表示其值权重。 在每一层骨干网络层中，MosaiChunk的键和值",
+   "sents": [
+    {
+     "en": "We preserve each selected token’s spatial coordinates and adjust its temporal RoPE coordinates to place it before the sliding window, fitting the backbone’s context layout.",
+     "zh": "我们保留每个被选中token的空间坐标，并调整其时间RoPE坐标，将其置于滑动窗口之前，以适配骨干网络的上下文布局。"
+    },
+    {
+     "en": "For N N selected sections, let K i , V i K_{i},V_{i} denote section i i ’s KV after this positional adjustment, and w i w_{i} its value weight.",
+     "zh": "对于选中的N个片段，令K_{i},V_{i}表示片段i经过该位置调整后的KV，w_{i}表示其值权重。"
+    },
+    {
+     "en": "At each backbone layer, the MosaiChunk keys and values are",
+     "zh": "在每一层骨干网络层中，MosaiChunk的键和值"
+    }
+   ]
+  },
+  {
+   "en": "Here Concat \\operatorname{Concat} joins token rows. The frozen DiT reads the resulting MosaiChunk as far memory alongside the attention sink and sliding window.",
+   "zh": "这里 Concat \\operatorname{Concat} 将各个词块的行拼接起来。 冻结的 DiT 将得到的 MosaiChunk 作为远端记忆，与注意力汇聚点（attention sink）和滑动窗口一起读取。",
+   "sents": [
+    {
+     "en": "Here Concat \\operatorname{Concat} joins token rows.",
+     "zh": "这里 Concat \\operatorname{Concat} 将各个词块的行拼接起来。"
+    },
+    {
+     "en": "The frozen DiT reads the resulting MosaiChunk as far memory alongside the attention sink and sliding window.",
+     "zh": "冻结的 DiT 将得到的 MosaiChunk 作为远端记忆，与注意力汇聚点（attention sink）和滑动窗口一起读取。"
+    }
+   ]
+  },
+  {
+   "en": "We train the descriptor encoder through self-distillation to match the same frozen generator’s predictions under richer far memory. Teacher and student use the same frozen DiT, noisy latent, denoising step, and sliding window; only far memory differs.",
+   "zh": "我们通过自蒸馏训练描述符编码器，使其在更丰富的远记忆下匹配同一个冻结生成器的预测。 教师和智能体使用同一个冻结的 DiT、带噪声的隐变量、去噪步骤和滑动窗口；只有远记忆不同。",
+   "sents": [
+    {
+     "en": "We train the descriptor encoder through self-distillation to match the same frozen generator’s predictions under richer far memory.",
+     "zh": "我们通过自蒸馏训练描述符编码器，使其在更丰富的远记忆下匹配同一个冻结生成器的预测。"
+    },
+    {
+     "en": "Teacher and student use the same frozen DiT, noisy latent, denoising step, and sliding window; only far memory differs.",
+     "zh": "教师和智能体使用同一个冻结的 DiT、带噪声的隐变量、去噪步骤和滑动窗口；只有远记忆不同。"
+    }
+   ]
+  },
+  {
+   "en": "Teacher and student. The KV context consists of an attention sink, a sliding window, and far memory. We specify these components for each task below.",
+   "zh": "教师与学生。 KV 上下文由注意力汇聚点、滑动窗口和远端记忆组成。 我们将在下文针对每个任务具体说明这些组件。",
+   "sents": [
+    {
+     "en": "Teacher and student.",
+     "zh": "教师与学生。"
+    },
+    {
+     "en": "The KV context consists of an attention sink, a sliding window, and far memory.",
+     "zh": "KV 上下文由注意力汇聚点、滑动窗口和远端记忆组成。"
+    },
+    {
+     "en": "We specify these components for each task below.",
+     "zh": "我们将在下文针对每个任务具体说明这些组件。"
+    }
+   ]
+  },
+  {
+   "en": "T2V. Both teacher and student use text tokens as the attention sink and the two most recent video chunks as the sliding window. The teacher keeps the first five video chunks, which cover the prompt’s initial reveal of the target content. Their KV outside the sliding window forms its far memory. The student’s far memory is a MosaiChunk composed from historical sections outside the sliding window, under a two-chunk far-memory budget.",
+   "zh": "T2V。 教师和智能体都使用文本 token 作为注意力锚点，并以最近两个视频块作为滑动窗口。 教师保留前五个视频块，这些视频块覆盖了提示词最初呈现目标内容的部分。 它们在滑动窗口之外的 KV 构成其远端记忆。 学生模型的远端记忆是一个由滑动窗口之外的历史片段组成的 MosaiChunk，远端记忆预算为两个块。",
+   "sents": [
+    {
+     "en": "T2V.",
+     "zh": "T2V。"
+    },
+    {
+     "en": "Both teacher and student use text tokens as the attention sink and the two most recent video chunks as the sliding window.",
+     "zh": "教师和智能体都使用文本 token 作为注意力锚点，并以最近两个视频块作为滑动窗口。"
+    },
+    {
+     "en": "The teacher keeps the first five video chunks, which cover the prompt’s initial reveal of the target content.",
+     "zh": "教师保留前五个视频块，这些视频块覆盖了提示词最初呈现目标内容的部分。"
+    },
+    {
+     "en": "Their KV outside the sliding window forms its far memory.",
+     "zh": "它们在滑动窗口之外的 KV 构成其远端记忆。"
+    },
+    {
+     "en": "The student’s far memory is a MosaiChunk composed from historical sections outside the sliding window, under a two-chunk far-memory budget.",
+     "zh": "学生模型的远端记忆是一个由滑动窗口之外的历史片段组成的 MosaiChunk，远端记忆预算为两个块。"
+    }
+   ]
+  },
+  {
+   "en": "I2V. Both teacher and student use the first video chunk as the attention sink and the two most recent chunks as the sliding window. The teacher’s far memory contains up to three historical chunks nearest to the current camera pose, selected from outside the attention sink and sliding window. For the in-place training trajectory, nearness is measured by the angle between chunks’ mean viewing directions. The student’s far memory is a MosaiChunk composed from historical sections outside the attention sink and sliding window, under a two-chunk far-memory budget.",
+   "zh": "I2V。 教师和智能体均使用第一个视频块作为注意力汇聚点（attention sink），并使用最近的两个块作为滑动窗口。 教师的远记忆包含最多三个距当前相机位姿最近的历史块，这些块从注意力汇聚点和滑动窗口之外选取。 对于原位训练轨迹，远近以各块平均观察方向之间的夹角来度量。 学生的远记忆是一个由注意力汇聚点和滑动窗口之外的历史片段组成的 MosaiChunk，远记忆预算为两个块。",
+   "sents": [
+    {
+     "en": "I2V.",
+     "zh": "I2V。"
+    },
+    {
+     "en": "Both teacher and student use the first video chunk as the attention sink and the two most recent chunks as the sliding window.",
+     "zh": "教师和智能体均使用第一个视频块作为注意力汇聚点（attention sink），并使用最近的两个块作为滑动窗口。"
+    },
+    {
+     "en": "The teacher’s far memory contains up to three historical chunks nearest to the current camera pose, selected from outside the attention sink and sliding window.",
+     "zh": "教师的远记忆包含最多三个距当前相机位姿最近的历史块，这些块从注意力汇聚点和滑动窗口之外选取。"
+    },
+    {
+     "en": "For the in-place training trajectory, nearness is measured by the angle between chunks’ mean viewing directions.",
+     "zh": "对于原位训练轨迹，远近以各块平均观察方向之间的夹角来度量。"
+    },
+    {
+     "en": "The student’s far memory is a MosaiChunk composed from historical sections outside the attention sink and sliding window, under a two-chunk far-memory budget.",
+     "zh": "学生的远记忆是一个由注意力汇聚点和滑动窗口之外的历史片段组成的 MosaiChunk，远记忆预算为两个块。"
+    }
+   ]
+  },
+  {
+   "en": "We minimize the mean squared error (MSE) between teacher and student predictions, comparing noise-free latents for H3-AR and denoising velocities for LingBot-World-Infinity. We scale both losses by 100 100 . For T2V, we first generate a 16 16 -chunk rollout, then uniformly sample one chunk from indices 5 5 – 15 15 and one of its four denoising steps for supervision. For I2V, we generate 20 20 chunks sequentially. For each chunk at indices 4 4 – 19 19 , we uniformly sample one of four denoising steps and update the descriptor encoder at that step before continuing generation. Each comparison uses the same noisy latent for teacher and student. Chunk indices are zero-based.",
+   "zh": "我们最小化教师与学生预测之间的均方误差（MSE），其中 H3-AR 比较无噪声潜变量，LingBot-World-Infinity 比较去噪速度。 我们将两个损失均乘以 100 100 进行缩放。 对于 T2V，我们先生成 16 16 个片段的 rollout，然后从索引 5 5 – 15 15 中均匀采样一个片段，并从其四个去噪步骤中均匀采样一个用于监督。 对于 I2V，我们依次生成 20 20 个片段。 对于索引 4 4 – 19 19 的每个片段，我们均匀采样四个去噪步骤之一，在该步骤更新描述符编码器，然后继续生成。 每次比较中，教师与学生使用相同的带噪潜变量。 片段索引从零开始计数。",
+   "sents": [
+    {
+     "en": "We minimize the mean squared error (MSE) between teacher and student predictions, comparing noise-free latents for H3-AR and denoising velocities for LingBot-World-Infinity.",
+     "zh": "我们最小化教师与学生预测之间的均方误差（MSE），其中 H3-AR 比较无噪声潜变量，LingBot-World-Infinity 比较去噪速度。"
+    },
+    {
+     "en": "We scale both losses by 100 100 .",
+     "zh": "我们将两个损失均乘以 100 100 进行缩放。"
+    },
+    {
+     "en": "For T2V, we first generate a 16 16 -chunk rollout, then uniformly sample one chunk from indices 5 5 – 15 15 and one of its four denoising steps for supervision.",
+     "zh": "对于 T2V，我们先生成 16 16 个片段的 rollout，然后从索引 5 5 – 15 15 中均匀采样一个片段，并从其四个去噪步骤中均匀采样一个用于监督。"
+    },
+    {
+     "en": "For I2V, we generate 20 20 chunks sequentially.",
+     "zh": "对于 I2V，我们依次生成 20 20 个片段。"
+    },
+    {
+     "en": "For each chunk at indices 4 4 – 19 19 , we uniformly sample one of four denoising steps and update the descriptor encoder at that step before continuing generation.",
+     "zh": "对于索引 4 4 – 19 19 的每个片段，我们均匀采样四个去噪步骤之一，在该步骤更新描述符编码器，然后继续生成。"
+    },
+    {
+     "en": "Each comparison uses the same noisy latent for teacher and student.",
+     "zh": "每次比较中，教师与学生使用相同的带噪潜变量。"
+    },
+    {
+     "en": "Chunk indices are zero-based.",
+     "zh": "片段索引从零开始计数。"
+    }
+   ]
+  },
+  {
+   "en": "Teacher predictions are fixed targets. Gradients pass through the student’s frozen DiT and the section value weights to the descriptor encoder; they do not pass through the discrete section selection. The stored KV and backbone parameters remain unchanged. The mean used to normalize value weights is held constant during backpropagation, preserving gradients through the full-candidate softmax to unselected scores as well. To explore alternatives during training, random candidates replace 15 % 15\\% of selected sections for T2V and a fraction drawn uniformly from [ 0 , 0.15 ] [0,0.15] for I2V. Evaluation disables this exploration.",
+   "zh": "教师预测是固定目标。 梯度穿过学生的冻结 DiT 以及区段值权重传播到描述符编码器；它们不会穿过离散的区段选择。 存储的 KV 和主干网络参数保持不变。 用于归一化值权重的均值在反向传播期间保持恒定，从而保留经过全候选 softmax 的梯度，使其同样传播到未被选中的分数。 为了在训练期间探索替代方案，随机候选择换 T2V 中 15% 15\\% 的已选区段，而在 I2V 中替换的比例从 [0, 0.15] [0,0.15] 中均匀抽取。 评估阶段禁用这种探索。",
+   "sents": [
+    {
+     "en": "Teacher predictions are fixed targets.",
+     "zh": "教师预测是固定目标。"
+    },
+    {
+     "en": "Gradients pass through the student’s frozen DiT and the section value weights to the descriptor encoder; they do not pass through the discrete section selection.",
+     "zh": "梯度穿过学生的冻结 DiT 以及区段值权重传播到描述符编码器；它们不会穿过离散的区段选择。"
+    },
+    {
+     "en": "The stored KV and backbone parameters remain unchanged.",
+     "zh": "存储的 KV 和主干网络参数保持不变。"
+    },
+    {
+     "en": "The mean used to normalize value weights is held constant during backpropagation, preserving gradients through the full-candidate softmax to unselected scores as well.",
+     "zh": "用于归一化值权重的均值在反向传播期间保持恒定，从而保留经过全候选 softmax 的梯度，使其同样传播到未被选中的分数。"
+    },
+    {
+     "en": "To explore alternatives during training, random candidates replace 15 % 15\\% of selected sections for T2V and a fraction drawn uniformly from [ 0 , 0.15 ] [0,0.15] for I2V.",
+     "zh": "为了在训练期间探索替代方案，随机候选择换 T2V 中 15% 15\\% 的已选区段，而在 I2V 中替换的比例从 [0, 0.15] [0,0.15] 中均匀抽取。"
+    },
+    {
+     "en": "Evaluation disables this exploration.",
+     "zh": "评估阶段禁用这种探索。"
+    }
+   ]
+  },
+  {
+   "en": "Training data. T2V uses 2000 2000 four-segment prompt sequences based on Ring Forcing’s three-stage appear–disappear–reappear design ( Xue et al., 2026 ) , with 16 16 chunks per rollout. I2V starts from 2664 2664 Sekai clips ( Li et al., 2025 ) , captioned with Qwen2.5-VL-7B ( Bai et al., 2025 ) . Scene-disjoint splits yield 2388 2388 training clips and 44 / 46 44/46 validation/test clips after capping each held-out scene at three clips. Sekai supplies conditioning frames; the frozen backbone generates continuations, so no ground-truth target videos are required. Training uses a 20 20 -chunk in-place turn of roughly 120 ∘ 120^{\\circ} followed by its reversal. The DL3DV evaluation scenes and 90 ∘ 90^{\\circ} , 180 ∘ 180^{\\circ} , 360 ∘ 360^{\\circ} , and translation trajectories are separate from this training setup (Section B.1 ).",
+   "zh": "训练数据。 T2V 使用 2000 2000 条基于 Ring Forcing 三阶段“出现–消失–重现”设计（Xue et al., 2026）的四段式提示词序列，每次 rollout 包含 16 16 个分块。 I2V 从 2664 2664 个 Sekai 视频片段（Li et al., 2025）出发，并使用 Qwen2.5-VL-7B（Bai et al., 2025）进行描述标注。 在将每个留出场景的上限设为三个片段后，场景互斥的划分得到 2388 2388 个训练片段以及 44 / 46 44/46 个验证/测试片段。 Sekai 提供条件帧；冻结的骨干网络生成后续内容，因此无需真实的 ground-truth 目标视频。 训练采用一次约 120 ∘ 120^{\\circ} 的 20 20 分块原地转弯，随后是其反向转弯。 DL3DV 评估场景以及 90 ∘ 90^{\\circ}、180 ∘ 180^{\\circ}、360 ∘ 360^{\\circ} 和平移轨迹均与此训练设置相互独立（第 B.1 节）。",
+   "sents": [
+    {
+     "en": "Training data.",
+     "zh": "训练数据。"
+    },
+    {
+     "en": "T2V uses 2000 2000 four-segment prompt sequences based on Ring Forcing’s three-stage appear–disappear–reappear design ( Xue et al., 2026 ) , with 16 16 chunks per rollout.",
+     "zh": "T2V 使用 2000 2000 条基于 Ring Forcing 三阶段“出现–消失–重现”设计（Xue et al., 2026）的四段式提示词序列，每次 rollout 包含 16 16 个分块。"
+    },
+    {
+     "en": "I2V starts from 2664 2664 Sekai clips ( Li et al., 2025 ) , captioned with Qwen2.5-VL-7B ( Bai et al., 2025 ) .",
+     "zh": "I2V 从 2664 2664 个 Sekai 视频片段（Li et al., 2025）出发，并使用 Qwen2.5-VL-7B（Bai et al., 2025）进行描述标注。"
+    },
+    {
+     "en": "Scene-disjoint splits yield 2388 2388 training clips and 44 / 46 44/46 validation/test clips after capping each held-out scene at three clips.",
+     "zh": "在将每个留出场景的上限设为三个片段后，场景互斥的划分得到 2388 2388 个训练片段以及 44 / 46 44/46 个验证/测试片段。"
+    },
+    {
+     "en": "Sekai supplies conditioning frames; the frozen backbone generates continuations, so no ground-truth target videos are required.",
+     "zh": "Sekai 提供条件帧；冻结的骨干网络生成后续内容，因此无需真实的 ground-truth 目标视频。"
+    },
+    {
+     "en": "Training uses a 20 20 -chunk in-place turn of roughly 120 ∘ 120^{\\circ} followed by its reversal.",
+     "zh": "训练采用一次约 120 ∘ 120^{\\circ} 的 20 20 分块原地转弯，随后是其反向转弯。"
+    },
+    {
+     "en": "The DL3DV evaluation scenes and 90 ∘ 90^{\\circ} , 180 ∘ 180^{\\circ} , 360 ∘ 360^{\\circ} , and translation trajectories are separate from this training setup (Section B.1 ).",
+     "zh": "DL3DV 评估场景以及 90 ∘ 90^{\\circ}、180 ∘ 180^{\\circ}、360 ∘ 360^{\\circ} 和平移轨迹均与此训练设置相互独立（第 B.1 节）。"
+    }
+   ]
+  },
+  {
+   "en": "Optimization. Table 6 reports architecture, optimization, and checkpoint settings. Each backbone has its own trained router, reused across memory budgets. Scheduled steps specify the training horizon; evaluation uses the earlier checkpoint listed in the table.",
+   "zh": "优化。 表 6 报告了架构、优化和检查点设置。 每个主干都有其自己训练好的路由器，并在不同内存预算间复用。 计划步骤指定了训练范围；评估使用表中列出的较早的检查点。",
+   "sents": [
+    {
+     "en": "Optimization.",
+     "zh": "优化。"
+    },
+    {
+     "en": "Table 6 reports architecture, optimization, and checkpoint settings.",
+     "zh": "表 6 报告了架构、优化和检查点设置。"
+    },
+    {
+     "en": "Each backbone has its own trained router, reused across memory budgets.",
+     "zh": "每个主干都有其自己训练好的路由器，并在不同内存预算间复用。"
+    },
+    {
+     "en": "Scheduled steps specify the training horizon; evaluation uses the earlier checkpoint listed in the table.",
+     "zh": "计划步骤指定了训练范围；评估使用表中列出的较早的检查点。"
+    }
+   ]
+  },
+  {
+   "en": "This section describes the construction and evaluation of RememBench and illustrates its visual diversity. T2V test scenarios are disjoint from router training. I2V uses initial frames from DL3DV rather than the Sekai frames used for training, together with camera trajectories not seen during training.",
+   "zh": "本节介绍 RememBench 的构建与评估，并展示其视觉多样性。 T2V 测试场景与路由器训练数据相互独立。 I2V 使用来自 DL3DV 而非训练所用 Sekai 帧的初始帧，并结合训练中未见过的相机轨迹。",
+   "sents": [
+    {
+     "en": "This section describes the construction and evaluation of RememBench and illustrates its visual diversity.",
+     "zh": "本节介绍 RememBench 的构建与评估，并展示其视觉多样性。"
+    },
+    {
+     "en": "T2V test scenarios are disjoint from router training.",
+     "zh": "T2V 测试场景与路由器训练数据相互独立。"
+    },
+    {
+     "en": "I2V uses initial frames from DL3DV rather than the Sekai frames used for training, together with camera trajectories not seen during training.",
+     "zh": "I2V 使用来自 DL3DV 而非训练所用 Sekai 帧的初始帧，并结合训练中未见过的相机轨迹。"
+    }
+   ]
+  },
+  {
+   "en": "T2V prompts and screening. We adapt Ring Forcing’s three-stage appear–disappear–reappear design ( Xue et al., 2026 ) into four prompt segments with a Claude agent: the object appears, disappears, remains out of sight, and reappears. The candidate pool contains 466 scenes covering cases, drawers, doors, lids, covers, tins, hinges, latches, screw tops, and sliding covers. The nominal prompt transitions occur at 3.6, 6.2, and 11.2 seconds. The third segment therefore requests five seconds with the object out of sight, exceeding the largest sliding-window baseline’s approximately three seconds of recent context. Each generated clip contains 379 frames at 24 fps; the prompt schedule specifies the intended action timing, not the exact frame at which a generated action occurs.",
+   "zh": "T2V提示词与筛选。 我们将Ring Forcing的三阶段“出现—消失—再现”设计（Xue et al., 2026）改编为与Claude智能体协作的四个提示词片段：物体出现、消失、保持不可见、再次出现。 候选池包含466个场景，涵盖盒子、抽屉、门、盖子、罩子、罐子、铰链、门闩、旋盖和滑动盖等情况。 标称的提示词转换发生在3.6秒、6.2秒和11.2秒。 因此第三个片段要求物体保持不可见五秒钟，超过了最大的滑动窗口基线约三秒的近期上下文范围。 每个生成的视频片段包含379帧，帧率为24 fps；提示词时间表规定了预期动作的时间点，而非生成动作实际发生的精确帧。",
+   "sents": [
+    {
+     "en": "T2V prompts and screening.",
+     "zh": "T2V提示词与筛选。"
+    },
+    {
+     "en": "We adapt Ring Forcing’s three-stage appear–disappear–reappear design ( Xue et al., 2026 ) into four prompt segments with a Claude agent: the object appears, disappears, remains out of sight, and reappears.",
+     "zh": "我们将Ring Forcing的三阶段“出现—消失—再现”设计（Xue et al., 2026）改编为与Claude智能体协作的四个提示词片段：物体出现、消失、保持不可见、再次出现。"
+    },
+    {
+     "en": "The candidate pool contains 466 scenes covering cases, drawers, doors, lids, covers, tins, hinges, latches, screw tops, and sliding covers.",
+     "zh": "候选池包含466个场景，涵盖盒子、抽屉、门、盖子、罩子、罐子、铰链、门闩、旋盖和滑动盖等情况。"
+    },
+    {
+     "en": "The nominal prompt transitions occur at 3.6, 6.2, and 11.2 seconds.",
+     "zh": "标称的提示词转换发生在3.6秒、6.2秒和11.2秒。"
+    },
+    {
+     "en": "The third segment therefore requests five seconds with the object out of sight, exceeding the largest sliding-window baseline’s approximately three seconds of recent context.",
+     "zh": "因此第三个片段要求物体保持不可见五秒钟，超过了最大的滑动窗口基线约三秒的近期上下文范围。"
+    },
+    {
+     "en": "Each generated clip contains 379 frames at 24 fps; the prompt schedule specifies the intended action timing, not the exact frame at which a generated action occurs.",
+     "zh": "每个生成的视频片段包含379帧，帧率为24 fps；提示词时间表规定了预期动作的时间点，而非生成动作实际发生的精确帧。"
+    }
+   ]
+  },
+  {
+   "en": "For each prompt, we generate one H3-AR rollout and screen it for compliance with the four segments. We retain 100 scenes, excluding 366. A rollout in which the object never disappears or never returns has no valid departure–revisit pair and does not test the memory behavior of interest. Figure 7 shows these two failure modes. The retained scene list and noise seeds are fixed across the methods and budgets being compared.",
+   "zh": "对于每个提示词，我们生成一次 H3-AR 回放，并筛查其是否符合四个片段的要求。 我们保留 100 个场景，排除 366 个。 如果某次回放中物体从未消失或从未重新出现，则不存在有效的“离开–重现”对，也无法测试我们所关注的记忆行为。 图 7 展示了这两种失败模式。 保留的场景列表和噪声种子在所有被比较的方法与预算之间保持固定。",
+   "sents": [
+    {
+     "en": "For each prompt, we generate one H3-AR rollout and screen it for compliance with the four segments.",
+     "zh": "对于每个提示词，我们生成一次 H3-AR 回放，并筛查其是否符合四个片段的要求。"
+    },
+    {
+     "en": "We retain 100 scenes, excluding 366.",
+     "zh": "我们保留 100 个场景，排除 366 个。"
+    },
+    {
+     "en": "A rollout in which the object never disappears or never returns has no valid departure–revisit pair and does not test the memory behavior of interest.",
+     "zh": "如果某次回放中物体从未消失或从未重新出现，则不存在有效的“离开–重现”对，也无法测试我们所关注的记忆行为。"
+    },
+    {
+     "en": "Figure 7 shows these two failure modes.",
+     "zh": "图 7 展示了这两种失败模式。"
+    },
+    {
+     "en": "The retained scene list and noise seeds are fixed across the methods and budgets being compared.",
+     "zh": "保留的场景列表和噪声种子在所有被比较的方法与预算之间保持固定。"
+    }
+   ]
+  },
+  {
+   "en": "I2V initial frames and prompts. We take initial frames from DL3DV ( Ling et al., 2023 ) , center-crop them to the backbone’s aspect ratio, and resize them to 832 × 480 832\\times 480 . Qwen2.5-VL-7B ( Bai et al., 2025 ) is used for scene classification, view screening, and captioning. The classification pass separates indoor and outdoor scenes. The screening pass checks eye-level views in both classes and overhead cover in outdoor scenes only. A covered outdoor scene is eligible for rotation alone; it is not used for translation. Ambiguous binary replies, containing both or neither expected answer, are not assigned a default class. The final set contains 50 indoor and 100 outdoor scenes; the selected outdoor scenes support both trajectory types in Table 8 . The captioning pass produces a scene prompt describing visible content without prescribing camera motion, so the camera trajectory is supplied through the backbone’s motion conditioning rather than through the text prompt. Table 7 lists the scene-classification, eye-level screening, and captioning prompts.",
+   "zh": "I2V 的初始帧与提示词。 我们从 DL3DV ( Ling et al., 2023 ) 中获取初始帧，进行中心裁剪以匹配骨干网络的宽高比，并将其调整为 832 × 480 832\\times 480 的尺寸。 使用 Qwen2.5-VL-7B ( Bai et al., 2025 ) 进行场景分类、视角筛选和字幕生成。 分类步骤区分室内与室外场景。 筛选步骤检查两类场景中的平视视角，并仅对室外场景检查俯视遮挡情况。 有遮挡的室外场景仅可用于旋转，不用于平移。 含糊的二值回复（既包含两个预期答案，又不包含任何一个预期答案）不会被赋予默认类别。 最终集合包含 50 个室内场景和 100 个室外场景；所选的室外场景支持表 8 中的两种轨迹类型。 字幕生成步骤产出一个描述可见内容的场景提示词，而不规定相机运动，因此相机轨迹通过骨干网络的运动条件机制提供，而非通过文本提示词提供。 表 7 列出了场景分类、平视视角筛选和字幕生成的提示词。",
+   "sents": [
+    {
+     "en": "I2V initial frames and prompts.",
+     "zh": "I2V 的初始帧与提示词。"
+    },
+    {
+     "en": "We take initial frames from DL3DV ( Ling et al., 2023 ) , center-crop them to the backbone’s aspect ratio, and resize them to 832 × 480 832\\times 480 .",
+     "zh": "我们从 DL3DV ( Ling et al., 2023 ) 中获取初始帧，进行中心裁剪以匹配骨干网络的宽高比，并将其调整为 832 × 480 832\\times 480 的尺寸。"
+    },
+    {
+     "en": "Qwen2.5-VL-7B ( Bai et al., 2025 ) is used for scene classification, view screening, and captioning.",
+     "zh": "使用 Qwen2.5-VL-7B ( Bai et al., 2025 ) 进行场景分类、视角筛选和字幕生成。"
+    },
+    {
+     "en": "The classification pass separates indoor and outdoor scenes.",
+     "zh": "分类步骤区分室内与室外场景。"
+    },
+    {
+     "en": "The screening pass checks eye-level views in both classes and overhead cover in outdoor scenes only.",
+     "zh": "筛选步骤检查两类场景中的平视视角，并仅对室外场景检查俯视遮挡情况。"
+    },
+    {
+     "en": "A covered outdoor scene is eligible for rotation alone; it is not used for translation.",
+     "zh": "有遮挡的室外场景仅可用于旋转，不用于平移。"
+    },
+    {
+     "en": "Ambiguous binary replies, containing both or neither expected answer, are not assigned a default class.",
+     "zh": "含糊的二值回复（既包含两个预期答案，又不包含任何一个预期答案）不会被赋予默认类别。"
+    },
+    {
+     "en": "The final set contains 50 indoor and 100 outdoor scenes; the selected outdoor scenes support both trajectory types in Table 8 .",
+     "zh": "最终集合包含 50 个室内场景和 100 个室外场景；所选的室外场景支持表 8 中的两种轨迹类型。"
+    },
+    {
+     "en": "The captioning pass produces a scene prompt describing visible content without prescribing camera motion, so the camera trajectory is supplied through the backbone’s motion conditioning rather than through the text prompt.",
+     "zh": "字幕生成步骤产出一个描述可见内容的场景提示词，而不规定相机运动，因此相机轨迹通过骨干网络的运动条件机制提供，而非通过文本提示词提供。"
+    },
+    {
+     "en": "Table 7 lists the scene-classification, eye-level screening, and captioning prompts.",
+     "zh": "表 7 列出了场景分类、平视视角筛选和字幕生成的提示词。"
+    }
+   ]
+  },
+  {
+   "en": "I2V camera trajectories. All 150 scenes have in-place rotation trajectories, with a left or right direction drawn once per scene and shared across settings. For 90 ∘ 90^{\\circ} and 180 ∘ 180^{\\circ} , yaw increases linearly to the specified angle at the midpoint and then reverses to its initial value. The 360 ∘ 360^{\\circ} trajectory instead completes one continuous full turn.",
+   "zh": "I2V 相机轨迹。 所有 150 个场景均采用原地旋转轨迹，每个场景随机抽取一次左转或右转方向，并在各设置之间共享。 对于 90 ∘ 90^{\\circ} 和 180 ∘ 180^{\\circ}，偏航角在中点处线性增加至指定角度，然后再返回初始值。 360 ∘ 360^{\\circ} 轨迹则完成一次连续的完整旋转。",
+   "sents": [
+    {
+     "en": "I2V camera trajectories.",
+     "zh": "I2V 相机轨迹。"
+    },
+    {
+     "en": "All 150 scenes have in-place rotation trajectories, with a left or right direction drawn once per scene and shared across settings.",
+     "zh": "所有 150 个场景均采用原地旋转轨迹，每个场景随机抽取一次左转或右转方向，并在各设置之间共享。"
+    },
+    {
+     "en": "For 90 ∘ 90^{\\circ} and 180 ∘ 180^{\\circ} , yaw increases linearly to the specified angle at the midpoint and then reverses to its initial value.",
+     "zh": "对于 90 ∘ 90^{\\circ} 和 180 ∘ 180^{\\circ}，偏航角在中点处线性增加至指定角度，然后再返回初始值。"
+    },
+    {
+     "en": "The 360 ∘ 360^{\\circ} trajectory instead completes one continuous full turn.",
+     "zh": "360 ∘ 360^{\\circ} 轨迹则完成一次连续的完整旋转。"
+    }
+   ]
+  },
+  {
+   "en": "For the 100 outdoor scenes, Depth Anything 3 ( Lin et al., 2025 ) estimates depth from the initial frame. We use conservative free-depth estimates around the forward direction to define a scene-specific straight path into the scene and back. The translation distance is bounded by the estimated free space. Rotation is superimposed on this out-and-back translation, using the same three angular settings. Each input camera trajectory ends at its initial position and orientation.",
+   "zh": "对于100个室外场景，Depth Anything 3（Lin et al., 2025）从初始帧估计深度。 我们在前向方向周围使用保守的自由深度估计来定义一条特定于场景的进入场景并返回的直线路径。 平移距离受估计的自由空间约束。 旋转叠加在这一往返平移之上，使用相同的三种角度设置。 每条输入相机轨迹都终止于其初始位置和朝向。",
+   "sents": [
+    {
+     "en": "For the 100 outdoor scenes, Depth Anything 3 ( Lin et al., 2025 ) estimates depth from the initial frame.",
+     "zh": "对于100个室外场景，Depth Anything 3（Lin et al., 2025）从初始帧估计深度。"
+    },
+    {
+     "en": "We use conservative free-depth estimates around the forward direction to define a scene-specific straight path into the scene and back.",
+     "zh": "我们在前向方向周围使用保守的自由深度估计来定义一条特定于场景的进入场景并返回的直线路径。"
+    },
+    {
+     "en": "The translation distance is bounded by the estimated free space.",
+     "zh": "平移距离受估计的自由空间约束。"
+    },
+    {
+     "en": "Rotation is superimposed on this out-and-back translation, using the same three angular settings.",
+     "zh": "旋转叠加在这一往返平移之上，使用相同的三种角度设置。"
+    },
+    {
+     "en": "Each input camera trajectory ends at its initial position and orientation.",
+     "zh": "每条输入相机轨迹都终止于其初始位置和朝向。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 8 shows objects when first revealed in T2V rollouts and the conditioning frames for I2V, illustrating the visual diversity of the two splits.",
+   "zh": "图 8 展示了 T2V 生成结果中首次显现的物体以及 I2V 的条件帧，展示了这两个划分的视觉多样性。",
+   "sents": null
+  },
+  {
+   "en": "Generation and matched budgets. To isolate memory quality, all methods use the same prompts and noise seed for each scene, with a shared prompt schedule for T2V and the same conditioning frame and input camera trajectory for I2V. T2V generates 379 379 frames at 24 24 fps ( 23 23 chunks); I2V generates 253 253 frames at 16 16 fps ( 16 16 chunks). Both use four denoising steps per chunk. Retrieval methods retain two chunks in the sliding window plus one or two chunks of far memory. Base instead retains three or four recent chunks, matching the active visual KV budget. All methods use the same backbone-specific attention sink. Scores are computed on the original rollouts, before the compression used for the Video Viewer .",
+   "zh": "生成与匹配的预算。 为了隔离记忆质量，所有方法在每个场景中使用相同的提示词和噪声种子，T2V 共享同一提示词调度，I2V 使用相同的条件帧和输入相机轨迹。 T2V 以 24 24 fps 生成 379 379 帧（23 23 个分块）；I2V 以 16 16 fps 生成 253 253 帧（16 16 个分块）。 两者在每个分块中都使用四个去噪步骤。 检索方法在滑动窗口中保留两个分块，外加一到两个分块的远期记忆。 Base 则保留最近的三到四个分块，以匹配活跃的视觉 KV 预算。 所有方法都使用相同的针对骨干网络的注意力汇聚（attention sink）。 分数在原始 rollout 上计算，即在用于 Video Viewer 的压缩之前进行。",
+   "sents": [
+    {
+     "en": "Generation and matched budgets.",
+     "zh": "生成与匹配的预算。"
+    },
+    {
+     "en": "To isolate memory quality, all methods use the same prompts and noise seed for each scene, with a shared prompt schedule for T2V and the same conditioning frame and input camera trajectory for I2V.",
+     "zh": "为了隔离记忆质量，所有方法在每个场景中使用相同的提示词和噪声种子，T2V 共享同一提示词调度，I2V 使用相同的条件帧和输入相机轨迹。"
+    },
+    {
+     "en": "T2V generates 379 379 frames at 24 24 fps ( 23 23 chunks); I2V generates 253 253 frames at 16 16 fps ( 16 16 chunks).",
+     "zh": "T2V 以 24 24 fps 生成 379 379 帧（23 23 个分块）；I2V 以 16 16 fps 生成 253 253 帧（16 16 个分块）。"
+    },
+    {
+     "en": "Both use four denoising steps per chunk.",
+     "zh": "两者在每个分块中都使用四个去噪步骤。"
+    },
+    {
+     "en": "Retrieval methods retain two chunks in the sliding window plus one or two chunks of far memory.",
+     "zh": "检索方法在滑动窗口中保留两个分块，外加一到两个分块的远期记忆。"
+    },
+    {
+     "en": "Base instead retains three or four recent chunks, matching the active visual KV budget.",
+     "zh": "Base 则保留最近的三到四个分块，以匹配活跃的视觉 KV 预算。"
+    },
+    {
+     "en": "All methods use the same backbone-specific attention sink.",
+     "zh": "所有方法都使用相同的针对骨干网络的注意力汇聚（attention sink）。"
+    },
+    {
+     "en": "Scores are computed on the original rollouts, before the compression used for the Video Viewer .",
+     "zh": "分数在原始 rollout 上计算，即在用于 Video Viewer 的压缩之前进行。"
+    }
+   ]
+  },
+  {
+   "en": "MoC adaptation. We adapt MoC ( Cai et al., 2025 ) to our frozen backbones, using mean-pooled keys to describe and retrieve historical chunks. We use the latest chunk’s mean-pooled section keys as retrieval queries. Each historical chunk is described by its mean-pooled keys and scored by its maximum dot product with these queries. The highest-scoring one or two chunks form far memory, with the same selection shared across queries, attention heads, and layers. Retrieved values have unit weights, and positional handling is the same as for MosaiChunk .",
+   "zh": "MoC 适配。 我们将 MoC（Cai et al., 2025）适配到我们的冻结主干上，使用平均池化的键来描述和检索历史块。 我们使用最新块的平均池化分区键作为检索查询。 每个历史块由其平均池化的键来描述，并通过与这些查询的最大点积进行评分。 得分最高的一到两个块构成远记忆，且在所有查询、注意力头和层之间共享相同的选择。 检索到的值的权重为单位权重，位置处理方式与 MosaiChunk 相同。",
+   "sents": [
+    {
+     "en": "MoC adaptation.",
+     "zh": "MoC 适配。"
+    },
+    {
+     "en": "We adapt MoC ( Cai et al., 2025 ) to our frozen backbones, using mean-pooled keys to describe and retrieve historical chunks.",
+     "zh": "我们将 MoC（Cai et al., 2025）适配到我们的冻结主干上，使用平均池化的键来描述和检索历史块。"
+    },
+    {
+     "en": "We use the latest chunk’s mean-pooled section keys as retrieval queries.",
+     "zh": "我们使用最新块的平均池化分区键作为检索查询。"
+    },
+    {
+     "en": "Each historical chunk is described by its mean-pooled keys and scored by its maximum dot product with these queries.",
+     "zh": "每个历史块由其平均池化的键来描述，并通过与这些查询的最大点积进行评分。"
+    },
+    {
+     "en": "The highest-scoring one or two chunks form far memory, with the same selection shared across queries, attention heads, and layers.",
+     "zh": "得分最高的一到两个块构成远记忆，且在所有查询、注意力头和层之间共享相同的选择。"
+    },
+    {
+     "en": "Retrieved values have unit weights, and positional handling is the same as for MosaiChunk .",
+     "zh": "检索到的值的权重为单位权重，位置处理方式与 MosaiChunk 相同。"
+    }
+   ]
+  },
+  {
+   "en": "T2V frame pairs. For each retained scene, we manually mark a departure frame in which the object is fully visible before the container closes. Its frame index is shared across methods. We then mark each rollout’s revisit frame separately, when the container has reopened and its contents are visible. This accommodates differences in generated action timing. The annotation interface in Figure 9 uses linked playback to mark the common departure frame. We then select and scrub each rollout individually to mark its revisit frame; the saved frame pairs appear below.",
+   "zh": "T2V 帧对。 对于每个保留的场景，我们手动标注一个出发帧，在该帧中物体在容器关闭前完全可见。 其帧索引在各方法之间共享。 然后，我们分别为每次 rollout 单独标注重访帧，即容器已重新打开且其中内容可见的帧。 这样可以容纳生成动作时序上的差异。 图 9 中的标注界面使用联动播放来标注共同的出发帧。 然后我们逐一选择并拖动查看每次 rollout，以标注其重访帧；已保存的帧对显示在下方。",
+   "sents": [
+    {
+     "en": "T2V frame pairs.",
+     "zh": "T2V 帧对。"
+    },
+    {
+     "en": "For each retained scene, we manually mark a departure frame in which the object is fully visible before the container closes.",
+     "zh": "对于每个保留的场景，我们手动标注一个出发帧，在该帧中物体在容器关闭前完全可见。"
+    },
+    {
+     "en": "Its frame index is shared across methods.",
+     "zh": "其帧索引在各方法之间共享。"
+    },
+    {
+     "en": "We then mark each rollout’s revisit frame separately, when the container has reopened and its contents are visible.",
+     "zh": "然后，我们分别为每次 rollout 单独标注重访帧，即容器已重新打开且其中内容可见的帧。"
+    },
+    {
+     "en": "This accommodates differences in generated action timing.",
+     "zh": "这样可以容纳生成动作时序上的差异。"
+    },
+    {
+     "en": "The annotation interface in Figure 9 uses linked playback to mark the common departure frame.",
+     "zh": "图 9 中的标注界面使用联动播放来标注共同的出发帧。"
+    },
+    {
+     "en": "We then select and scrub each rollout individually to mark its revisit frame; the saved frame pairs appear below.",
+     "zh": "然后我们逐一选择并拖动查看每次 rollout，以标注其重访帧；已保存的帧对显示在下方。"
+    }
+   ]
+  },
+  {
+   "en": "I2V frame pairs. The departure frame is the conditioning frame. We reconstruct each generated rollout with Pi3X ( Wang et al., 2026 ) in a single pass, using every decoded frame. Reconstruction inputs are resized to approximately 255,000 pixels, with dimensions rounded to multiples of 14. The reconstructed poses determine the revisit frame independently for each method.",
+   "zh": "I2V 帧对。 出发帧即为条件帧。 我们使用 Pi3X（Wang et al., 2026）在单次推理中，利用每个解码后的帧来重构每条生成的 rollout。 重构输入被缩放到约 255,000 像素，尺寸取整为 14 的倍数。 重构得到的位姿针对每种方法独立确定重访帧。",
+   "sents": [
+    {
+     "en": "I2V frame pairs.",
+     "zh": "I2V 帧对。"
+    },
+    {
+     "en": "The departure frame is the conditioning frame.",
+     "zh": "出发帧即为条件帧。"
+    },
+    {
+     "en": "We reconstruct each generated rollout with Pi3X ( Wang et al., 2026 ) in a single pass, using every decoded frame.",
+     "zh": "我们使用 Pi3X（Wang et al., 2026）在单次推理中，利用每个解码后的帧来重构每条生成的 rollout。"
+    },
+    {
+     "en": "Reconstruction inputs are resized to approximately 255,000 pixels, with dimensions rounded to multiples of 14.",
+     "zh": "重构输入被缩放到约 255,000 像素，尺寸取整为 14 的倍数。"
+    },
+    {
+     "en": "The reconstructed poses determine the revisit frame independently for each method.",
+     "zh": "重构得到的位姿针对每种方法独立确定重访帧。"
+    }
+   ]
+  },
+  {
+   "en": "For rotation, the turnaround is the frame with the largest angular deviation of its viewing direction from that of the conditioning frame. For translation, it is the frame farthest from the initial position. Among frames from the turnaround onward, we select the revisit frame with the smallest unsigned angle between its reconstructed viewing direction and that of the conditioning frame. This rule also handles a full 360 ∘ 360^{\\circ} turn without an angle-wrap ambiguity. CLIP and LPIPS are evaluated on the selected original images.",
+   "zh": "对于旋转，回转帧是其观察方向相对于条件帧观察方向的角偏差最大的帧。 对于平移，回转帧是距离初始位置最远的帧。 在从回转帧开始的各帧中，我们选择其重建观察方向与条件帧观察方向之间的无符号夹角最小的重访帧。 该规则同样能处理完整的 360^{\\circ} 旋转，而不会出现角度回绕的歧义。 CLIP 和 LPIPS 在所选的原始图像上进行评估。",
+   "sents": [
+    {
+     "en": "For rotation, the turnaround is the frame with the largest angular deviation of its viewing direction from that of the conditioning frame.",
+     "zh": "对于旋转，回转帧是其观察方向相对于条件帧观察方向的角偏差最大的帧。"
+    },
+    {
+     "en": "For translation, it is the frame farthest from the initial position.",
+     "zh": "对于平移，回转帧是距离初始位置最远的帧。"
+    },
+    {
+     "en": "Among frames from the turnaround onward, we select the revisit frame with the smallest unsigned angle between its reconstructed viewing direction and that of the conditioning frame.",
+     "zh": "在从回转帧开始的各帧中，我们选择其重建观察方向与条件帧观察方向之间的无符号夹角最小的重访帧。"
+    },
+    {
+     "en": "This rule also handles a full 360 ∘ 360^{\\circ} turn without an angle-wrap ambiguity.",
+     "zh": "该规则同样能处理完整的 360^{\\circ} 旋转，而不会出现角度回绕的歧义。"
+    },
+    {
+     "en": "CLIP and LPIPS are evaluated on the selected original images.",
+     "zh": "CLIP 和 LPIPS 在所选的原始图像上进行评估。"
+    }
+   ]
+  },
+  {
+   "en": "Metrics and aggregation. Table 9 specifies the metrics used for the T2V and I2V comparisons. CLIP and LPIPS compare the departure–revisit pair; TempSSIM and Drift summarize the full rollout. For the latter two, we first average within each video, then report the median over scenes, as for the pairwise metrics. We use the same definitions for every method and memory budget.",
+   "zh": "指标与聚合。 表 9 规定了 T2V 与 I2V 对比中使用的指标。 CLIP 和 LPIPS 对比出发–重访配对；TempSSIM 和 Drift 汇总整个回放过程。 对于后两个指标，我们与成对指标一样，先在每个视频内取平均，再报告各场景的中位数。 我们对每种方法和每个记忆预算使用相同的定义。",
+   "sents": [
+    {
+     "en": "Metrics and aggregation.",
+     "zh": "指标与聚合。"
+    },
+    {
+     "en": "Table 9 specifies the metrics used for the T2V and I2V comparisons.",
+     "zh": "表 9 规定了 T2V 与 I2V 对比中使用的指标。"
+    },
+    {
+     "en": "CLIP and LPIPS compare the departure–revisit pair; TempSSIM and Drift summarize the full rollout.",
+     "zh": "CLIP 和 LPIPS 对比出发–重访配对；TempSSIM 和 Drift 汇总整个回放过程。"
+    },
+    {
+     "en": "For the latter two, we first average within each video, then report the median over scenes, as for the pairwise metrics.",
+     "zh": "对于后两个指标，我们与成对指标一样，先在每个视频内取平均，再报告各场景的中位数。"
+    },
+    {
+     "en": "We use the same definitions for every method and memory budget.",
+     "zh": "我们对每种方法和每个记忆预算使用相同的定义。"
+    }
+   ]
+  },
+  {
+   "en": "For Drift, chunk boundaries follow the backbone’s decoded output: H3-AR has an initial five-frame chunk followed by 17-frame chunks; LingBot-World-Infinity has an initial 13-frame chunk followed by 16-frame chunks. This avoids treating an arbitrary fixed-length frame partition as the model’s chunk structure.",
+   "zh": "对于 Drift，分块边界遵循主干模型解码输出：H3-AR 首先有一个五帧的初始分块，随后是 17 帧的分块；LingBot-World-Infinity 首先有一个 13 帧的初始分块，随后是 16 帧的分块。 这避免了将任意固定长度的帧划分当作模型的分块结构。",
+   "sents": [
+    {
+     "en": "For Drift, chunk boundaries follow the backbone’s decoded output: H3-AR has an initial five-frame chunk followed by 17-frame chunks; LingBot-World-Infinity has an initial 13-frame chunk followed by 16-frame chunks.",
+     "zh": "对于 Drift，分块边界遵循主干模型解码输出：H3-AR 首先有一个五帧的初始分块，随后是 17 帧的分块；LingBot-World-Infinity 首先有一个 13 帧的初始分块，随后是 16 帧的分块。"
+    },
+    {
+     "en": "This avoids treating an arbitrary fixed-length frame partition as the model’s chunk structure.",
+     "zh": "这避免了将任意固定长度的帧划分当作模型的分块结构。"
+    }
+   ]
+  },
+  {
+   "en": "Figures 10 and 11 show three scenes per setting, using the frame-pair protocol in Section B.3 . The first and last columns show departure and revisit frames, with intermediate frames illustrating the intervening motion.",
+   "zh": "图10和图11展示了每种设置下的三个场景，使用了第B.3节中的帧对协议。 第一列和最后一列分别展示出发帧和重访帧，中间的帧展示了期间发生的运动。",
+   "sents": [
+    {
+     "en": "Figures 10 and 11 show three scenes per setting, using the frame-pair protocol in Section B.3 .",
+     "zh": "图10和图11展示了每种设置下的三个场景，使用了第B.3节中的帧对协议。"
+    },
+    {
+     "en": "The first and last columns show departure and revisit frames, with intermediate frames illustrating the intervening motion.",
+     "zh": "第一列和最后一列分别展示出发帧和重访帧，中间的帧展示了期间发生的运动。"
+    }
+   ]
+  },
+  {
+   "en": "Within each scene, methods share the prompt and noise seed; I2V methods also share the conditioning frame and input camera trajectory. Rows therefore differ only in the memory supplied to the backbone. Rows are Base, MoC, and Ours ( MosaiChunk ), from top to bottom. The T2V examples use two chunks of far memory; the I2V examples use one, as stated in the captions. The Video Viewer provides synchronized full rollouts together with the departure–revisit frame pairs and their CLIP scores.",
+   "zh": "在每个场景内，各方法共享相同的提示词与噪声种子；I2V 方法还共享条件帧与输入相机轨迹。 因此各行仅在提供给骨干网络的记忆上有所不同。 各行从上到下依次为 Base、MoC 和 Ours（ MosaiChunk ）。 T2V 示例使用两段远端记忆；I2V 示例使用一段，如图注所述。 视频查看器提供同步的完整生成结果，以及离开—重访帧对及其 CLIP 分数。",
+   "sents": [
+    {
+     "en": "Within each scene, methods share the prompt and noise seed; I2V methods also share the conditioning frame and input camera trajectory.",
+     "zh": "在每个场景内，各方法共享相同的提示词与噪声种子；I2V 方法还共享条件帧与输入相机轨迹。"
+    },
+    {
+     "en": "Rows therefore differ only in the memory supplied to the backbone.",
+     "zh": "因此各行仅在提供给骨干网络的记忆上有所不同。"
+    },
+    {
+     "en": "Rows are Base, MoC, and Ours ( MosaiChunk ), from top to bottom.",
+     "zh": "各行从上到下依次为 Base、MoC 和 Ours（ MosaiChunk ）。"
+    },
+    {
+     "en": "The T2V examples use two chunks of far memory; the I2V examples use one, as stated in the captions.",
+     "zh": "T2V 示例使用两段远端记忆；I2V 示例使用一段，如图注所述。"
+    },
+    {
+     "en": "The Video Viewer provides synchronized full rollouts together with the departure–revisit frame pairs and their CLIP scores.",
+     "zh": "视频查看器提供同步的完整生成结果，以及离开—重访帧对及其 CLIP 分数。"
+    }
+   ]
+  },
+  {
+   "en": "Public benchmarks. We evaluate I2V generation on WBench ( Ying et al., 2026 ) and WorldMark ( Xu et al., 2026 ) , two general-purpose benchmarks for interactive video world models, and report every metric in their consistency and video-quality dimensions. We compare Base and MosaiChunk at one- and two-chunk far-memory budgets. Base matches the total active KV cache budget by retaining additional recent chunks instead of far memory. Scores are reported on a 0 0 – 100 100 scale, with higher values indicating better performance. Both benchmarks use the frozen LingBot-World-Infinity backbone at 832 × 480 832\\times 480 and 16 16 fps, with four denoising steps per chunk and identical noise seeds across compared methods.",
+   "zh": "公开基准测试。 我们在 WBench（Ying et al., 2026）和 WorldMark（Xu et al., 2026）上评估 I2V 生成，这两个基准是面向交互式视频世界模型的通用基准，我们报告其在一致性和视频质量维度上的所有指标。 我们在一个和两个 chunk 的远记忆预算下比较 Base 与 MosaiChunk。 Base 通过保留额外的近期 chunk（而非远记忆）来匹配总活跃 KV 缓存预算。 分数以 0–100 的量表报告，数值越高表示性能越好。 两个基准均使用冻结的 LingBot-World-Infinity 骨干模型，分辨率为 832×480、帧率为 16 fps，每个 chunk 执行四步去噪，且各对比方法使用相同的噪声种子。",
+   "sents": [
+    {
+     "en": "Public benchmarks.",
+     "zh": "公开基准测试。"
+    },
+    {
+     "en": "We evaluate I2V generation on WBench ( Ying et al., 2026 ) and WorldMark ( Xu et al., 2026 ) , two general-purpose benchmarks for interactive video world models, and report every metric in their consistency and video-quality dimensions.",
+     "zh": "我们在 WBench（Ying et al., 2026）和 WorldMark（Xu et al., 2026）上评估 I2V 生成，这两个基准是面向交互式视频世界模型的通用基准，我们报告其在一致性和视频质量维度上的所有指标。"
+    },
+    {
+     "en": "We compare Base and MosaiChunk at one- and two-chunk far-memory budgets.",
+     "zh": "我们在一个和两个 chunk 的远记忆预算下比较 Base 与 MosaiChunk。"
+    },
+    {
+     "en": "Base matches the total active KV cache budget by retaining additional recent chunks instead of far memory.",
+     "zh": "Base 通过保留额外的近期 chunk（而非远记忆）来匹配总活跃 KV 缓存预算。"
+    },
+    {
+     "en": "Scores are reported on a 0 0 – 100 100 scale, with higher values indicating better performance.",
+     "zh": "分数以 0–100 的量表报告，数值越高表示性能越好。"
+    },
+    {
+     "en": "Both benchmarks use the frozen LingBot-World-Infinity backbone at 832 × 480 832\\times 480 and 16 16 fps, with four denoising steps per chunk and identical noise seeds across compared methods.",
+     "zh": "两个基准均使用冻结的 LingBot-World-Infinity 骨干模型，分辨率为 832×480、帧率为 16 fps，每个 chunk 执行四步去噪，且各对比方法使用相同的噪声种子。"
+    }
+   ]
+  },
+  {
+   "en": "Table 3 summarizes selected metrics; full results and metric descriptions follow.",
+   "zh": "表 3 总结了选定的指标；完整结果和指标说明见后文。",
+   "sents": null
+  },
+  {
+   "en": "The relatively small camera rotations in these evaluations can preserve substantial overlap with earlier views, as in our 90 ∘ 90^{\\circ} setting, reducing the need to recall content beyond the sliding window. The sliding-window baseline already achieves strong consistency scores in these evaluations. Nevertheless, MosaiChunk improves every consistency metric reported in Table 3 at both budgets, while also improving the video-quality scores.",
+   "zh": "这些评测中相对较小的相机旋转能够与较早的视角保持大量重叠，例如我们 90 ∘ 90^{\\circ} 的设置，从而减少了对滑动窗口之外内容回忆的需求。 滑动窗口基线在这些评测中已经取得了很强的一致性分数。 尽管如此，MosaiChunk 在两种预算下都提升了表 3 中报告的每一项一致性指标，同时也提高了视频质量分数。",
+   "sents": [
+    {
+     "en": "The relatively small camera rotations in these evaluations can preserve substantial overlap with earlier views, as in our 90 ∘ 90^{\\circ} setting, reducing the need to recall content beyond the sliding window.",
+     "zh": "这些评测中相对较小的相机旋转能够与较早的视角保持大量重叠，例如我们 90 ∘ 90^{\\circ} 的设置，从而减少了对滑动窗口之外内容回忆的需求。"
+    },
+    {
+     "en": "The sliding-window baseline already achieves strong consistency scores in these evaluations.",
+     "zh": "滑动窗口基线在这些评测中已经取得了很强的一致性分数。"
+    },
+    {
+     "en": "Nevertheless, MosaiChunk improves every consistency metric reported in Table 3 at both budgets, while also improving the video-quality scores.",
+     "zh": "尽管如此，MosaiChunk 在两种预算下都提升了表 3 中报告的每一项一致性指标，同时也提高了视频质量分数。"
+    }
+   ]
+  },
+  {
+   "en": "WBench. We use the navigation split with 158 158 cases. Spatial and Gated Spatial are defined on its 60 60 round-trip cases, and Subject is evaluated on 103 103 cases; the remaining metrics use all 158 158 cases. The released adapter converts navigation commands into camera poses and combines segment prompts while preserving perspective information and command durations. Table 10 reports the full results. The metric descriptions below follow the released evaluation implementation.",
+   "zh": "WBench。 我们使用包含 158 158 个案例的导航拆分。 Spatial 和 Gated Spatial 在其 60 60 个往返案例上定义，Subject 在 103 103 个案例上评估；其余指标使用全部 158 158 个案例。 发布的适配器将导航指令转换为相机位姿，并在保留透视信息和指令时长的同时合并片段提示。 表 10 报告了完整结果。 下面的指标描述遵循已发布的评估实现。",
+   "sents": [
+    {
+     "en": "WBench.",
+     "zh": "WBench。"
+    },
+    {
+     "en": "We use the navigation split with 158 158 cases.",
+     "zh": "我们使用包含 158 158 个案例的导航拆分。"
+    },
+    {
+     "en": "Spatial and Gated Spatial are defined on its 60 60 round-trip cases, and Subject is evaluated on 103 103 cases; the remaining metrics use all 158 158 cases.",
+     "zh": "Spatial 和 Gated Spatial 在其 60 60 个往返案例上定义，Subject 在 103 103 个案例上评估；其余指标使用全部 158 158 个案例。"
+    },
+    {
+     "en": "The released adapter converts navigation commands into camera poses and combines segment prompts while preserving perspective information and command durations.",
+     "zh": "发布的适配器将导航指令转换为相机位姿，并在保留透视信息和指令时长的同时合并片段提示。"
+    },
+    {
+     "en": "Table 10 reports the full results.",
+     "zh": "表 10 报告了完整结果。"
+    },
+    {
+     "en": "The metric descriptions below follow the released evaluation implementation.",
+     "zh": "下面的指标描述遵循已发布的评估实现。"
+    }
+   ]
+  },
+  {
+   "en": "For consistency , Background compares CLIP features across time. Spatial compares the initial and returning views using DreamSim, with the return frame selected from estimated camera orientations. Gated Spatial downweights this similarity when intermediate frames show little departure from the initial view. Segment reports the fraction of videos without detected shot boundaries. Perspective measures the stability and presence of a tracked subject’s image-plane centroid. Subject compares masked subject features across adjacent frames and against the first frame. Geometric measures agreement between estimated depths after reprojection, and Photometric measures RGB agreement under the same geometric warping.",
+   "zh": "为保持一致性，Background 跨时间比较 CLIP 特征。 Spatial 使用 DreamSim 比较初始视角与返回视角，其中返回帧根据估计的相机朝向选取。 当中间帧显示几乎未偏离初始视角时，Gated Spatial 会降低该相似度的权重。 Segment 报告未检测到镜头切换边界的视频所占比例。 Perspective 衡量被跟踪主体在图像平面上质心的稳定性与存在性。 Subject 比较相邻帧之间以及与第一帧相比的掩码主体特征。 Geometric 衡量重投影后估计深度之间的一致性，Photometric 衡量在相同几何变形下 RGB 的一致性。",
+   "sents": [
+    {
+     "en": "For consistency , Background compares CLIP features across time.",
+     "zh": "为保持一致性，Background 跨时间比较 CLIP 特征。"
+    },
+    {
+     "en": "Spatial compares the initial and returning views using DreamSim, with the return frame selected from estimated camera orientations.",
+     "zh": "Spatial 使用 DreamSim 比较初始视角与返回视角，其中返回帧根据估计的相机朝向选取。"
+    },
+    {
+     "en": "Gated Spatial downweights this similarity when intermediate frames show little departure from the initial view.",
+     "zh": "当中间帧显示几乎未偏离初始视角时，Gated Spatial 会降低该相似度的权重。"
+    },
+    {
+     "en": "Segment reports the fraction of videos without detected shot boundaries.",
+     "zh": "Segment 报告未检测到镜头切换边界的视频所占比例。"
+    },
+    {
+     "en": "Perspective measures the stability and presence of a tracked subject’s image-plane centroid.",
+     "zh": "Perspective 衡量被跟踪主体在图像平面上质心的稳定性与存在性。"
+    },
+    {
+     "en": "Subject compares masked subject features across adjacent frames and against the first frame.",
+     "zh": "Subject 比较相邻帧之间以及与第一帧相比的掩码主体特征。"
+    },
+    {
+     "en": "Geometric measures agreement between estimated depths after reprojection, and Photometric measures RGB agreement under the same geometric warping.",
+     "zh": "Geometric 衡量重投影后估计深度之间的一致性，Photometric 衡量在相同几何变形下 RGB 的一致性。"
+    }
+   ]
+  },
+  {
+   "en": "For video quality , Aesthetic uses a learned aesthetic predictor and Imaging uses MUSIQ to assess technical image quality. Flickering penalizes pixel changes between successive frames, Dynamic detects motion from optical flow, and Smoothness evaluates frame-interpolation error. HPSv3-Norm reports percentile-normalized human-preference scores.",
+   "zh": "在视频质量方面，Aesthetic 使用学习得到的审美预测器，Imaging 使用 MUSIQ 来评估技术性图像质量。 Flickering 惩罚相邻帧之间的像素变化，Dynamic 通过光流检测运动，Smoothness 评估帧插值误差。 HPSv3-Norm 报告经百分位归一化的人类偏好分数。",
+   "sents": [
+    {
+     "en": "For video quality , Aesthetic uses a learned aesthetic predictor and Imaging uses MUSIQ to assess technical image quality.",
+     "zh": "在视频质量方面，Aesthetic 使用学习得到的审美预测器，Imaging 使用 MUSIQ 来评估技术性图像质量。"
+    },
+    {
+     "en": "Flickering penalizes pixel changes between successive frames, Dynamic detects motion from optical flow, and Smoothness evaluates frame-interpolation error.",
+     "zh": "Flickering 惩罚相邻帧之间的像素变化，Dynamic 通过光流检测运动，Smoothness 评估帧插值误差。"
+    },
+    {
+     "en": "HPSv3-Norm reports percentile-normalized human-preference scores.",
+     "zh": "HPSv3-Norm 报告经百分位归一化的人类偏好分数。"
+    }
+   ]
+  },
+  {
+   "en": "Table 10 shows higher Background, Spatial, Gated Spatial, Perspective, Subject, and Geometric scores for MosaiChunk at both budgets. The improvements are not uniform across all metrics: Segment is lower at two chunks, and Photometric is slightly lower at that budget.",
+   "zh": "表10显示，在两种预算下，MosaiChunk的背景、空间、门控空间、视角、主体和几何分数均更高。 这些提升并非在所有指标上都一致：在两个分块时Segment分数更低，且在该预算下Photometric分数也略低。",
+   "sents": [
+    {
+     "en": "Table 10 shows higher Background, Spatial, Gated Spatial, Perspective, Subject, and Geometric scores for MosaiChunk at both budgets.",
+     "zh": "表10显示，在两种预算下，MosaiChunk的背景、空间、门控空间、视角、主体和几何分数均更高。"
+    },
+    {
+     "en": "The improvements are not uniform across all metrics: Segment is lower at two chunks, and Photometric is slightly lower at that budget.",
+     "zh": "这些提升并非在所有指标上都一致：在两个分块时Segment分数更低，且在该预算下Photometric分数也略低。"
+    }
+   ]
+  },
+  {
+   "en": "WorldMark. We evaluate the Real and Stylized first-person splits, each containing 125 125 videos per method and budget, and macro-average the scores across the two splits. Table 11 gives the complete results for the World Memory and Visual Quality dimensions. We use the supplied conditioning frames, prompts, and image-specific intrinsics, adjusted after center cropping. Each action segment lasts 20 20 seconds and commands 120 ∘ 120^{\\circ} of rotation or two world units of translation. Completing the final generation chunk produces 333 333 , 653 653 , or 973 973 frames for one-, two-, or three-segment trajectories, respectively.",
+   "zh": "WorldMark（世界水印）。 我们对 Real（真实）和 Stylized（风格化）两个第一视角划分进行评估，每个划分中每种方法和预算包含 125 125 个视频，并对两个划分的分数取宏平均。 表 11 给出了世界记忆与视觉质量两个维度的完整结果。 我们使用所提供的条件帧、提示词和图像特定的内参，并在中心裁剪后进行了调整。 每个动作片段持续 20 20 秒，指令为 120 ∘ 120^{\\circ} 的旋转或两个世界单位的平移。 完成最后一个生成块后，单片段、双片段或三片段轨迹分别产生 333 333 、653 653 或 973 973 帧。",
+   "sents": [
+    {
+     "en": "WorldMark.",
+     "zh": "WorldMark（世界水印）。"
+    },
+    {
+     "en": "We evaluate the Real and Stylized first-person splits, each containing 125 125 videos per method and budget, and macro-average the scores across the two splits.",
+     "zh": "我们对 Real（真实）和 Stylized（风格化）两个第一视角划分进行评估，每个划分中每种方法和预算包含 125 125 个视频，并对两个划分的分数取宏平均。"
+    },
+    {
+     "en": "Table 11 gives the complete results for the World Memory and Visual Quality dimensions.",
+     "zh": "表 11 给出了世界记忆与视觉质量两个维度的完整结果。"
+    },
+    {
+     "en": "We use the supplied conditioning frames, prompts, and image-specific intrinsics, adjusted after center cropping.",
+     "zh": "我们使用所提供的条件帧、提示词和图像特定的内参，并在中心裁剪后进行了调整。"
+    },
+    {
+     "en": "Each action segment lasts 20 20 seconds and commands 120 ∘ 120^{\\circ} of rotation or two world units of translation.",
+     "zh": "每个动作片段持续 20 20 秒，指令为 120 ∘ 120^{\\circ} 的旋转或两个世界单位的平移。"
+    },
+    {
+     "en": "Completing the final generation chunk produces 333 333 , 653 653 , or 973 973 frames for one-, two-, or three-segment trajectories, respectively.",
+     "zh": "完成最后一个生成块后，单片段、双片段或三片段轨迹分别产生 333 333 、653 653 或 973 973 帧。"
+    }
+   ]
+  },
+  {
+   "en": "Local Memory penalizes detected cuts and abrupt changes in DINOv2 features between frames sampled at equal increments of accumulated motion. Global Memory measures geometric consistency across the trajectory using VGGT-Omega reconstruction. Revisit Memory aligns outward and return frames by cumulative optical-flow arc length and compares DINOv2 features of the matched pairs, using clips that satisfy the benchmark’s return-motion checks. Aesthetic and Perceptual use the aesthetics and visual-quality tasks of Q-Align, respectively.",
+   "zh": "局部记忆对在累积运动等增量采样帧之间的 DINOv2 特征中检测到的切换和突变进行惩罚。 全局记忆利用 VGGT-Omega 重建来度量整条轨迹上的几何一致性。 重访记忆通过累积光流弧长对齐去程帧和返程帧，并比较配对帧的 DINOv2 特征，仅使用满足基准返程运动校验的视频片段。 美学评估与感知评估分别使用 Q-Align 的美学任务和视觉质量任务。",
+   "sents": [
+    {
+     "en": "Local Memory penalizes detected cuts and abrupt changes in DINOv2 features between frames sampled at equal increments of accumulated motion.",
+     "zh": "局部记忆对在累积运动等增量采样帧之间的 DINOv2 特征中检测到的切换和突变进行惩罚。"
+    },
+    {
+     "en": "Global Memory measures geometric consistency across the trajectory using VGGT-Omega reconstruction.",
+     "zh": "全局记忆利用 VGGT-Omega 重建来度量整条轨迹上的几何一致性。"
+    },
+    {
+     "en": "Revisit Memory aligns outward and return frames by cumulative optical-flow arc length and compares DINOv2 features of the matched pairs, using clips that satisfy the benchmark’s return-motion checks.",
+     "zh": "重访记忆通过累积光流弧长对齐去程帧和返程帧，并比较配对帧的 DINOv2 特征，仅使用满足基准返程运动校验的视频片段。"
+    },
+    {
+     "en": "Aesthetic and Perceptual use the aesthetics and visual-quality tasks of Q-Align, respectively.",
+     "zh": "美学评估与感知评估分别使用 Q-Align 的美学任务和视觉质量任务。"
+    }
+   ]
+  },
+  {
+   "en": "Table 11 shows improved Global and Revisit Memory at both budgets, alongside higher Aesthetic and Perceptual scores. Local Memory is slightly lower, distinguishing improved recall from local temporal stability.",
+   "zh": "表 11 显示，在两种预算下，全局记忆和重访记忆均有所提升，同时美学和感知得分也更高。 局部记忆略低，这将记忆的改善与局部时间稳定性区分开来。",
+   "sents": [
+    {
+     "en": "Table 11 shows improved Global and Revisit Memory at both budgets, alongside higher Aesthetic and Perceptual scores.",
+     "zh": "表 11 显示，在两种预算下，全局记忆和重访记忆均有所提升，同时美学和感知得分也更高。"
+    },
+    {
+     "en": "Local Memory is slightly lower, distinguishing improved recall from local temporal stability.",
+     "zh": "局部记忆略低，这将记忆的改善与局部时间稳定性区分开来。"
+    }
+   ]
+  },
+  {
+   "en": "Additional camera trajectories. Table 12 reports 90 ∘ 90^{\\circ} and 360 ∘ 360^{\\circ} turns, with and without translation, using the trajectories in Section B.1 and frame-pair selection in Section B.3 . At 90 ∘ 90^{\\circ} , the starting view remains substantially visible and the methods achieve similar scores. At 360 ∘ 360^{\\circ} , revisit consistency is lower for all methods and their relative ordering varies across settings. Thus, the benefits observed for the 180 ∘ 180^{\\circ} revisit task do not extend uniformly to every camera trajectory: limited turns preserve overlapping visual context, while full rotations remain challenging.",
+   "zh": "额外的相机轨迹。 表 12 报告了 90 ∘ 90^{\\circ} 和 360 ∘ 360^{\\circ} 转向（含平移与不含平移）的结果，其中使用了 B.1 节中的轨迹和 B.3 节中的帧对选择方法。 在 90 ∘ 90^{\\circ} 时，起始视角仍然大部分可见，各方法取得了相近的分数。 在 360 ∘ 360^{\\circ} 时，所有方法的重访一致性都较低，且它们的相对排序在不同设置下有所变化。 因此，在 180 ∘ 180^{\\circ} 重访任务中观察到的收益并不能均匀地推广到每一条相机轨迹：有限的转向保留了重叠的视觉上下文，而完整旋转仍然具有挑战性。",
+   "sents": [
+    {
+     "en": "Additional camera trajectories.",
+     "zh": "额外的相机轨迹。"
+    },
+    {
+     "en": "Table 12 reports 90 ∘ 90^{\\circ} and 360 ∘ 360^{\\circ} turns, with and without translation, using the trajectories in Section B.1 and frame-pair selection in Section B.3 .",
+     "zh": "表 12 报告了 90 ∘ 90^{\\circ} 和 360 ∘ 360^{\\circ} 转向（含平移与不含平移）的结果，其中使用了 B.1 节中的轨迹和 B.3 节中的帧对选择方法。"
+    },
+    {
+     "en": "At 90 ∘ 90^{\\circ} , the starting view remains substantially visible and the methods achieve similar scores.",
+     "zh": "在 90 ∘ 90^{\\circ} 时，起始视角仍然大部分可见，各方法取得了相近的分数。"
+    },
+    {
+     "en": "At 360 ∘ 360^{\\circ} , revisit consistency is lower for all methods and their relative ordering varies across settings.",
+     "zh": "在 360 ∘ 360^{\\circ} 时，所有方法的重访一致性都较低，且它们的相对排序在不同设置下有所变化。"
+    },
+    {
+     "en": "Thus, the benefits observed for the 180 ∘ 180^{\\circ} revisit task do not extend uniformly to every camera trajectory: limited turns preserve overlapping visual context, while full rotations remain challenging.",
+     "zh": "因此，在 180 ∘ 180^{\\circ} 重访任务中观察到的收益并不能均匀地推广到每一条相机轨迹：有限的转向保留了重叠的视觉上下文，而完整旋转仍然具有挑战性。"
+    }
+   ]
+  },
+  {
+   "en": "Per-query selection details. For the per-query selection ablation, we retrain the descriptor encoder to select historical sections independently for each query section in the latest chunk. Selecting one or two sections per query gives the one- or two-chunk far-memory budget, respectively.",
+   "zh": "逐查询的选择细节。 对于逐查询选择的消融实验，我们重新训练描述符编码器，以便为最新分块中的每个查询分块独立选择历史分节。 为每个查询选择一个或两个分节，分别对应一个或两个分块的远记忆预算。",
+   "sents": [
+    {
+     "en": "Per-query selection details.",
+     "zh": "逐查询的选择细节。"
+    },
+    {
+     "en": "For the per-query selection ablation, we retrain the descriptor encoder to select historical sections independently for each query section in the latest chunk.",
+     "zh": "对于逐查询选择的消融实验，我们重新训练描述符编码器，以便为最新分块中的每个查询分块独立选择历史分节。"
+    },
+    {
+     "en": "Selecting one or two sections per query gives the one- or two-chunk far-memory budget, respectively.",
+     "zh": "为每个查询选择一个或两个分节，分别对应一个或两个分块的远记忆预算。"
+    }
+   ]
+  },
+  {
+   "en": "Camera pose as a retrieval signal. We examine whether camera poses improve descriptor-based retrieval and whether section composition remains useful when this guidance is available. MosaiChunk scores historical sections using learned descriptor similarity. MosaiChunk-Pose first uses camera-pose similarity to shortlist historical chunks, then applies the same trained router to select sections within them. For a whole-chunk comparison, we implement WorldKV’s pose-based retrieval rule ( Yi et al., 2026 ) on the same frozen backbone. Table 13 evaluates 180 ∘ 180^{\\circ} trajectories on 150 150 rotation scenes and 100 100 scenes with rotation and translation, at one- and two-chunk far-memory budgets.",
+   "zh": "以相机位姿作为检索信号。 我们考察相机位姿能否改进基于描述子的检索，以及在这种引导可用时，章节构图是否仍然有用。 MosaiChunk 使用学习到的描述子相似度对历史章节进行打分。 MosaiChunk-Pose 首先利用相机位姿相似度筛选出候选历史块，然后在其中应用同一个训练好的路由器来选择章节。 对于整块层面的比较，我们在相同的冻结骨干网络上实现了 WorldKV 基于位姿的检索规则（ Yi et al., 2026 ）。 表 13 在 150 个纯旋转场景和 100 个包含旋转与平移的场景上，以一块和两块的远记忆预算评估了 180^{\\circ} 的轨迹。",
+   "sents": [
+    {
+     "en": "Camera pose as a retrieval signal.",
+     "zh": "以相机位姿作为检索信号。"
+    },
+    {
+     "en": "We examine whether camera poses improve descriptor-based retrieval and whether section composition remains useful when this guidance is available.",
+     "zh": "我们考察相机位姿能否改进基于描述子的检索，以及在这种引导可用时，章节构图是否仍然有用。"
+    },
+    {
+     "en": "MosaiChunk scores historical sections using learned descriptor similarity.",
+     "zh": "MosaiChunk 使用学习到的描述子相似度对历史章节进行打分。"
+    },
+    {
+     "en": "MosaiChunk-Pose first uses camera-pose similarity to shortlist historical chunks, then applies the same trained router to select sections within them.",
+     "zh": "MosaiChunk-Pose 首先利用相机位姿相似度筛选出候选历史块，然后在其中应用同一个训练好的路由器来选择章节。"
+    },
+    {
+     "en": "For a whole-chunk comparison, we implement WorldKV’s pose-based retrieval rule ( Yi et al., 2026 ) on the same frozen backbone.",
+     "zh": "对于整块层面的比较，我们在相同的冻结骨干网络上实现了 WorldKV 基于位姿的检索规则（ Yi et al., 2026 ）。"
+    },
+    {
+     "en": "Table 13 evaluates 180 ∘ 180^{\\circ} trajectories on 150 150 rotation scenes and 100 100 scenes with rotation and translation, at one- and two-chunk far-memory budgets.",
+     "zh": "表 13 在 150 个纯旋转场景和 100 个包含旋转与平移的场景上，以一块和两块的远记忆预算评估了 180^{\\circ} 的轨迹。"
+    }
+   ]
+  },
+  {
+   "en": "Pose guidance improves both CLIP and LPIPS over MosaiChunk in every setting. Relative to WorldKV, MosaiChunk-Pose achieves similar CLIP, with slightly higher scores at both two-chunk budgets. WorldKV is stronger on rotation at one chunk and has lower LPIPS under rotation with translation. Figure 12 illustrates how section composition can preserve the staircase of a background building, even though it occupies only a small part of the frame.",
+   "zh": "姿态引导在所有设置下都使 CLIP 和 LPIPS 相较 MosaiChunk 有所提升。 相较于 WorldKV，MosaiChunk-Pose 取得了相近的 CLIP，在两个分块预算下均略高。 WorldKV 在单分块下的旋转上更强，并且在带平移的旋转下 LPIPS 更低。 图 12 展示了分节构图如何保留背景建筑的阶梯状结构，即使它只占画面的一小部分。",
+   "sents": [
+    {
+     "en": "Pose guidance improves both CLIP and LPIPS over MosaiChunk in every setting.",
+     "zh": "姿态引导在所有设置下都使 CLIP 和 LPIPS 相较 MosaiChunk 有所提升。"
+    },
+    {
+     "en": "Relative to WorldKV, MosaiChunk-Pose achieves similar CLIP, with slightly higher scores at both two-chunk budgets.",
+     "zh": "相较于 WorldKV，MosaiChunk-Pose 取得了相近的 CLIP，在两个分块预算下均略高。"
+    },
+    {
+     "en": "WorldKV is stronger on rotation at one chunk and has lower LPIPS under rotation with translation.",
+     "zh": "WorldKV 在单分块下的旋转上更强，并且在带平移的旋转下 LPIPS 更低。"
+    },
+    {
+     "en": "Figure 12 illustrates how section composition can preserve the staircase of a background building, even though it occupies only a small part of the frame.",
+     "zh": "图 12 展示了分节构图如何保留背景建筑的阶梯状结构，即使它只占画面的一小部分。"
+    }
+   ]
+  },
+  {
+   "en": "Far-memory budget. We compare allocating additional KV entries to retrieved far memory with retaining additional recent chunks. Retrieval methods keep their sliding window fixed, whereas Base matches the total active KV cache budget by retaining additional recent chunks. On 100 100 T2V and 150 150 I2V rotation scenes, we evaluate MosaiChunk and, for I2V, MosaiChunk-Pose at far-memory budgets from 0.5 0.5 to 2 2 chunks in half-chunk increments. The other methods are evaluated at one and two chunks (Figure 13 ).",
+   "zh": "远端记忆预算。 我们将额外的 KV 条目分配给检索到的远端记忆，与保留更多近期分块进行比较。 检索方法保持其滑动窗口固定，而 Base 通过保留更多近期分块来匹配相同的活跃 KV 缓存总预算。 在 100 100 T2V 和 150 150 I2V 旋转场景中，我们评估了 MosaiChunk，以及在 I2V 情况下评估了 MosaiChunk-Pose，远端记忆预算从 0.5 0.5 到 2 2 个分块，以半个分块为增量。 其他方法在 1 个和 2 个分块下进行评估（图 13）。",
+   "sents": [
+    {
+     "en": "Far-memory budget.",
+     "zh": "远端记忆预算。"
+    },
+    {
+     "en": "We compare allocating additional KV entries to retrieved far memory with retaining additional recent chunks.",
+     "zh": "我们将额外的 KV 条目分配给检索到的远端记忆，与保留更多近期分块进行比较。"
+    },
+    {
+     "en": "Retrieval methods keep their sliding window fixed, whereas Base matches the total active KV cache budget by retaining additional recent chunks.",
+     "zh": "检索方法保持其滑动窗口固定，而 Base 通过保留更多近期分块来匹配相同的活跃 KV 缓存总预算。"
+    },
+    {
+     "en": "On 100 100 T2V and 150 150 I2V rotation scenes, we evaluate MosaiChunk and, for I2V, MosaiChunk-Pose at far-memory budgets from 0.5 0.5 to 2 2 chunks in half-chunk increments.",
+     "zh": "在 100 100 T2V 和 150 150 I2V 旋转场景中，我们评估了 MosaiChunk，以及在 I2V 情况下评估了 MosaiChunk-Pose，远端记忆预算从 0.5 0.5 到 2 2 个分块，以半个分块为增量。"
+    },
+    {
+     "en": "The other methods are evaluated at one and two chunks (Figure 13 ).",
+     "zh": "其他方法在 1 个和 2 个分块下进行评估（图 13）。"
+    }
+   ]
+  },
+  {
+   "en": "Both MosaiChunk and MosaiChunk-Pose improve as the budget grows. The advantage also holds with less far memory: on T2V, MosaiChunk with one chunk exceeds MoC with two ( 0.899 0.899 vs. 0.841 0.841 CLIP); on I2V, half a chunk already does so ( 0.815 0.815 vs. 0.807 0.807 ). These comparisons demonstrate both effective retrieval at small budgets and improved revisit consistency when more memory is available.",
+   "zh": "MosaiChunk 与 MosaiChunk-Pose 都随着预算的增长而提升。 这一优势在更少远期记忆下依然成立：在 T2V 上，使用一个分块的 MosaiChunk 超过了使用两个分块的 MoC（0.899 0.899 vs. 0.841 0.841 CLIP）；在 I2V 上，半个分块就已经如此（0.815 0.815 vs. 0.807 0.807）。 这些比较证明了在小预算下的有效检索，以及在更多记忆可用时重访一致性的提升。",
+   "sents": [
+    {
+     "en": "Both MosaiChunk and MosaiChunk-Pose improve as the budget grows.",
+     "zh": "MosaiChunk 与 MosaiChunk-Pose 都随着预算的增长而提升。"
+    },
+    {
+     "en": "The advantage also holds with less far memory: on T2V, MosaiChunk with one chunk exceeds MoC with two ( 0.899 0.899 vs. 0.841 0.841 CLIP); on I2V, half a chunk already does so ( 0.815 0.815 vs. 0.807 0.807 ).",
+     "zh": "这一优势在更少远期记忆下依然成立：在 T2V 上，使用一个分块的 MosaiChunk 超过了使用两个分块的 MoC（0.899 0.899 vs. 0.841 0.841 CLIP）；在 I2V 上，半个分块就已经如此（0.815 0.815 vs. 0.807 0.807）。"
+    },
+    {
+     "en": "These comparisons demonstrate both effective retrieval at small budgets and improved revisit consistency when more memory is available.",
+     "zh": "这些比较证明了在小预算下的有效检索，以及在更多记忆可用时重访一致性的提升。"
+    }
+   ]
+  },
+  {
+   "en": "We test whether selected historical KV can transfer content between rollouts without updating the video generator. We generate two cookie-tin rollouts with different cookies, manually mark each cookie in an earlier frame, and select the cached KV at the corresponding latent positions. When the tins close and reopen, we exchange these entries as far memory while keeping the generator frozen. Figure 14 shows that cookie A appears in tin B and cookie B appears in tin A, while each rollout retains its original tin. This intervention provides further evidence that historical KV can serve as content-specific memory even when it comes from another rollout.",
+   "zh": "我们测试所选择的历史 KV 能否在不更新视频生成器的情况下，在不同 rollout 之间传递内容。 我们生成了两个包含不同饼干的饼干罐 rollout，在较早的帧中手动标记每块饼干，并选择相应潜在位置上的缓存 KV。 当罐子关闭再重新打开时，我们交换这些条目作为远期记忆，同时保持生成器冻结。 图 14 显示，饼干 A 出现在罐 B 中，饼干 B 出现在罐 A 中，而每个 rollout 仍保留其原来的罐子。 这一干预进一步证明，即使历史 KV 来自另一个 rollout，它也可以作为特定内容的记忆发挥作用。",
+   "sents": [
+    {
+     "en": "We test whether selected historical KV can transfer content between rollouts without updating the video generator.",
+     "zh": "我们测试所选择的历史 KV 能否在不更新视频生成器的情况下，在不同 rollout 之间传递内容。"
+    },
+    {
+     "en": "We generate two cookie-tin rollouts with different cookies, manually mark each cookie in an earlier frame, and select the cached KV at the corresponding latent positions.",
+     "zh": "我们生成了两个包含不同饼干的饼干罐 rollout，在较早的帧中手动标记每块饼干，并选择相应潜在位置上的缓存 KV。"
+    },
+    {
+     "en": "When the tins close and reopen, we exchange these entries as far memory while keeping the generator frozen.",
+     "zh": "当罐子关闭再重新打开时，我们交换这些条目作为远期记忆，同时保持生成器冻结。"
+    },
+    {
+     "en": "Figure 14 shows that cookie A appears in tin B and cookie B appears in tin A, while each rollout retains its original tin.",
+     "zh": "图 14 显示，饼干 A 出现在罐 B 中，饼干 B 出现在罐 A 中，而每个 rollout 仍保留其原来的罐子。"
+    },
+    {
+     "en": "This intervention provides further evidence that historical KV can serve as content-specific memory even when it comes from another rollout.",
+     "zh": "这一干预进一步证明，即使历史 KV 来自另一个 rollout，它也可以作为特定内容的记忆发挥作用。"
+    }
+   ]
+  }
+ ]
+}
