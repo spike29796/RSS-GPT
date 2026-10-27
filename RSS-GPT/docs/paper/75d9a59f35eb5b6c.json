@@ -1,0 +1,776 @@
+{
+ "id": "75d9a59f35eb5b6c",
+ "source": "hackernews",
+ "link": "https://alphapixeldev.com/sdf-vs-msdf-vs-slug-vs-rive-gpu-text-rendering/",
+ "title": "SDF vs. MSDF vs. Slug: GPU Text Rendering",
+ "title_zh": "SDF vs. MSDF vs. Slug: GPU文本渲染比较",
+ "published": "Wed, 30 Sep 2026 13:50:50 +0000",
+ "translated_at": "2026-10-26T05:29:55Z",
+ "paragraphs": [
+  {
+   "en": "Text looks simple until you have to draw it yourself. A letter is not a picture, it is a set of outlines: closed loops of straight lines and Bezier curves, filled according to a winding rule. Drawing that on a CPU into a bitmap is a solved problem. Drawing it on a GPU, crisply, at any size, under any 3D transform, while the text changes every frame, is not. Most engines dodge the hard version by baking glyphs into textures ahead of time and living with the compromises.",
+   "zh": "文字看起来很简单，直到你不得不亲自把它绘制出来。 一个字母并不是一幅图片，而是一组轮廓：由直线和贝塞尔曲线构成的闭合环，并按照环绕规则进行填充。 在 CPU 上将其绘制成位图是一个已经被解决的问题。 而在 GPU 上清晰地绘制它，支持任意尺寸、任意 3D 变换，同时文字每一帧都在变化，这就不是了。 大多数引擎会回避这个困难版本的做法，即提前把字形烘焙进纹理，然后忍受由此带来的种种妥协。",
+   "sents": [
+    {
+     "en": "Text looks simple until you have to draw it yourself.",
+     "zh": "文字看起来很简单，直到你不得不亲自把它绘制出来。"
+    },
+    {
+     "en": "A letter is not a picture, it is a set of outlines: closed loops of straight lines and Bezier curves, filled according to a winding rule.",
+     "zh": "一个字母并不是一幅图片，而是一组轮廓：由直线和贝塞尔曲线构成的闭合环，并按照环绕规则进行填充。"
+    },
+    {
+     "en": "Drawing that on a CPU into a bitmap is a solved problem.",
+     "zh": "在 CPU 上将其绘制成位图是一个已经被解决的问题。"
+    },
+    {
+     "en": "Drawing it on a GPU, crisply, at any size, under any 3D transform, while the text changes every frame, is not.",
+     "zh": "而在 GPU 上清晰地绘制它，支持任意尺寸、任意 3D 变换，同时文字每一帧都在变化，这就不是了。"
+    },
+    {
+     "en": "Most engines dodge the hard version by baking glyphs into textures ahead of time and living with the compromises.",
+     "zh": "大多数引擎会回避这个困难版本的做法，即提前把字形烘焙进纹理，然后忍受由此带来的种种妥协。"
+    }
+   ]
+  },
+  {
+   "en": "In 2017 Eric Lengyel published an algorithm, called Slug, that stopped dodging. It renders glyphs directly from their outlines in the fragment shader, with no texture atlas and no per-frame tessellation. Lengyel patented it in 2019, and on March 17, 2026 he dedicated that patent to the public domain. That is why we built Slughorn , our C++20 implementation of the Slug technique, and it is why we can now talk about how it works and where it wins.",
+   "zh": "2017 年，Eric Lengyel 发表了一种名为 Slug 的算法，不再回避这个问题。 它在片段着色器中直接根据字形轮廓进行渲染，无需纹理图集，也无需逐帧细分。 Lengyel 于 2019 年为该算法申请了专利，并在 2026 年 3 月 17 日将该专利贡献给公有领域。 正因如此，我们构建了 Slughorn，即 Slug 技术的 C++20 实现，也正因如此，我们现在可以谈论它的工作原理以及它的优势所在。",
+   "sents": [
+    {
+     "en": "In 2017 Eric Lengyel published an algorithm, called Slug, that stopped dodging.",
+     "zh": "2017 年，Eric Lengyel 发表了一种名为 Slug 的算法，不再回避这个问题。"
+    },
+    {
+     "en": "It renders glyphs directly from their outlines in the fragment shader, with no texture atlas and no per-frame tessellation.",
+     "zh": "它在片段着色器中直接根据字形轮廓进行渲染，无需纹理图集，也无需逐帧细分。"
+    },
+    {
+     "en": "Lengyel patented it in 2019, and on March 17, 2026 he dedicated that patent to the public domain.",
+     "zh": "Lengyel 于 2019 年为该算法申请了专利，并在 2026 年 3 月 17 日将该专利贡献给公有领域。"
+    },
+    {
+     "en": "That is why we built Slughorn , our C++20 implementation of the Slug technique, and it is why we can now talk about how it works and where it wins.",
+     "zh": "正因如此，我们构建了 Slughorn，即 Slug 技术的 C++20 实现，也正因如此，我们现在可以谈论它的工作原理以及它的优势所在。"
+    }
+   ]
+  },
+  {
+   "en": "This is a tour of how GPU text rendering actually works, from the bitmap atlas up to Slug, and where each method fits.",
+   "zh": "这是一次关于 GPU 文本渲染实际工作原理的讲解，从位图图集到 Slug，以及每种方法各自的适用场景。",
+   "sents": null
+  },
+  {
+   "en": "Every scalable font stores each glyph as vector outlines. TrueType uses quadratic Bezier curves, OpenType with CFF uses cubic curves, and both mix in straight segments. The interior of the letter is whatever the fill rule says is inside, usually the nonzero winding rule: shoot a ray from the pixel, count how the outline crosses it, and if the winding number is nonzero the pixel is inside the glyph.",
+   "zh": "每种可缩放字体都将每个字形存储为矢量轮廓。 TrueType 使用二次贝塞尔曲线，使用 CFF 的 OpenType 使用三次曲线，两者都混合使用直线段。 字母的内部由填充规则决定什么算在内部，通常是非零环绕规则：从像素发射一条射线，统计轮廓与它相交的方式，如果环绕数非零，则该像素在字形内部。",
+   "sents": [
+    {
+     "en": "Every scalable font stores each glyph as vector outlines.",
+     "zh": "每种可缩放字体都将每个字形存储为矢量轮廓。"
+    },
+    {
+     "en": "TrueType uses quadratic Bezier curves, OpenType with CFF uses cubic curves, and both mix in straight segments.",
+     "zh": "TrueType 使用二次贝塞尔曲线，使用 CFF 的 OpenType 使用三次曲线，两者都混合使用直线段。"
+    },
+    {
+     "en": "The interior of the letter is whatever the fill rule says is inside, usually the nonzero winding rule: shoot a ray from the pixel, count how the outline crosses it, and if the winding number is nonzero the pixel is inside the glyph.",
+     "zh": "字母的内部由填充规则决定什么算在内部，通常是非零环绕规则：从像素发射一条射线，统计轮廓与它相交的方式，如果环绕数非零，则该像素在字形内部。"
+    }
+   ]
+  },
+  {
+   "en": "A glyph is a set of outlines, not pixels: filled dots are on-curve points, open circles are Bezier control points.",
+   "zh": "字形（glyph）是一组轮廓，而非像素：实心圆点为曲线上的点，空心圆圈为贝塞尔控制点。",
+   "sents": null
+  },
+  {
+   "en": "The renderer has to do three things at once and do them fast: fill the interior correctly, produce clean antialiased edges, and stay sharp whether the glyph is 8 pixels tall in a menu or filling the screen on a billboard rotated in perspective. On a CPU you rasterize each glyph once at its target size and you are done. On a GPU you want to draw thousands of glyphs per frame, at arbitrary scales, ideally without re-rasterizing anything. That constraint is where every technique below makes its trade.",
+   "zh": "渲染器必须同时做三件事并快速完成：正确填充内部、生成干净的抗锯齿边缘，并且无论字形是菜单里 8 像素高还是占满透视旋转的广告牌屏幕，都能保持清晰。 在 CPU 上，你只需按目标尺寸对每个字形光栅化一次就完成了。 而在 GPU 上，你希望每帧绘制数千个字形，支持任意缩放，最好不需要重新光栅化任何东西。 下面介绍的每种技术都是在这一约束下做出权衡的。",
+   "sents": [
+    {
+     "en": "The renderer has to do three things at once and do them fast: fill the interior correctly, produce clean antialiased edges, and stay sharp whether the glyph is 8 pixels tall in a menu or filling the screen on a billboard rotated in perspective.",
+     "zh": "渲染器必须同时做三件事并快速完成：正确填充内部、生成干净的抗锯齿边缘，并且无论字形是菜单里 8 像素高还是占满透视旋转的广告牌屏幕，都能保持清晰。"
+    },
+    {
+     "en": "On a CPU you rasterize each glyph once at its target size and you are done.",
+     "zh": "在 CPU 上，你只需按目标尺寸对每个字形光栅化一次就完成了。"
+    },
+    {
+     "en": "On a GPU you want to draw thousands of glyphs per frame, at arbitrary scales, ideally without re-rasterizing anything.",
+     "zh": "而在 GPU 上，你希望每帧绘制数千个字形，支持任意缩放，最好不需要重新光栅化任何东西。"
+    },
+    {
+     "en": "That constraint is where every technique below makes its trade.",
+     "zh": "下面介绍的每种技术都是在这一约束下做出权衡的。"
+    }
+   ]
+  },
+  {
+   "en": "The oldest and still most common approach. Rasterize each glyph once, at one size, into a shared texture called an atlas, then draw each on-screen character as a textured quad that samples its slot.",
+   "zh": "最古老且至今仍最常见的方法。 将每个字形以单一尺寸光栅化一次，存入一张称为图集（atlas）的共享纹理中，然后把屏幕上的每个字符绘制为一个纹理四边形，从其对应的槽位采样。",
+   "sents": [
+    {
+     "en": "The oldest and still most common approach.",
+     "zh": "最古老且至今仍最常见的方法。"
+    },
+    {
+     "en": "Rasterize each glyph once, at one size, into a shared texture called an atlas, then draw each on-screen character as a textured quad that samples its slot.",
+     "zh": "将每个字形以单一尺寸光栅化一次，存入一张称为图集（atlas）的共享纹理中，然后把屏幕上的每个字符绘制为一个纹理四边形，从其对应的槽位采样。"
+    }
+   ]
+  },
+  {
+   "en": "It is fast, trivially portable, and runs on anything with a texture unit. That is why it is everywhere.",
+   "zh": "它速度快、可移植性极佳，能在任何带有纹理单元的设备上运行。 这就是它无处不在的原因。",
+   "sents": [
+    {
+     "en": "It is fast, trivially portable, and runs on anything with a texture unit.",
+     "zh": "它速度快、可移植性极佳，能在任何带有纹理单元的设备上运行。"
+    },
+    {
+     "en": "That is why it is everywhere.",
+     "zh": "这就是它无处不在的原因。"
+    }
+   ]
+  },
+  {
+   "en": "The problems show up the moment you scale. Enlarge past the baked size and the glyph turns into blurry or blocky pixels, because you are magnifying a bitmap. Shrink it and you get shimmer and dropped stems unless you bake mip levels. Every size you want crisp is another atlas. Every language is another problem: a Latin atlas is small, but Chinese, Japanese, and Korean have tens of thousands of glyphs, and baking all of them at several sizes is a memory disaster. And a bitmap has no idea it is being viewed in perspective, so text laid onto a 3D surface looks soft.",
+   "zh": "问题在你扩展规模的那一刻就会显现出来。 一旦放大超过烘焙时的尺寸，字形就会变成模糊或块状的像素，因为你是在放大一张位图。 缩小时则会出现闪烁和笔画丢失，除非你烘焙多级纹理（mip levels）。 你想要清晰显示的每一种字号，都意味着又一张图集。 每种语言都是另一个问题：拉丁字母的图集很小，但中文、日文和韩文有几万个字形，按多个尺寸全部烘焙是一场内存灾难。 而且位图完全不知道自己正处于透视视角下被观看，因此贴到三维表面上的文字看起来是发虚的。",
+   "sents": [
+    {
+     "en": "The problems show up the moment you scale.",
+     "zh": "问题在你扩展规模的那一刻就会显现出来。"
+    },
+    {
+     "en": "Enlarge past the baked size and the glyph turns into blurry or blocky pixels, because you are magnifying a bitmap.",
+     "zh": "一旦放大超过烘焙时的尺寸，字形就会变成模糊或块状的像素，因为你是在放大一张位图。"
+    },
+    {
+     "en": "Shrink it and you get shimmer and dropped stems unless you bake mip levels.",
+     "zh": "缩小时则会出现闪烁和笔画丢失，除非你烘焙多级纹理（mip levels）。"
+    },
+    {
+     "en": "Every size you want crisp is another atlas.",
+     "zh": "你想要清晰显示的每一种字号，都意味着又一张图集。"
+    },
+    {
+     "en": "Every language is another problem: a Latin atlas is small, but Chinese, Japanese, and Korean have tens of thousands of glyphs, and baking all of them at several sizes is a memory disaster.",
+     "zh": "每种语言都是另一个问题：拉丁字母的图集很小，但中文、日文和韩文有几万个字形，按多个尺寸全部烘焙是一场内存灾难。"
+    },
+    {
+     "en": "And a bitmap has no idea it is being viewed in perspective, so text laid onto a 3D surface looks soft.",
+     "zh": "而且位图完全不知道自己正处于透视视角下被观看，因此贴到三维表面上的文字看起来是发虚的。"
+    }
+   ]
+  },
+  {
+   "en": "Magnifying a baked atlas glyph (left and center) versus rendering it from the outline (right).",
+   "zh": "放大烘焙后的图集字形（左图和中图）与从轮廓渲染字形（右图）的对比。",
+   "sents": null
+  },
+  {
+   "en": "Valve introduced the fix that carried the industry for a decade. Chris Green's 2007 SIGGRAPH work, \"Improved Alpha-Tested Magnification for Vector Textures and Special Effects,\" stores not the glyph's pixels but a signed distance field: each texel holds the distance to the nearest edge, positive inside, negative outside. In the shader you sample that field and threshold at zero. Because distance interpolates smoothly, you can scale a small SDF texture up dramatically and still get a clean edge, and you get cheap antialiasing by softening the threshold.",
+   "zh": "Valve 推出了这项支撑整个行业十年的修复方案。 Chris Green 在 2007 年 SIGGRAPH 上的论文《Improved Alpha-Tested Magnification for Vector Textures and Special Effects》（矢量纹理与特殊效果的改进式 Alpha 测试放大）存储的不是字形的像素，而是一个有符号距离场：每个纹素保存到最近边缘的距离，内部为正，外部为负。 在着色器中你对该场进行采样，并以零为阈值。 由于距离是平滑插值的，你可以把一张很小的 SDF 纹理大幅放大而仍得到干净的边缘，并且通过软化阈值还能低成本地获得抗锯齿效果。",
+   "sents": [
+    {
+     "en": "Valve introduced the fix that carried the industry for a decade.",
+     "zh": "Valve 推出了这项支撑整个行业十年的修复方案。"
+    },
+    {
+     "en": "Chris Green's 2007 SIGGRAPH work, \"Improved Alpha-Tested Magnification for Vector Textures and Special Effects,\" stores not the glyph's pixels but a signed distance field: each texel holds the distance to the nearest edge, positive inside, negative outside.",
+     "zh": "Chris Green 在 2007 年 SIGGRAPH 上的论文《Improved Alpha-Tested Magnification for Vector Textures and Special Effects》（矢量纹理与特殊效果的改进式 Alpha 测试放大）存储的不是字形的像素，而是一个有符号距离场：每个纹素保存到最近边缘的距离，内部为正，外部为负。"
+    },
+    {
+     "en": "In the shader you sample that field and threshold at zero.",
+     "zh": "在着色器中你对该场进行采样，并以零为阈值。"
+    },
+    {
+     "en": "Because distance interpolates smoothly, you can scale a small SDF texture up dramatically and still get a clean edge, and you get cheap antialiasing by softening the threshold.",
+     "zh": "由于距离是平滑插值的，你可以把一张很小的 SDF 纹理大幅放大而仍得到干净的边缘，并且通过软化阈值还能低成本地获得抗锯齿效果。"
+    }
+   ]
+  },
+  {
+   "en": "One small texture, resolution independent within reason, one cheap shader. For a long time this was the default for crisp UI text and game HUDs, and it still is on constrained hardware.",
+   "zh": "一张小贴图，分辨率在合理范围内不受影响，一个开销很低的着色器。 长期以来，这一直是清晰界面文字和游戏 HUD 的默认方案，在硬件受限的设备上至今仍然如此。",
+   "sents": [
+    {
+     "en": "One small texture, resolution independent within reason, one cheap shader.",
+     "zh": "一张小贴图，分辨率在合理范围内不受影响，一个开销很低的着色器。"
+    },
+    {
+     "en": "For a long time this was the default for crisp UI text and game HUDs, and it still is on constrained hardware.",
+     "zh": "长期以来，这一直是清晰界面文字和游戏 HUD 的默认方案，在硬件受限的设备上至今仍然如此。"
+    }
+   ]
+  },
+  {
+   "en": "But an SDF is still a baked texture sampled at a fixed resolution, and it lies about corners. A sharp corner is a discontinuity in the distance field, and bilinear interpolation rounds it off. Every hard corner on a letter, the point of an \"A\", the notch of a \"K\", gets softened. Push the magnification far enough, or make the glyph small enough that the field is only a few texels wide, and thin stems break up and detail smears.",
+   "zh": "但 SDF 仍然是一张在固定分辨率下采样的烘焙纹理，而且它会在角上“说谎”。 尖锐的角是距离场中的不连续点，而双线性插值会把它磨圆。 字母上每一个硬角——\"A\" 的尖顶、\"K\" 的缺口——都会被软化。 把放大倍数推得足够高，或者把字形做得足够小以至于距离场只有几个纹素宽，细长的字干就会碎裂，细节也会糊掉。",
+   "sents": [
+    {
+     "en": "But an SDF is still a baked texture sampled at a fixed resolution, and it lies about corners.",
+     "zh": "但 SDF 仍然是一张在固定分辨率下采样的烘焙纹理，而且它会在角上“说谎”。"
+    },
+    {
+     "en": "A sharp corner is a discontinuity in the distance field, and bilinear interpolation rounds it off.",
+     "zh": "尖锐的角是距离场中的不连续点，而双线性插值会把它磨圆。"
+    },
+    {
+     "en": "Every hard corner on a letter, the point of an \"A\", the notch of a \"K\", gets softened.",
+     "zh": "字母上每一个硬角——\"A\" 的尖顶、\"K\" 的缺口——都会被软化。"
+    },
+    {
+     "en": "Push the magnification far enough, or make the glyph small enough that the field is only a few texels wide, and thin stems break up and detail smears.",
+     "zh": "把放大倍数推得足够高，或者把字形做得足够小以至于距离场只有几个纹素宽，细长的字干就会碎裂，细节也会糊掉。"
+    }
+   ]
+  },
+  {
+   "en": "A signed distance field (left) and the crisp edge a shader recovers from it (right).",
+   "zh": "有符号距离场（左）以及着色器从中恢复出的锐利边缘（右）。",
+   "sents": null
+  },
+  {
+   "en": "Viktor Chlumsky's work, from his 2015 thesis and the 2018 paper \"Improved Corners with Multi-Channel Signed Distance Fields,\" fixes the corner problem. Instead of one distance channel, MSDF stores three, in red, green, and blue, each encoding distance to a different subset of edges chosen so that sharp corners survive. In the shader you take the median of the three channels. The median trick reconstructs corners almost perfectly, so an MSDF glyph stays crisp at magnifications that would round an SDF to mush.",
+   "zh": "Viktor Chlumsky 的工作，源自其 2015 年的学位论文和 2018 年的论文《Improved Corners with Multi-Channel Signed Distance Fields》，解决了尖角问题。 MSDF 不是只用一个距离通道，而是存储三个通道，分别位于红、绿、蓝中，每个通道编码到不同边集子集的距离，这些子集经过精心选取，使尖锐的角得以保留。 在着色器中，你取三个通道的中值。 这种中值技巧几乎能完美地重建尖角，因此在会导致 SDF 字形被圆化成模糊一团的放大倍率下，MSDF 字形依然清晰锐利。",
+   "sents": [
+    {
+     "en": "Viktor Chlumsky's work, from his 2015 thesis and the 2018 paper \"Improved Corners with Multi-Channel Signed Distance Fields,\" fixes the corner problem.",
+     "zh": "Viktor Chlumsky 的工作，源自其 2015 年的学位论文和 2018 年的论文《Improved Corners with Multi-Channel Signed Distance Fields》，解决了尖角问题。"
+    },
+    {
+     "en": "Instead of one distance channel, MSDF stores three, in red, green, and blue, each encoding distance to a different subset of edges chosen so that sharp corners survive.",
+     "zh": "MSDF 不是只用一个距离通道，而是存储三个通道，分别位于红、绿、蓝中，每个通道编码到不同边集子集的距离，这些子集经过精心选取，使尖锐的角得以保留。"
+    },
+    {
+     "en": "In the shader you take the median of the three channels.",
+     "zh": "在着色器中，你取三个通道的中值。"
+    },
+    {
+     "en": "The median trick reconstructs corners almost perfectly, so an MSDF glyph stays crisp at magnifications that would round an SDF to mush.",
+     "zh": "这种中值技巧几乎能完美地重建尖角，因此在会导致 SDF 字形被圆化成模糊一团的放大倍率下，MSDF 字形依然清晰锐利。"
+    }
+   ]
+  },
+  {
+   "en": "MSDF is the current sweet spot for a lot of teams, and Chlumsky's msdfgen is MIT licensed and widely adopted. If you need crisp scalable text and you are willing to bake an atlas, it is an excellent choice.",
+   "zh": "对于许多团队来说，MSDF 是当前的最佳选择，Chlumsky 的 msdfgen 采用 MIT 许可证并被广泛采用。 如果你需要清晰可缩放的文本，并且愿意烘焙一个图集，它是一个极佳的选择。",
+   "sents": [
+    {
+     "en": "MSDF is the current sweet spot for a lot of teams, and Chlumsky's msdfgen is MIT licensed and widely adopted.",
+     "zh": "对于许多团队来说，MSDF 是当前的最佳选择，Chlumsky 的 msdfgen 采用 MIT 许可证并被广泛采用。"
+    },
+    {
+     "en": "If you need crisp scalable text and you are willing to bake an atlas, it is an excellent choice.",
+     "zh": "如果你需要清晰可缩放的文本，并且愿意烘焙一个图集，它是一个极佳的选择。"
+    }
+   ]
+  },
+  {
+   "en": "It is still an atlas, though, with the costs that implies. You bake each glyph at a chosen resolution ahead of time, so dynamic or user-supplied text, and enormous glyph sets like CJK, still mean baking pipelines and memory budgets. Generation is more expensive than plain SDF. At very small sizes you are still sampling too few texels to hold fine detail, and at extreme minification you still fight aliasing. The three-channel lookup costs more bandwidth than one. MSDF raises the ceiling on quality, but it still uses an atlas.",
+   "zh": "不过它仍然是一张图集，也带有随之而来的代价。 你需要提前在选定的分辨率下烘焙每个字形，因此动态文本、用户提供的文本，以及像 CJK 这样庞大的字符集，仍然意味着需要烘焙流水线和内存预算。 生成比普通 SDF 更昂贵。 在很小的字号下，你仍然只能采样过少的纹素来承载精细细节；而在极端缩小的情况下，你仍然要对抗锯齿问题。 三通道查找比单通道消耗更多带宽。 MSDF 提高了质量的上限，但它仍然使用图集。",
+   "sents": [
+    {
+     "en": "It is still an atlas, though, with the costs that implies.",
+     "zh": "不过它仍然是一张图集，也带有随之而来的代价。"
+    },
+    {
+     "en": "You bake each glyph at a chosen resolution ahead of time, so dynamic or user-supplied text, and enormous glyph sets like CJK, still mean baking pipelines and memory budgets.",
+     "zh": "你需要提前在选定的分辨率下烘焙每个字形，因此动态文本、用户提供的文本，以及像 CJK 这样庞大的字符集，仍然意味着需要烘焙流水线和内存预算。"
+    },
+    {
+     "en": "Generation is more expensive than plain SDF.",
+     "zh": "生成比普通 SDF 更昂贵。"
+    },
+    {
+     "en": "At very small sizes you are still sampling too few texels to hold fine detail, and at extreme minification you still fight aliasing.",
+     "zh": "在很小的字号下，你仍然只能采样过少的纹素来承载精细细节；而在极端缩小的情况下，你仍然要对抗锯齿问题。"
+    },
+    {
+     "en": "The three-channel lookup costs more bandwidth than one.",
+     "zh": "三通道查找比单通道消耗更多带宽。"
+    },
+    {
+     "en": "MSDF raises the ceiling on quality, but it still uses an atlas.",
+     "zh": "MSDF 提高了质量的上限，但它仍然使用图集。"
+    }
+   ]
+  },
+  {
+   "en": "SDF rounds sharp corners; MSDF preserves them. Images: Viktor Chlumsky / msdfgen (MIT).",
+   "zh": "SDF 会圆化尖角；MSDF 则保留尖角。 图片：Viktor Chlumsky / msdfgen（MIT 许可证）。",
+   "sents": [
+    {
+     "en": "SDF rounds sharp corners; MSDF preserves them.",
+     "zh": "SDF 会圆化尖角；MSDF 则保留尖角。"
+    },
+    {
+     "en": "Images: Viktor Chlumsky / msdfgen (MIT).",
+     "zh": "图片：Viktor Chlumsky / msdfgen（MIT 许可证）。"
+    }
+   ]
+  },
+  {
+   "en": "A different family skips textures entirely and turns the outline into geometry the GPU can rasterize.",
+   "zh": "另一个家族则完全舍弃纹理，将轮廓转化为 GPU 可以光栅化的几何体。",
+   "sents": null
+  },
+  {
+   "en": "This family is genuinely resolution-independent and, for animated designed vector graphics, often the right answer. Rive in particular is built for artwork that moves. The costs are the tessellation itself, which has to be redone when geometry changes, the geometry blowup for complex glyphs, the difficulty of clean analytic antialiasing, and in some cases a dependence on specific hardware features or extensions.",
+   "zh": "这一类方法真正做到了与分辨率无关，而且对于动画化的设计矢量图形来说，往往就是正确答案。 Rine 特别适合用于会动起来的美术作品。 其代价包括：网格剖分本身（几何形状改变时必须重新进行）、复杂字形导致的几何规模膨胀、难以实现干净利落的解析式抗锯齿，以及在某些情况下对特定硬件特性或扩展的依赖。",
+   "sents": [
+    {
+     "en": "This family is genuinely resolution-independent and, for animated designed vector graphics, often the right answer.",
+     "zh": "这一类方法真正做到了与分辨率无关，而且对于动画化的设计矢量图形来说，往往就是正确答案。"
+    },
+    {
+     "en": "Rive in particular is built for artwork that moves.",
+     "zh": "Rine 特别适合用于会动起来的美术作品。"
+    },
+    {
+     "en": "The costs are the tessellation itself, which has to be redone when geometry changes, the geometry blowup for complex glyphs, the difficulty of clean analytic antialiasing, and in some cases a dependence on specific hardware features or extensions.",
+     "zh": "其代价包括：网格剖分本身（几何形状改变时必须重新进行）、复杂字形导致的几何规模膨胀、难以实现干净利落的解析式抗锯齿，以及在某些情况下对特定硬件特性或扩展的依赖。"
+    }
+   ]
+  },
+  {
+   "en": "Tessellation methods turn the outline into triangles the GPU rasterizes.",
+   "zh": "细分（Tessellation）方法将轮廓转换为 GPU 可光栅化的三角形。",
+   "sents": null
+  },
+  {
+   "en": "Slug skips the atlas and per-frame tessellation and keeps the glyph as a list of quadratic Bezier curves and line segments stored in a small GPU buffer. Alongside it, Slug builds a lightweight per-glyph acceleration structure that partitions the glyph into horizontal bands, so a given pixel only has to consider the handful of curves near it rather than the whole outline.",
+   "zh": "Slug 跳过了图集和逐帧的三角剖分（tessellation），而是把字形保留为二次贝塞尔曲线和线段的列表，存储在一个小型 GPU 缓冲区中。 与此同时，Slug 还会构建一个轻量的逐字形加速结构，将字形划分为若干水平条带，这样某个像素只需考虑它附近的少量曲线，而无需考虑整个轮廓。",
+   "sents": [
+    {
+     "en": "Slug skips the atlas and per-frame tessellation and keeps the glyph as a list of quadratic Bezier curves and line segments stored in a small GPU buffer.",
+     "zh": "Slug 跳过了图集和逐帧的三角剖分（tessellation），而是把字形保留为二次贝塞尔曲线和线段的列表，存储在一个小型 GPU 缓冲区中。"
+    },
+    {
+     "en": "Alongside it, Slug builds a lightweight per-glyph acceleration structure that partitions the glyph into horizontal bands, so a given pixel only has to consider the handful of curves near it rather than the whole outline.",
+     "zh": "与此同时，Slug 还会构建一个轻量的逐字形加速结构，将字形划分为若干水平条带，这样某个像素只需考虑它附近的少量曲线，而无需考虑整个轮廓。"
+    }
+   ]
+  },
+  {
+   "en": "Then it resolves coverage directly in the fragment shader. For each pixel it effectively casts a ray, finds where that ray crosses the nearby Bézier curves, and counts those crossings to compute the winding number and therefore coverage. The hard part, and Lengyel's secret sauce, is a test he calls root eligibility : a precise rule for which curve-ray intersections should count, so the winding math is exact at the shared endpoints where curves meet and where naive approaches produce cracks or double-counts. Because the shader is solving the curve equations analytically rather than sampling a baked field, it produces exact coverage and clean antialiasing at any scale.",
+   "zh": "然后它直接在片段着色器中解析覆盖率。 对于每个像素，它实际上会投射一条射线，找出该射线与附近的贝塞尔曲线的交点，并统计这些交点来计算环绕数，从而得到覆盖率。 难点，也就是 Lengyel 的秘诀，在于他称之为根资格（root eligibility）的测试：这是一条精确的规则，用来确定哪些曲线与射线的交点应当计入统计，从而使环绕数的计算在曲线相交的共享端点处保持精确，而朴素的方法在这些位置会产生裂缝或重复计数。 由于着色器是通过解析方式求解曲线方程，而不是对预烘焙的场进行采样，因此它能在任意尺度下产生精确的覆盖率和干净的抗锯齿效果。",
+   "sents": [
+    {
+     "en": "Then it resolves coverage directly in the fragment shader.",
+     "zh": "然后它直接在片段着色器中解析覆盖率。"
+    },
+    {
+     "en": "For each pixel it effectively casts a ray, finds where that ray crosses the nearby Bézier curves, and counts those crossings to compute the winding number and therefore coverage.",
+     "zh": "对于每个像素，它实际上会投射一条射线，找出该射线与附近的贝塞尔曲线的交点，并统计这些交点来计算环绕数，从而得到覆盖率。"
+    },
+    {
+     "en": "The hard part, and Lengyel's secret sauce, is a test he calls root eligibility : a precise rule for which curve-ray intersections should count, so the winding math is exact at the shared endpoints where curves meet and where naive approaches produce cracks or double-counts.",
+     "zh": "难点，也就是 Lengyel 的秘诀，在于他称之为根资格（root eligibility）的测试：这是一条精确的规则，用来确定哪些曲线与射线的交点应当计入统计，从而使环绕数的计算在曲线相交的共享端点处保持精确，而朴素的方法在这些位置会产生裂缝或重复计数。"
+    },
+    {
+     "en": "Because the shader is solving the curve equations analytically rather than sampling a baked field, it produces exact coverage and clean antialiasing at any scale.",
+     "zh": "由于着色器是通过解析方式求解曲线方程，而不是对预烘焙的场进行采样，因此它能在任意尺度下产生精确的覆盖率和干净的抗锯齿效果。"
+    }
+   ]
+  },
+  {
+   "en": "Slug’s core idea: for each pixel, cast a ray and count how many times it crosses the outline.",
+   "zh": "Slug 的核心思想：对每个像素投射一条射线，并统计它与轮廓相交（穿过）的次数。",
+   "sents": null
+  },
+  {
+   "en": "There is no baked resolution, so the same glyph is razor sharp at 6 pixels or 6000, and it stays sharp under arbitrary 2D and 3D transforms, including perspective, because coverage is computed per pixel after the transform. There is no atlas, so a hundred thousand CJK glyphs cost a font's worth of outline data, not an atlas the size of a video. Text can change every frame at no baking cost, which is exactly what you want for live data, user input, and localized content. And it all happens in a single draw with an ordinary fragment shader, no vendor extension required.",
+   "zh": "没有预烘焙的分辨率，因此同一个字形无论是 6 像素还是 6000 像素都锋利无比，而且在任意二维和三维变换（包括透视变换）下依然保持锐利，因为覆盖率是在变换之后逐像素计算的。 没有图集，因此十万个中日韩字形只占相当于一份字体的轮廓数据量，而不是一个视频大小的图集。 文本可以每一帧都变化而没有任何烘焙成本，这正是实时数据、用户输入和本地化内容所需要的。 而这一切都通过普通的片元着色器在单次绘制中完成，无需任何厂商扩展。",
+   "sents": [
+    {
+     "en": "There is no baked resolution, so the same glyph is razor sharp at 6 pixels or 6000, and it stays sharp under arbitrary 2D and 3D transforms, including perspective, because coverage is computed per pixel after the transform.",
+     "zh": "没有预烘焙的分辨率，因此同一个字形无论是 6 像素还是 6000 像素都锋利无比，而且在任意二维和三维变换（包括透视变换）下依然保持锐利，因为覆盖率是在变换之后逐像素计算的。"
+    },
+    {
+     "en": "There is no atlas, so a hundred thousand CJK glyphs cost a font's worth of outline data, not an atlas the size of a video.",
+     "zh": "没有图集，因此十万个中日韩字形只占相当于一份字体的轮廓数据量，而不是一个视频大小的图集。"
+    },
+    {
+     "en": "Text can change every frame at no baking cost, which is exactly what you want for live data, user input, and localized content.",
+     "zh": "文本可以每一帧都变化而没有任何烘焙成本，这正是实时数据、用户输入和本地化内容所需要的。"
+    },
+    {
+     "en": "And it all happens in a single draw with an ordinary fragment shader, no vendor extension required.",
+     "zh": "而这一切都通过普通的片元着色器在单次绘制中完成，无需任何厂商扩展。"
+    }
+   ]
+  },
+  {
+   "en": "This is critical when you cannot predict how the text will be viewed. Atlas, SDF, and MSDF all bake a fixed resolution ahead of time, which quietly assumes a bounded range of on-screen sizes and viewing angles. When the relationship between the text plane and the camera is not known in advance, a free 3D camera, an arbitrary zoom, a close-up, or a steep off-axis grazing angle, those baked approximations break down: magnify past the baked resolution and the atlas blurs while SDF and MSDF round and smear, and at oblique angles the sampled field aliases. You cannot pre-allocate enough resolution for every possible view without the storage exploding. Slug computes coverage analytically, per pixel, after the transform, so it stays exact no matter how close, how far, or how oblique the viewer gets, with nothing baked and no ceiling to hit. Tessellation is the only other family that shares this, and it pays for it in tessellation cost and harder antialiasing. That is why Slughorn is the one to reach for in interactive 3D, AR and VR, flythroughs, moving HUDs, and CAD or digital-twin navigation, where you do not get to decide in advance how close or how oblique the viewer will be.",
+   "zh": "当你无法预测文本将以何种方式被查看时，这一点至关重要。 Atlas、SDF 和 MSDF 都是提前烘焙固定分辨率，这悄然假设了屏幕上的尺寸和视角范围是有界的。 当文本平面与相机之间的关系无法预先确定时——自由的 3D 相机、任意缩放、特写镜头，或陡峭的离轴掠射角——这些烘焙出来的近似就会失效：放大超过烘焙分辨率后，atlas 会模糊，而 SDF 和 MSDF 会变圆并拖影；在斜视角下，采样场会出现走样。 你无法为每一种可能的视图预先分配足够的分辨率，否则存储会爆炸。 Slug 在变换之后逐像素解析地计算覆盖率，因此无论观察者凑得多近、离得多远或视角多么倾斜，它都能保持精确——没有任何烘焙，也没有触及上限的问题。 唯一能共享这一特性的另一类方法是细分（tessellation），而它为此付出了细分开销和更困难抗锯齿的代价。 这就是为什么在交互式 3D、AR 和 VR、穿越漫游、移动的 HUD 以及 CAD 或数字孪生导航中，你应该选择 Slughorn——在这些场景中，你无法预先决定观察者会有多近、视角会有多倾斜。",
+   "sents": [
+    {
+     "en": "This is critical when you cannot predict how the text will be viewed.",
+     "zh": "当你无法预测文本将以何种方式被查看时，这一点至关重要。"
+    },
+    {
+     "en": "Atlas, SDF, and MSDF all bake a fixed resolution ahead of time, which quietly assumes a bounded range of on-screen sizes and viewing angles.",
+     "zh": "Atlas、SDF 和 MSDF 都是提前烘焙固定分辨率，这悄然假设了屏幕上的尺寸和视角范围是有界的。"
+    },
+    {
+     "en": "When the relationship between the text plane and the camera is not known in advance, a free 3D camera, an arbitrary zoom, a close-up, or a steep off-axis grazing angle, those baked approximations break down: magnify past the baked resolution and the atlas blurs while SDF and MSDF round and smear, and at oblique angles the sampled field aliases.",
+     "zh": "当文本平面与相机之间的关系无法预先确定时——自由的 3D 相机、任意缩放、特写镜头，或陡峭的离轴掠射角——这些烘焙出来的近似就会失效：放大超过烘焙分辨率后，atlas 会模糊，而 SDF 和 MSDF 会变圆并拖影；在斜视角下，采样场会出现走样。"
+    },
+    {
+     "en": "You cannot pre-allocate enough resolution for every possible view without the storage exploding.",
+     "zh": "你无法为每一种可能的视图预先分配足够的分辨率，否则存储会爆炸。"
+    },
+    {
+     "en": "Slug computes coverage analytically, per pixel, after the transform, so it stays exact no matter how close, how far, or how oblique the viewer gets, with nothing baked and no ceiling to hit.",
+     "zh": "Slug 在变换之后逐像素解析地计算覆盖率，因此无论观察者凑得多近、离得多远或视角多么倾斜，它都能保持精确——没有任何烘焙，也没有触及上限的问题。"
+    },
+    {
+     "en": "Tessellation is the only other family that shares this, and it pays for it in tessellation cost and harder antialiasing.",
+     "zh": "唯一能共享这一特性的另一类方法是细分（tessellation），而它为此付出了细分开销和更困难抗锯齿的代价。"
+    },
+    {
+     "en": "That is why Slughorn is the one to reach for in interactive 3D, AR and VR, flythroughs, moving HUDs, and CAD or digital-twin navigation, where you do not get to decide in advance how close or how oblique the viewer will be.",
+     "zh": "这就是为什么在交互式 3D、AR 和 VR、穿越漫游、移动的 HUD 以及 CAD 或数字孪生导航中，你应该选择 Slughorn——在这些场景中，你无法预先决定观察者会有多近、视角会有多倾斜。"
+    }
+   ]
+  },
+  {
+   "en": "We rendered the same capital R with Slughorn (our osgSlug integration) next to the alternatives you would actually reach for: a single-channel SDF, an MSDF, Rive's renderer, and osgText's bitmap along with its bitmap-derived SDF. Every texture-based panel got the same budget, 64 texels per em, so what separates them is technique, not resolution.",
+   "zh": "我们用 Slughorn（我们的 osgSlug 集成）渲染了同一个大写字母 R，并将其与你实际会用到的替代方案并排对比：单通道 SDF、MSDF、Rive 的渲染器，以及 osgText 的位图及其由位图派生的 SDF。 所有基于纹理的方案都获得了相同的预算——每个 em 64 纹素——因此区分它们的只是技术，而不是分辨率。",
+   "sents": [
+    {
+     "en": "We rendered the same capital R with Slughorn (our osgSlug integration) next to the alternatives you would actually reach for: a single-channel SDF, an MSDF, Rive's renderer, and osgText's bitmap along with its bitmap-derived SDF.",
+     "zh": "我们用 Slughorn（我们的 osgSlug 集成）渲染了同一个大写字母 R，并将其与你实际会用到的替代方案并排对比：单通道 SDF、MSDF、Rive 的渲染器，以及 osgText 的位图及其由位图派生的 SDF。"
+    },
+    {
+     "en": "Every texture-based panel got the same budget, 64 texels per em, so what separates them is technique, not resolution.",
+     "zh": "所有基于纹理的方案都获得了相同的预算——每个 em 64 纹素——因此区分它们的只是技术，而不是分辨率。"
+    }
+   ]
+  },
+  {
+   "en": "Straight on at their baked size, five of the six are practically identical: Slughorn, Rive, and MSDF reproduce the outline, and the single-channel SDFs differ only by slightly rounded corners at the foot of the leg. The outlier is the osgText bitmap, a 64 px/em image magnified about four times, which cannot recover detail it never stored.",
+   "zh": "直接按烘焙尺寸观察，六个字形中有五个几乎完全相同：Slughorn、Rive 和 MSDF 复现了轮廓，而单通道 SDF 之间的差异仅在于腿部底端略微圆润的边角。 离群的是 osgText 位图，它是一张 64 px/em 的图像被放大约四倍后的结果，无法恢复它从未存储过的细节。",
+   "sents": [
+    {
+     "en": "Straight on at their baked size, five of the six are practically identical: Slughorn, Rive, and MSDF reproduce the outline, and the single-channel SDFs differ only by slightly rounded corners at the foot of the leg.",
+     "zh": "直接按烘焙尺寸观察，六个字形中有五个几乎完全相同：Slughorn、Rive 和 MSDF 复现了轮廓，而单通道 SDF 之间的差异仅在于腿部底端略微圆润的边角。"
+    },
+    {
+     "en": "The outlier is the osgText bitmap, a 64 px/em image magnified about four times, which cannot recover detail it never stored.",
+     "zh": "离群的是 osgText 位图，它是一张 64 px/em 的图像被放大约四倍后的结果，无法恢复它从未存储过的细节。"
+    }
+   ]
+  },
+  {
+   "en": "Tilt the glyph into perspective and the picture changes.",
+   "zh": "将字形倾斜成透视角度后，情况就变了。",
+   "sents": null
+  },
+  {
+   "en": "In grazing perspective, Slughorn and the three distance-field panels keep the R in place with clean edges, because they compute coverage per pixel inside the glyph’s own plane, so the projection costs them nothing. The osgText bitmap blurs as it recedes. Rive’s R is the wrong shape: its renderer only accepts 2D affine transforms, and a perspective projection is not affine, so the best it can do is an approximation that is exact at the center and drifts toward the edges.",
+   "zh": "在透视观察下，Slughorn 和三个距离场面板能让 R 保持原位且边缘干净，因为它们是在字形自身平面内逐像素计算覆盖率的，所以透视投影对它们没有任何代价。 osgText 的位图 R 在远去时会变得模糊。 Rive 的 R 形状是错误的：它的渲染器只接受二维仿射变换，而透视投影不是仿射的，所以它最多只能做一个在中心处精确、向边缘逐渐偏移的近似。",
+   "sents": [
+    {
+     "en": "In grazing perspective, Slughorn and the three distance-field panels keep the R in place with clean edges, because they compute coverage per pixel inside the glyph’s own plane, so the projection costs them nothing.",
+     "zh": "在透视观察下，Slughorn 和三个距离场面板能让 R 保持原位且边缘干净，因为它们是在字形自身平面内逐像素计算覆盖率的，所以透视投影对它们没有任何代价。"
+    },
+    {
+     "en": "The osgText bitmap blurs as it recedes.",
+     "zh": "osgText 的位图 R 在远去时会变得模糊。"
+    },
+    {
+     "en": "Rive’s R is the wrong shape: its renderer only accepts 2D affine transforms, and a perspective projection is not affine, so the best it can do is an approximation that is exact at the center and drifts toward the edges.",
+     "zh": "Rive 的 R 形状是错误的：它的渲染器只接受二维仿射变换，而透视投影不是仿射的，所以它最多只能做一个在中心处精确、向边缘逐渐偏移的近似。"
+    }
+   ]
+  },
+  {
+   "en": "At extreme magnification, only the curve-based renderers, Slughorn and Rive, still produce a straight, clean edge, because both work from the actual outline at whatever size it is shown (Rive by re-tessellating every frame for this view). The distance-field panels notch, where interpolating between stored samples no longer matches the true curve. The osgText bitmap has dissolved into a single grey gradient, because each of its texels now covers a large part of the panel.",
+   "zh": "在极高放大倍率下，只有基于曲线的渲染器 Slughorn 和 Rive 仍能产生笔直、干净的边缘，因为两者都是根据轮廓在任意显示尺寸下的实际形状进行工作（Rive 通过为该视图每帧重新做网格化）。 距离场面板出现了缺口，此时在存储的样本之间进行插值已无法匹配真实曲线。 osgText 位图已经溶解成一片灰色渐变，因为它的每个纹素现在都覆盖了面板的很大一部分。",
+   "sents": [
+    {
+     "en": "At extreme magnification, only the curve-based renderers, Slughorn and Rive, still produce a straight, clean edge, because both work from the actual outline at whatever size it is shown (Rive by re-tessellating every frame for this view).",
+     "zh": "在极高放大倍率下，只有基于曲线的渲染器 Slughorn 和 Rive 仍能产生笔直、干净的边缘，因为两者都是根据轮廓在任意显示尺寸下的实际形状进行工作（Rive 通过为该视图每帧重新做网格化）。"
+    },
+    {
+     "en": "The distance-field panels notch, where interpolating between stored samples no longer matches the true curve.",
+     "zh": "距离场面板出现了缺口，此时在存储的样本之间进行插值已无法匹配真实曲线。"
+    },
+    {
+     "en": "The osgText bitmap has dissolved into a single grey gradient, because each of its texels now covers a large part of the panel.",
+     "zh": "osgText 位图已经溶解成一片灰色渐变，因为它的每个纹素现在都覆盖了面板的很大一部分。"
+    }
+   ]
+  },
+  {
+   "en": "A note on fairness, because the technical reader will ask. Every texture-based method here used the same 64 texels per em, and giving them more pushes these artifacts back without removing them. The SDF and MSDF panels use default bake settings, and MSDF's error-correction options would soften some of the notches in the last image. Rive is shown at its best for these views, rendered through the camera every frame, which is more generous than how it is usually embedded in a 3D scene, where it would be drawn into a texture and mapped onto the surface, avoiding the distortion but blurring the way the bitmap does.",
+   "zh": "关于公平性的一点说明，因为技术读者会问起。 这里所有基于纹理的方法都使用了每 em 64 texel 的相同设置，给它们更多 texel 只会让这些伪影退回来，而不会消除它们。 SDF 和 MSDF 面板使用默认烘焙设置，而 MSDF 的纠错选项会柔化最后一幅图像中的一些缺口。 Rive 在这些视图中是以其最佳状态呈现的，每帧都通过相机直接渲染，这比它通常嵌入 3D 场景的方式更为慷慨——在那种方式下，它会被绘制到一张纹理上再映射到表面，虽然避免了变形，但会像位图那样产生模糊。",
+   "sents": [
+    {
+     "en": "A note on fairness, because the technical reader will ask.",
+     "zh": "关于公平性的一点说明，因为技术读者会问起。"
+    },
+    {
+     "en": "Every texture-based method here used the same 64 texels per em, and giving them more pushes these artifacts back without removing them.",
+     "zh": "这里所有基于纹理的方法都使用了每 em 64 texel 的相同设置，给它们更多 texel 只会让这些伪影退回来，而不会消除它们。"
+    },
+    {
+     "en": "The SDF and MSDF panels use default bake settings, and MSDF's error-correction options would soften some of the notches in the last image.",
+     "zh": "SDF 和 MSDF 面板使用默认烘焙设置，而 MSDF 的纠错选项会柔化最后一幅图像中的一些缺口。"
+    },
+    {
+     "en": "Rive is shown at its best for these views, rendered through the camera every frame, which is more generous than how it is usually embedded in a 3D scene, where it would be drawn into a texture and mapped onto the surface, avoiding the distortion but blurring the way the bitmap does.",
+     "zh": "Rive 在这些视图中是以其最佳状态呈现的，每帧都通过相机直接渲染，这比它通常嵌入 3D 场景的方式更为慷慨——在那种方式下，它会被绘制到一张纹理上再映射到表面，虽然避免了变形，但会像位图那样产生模糊。"
+    }
+   ]
+  },
+  {
+   "en": "Pale green marks where Slug is the best or a tied-best choice.",
+   "zh": "淡绿色标记了 Slug 是最佳选择或并列最佳选择的位置。",
+   "sents": null
+  },
+  {
+   "en": "There is no single winner, there is a right tool per job.",
+   "zh": "没有唯一的赢家，每项工作都有合适的工具。",
+   "sents": null
+  },
+  {
+   "en": "We keep saying text because text is where Slug earned its name, but Slughorn draws anything you can express as filled and stroked vector geometry, from any of its backends. That means full SVG with gradients, layered shaders, and animation within layers, and it holds up at map-cartography scale, drawing labels and linework at clarity and resolution the pre-baked approaches cannot reach. There is a lot more we will be demonstrating soon. For the features we have not called out here, see the Slughorn repository on GitHub .",
+   "zh": "我们一直说“文本”，因为文本正是 Slug 得名之处，但 Slughorn 可以绘制任何你能用填充和描边矢量几何来表达的内容，且可来自它的任意后端。 这意味着完整的 SVG 支持，包括渐变、分层着色器以及图层内的动画，而且它在地图制图级别上依然表现出色，能以预先烘焙的方案无法达到的清晰度和分辨率绘制标注与线条。 还有更多内容我们很快就会展示。 关于我们在此未提及的功能，请参阅 GitHub 上的 Slughorn 代码仓库。",
+   "sents": [
+    {
+     "en": "We keep saying text because text is where Slug earned its name, but Slughorn draws anything you can express as filled and stroked vector geometry, from any of its backends.",
+     "zh": "我们一直说“文本”，因为文本正是 Slug 得名之处，但 Slughorn 可以绘制任何你能用填充和描边矢量几何来表达的内容，且可来自它的任意后端。"
+    },
+    {
+     "en": "That means full SVG with gradients, layered shaders, and animation within layers, and it holds up at map-cartography scale, drawing labels and linework at clarity and resolution the pre-baked approaches cannot reach.",
+     "zh": "这意味着完整的 SVG 支持，包括渐变、分层着色器以及图层内的动画，而且它在地图制图级别上依然表现出色，能以预先烘焙的方案无法达到的清晰度和分辨率绘制标注与线条。"
+    },
+    {
+     "en": "There is a lot more we will be demonstrating soon.",
+     "zh": "还有更多内容我们很快就会展示。"
+    },
+    {
+     "en": "For the features we have not called out here, see the Slughorn repository on GitHub .",
+     "zh": "关于我们在此未提及的功能，请参阅 GitHub 上的 Slughorn 代码仓库。"
+    }
+   ]
+  },
+  {
+   "en": "Slughorn is our implementation of the Slug technique in modern C++20. It does the heavy work once, at build time, so there is no runtime tessellation: the outline data and band structure are prepared ahead of time and the shader just evaluates coverage. And while text is where Slug made its name, Slughorn doesn't treat glyphs specially: a glyph is just a popular shape. Anything you can describe as vector paths renders through the same pipeline, with the same quality. It ingests the formats you already use, including SVG, FreeType fonts, and paths from Blend2D, Cairo, and Skia, and it exposes a native Canvas-style API for authoring shapes directly, with fills, strokes, and gradients composited into a single GPU-ready atlas of outline data. It targets OpenGL, Vulkan, WebGPU, and DirectX, and ships with Python bindings alongside the C++ API, so the same rendering works from an embedded HUD to a full 3D scene.",
+   "zh": "Slughorn 是我们对 Slug 技术在现代 C++20 中的实现。 它在构建时一次性完成繁重的工作，因此没有运行时细分：轮廓数据和条带结构都提前准备好，着色器只需计算覆盖率。 虽然 Slug 是靠文本成名的，但 Slughorn 并不对字形做特殊处理：字形不过是一种常见的形状。 任何可以用矢量路径描述的内容都会通过同一条管线渲染，并具有相同的质量。 它可以摄取你已经在使用的格式，包括 SVG、FreeType 字体，以及来自 Blend2D、Cairo 和 Skia 的路径，并且它提供了一个原生的 Canvas 风格 API 来直接创建形状，将填充、描边和渐变合成到一个可用于 GPU 的轮廓数据图集中。 它支持 OpenGL、Vulkan、WebGPU 和 DirectX，并在 C++ API 之外附带 Python 绑定，因此同样的渲染既可用于嵌入式 HUD，也可用于完整的 3D 场景。",
+   "sents": [
+    {
+     "en": "Slughorn is our implementation of the Slug technique in modern C++20.",
+     "zh": "Slughorn 是我们对 Slug 技术在现代 C++20 中的实现。"
+    },
+    {
+     "en": "It does the heavy work once, at build time, so there is no runtime tessellation: the outline data and band structure are prepared ahead of time and the shader just evaluates coverage.",
+     "zh": "它在构建时一次性完成繁重的工作，因此没有运行时细分：轮廓数据和条带结构都提前准备好，着色器只需计算覆盖率。"
+    },
+    {
+     "en": "And while text is where Slug made its name, Slughorn doesn't treat glyphs specially: a glyph is just a popular shape.",
+     "zh": "虽然 Slug 是靠文本成名的，但 Slughorn 并不对字形做特殊处理：字形不过是一种常见的形状。"
+    },
+    {
+     "en": "Anything you can describe as vector paths renders through the same pipeline, with the same quality.",
+     "zh": "任何可以用矢量路径描述的内容都会通过同一条管线渲染，并具有相同的质量。"
+    },
+    {
+     "en": "It ingests the formats you already use, including SVG, FreeType fonts, and paths from Blend2D, Cairo, and Skia, and it exposes a native Canvas-style API for authoring shapes directly, with fills, strokes, and gradients composited into a single GPU-ready atlas of outline data.",
+     "zh": "它可以摄取你已经在使用的格式，包括 SVG、FreeType 字体，以及来自 Blend2D、Cairo 和 Skia 的路径，并且它提供了一个原生的 Canvas 风格 API 来直接创建形状，将填充、描边和渐变合成到一个可用于 GPU 的轮廓数据图集中。"
+    },
+    {
+     "en": "It targets OpenGL, Vulkan, WebGPU, and DirectX, and ships with Python bindings alongside the C++ API, so the same rendering works from an embedded HUD to a full 3D scene.",
+     "zh": "它支持 OpenGL、Vulkan、WebGPU 和 DirectX，并在 C++ API 之外附带 Python 绑定，因此同样的渲染既可用于嵌入式 HUD，也可用于完整的 3D 场景。"
+    }
+   ]
+  },
+  {
+   "en": "Credit where it is due: the Slug algorithm is Eric Lengyel's, published in the Journal of Computer Graphics Techniques and, since March 2026, free for anyone to implement. We think it is the right foundation for correct, resolution-independent text on the GPU, and Slughorn is our take on making it easy to use.",
+   "zh": "功劳应归功于应得之人：Slug 算法出自 Eric Lengyel 之手，发表于《计算机图形学技术期刊》，并且自 2026 年 3 月起，任何人都可以免费实现它。 我们认为它是在 GPU 上实现正确、分辨率无关文本的正确基础，而 Slughorn 就是我们为了让它易于使用所做的尝试。",
+   "sents": [
+    {
+     "en": "Credit where it is due: the Slug algorithm is Eric Lengyel's, published in the Journal of Computer Graphics Techniques and, since March 2026, free for anyone to implement.",
+     "zh": "功劳应归功于应得之人：Slug 算法出自 Eric Lengyel 之手，发表于《计算机图形学技术期刊》，并且自 2026 年 3 月起，任何人都可以免费实现它。"
+    },
+    {
+     "en": "We think it is the right foundation for correct, resolution-independent text on the GPU, and Slughorn is our take on making it easy to use.",
+     "zh": "我们认为它是在 GPU 上实现正确、分辨率无关文本的正确基础，而 Slughorn 就是我们为了让它易于使用所做的尝试。"
+    }
+   ]
+  },
+  {
+   "en": "If you are fighting blurry labels in a 3D scene, an atlas that will not fit your glyph set, or text that has to stay crisp while it moves, that is exactly the kind of problem we solve. Contact us to talk about Slughorn or to put it to work in your pipeline.",
+   "zh": "如果你正在 3D 场景中与模糊的标签搏斗，遇到了装不下你的字形集的图集，或者需要文字在移动时保持清晰，那正是我们要解决的这类问题。 联系我们，聊聊 Slughorn，或把它应用到你的工作流程中。",
+   "sents": [
+    {
+     "en": "If you are fighting blurry labels in a 3D scene, an atlas that will not fit your glyph set, or text that has to stay crisp while it moves, that is exactly the kind of problem we solve.",
+     "zh": "如果你正在 3D 场景中与模糊的标签搏斗，遇到了装不下你的字形集的图集，或者需要文字在移动时保持清晰，那正是我们要解决的这类问题。"
+    },
+    {
+     "en": "Contact us to talk about Slughorn or to put it to work in your pipeline.",
+     "zh": "联系我们，聊聊 Slughorn，或把它应用到你的工作流程中。"
+    }
+   ]
+  },
+  {
+   "en": "A texture atlas stores each glyph as a baked bitmap, so it blurs once you scale past its baked size. SDF (signed distance field) stores distance-to-edge instead, which scales better but rounds sharp corners. MSDF adds channels so corners stay crisp, but it is still a baked atlas at a chosen resolution. Slug skips the atlas and computes coverage from the glyph's actual Bezier outline in the shader, so it stays exact at any size or angle.",
+   "zh": "纹理图集将每个字形存储为预先烘焙的位图，因此一旦放大超过其烘焙尺寸就会模糊。 SDF（有向距离场）改为存储到边缘的距离，缩放效果更好，但会使尖锐的角变圆。 MSDF 增加了通道以保持角落清晰，但它仍然是按选定分辨率烘焙的图集。 Slug 跳过图集，在着色器中根据字形的实际贝塞尔轮廓计算覆盖率，因此在任何尺寸或角度下都保持精确。",
+   "sents": [
+    {
+     "en": "A texture atlas stores each glyph as a baked bitmap, so it blurs once you scale past its baked size.",
+     "zh": "纹理图集将每个字形存储为预先烘焙的位图，因此一旦放大超过其烘焙尺寸就会模糊。"
+    },
+    {
+     "en": "SDF (signed distance field) stores distance-to-edge instead, which scales better but rounds sharp corners.",
+     "zh": "SDF（有向距离场）改为存储到边缘的距离，缩放效果更好，但会使尖锐的角变圆。"
+    },
+    {
+     "en": "MSDF adds channels so corners stay crisp, but it is still a baked atlas at a chosen resolution.",
+     "zh": "MSDF 增加了通道以保持角落清晰，但它仍然是按选定分辨率烘焙的图集。"
+    },
+    {
+     "en": "Slug skips the atlas and computes coverage from the glyph's actual Bezier outline in the shader, so it stays exact at any size or angle.",
+     "zh": "Slug 跳过图集，在着色器中根据字形的实际贝塞尔轮廓计算覆盖率，因此在任何尺寸或角度下都保持精确。"
+    }
+   ]
+  },
+  {
+   "en": "Because most engines draw text from a pre-baked bitmap atlas. Magnify past the baked resolution, tilt it in perspective, or wrap it onto a surface, and you are stretching a fixed grid of pixels, so the edges soften. Outline-based methods like Slug avoid this because coverage is computed per pixel after the transform.",
+   "zh": "因为大多数引擎是从预先烘焙好的位图图集中提取文字的。 一旦放大超过烘焙时的分辨率、以透视方式倾斜，或将其贴到曲面上，你就是在拉伸一个固定的像素网格，因此边缘会变模糊。 像 Slug 这类基于轮廓的方法可以避免这个问题，因为覆盖率是在变换之后按像素计算的。",
+   "sents": [
+    {
+     "en": "Because most engines draw text from a pre-baked bitmap atlas.",
+     "zh": "因为大多数引擎是从预先烘焙好的位图图集中提取文字的。"
+    },
+    {
+     "en": "Magnify past the baked resolution, tilt it in perspective, or wrap it onto a surface, and you are stretching a fixed grid of pixels, so the edges soften.",
+     "zh": "一旦放大超过烘焙时的分辨率、以透视方式倾斜，或将其贴到曲面上，你就是在拉伸一个固定的像素网格，因此边缘会变模糊。"
+    },
+    {
+     "en": "Outline-based methods like Slug avoid this because coverage is computed per pixel after the transform.",
+     "zh": "像 Slug 这类基于轮廓的方法可以避免这个问题，因为覆盖率是在变换之后按像素计算的。"
+    }
+   ]
+  },
+  {
+   "en": "Slug is a technique published by Eric Lengyel in 2017 that renders glyphs directly from their quadratic Bezier outlines on the GPU, with no texture atlas and no per-frame tessellation. A fragment shader casts a ray per pixel and counts curve crossings to get exact coverage, using Lengyel's “root eligibility” test for correctness where curves meet.",
+   "zh": "Slug 是 Eric Lengyel 于 2017 年发表的一种技术，它直接在 GPU 上根据字形的二次贝塞尔轮廓进行渲染，无需纹理图集，也无需每帧做曲面细分。 片元着色器为每个像素投射一条射线，并统计曲线穿越次数以获得精确的覆盖率，并利用 Lengyel 的“根资格”测试来保证曲线相交处的正确性。",
+   "sents": [
+    {
+     "en": "Slug is a technique published by Eric Lengyel in 2017 that renders glyphs directly from their quadratic Bezier outlines on the GPU, with no texture atlas and no per-frame tessellation.",
+     "zh": "Slug 是 Eric Lengyel 于 2017 年发表的一种技术，它直接在 GPU 上根据字形的二次贝塞尔轮廓进行渲染，无需纹理图集，也无需每帧做曲面细分。"
+    },
+    {
+     "en": "A fragment shader casts a ray per pixel and counts curve crossings to get exact coverage, using Lengyel's “root eligibility” test for correctness where curves meet.",
+     "zh": "片元着色器为每个像素投射一条射线，并统计曲线穿越次数以获得精确的覆盖率，并利用 Lengyel 的“根资格”测试来保证曲线相交处的正确性。"
+    }
+   ]
+  },
+  {
+   "en": "Yes. Lengyel dedicated the Slug patent to the public domain in March 2026, so anyone can implement the technique. AlphaPixel's Slughorn is a C++20, MIT-licensed implementation of it.",
+   "zh": "是的。 Lengyel 于 2026 年 3 月将 Slug 专利贡献到公有领域，因此任何人都可以实现该技术。 AlphaPixel 的 Slughorn 是该技术的一个基于 C++20、采用 MIT 许可证的实现。",
+   "sents": [
+    {
+     "en": "Yes.",
+     "zh": "是的。"
+    },
+    {
+     "en": "Lengyel dedicated the Slug patent to the public domain in March 2026, so anyone can implement the technique.",
+     "zh": "Lengyel 于 2026 年 3 月将 Slug 专利贡献到公有领域，因此任何人都可以实现该技术。"
+    },
+    {
+     "en": "AlphaPixel's Slughorn is a C++20, MIT-licensed implementation of it.",
+     "zh": "AlphaPixel 的 Slughorn 是该技术的一个基于 C++20、采用 MIT 许可证的实现。"
+    }
+   ]
+  },
+  {
+   "en": "When you can bake an atlas up front, your text is fairly static, and you want one cheap shader that runs on a wide range of hardware. MSDF is a strong default for game HUDs and app UI. Slug wins when text must stay crisp at any scale and angle, when glyph sets are huge or dynamic, or when the camera relationship is unbounded.",
+   "zh": "当你可以预先烘焙图集、文本相当静态，并且希望用一个廉价的着色器在广泛范围的硬件上运行时。 对于游戏 HUD 和应用 UI，MSDF 是一个强有力的默认选择。 当文本必须在任意缩放和角度下保持清晰、字形集非常庞大或动态变化，或者摄像机关系不受限制时，Slug 是最佳选择。",
+   "sents": [
+    {
+     "en": "When you can bake an atlas up front, your text is fairly static, and you want one cheap shader that runs on a wide range of hardware.",
+     "zh": "当你可以预先烘焙图集、文本相当静态，并且希望用一个廉价的着色器在广泛范围的硬件上运行时。"
+    },
+    {
+     "en": "MSDF is a strong default for game HUDs and app UI.",
+     "zh": "对于游戏 HUD 和应用 UI，MSDF 是一个强有力的默认选择。"
+    },
+    {
+     "en": "Slug wins when text must stay crisp at any scale and angle, when glyph sets are huge or dynamic, or when the camera relationship is unbounded.",
+     "zh": "当文本必须在任意缩放和角度下保持清晰、字形集非常庞大或动态变化，或者摄像机关系不受限制时，Slug 是最佳选择。"
+    }
+   ]
+  },
+  {
+   "en": "Yes, and without the atlas-memory explosion. Because Slug stores outline data instead of baked bitmaps, tens of thousands of CJK glyphs cost a font's worth of curve data rather than a giant multi-size texture. In Slughorn the per-glyph band structure adds moderate overhead, still well below a CJK atlas.",
+   "zh": "是的，而且不会出现图集内存爆炸的问题。 由于 Slug 存储的是轮廓数据而非烘焙好的位图，数万个中日韩字形只需占用相当于一份字体的曲线数据，而不是巨大的多尺寸纹理。 在 Slughorn 中，每个字形的条带结构会带来适度的开销，但仍远低于中日韩图集的开销。",
+   "sents": [
+    {
+     "en": "Yes, and without the atlas-memory explosion.",
+     "zh": "是的，而且不会出现图集内存爆炸的问题。"
+    },
+    {
+     "en": "Because Slug stores outline data instead of baked bitmaps, tens of thousands of CJK glyphs cost a font's worth of curve data rather than a giant multi-size texture.",
+     "zh": "由于 Slug 存储的是轮廓数据而非烘焙好的位图，数万个中日韩字形只需占用相当于一份字体的曲线数据，而不是巨大的多尺寸纹理。"
+    },
+    {
+     "en": "In Slughorn the per-glyph band structure adds moderate overhead, still well below a CJK atlas.",
+     "zh": "在 Slughorn 中，每个字形的条带结构会带来适度的开销，但仍远低于中日韩图集的开销。"
+    }
+   ]
+  },
+  {
+   "en": "Slug is the algorithm (Lengyel's); Slughorn is AlphaPixel's library that implements it. Slughorn feeds any GPU API (OpenGL, Vulkan, WebGPU, Direct3D) and draws any filled and stroked vector geometry, not just text.",
+   "zh": "Slug 是算法（Lengyel 的算法）；Slughorn 是 AlphaPixel 实现该算法的库。 Slughorn 可对接任何 GPU API（OpenGL、Vulkan、WebGPU、Direct3D），并绘制任何填充和描边的矢量几何图形，而不仅仅是文本。",
+   "sents": [
+    {
+     "en": "Slug is the algorithm (Lengyel's); Slughorn is AlphaPixel's library that implements it.",
+     "zh": "Slug 是算法（Lengyel 的算法）；Slughorn 是 AlphaPixel 实现该算法的库。"
+    },
+    {
+     "en": "Slughorn feeds any GPU API (OpenGL, Vulkan, WebGPU, Direct3D) and draws any filled and stroked vector geometry, not just text.",
+     "zh": "Slughorn 可对接任何 GPU API（OpenGL、Vulkan、WebGPU、Direct3D），并绘制任何填充和描边的矢量几何图形，而不仅仅是文本。"
+    }
+   ]
+  },
+  {
+   "en": "Tell us what you’re building and where it’s stuck. We’ll tell you straight whether it’s something we can help with, and how we’d approach it.",
+   "zh": "告诉我们你在构建什么，以及卡在了哪里。 我们会直截了当地告诉你这是否是我们能帮忙的事情，以及我们会如何着手处理。",
+   "sents": [
+    {
+     "en": "Tell us what you’re building and where it’s stuck.",
+     "zh": "告诉我们你在构建什么，以及卡在了哪里。"
+    },
+    {
+     "en": "We’ll tell you straight whether it’s something we can help with, and how we’d approach it.",
+     "zh": "我们会直截了当地告诉你这是否是我们能帮忙的事情，以及我们会如何着手处理。"
+    }
+   ]
+  },
+  {
+   "en": "Or see how we run consulting and software development engagements.",
+   "zh": "或者查看我们如何开展咨询和软件开发项目。",
+   "sents": null
+  },
+  {
+   "en": "Copyright 2026 AlphaPixel. Website design and hosting by Wild Iris Marketing , Evergreen & Conifer Colorado.",
+   "zh": "版权所有 2026 AlphaPixel。 网站设计与托管由 Wild Iris Marketing 提供，位于科罗拉多州埃佛格林与康纳佛（Evergreen & Conifer Colorado）。",
+   "sents": [
+    {
+     "en": "Copyright 2026 AlphaPixel.",
+     "zh": "版权所有 2026 AlphaPixel。"
+    },
+    {
+     "en": "Website design and hosting by Wild Iris Marketing , Evergreen & Conifer Colorado.",
+     "zh": "网站设计与托管由 Wild Iris Marketing 提供，位于科罗拉多州埃佛格林与康纳佛（Evergreen & Conifer Colorado）。"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,1120 @@
+{
+ "id": "e03a8fbe8af2cd0b",
+ "source": "gradient",
+ "link": "https://thegradient.pub/mamba-explained/",
+ "title": "Mamba Explained",
+ "title_zh": "Mamba 解释",
+ "published": "Thu, 28 Mar 2024 01:24:43 GMT",
+ "translated_at": "2026-10-26T04:40:43Z",
+ "paragraphs": [
+  {
+   "en": "The State Space Model taking on Transformers Right now, AI is eating the world. And by AI, I mean Transformers. Practically all the big breakthroughs in AI over the last few years are due to Transformers. Mamba , however, is one of an alternative class of models called State Space Models ( SSMs ). Importantly, for the first time, Mamba promises similar performance (and crucially similar scaling laws ) as the Transformer whilst being feasible at long sequence lengths (say 1 million tokens). To achieve this long context, the Mamba authors remove the “quadratic bottleneck” in the Attention Mechanism. Mamba also runs fast - like “up to 5x faster than Transformer fast” 1 . Mamba performs similarly (or slightly better than) other Language Models on The Pile ( source ) Gu and Dao, the Mamba authors write: Mamba enjoys fast inference and linear scaling in sequence length, and its performance improves on real data up to million-length sequences. As a general sequence model backbone, Mamba achieves state-of-the-art performance across several modalities such as language, audio, and genomics. On language modelling, our Mamba-3B model outperforms Transformers of the same size and matches Transformers twice its size, both in pretraining and downstream evaluation. Here we’ll discuss: The advantages (and disadvantages) of Mamba (🐍) vs Transformers (🤖), Analogies and intuitions for thinking about Mamba, and What Mamba means for Interpretability, AI Safety and Applications. Problems with Transformers - Maybe Attention Isn’t All You Need We’re very much in the Transformer-era of history. ML used to be about detecting cats and dogs. Now, with Transformers, we’re generating human-like poetry , coding better than the median competitive programmer , and solving the protein folding problem . But Transformers have one core problem. In a transformer, every token can look back at every previous token when making predictions. For this lookback, we cache detailed information about each token in the so-called KV cache. When using the Attention Mechanism, information from all previous tokens can be passed to the current token This pairwise communication means a forward pass is O(n²) time complexity in training (the dreaded quadratic bottleneck), and each new token generated autoregressively takes O(n) time. In other words, as the context size increases, the model gets slower . To add insult to injury, storing this key-value (KV) cache requires O(n) space.",
+   "zh": "挑战Transformer地位的状态空间模型 现在，人工智能正在吞噬整个世界。 我所说的人工智能，指的就是Transformer。 过去几年人工智能领域几乎所有重大突破都要归功于Transformer。 然而，Mamba属于另一类被称为状态空间模型（SSM）的模型。 重要的是，Mamba首次在保持与Transformer相似的性能（以及至关重要的相似缩放定律）的同时，还能在长序列长度（例如100万个token）下保持可行性。 为了实现这种长上下文，Mamba的作者移除了注意力机制中的“二次瓶颈”。 Mamba的运行速度还很快——比如“比Transformer快最多5倍”1。 Mamba在The Pile上的表现与其他语言模型相当（或略好）（来源）Mamba的作者Gu和Dao写道：Mamba享有快速推理和随序列长度线性扩展的特性，其性能在真实数据上直到百万长度序列仍在提升。 作为通用序列模型骨干，Mamba在语言、音频和基因组学等多种模态上都实现了最先进的性能。 在语言建模方面，我们的Mamba-3B模型在预训练和下游评估中都超越了同尺寸的Transformer，并与两倍于其尺寸的Transformer相当。 在这里我们将讨论：Mamba（🐍）相对Transformer（🤖）的优势（和劣势），思考Mamba的类比和直觉，以及Mamba对可解释性、人工智能安全和应用的意义。 Transformer的问题——也许注意力并非你所需要的一切 我们目前正处于历史的Transformer时代。 机器学习过去只是用来检测猫和狗。 现在，有了Transformer，我们正在生成类似人类的诗歌、编写出胜过中位数竞赛程序员的代码，并解决蛋白质折叠问题。 但Transformer有一个核心问题。 在Transformer中，每个token在进行预测时都可以回看之前所有的token。 为了实现这种回看，我们将每个token的详细信息缓存在所谓的KV缓存中。 当使用注意力机制时，来自所有之前token的信息都可以传递给当前token 这种两两通信意味着前向传播在训练时具有O(n²)的时间复杂度（可怕的二次瓶颈），并且自回归生成的每个新token需要O(n)的时间。 换句话说，随着上下文大小的增加，模型会变慢。 雪上加霜的是，存储这个键值（KV）缓存需要O(n)的空间。",
+   "sents": [
+    {
+     "en": "The State Space Model taking on Transformers Right now, AI is eating the world.",
+     "zh": "挑战Transformer地位的状态空间模型 现在，人工智能正在吞噬整个世界。"
+    },
+    {
+     "en": "And by AI, I mean Transformers.",
+     "zh": "我所说的人工智能，指的就是Transformer。"
+    },
+    {
+     "en": "Practically all the big breakthroughs in AI over the last few years are due to Transformers.",
+     "zh": "过去几年人工智能领域几乎所有重大突破都要归功于Transformer。"
+    },
+    {
+     "en": "Mamba , however, is one of an alternative class of models called State Space Models ( SSMs ).",
+     "zh": "然而，Mamba属于另一类被称为状态空间模型（SSM）的模型。"
+    },
+    {
+     "en": "Importantly, for the first time, Mamba promises similar performance (and crucially similar scaling laws ) as the Transformer whilst being feasible at long sequence lengths (say 1 million tokens).",
+     "zh": "重要的是，Mamba首次在保持与Transformer相似的性能（以及至关重要的相似缩放定律）的同时，还能在长序列长度（例如100万个token）下保持可行性。"
+    },
+    {
+     "en": "To achieve this long context, the Mamba authors remove the “quadratic bottleneck” in the Attention Mechanism.",
+     "zh": "为了实现这种长上下文，Mamba的作者移除了注意力机制中的“二次瓶颈”。"
+    },
+    {
+     "en": "Mamba also runs fast - like “up to 5x faster than Transformer fast” 1 .",
+     "zh": "Mamba的运行速度还很快——比如“比Transformer快最多5倍”1。"
+    },
+    {
+     "en": "Mamba performs similarly (or slightly better than) other Language Models on The Pile ( source ) Gu and Dao, the Mamba authors write: Mamba enjoys fast inference and linear scaling in sequence length, and its performance improves on real data up to million-length sequences.",
+     "zh": "Mamba在The Pile上的表现与其他语言模型相当（或略好）（来源）Mamba的作者Gu和Dao写道：Mamba享有快速推理和随序列长度线性扩展的特性，其性能在真实数据上直到百万长度序列仍在提升。"
+    },
+    {
+     "en": "As a general sequence model backbone, Mamba achieves state-of-the-art performance across several modalities such as language, audio, and genomics.",
+     "zh": "作为通用序列模型骨干，Mamba在语言、音频和基因组学等多种模态上都实现了最先进的性能。"
+    },
+    {
+     "en": "On language modelling, our Mamba-3B model outperforms Transformers of the same size and matches Transformers twice its size, both in pretraining and downstream evaluation.",
+     "zh": "在语言建模方面，我们的Mamba-3B模型在预训练和下游评估中都超越了同尺寸的Transformer，并与两倍于其尺寸的Transformer相当。"
+    },
+    {
+     "en": "Here we’ll discuss: The advantages (and disadvantages) of Mamba (🐍) vs Transformers (🤖), Analogies and intuitions for thinking about Mamba, and What Mamba means for Interpretability, AI Safety and Applications.",
+     "zh": "在这里我们将讨论：Mamba（🐍）相对Transformer（🤖）的优势（和劣势），思考Mamba的类比和直觉，以及Mamba对可解释性、人工智能安全和应用的意义。"
+    },
+    {
+     "en": "Problems with Transformers - Maybe Attention Isn’t All You Need We’re very much in the Transformer-era of history.",
+     "zh": "Transformer的问题——也许注意力并非你所需要的一切 我们目前正处于历史的Transformer时代。"
+    },
+    {
+     "en": "ML used to be about detecting cats and dogs.",
+     "zh": "机器学习过去只是用来检测猫和狗。"
+    },
+    {
+     "en": "Now, with Transformers, we’re generating human-like poetry , coding better than the median competitive programmer , and solving the protein folding problem .",
+     "zh": "现在，有了Transformer，我们正在生成类似人类的诗歌、编写出胜过中位数竞赛程序员的代码，并解决蛋白质折叠问题。"
+    },
+    {
+     "en": "But Transformers have one core problem.",
+     "zh": "但Transformer有一个核心问题。"
+    },
+    {
+     "en": "In a transformer, every token can look back at every previous token when making predictions.",
+     "zh": "在Transformer中，每个token在进行预测时都可以回看之前所有的token。"
+    },
+    {
+     "en": "For this lookback, we cache detailed information about each token in the so-called KV cache.",
+     "zh": "为了实现这种回看，我们将每个token的详细信息缓存在所谓的KV缓存中。"
+    },
+    {
+     "en": "When using the Attention Mechanism, information from all previous tokens can be passed to the current token This pairwise communication means a forward pass is O(n²) time complexity in training (the dreaded quadratic bottleneck), and each new token generated autoregressively takes O(n) time.",
+     "zh": "当使用注意力机制时，来自所有之前token的信息都可以传递给当前token 这种两两通信意味着前向传播在训练时具有O(n²)的时间复杂度（可怕的二次瓶颈），并且自回归生成的每个新token需要O(n)的时间。"
+    },
+    {
+     "en": "In other words, as the context size increases, the model gets slower .",
+     "zh": "换句话说，随着上下文大小的增加，模型会变慢。"
+    },
+    {
+     "en": "To add insult to injury, storing this key-value (KV) cache requires O(n) space.",
+     "zh": "雪上加霜的是，存储这个键值（KV）缓存需要O(n)的空间。"
+    }
+   ]
+  },
+  {
+   "en": "Consequently, the dreaded CUDA out-of-memory (OOM) error becomes a significant threat as the memory footprint expands. If space were the only concern, we might consider adding more GPUs; however, with latency increasing quadratically, simply adding more compute might not be a viable solution. On the margin, we can mitigate the quadratic bottleneck with techniques like Sliding Window Attention or clever CUDA optimisations like FlashAttention . But ultimately, for super long context windows (like a chatbot which remembers every conversation you’ve shared), we need a different approach. Foundation Model Backbones Fundamentally, all good ML architecture backbones have components for two important operations: Communication between tokens Computation within a token The Transformer Block In transformers, this is Attention (communication) and MLPs (computation). We improve transformers by optimising these two operations 2 . We would like to substitute the Attention component 3 with an alternative mechanism for facilitating inter-token communication. Specifically, Mamba employs a Control Theory-inspired State Space Model, or SSM, for Communication purposes while retaining Multilayer Perceptron (MLP)-style projections for Computation. The Mamba Block Like a Transformer made up of stacked transformer blocks, Mamba is made up of stacked Mamba blocks as above. We would like to understand and motivate the choice of the SSM for sequence transformations. Motivating Mamba - A Throwback to Temple Run Imagine we’re building a Temple Run agent 4 . It chooses if the runner should move left or right at any time. To successfully pick the correct direction, we need information about our surroundings. Let’s call the collection of relevant information the state. Here the state likely includes your current position and velocity, the position of the nearest obstacle, weather conditions, etc. Claim 1: if you know the current state of the world and how the world is evolving, then you can use this to determine the direction to move. Note that you don’t need to look at the whole screen all the time. You can figure out what will happen to most of the screen by noting that as you run, the obstacles move down the screen. You only need to look at the top of the screen to understand the new information and then simulate the rest. This lends itself to a natural formulation. Let h be the hidden state, relevant knowledge about the world.",
+   "zh": "因此，随着内存占用不断扩大，令人畏惧的 CUDA 显存不足（OOM）错误成为一大威胁。 如果空间是唯一的顾虑，我们或许可以考虑增加更多 GPU；然而，随着延迟呈平方级增长，单纯增加算力可能并不是可行的解决方案。 在一定程度上，我们可以通过滑动窗口注意力（Sliding Window Attention）等技术，或 FlashAttention 这类巧妙的 CUDA 优化手段来缓解平方级瓶颈。 但归根结底，对于超长上下文窗口（比如能记住你所有对话内容的聊天机器人），我们需要一种不同的方法。 基础模型骨干网络从根本上说，所有优秀的机器学习架构骨干网络都包含实现两个重要操作的组件：词元之间的通信（Communication between tokens）词元内部的计算（Computation within a token）Transformer 块在 Transformer 中，这分别对应注意力机制（Attention，通信）和多层感知机（MLP，计算）。 我们通过优化这两个操作来改进 Transformer。 我们希望用另一种促进词元间通信的机制来替代注意力组件。 具体而言，Mamba 采用一种受控制论启发的状态空间模型（State Space Model，简称 SSM）来实现通信，同时保留多层感知机（MLP）风格的投影来完成计算。 Mamba 块正如 Transformer 由堆叠的 Transformer 块构成一样，Mamba 由上述堆叠的 Mamba 块构成。 我们想要理解并论证选择 SSM 进行序列变换的理由。 Mamba 的动机——重温《神庙逃亡》假设我们正在构建一个《神庙逃亡》智能体。 它决定奔跑者在任何时刻应该向左还是向右移动。 为了成功选择正确的方向，我们需要关于周围环境的信息。 我们把相关信息的集合称为状态（state）。 这里的状态很可能包括你当前的位置和速度、最近障碍物的位置、天气状况等。 断言 1：如果你知道世界当前的状态以及世界如何演变，那么你就可以据此确定移动的方向。 注意，你不需要一直盯着整个屏幕。 你可以通过观察到障碍物随着你奔跑而沿屏幕向下移动，推断出屏幕大部分区域将会发生什么。 你只需要关注屏幕顶部来了解新信息，然后推演出其余部分。 这自然引出一种形式化表述。 设 h 为隐藏状态，即关于世界的相关知识。",
+   "sents": [
+    {
+     "en": "Consequently, the dreaded CUDA out-of-memory (OOM) error becomes a significant threat as the memory footprint expands.",
+     "zh": "因此，随着内存占用不断扩大，令人畏惧的 CUDA 显存不足（OOM）错误成为一大威胁。"
+    },
+    {
+     "en": "If space were the only concern, we might consider adding more GPUs; however, with latency increasing quadratically, simply adding more compute might not be a viable solution.",
+     "zh": "如果空间是唯一的顾虑，我们或许可以考虑增加更多 GPU；然而，随着延迟呈平方级增长，单纯增加算力可能并不是可行的解决方案。"
+    },
+    {
+     "en": "On the margin, we can mitigate the quadratic bottleneck with techniques like Sliding Window Attention or clever CUDA optimisations like FlashAttention .",
+     "zh": "在一定程度上，我们可以通过滑动窗口注意力（Sliding Window Attention）等技术，或 FlashAttention 这类巧妙的 CUDA 优化手段来缓解平方级瓶颈。"
+    },
+    {
+     "en": "But ultimately, for super long context windows (like a chatbot which remembers every conversation you’ve shared), we need a different approach.",
+     "zh": "但归根结底，对于超长上下文窗口（比如能记住你所有对话内容的聊天机器人），我们需要一种不同的方法。"
+    },
+    {
+     "en": "Foundation Model Backbones Fundamentally, all good ML architecture backbones have components for two important operations: Communication between tokens Computation within a token The Transformer Block In transformers, this is Attention (communication) and MLPs (computation).",
+     "zh": "基础模型骨干网络从根本上说，所有优秀的机器学习架构骨干网络都包含实现两个重要操作的组件：词元之间的通信（Communication between tokens）词元内部的计算（Computation within a token）Transformer 块在 Transformer 中，这分别对应注意力机制（Attention，通信）和多层感知机（MLP，计算）。"
+    },
+    {
+     "en": "We improve transformers by optimising these two operations 2 .",
+     "zh": "我们通过优化这两个操作来改进 Transformer。"
+    },
+    {
+     "en": "We would like to substitute the Attention component 3 with an alternative mechanism for facilitating inter-token communication.",
+     "zh": "我们希望用另一种促进词元间通信的机制来替代注意力组件。"
+    },
+    {
+     "en": "Specifically, Mamba employs a Control Theory-inspired State Space Model, or SSM, for Communication purposes while retaining Multilayer Perceptron (MLP)-style projections for Computation.",
+     "zh": "具体而言，Mamba 采用一种受控制论启发的状态空间模型（State Space Model，简称 SSM）来实现通信，同时保留多层感知机（MLP）风格的投影来完成计算。"
+    },
+    {
+     "en": "The Mamba Block Like a Transformer made up of stacked transformer blocks, Mamba is made up of stacked Mamba blocks as above.",
+     "zh": "Mamba 块正如 Transformer 由堆叠的 Transformer 块构成一样，Mamba 由上述堆叠的 Mamba 块构成。"
+    },
+    {
+     "en": "We would like to understand and motivate the choice of the SSM for sequence transformations.",
+     "zh": "我们想要理解并论证选择 SSM 进行序列变换的理由。"
+    },
+    {
+     "en": "Motivating Mamba - A Throwback to Temple Run Imagine we’re building a Temple Run agent 4 .",
+     "zh": "Mamba 的动机——重温《神庙逃亡》假设我们正在构建一个《神庙逃亡》智能体。"
+    },
+    {
+     "en": "It chooses if the runner should move left or right at any time.",
+     "zh": "它决定奔跑者在任何时刻应该向左还是向右移动。"
+    },
+    {
+     "en": "To successfully pick the correct direction, we need information about our surroundings.",
+     "zh": "为了成功选择正确的方向，我们需要关于周围环境的信息。"
+    },
+    {
+     "en": "Let’s call the collection of relevant information the state.",
+     "zh": "我们把相关信息的集合称为状态（state）。"
+    },
+    {
+     "en": "Here the state likely includes your current position and velocity, the position of the nearest obstacle, weather conditions, etc.",
+     "zh": "这里的状态很可能包括你当前的位置和速度、最近障碍物的位置、天气状况等。"
+    },
+    {
+     "en": "Claim 1: if you know the current state of the world and how the world is evolving, then you can use this to determine the direction to move.",
+     "zh": "断言 1：如果你知道世界当前的状态以及世界如何演变，那么你就可以据此确定移动的方向。"
+    },
+    {
+     "en": "Note that you don’t need to look at the whole screen all the time.",
+     "zh": "注意，你不需要一直盯着整个屏幕。"
+    },
+    {
+     "en": "You can figure out what will happen to most of the screen by noting that as you run, the obstacles move down the screen.",
+     "zh": "你可以通过观察到障碍物随着你奔跑而沿屏幕向下移动，推断出屏幕大部分区域将会发生什么。"
+    },
+    {
+     "en": "You only need to look at the top of the screen to understand the new information and then simulate the rest.",
+     "zh": "你只需要关注屏幕顶部来了解新信息，然后推演出其余部分。"
+    },
+    {
+     "en": "This lends itself to a natural formulation.",
+     "zh": "这自然引出一种形式化表述。"
+    },
+    {
+     "en": "Let h be the hidden state, relevant knowledge about the world.",
+     "zh": "设 h 为隐藏状态，即关于世界的相关知识。"
+    }
+   ]
+  },
+  {
+   "en": "Also let x be the input, the observation that you get each time. h’ then represents the derivative of the hidden state, i.e. how the state is evolving. We’re trying to predict y, the optimal next move (right or left). Now, Claim 1 states that from the hidden state h, h’, and the new observation x, you can figure out y. More concretely, h, the state, can be represented as a differential equation (Eq 1a): $h’(t) = \\mathbf{A}h(t) + \\mathbf{B}x(t)$ Knowing h allows you to determine your next move y (Eq 1b): $y(t) = \\mathbf{C}h(t) + \\mathbf{D}x(t)$ The system's evolution is determined by its current state and newly acquired observations. A small new observation is enough, as the majority of the state can be inferred by applying known state dynamics to its previous state. That is, most of the screen isn’t new, it’s just a continuation of the previous state's natural downward trajectory. A full understanding of the state would enable optimal selection of the subsequent action, denoted as y. You can learn a lot about the system dynamics by observing the top of the screen. For instance, increased velocity of this upper section suggests an acceleration of the rest of the screen as well, so we can infer that the game is speeding up 5 . In this way, even if we start off knowing nothing about the game and only have limited observations, it becomes possible to gain a holistic understanding of the screen dynamics fairly rapidly. What’s the State? Here, state refers to the variables that, when combined with the input variables, fully determine the future system behaviour. In theory, once we have the state, there’s nothing else we need to know about the past to predict the future. With this choice of state, the system is converted to a Markov Decision Process . Ideally, the state is a fairly small amount of information which captures the essential properties of the system. That is, the state is a compression of the past 6 . Discretisation - How To Deal With Living in a Quantised World Okay, great! So, given some state and input observation, we have an autoregressive-style system to determine the next action. Amazing! In practice though, there’s a little snag here. We’re modelling time as continuous. But in real life, we get new inputs and take new actions at discrete time steps 7 . We would like to convert this continuous-time differential equation into a discrete-time difference equation . This conversion process is known as discretisation.",
+   "zh": "同样令 x 为输入，即你每次得到的观测。h‘ 则表示隐藏状态的导数，即状态如何演化。 我们试图预测 y，即最优的下一步动作（向右或向左）。 现在，断言 1 表明，从隐藏状态 h、h’ 以及新的观测 x，你可以推算出 y。 更具体地说，状态 h 可以表示为一个微分方程（式 1a）：$h'(t) = \\mathbf{A}h(t) + \\mathbf{B}x(t)$。知道 h 便能确定你的下一步动作 y（式 1b）：$y(t) = \\mathbf{C}h(t) + \\mathbf{D}x(t)$。系统的演化由其当前状态和新获得的观测决定。 一个小小的新观测就足够了，因为通过将已知的状态动力学应用于前一状态，大部分状态都可以推断出来。 也就是说，屏幕的大部分内容并不是新的，它只是前一个状态自然向下轨迹的延续。 对状态的完整理解将使我们能够最优地选择后续动作，记为 y。 通过观察屏幕顶部，你可以了解到许多关于系统动力学的信息。 例如，屏幕上部速度的加快表明屏幕其余部分也在加速，因此我们可以推断游戏正在加速 5。 这样一来，即使我们起初对游戏一无所知，只有有限的观测，也有可能相当快地获得对屏幕动力学的整体理解。什么是状态？ 这里，状态指的是这样一些变量：当它们与输入变量相结合时，能够完全决定系统未来的行为。 理论上，一旦我们拥有了状态，就不再需要了解关于过去的任何其他信息来预测未来。 有了这样的状态选择，该系统就转化为一个马尔可夫决策过程。 理想情况下，状态是相当少量的信息，它捕捉了系统的本质属性。 也就是说，状态是对过去的一种压缩 6。 离散化——如何应对生活在一个量子化的世界里 好的，很棒！ 于是，给定某个状态和输入观测，我们就拥有一个自回归式的系统来确定下一个动作。太棒了！ 然而在实践中，这里有一个小问题。 我们把时间建模为连续的。 但在现实生活中，我们是在离散的时间步长上获得新输入并采取新动作的 7。 我们希望把这个连续时间的微分方程转换为离散时间的差分方程。 这个转换过程被称为离散化。",
+   "sents": [
+    {
+     "en": "Also let x be the input, the observation that you get each time. h’ then represents the derivative of the hidden state, i.e. how the state is evolving.",
+     "zh": "同样令 x 为输入，即你每次得到的观测。h‘ 则表示隐藏状态的导数，即状态如何演化。"
+    },
+    {
+     "en": "We’re trying to predict y, the optimal next move (right or left).",
+     "zh": "我们试图预测 y，即最优的下一步动作（向右或向左）。"
+    },
+    {
+     "en": "Now, Claim 1 states that from the hidden state h, h’, and the new observation x, you can figure out y.",
+     "zh": "现在，断言 1 表明，从隐藏状态 h、h’ 以及新的观测 x，你可以推算出 y。"
+    },
+    {
+     "en": "More concretely, h, the state, can be represented as a differential equation (Eq 1a): $h’(t) = \\mathbf{A}h(t) + \\mathbf{B}x(t)$ Knowing h allows you to determine your next move y (Eq 1b): $y(t) = \\mathbf{C}h(t) + \\mathbf{D}x(t)$ The system's evolution is determined by its current state and newly acquired observations.",
+     "zh": "更具体地说，状态 h 可以表示为一个微分方程（式 1a）：$h'(t) = \\mathbf{A}h(t) + \\mathbf{B}x(t)$。知道 h 便能确定你的下一步动作 y（式 1b）：$y(t) = \\mathbf{C}h(t) + \\mathbf{D}x(t)$。系统的演化由其当前状态和新获得的观测决定。"
+    },
+    {
+     "en": "A small new observation is enough, as the majority of the state can be inferred by applying known state dynamics to its previous state.",
+     "zh": "一个小小的新观测就足够了，因为通过将已知的状态动力学应用于前一状态，大部分状态都可以推断出来。"
+    },
+    {
+     "en": "That is, most of the screen isn’t new, it’s just a continuation of the previous state's natural downward trajectory.",
+     "zh": "也就是说，屏幕的大部分内容并不是新的，它只是前一个状态自然向下轨迹的延续。"
+    },
+    {
+     "en": "A full understanding of the state would enable optimal selection of the subsequent action, denoted as y.",
+     "zh": "对状态的完整理解将使我们能够最优地选择后续动作，记为 y。"
+    },
+    {
+     "en": "You can learn a lot about the system dynamics by observing the top of the screen.",
+     "zh": "通过观察屏幕顶部，你可以了解到许多关于系统动力学的信息。"
+    },
+    {
+     "en": "For instance, increased velocity of this upper section suggests an acceleration of the rest of the screen as well, so we can infer that the game is speeding up 5 .",
+     "zh": "例如，屏幕上部速度的加快表明屏幕其余部分也在加速，因此我们可以推断游戏正在加速 5。"
+    },
+    {
+     "en": "In this way, even if we start off knowing nothing about the game and only have limited observations, it becomes possible to gain a holistic understanding of the screen dynamics fairly rapidly. What’s the State?",
+     "zh": "这样一来，即使我们起初对游戏一无所知，只有有限的观测，也有可能相当快地获得对屏幕动力学的整体理解。什么是状态？"
+    },
+    {
+     "en": "Here, state refers to the variables that, when combined with the input variables, fully determine the future system behaviour.",
+     "zh": "这里，状态指的是这样一些变量：当它们与输入变量相结合时，能够完全决定系统未来的行为。"
+    },
+    {
+     "en": "In theory, once we have the state, there’s nothing else we need to know about the past to predict the future.",
+     "zh": "理论上，一旦我们拥有了状态，就不再需要了解关于过去的任何其他信息来预测未来。"
+    },
+    {
+     "en": "With this choice of state, the system is converted to a Markov Decision Process .",
+     "zh": "有了这样的状态选择，该系统就转化为一个马尔可夫决策过程。"
+    },
+    {
+     "en": "Ideally, the state is a fairly small amount of information which captures the essential properties of the system.",
+     "zh": "理想情况下，状态是相当少量的信息，它捕捉了系统的本质属性。"
+    },
+    {
+     "en": "That is, the state is a compression of the past 6 .",
+     "zh": "也就是说，状态是对过去的一种压缩 6。"
+    },
+    {
+     "en": "Discretisation - How To Deal With Living in a Quantised World Okay, great!",
+     "zh": "离散化——如何应对生活在一个量子化的世界里 好的，很棒！"
+    },
+    {
+     "en": "So, given some state and input observation, we have an autoregressive-style system to determine the next action. Amazing!",
+     "zh": "于是，给定某个状态和输入观测，我们就拥有一个自回归式的系统来确定下一个动作。太棒了！"
+    },
+    {
+     "en": "In practice though, there’s a little snag here.",
+     "zh": "然而在实践中，这里有一个小问题。"
+    },
+    {
+     "en": "We’re modelling time as continuous.",
+     "zh": "我们把时间建模为连续的。"
+    },
+    {
+     "en": "But in real life, we get new inputs and take new actions at discrete time steps 7 .",
+     "zh": "但在现实生活中，我们是在离散的时间步长上获得新输入并采取新动作的 7。"
+    },
+    {
+     "en": "We would like to convert this continuous-time differential equation into a discrete-time difference equation .",
+     "zh": "我们希望把这个连续时间的微分方程转换为离散时间的差分方程。"
+    },
+    {
+     "en": "This conversion process is known as discretisation.",
+     "zh": "这个转换过程被称为离散化。"
+    }
+   ]
+  },
+  {
+   "en": "Discretisation is a well-studied problem in the literature. Mamba uses the Zero-Order Hold (ZOH) discretisation 8 . To give an idea of what’s happening morally, consider a naive first-order approximation 9 . From Equation 1a, we have $h’(t) = \\mathbf{A}h(t) + \\mathbf{B}x(t)$ And for small ∆, $h’(t) \\approx \\frac{h(t+\\Delta) - h(t)}{\\Delta}$ by the definition of the derivative. We let: $h_t = h(t)$ and $h_{t+1} = h(t + \\Delta)$ and substitute into Equation 1a giving: $h_{t+1} - h_t \\approx \\Delta (\\mathbf{A}h_t + \\mathbf{B}x_t)$ $\\Rightarrow h_{t+1} \\approx (I + \\Delta \\mathbf{A})h_t + (\\Delta \\mathbf{B})x_t$ Hence, after renaming the coefficients and relabelling indices, we have the discrete representations: The Discretised Version of the SSM Equation If you’ve ever looked at an RNN before 10 and this feels familiar - trust your instincts : We have some input x, which is combined with the previous hidden state by some transform to give the new hidden state. Then we use the hidden state to calculate the output at each time step. Understanding the SSM Matrices Now, we can interpret the A, B, C, D matrices more intuitively: A is the transition state matrix. It shows how you transition the current state into the next state. It asks “How should I forget the less relevant parts of the state over time?” B is mapping the new input into the state, asking “What part of my new input should I remember?” 11 C is mapping the state to the output of the SSM. It asks, “How can I use the state to make a good next prediction?” 12 D is how the new input passes through to the output. It’s a kind of modified skip connection that asks “How can I use the new input in my prediction?” Visual Representation of The SSM Equations Additionally, ∆ has a nice interpretation - it’s the step size, or what we might call the linger time or the dwell time. For large ∆, you focus more on that token; for small ∆, you skip past the token immediately and don’t include it much in the next state. ( source ) And that’s it! That’s the SSM, our ~drop-in replacement for Attention (Communication) in the Mamba block. The Computation in the Mamba architecture comes from regular linear projections, non-linearities, and local convolutions. Okay great, that’s the theory - but does this work? Well… Effectiveness vs Efficiency: Attention is Focus, Selectivity is Prioritisation At WWDC ‘97, Steve Jobs famously noted that “ focusing is about saying no ”. Focus is ruthless prioritisation.",
+   "zh": "离散化是文献中被充分研究的问题。 Mamba 使用零阶保持（ZOH）离散化 8 。 为了直观地说明其大致原理，我们考虑一个朴素的一阶近似 9 。 根据式 1a，我们有 $h’(t) = \\mathbf{A}h(t) + \\mathbf{B}x(t)$，并且当 ∆ 很小时，根据导数的定义有 $h’(t) \\approx \\frac{h(t+\\Delta) - h(t)}{\\Delta}$。 我们令：$h_t = h(t)$ 且 $h_{t+1} = h(t + \\Delta)$，并代入式 1a 得到：$h_{t+1} - h_t \\approx \\Delta (\\mathbf{A}h_t + \\mathbf{B}x_t)$ $\\Rightarrow h_{t+1} \\approx (I + \\Delta \\mathbf{A})h_t + (\\Delta \\mathbf{B})x_t$ 因此，在对系数重新命名并对索引重新标记之后，我们得到离散表示：SSM 方程的离散化版本 如果你以前看过 RNN 10 ，并觉得这很眼熟——相信你的直觉：我们有一个输入 x，它通过某种变换与之前的隐藏状态相结合，从而得到新的隐藏状态。 然后我们用隐藏状态来计算每个时间步的输出。 理解 SSM 矩阵 现在，我们可以更直观地解释 A、B、C、D 这些矩阵：A 是状态转移矩阵。 它展示了如何将当前状态转移到下一个状态。 它问的是“我应该如何随着时间推移遗忘状态中不那么相关的部分？” B 是将新输入映射到状态中，问的是“我的新输入中有哪些部分应该被记住？” 11 C 是将状态映射到 SSM 的输出。 它问的是“我如何利用状态做出更好的下一次预测？” 12 D 是新输入直接传递到输出的方式。 它是一种经过修改的跳跃连接，问的是“我如何在预测中利用新输入？” SSM 方程的可视化表示 此外，∆ 有一个很好的解释——它是步长，或者可以称之为驻留时间或停留时间。 对于较大的 ∆，你会更多地关注该词元；对于较小的 ∆，你会立即跳过该词元，几乎不把它纳入下一个状态。 （来源）就是这样！ 这就是 SSM，Mamba 模块中对注意力（Attention，通信）机制的近似“即插即用”替代品。 Mamba 架构中的计算来自常规的线性投影、非线性变换以及局部卷积。 好了，理论就是这样——但这真的有效吗？ 嗯……效果与效率：注意力是聚焦，选择性是优先级排序 在 1997 年的苹果全球开发者大会（WWDC）上，史蒂夫·乔布斯有一句名言：“专注就是学会说不”。 专注是无情的优先级排序。",
+   "sents": [
+    {
+     "en": "Discretisation is a well-studied problem in the literature.",
+     "zh": "离散化是文献中被充分研究的问题。"
+    },
+    {
+     "en": "Mamba uses the Zero-Order Hold (ZOH) discretisation 8 .",
+     "zh": "Mamba 使用零阶保持（ZOH）离散化 8 。"
+    },
+    {
+     "en": "To give an idea of what’s happening morally, consider a naive first-order approximation 9 .",
+     "zh": "为了直观地说明其大致原理，我们考虑一个朴素的一阶近似 9 。"
+    },
+    {
+     "en": "From Equation 1a, we have $h’(t) = \\mathbf{A}h(t) + \\mathbf{B}x(t)$ And for small ∆, $h’(t) \\approx \\frac{h(t+\\Delta) - h(t)}{\\Delta}$ by the definition of the derivative.",
+     "zh": "根据式 1a，我们有 $h’(t) = \\mathbf{A}h(t) + \\mathbf{B}x(t)$，并且当 ∆ 很小时，根据导数的定义有 $h’(t) \\approx \\frac{h(t+\\Delta) - h(t)}{\\Delta}$。"
+    },
+    {
+     "en": "We let: $h_t = h(t)$ and $h_{t+1} = h(t + \\Delta)$ and substitute into Equation 1a giving: $h_{t+1} - h_t \\approx \\Delta (\\mathbf{A}h_t + \\mathbf{B}x_t)$ $\\Rightarrow h_{t+1} \\approx (I + \\Delta \\mathbf{A})h_t + (\\Delta \\mathbf{B})x_t$ Hence, after renaming the coefficients and relabelling indices, we have the discrete representations: The Discretised Version of the SSM Equation If you’ve ever looked at an RNN before 10 and this feels familiar - trust your instincts : We have some input x, which is combined with the previous hidden state by some transform to give the new hidden state.",
+     "zh": "我们令：$h_t = h(t)$ 且 $h_{t+1} = h(t + \\Delta)$，并代入式 1a 得到：$h_{t+1} - h_t \\approx \\Delta (\\mathbf{A}h_t + \\mathbf{B}x_t)$ $\\Rightarrow h_{t+1} \\approx (I + \\Delta \\mathbf{A})h_t + (\\Delta \\mathbf{B})x_t$ 因此，在对系数重新命名并对索引重新标记之后，我们得到离散表示：SSM 方程的离散化版本 如果你以前看过 RNN 10 ，并觉得这很眼熟——相信你的直觉：我们有一个输入 x，它通过某种变换与之前的隐藏状态相结合，从而得到新的隐藏状态。"
+    },
+    {
+     "en": "Then we use the hidden state to calculate the output at each time step.",
+     "zh": "然后我们用隐藏状态来计算每个时间步的输出。"
+    },
+    {
+     "en": "Understanding the SSM Matrices Now, we can interpret the A, B, C, D matrices more intuitively: A is the transition state matrix.",
+     "zh": "理解 SSM 矩阵 现在，我们可以更直观地解释 A、B、C、D 这些矩阵：A 是状态转移矩阵。"
+    },
+    {
+     "en": "It shows how you transition the current state into the next state.",
+     "zh": "它展示了如何将当前状态转移到下一个状态。"
+    },
+    {
+     "en": "It asks “How should I forget the less relevant parts of the state over time?” B is mapping the new input into the state, asking “What part of my new input should I remember?” 11 C is mapping the state to the output of the SSM.",
+     "zh": "它问的是“我应该如何随着时间推移遗忘状态中不那么相关的部分？” B 是将新输入映射到状态中，问的是“我的新输入中有哪些部分应该被记住？” 11 C 是将状态映射到 SSM 的输出。"
+    },
+    {
+     "en": "It asks, “How can I use the state to make a good next prediction?” 12 D is how the new input passes through to the output.",
+     "zh": "它问的是“我如何利用状态做出更好的下一次预测？” 12 D 是新输入直接传递到输出的方式。"
+    },
+    {
+     "en": "It’s a kind of modified skip connection that asks “How can I use the new input in my prediction?” Visual Representation of The SSM Equations Additionally, ∆ has a nice interpretation - it’s the step size, or what we might call the linger time or the dwell time.",
+     "zh": "它是一种经过修改的跳跃连接，问的是“我如何在预测中利用新输入？” SSM 方程的可视化表示 此外，∆ 有一个很好的解释——它是步长，或者可以称之为驻留时间或停留时间。"
+    },
+    {
+     "en": "For large ∆, you focus more on that token; for small ∆, you skip past the token immediately and don’t include it much in the next state.",
+     "zh": "对于较大的 ∆，你会更多地关注该词元；对于较小的 ∆，你会立即跳过该词元，几乎不把它纳入下一个状态。"
+    },
+    {
+     "en": "( source ) And that’s it!",
+     "zh": "（来源）就是这样！"
+    },
+    {
+     "en": "That’s the SSM, our ~drop-in replacement for Attention (Communication) in the Mamba block.",
+     "zh": "这就是 SSM，Mamba 模块中对注意力（Attention，通信）机制的近似“即插即用”替代品。"
+    },
+    {
+     "en": "The Computation in the Mamba architecture comes from regular linear projections, non-linearities, and local convolutions.",
+     "zh": "Mamba 架构中的计算来自常规的线性投影、非线性变换以及局部卷积。"
+    },
+    {
+     "en": "Okay great, that’s the theory - but does this work?",
+     "zh": "好了，理论就是这样——但这真的有效吗？"
+    },
+    {
+     "en": "Well… Effectiveness vs Efficiency: Attention is Focus, Selectivity is Prioritisation At WWDC ‘97, Steve Jobs famously noted that “ focusing is about saying no ”.",
+     "zh": "嗯……效果与效率：注意力是聚焦，选择性是优先级排序 在 1997 年的苹果全球开发者大会（WWDC）上，史蒂夫·乔布斯有一句名言：“专注就是学会说不”。"
+    },
+    {
+     "en": "Focus is ruthless prioritisation.",
+     "zh": "专注是无情的优先级排序。"
+    }
+   ]
+  },
+  {
+   "en": "It’s common to think about Attention positively as choosing what to notice . In the Steve Jobs sense, we might instead frame Attention negatively as choosing what to discard . There’s a classic intuition pump in Machine Learning known as the Cocktail Party Problem 13 . Imagine a party with dozens of simultaneous loud conversations: Question: How do we recognise what one person is saying when others are talking at the same time? 14 Answer: The brain solves this problem by focusing your “attention” on a particular stimulus and hence drowning out all other sounds as much as possible. Transformers use Dot-Product Attention to focus on the most relevant tokens. A big reason Attention is so great is that you have the potential to look back at everything that ever happened in its context. This is like photographic memory when done right. 15 Transformers (🤖) are extremely effective . But they aren’t very efficient . They store everything from the past so that they can look back at tokens with theoretically perfect recall. Traditional RNNs (🔁) are the opposite - they forget a lot, only recalling a small amount in their hidden state and discarding the rest. They are very efficient - their state is small. Yet they are less effective as discarded information cannot be recovered. We’d like something closer to the Pareto frontier of the effectiveness/efficiency tradeoff. Something that’s more effective than traditional RNNs and more efficient than transformers. The Mamba Architecture seems to offer a solution which pushes out the Pareto frontier of effectiveness/efficiency. SSMs are as efficient as RNNs, but we might wonder how effective they are. After all, it seems like they would have a hard time discarding only unnecessary information and keeping everything relevant. If each token is being processed the same way, applying the same A and B matrices as if in a factory assembly line for tokens, there is no context-dependence. We would like the forgetting and remembering matrices (A and B respectively) to vary and dynamically adapt to inputs. The Selection Mechanism Selectivity allows each token to be transformed into the state in a way that is unique to its own needs. Selectivity is what takes us from vanilla SSM models (applying the same A (forgetting) and B (remembering) matrices to every input) to Mamba, the Selective State Space Model . In regular SSMs, A, B, C and D are learned matrices - that is $\\mathbf{A} = \\mathbf{A}_{\\theta}$ etc.",
+   "zh": "人们通常从积极的角度理解注意力（Attention），即选择去注意什么。 而借用史蒂夫·乔布斯的说法，我们或许应该从消极的角度来定义注意力，即选择去舍弃什么。 机器学习中有一个经典的思想实验，叫做「鸡尾酒会问题」13。 想象一个派对，几十个嘈杂的对话同时进行：问题：当其他人也在同时说话时，我们如何辨认出某一个人在说什么？14 答案：大脑解决这个问题的方法，是把你的「注意力」集中在特定的刺激上，从而尽可能屏蔽其他所有声音。 Transformer 使用点积注意力（Dot-Product Attention）来聚焦于最相关的词元（token）。 注意力之所以如此强大，一个重要原因在于，你有机会回看其上下文中曾经发生过的一切。 用得好的话，这就像拥有过目不忘的记忆力。15 Transformer（🤖）极为有效。 但它们的效率并不高。 它们存储过去的一切信息，从而能够以理论上完美无缺的召回能力回看所有词元。 传统的 RNN（🔁）则恰恰相反——它们会遗忘大量信息，只在其隐藏状态中记住少量内容，而把其余部分丢弃。 它们的效率非常高——因为其状态很小。 然而它们的效果较差，因为被丢弃的信息无法恢复。 我们希望有某种东西更接近效果/效率权衡的帕累托前沿。 也就是比传统 RNN 更有效、又比 Transformer 更高效的东西。 Mamba 架构似乎提供了一个解决方案，能够将效果/效率的帕累托前沿向外推进。 SSM 的效率与 RNN 相当，但我们可能会怀疑它们的效果如何。 毕竟，它们似乎很难做到只丢弃不必要的信息，而保留所有相关内容。 如果每个词元都以相同的方式处理，像流水线上的词元一样应用相同的 A 和 B 矩阵，那就没有任何上下文依赖性。 我们希望遗忘矩阵和记忆矩阵（分别是 A 和 B）能够随输入而变化并动态适应。 选择机制 选择性（Selectivity）使每个词元都能以其自身需求独有的方式被转换到状态中。 正是选择性让我们从原始的 SSM 模型（对每个输入都应用相同的 A（遗忘）和 B（记忆）矩阵）走向了 Mamba——选择性状态空间模型（Selective State Space Model）。 在常规的 SSM 中，A、B、C 和 D 都是通过学习得到的矩阵，即 $\\mathbf{A} = \\mathbf{A}_{\\theta}$ 等等。",
+   "sents": [
+    {
+     "en": "It’s common to think about Attention positively as choosing what to notice .",
+     "zh": "人们通常从积极的角度理解注意力（Attention），即选择去注意什么。"
+    },
+    {
+     "en": "In the Steve Jobs sense, we might instead frame Attention negatively as choosing what to discard .",
+     "zh": "而借用史蒂夫·乔布斯的说法，我们或许应该从消极的角度来定义注意力，即选择去舍弃什么。"
+    },
+    {
+     "en": "There’s a classic intuition pump in Machine Learning known as the Cocktail Party Problem 13 .",
+     "zh": "机器学习中有一个经典的思想实验，叫做「鸡尾酒会问题」13。"
+    },
+    {
+     "en": "Imagine a party with dozens of simultaneous loud conversations: Question: How do we recognise what one person is saying when others are talking at the same time? 14 Answer: The brain solves this problem by focusing your “attention” on a particular stimulus and hence drowning out all other sounds as much as possible.",
+     "zh": "想象一个派对，几十个嘈杂的对话同时进行：问题：当其他人也在同时说话时，我们如何辨认出某一个人在说什么？14 答案：大脑解决这个问题的方法，是把你的「注意力」集中在特定的刺激上，从而尽可能屏蔽其他所有声音。"
+    },
+    {
+     "en": "Transformers use Dot-Product Attention to focus on the most relevant tokens.",
+     "zh": "Transformer 使用点积注意力（Dot-Product Attention）来聚焦于最相关的词元（token）。"
+    },
+    {
+     "en": "A big reason Attention is so great is that you have the potential to look back at everything that ever happened in its context.",
+     "zh": "注意力之所以如此强大，一个重要原因在于，你有机会回看其上下文中曾经发生过的一切。"
+    },
+    {
+     "en": "This is like photographic memory when done right. 15 Transformers (🤖) are extremely effective .",
+     "zh": "用得好的话，这就像拥有过目不忘的记忆力。15 Transformer（🤖）极为有效。"
+    },
+    {
+     "en": "But they aren’t very efficient .",
+     "zh": "但它们的效率并不高。"
+    },
+    {
+     "en": "They store everything from the past so that they can look back at tokens with theoretically perfect recall.",
+     "zh": "它们存储过去的一切信息，从而能够以理论上完美无缺的召回能力回看所有词元。"
+    },
+    {
+     "en": "Traditional RNNs (🔁) are the opposite - they forget a lot, only recalling a small amount in their hidden state and discarding the rest.",
+     "zh": "传统的 RNN（🔁）则恰恰相反——它们会遗忘大量信息，只在其隐藏状态中记住少量内容，而把其余部分丢弃。"
+    },
+    {
+     "en": "They are very efficient - their state is small.",
+     "zh": "它们的效率非常高——因为其状态很小。"
+    },
+    {
+     "en": "Yet they are less effective as discarded information cannot be recovered.",
+     "zh": "然而它们的效果较差，因为被丢弃的信息无法恢复。"
+    },
+    {
+     "en": "We’d like something closer to the Pareto frontier of the effectiveness/efficiency tradeoff.",
+     "zh": "我们希望有某种东西更接近效果/效率权衡的帕累托前沿。"
+    },
+    {
+     "en": "Something that’s more effective than traditional RNNs and more efficient than transformers.",
+     "zh": "也就是比传统 RNN 更有效、又比 Transformer 更高效的东西。"
+    },
+    {
+     "en": "The Mamba Architecture seems to offer a solution which pushes out the Pareto frontier of effectiveness/efficiency.",
+     "zh": "Mamba 架构似乎提供了一个解决方案，能够将效果/效率的帕累托前沿向外推进。"
+    },
+    {
+     "en": "SSMs are as efficient as RNNs, but we might wonder how effective they are.",
+     "zh": "SSM 的效率与 RNN 相当，但我们可能会怀疑它们的效果如何。"
+    },
+    {
+     "en": "After all, it seems like they would have a hard time discarding only unnecessary information and keeping everything relevant.",
+     "zh": "毕竟，它们似乎很难做到只丢弃不必要的信息，而保留所有相关内容。"
+    },
+    {
+     "en": "If each token is being processed the same way, applying the same A and B matrices as if in a factory assembly line for tokens, there is no context-dependence.",
+     "zh": "如果每个词元都以相同的方式处理，像流水线上的词元一样应用相同的 A 和 B 矩阵，那就没有任何上下文依赖性。"
+    },
+    {
+     "en": "We would like the forgetting and remembering matrices (A and B respectively) to vary and dynamically adapt to inputs.",
+     "zh": "我们希望遗忘矩阵和记忆矩阵（分别是 A 和 B）能够随输入而变化并动态适应。"
+    },
+    {
+     "en": "The Selection Mechanism Selectivity allows each token to be transformed into the state in a way that is unique to its own needs.",
+     "zh": "选择机制 选择性（Selectivity）使每个词元都能以其自身需求独有的方式被转换到状态中。"
+    },
+    {
+     "en": "Selectivity is what takes us from vanilla SSM models (applying the same A (forgetting) and B (remembering) matrices to every input) to Mamba, the Selective State Space Model .",
+     "zh": "正是选择性让我们从原始的 SSM 模型（对每个输入都应用相同的 A（遗忘）和 B（记忆）矩阵）走向了 Mamba——选择性状态空间模型（Selective State Space Model）。"
+    },
+    {
+     "en": "In regular SSMs, A, B, C and D are learned matrices - that is $\\mathbf{A} = \\mathbf{A}_{\\theta}$ etc.",
+     "zh": "在常规的 SSM 中，A、B、C 和 D 都是通过学习得到的矩阵，即 $\\mathbf{A} = \\mathbf{A}_{\\theta}$ 等等。"
+    }
+   ]
+  },
+  {
+   "en": "(where θ represents the learned parameters) With the Selection Mechanism in Mamba, A, B, C and D are also functions of x. That is $\\mathbf{A} = \\mathbf{A}_{\\theta(x)}$ etc; the matrices are context dependent rather than static. Mamba (right) differs from traditional SSMs by allowing A,B,C matrices to be selective i.e. context dependent ( source ) Making A and B functions of x allows us to get the best of both worlds: We’re selective about what we include in the state, which improves effectiveness vs traditional SSMs. Yet, since the state size is bounded, we improve on efficiency relative to the Transformer. We have O(1), not O(n) space and O(n) not O(n²) time requirements. The Mamba paper authors write: The efficiency vs. effectiveness tradeoff of sequence models is characterized by how well they compress their state: efficient models must have a small state, while effective models must have a state that contains all necessary information from the context. In turn, we propose that a fundamental principle for building sequence models is selectivity: or the context-aware ability to focus on or filter out inputs into a sequential state. In particular, a selection mechanism controls how information propagates or interacts along the sequence dimension. Humans (mostly) don’t have photographic memory for everything they experience within a lifetime - or even within a day! There’s just way too much information to retain it all. Subconsciously, we select what to remember by choosing to forget, throwing away most information as we encounter it. Transformers (🤖) decide what to focus on at recall time . Humans (🧑) also decide what to throw away at memory-making time . Humans filter out information early and often. If we had infinite capacity for memorisation, it’s clear the transformer approach is better than the human approach - it truly is more effective. But it’s less efficient - transformers have to store so much information about the past that might not be relevant. Transformers (🤖) only decide what’s relevant at recall time . The innovation of Mamba (🐍) is allowing the model better ways of forgetting earlier - it’s focusing by choosing what to discard using Selectivity , throwing away less relevant information at memory-making time 16 . The Problems of Selectivity Applying the Selection Mechanism does have its gotchas though. Non-selective SSMs (i.e. A,B not dependent on x) are fast to compute in training.",
+   "zh": "（其中 θ 表示学习到的参数）借助 Mamba 中的选择机制，A、B、C 和 D 也成为 x 的函数。 也就是说 $\\mathbf{A} = \\mathbf{A}_{\\theta(x)}$ 等等；这些矩阵依赖于上下文，而不是静态的。 Mamba（右）与传统 SSM 的不同之处在于，它允许 A、B、C 矩阵具有选择性，即依赖于上下文（来源）。让 A 和 B 成为 x 的函数使我们能够两全其美：我们对状态中包含的内容是有选择性的，这相比传统 SSM 提升了有效性。 然而，由于状态大小是有界的，我们在效率上优于 Transformer。 我们具有 O(1) 而非 O(n) 的空间需求和 O(n) 而非 O(n²) 的时间需求。 Mamba 论文的作者写道：序列模型在效率与有效性之间的权衡取决于它们压缩状态的能力：高效的模型必须拥有较小的状态，而有效的模型必须拥有一个包含上下文中全部必要信息的状态。 因此，我们提出，构建序列模型的一个基本原则是选择性：即一种能感知上下文、从而聚焦或过滤输入到序列状态中的能力。 具体而言，选择机制控制信息如何沿序列维度传播或交互。 人类（大体上）并不具备摄影式记忆，无法记住一生中——甚至一天中——经历的所有事情！ 信息实在太多，不可能全部保留。 在潜意识中，我们通过选择遗忘来决定记住什么，在遇到大多数信息时便将其丢弃。 Transformer（🤖）是在回忆时决定关注什么。 人类（🧑）则在形成记忆时决定丢弃什么。 人类会及早且频繁地过滤信息。 如果我们拥有无限的记忆容量，显然 Transformer 的方式优于人类的方式——它确实更有效。 但它的效率更低——Transformer 必须存储大量可能并不相关的过去信息。 Transformer（🤖）只在回忆时决定什么相关。 Mamba（🐍）的创新在于让模型能够更好地更早遗忘——它借助选择性来决定丢弃什么以实现聚焦，在形成记忆时便丢弃较不相关的信息 16。 选择性的问题 不过，应用选择机制确实存在一些陷阱。非选择性 SSM（即 A、B 不依赖于 x）在训练时计算速度很快。",
+   "sents": [
+    {
+     "en": "(where θ represents the learned parameters) With the Selection Mechanism in Mamba, A, B, C and D are also functions of x.",
+     "zh": "（其中 θ 表示学习到的参数）借助 Mamba 中的选择机制，A、B、C 和 D 也成为 x 的函数。"
+    },
+    {
+     "en": "That is $\\mathbf{A} = \\mathbf{A}_{\\theta(x)}$ etc; the matrices are context dependent rather than static.",
+     "zh": "也就是说 $\\mathbf{A} = \\mathbf{A}_{\\theta(x)}$ 等等；这些矩阵依赖于上下文，而不是静态的。"
+    },
+    {
+     "en": "Mamba (right) differs from traditional SSMs by allowing A,B,C matrices to be selective i.e. context dependent ( source ) Making A and B functions of x allows us to get the best of both worlds: We’re selective about what we include in the state, which improves effectiveness vs traditional SSMs.",
+     "zh": "Mamba（右）与传统 SSM 的不同之处在于，它允许 A、B、C 矩阵具有选择性，即依赖于上下文（来源）。让 A 和 B 成为 x 的函数使我们能够两全其美：我们对状态中包含的内容是有选择性的，这相比传统 SSM 提升了有效性。"
+    },
+    {
+     "en": "Yet, since the state size is bounded, we improve on efficiency relative to the Transformer.",
+     "zh": "然而，由于状态大小是有界的，我们在效率上优于 Transformer。"
+    },
+    {
+     "en": "We have O(1), not O(n) space and O(n) not O(n²) time requirements.",
+     "zh": "我们具有 O(1) 而非 O(n) 的空间需求和 O(n) 而非 O(n²) 的时间需求。"
+    },
+    {
+     "en": "The Mamba paper authors write: The efficiency vs. effectiveness tradeoff of sequence models is characterized by how well they compress their state: efficient models must have a small state, while effective models must have a state that contains all necessary information from the context.",
+     "zh": "Mamba 论文的作者写道：序列模型在效率与有效性之间的权衡取决于它们压缩状态的能力：高效的模型必须拥有较小的状态，而有效的模型必须拥有一个包含上下文中全部必要信息的状态。"
+    },
+    {
+     "en": "In turn, we propose that a fundamental principle for building sequence models is selectivity: or the context-aware ability to focus on or filter out inputs into a sequential state.",
+     "zh": "因此，我们提出，构建序列模型的一个基本原则是选择性：即一种能感知上下文、从而聚焦或过滤输入到序列状态中的能力。"
+    },
+    {
+     "en": "In particular, a selection mechanism controls how information propagates or interacts along the sequence dimension.",
+     "zh": "具体而言，选择机制控制信息如何沿序列维度传播或交互。"
+    },
+    {
+     "en": "Humans (mostly) don’t have photographic memory for everything they experience within a lifetime - or even within a day!",
+     "zh": "人类（大体上）并不具备摄影式记忆，无法记住一生中——甚至一天中——经历的所有事情！"
+    },
+    {
+     "en": "There’s just way too much information to retain it all.",
+     "zh": "信息实在太多，不可能全部保留。"
+    },
+    {
+     "en": "Subconsciously, we select what to remember by choosing to forget, throwing away most information as we encounter it.",
+     "zh": "在潜意识中，我们通过选择遗忘来决定记住什么，在遇到大多数信息时便将其丢弃。"
+    },
+    {
+     "en": "Transformers (🤖) decide what to focus on at recall time .",
+     "zh": "Transformer（🤖）是在回忆时决定关注什么。"
+    },
+    {
+     "en": "Humans (🧑) also decide what to throw away at memory-making time .",
+     "zh": "人类（🧑）则在形成记忆时决定丢弃什么。"
+    },
+    {
+     "en": "Humans filter out information early and often.",
+     "zh": "人类会及早且频繁地过滤信息。"
+    },
+    {
+     "en": "If we had infinite capacity for memorisation, it’s clear the transformer approach is better than the human approach - it truly is more effective.",
+     "zh": "如果我们拥有无限的记忆容量，显然 Transformer 的方式优于人类的方式——它确实更有效。"
+    },
+    {
+     "en": "But it’s less efficient - transformers have to store so much information about the past that might not be relevant.",
+     "zh": "但它的效率更低——Transformer 必须存储大量可能并不相关的过去信息。"
+    },
+    {
+     "en": "Transformers (🤖) only decide what’s relevant at recall time .",
+     "zh": "Transformer（🤖）只在回忆时决定什么相关。"
+    },
+    {
+     "en": "The innovation of Mamba (🐍) is allowing the model better ways of forgetting earlier - it’s focusing by choosing what to discard using Selectivity , throwing away less relevant information at memory-making time 16 .",
+     "zh": "Mamba（🐍）的创新在于让模型能够更好地更早遗忘——它借助选择性来决定丢弃什么以实现聚焦，在形成记忆时便丢弃较不相关的信息 16。"
+    },
+    {
+     "en": "The Problems of Selectivity Applying the Selection Mechanism does have its gotchas though. Non-selective SSMs (i.e.",
+     "zh": "选择性的问题 不过，应用选择机制确实存在一些陷阱。非选择性 SSM（即"
+    },
+    {
+     "en": "A,B not dependent on x) are fast to compute in training.",
+     "zh": "A、B 不依赖于 x）在训练时计算速度很快。"
+    }
+   ]
+  },
+  {
+   "en": "This is because the component of Yt which depends on xi can be expressed as a linear map, i.e. a single matrix that can be precomputed! For example (ignoring the D component, the skip connection): $$y_2 = \\mathbf{C}\\mathbf{B}x_2 + \\mathbf{C}\\mathbf{A}\\mathbf{B}x_1 + \\mathbf{C}\\mathbf{A}\\mathbf{A}\\mathbf{B}x_0$$ If we’re paying attention, we might spot something even better here - this expression can be written as a convolution. Hence we can apply the Fast Fourier Transform and the Convolution Theorem to compute this very efficiently on hardware as in Equation 3 below. We can calculate Equation 2, the SSM equations, efficiently in the Convolutional Form, Equation 3. Unfortunately, with the Selection Mechanism, we lose the convolutional form. Much attention is given to making Mamba efficient on modern GPU hardware using similar hardware optimisation tricks to Tri Dao’s Flash Attention 17 . With the hardware optimisations, Mamba is able to run faster than comparably sized Transformers. Machine Learning for Political Economists - How Large Should The State Be? The Mamba authors write, “the efficiency vs. effectiveness tradeoff of sequence models is characterised by how well they compress their state”. In other words, like in political economy 18 , the fundamental problem is how to manage the state. 🔁 Traditional RNNs are anarchic They have a small, minimal state. The size of the state is bounded. The compression of state is poor. 🤖 Transformers are communist They have a maximally large state. The “state” is just a cache of the entire history with no compression. Every context token is treated equally until recall time. 🐍 Mamba has a compressed state …but it’s selective about what goes in. Mamba says we can get away with a small state if the state is well focused and effective 19 . Language Models and State Size The upshot is that state representation is critical . A smaller state is more efficient; a larger state is more effective. The key is to selectively and dynamically compress data into the state. Mamba’s Selection Mechanism allows for context-dependent reasoning, focusing and ignoring. For both performance and interpretability, understanding the state seems to be very useful. Information Flow in Transformer vs Mamba How do Transformers know anything? At initialization, a transformer isn’t very smart. It learns in two ways: Training data (Pretraining, SFT, RLHF etc) In context-data Training Data Models learn from their training data.",
+   "zh": "这是因为 Yt 中依赖于 xi 的部分可以表示为一个线性映射，即一个可以预先计算的单个矩阵！ 例如（忽略 D 分量，即跳跃连接）：$$y_2 = \\mathbf{C}\\mathbf{B}x_2 + \\mathbf{C}\\mathbf{A}\\mathbf{B}x_1 + \\mathbf{C}\\mathbf{A}\\mathbf{A}\\mathbf{B}x_0$$ 如果我们仔细观察，可能会在这里发现更妙的东西——这个表达式可以写成一个卷积。 因此，我们可以应用快速傅里叶变换和卷积定理，在硬件上非常高效地进行计算，如下面的公式 3 所示。 我们可以在卷积形式（公式 3）中高效地计算公式 2，即状态空间模型（SSM）方程。 遗憾的是，有了选择机制之后，我们便失去了卷积形式。 人们非常关注如何使用与 Tri Dao 的 Flash Attention 17 类似的硬件优化技巧，让 Mamba 在现代 GPU 硬件上高效运行。 借助硬件优化，Mamba 能够比规模相当的 Transformer 运行得更快。 面向政治经济学家的机器学习——国家应该有多大？ Mamba 的作者写道：“序列模型在效率与效果之间的权衡，取决于它们压缩状态的能力”。 换句话说，就像在政治经济学 18 中一样，根本问题在于如何管理状态。🔁 传统 RNN 是无政府主义的 它们拥有一个小而极简的状态。 状态的大小是有界的。 状态的压缩效果很差。🤖 Transformer 是共产主义式的 它们拥有一个极大的状态。 这个“状态”只是对全部历史记录的缓存，没有任何压缩。 在需要回溯之前，每个上下文 token 都被平等对待。🐍 Mamba 拥有一个压缩的状态……但它对进入状态的内容是有选择性的。 Mamba 认为，如果状态足够专注且有效，我们就可以用一个小状态来应对 19 。 语言模型与状态大小 结论是：状态表示至关重要。 较小的状态更高效；较大的状态更有效。 关键在于有选择地、动态地将数据压缩进状态。 Mamba 的选择机制支持依赖于上下文的推理、聚焦与忽略。 无论是出于性能还是可解释性的考虑，理解状态似乎都非常有用。 Transformer 与 Mamba 中的信息流动 Transformer 是如何知道任何信息的？ 在初始化时，一个 Transformer 并不聪明。 它通过两种方式学习：训练数据（预训练、SFT、RLHF 等）和上下文数据 训练数据 模型从训练数据中学习。",
+   "sents": [
+    {
+     "en": "This is because the component of Yt which depends on xi can be expressed as a linear map, i.e. a single matrix that can be precomputed!",
+     "zh": "这是因为 Yt 中依赖于 xi 的部分可以表示为一个线性映射，即一个可以预先计算的单个矩阵！"
+    },
+    {
+     "en": "For example (ignoring the D component, the skip connection): $$y_2 = \\mathbf{C}\\mathbf{B}x_2 + \\mathbf{C}\\mathbf{A}\\mathbf{B}x_1 + \\mathbf{C}\\mathbf{A}\\mathbf{A}\\mathbf{B}x_0$$ If we’re paying attention, we might spot something even better here - this expression can be written as a convolution.",
+     "zh": "例如（忽略 D 分量，即跳跃连接）：$$y_2 = \\mathbf{C}\\mathbf{B}x_2 + \\mathbf{C}\\mathbf{A}\\mathbf{B}x_1 + \\mathbf{C}\\mathbf{A}\\mathbf{A}\\mathbf{B}x_0$$ 如果我们仔细观察，可能会在这里发现更妙的东西——这个表达式可以写成一个卷积。"
+    },
+    {
+     "en": "Hence we can apply the Fast Fourier Transform and the Convolution Theorem to compute this very efficiently on hardware as in Equation 3 below.",
+     "zh": "因此，我们可以应用快速傅里叶变换和卷积定理，在硬件上非常高效地进行计算，如下面的公式 3 所示。"
+    },
+    {
+     "en": "We can calculate Equation 2, the SSM equations, efficiently in the Convolutional Form, Equation 3.",
+     "zh": "我们可以在卷积形式（公式 3）中高效地计算公式 2，即状态空间模型（SSM）方程。"
+    },
+    {
+     "en": "Unfortunately, with the Selection Mechanism, we lose the convolutional form.",
+     "zh": "遗憾的是，有了选择机制之后，我们便失去了卷积形式。"
+    },
+    {
+     "en": "Much attention is given to making Mamba efficient on modern GPU hardware using similar hardware optimisation tricks to Tri Dao’s Flash Attention 17 .",
+     "zh": "人们非常关注如何使用与 Tri Dao 的 Flash Attention 17 类似的硬件优化技巧，让 Mamba 在现代 GPU 硬件上高效运行。"
+    },
+    {
+     "en": "With the hardware optimisations, Mamba is able to run faster than comparably sized Transformers.",
+     "zh": "借助硬件优化，Mamba 能够比规模相当的 Transformer 运行得更快。"
+    },
+    {
+     "en": "Machine Learning for Political Economists - How Large Should The State Be?",
+     "zh": "面向政治经济学家的机器学习——国家应该有多大？"
+    },
+    {
+     "en": "The Mamba authors write, “the efficiency vs. effectiveness tradeoff of sequence models is characterised by how well they compress their state”.",
+     "zh": "Mamba 的作者写道：“序列模型在效率与效果之间的权衡，取决于它们压缩状态的能力”。"
+    },
+    {
+     "en": "In other words, like in political economy 18 , the fundamental problem is how to manage the state. 🔁 Traditional RNNs are anarchic They have a small, minimal state.",
+     "zh": "换句话说，就像在政治经济学 18 中一样，根本问题在于如何管理状态。🔁 传统 RNN 是无政府主义的 它们拥有一个小而极简的状态。"
+    },
+    {
+     "en": "The size of the state is bounded.",
+     "zh": "状态的大小是有界的。"
+    },
+    {
+     "en": "The compression of state is poor. 🤖 Transformers are communist They have a maximally large state.",
+     "zh": "状态的压缩效果很差。🤖 Transformer 是共产主义式的 它们拥有一个极大的状态。"
+    },
+    {
+     "en": "The “state” is just a cache of the entire history with no compression.",
+     "zh": "这个“状态”只是对全部历史记录的缓存，没有任何压缩。"
+    },
+    {
+     "en": "Every context token is treated equally until recall time. 🐍 Mamba has a compressed state …but it’s selective about what goes in.",
+     "zh": "在需要回溯之前，每个上下文 token 都被平等对待。🐍 Mamba 拥有一个压缩的状态……但它对进入状态的内容是有选择性的。"
+    },
+    {
+     "en": "Mamba says we can get away with a small state if the state is well focused and effective 19 .",
+     "zh": "Mamba 认为，如果状态足够专注且有效，我们就可以用一个小状态来应对 19 。"
+    },
+    {
+     "en": "Language Models and State Size The upshot is that state representation is critical .",
+     "zh": "语言模型与状态大小 结论是：状态表示至关重要。"
+    },
+    {
+     "en": "A smaller state is more efficient; a larger state is more effective.",
+     "zh": "较小的状态更高效；较大的状态更有效。"
+    },
+    {
+     "en": "The key is to selectively and dynamically compress data into the state.",
+     "zh": "关键在于有选择地、动态地将数据压缩进状态。"
+    },
+    {
+     "en": "Mamba’s Selection Mechanism allows for context-dependent reasoning, focusing and ignoring.",
+     "zh": "Mamba 的选择机制支持依赖于上下文的推理、聚焦与忽略。"
+    },
+    {
+     "en": "For both performance and interpretability, understanding the state seems to be very useful.",
+     "zh": "无论是出于性能还是可解释性的考虑，理解状态似乎都非常有用。"
+    },
+    {
+     "en": "Information Flow in Transformer vs Mamba How do Transformers know anything?",
+     "zh": "Transformer 与 Mamba 中的信息流动 Transformer 是如何知道任何信息的？"
+    },
+    {
+     "en": "At initialization, a transformer isn’t very smart.",
+     "zh": "在初始化时，一个 Transformer 并不聪明。"
+    },
+    {
+     "en": "It learns in two ways: Training data (Pretraining, SFT, RLHF etc) In context-data Training Data Models learn from their training data.",
+     "zh": "它通过两种方式学习：训练数据（预训练、SFT、RLHF 等）和上下文数据 训练数据 模型从训练数据中学习。"
+    }
+   ]
+  },
+  {
+   "en": "This is a kind of lossy compression of input data into the weights. We can think of the effect of pretraining data on the transformer kinda like the effect of your ancestor’s experiences on your genetics - you can’t recall their experiences, you just have vague instincts about them 20 . In Context-Data Transformers use their context as short-term memory, which they can recall with ~perfect fidelity. So we get In-Context Learning , e.g. using induction heads to solve the Indirect Object Identification task, or computing Linear Regression . Retrieval Note that Transformers don’t filter their context at all until recall time. So if we have a bunch of information we think might be useful to the Transformer, we filter it outside the Transformer (using Information Retrieval strategies) and then stuff the results into the prompt. This process is known as Retrieval Augmented Generation (RAG). RAG determines relevant information for the context window of a transformer. A human with the internet is kinda like a RAG system - you still have to know what to search but whatever you retrieve is as salient as short-term memory to you. Information Flow for Mamba Training Data acts similarly for Mamba. However, the lines are slightly blurred for in-context data and retrieval. In-context data for Mamba is compressed/filtered similar to retrieval data for transformers. This in-context data is also accessible for look-up like for transformers (although with somewhat lower fidelity). Transformer context is to Mamba states what short-term is to long-term memory. Mamba doesn’t just have “RAM”, it has a hard drive 21 22 . Swapping States as a New Prompting Paradigm Currently, we often use RAG to give a transformer contextual information. With Mamba-like models, you could instead imagine having a library of states created by running the model over specialised data. States could be shared kinda like LoRAs for image models. For example, I could do inference on 20 physics textbooks and, say, 100 physics questions and answers. Then I have a state which I can give to you. Now you don’t need to add any few-shot examples; you just simply ask your question. The in-context learning is in the state . In other words, you can drag and drop downloaded states into your model, like literal plug-in cartridges. And note that “training” a state doesn’t require any backprop. It’s more like a highly specialised one-pass fixed-size compression algorithm.",
+   "zh": "这是一种把输入数据有损压缩进权重的方式。 我们可以把预训练数据对Transformer的影响，大致类比为祖先的经历对你基因的影响——你无法回忆起他们的经历，只是对他们有一些模糊的本能。20 在上下文中的数据（In-Context Data）：Transformer将上下文作为短期记忆，能以近乎完美的保真度进行回忆。 于是我们得到了上下文学习（In-Context Learning），例如使用归纳头（induction heads）解决间接宾语识别任务，或进行线性回归计算。 检索：需要注意的是，Transformer在回忆时刻之前完全不对其上下文进行过滤。 因此，如果我们有一批认为可能对Transformer有用的信息，就在Transformer外部对其进行过滤（使用信息检索策略），然后把结果塞进提示词中。 这一过程被称为检索增强生成（Retrieval Augmented Generation，RAG）。 RAG为Transformer的上下文窗口确定相关信息。 一个能上网的人有点像一个RAG系统——你仍然需要知道该搜索什么，但你检索到的任何内容对你来说都和短期记忆一样突出。 信息流：训练数据对Mamba的作用与此类似。 不过，对于上下文内数据和检索来说，两者的界限会稍微模糊一些。 Mamba的上下文内数据会像Transformer的检索数据一样被压缩/过滤。 这些上下文内数据也可以像Transformer那样被查询（尽管保真度稍低）。 Transformer的上下文之于Mamba的状态，犹如短期记忆之于长期记忆。 Mamba不仅仅有“内存（RAM）”，它还有一块硬盘。21 22 状态交换作为一种新的提示范式：目前，我们经常使用RAG为Transformer提供上下文信息。 而对于类Mamba模型，你可以想象拥有一个状态库，这些状态是通过让模型处理专门化数据而生成的。 状态可以像图像模型的LoRA那样被共享。 例如，我可以对20本物理教科书，以及比如说100道物理问答进行推理。 然后我就得到了一个可以交给你的状态。 现在你不需要添加任何少样本示例，只需直接提出你的问题即可。 上下文学习已经包含在这个状态之中。 换句话说，你可以把下载好的状态拖放进你的模型，就像字面意义上的即插即用卡带。 并且请注意，“训练”一个状态并不需要任何反向传播。 它更像是一个高度专门化的单遍定长压缩算法。",
+   "sents": [
+    {
+     "en": "This is a kind of lossy compression of input data into the weights.",
+     "zh": "这是一种把输入数据有损压缩进权重的方式。"
+    },
+    {
+     "en": "We can think of the effect of pretraining data on the transformer kinda like the effect of your ancestor’s experiences on your genetics - you can’t recall their experiences, you just have vague instincts about them 20 .",
+     "zh": "我们可以把预训练数据对Transformer的影响，大致类比为祖先的经历对你基因的影响——你无法回忆起他们的经历，只是对他们有一些模糊的本能。20"
+    },
+    {
+     "en": "In Context-Data Transformers use their context as short-term memory, which they can recall with ~perfect fidelity.",
+     "zh": "在上下文中的数据（In-Context Data）：Transformer将上下文作为短期记忆，能以近乎完美的保真度进行回忆。"
+    },
+    {
+     "en": "So we get In-Context Learning , e.g. using induction heads to solve the Indirect Object Identification task, or computing Linear Regression .",
+     "zh": "于是我们得到了上下文学习（In-Context Learning），例如使用归纳头（induction heads）解决间接宾语识别任务，或进行线性回归计算。"
+    },
+    {
+     "en": "Retrieval Note that Transformers don’t filter their context at all until recall time.",
+     "zh": "检索：需要注意的是，Transformer在回忆时刻之前完全不对其上下文进行过滤。"
+    },
+    {
+     "en": "So if we have a bunch of information we think might be useful to the Transformer, we filter it outside the Transformer (using Information Retrieval strategies) and then stuff the results into the prompt.",
+     "zh": "因此，如果我们有一批认为可能对Transformer有用的信息，就在Transformer外部对其进行过滤（使用信息检索策略），然后把结果塞进提示词中。"
+    },
+    {
+     "en": "This process is known as Retrieval Augmented Generation (RAG).",
+     "zh": "这一过程被称为检索增强生成（Retrieval Augmented Generation，RAG）。"
+    },
+    {
+     "en": "RAG determines relevant information for the context window of a transformer.",
+     "zh": "RAG为Transformer的上下文窗口确定相关信息。"
+    },
+    {
+     "en": "A human with the internet is kinda like a RAG system - you still have to know what to search but whatever you retrieve is as salient as short-term memory to you.",
+     "zh": "一个能上网的人有点像一个RAG系统——你仍然需要知道该搜索什么，但你检索到的任何内容对你来说都和短期记忆一样突出。"
+    },
+    {
+     "en": "Information Flow for Mamba Training Data acts similarly for Mamba.",
+     "zh": "信息流：训练数据对Mamba的作用与此类似。"
+    },
+    {
+     "en": "However, the lines are slightly blurred for in-context data and retrieval.",
+     "zh": "不过，对于上下文内数据和检索来说，两者的界限会稍微模糊一些。"
+    },
+    {
+     "en": "In-context data for Mamba is compressed/filtered similar to retrieval data for transformers.",
+     "zh": "Mamba的上下文内数据会像Transformer的检索数据一样被压缩/过滤。"
+    },
+    {
+     "en": "This in-context data is also accessible for look-up like for transformers (although with somewhat lower fidelity).",
+     "zh": "这些上下文内数据也可以像Transformer那样被查询（尽管保真度稍低）。"
+    },
+    {
+     "en": "Transformer context is to Mamba states what short-term is to long-term memory.",
+     "zh": "Transformer的上下文之于Mamba的状态，犹如短期记忆之于长期记忆。"
+    },
+    {
+     "en": "Mamba doesn’t just have “RAM”, it has a hard drive 21 22 .",
+     "zh": "Mamba不仅仅有“内存（RAM）”，它还有一块硬盘。21 22"
+    },
+    {
+     "en": "Swapping States as a New Prompting Paradigm Currently, we often use RAG to give a transformer contextual information.",
+     "zh": "状态交换作为一种新的提示范式：目前，我们经常使用RAG为Transformer提供上下文信息。"
+    },
+    {
+     "en": "With Mamba-like models, you could instead imagine having a library of states created by running the model over specialised data.",
+     "zh": "而对于类Mamba模型，你可以想象拥有一个状态库，这些状态是通过让模型处理专门化数据而生成的。"
+    },
+    {
+     "en": "States could be shared kinda like LoRAs for image models.",
+     "zh": "状态可以像图像模型的LoRA那样被共享。"
+    },
+    {
+     "en": "For example, I could do inference on 20 physics textbooks and, say, 100 physics questions and answers.",
+     "zh": "例如，我可以对20本物理教科书，以及比如说100道物理问答进行推理。"
+    },
+    {
+     "en": "Then I have a state which I can give to you.",
+     "zh": "然后我就得到了一个可以交给你的状态。"
+    },
+    {
+     "en": "Now you don’t need to add any few-shot examples; you just simply ask your question.",
+     "zh": "现在你不需要添加任何少样本示例，只需直接提出你的问题即可。"
+    },
+    {
+     "en": "The in-context learning is in the state .",
+     "zh": "上下文学习已经包含在这个状态之中。"
+    },
+    {
+     "en": "In other words, you can drag and drop downloaded states into your model, like literal plug-in cartridges.",
+     "zh": "换句话说，你可以把下载好的状态拖放进你的模型，就像字面意义上的即插即用卡带。"
+    },
+    {
+     "en": "And note that “training” a state doesn’t require any backprop.",
+     "zh": "并且请注意，“训练”一个状态并不需要任何反向传播。"
+    },
+    {
+     "en": "It’s more like a highly specialised one-pass fixed-size compression algorithm.",
+     "zh": "它更像是一个高度专门化的单遍定长压缩算法。"
+    }
+   ]
+  },
+  {
+   "en": "This is unlimited in-context learning applied at inference time for zero-compute or latency 23 . The structure of an effective LLM call goes from… System Prompt Preamble Few shot-examples Question …for Transformers, to simply… Inputted state (with problem context, initial instructions, textbooks, and few-shot examples) Short question …for Mamba. This is cheaper and faster than few-shot prompting (as the state is infinitely reusable without inference cost). It’s also MUCH cheaper than finetuning and doesn’t require any gradient updates. We could imagine retrieving states in addition to context. Mamba & Mechanistic Interpretability Transformer interpretability typically involves: understanding token relationships via attention, understanding circuits, and using Dictionary Learning for unfolding MLPs. Most of the ablations that we would like to do for Mamba are still valid, but understanding token communication (1) is now more nuanced. All information moves between tokens via hidden states instead of the Attention Mechanism which can “teleport” information from one sequence position to another. For understanding in-context learning (ICL) tasks with Mamba, we will look to intervene on the SSM state. A classic task in-context learning task is Indirect Object Identification in which a model has to finish a paragraph like: Then, Shelby and Emma had a lot of fun at the school. [Shelby/Emma] gave an apple to [BLANK] The model is expected to fill in the blank with the name that is not repeated in the paragraph. In the chart below we can see that information is passed from the [Shelby/Emma] position to the final position via the hidden state (see the two blue lines in the top chart). Since it’s hypothesised that much of In-Context Learning in Transformers is downstream of more primitive sequence position operations (like Induction Heads ), Mamba being able to complete this task suggests a more general In-Context Learning ability. What’s Next for Mamba & SSMs? Mamba-like models are likely to excel in scenarios requiring extremely long context and long-term memory. Examples include: Processing DNA Generating (or reasoning over) video Writing novels An illustrative example is agents with long-term goals. Suppose you have an agent interacting with the world. Eventually, its experiences become too much for the context window of a transformer. The agent then has to compress or summarise its experiences into some more compact representation.",
+   "zh": "这是在推理时应用的无限制上下文学习，实现零计算或零延迟23。 一次有效的 LLM 调用的结构，对于 Transformer 而言是……系统提示词前言、少样本示例、问题……而对于 Mamba，则简化为……输入的状态（包含问题上下文、初始指令、教科书和少样本示例）以及简短的问题。 这比少样本提示（few-shot prompting）更便宜、更快（因为状态可以被无限次复用而不产生推理成本）。 它也比微调便宜得多，并且不需要任何梯度更新。 我们可以设想在检索上下文之外，还可以检索状态。 Mamba 与机制可解释性 Transformer 的可解释性通常涉及：通过注意力机制理解 token 之间的关系、理解电路，以及使用字典学习来解析 MLP。 我们想对 Mamba 做的大多数消融实验仍然适用，但理解 token 之间的通信（1）现在变得更加复杂。 所有信息通过隐藏状态在 token 之间传递，而不是通过能够将信息从一个序列位置“传送”到另一个位置的注意力机制。 为了理解 Mamba 的上下文学习（ICL）任务，我们将对 SSM 状态进行干预。 一个经典的上下文学习任务是间接宾语识别，其中模型必须完成类似这样的段落：Then, Shelby and Emma had a lot of fun at the school. [Shelby/Emma] gave an apple to [BLANK] 模型需要用段落中没有重复出现的那个名字来填空。 在下图中，我们可以看到信息从 [Shelby/Emma] 位置经由隐藏状态传递到最终位置（见上图中的两条蓝线）。 由于假设 Transformer 中的大部分上下文学习都源于更基础的序列位置操作（如归纳头），Mamba 能够完成这一任务表明它具备更通用的上下文学习能力。 Mamba 与 SSM 的下一步是什么？ 类 Mamba 模型可能在需要极长上下文和长期记忆的场景中表现出色。 例子包括：处理 DNA、生成（或推理）视频、写小说。一个典型的例子是拥有长期目标的智能体。 假设你有一个智能体在与世界交互。 最终，它的经历会超出 Transformer 的上下文窗口的容量。 此时智能体必须将其经历压缩或总结为某种更紧凑的表示。",
+   "sents": [
+    {
+     "en": "This is unlimited in-context learning applied at inference time for zero-compute or latency 23 .",
+     "zh": "这是在推理时应用的无限制上下文学习，实现零计算或零延迟23。"
+    },
+    {
+     "en": "The structure of an effective LLM call goes from… System Prompt Preamble Few shot-examples Question …for Transformers, to simply… Inputted state (with problem context, initial instructions, textbooks, and few-shot examples) Short question …for Mamba.",
+     "zh": "一次有效的 LLM 调用的结构，对于 Transformer 而言是……系统提示词前言、少样本示例、问题……而对于 Mamba，则简化为……输入的状态（包含问题上下文、初始指令、教科书和少样本示例）以及简短的问题。"
+    },
+    {
+     "en": "This is cheaper and faster than few-shot prompting (as the state is infinitely reusable without inference cost).",
+     "zh": "这比少样本提示（few-shot prompting）更便宜、更快（因为状态可以被无限次复用而不产生推理成本）。"
+    },
+    {
+     "en": "It’s also MUCH cheaper than finetuning and doesn’t require any gradient updates.",
+     "zh": "它也比微调便宜得多，并且不需要任何梯度更新。"
+    },
+    {
+     "en": "We could imagine retrieving states in addition to context.",
+     "zh": "我们可以设想在检索上下文之外，还可以检索状态。"
+    },
+    {
+     "en": "Mamba & Mechanistic Interpretability Transformer interpretability typically involves: understanding token relationships via attention, understanding circuits, and using Dictionary Learning for unfolding MLPs.",
+     "zh": "Mamba 与机制可解释性 Transformer 的可解释性通常涉及：通过注意力机制理解 token 之间的关系、理解电路，以及使用字典学习来解析 MLP。"
+    },
+    {
+     "en": "Most of the ablations that we would like to do for Mamba are still valid, but understanding token communication (1) is now more nuanced.",
+     "zh": "我们想对 Mamba 做的大多数消融实验仍然适用，但理解 token 之间的通信（1）现在变得更加复杂。"
+    },
+    {
+     "en": "All information moves between tokens via hidden states instead of the Attention Mechanism which can “teleport” information from one sequence position to another.",
+     "zh": "所有信息通过隐藏状态在 token 之间传递，而不是通过能够将信息从一个序列位置“传送”到另一个位置的注意力机制。"
+    },
+    {
+     "en": "For understanding in-context learning (ICL) tasks with Mamba, we will look to intervene on the SSM state.",
+     "zh": "为了理解 Mamba 的上下文学习（ICL）任务，我们将对 SSM 状态进行干预。"
+    },
+    {
+     "en": "A classic task in-context learning task is Indirect Object Identification in which a model has to finish a paragraph like: Then, Shelby and Emma had a lot of fun at the school.",
+     "zh": "一个经典的上下文学习任务是间接宾语识别，其中模型必须完成类似这样的段落：Then, Shelby and Emma had a lot of fun at the school."
+    },
+    {
+     "en": "[Shelby/Emma] gave an apple to [BLANK] The model is expected to fill in the blank with the name that is not repeated in the paragraph.",
+     "zh": "[Shelby/Emma] gave an apple to [BLANK] 模型需要用段落中没有重复出现的那个名字来填空。"
+    },
+    {
+     "en": "In the chart below we can see that information is passed from the [Shelby/Emma] position to the final position via the hidden state (see the two blue lines in the top chart).",
+     "zh": "在下图中，我们可以看到信息从 [Shelby/Emma] 位置经由隐藏状态传递到最终位置（见上图中的两条蓝线）。"
+    },
+    {
+     "en": "Since it’s hypothesised that much of In-Context Learning in Transformers is downstream of more primitive sequence position operations (like Induction Heads ), Mamba being able to complete this task suggests a more general In-Context Learning ability.",
+     "zh": "由于假设 Transformer 中的大部分上下文学习都源于更基础的序列位置操作（如归纳头），Mamba 能够完成这一任务表明它具备更通用的上下文学习能力。"
+    },
+    {
+     "en": "What’s Next for Mamba & SSMs?",
+     "zh": "Mamba 与 SSM 的下一步是什么？"
+    },
+    {
+     "en": "Mamba-like models are likely to excel in scenarios requiring extremely long context and long-term memory.",
+     "zh": "类 Mamba 模型可能在需要极长上下文和长期记忆的场景中表现出色。"
+    },
+    {
+     "en": "Examples include: Processing DNA Generating (or reasoning over) video Writing novels An illustrative example is agents with long-term goals.",
+     "zh": "例子包括：处理 DNA、生成（或推理）视频、写小说。一个典型的例子是拥有长期目标的智能体。"
+    },
+    {
+     "en": "Suppose you have an agent interacting with the world.",
+     "zh": "假设你有一个智能体在与世界交互。"
+    },
+    {
+     "en": "Eventually, its experiences become too much for the context window of a transformer.",
+     "zh": "最终，它的经历会超出 Transformer 的上下文窗口的容量。"
+    },
+    {
+     "en": "The agent then has to compress or summarise its experiences into some more compact representation.",
+     "zh": "此时智能体必须将其经历压缩或总结为某种更紧凑的表示。"
+    }
+   ]
+  },
+  {
+   "en": "But how do you decide what information is the most useful as a summary? If the task is language, LLMs are actually fairly good at summaries - okay, yeah, you’ll lose some information, but the most important stuff can be retained. However, for other disciplines, it might not be clear how to summarise. For example, what’s the best way to summarise a 2 hour movie? 24 . Could the model itself learn to do this naturally rather than a hacky workaround like trying to describe the aesthetics of the movie in text? This is what Mamba allows. Actual long-term memory. A real state where the model learns to keep what’s important. Prediction is compression - learning what’s useful to predict what’s coming next inevitably leads to building a useful compression of the previous tokens. The implications for Assistants are clear: Your chatbot co-evolves with you. It remembers. The film HER is looking better and better as time goes on 😳 Agents & AI Safety One reason for positive updates in existential risk from AGI is Language Models. Previously, Deep-RL agents trained via self-play looked set to be the first AGIs. Language models are inherently much safer since they aren’t trained with long-term goals 25 . The potential for long-term sequence reasoning here brings back the importance of agent-based AI safety. Few agent worries are relevant to Transformers with an 8k context window. Many are relevant to systems with impressive long-term memories and possible instrumental goals. The Best Collab Since Taco Bell & KFC: 🤖 x 🐍 The Mamba authors show that there’s value in combining Mamba’s long context with the Transformer’s high fidelity over short sequences. For example, if you’re making long videos, you likely can’t fit a whole movie into a Transformer’s context for attention 26 . You could imagine having Attention look at the most recent frames for short-term fluidity and an SSM for long-term narrative consistency 27 . This isn’t the end for Transformers. Their high effectiveness is exactly what’s needed for many tasks. But now Transformers aren’t the only option. Other architectures are genuinely feasible. So we’re not in the post-Transformer era. But for the first time, we’re living in the post-only-Transformers era 28 . And this blows the possibilities wide open for sequence modelling with extreme context lengths and native long-term memory.",
+   "zh": "但是，你如何决定哪些信息作为摘要最有用呢？ 如果任务是语言，大语言模型其实相当擅长做摘要——好吧，是的，你会丢失一些信息，但最重要的内容可以被保留下来。 然而，对于其他领域，如何进行摘要可能并不明确。 例如，总结一部 2 小时的电影的最佳方式是什么？24 。 模型本身能否自然地学会做到这一点，而不是像用文字描述电影的美学这样蹩脚的变通方法？ 这正是 Mamba 所实现的。真正的长期记忆。 一个真实的状态，模型在其中学会保留重要的东西。 预测即压缩——学习什么对预测接下来要出现的内容有用，不可避免地会构建出对之前 token 的有效压缩。 这对智能体助手的影响很明显：你的聊天机器人与你共同进化。它拥有记忆。 随着时间推移，电影《她》看起来越来越有预见性了 😳 智能体与 AI 安全 从 AGI 的存在性风险的正面更新来看，一个原因就是语言模型。 在此之前，通过自我博弈训练的深度强化学习智能体似乎注定会成为最早的 AGI。 语言模型本质上要安全得多，因为它们不是以长期目标来训练的 25 。 长序列推理的潜力使基于智能体的 AI 安全重新变得重要起来。 对于拥有 8k 上下文窗口的 Transformer 来说，许多对智能体的担忧并不相关。 但对于拥有出色长期记忆和可能出现工具性目标的系统来说，许多担忧是相关的。 自塔可钟和肯德基合作以来最佳组合：🤖 x 🐍 Mamba 的作者们展示了将 Mamba 的长上下文能力与 Transformer 在短序列上的高保真度相结合的价值。 例如，如果你在制作长视频，你可能无法把整部电影放进 Transformer 的上下文中进行注意力计算 26 。 你可以想象让注意力机制查看最近的帧以实现短期流畅性，同时用一个 SSM 来保证长期叙事一致性 27 。 这并不是 Transformer 的终结。 它们的高效性恰恰是许多任务所需要的。 但现在 Transformer 不再是唯一的选择。 其他架构真正变得可行了。 所以我们还没有进入后 Transformer 时代。 但这是第一次，我们生活在一个“仅有 Transformer”的时代之后的时代 28 。 这为具有极长上下文长度和原生长期记忆的序列建模打开了广阔的可能性。",
+   "sents": [
+    {
+     "en": "But how do you decide what information is the most useful as a summary?",
+     "zh": "但是，你如何决定哪些信息作为摘要最有用呢？"
+    },
+    {
+     "en": "If the task is language, LLMs are actually fairly good at summaries - okay, yeah, you’ll lose some information, but the most important stuff can be retained.",
+     "zh": "如果任务是语言，大语言模型其实相当擅长做摘要——好吧，是的，你会丢失一些信息，但最重要的内容可以被保留下来。"
+    },
+    {
+     "en": "However, for other disciplines, it might not be clear how to summarise.",
+     "zh": "然而，对于其他领域，如何进行摘要可能并不明确。"
+    },
+    {
+     "en": "For example, what’s the best way to summarise a 2 hour movie? 24 .",
+     "zh": "例如，总结一部 2 小时的电影的最佳方式是什么？24 。"
+    },
+    {
+     "en": "Could the model itself learn to do this naturally rather than a hacky workaround like trying to describe the aesthetics of the movie in text?",
+     "zh": "模型本身能否自然地学会做到这一点，而不是像用文字描述电影的美学这样蹩脚的变通方法？"
+    },
+    {
+     "en": "This is what Mamba allows. Actual long-term memory.",
+     "zh": "这正是 Mamba 所实现的。真正的长期记忆。"
+    },
+    {
+     "en": "A real state where the model learns to keep what’s important.",
+     "zh": "一个真实的状态，模型在其中学会保留重要的东西。"
+    },
+    {
+     "en": "Prediction is compression - learning what’s useful to predict what’s coming next inevitably leads to building a useful compression of the previous tokens.",
+     "zh": "预测即压缩——学习什么对预测接下来要出现的内容有用，不可避免地会构建出对之前 token 的有效压缩。"
+    },
+    {
+     "en": "The implications for Assistants are clear: Your chatbot co-evolves with you. It remembers.",
+     "zh": "这对智能体助手的影响很明显：你的聊天机器人与你共同进化。它拥有记忆。"
+    },
+    {
+     "en": "The film HER is looking better and better as time goes on 😳 Agents & AI Safety One reason for positive updates in existential risk from AGI is Language Models.",
+     "zh": "随着时间推移，电影《她》看起来越来越有预见性了 😳 智能体与 AI 安全 从 AGI 的存在性风险的正面更新来看，一个原因就是语言模型。"
+    },
+    {
+     "en": "Previously, Deep-RL agents trained via self-play looked set to be the first AGIs.",
+     "zh": "在此之前，通过自我博弈训练的深度强化学习智能体似乎注定会成为最早的 AGI。"
+    },
+    {
+     "en": "Language models are inherently much safer since they aren’t trained with long-term goals 25 .",
+     "zh": "语言模型本质上要安全得多，因为它们不是以长期目标来训练的 25 。"
+    },
+    {
+     "en": "The potential for long-term sequence reasoning here brings back the importance of agent-based AI safety.",
+     "zh": "长序列推理的潜力使基于智能体的 AI 安全重新变得重要起来。"
+    },
+    {
+     "en": "Few agent worries are relevant to Transformers with an 8k context window.",
+     "zh": "对于拥有 8k 上下文窗口的 Transformer 来说，许多对智能体的担忧并不相关。"
+    },
+    {
+     "en": "Many are relevant to systems with impressive long-term memories and possible instrumental goals.",
+     "zh": "但对于拥有出色长期记忆和可能出现工具性目标的系统来说，许多担忧是相关的。"
+    },
+    {
+     "en": "The Best Collab Since Taco Bell & KFC: 🤖 x 🐍 The Mamba authors show that there’s value in combining Mamba’s long context with the Transformer’s high fidelity over short sequences.",
+     "zh": "自塔可钟和肯德基合作以来最佳组合：🤖 x 🐍 Mamba 的作者们展示了将 Mamba 的长上下文能力与 Transformer 在短序列上的高保真度相结合的价值。"
+    },
+    {
+     "en": "For example, if you’re making long videos, you likely can’t fit a whole movie into a Transformer’s context for attention 26 .",
+     "zh": "例如，如果你在制作长视频，你可能无法把整部电影放进 Transformer 的上下文中进行注意力计算 26 。"
+    },
+    {
+     "en": "You could imagine having Attention look at the most recent frames for short-term fluidity and an SSM for long-term narrative consistency 27 .",
+     "zh": "你可以想象让注意力机制查看最近的帧以实现短期流畅性，同时用一个 SSM 来保证长期叙事一致性 27 。"
+    },
+    {
+     "en": "This isn’t the end for Transformers.",
+     "zh": "这并不是 Transformer 的终结。"
+    },
+    {
+     "en": "Their high effectiveness is exactly what’s needed for many tasks.",
+     "zh": "它们的高效性恰恰是许多任务所需要的。"
+    },
+    {
+     "en": "But now Transformers aren’t the only option.",
+     "zh": "但现在 Transformer 不再是唯一的选择。"
+    },
+    {
+     "en": "Other architectures are genuinely feasible.",
+     "zh": "其他架构真正变得可行了。"
+    },
+    {
+     "en": "So we’re not in the post-Transformer era.",
+     "zh": "所以我们还没有进入后 Transformer 时代。"
+    },
+    {
+     "en": "But for the first time, we’re living in the post-only-Transformers era 28 .",
+     "zh": "但这是第一次，我们生活在一个“仅有 Transformer”的时代之后的时代 28 。"
+    },
+    {
+     "en": "And this blows the possibilities wide open for sequence modelling with extreme context lengths and native long-term memory.",
+     "zh": "这为具有极长上下文长度和原生长期记忆的序列建模打开了广阔的可能性。"
+    }
+   ]
+  },
+  {
+   "en": "Two ML researchers, Sasha Rush (HuggingFace, Annotated Transformer, Cornell Professor) and Jonathan Frankle (Lottery Ticket Hypothesis, MosaicML, Harvard Professor), currently have a bet here . Currently Transformers are far and away in the lead. With 3 years left, there’s now a research direction with a fighting chance. All that remains to ask is: Is Attention All We Need? Footnotes 1. see Figure 8 in the Mamba paper. 2. And scaling up with massive compute. 3. More specifically the scaled dot-product Attention popularised by Transformers 4. For people who don’t see Temple Run as the cultural cornerstone it is 🤣 Temple Run was an iPhone game from 2011 similar to Subway Surfer 5. Here we assume the environment is sufficiently smooth. 6. One pretty important constraint for this to be efficient is that we don’t allow the individual elements of the state vector to interact with each other directly. We’ll use a combination of the state dimensions to determine the output but we don’t e.g. allow the velocity of the runner and the direction of the closest obstacle (or whatever else was in our state) to directly interact. This helps with efficient computation and we achieve this practically by constraining A to be a diagonal matrix. 7. Concretely consider the case of Language Models - each token is a discrete step 8. ZOH also has nice properties for the initialisations - we want A_bar to be close to the identity so that the state can be mostly maintained from timestep to timestep if desired. ZOH gives A_bar as an exponential so any diagonal element initialisations close to zero give values close to 1 9. This is known as the Euler discretisation in the literature 10. It’s wild to note that some readers might not have, we’re so far into the age of Attention that RNNs have been forgotten! 11. B is like the Query (Q) matrix for Transformers. 12. C is like the Output (O) matrix for Transformers. 13. Non-alcoholic options also available! 14. Especially as all voices roughly occupy the same space on the audio frequency spectrum Intuitively this seems really hard! 15. Note that photographic memory doesn’t necessarily imply perfect inferences from that memory! 16. To be clear, if you have a short sequence, then a transformer should theoretically be a better approach. If you can store the whole context, then why not!? If you have enough memory for a high-resolution image, why compress it into a JPEG?",
+   "zh": "两位机器学习研究者，Sasha Rush（HuggingFace、Annotated Transformer、康奈尔大学教授）和 Jonathan Frankle（彩票假设、MosaicML、哈佛大学教授），目前就此有一个赌约。 目前 Transformer 遥遥领先。 还剩三年时间，现在出现了一个研究方向，有一搏的机会。 剩下要问的就是：注意力就是我们所需要的一切吗？ 脚注 1. 见 Mamba 论文中的图 8。 2. 以及通过大规模算力进行扩展。 3. 更具体地说，是由 Transformer 普及的缩放点积注意力。 4. 对于那些不认为 Temple Run（神庙逃亡）具有其应有的文化基石地位的人 🤣 Temple Run 是 2011 年的一款 iPhone 游戏，类似于 Subway Surfer（地铁跑酷）。 5. 这里我们假设环境足够平滑。 6. 要使其高效，一个相当重要的约束是：我们不允许状态向量的各个元素之间直接相互作用。 我们会使用状态维度的组合来确定输出，但我们不允许例如跑者的速度和最近障碍物的方向（或状态中的其他任何东西）直接相互作用。 这有助于高效计算，在实践中我们通过将 A 约束为对角矩阵来实现这一点。 7. 具体考虑语言模型的情况——每个 token 是一个离散的步骤。 8. ZOH 对初始化也有很好的性质——我们希望 A_bar 接近单位矩阵，以便在需要时状态可以在时间步之间大体保持不变。 ZOH 给出的 A_bar 是一个指数形式，因此任何接近零的对角元素初始化都会得到接近 1 的值。 9. 这在文献中被称为欧拉离散化。 10. 值得注意的是，有些读者可能从未听说过，这真是不可思议——我们已经如此深入注意力的时代，以至于 RNN 都被遗忘了！ 11. B 类似于 Transformer 的 Query（Q）矩阵。 12. C 类似于 Transformer 的 Output（O）矩阵。 13. 也提供无酒精饮品！ 14. 尤其是当所有声音在音频频谱上大致占据相同空间时，直觉上这看起来真的很难！ 15. 请注意，过目不忘的记忆力并不一定意味着能从该记忆中做出完美的推断！ 16. 需要明确的是，如果你的序列很短，那么 Transformer 理论上应该是更好的方法。 如果你能存储整个上下文，那何乐而不为呢！？ 如果你有足够的内存存储高分辨率图像，为什么要把它压缩成 JPEG 呢？",
+   "sents": [
+    {
+     "en": "Two ML researchers, Sasha Rush (HuggingFace, Annotated Transformer, Cornell Professor) and Jonathan Frankle (Lottery Ticket Hypothesis, MosaicML, Harvard Professor), currently have a bet here .",
+     "zh": "两位机器学习研究者，Sasha Rush（HuggingFace、Annotated Transformer、康奈尔大学教授）和 Jonathan Frankle（彩票假设、MosaicML、哈佛大学教授），目前就此有一个赌约。"
+    },
+    {
+     "en": "Currently Transformers are far and away in the lead.",
+     "zh": "目前 Transformer 遥遥领先。"
+    },
+    {
+     "en": "With 3 years left, there’s now a research direction with a fighting chance.",
+     "zh": "还剩三年时间，现在出现了一个研究方向，有一搏的机会。"
+    },
+    {
+     "en": "All that remains to ask is: Is Attention All We Need?",
+     "zh": "剩下要问的就是：注意力就是我们所需要的一切吗？"
+    },
+    {
+     "en": "Footnotes 1. see Figure 8 in the Mamba paper. 2.",
+     "zh": "脚注 1. 见 Mamba 论文中的图 8。 2."
+    },
+    {
+     "en": "And scaling up with massive compute. 3.",
+     "zh": "以及通过大规模算力进行扩展。 3."
+    },
+    {
+     "en": "More specifically the scaled dot-product Attention popularised by Transformers 4.",
+     "zh": "更具体地说，是由 Transformer 普及的缩放点积注意力。 4."
+    },
+    {
+     "en": "For people who don’t see Temple Run as the cultural cornerstone it is 🤣 Temple Run was an iPhone game from 2011 similar to Subway Surfer 5.",
+     "zh": "对于那些不认为 Temple Run（神庙逃亡）具有其应有的文化基石地位的人 🤣 Temple Run 是 2011 年的一款 iPhone 游戏，类似于 Subway Surfer（地铁跑酷）。 5."
+    },
+    {
+     "en": "Here we assume the environment is sufficiently smooth. 6.",
+     "zh": "这里我们假设环境足够平滑。 6."
+    },
+    {
+     "en": "One pretty important constraint for this to be efficient is that we don’t allow the individual elements of the state vector to interact with each other directly.",
+     "zh": "要使其高效，一个相当重要的约束是：我们不允许状态向量的各个元素之间直接相互作用。"
+    },
+    {
+     "en": "We’ll use a combination of the state dimensions to determine the output but we don’t e.g. allow the velocity of the runner and the direction of the closest obstacle (or whatever else was in our state) to directly interact.",
+     "zh": "我们会使用状态维度的组合来确定输出，但我们不允许例如跑者的速度和最近障碍物的方向（或状态中的其他任何东西）直接相互作用。"
+    },
+    {
+     "en": "This helps with efficient computation and we achieve this practically by constraining A to be a diagonal matrix. 7.",
+     "zh": "这有助于高效计算，在实践中我们通过将 A 约束为对角矩阵来实现这一点。 7."
+    },
+    {
+     "en": "Concretely consider the case of Language Models - each token is a discrete step 8.",
+     "zh": "具体考虑语言模型的情况——每个 token 是一个离散的步骤。 8."
+    },
+    {
+     "en": "ZOH also has nice properties for the initialisations - we want A_bar to be close to the identity so that the state can be mostly maintained from timestep to timestep if desired.",
+     "zh": "ZOH 对初始化也有很好的性质——我们希望 A_bar 接近单位矩阵，以便在需要时状态可以在时间步之间大体保持不变。"
+    },
+    {
+     "en": "ZOH gives A_bar as an exponential so any diagonal element initialisations close to zero give values close to 1 9.",
+     "zh": "ZOH 给出的 A_bar 是一个指数形式，因此任何接近零的对角元素初始化都会得到接近 1 的值。 9."
+    },
+    {
+     "en": "This is known as the Euler discretisation in the literature 10.",
+     "zh": "这在文献中被称为欧拉离散化。 10."
+    },
+    {
+     "en": "It’s wild to note that some readers might not have, we’re so far into the age of Attention that RNNs have been forgotten! 11.",
+     "zh": "值得注意的是，有些读者可能从未听说过，这真是不可思议——我们已经如此深入注意力的时代，以至于 RNN 都被遗忘了！ 11."
+    },
+    {
+     "en": "B is like the Query (Q) matrix for Transformers. 12.",
+     "zh": "B 类似于 Transformer 的 Query（Q）矩阵。 12."
+    },
+    {
+     "en": "C is like the Output (O) matrix for Transformers. 13.",
+     "zh": "C 类似于 Transformer 的 Output（O）矩阵。 13."
+    },
+    {
+     "en": "Non-alcoholic options also available! 14.",
+     "zh": "也提供无酒精饮品！ 14."
+    },
+    {
+     "en": "Especially as all voices roughly occupy the same space on the audio frequency spectrum Intuitively this seems really hard! 15.",
+     "zh": "尤其是当所有声音在音频频谱上大致占据相同空间时，直觉上这看起来真的很难！ 15."
+    },
+    {
+     "en": "Note that photographic memory doesn’t necessarily imply perfect inferences from that memory! 16.",
+     "zh": "请注意，过目不忘的记忆力并不一定意味着能从该记忆中做出完美的推断！ 16."
+    },
+    {
+     "en": "To be clear, if you have a short sequence, then a transformer should theoretically be a better approach.",
+     "zh": "需要明确的是，如果你的序列很短，那么 Transformer 理论上应该是更好的方法。"
+    },
+    {
+     "en": "If you can store the whole context, then why not!?",
+     "zh": "如果你能存储整个上下文，那何乐而不为呢！？"
+    },
+    {
+     "en": "If you have enough memory for a high-resolution image, why compress it into a JPEG?",
+     "zh": "如果你有足够的内存存储高分辨率图像，为什么要把它压缩成 JPEG 呢？"
+    }
+   ]
+  },
+  {
+   "en": "But Mamba-style architectures are likely to hugely outperform with long-range sequences. 17. More details are available for engineers interested in CUDA programming - Tri’s talk, Mamba paper section 3.3.2, and the official CUDA code are good resources for understanding the Hardware-Aware Scan 18. or in Object Oriented Programming 19. Implications to actual Political Economy are left to the reader but maybe Gu and Dao accidentally solved politics!? 20. This isn’t a perfect analogy as human evolution follows a genetic algorithm rather than SGD. 21. Albeit a pretty weird hard drive at that - it morphs over time rather than being a fixed representation. 22. As a backronym, I’ve started calling the hidden_state the state space dimension (or selective state dimension) which shortens to SSD, a nice reminder for what this object represents - the long-term memory of the system. 23. I’m thinking about this similarly to the relationship between harmlessness finetuning and activation steering. State swapping, like activation steering, is an inference time intervention giving comparable results to its train time analogue. 24. This is a very non-trivial problem! How do human brains represent a movie internally? It’s not a series of the most salient frames, nor is it a text summary of the colours, nor is it a purely vibes-based summary if you can memorise some lines of the film. 25. They’re also safer since they inherently understand (though don’t necessarily embody) human values. It’s not all clear that how to teach an RL agent human morality. 26. Note that typically an image (i.e. a single frame) counts as >196 tokens, and movies are typically 24 fps so you’ll fill a 32k context window in 7 seconds 🤯 27. Another possibility that I’m excited about is applying optimisation pressure to the state itself as well as the output to have models that respect particular use cases. 28. This is slightly hyperbolic, the TS-Mixer for time series, Gradient Boosting Trees for tabular data and Graph Neural Networks for weather prediction exist and are currently used, but these aren’t at the core of AI Author Bio Kola Ayonrinde is a Research Scientist and Machine Learning Engineer with a flair for writing. He integrates technology and creativity, focusing on applying machine learning in innovative ways and exploring the societal impacts of tech advancements. Acknowledgements This post was originally posted on Kola's personal blog .",
+   "zh": "但 Mamba 风格的架构在处理长程序列时很可能会大幅胜出。17. 对 CUDA 编程感兴趣的工程师可以获取更多细节——Tri 的演讲、Mamba 论文的 3.3.2 节以及官方 CUDA 代码都是理解「硬件感知扫描」的好资源 18. 或在面向对象编程中 19. 对实际政治经济学的启示留给读者思考，但也许 Gu 和 Dao 意外解决了政治问题！？20. 这个类比并不完美，因为人类进化遵循的是遗传算法而非随机梯度下降（SGD）。21. 尽管它是一块相当奇怪的硬盘——它会随时间变化，而不是一个固定的表示。22. 作为一个逆向缩略词，我开始把 hidden_state 称为状态空间维度（或选择性状态维度），缩写为 SSD，这能很好地提醒人们这个对象代表什么——系统的长期记忆。23. 我对它的思考类似于无害性微调与激活引导之间的关系。 状态交换和激活引导一样，是一种推理时干预，能给出与其训练时对应方法相当的结果。24. 这是一个非常不平凡的问题！ 人脑是如何在内部表示一部电影的？ 它不是一系列最突出的帧，也不是对颜色的文字摘要，即使你能记住电影中的某些台词，它也不是纯粹基于感觉的摘要。25. 它们也更安全，因为它们天然地理解（尽管不一定体现）人类价值观。 目前还不清楚如何向强化学习智能体传授人类道德。26. 请注意，通常一张图像（即单帧）就相当于超过 196 个 token，而电影通常每秒 24 帧，所以你会在 7 秒内填满一个 32k 的上下文窗口 🤯 27. 让我感到兴奋的另一种可能性，是对状态本身以及输出施加优化压力，以得到符合特定用例的模型。28. 这说法略有夸张，用于时间序列的 TS-Mixer、用于表格数据的梯度提升树以及用于天气预测的图神经网络确实存在且目前仍在使用，但它们并不处于 AI 的核心。作者简介 Kola Ayonrinde 是一位研究员兼机器学习工程师，文笔出色。 他将技术与创意相结合，专注于以创新的方式应用机器学习，并探索技术进步对社会的影响。 致谢 本文最初发表于 Kola 的个人博客。",
+   "sents": [
+    {
+     "en": "But Mamba-style architectures are likely to hugely outperform with long-range sequences. 17.",
+     "zh": "但 Mamba 风格的架构在处理长程序列时很可能会大幅胜出。17."
+    },
+    {
+     "en": "More details are available for engineers interested in CUDA programming - Tri’s talk, Mamba paper section 3.3.2, and the official CUDA code are good resources for understanding the Hardware-Aware Scan 18. or in Object Oriented Programming 19.",
+     "zh": "对 CUDA 编程感兴趣的工程师可以获取更多细节——Tri 的演讲、Mamba 论文的 3.3.2 节以及官方 CUDA 代码都是理解「硬件感知扫描」的好资源 18. 或在面向对象编程中 19."
+    },
+    {
+     "en": "Implications to actual Political Economy are left to the reader but maybe Gu and Dao accidentally solved politics!? 20.",
+     "zh": "对实际政治经济学的启示留给读者思考，但也许 Gu 和 Dao 意外解决了政治问题！？20."
+    },
+    {
+     "en": "This isn’t a perfect analogy as human evolution follows a genetic algorithm rather than SGD. 21.",
+     "zh": "这个类比并不完美，因为人类进化遵循的是遗传算法而非随机梯度下降（SGD）。21."
+    },
+    {
+     "en": "Albeit a pretty weird hard drive at that - it morphs over time rather than being a fixed representation. 22.",
+     "zh": "尽管它是一块相当奇怪的硬盘——它会随时间变化，而不是一个固定的表示。22."
+    },
+    {
+     "en": "As a backronym, I’ve started calling the hidden_state the state space dimension (or selective state dimension) which shortens to SSD, a nice reminder for what this object represents - the long-term memory of the system. 23.",
+     "zh": "作为一个逆向缩略词，我开始把 hidden_state 称为状态空间维度（或选择性状态维度），缩写为 SSD，这能很好地提醒人们这个对象代表什么——系统的长期记忆。23."
+    },
+    {
+     "en": "I’m thinking about this similarly to the relationship between harmlessness finetuning and activation steering.",
+     "zh": "我对它的思考类似于无害性微调与激活引导之间的关系。"
+    },
+    {
+     "en": "State swapping, like activation steering, is an inference time intervention giving comparable results to its train time analogue. 24.",
+     "zh": "状态交换和激活引导一样，是一种推理时干预，能给出与其训练时对应方法相当的结果。24."
+    },
+    {
+     "en": "This is a very non-trivial problem!",
+     "zh": "这是一个非常不平凡的问题！"
+    },
+    {
+     "en": "How do human brains represent a movie internally?",
+     "zh": "人脑是如何在内部表示一部电影的？"
+    },
+    {
+     "en": "It’s not a series of the most salient frames, nor is it a text summary of the colours, nor is it a purely vibes-based summary if you can memorise some lines of the film. 25.",
+     "zh": "它不是一系列最突出的帧，也不是对颜色的文字摘要，即使你能记住电影中的某些台词，它也不是纯粹基于感觉的摘要。25."
+    },
+    {
+     "en": "They’re also safer since they inherently understand (though don’t necessarily embody) human values.",
+     "zh": "它们也更安全，因为它们天然地理解（尽管不一定体现）人类价值观。"
+    },
+    {
+     "en": "It’s not all clear that how to teach an RL agent human morality. 26.",
+     "zh": "目前还不清楚如何向强化学习智能体传授人类道德。26."
+    },
+    {
+     "en": "Note that typically an image (i.e. a single frame) counts as >196 tokens, and movies are typically 24 fps so you’ll fill a 32k context window in 7 seconds 🤯 27.",
+     "zh": "请注意，通常一张图像（即单帧）就相当于超过 196 个 token，而电影通常每秒 24 帧，所以你会在 7 秒内填满一个 32k 的上下文窗口 🤯 27."
+    },
+    {
+     "en": "Another possibility that I’m excited about is applying optimisation pressure to the state itself as well as the output to have models that respect particular use cases. 28.",
+     "zh": "让我感到兴奋的另一种可能性，是对状态本身以及输出施加优化压力，以得到符合特定用例的模型。28."
+    },
+    {
+     "en": "This is slightly hyperbolic, the TS-Mixer for time series, Gradient Boosting Trees for tabular data and Graph Neural Networks for weather prediction exist and are currently used, but these aren’t at the core of AI Author Bio Kola Ayonrinde is a Research Scientist and Machine Learning Engineer with a flair for writing.",
+     "zh": "这说法略有夸张，用于时间序列的 TS-Mixer、用于表格数据的梯度提升树以及用于天气预测的图神经网络确实存在且目前仍在使用，但它们并不处于 AI 的核心。作者简介 Kola Ayonrinde 是一位研究员兼机器学习工程师，文笔出色。"
+    },
+    {
+     "en": "He integrates technology and creativity, focusing on applying machine learning in innovative ways and exploring the societal impacts of tech advancements.",
+     "zh": "他将技术与创意相结合，专注于以创新的方式应用机器学习，并探索技术进步对社会的影响。"
+    },
+    {
+     "en": "Acknowledgements This post was originally posted on Kola's personal blog .",
+     "zh": "致谢 本文最初发表于 Kola 的个人博客。"
+    }
+   ]
+  },
+  {
+   "en": "Thanks to Gonçalo for reading an early draft, Jaden for the nnsight library used for the Interpretability analysis and Tessa for Mamba patching visualisations.Also see: Mamba paper , Mamba Python code, Annotated S4 , Nathan Labenz podcast Citation For attribution in academic contexts or books, please cite this work as Kola Ayonrinde, \"Mamba Explained,\" The Gradient, 2024 @article{Ayonrinde2024mamba, author = {Kola Ayonrinde}, title = {Mamba Explained}, journal = {The Gradient}, year = {2024}, howpublished = {\\url{https://thegradient.pub/mamba-explained}, }",
+   "zh": "感谢 Gonçalo 阅读早期草稿，感谢 Jaden 提供用于可解释性分析的 nnsight 库，以及 Tessa 制作的 Mamba patching 可视化。另请参见：Mamba 论文、Mamba Python 代码、Annotated S4、Nathan Labenz 播客\n\n引用\n\n在学术或书籍等需要注明出处的场景中，请按如下方式引用本作品：\n\nKola Ayonrinde, \"Mamba Explained,\" The Gradient, 2024\n\n@article{Ayonrinde2024mamba,\n  author = {Kola Ayonrinde},\n  title = {Mamba Explained},\n  journal = {The Gradient},\n  year = {2024},\n  howpublished = {\\url{https://thegradient.pub/mamba-explained},\n}",
+   "sents": null
+  }
+ ]
+}

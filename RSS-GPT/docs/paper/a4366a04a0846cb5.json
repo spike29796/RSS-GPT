@@ -1,0 +1,2300 @@
+{
+ "id": "a4366a04a0846cb5",
+ "source": "hackernews",
+ "link": "https://www.linum.ai/field-notes/jit-ddt",
+ "title": "Training Text-to-Image Models 3.6× Faster",
+ "title_zh": "JIT-DDT 发布",
+ "published": "Wed, 16 Sep 2026 16:58:13 +0000",
+ "translated_at": "2026-10-26T07:43:17Z",
+ "paragraphs": [
+  {
+   "en": "Beating latent diffusion models with pixel-space encoder-decoders",
+   "zh": "用像素空间编码器-解码器击败潜在扩散模型",
+   "sents": null
+  },
+  {
+   "en": "Linum v2 was bottlenecked by the enormous size of its attention context window. A 720p, 5 second clip cost a whopping 110K tokens. To put that in perspective, LLMs see samples with fewer than 8K tokens for 97% of their pretraining . Attention is quadratic in cost, so the biggest lever we have to accelerate model training is pruning the context window down.",
+   "zh": "Linum v2 的瓶颈在于其注意力上下文窗口的巨大规模。 一段 720p、5 秒的视频剪辑就要消耗高达 11 万个 token。 作为对比，大语言模型在 97% 的预训练中所见样本的 token 数低于 8K。 注意力的计算成本是平方级的，因此加速模型训练的最大杠杆就是把上下文窗口裁剪得更小。",
+   "sents": [
+    {
+     "en": "Linum v2 was bottlenecked by the enormous size of its attention context window.",
+     "zh": "Linum v2 的瓶颈在于其注意力上下文窗口的巨大规模。"
+    },
+    {
+     "en": "A 720p, 5 second clip cost a whopping 110K tokens.",
+     "zh": "一段 720p、5 秒的视频剪辑就要消耗高达 11 万个 token。"
+    },
+    {
+     "en": "To put that in perspective, LLMs see samples with fewer than 8K tokens for 97% of their pretraining .",
+     "zh": "作为对比，大语言模型在 97% 的预训练中所见样本的 token 数低于 8K。"
+    },
+    {
+     "en": "Attention is quadratic in cost, so the biggest lever we have to accelerate model training is pruning the context window down.",
+     "zh": "注意力的计算成本是平方级的，因此加速模型训练的最大杠杆就是把上下文窗口裁剪得更小。"
+    }
+   ]
+  },
+  {
+   "en": "Most generative image and video systems are Latent Diffusion Models (LDMs). They split compression and generation into independently trained modules: the Variational Autoencoder (VAE) and the DiT (Diffusion Transformer). Recently, pixel-space models like the JiT have shown to be a promising alternative. It reduces two models into one and allows the diffusion model to construct a latent space specifically for generation, rather than rely on one built for reconstruction.",
+   "zh": "大多数生成式图像和视频系统都是潜在扩散模型（LDM）。 它们将压缩和生成分割为独立训练的两个模块：变分自编码器（VAE）和 DiT（扩散 Transformer）。 最近，像 JiT 这样的像素空间模型已被证明是一种有前景的替代方案。 它将两个模型合并为一个，并允许扩散模型构建一个专门用于生成的潜在空间，而不是依赖于一个为重建而构建的潜在空间。",
+   "sents": [
+    {
+     "en": "Most generative image and video systems are Latent Diffusion Models (LDMs).",
+     "zh": "大多数生成式图像和视频系统都是潜在扩散模型（LDM）。"
+    },
+    {
+     "en": "They split compression and generation into independently trained modules: the Variational Autoencoder (VAE) and the DiT (Diffusion Transformer).",
+     "zh": "它们将压缩和生成分割为独立训练的两个模块：变分自编码器（VAE）和 DiT（扩散 Transformer）。"
+    },
+    {
+     "en": "Recently, pixel-space models like the JiT have shown to be a promising alternative.",
+     "zh": "最近，像 JiT 这样的像素空间模型已被证明是一种有前景的替代方案。"
+    },
+    {
+     "en": "It reduces two models into one and allows the diffusion model to construct a latent space specifically for generation, rather than rely on one built for reconstruction.",
+     "zh": "它将两个模型合并为一个，并允许扩散模型构建一个专门用于生成的潜在空间，而不是依赖于一个为重建而构建的潜在空间。"
+    }
+   ]
+  },
+  {
+   "en": "When trained on our (image, caption) dataset, the JiT seems to struggle to produce finegrained details. We propose a novel encoder-decoder architecture (JiT-DDT) that recovers this detail and trains much more efficiently than its LDM counterpart. Against our Linum v2 baseline, the JiT-DDT trains a text-to-image model with 3.6× fewer GPU-hours, even though it generates images with 4× the pixels.",
+   "zh": "当在我们的（图像，描述）数据集上训练时，JiT似乎难以生成细粒度的细节。 我们提出了一种新颖的编码器-解码器架构（JiT-DDT），它能够恢复这些细节，并且训练效率远高于其对应的LDM。 相比我们的Linum v2基线，JiT-DDT训练一个文本到图像模型所需的GPU小时数减少3.6倍，尽管它生成的图像像素数是其4倍。",
+   "sents": [
+    {
+     "en": "When trained on our (image, caption) dataset, the JiT seems to struggle to produce finegrained details.",
+     "zh": "当在我们的（图像，描述）数据集上训练时，JiT似乎难以生成细粒度的细节。"
+    },
+    {
+     "en": "We propose a novel encoder-decoder architecture (JiT-DDT) that recovers this detail and trains much more efficiently than its LDM counterpart.",
+     "zh": "我们提出了一种新颖的编码器-解码器架构（JiT-DDT），它能够恢复这些细节，并且训练效率远高于其对应的LDM。"
+    },
+    {
+     "en": "Against our Linum v2 baseline, the JiT-DDT trains a text-to-image model with 3.6× fewer GPU-hours, even though it generates images with 4× the pixels.",
+     "zh": "相比我们的Linum v2基线，JiT-DDT训练一个文本到图像模型所需的GPU小时数减少3.6倍，尽管它生成的图像像素数是其4倍。"
+    }
+   ]
+  },
+  {
+   "en": "JiT-DDT code and model weights are available under the Apache 2.0 license. We hope that by sharing our findings with the broader community, we can encourage others to also explore more efficient training methods. This should be treated as a research artifact, not a full model release. Stay tuned for more research checkpoints like this, en route to Linum v3.",
+   "zh": "JiT-DDT 的代码和模型权重以 Apache 2.0 许可证发布。 我们希望通过与更广泛的社区分享我们的发现，鼓励其他人也探索更高效的训练方法。 这应当被视为一个研究产物，而非完整的模型发布。 请持续关注更多此类研究检查点，它们是通往 Linum v3 路上的成果。",
+   "sents": [
+    {
+     "en": "JiT-DDT code and model weights are available under the Apache 2.0 license.",
+     "zh": "JiT-DDT 的代码和模型权重以 Apache 2.0 许可证发布。"
+    },
+    {
+     "en": "We hope that by sharing our findings with the broader community, we can encourage others to also explore more efficient training methods.",
+     "zh": "我们希望通过与更广泛的社区分享我们的发现，鼓励其他人也探索更高效的训练方法。"
+    },
+    {
+     "en": "This should be treated as a research artifact, not a full model release.",
+     "zh": "这应当被视为一个研究产物，而非完整的模型发布。"
+    },
+    {
+     "en": "Stay tuned for more research checkpoints like this, en route to Linum v3.",
+     "zh": "请持续关注更多此类研究检查点，它们是通往 Linum v3 路上的成果。"
+    }
+   ]
+  },
+  {
+   "en": "Almost all generative image and video models are Latent Diffusion Models (LDMs). These have two key components, a Variational Auto Encoder (VAE) for compression and a Diffusion Transformer (DiT) for generation.",
+   "zh": "几乎所有的生成式图像和视频模型都是潜在扩散模型（Latent Diffusion Models, LDM）。 它们包含两个关键组件：用于压缩的变分自编码器（Variational Auto Encoder, VAE）和用于生成的扩散Transformer（Diffusion Transformer, DiT）。",
+   "sents": [
+    {
+     "en": "Almost all generative image and video models are Latent Diffusion Models (LDMs).",
+     "zh": "几乎所有的生成式图像和视频模型都是潜在扩散模型（Latent Diffusion Models, LDM）。"
+    },
+    {
+     "en": "These have two key components, a Variational Auto Encoder (VAE) for compression and a Diffusion Transformer (DiT) for generation.",
+     "zh": "它们包含两个关键组件：用于压缩的变分自编码器（Variational Auto Encoder, VAE）和用于生成的扩散Transformer（Diffusion Transformer, DiT）。"
+    }
+   ]
+  },
+  {
+   "en": "Operating in raw pixels is too expensive (especially for video), so we first need to find a way to reduce RGB pixels into a smaller amount of tokens for the DiT. This is where the VAE comes in. It's trained for compression and reconstruction. Specifically, it pushes our pixel-space samples through a probabilistic encoder, spits out -dimensional tokens, and then pushes these latent tokens through a probabilistic decoder to land back in pixel-space.",
+   "zh": "直接在原始像素上操作代价太高（尤其是视频），所以我们首先需要找到一种方法，把 RGB 像素缩减为更少量的 token，供 DiT 使用。 这正是 VAE 发挥作用的地方。 它通过压缩与重建来训练。 具体来说，它把像素空间的样本送入一个概率编码器，输出 - 维的 token，然后再把这些潜在 token 送入一个概率解码器，映射回像素空间。",
+   "sents": [
+    {
+     "en": "Operating in raw pixels is too expensive (especially for video), so we first need to find a way to reduce RGB pixels into a smaller amount of tokens for the DiT.",
+     "zh": "直接在原始像素上操作代价太高（尤其是视频），所以我们首先需要找到一种方法，把 RGB 像素缩减为更少量的 token，供 DiT 使用。"
+    },
+    {
+     "en": "This is where the VAE comes in.",
+     "zh": "这正是 VAE 发挥作用的地方。"
+    },
+    {
+     "en": "It's trained for compression and reconstruction.",
+     "zh": "它通过压缩与重建来训练。"
+    },
+    {
+     "en": "Specifically, it pushes our pixel-space samples through a probabilistic encoder, spits out -dimensional tokens, and then pushes these latent tokens through a probabilistic decoder to land back in pixel-space.",
+     "zh": "具体来说，它把像素空间的样本送入一个概率编码器，输出 - 维的 token，然后再把这些潜在 token 送入一个概率解码器，映射回像素空间。"
+    }
+   ]
+  },
+  {
+   "en": "The VAE is trained to compress and reconstruct",
+   "zh": "该变分自编码器（VAE）经过训练以进行压缩和重建。",
+   "sents": null
+  },
+  {
+   "en": "When building a LDM, you train the VAE separately and then freeze it (i.e. no gradient flow from the DiT into the VAE). This way the latent space stays static throughout the course of DiT training. You run the VAE's encoder to embed your data, train the DiT to traverse the VAE's latent space, and then transform the DiT-generated latent tokens into pixel space using the VAE's decoder.",
+   "zh": "构建潜在扩散模型（LDM）时，你会先单独训练 VAE，然后将其冻结（即不让梯度从 DiT 流入 VAE）。 这样一来，潜在空间在整个 DiT 训练过程中保持静态。 你运行 VAE 的编码器来嵌入数据，训练 DiT 在 VAE 的潜在空间中漫游，然后使用 VAE 的解码器将 DiT 生成的潜在 token 变换到像素空间。",
+   "sents": [
+    {
+     "en": "When building a LDM, you train the VAE separately and then freeze it (i.e. no gradient flow from the DiT into the VAE).",
+     "zh": "构建潜在扩散模型（LDM）时，你会先单独训练 VAE，然后将其冻结（即不让梯度从 DiT 流入 VAE）。"
+    },
+    {
+     "en": "This way the latent space stays static throughout the course of DiT training.",
+     "zh": "这样一来，潜在空间在整个 DiT 训练过程中保持静态。"
+    },
+    {
+     "en": "You run the VAE's encoder to embed your data, train the DiT to traverse the VAE's latent space, and then transform the DiT-generated latent tokens into pixel space using the VAE's decoder.",
+     "zh": "你运行 VAE 的编码器来嵌入数据，训练 DiT 在 VAE 的潜在空间中漫游，然后使用 VAE 的解码器将 DiT 生成的潜在 token 变换到像素空间。"
+    }
+   ]
+  },
+  {
+   "en": "The VAE is trained once and frozen; the DiT learns to move through its latent space",
+   "zh": "VAE 只训练一次并被冻结；DiT 则学习在其潜空间中移动",
+   "sents": null
+  },
+  {
+   "en": "We want to eke out as much token compression as possible from the VAE, so that we can curb the cost of attention in our DiT. But if you take a survey of the popular open source text-to-image models like FLUX, Ideogram, and Z-Image, you'll notice that they all cap out at 16×16 token reduction. This aligns with our experiments on Image-Video VAEs from a few years ago . Unfortunately, it seems like there is an empirical ceiling on the amount of compression we can get out of a standard CNN VAE without degrading the reconstructions.",
+   "zh": "我们希望从 VAE 中尽可能榨取更多的 token 压缩，以便控制 DiT 中注意力机制的开销。 但如果你调查一下流行的开源文生图模型，比如 FLUX、Ideogram 和 Z-Image，你会注意到它们的 token 缩减上限都是 16×16。 这与我们几年前对图像-视频 VAE 的实验结果一致。 遗憾的是，在不降低重建质量的前提下，标准 CNN VAE 能提供的压缩量似乎存在一个经验上限。",
+   "sents": [
+    {
+     "en": "We want to eke out as much token compression as possible from the VAE, so that we can curb the cost of attention in our DiT.",
+     "zh": "我们希望从 VAE 中尽可能榨取更多的 token 压缩，以便控制 DiT 中注意力机制的开销。"
+    },
+    {
+     "en": "But if you take a survey of the popular open source text-to-image models like FLUX, Ideogram, and Z-Image, you'll notice that they all cap out at 16×16 token reduction.",
+     "zh": "但如果你调查一下流行的开源文生图模型，比如 FLUX、Ideogram 和 Z-Image，你会注意到它们的 token 缩减上限都是 16×16。"
+    },
+    {
+     "en": "This aligns with our experiments on Image-Video VAEs from a few years ago .",
+     "zh": "这与我们几年前对图像-视频 VAE 的实验结果一致。"
+    },
+    {
+     "en": "Unfortunately, it seems like there is an empirical ceiling on the amount of compression we can get out of a standard CNN VAE without degrading the reconstructions.",
+     "zh": "遗憾的是，在不降低重建质量的前提下，标准 CNN VAE 能提供的压缩量似乎存在一个经验上限。"
+    }
+   ]
+  },
+  {
+   "en": "Last fall, Tianhong Li and Kaiming He published a paper ( JiT ) that achieves 32×32 token reduction by throwing away the VAE altogether and pushing the compression task into the DiT itself.",
+   "zh": "去年秋天，田洪立（Tianhong Li）和何恺明（Kaiming He）发表了一篇论文（JiT），该论文通过完全舍弃 VAE 并将压缩任务推入 DiT 本身，实现了 32×32 的 token 压缩。",
+   "sents": null
+  },
+  {
+   "en": "Patchify: 4×4-pixel patches → 48-dim tokens → linear bottleneck to 12",
+   "zh": "Patchify：4×4 像素块 → 48 维 token → 线性瓶颈层降至 12",
+   "sents": null
+  },
+  {
+   "en": "each patch is tokenized independently: 16 pixels × 3 channels become one 48-dim token",
+   "zh": "每个图像块被独立分词：16 个像素 × 3 个通道变成一个 48 维 token",
+   "sents": null
+  },
+  {
+   "en": "a linear layer W ∈ ℝ 12 × 48 projects 48 dims down to 12",
+   "zh": "一个线性层 W ∈ ℝ 12 × 48 将 48 维投影降为 12 维",
+   "sents": null
+  },
+  {
+   "en": "This approach to reducing token counts isn't particularly new. It was invented for vision transformers ( ViT ) half a decade ago, and it's pretty commonly paired with a VAE to further condense token sequences before they enter the DiT. In Linum v2, our VAE gave us 8×8 (h×w) compression and 16-dimensional latents. At the base of the DiT, we applied 2×2 patchification to get 16×16 token compression and 64-dimensional latents. We used it in Linum v2 and so do models like FLUX.",
+   "zh": "这种减少 token 数量的方法并不是特别新颖。 它在大约五年前就被发明用于视觉 Transformer（ViT），并且通常与 VAE 搭配使用，在 token 序列进入 DiT 之前进一步压缩。 在 Linum v2 中，我们的 VAE 提供了 8×8（高×宽）的压缩和 16 维的潜变量。 在 DiT 的底层，我们应用了 2×2 的 patch 化，从而实现 16×16 的 token 压缩和 64 维的潜变量。 我们在 Linum v2 中使用了它，FLUX 等模型也是如此。",
+   "sents": [
+    {
+     "en": "This approach to reducing token counts isn't particularly new.",
+     "zh": "这种减少 token 数量的方法并不是特别新颖。"
+    },
+    {
+     "en": "It was invented for vision transformers ( ViT ) half a decade ago, and it's pretty commonly paired with a VAE to further condense token sequences before they enter the DiT.",
+     "zh": "它在大约五年前就被发明用于视觉 Transformer（ViT），并且通常与 VAE 搭配使用，在 token 序列进入 DiT 之前进一步压缩。"
+    },
+    {
+     "en": "In Linum v2, our VAE gave us 8×8 (h×w) compression and 16-dimensional latents.",
+     "zh": "在 Linum v2 中，我们的 VAE 提供了 8×8（高×宽）的压缩和 16 维的潜变量。"
+    },
+    {
+     "en": "At the base of the DiT, we applied 2×2 patchification to get 16×16 token compression and 64-dimensional latents.",
+     "zh": "在 DiT 的底层，我们应用了 2×2 的 patch 化，从而实现 16×16 的 token 压缩和 64 维的潜变量。"
+    },
+    {
+     "en": "We used it in Linum v2 and so do models like FLUX.",
+     "zh": "我们在 Linum v2 中使用了它，FLUX 等模型也是如此。"
+    }
+   ]
+  },
+  {
+   "en": "So, why hasn't anyone tried this before? This feels like a free lunch. You get a (potentially) lossless way to cut down attention cost, and it's bone-dead simple.",
+   "zh": "那么，为什么之前没有人尝试过这个方法？ 这感觉像是一顿免费的午餐。 你得到了一种（潜在的）无损方式来降低注意力开销，而且它简单得不能再简单了。",
+   "sents": [
+    {
+     "en": "So, why hasn't anyone tried this before?",
+     "zh": "那么，为什么之前没有人尝试过这个方法？"
+    },
+    {
+     "en": "This feels like a free lunch.",
+     "zh": "这感觉像是一顿免费的午餐。"
+    },
+    {
+     "en": "You get a (potentially) lossless way to cut down attention cost, and it's bone-dead simple.",
+     "zh": "你得到了一种（潜在的）无损方式来降低注意力开销，而且它简单得不能再简单了。"
+    }
+   ]
+  },
+  {
+   "en": "In early 2025, papers like VA-VAE demonstrated that DiTs struggle to learn from high dimensional inputs. There are small hacks like using an external model as a regularizer during VAE training (e.g. DINOv3) that (likely) enabled models like FLUX-2 to make the leap from 64 latent dimensions to 128 latent dimensions for their DiT. But, these strategies just kick the can down the road on a clear learnability problem within the DiT. Aggressive patchification explicitly pushes information into the channel dimension, so it triggers this instability. But as it turns out, this is not intrinsic to the architecture. Rather, it's downstream of the v-prediction, v-loss flow matching objective that everyone's been using to train diffusion models these past few years.",
+   "zh": "2025年初，像 VA-VAE 这样的论文表明，扩散变换器（DiT）难以从高维输入中学习。 也有一些小技巧，比如在 VAE 训练过程中使用外部模型作为正则化器（例如 DINOv3），（很可能）正是这些技巧让 FLUX-2 等模型的 DiT 得以从 64 个潜在维度跃升到 128 个潜在维度。 但这些策略只是把问题往后推，并没有解决 DiT 内部一个明确的可学习性问题。 激进的分块处理（patchification）明确地把信息推入通道维度，因此会触发这种不稳定性。 但事实证明，这并非该架构本身固有的问题。 相反，它是 v-预测、v-损失的流匹配目标所导致的下游结果，而过去几年大家一直在用这个目标来训练扩散模型。",
+   "sents": [
+    {
+     "en": "In early 2025, papers like VA-VAE demonstrated that DiTs struggle to learn from high dimensional inputs.",
+     "zh": "2025年初，像 VA-VAE 这样的论文表明，扩散变换器（DiT）难以从高维输入中学习。"
+    },
+    {
+     "en": "There are small hacks like using an external model as a regularizer during VAE training (e.g.",
+     "zh": "也有一些小技巧，比如在 VAE 训练过程中使用外部模型作为正则化器（例如"
+    },
+    {
+     "en": "DINOv3) that (likely) enabled models like FLUX-2 to make the leap from 64 latent dimensions to 128 latent dimensions for their DiT.",
+     "zh": "DINOv3），（很可能）正是这些技巧让 FLUX-2 等模型的 DiT 得以从 64 个潜在维度跃升到 128 个潜在维度。"
+    },
+    {
+     "en": "But, these strategies just kick the can down the road on a clear learnability problem within the DiT.",
+     "zh": "但这些策略只是把问题往后推，并没有解决 DiT 内部一个明确的可学习性问题。"
+    },
+    {
+     "en": "Aggressive patchification explicitly pushes information into the channel dimension, so it triggers this instability.",
+     "zh": "激进的分块处理（patchification）明确地把信息推入通道维度，因此会触发这种不稳定性。"
+    },
+    {
+     "en": "But as it turns out, this is not intrinsic to the architecture.",
+     "zh": "但事实证明，这并非该架构本身固有的问题。"
+    },
+    {
+     "en": "Rather, it's downstream of the v-prediction, v-loss flow matching objective that everyone's been using to train diffusion models these past few years.",
+     "zh": "相反，它是 v-预测、v-损失的流匹配目标所导致的下游结果，而过去几年大家一直在用这个目标来训练扩散模型。"
+    }
+   ]
+  },
+  {
+   "en": "In old school 2022-era denoising diffusion ( DDPM ), we iteratively noise a sample and train a neural network to remove the noise. This way at inference time we can use our neural network to transform Gaussian noise into a sample from our data distribution over a sequence of steps. This formulation has a host of issues (e.g. oversaturation in generation , unstable learning , distillation collapse ), so in the intervening years the field has shifted away from it towards flow matching.",
+   "zh": "在老派的2022年时代去噪扩散（DDPM）中，我们对样本迭代地加噪，并训练一个神经网络来去除噪声。 这样，在推理时我们可以利用神经网络，通过一系列步骤将高斯噪声转换为我们数据分布中的一个样本。 这种表述存在诸多问题（例如生成过度饱和、学习不稳定、蒸馏崩塌），因此在随后的几年里，该领域已逐渐放弃它，转向流匹配。",
+   "sents": [
+    {
+     "en": "In old school 2022-era denoising diffusion ( DDPM ), we iteratively noise a sample and train a neural network to remove the noise.",
+     "zh": "在老派的2022年时代去噪扩散（DDPM）中，我们对样本迭代地加噪，并训练一个神经网络来去除噪声。"
+    },
+    {
+     "en": "This way at inference time we can use our neural network to transform Gaussian noise into a sample from our data distribution over a sequence of steps.",
+     "zh": "这样，在推理时我们可以利用神经网络，通过一系列步骤将高斯噪声转换为我们数据分布中的一个样本。"
+    },
+    {
+     "en": "This formulation has a host of issues (e.g. oversaturation in generation , unstable learning , distillation collapse ), so in the intervening years the field has shifted away from it towards flow matching.",
+     "zh": "这种表述存在诸多问题（例如生成过度饱和、学习不稳定、蒸馏崩塌），因此在随后的几年里，该领域已逐渐放弃它，转向流匹配。"
+    }
+   ]
+  },
+  {
+   "en": "In flow matching , we construct a straight line path between every sample in our data distribution and a sample of Gaussian noise: The path between noise and samples does not have to be straight. But in practice, we all do it.",
+   "zh": "在流匹配中，我们为数据分布中的每个样本与一个高斯噪声样本之间构造一条直线路径：噪声与样本之间的路径并不一定是直的。 但在实践中，我们都会这么做。",
+   "sents": [
+    {
+     "en": "In flow matching , we construct a straight line path between every sample in our data distribution and a sample of Gaussian noise: The path between noise and samples does not have to be straight.",
+     "zh": "在流匹配中，我们为数据分布中的每个样本与一个高斯噪声样本之间构造一条直线路径：噪声与样本之间的路径并不一定是直的。"
+    },
+    {
+     "en": "But in practice, we all do it.",
+     "zh": "但在实践中，我们都会这么做。"
+    }
+   ]
+  },
+  {
+   "en": "At , we recover . At , we get , where . We follow the DDPM convention throughout this post: is data, is noise. Some flow matching papers run the other way, with as noise and as data. The two formulations are equivalent. Then we train a network to approximate the velocity along that path:",
+   "zh": "在 时，我们恢复 。在 时，我们得到 ，其中 。 在本文中我们始终遵循 DDPM 的约定： 是数据， 是噪声。 一些流匹配论文采用相反的方向，把 作为噪声、 作为数据。 这两种表述是等价的。 然后我们训练一个网络来近似沿该路径的速度：",
+   "sents": [
+    {
+     "en": "At , we recover . At , we get , where .",
+     "zh": "在 时，我们恢复 。在 时，我们得到 ，其中 。"
+    },
+    {
+     "en": "We follow the DDPM convention throughout this post: is data, is noise.",
+     "zh": "在本文中我们始终遵循 DDPM 的约定： 是数据， 是噪声。"
+    },
+    {
+     "en": "Some flow matching papers run the other way, with as noise and as data.",
+     "zh": "一些流匹配论文采用相反的方向，把 作为噪声、 作为数据。"
+    },
+    {
+     "en": "The two formulations are equivalent.",
+     "zh": "这两种表述是等价的。"
+    },
+    {
+     "en": "Then we train a network to approximate the velocity along that path:",
+     "zh": "然后我们训练一个网络来近似沿该路径的速度："
+    }
+   ]
+  },
+  {
+   "en": "We call this v-prediction, v-loss because the neural network is explicitly predicting velocity and it's trained on the MSE between its velocity prediction and the ground-truth, conditional velocity field.",
+   "zh": "我们将其称为 v-预测、v-损失，因为神经网络显式地预测速度，并且它以速度预测与真实的条件速度场之间的均方误差进行训练。",
+   "sents": null
+  },
+  {
+   "en": "If you're training a flow matching model you don't necessarily need to train your neural network to predict and regress velocity. The three terms are linearly re-arrangeable; so you can mix and match , , and across prediction and regression targets:",
+   "zh": "如果你训练的是流匹配模型，并不一定需要让神经网络去预测并回归速度。 这三项可以线性重排；因此你可以在预测目标和回归目标之间混合搭配、、：",
+   "sents": [
+    {
+     "en": "If you're training a flow matching model you don't necessarily need to train your neural network to predict and regress velocity.",
+     "zh": "如果你训练的是流匹配模型，并不一定需要让神经网络去预测并回归速度。"
+    },
+    {
+     "en": "The three terms are linearly re-arrangeable; so you can mix and match , , and across prediction and regression targets:",
+     "zh": "这三项可以线性重排；因此你可以在预测目标和回归目标之间混合搭配、、："
+    }
+   ]
+  },
+  {
+   "en": "Three targets, each linear in the other two",
+   "zh": "三个目标，每个对另外两个都是线性的",
+   "sents": null
+  },
+  {
+   "en": "Rearrange one identity to fill each off-diagonal cell",
+   "zh": "将其中一个恒等式重新排列，以填充每个非对角单元格",
+   "sents": null
+  },
+  {
+   "en": "In JiT, Li and He revisited the v-prediction, v-loss decision that the field's been making since the inception of flow matching. They took a toy distribution (points on a spiral) and then projected these points from 2D to different high dimensional spaces of increasing size. For each of these spaces, they trained flow matching models with x-prediction, -prediction, and velocity-prediction; and found that the x-prediction was the only model type to accurately generate samples from the spiral distribution at large dimensions. DiTs have been struggling to learn from high-dimensional inputs because of the curse of dimensionality.",
+   "zh": "在 JiT 中，Li 和 He 重新审视了自流匹配诞生以来该领域一直在做的 v 预测与 v 损失的决策。 他们取了一个玩具分布（螺旋上的点），然后将这些点从二维投影到规模递增的不同高维空间中。 在每个这样的空间里，他们分别用 x 预测、ε 预测和速度预测训练了流匹配模型；并发现 x 预测是唯一能在高维下准确生成螺旋分布样本的模型类型。 由于维数灾难，DiT 一直难以从高维输入中学习。",
+   "sents": [
+    {
+     "en": "In JiT, Li and He revisited the v-prediction, v-loss decision that the field's been making since the inception of flow matching.",
+     "zh": "在 JiT 中，Li 和 He 重新审视了自流匹配诞生以来该领域一直在做的 v 预测与 v 损失的决策。"
+    },
+    {
+     "en": "They took a toy distribution (points on a spiral) and then projected these points from 2D to different high dimensional spaces of increasing size.",
+     "zh": "他们取了一个玩具分布（螺旋上的点），然后将这些点从二维投影到规模递增的不同高维空间中。"
+    },
+    {
+     "en": "For each of these spaces, they trained flow matching models with x-prediction, -prediction, and velocity-prediction; and found that the x-prediction was the only model type to accurately generate samples from the spiral distribution at large dimensions.",
+     "zh": "在每个这样的空间里，他们分别用 x 预测、ε 预测和速度预测训练了流匹配模型；并发现 x 预测是唯一能在高维下准确生成螺旋分布样本的模型类型。"
+    },
+    {
+     "en": "DiTs have been struggling to learn from high-dimensional inputs because of the curse of dimensionality.",
+     "zh": "由于维数灾难，DiT 一直难以从高维输入中学习。"
+    }
+   ]
+  },
+  {
+   "en": "Velocity is . When we do v-prediction, our neural network has to implicitly learn the signal ( ) and noise ( ). Noise is a random Gaussian that will cover the entire -dimensional space. So, as we scale the problem of fitting noise (within the velocity term) becomes exponentially harder. This is why aggressive patchification failed in the past and why LDMs have been struggling to learn from high-dimensional VAE latents. As we grow the channel dimension, we end up in the degenerate case where our DiT is struggling to learn high dimensional Gaussian noise.",
+   "zh": "速度（Velocity）为 。 当我们做 v-prediction 时，我们的神经网络必须隐式地学习信号（ ）和噪声（ ）。 噪声是一个随机高斯分布，它会覆盖整个 - 维空间。 因此，随着问题规模的扩大，拟合噪声（在速度项范围内）会变得指数级困难。 这就是为什么过去激进的 patchification（分块化）会失败，也是为什么 LDM 一直难以从高维 VAE 潜变量中学习。 随着我们增大通道维度，最终会陷入一种退化情形，即我们的 DiT 难以学习高维高斯噪声。",
+   "sents": [
+    {
+     "en": "Velocity is .",
+     "zh": "速度（Velocity）为 。"
+    },
+    {
+     "en": "When we do v-prediction, our neural network has to implicitly learn the signal ( ) and noise ( ).",
+     "zh": "当我们做 v-prediction 时，我们的神经网络必须隐式地学习信号（ ）和噪声（ ）。"
+    },
+    {
+     "en": "Noise is a random Gaussian that will cover the entire -dimensional space.",
+     "zh": "噪声是一个随机高斯分布，它会覆盖整个 - 维空间。"
+    },
+    {
+     "en": "So, as we scale the problem of fitting noise (within the velocity term) becomes exponentially harder.",
+     "zh": "因此，随着问题规模的扩大，拟合噪声（在速度项范围内）会变得指数级困难。"
+    },
+    {
+     "en": "This is why aggressive patchification failed in the past and why LDMs have been struggling to learn from high-dimensional VAE latents.",
+     "zh": "这就是为什么过去激进的 patchification（分块化）会失败，也是为什么 LDM 一直难以从高维 VAE 潜变量中学习。"
+    },
+    {
+     "en": "As we grow the channel dimension, we end up in the degenerate case where our DiT is struggling to learn high dimensional Gaussian noise.",
+     "zh": "随着我们增大通道维度，最终会陷入一种退化情形，即我们的 DiT 难以学习高维高斯噪声。"
+    }
+   ]
+  },
+  {
+   "en": "By switching to x-prediction, we can try to side-step the curse of dimensionality. If we believe that images and videos naturally lie on a low dimensional manifold, we should be able to have our models predict effectively even with high .",
+   "zh": "通过切换到 x-prediction，我们可以尝试绕开维度灾难。 如果我们相信图像和视频天然地位于一个低维流形上，那么即使 维度很高，我们的模型也应该能够有效地进行预测。",
+   "sents": [
+    {
+     "en": "By switching to x-prediction, we can try to side-step the curse of dimensionality.",
+     "zh": "通过切换到 x-prediction，我们可以尝试绕开维度灾难。"
+    },
+    {
+     "en": "If we believe that images and videos naturally lie on a low dimensional manifold, we should be able to have our models predict effectively even with high .",
+     "zh": "如果我们相信图像和视频天然地位于一个低维流形上，那么即使 维度很高，我们的模型也应该能够有效地进行预测。"
+    }
+   ]
+  },
+  {
+   "en": "Noise fills the whole D-dimensional ball; images sit on a thin sliver of it",
+   "zh": "噪声充满整个 D 维球体；图像位于其中一个极薄的薄片上",
+   "sents": null
+  },
+  {
+   "en": "In high-dimensional space (D = 512 ), noise is truly random. It spreads across the entire space, is incompressible, and cannot be described by any smaller number of dimensions (left). Images are intrinsically low-dimensional, so even in a high-dimensional space they cluster in a small subspace (right).",
+   "zh": "在高维空间（D = 512）中，噪声是真正随机的。 它分布于整个空间，不可压缩，也无法用更少的维度来描述（左图）。 图像本质上是低维的，因此即使在高维空间中，它们也会聚集在一个很小的子空间内（右图）。",
+   "sents": [
+    {
+     "en": "In high-dimensional space (D = 512 ), noise is truly random.",
+     "zh": "在高维空间（D = 512）中，噪声是真正随机的。"
+    },
+    {
+     "en": "It spreads across the entire space, is incompressible, and cannot be described by any smaller number of dimensions (left).",
+     "zh": "它分布于整个空间，不可压缩，也无法用更少的维度来描述（左图）。"
+    },
+    {
+     "en": "Images are intrinsically low-dimensional, so even in a high-dimensional space they cluster in a small subspace (right).",
+     "zh": "图像本质上是低维的，因此即使在高维空间中，它们也会聚集在一个很小的子空间内（右图）。"
+    }
+   ]
+  },
+  {
+   "en": "By predicting v, the model has to learn both the noise ε and the structure. Noise is the harder of the two, and the bigger D gets, the more of the model's capacity goes to fitting it. By switching to x-prediction, the model can spend its full capacity on the low-dimensional signal, even when D becomes large.",
+   "zh": "通过预测 v，模型必须同时学习噪声 ε 和结构。 噪声是两者中更难的部分，D 越大，模型的容量就有越多部分被用于拟合噪声。 通过改用 x-prediction，即使 D 变得很大，模型也能将全部容量集中在低维信号上。",
+   "sents": [
+    {
+     "en": "By predicting v, the model has to learn both the noise ε and the structure.",
+     "zh": "通过预测 v，模型必须同时学习噪声 ε 和结构。"
+    },
+    {
+     "en": "Noise is the harder of the two, and the bigger D gets, the more of the model's capacity goes to fitting it.",
+     "zh": "噪声是两者中更难的部分，D 越大，模型的容量就有越多部分被用于拟合噪声。"
+    },
+    {
+     "en": "By switching to x-prediction, the model can spend its full capacity on the low-dimensional signal, even when D becomes large.",
+     "zh": "通过改用 x-prediction，即使 D 变得很大，模型也能将全部容量集中在低维信号上。"
+    }
+   ]
+  },
+  {
+   "en": "Empirically this works, if you do x-prediction, v-loss. The network predicts . We convert that prediction to a velocity and take the MSE against the true velocity. Since , this is just x-loss scaled by : the same objective, weighted toward small (low noise, nearly clean images). In turn, this unlocks our ability to apply aggressive patchification, blow up the channel dimension, and push the compression problem into the DiT.",
+   "zh": "从经验上看，如果你采用 x-预测、v-损失，这样做是有效的。网络预测 。 我们将该预测转换为速度，并与真实速度计算 MSE。 由于 ，这只不过是乘以缩放系数 的 x-损失：同一个目标函数，但权重偏向小（低噪声、接近干净的图像）。 反过来，这使我们能够应用激进的分块处理，扩大通道维度，并将压缩问题推入 DiT 中解决。",
+   "sents": [
+    {
+     "en": "Empirically this works, if you do x-prediction, v-loss. The network predicts .",
+     "zh": "从经验上看，如果你采用 x-预测、v-损失，这样做是有效的。网络预测 。"
+    },
+    {
+     "en": "We convert that prediction to a velocity and take the MSE against the true velocity.",
+     "zh": "我们将该预测转换为速度，并与真实速度计算 MSE。"
+    },
+    {
+     "en": "Since , this is just x-loss scaled by : the same objective, weighted toward small (low noise, nearly clean images).",
+     "zh": "由于 ，这只不过是乘以缩放系数 的 x-损失：同一个目标函数，但权重偏向小（低噪声、接近干净的图像）。"
+    },
+    {
+     "en": "In turn, this unlocks our ability to apply aggressive patchification, blow up the channel dimension, and push the compression problem into the DiT.",
+     "zh": "反过来，这使我们能够应用激进的分块处理，扩大通道维度，并将压缩问题推入 DiT 中解决。"
+    }
+   ]
+  },
+  {
+   "en": "When we read about JiT, we were really excited to give it a go, since it was explicitly able to achieve 32×32 token reduction. But, we'd be remiss to say this is the only way to achieve this level of compression. Or, that everyone agrees that this is the best way to achieve this amount of compression.",
+   "zh": "当我们读到 JiT 时，我们非常兴奋地想试一试，因为它明确能够实现 32×32 的 token 缩减。 但是，如果说这是实现这种压缩水平的唯一方法，那就不够严谨了。 或者说，也并非所有人都认同这是实现这种压缩程度的最佳方法。",
+   "sents": [
+    {
+     "en": "When we read about JiT, we were really excited to give it a go, since it was explicitly able to achieve 32×32 token reduction.",
+     "zh": "当我们读到 JiT 时，我们非常兴奋地想试一试，因为它明确能够实现 32×32 的 token 缩减。"
+    },
+    {
+     "en": "But, we'd be remiss to say this is the only way to achieve this level of compression.",
+     "zh": "但是，如果说这是实现这种压缩水平的唯一方法，那就不够严谨了。"
+    },
+    {
+     "en": "Or, that everyone agrees that this is the best way to achieve this amount of compression.",
+     "zh": "或者说，也并非所有人都认同这是实现这种压缩程度的最佳方法。"
+    }
+   ]
+  },
+  {
+   "en": "LTX has been able to do this in their video models by altering their VAE's decoder to make it an explicit denoiser (i.e. they finetune the VAE decoder with a flow matching objective). More recently, Minimax H3 has achieved 32×32 compression in their VAE by swapping out the standard ~80-150M parameter CNN Decoder with a 2B parameter transformer (roughly the size of our entire Linum v2 model). And on toy benchmarks like ImageNet, LDMs still out-perform pixel space models by a smidge. Nevertheless, we think we can overcome some of the limitations present in the original JiT paper and match LDMs' performance in generative image and video.",
+   "zh": "LTX 之所以能做到这一点，是通过修改其视频模型的 VAE 解码器，使其成为一个显式的去噪器（即他们用流匹配目标对 VAE 解码器进行了微调）。 最近，Minimax H3 通过将标准的约 8000 万至 1.5 亿参数的 CNN 解码器替换为一个 2B 参数的 transformer（大致相当于我们整个 Linum v2 模型的规模），在其 VAE 中实现了 32×32 的压缩。 而在 ImageNet 这类玩具基准上，LDM（潜在扩散模型）的表现仍然略胜于像素空间模型。 尽管如此，我们认为我们能够克服原始 JiT 论文中存在的一些局限性，并在生成式图像和视频任务上达到 LDM 的性能水平。",
+   "sents": [
+    {
+     "en": "LTX has been able to do this in their video models by altering their VAE's decoder to make it an explicit denoiser (i.e. they finetune the VAE decoder with a flow matching objective).",
+     "zh": "LTX 之所以能做到这一点，是通过修改其视频模型的 VAE 解码器，使其成为一个显式的去噪器（即他们用流匹配目标对 VAE 解码器进行了微调）。"
+    },
+    {
+     "en": "More recently, Minimax H3 has achieved 32×32 compression in their VAE by swapping out the standard ~80-150M parameter CNN Decoder with a 2B parameter transformer (roughly the size of our entire Linum v2 model).",
+     "zh": "最近，Minimax H3 通过将标准的约 8000 万至 1.5 亿参数的 CNN 解码器替换为一个 2B 参数的 transformer（大致相当于我们整个 Linum v2 模型的规模），在其 VAE 中实现了 32×32 的压缩。"
+    },
+    {
+     "en": "And on toy benchmarks like ImageNet, LDMs still out-perform pixel space models by a smidge.",
+     "zh": "而在 ImageNet 这类玩具基准上，LDM（潜在扩散模型）的表现仍然略胜于像素空间模型。"
+    },
+    {
+     "en": "Nevertheless, we think we can overcome some of the limitations present in the original JiT paper and match LDMs' performance in generative image and video.",
+     "zh": "尽管如此，我们认为我们能够克服原始 JiT 论文中存在的一些局限性，并在生成式图像和视频任务上达到 LDM 的性能水平。"
+    }
+   ]
+  },
+  {
+   "en": "Ideologically, we believe simple tends to beat complex when it comes to training neural networks at scale. Papers like E2E-VAE from last fall have shown that allowing your DiT to backpropagate (smartly) into the VAE can improve generation results and accelerate convergence dramatically.",
+   "zh": "在理念上，我们相信在规模化训练神经网络时，简单往往胜过复杂。 去年秋天的 E2E-VAE 等论文已经表明，允许 DiT（巧妙地）向 VAE 进行反向传播，可以显著改善生成结果并大幅加速收敛。",
+   "sents": [
+    {
+     "en": "Ideologically, we believe simple tends to beat complex when it comes to training neural networks at scale.",
+     "zh": "在理念上，我们相信在规模化训练神经网络时，简单往往胜过复杂。"
+    },
+    {
+     "en": "Papers like E2E-VAE from last fall have shown that allowing your DiT to backpropagate (smartly) into the VAE can improve generation results and accelerate convergence dramatically.",
+     "zh": "去年秋天的 E2E-VAE 等论文已经表明，允许 DiT（巧妙地）向 VAE 进行反向传播，可以显著改善生成结果并大幅加速收敛。"
+    }
+   ]
+  },
+  {
+   "en": "To us, it makes logical sense that if we can specifically tailor the \"latent space\" for generation rather than rely on one built for compression, we can get better results. And we get the added benefit of having one cohesive model, rather than two disjoint ones.",
+   "zh": "对我们而言，这在逻辑上是说得通的：如果我们可以专门为生成定制「潜在空间」，而不是依赖一个为压缩而构建的潜在空间，就能得到更好的结果。 而且我们还获得了额外的收益，即拥有一个内聚统一的模型，而不是两个互不相干的模型。",
+   "sents": [
+    {
+     "en": "To us, it makes logical sense that if we can specifically tailor the \"latent space\" for generation rather than rely on one built for compression, we can get better results.",
+     "zh": "对我们而言，这在逻辑上是说得通的：如果我们可以专门为生成定制「潜在空间」，而不是依赖一个为压缩而构建的潜在空间，就能得到更好的结果。"
+    },
+    {
+     "en": "And we get the added benefit of having one cohesive model, rather than two disjoint ones.",
+     "zh": "而且我们还获得了额外的收益，即拥有一个内聚统一的模型，而不是两个互不相干的模型。"
+    }
+   ]
+  },
+  {
+   "en": "We also think that ImageNet benchmarks on JiT understate its potential. The JiT might be able to achieve better compression than an equivalent VAE, by leaning on the scaffolding provided by the text prompts.",
+   "zh": "我们还认为，在 ImageNet 基准测试上对 JiT 的评估低估了它的潜力。 借助文本提示所提供的支架，JiT 或许能够比等效的 VAE 实现更好的压缩。",
+   "sents": [
+    {
+     "en": "We also think that ImageNet benchmarks on JiT understate its potential.",
+     "zh": "我们还认为，在 ImageNet 基准测试上对 JiT 的评估低估了它的潜力。"
+    },
+    {
+     "en": "The JiT might be able to achieve better compression than an equivalent VAE, by leaning on the scaffolding provided by the text prompts.",
+     "zh": "借助文本提示所提供的支架，JiT 或许能够比等效的 VAE 实现更好的压缩。"
+    }
+   ]
+  },
+  {
+   "en": "When we pretrained Linum v2, we relied on a VAE + patchification stack that afforded 16×16 token reduction. So, we trained on ~600M samples at 256px resolution before introducing 180p video and scaling up to 512px resolution.",
+   "zh": "当我们预训练 Linum v2 时，我们采用了 VAE 加图像分块化的技术组合，实现了 16×16 的 token 缩减。 因此，我们先在约 6 亿个 256px 分辨率的样本上进行训练，然后才引入 180p 视频并将分辨率扩展到 512px。",
+   "sents": [
+    {
+     "en": "When we pretrained Linum v2, we relied on a VAE + patchification stack that afforded 16×16 token reduction.",
+     "zh": "当我们预训练 Linum v2 时，我们采用了 VAE 加图像分块化的技术组合，实现了 16×16 的 token 缩减。"
+    },
+    {
+     "en": "So, we trained on ~600M samples at 256px resolution before introducing 180p video and scaling up to 512px resolution.",
+     "zh": "因此，我们先在约 6 亿个 256px 分辨率的样本上进行训练，然后才引入 180p 视频并将分辨率扩展到 512px。"
+    }
+   ]
+  },
+  {
+   "en": "For our JiT baseline, we wanted to get a sense of the output quality with the same image-latent-token budget. That meant we trained on 512px images with 32×32 token reduction.",
+   "zh": "对于我们的 JiT 基线，我们想在相同的图像-潜变量-词元预算下了解输出质量。 这意味着我们在 512px 图像上进行训练，采用 32×32 的词元缩减。",
+   "sents": [
+    {
+     "en": "For our JiT baseline, we wanted to get a sense of the output quality with the same image-latent-token budget.",
+     "zh": "对于我们的 JiT 基线，我们想在相同的图像-潜变量-词元预算下了解输出质量。"
+    },
+    {
+     "en": "That meant we trained on 512px images with 32×32 token reduction.",
+     "zh": "这意味着我们在 512px 图像上进行训练，采用 32×32 的词元缩减。"
+    }
+   ]
+  },
+  {
+   "en": "By moving from LDM to pixel-space, we transitioned from v-prediction, v-loss to x-prediction, v-loss. But, we also made a slew of other tweaks to the network:",
+   "zh": "通过从 LDM 转向像素空间，我们将 v 预测加 v 损失改为了 x 预测加 v 损失。 但是，我们还对网络做了许多其他调整：",
+   "sents": [
+    {
+     "en": "By moving from LDM to pixel-space, we transitioned from v-prediction, v-loss to x-prediction, v-loss.",
+     "zh": "通过从 LDM 转向像素空间，我们将 v 预测加 v 损失改为了 x 预测加 v 损失。"
+    },
+    {
+     "en": "But, we also made a slew of other tweaks to the network:",
+     "zh": "但是，我们还对网络做了许多其他调整："
+    }
+   ]
+  },
+  {
+   "en": "One single-stream DiT does the compressing and the generating",
+   "zh": "单一单流 DiT 同时完成压缩与生成",
+   "sents": null
+  },
+  {
+   "en": "Instead of alternating blocks of self-attention (image/video) and cross-attention (text-to-image/video), we concatenate visual tokens and text tokens into a single stream that goes through the DiT. This increases the attention sequence in every block and increases the FLOPs per token, but should allow for significantly more expressive relationships between text and image tokens.",
+   "zh": "我们不再交替使用自注意力（图像/视频）与交叉注意力（文本到图像/视频）模块，而是将视觉 token 和文本 token 拼接成单一序列，送入 DiT 处理。 这会增加每个模块中的注意力序列长度，并提高每个 token 的浮点运算量（FLOPs），但应能实现文本与图像 token 之间更具表现力的关联。",
+   "sents": [
+    {
+     "en": "Instead of alternating blocks of self-attention (image/video) and cross-attention (text-to-image/video), we concatenate visual tokens and text tokens into a single stream that goes through the DiT.",
+     "zh": "我们不再交替使用自注意力（图像/视频）与交叉注意力（文本到图像/视频）模块，而是将视觉 token 和文本 token 拼接成单一序列，送入 DiT 处理。"
+    },
+    {
+     "en": "This increases the attention sequence in every block and increases the FLOPs per token, but should allow for significantly more expressive relationships between text and image tokens.",
+     "zh": "这会增加每个模块中的注意力序列长度，并提高每个 token 的浮点运算量（FLOPs），但应能实现文本与图像 token 之间更具表现力的关联。"
+    }
+   ]
+  },
+  {
+   "en": "v2 block: self-attention, then cross-attention v3 block: one self-attention over image and text",
+   "zh": "v2 块：自注意力，然后交叉注意力\nv3 块：一次针对图像和文本的自注意力",
+   "sents": null
+  },
+  {
+   "en": "Our old model was a 40-layer transformer with 2048 hidden size. Here, we switch to a 23-layer transformer with a wider 2944 hidden size. Wider networks have become standard in recent DiT architectures (e.g. Z-Image), so we adopted the same.",
+   "zh": "我们的旧模型是一个40层的Transformer，隐藏层维度为2048。 在这里，我们切换为23层的Transformer，隐藏层维度加宽至2944。 更宽的网络已成为近年DiT架构的标准做法（例如 Z-Image），因此我们采用了相同的方案。",
+   "sents": [
+    {
+     "en": "Our old model was a 40-layer transformer with 2048 hidden size.",
+     "zh": "我们的旧模型是一个40层的Transformer，隐藏层维度为2048。"
+    },
+    {
+     "en": "Here, we switch to a 23-layer transformer with a wider 2944 hidden size.",
+     "zh": "在这里，我们切换为23层的Transformer，隐藏层维度加宽至2944。"
+    },
+    {
+     "en": "Wider networks have become standard in recent DiT architectures (e.g.",
+     "zh": "更宽的网络已成为近年DiT架构的标准做法（例如"
+    },
+    {
+     "en": "Z-Image), so we adopted the same.",
+     "zh": "Z-Image），因此我们采用了相同的方案。"
+    }
+   ]
+  },
+  {
+   "en": "When you train a VAE, you use perceptual losses like LPIPS and adversarial loss via a GAN to push the reconstructions towards what humans like. MSE on its own gives you a blurry mess. Now that we don't have a VAE decoder, we need the JiT itself to leverage these losses to generate stuff humans like. We still use LPIPS , but instead of a GAN we use a P-DINO loss . Both are only applied when .",
+   "zh": "训练 VAE 时，你会使用 LPIPS 这类感知损失，以及通过 GAN 实现的对抗损失，来推动重建结果更接近人类所喜欢的样子。 单独使用 MSE 只会得到一片模糊的乱糟糟结果。 既然我们没有 VAE 解码器，就需要 JiT 本身来利用这些损失，生成人类所喜欢的内容。 我们仍然使用 LPIPS，但用 P-DINO 损失取代了 GAN。 两者仅在 时才被应用。",
+   "sents": [
+    {
+     "en": "When you train a VAE, you use perceptual losses like LPIPS and adversarial loss via a GAN to push the reconstructions towards what humans like.",
+     "zh": "训练 VAE 时，你会使用 LPIPS 这类感知损失，以及通过 GAN 实现的对抗损失，来推动重建结果更接近人类所喜欢的样子。"
+    },
+    {
+     "en": "MSE on its own gives you a blurry mess.",
+     "zh": "单独使用 MSE 只会得到一片模糊的乱糟糟结果。"
+    },
+    {
+     "en": "Now that we don't have a VAE decoder, we need the JiT itself to leverage these losses to generate stuff humans like.",
+     "zh": "既然我们没有 VAE 解码器，就需要 JiT 本身来利用这些损失，生成人类所喜欢的内容。"
+    },
+    {
+     "en": "We still use LPIPS , but instead of a GAN we use a P-DINO loss .",
+     "zh": "我们仍然使用 LPIPS，但用 P-DINO 损失取代了 GAN。"
+    },
+    {
+     "en": "Both are only applied when .",
+     "zh": "两者仅在 时才被应用。"
+    }
+   ]
+  },
+  {
+   "en": "perceptual losses · both towers frozen · on x̂₀ vs x₀",
+   "zh": "感知损失 · 双塔均冻结 · 在 x̂₀ 与 x₀ 上",
+   "sents": null
+  },
+  {
+   "en": "We swap standard SiLU non-linear activations with gated SiLUs (i.e. SwiGLU).",
+   "zh": "我们将标准的 SiLU 非线性激活替换为门控 SiLU（即 SwiGLU）。",
+   "sents": null
+  },
+  {
+   "en": "SwiGLU FFN · 2,944 → 7,936 → 2,944 · elementwise multiply",
+   "zh": "SwiGLU 前馈网络（FFN）· 2,944 → 7,936 → 2,944 · 逐元素相乘",
+   "sents": null
+  },
+  {
+   "en": "Moonshot's Kimi models proved that the Muon optimizer works really well at scale . As they recommend, all the 2D matrices in our network (e.g. q/k/v matrices for attention, FFN weights) are optimized with Muon , while layers at the input/output of the network (e.g. patchification, output head) and scales/biases (e.g. AdaLN) are still optimized by AdamW.",
+   "zh": "Moonshot 的 Kimi 模型证明了 Muon 优化器在大规模场景下确实非常好用。 按照他们的建议，我们网络中所有的二维矩阵（例如注意力机制的 q/k/v 矩阵、FFN 权重）都用 Muon 优化，而位于网络输入/输出端的层（例如图像分块、输出头）以及缩放因子/偏置（例如 AdaLN）仍然由 AdamW 优化。",
+   "sents": [
+    {
+     "en": "Moonshot's Kimi models proved that the Muon optimizer works really well at scale .",
+     "zh": "Moonshot 的 Kimi 模型证明了 Muon 优化器在大规模场景下确实非常好用。"
+    },
+    {
+     "en": "As they recommend, all the 2D matrices in our network (e.g. q/k/v matrices for attention, FFN weights) are optimized with Muon , while layers at the input/output of the network (e.g. patchification, output head) and scales/biases (e.g.",
+     "zh": "按照他们的建议，我们网络中所有的二维矩阵（例如注意力机制的 q/k/v 矩阵、FFN 权重）都用 Muon 优化，而位于网络输入/输出端的层（例如图像分块、输出头）以及缩放因子/偏置（例如"
+    },
+    {
+     "en": "AdaLN) are still optimized by AdamW.",
+     "zh": "AdaLN）仍然由 AdamW 优化。"
+    }
+   ]
+  },
+  {
+   "en": "It's become pretty common to accelerate the convergence of your DiT by having an earlier layer in the network (e.g. layer 8 of a 23-layer transformer) align to the embedding of in an auxiliary model (e.g. DINOv3). This technique is referred to as REPresentation Alignment (REPA). We'll dig into this (and the limitations) later in the blog, so hold on for that. But for now, plain REPA did not work well for the JiT. Instead, we adopted PixelREPA which masks out x% of tokens in our visual token hidden state, pushes it through a shallow transformer, and then applies the typical cosine-distance loss between all visual tokens (including the masked tokens) and the auxiliary representation from DINOv3.",
+   "zh": "通过让网络中较早的层（例如23层transformer的第8层）与辅助模型（例如DINOv3）的嵌入对齐，来加速DiT的收敛，这种做法已经相当普遍。 这种技术被称为表征对齐（REPA）。 我们会在博客后面深入探讨这一点（以及它的局限性），请稍候。 但目前来看，普通的REPA在JiT上效果并不好。 取而代之的是，我们采用了PixelREPA：它在视觉token隐藏状态中掩蔽掉x%的token，将其通过一个浅层智能体transformer，然后在所有视觉token（包括被掩蔽的token）与来自DINOv3的辅助表征之间施加通常的余弦距离损失。",
+   "sents": [
+    {
+     "en": "It's become pretty common to accelerate the convergence of your DiT by having an earlier layer in the network (e.g. layer 8 of a 23-layer transformer) align to the embedding of in an auxiliary model (e.g. DINOv3).",
+     "zh": "通过让网络中较早的层（例如23层transformer的第8层）与辅助模型（例如DINOv3）的嵌入对齐，来加速DiT的收敛，这种做法已经相当普遍。"
+    },
+    {
+     "en": "This technique is referred to as REPresentation Alignment (REPA).",
+     "zh": "这种技术被称为表征对齐（REPA）。"
+    },
+    {
+     "en": "We'll dig into this (and the limitations) later in the blog, so hold on for that.",
+     "zh": "我们会在博客后面深入探讨这一点（以及它的局限性），请稍候。"
+    },
+    {
+     "en": "But for now, plain REPA did not work well for the JiT.",
+     "zh": "但目前来看，普通的REPA在JiT上效果并不好。"
+    },
+    {
+     "en": "Instead, we adopted PixelREPA which masks out x% of tokens in our visual token hidden state, pushes it through a shallow transformer, and then applies the typical cosine-distance loss between all visual tokens (including the masked tokens) and the auxiliary representation from DINOv3.",
+     "zh": "取而代之的是，我们采用了PixelREPA：它在视觉token隐藏状态中掩蔽掉x%的token，将其通过一个浅层智能体transformer，然后在所有视觉token（包括被掩蔽的token）与来自DINOv3的辅助表征之间施加通常的余弦距离损失。"
+    }
+   ]
+  },
+  {
+   "en": "DINOv3 uses 16×16 patches. We need the token count between the DINO representation and our hidden state to match, so we downsample the images before they go through DINO. For example, if we're doing a 32×32 patchification on 512×512 images, we will have 256 tokens. We downsample the image to 256×256 before passing it through DINO's 16×16 patchification to also get 256 tokens.",
+   "zh": "DINOv3 使用 16×16 的图像块（patch）。 我们需要让 DINO 表示与我们隐藏状态之间的 token 数量相匹配，因此在图像进入 DINO 之前先对其进行下采样。 例如，如果我们在 512×512 的图像上进行 32×32 的图像块划分，我们将得到 256 个 token。 我们把图像下采样到 256×256，再经过 DINO 的 16×16 图像块划分，同样得到 256 个 token。",
+   "sents": [
+    {
+     "en": "DINOv3 uses 16×16 patches.",
+     "zh": "DINOv3 使用 16×16 的图像块（patch）。"
+    },
+    {
+     "en": "We need the token count between the DINO representation and our hidden state to match, so we downsample the images before they go through DINO.",
+     "zh": "我们需要让 DINO 表示与我们隐藏状态之间的 token 数量相匹配，因此在图像进入 DINO 之前先对其进行下采样。"
+    },
+    {
+     "en": "For example, if we're doing a 32×32 patchification on 512×512 images, we will have 256 tokens.",
+     "zh": "例如，如果我们在 512×512 的图像上进行 32×32 的图像块划分，我们将得到 256 个 token。"
+    },
+    {
+     "en": "We downsample the image to 256×256 before passing it through DINO's 16×16 patchification to also get 256 tokens.",
+     "zh": "我们把图像下采样到 256×256，再经过 DINO 的 16×16 图像块划分，同样得到 256 个 token。"
+    }
+   ]
+  },
+  {
+   "en": "PixelREPA · tapped after block 8 · x₀ downsized to 256px so DINOv3 gives 256 tokens",
+   "zh": "PixelREPA · 在第 8 个 block 之后接入 · x₀ 缩小到 256px，使 DINOv3 输出 256 个 token",
+   "sents": null
+  },
+  {
+   "en": "Now that we're moving from a cross-attention to a single-stream DiT architecture, we may be at a higher risk of attention sinks . We adopt sigmoid attention gating to neutralize this issue.",
+   "zh": "由于我们现在从交叉注意力架构转向单流 DiT 架构，我们可能面临更高的注意力汇（attention sinks）风险。 我们采用 sigmoid 注意力门控来消除这一问题。",
+   "sents": [
+    {
+     "en": "Now that we're moving from a cross-attention to a single-stream DiT architecture, we may be at a higher risk of attention sinks .",
+     "zh": "由于我们现在从交叉注意力架构转向单流 DiT 架构，我们可能面临更高的注意力汇（attention sinks）风险。"
+    },
+    {
+     "en": "We adopt sigmoid attention gating to neutralize this issue.",
+     "zh": "我们采用 sigmoid 注意力门控来消除这一问题。"
+    }
+   ]
+  },
+  {
+   "en": "attention gate · 23 gates per block (1 for each attention head) · elementwise multiply",
+   "zh": "注意力门控 · 每个块 23 个门控（每个注意力头 1 个）· 逐元素相乘",
+   "sents": null
+  },
+  {
+   "en": "Instead of T5-XXL text embeddings, we use hidden states from a more modern decoder-only LLM, Qwen3.5-4B. One downside to using a LLM is that it's unclear what hidden state to take as your embedding. Most modern LLMs use some sort of alternating sequence of sparse/linear attention and full-attention. We take the hidden states calculated after full-attention blocks, concatenate them together, and have the DiT learn a transform to combine these representations into a single text condition. Recent Ideogram and FLUX models are more aggressive here, using larger LLMs and aggregating information across all hidden states. Given the size of our DiT, it seemed like overkill to go down that path.",
+   "zh": "我们没有使用 T5-XXL 文本嵌入，而是使用了来自更现代的 decoder-only 大语言模型 Qwen3.5-4B 的隐藏状态。 使用大语言模型的一个缺点是，不清楚应该取哪个隐藏状态作为嵌入。 大多数现代大语言模型都采用某种稀疏/线性注意力与全注意力交替的序列结构。 我们取全注意力块之后计算得到的隐藏状态，将它们拼接在一起，并让 DiT 学习一个变换，把这些表示组合成单一的文本条件。 最近的 Ideogram 和 FLUX 模型在这方面更为激进，使用更大的大语言模型并跨所有隐藏状态聚合信息。 鉴于我们 DiT 的规模，走那条路似乎有些大材小用了。",
+   "sents": [
+    {
+     "en": "Instead of T5-XXL text embeddings, we use hidden states from a more modern decoder-only LLM, Qwen3.5-4B.",
+     "zh": "我们没有使用 T5-XXL 文本嵌入，而是使用了来自更现代的 decoder-only 大语言模型 Qwen3.5-4B 的隐藏状态。"
+    },
+    {
+     "en": "One downside to using a LLM is that it's unclear what hidden state to take as your embedding.",
+     "zh": "使用大语言模型的一个缺点是，不清楚应该取哪个隐藏状态作为嵌入。"
+    },
+    {
+     "en": "Most modern LLMs use some sort of alternating sequence of sparse/linear attention and full-attention.",
+     "zh": "大多数现代大语言模型都采用某种稀疏/线性注意力与全注意力交替的序列结构。"
+    },
+    {
+     "en": "We take the hidden states calculated after full-attention blocks, concatenate them together, and have the DiT learn a transform to combine these representations into a single text condition.",
+     "zh": "我们取全注意力块之后计算得到的隐藏状态，将它们拼接在一起，并让 DiT 学习一个变换，把这些表示组合成单一的文本条件。"
+    },
+    {
+     "en": "Recent Ideogram and FLUX models are more aggressive here, using larger LLMs and aggregating information across all hidden states.",
+     "zh": "最近的 Ideogram 和 FLUX 模型在这方面更为激进，使用更大的大语言模型并跨所有隐藏状态聚合信息。"
+    },
+    {
+     "en": "Given the size of our DiT, it seemed like overkill to go down that path.",
+     "zh": "鉴于我们 DiT 的规模，走那条路似乎有些大材小用了。"
+    }
+   ]
+  },
+  {
+   "en": "text conditioning · three hidden states, one learned projection",
+   "zh": "文本条件化 · 三个隐藏状态，一个可学习的投影",
+   "sents": null
+  },
+  {
+   "en": "At train time, we get to pick the distribution from which t is sampled. Empirically, there's a small band of values at high t where the structure of the image is determined. This is the hardest part of the trajectory for the model to learn, so we skew timesteps accordingly.",
+   "zh": "在训练时，我们可以选择 t 的采样分布。 从经验上看，在高 t 处存在一小段取值区间，图像的结构正是在那里被确定的。 这是轨迹中模型最难学习的部分，因此我们相应地对时间步进行了偏置。",
+   "sents": [
+    {
+     "en": "At train time, we get to pick the distribution from which t is sampled.",
+     "zh": "在训练时，我们可以选择 t 的采样分布。"
+    },
+    {
+     "en": "Empirically, there's a small band of values at high t where the structure of the image is determined.",
+     "zh": "从经验上看，在高 t 处存在一小段取值区间，图像的结构正是在那里被确定的。"
+    },
+    {
+     "en": "This is the hardest part of the trajectory for the model to learn, so we skew timesteps accordingly.",
+     "zh": "这是轨迹中模型最难学习的部分，因此我们相应地对时间步进行了偏置。"
+    }
+   ]
+  },
+  {
+   "en": "Note that the σ term is tied to pixel count: σ = 1 is for 256×256, σ = 2 is for 512×512. The intuition is that we need to shift more aggressively at higher pixel counts. There is more redundant information within the image, so we need to noise more. This is the exact schedule from JiT.",
+   "zh": "注意 σ 项与像素数量相关：σ = 1 对应 256×256，σ = 2 对应 512×512。 直觉上，在更高的像素数量下我们需要更激进地进行偏移。 图像内部存在更多冗余信息，因此我们需要加入更多噪声。 这正是来自 JiT 的调度方案。",
+   "sents": [
+    {
+     "en": "Note that the σ term is tied to pixel count: σ = 1 is for 256×256, σ = 2 is for 512×512.",
+     "zh": "注意 σ 项与像素数量相关：σ = 1 对应 256×256，σ = 2 对应 512×512。"
+    },
+    {
+     "en": "The intuition is that we need to shift more aggressively at higher pixel counts.",
+     "zh": "直觉上，在更高的像素数量下我们需要更激进地进行偏移。"
+    },
+    {
+     "en": "There is more redundant information within the image, so we need to noise more.",
+     "zh": "图像内部存在更多冗余信息，因此我们需要加入更多噪声。"
+    },
+    {
+     "en": "This is the exact schedule from JiT.",
+     "zh": "这正是来自 JiT 的调度方案。"
+    }
+   ]
+  },
+  {
+   "en": "The MSE is x-prediction with the velocity weighting (x-prediction, v-loss), clamped at t = 0.1 so the weight caps out at 100×. LPIPS and P-DINO are perceptual losses on the predicted image. PixelREPA aligns the block-8 hidden state with DINOv3 features of the clean image (downsampled 2× to match the token grid of h₈).",
+   "zh": "MSE 采用速度加权的 x 预测（x-prediction，v-loss），并在 t = 0.1 处截断，使权重上限为 100 倍。 LPIPS 和 P-DINO 是作用于预测图像的感知损失。 PixelREPA 将第 8 个块的隐状态与干净图像的 DINOv3 特征对齐（下采样 2 倍以匹配 h₈ 的 token 网格）。",
+   "sents": [
+    {
+     "en": "The MSE is x-prediction with the velocity weighting (x-prediction, v-loss), clamped at t = 0.1 so the weight caps out at 100×.",
+     "zh": "MSE 采用速度加权的 x 预测（x-prediction，v-loss），并在 t = 0.1 处截断，使权重上限为 100 倍。"
+    },
+    {
+     "en": "LPIPS and P-DINO are perceptual losses on the predicted image.",
+     "zh": "LPIPS 和 P-DINO 是作用于预测图像的感知损失。"
+    },
+    {
+     "en": "PixelREPA aligns the block-8 hidden state with DINOv3 features of the clean image (downsampled 2× to match the token grid of h₈).",
+     "zh": "PixelREPA 将第 8 个块的隐状态与干净图像的 DINOv3 特征对齐（下采样 2 倍以匹配 h₈ 的 token 网格）。"
+    }
+   ]
+  },
+  {
+   "en": "One of the biggest limitations that folks have observed about JiTs is that they struggle to generate the finegrained details. Our baselines corroborate this. If we want to really get our pixel space models to sing, we need to fix this.",
+   "zh": "人们观察到的 JiTs 最大的局限之一是它们难以生成细粒度的细节。 我们的基线证实了这一点。 如果我们想让像素空间模型真正大放异彩，就需要解决这个问题。",
+   "sents": [
+    {
+     "en": "One of the biggest limitations that folks have observed about JiTs is that they struggle to generate the finegrained details.",
+     "zh": "人们观察到的 JiTs 最大的局限之一是它们难以生成细粒度的细节。"
+    },
+    {
+     "en": "Our baselines corroborate this.",
+     "zh": "我们的基线证实了这一点。"
+    },
+    {
+     "en": "If we want to really get our pixel space models to sing, we need to fix this.",
+     "zh": "如果我们想让像素空间模型真正大放异彩，就需要解决这个问题。"
+    }
+   ]
+  },
+  {
+   "en": "LDMs face the same issue, but to a much lesser extent.",
+   "zh": "LDMs 面临同样的问题，但程度要轻得多。",
+   "sents": null
+  },
+  {
+   "en": "In early 2025, Shuai Wang and team tackled this problem directly with their DDT (Decoupled Diffusion Transformer), scoring SOTA on ImageNet gFID at the time. They observed that —",
+   "zh": "2025年初，王帅及其团队用他们的DDT（解耦扩散Transformer，Decoupled Diffusion Transformer）直接解决了这个问题，在当时取得了ImageNet gFID的SOTA成绩。他们观察到——",
+   "sents": null
+  },
+  {
+   "en": "In each denoising step, diffusion transformers encode the noisy inputs to extract the lower-frequency semantic component and then decode the higher frequency with identical modules. This scheme creates an inherent optimization dilemma: encoding low-frequency semantics necessitates reducing high-frequency components, creating tension between semantic encoding and high-frequency decoding.",
+   "zh": "在每个去噪步骤中，扩散变换器先对带噪输入进行编码以提取低频语义成分，然后再用相同的模块解码高频成分。 这种方案带来了固有的优化困境：编码低频语义必然要求削弱高频成分，从而使语义编码与高频解码之间产生矛盾。",
+   "sents": [
+    {
+     "en": "In each denoising step, diffusion transformers encode the noisy inputs to extract the lower-frequency semantic component and then decode the higher frequency with identical modules.",
+     "zh": "在每个去噪步骤中，扩散变换器先对带噪输入进行编码以提取低频语义成分，然后再用相同的模块解码高频成分。"
+    },
+    {
+     "en": "This scheme creates an inherent optimization dilemma: encoding low-frequency semantics necessitates reducing high-frequency components, creating tension between semantic encoding and high-frequency decoding.",
+     "zh": "这种方案带来了固有的优化困境：编码低频语义必然要求削弱高频成分，从而使语义编码与高频解码之间产生矛盾。"
+    }
+   ]
+  },
+  {
+   "en": "DDT splits the model into two components, a \"conditional encoder\" for low-frequency structure and a \"velocity decoder\" for high-frequency detail. They give the encoder most of the layers, since the most difficult portion of the probability path to master is the transition from random noise to basic structure. When you train a diffusion model, you have to sample timesteps between and to turn your clean samples into noise-interpolated . Since Stable Diffusion 3 , it's been widely known that there seems to be a small band of high- values where the overall structure of the image is determined. We oversample from this part of the distribution, to accelerate convergence. This finding was the inspiration for the DDT to allocate the bulk of its parameters to the encoder.",
+   "zh": "DDT 将模型拆分为两个组件：一个用于低频结构的「条件编码器」和一个用于高频细节的「速度解码器」。 他们将大部分层分配给了编码器，因为概率路径中最难掌握的部分是从随机噪声到基本结构的过渡。 在训练扩散模型时，你需要在时间和之间采样时间步，以便将干净样本转化为噪声插值样本。 自 Stable Diffusion 3 以来，人们普遍知道似乎存在一个较小的取值区间，在那里图像的整体结构被确定。 我们从该分布的这一部分进行过采样，以加速收敛。 这一发现正是 DDT 将其大部分参数分配给编码器的灵感来源。",
+   "sents": [
+    {
+     "en": "DDT splits the model into two components, a \"conditional encoder\" for low-frequency structure and a \"velocity decoder\" for high-frequency detail.",
+     "zh": "DDT 将模型拆分为两个组件：一个用于低频结构的「条件编码器」和一个用于高频细节的「速度解码器」。"
+    },
+    {
+     "en": "They give the encoder most of the layers, since the most difficult portion of the probability path to master is the transition from random noise to basic structure.",
+     "zh": "他们将大部分层分配给了编码器，因为概率路径中最难掌握的部分是从随机噪声到基本结构的过渡。"
+    },
+    {
+     "en": "When you train a diffusion model, you have to sample timesteps between and to turn your clean samples into noise-interpolated .",
+     "zh": "在训练扩散模型时，你需要在时间和之间采样时间步，以便将干净样本转化为噪声插值样本。"
+    },
+    {
+     "en": "Since Stable Diffusion 3 , it's been widely known that there seems to be a small band of high- values where the overall structure of the image is determined.",
+     "zh": "自 Stable Diffusion 3 以来，人们普遍知道似乎存在一个较小的取值区间，在那里图像的整体结构被确定。"
+    },
+    {
+     "en": "We oversample from this part of the distribution, to accelerate convergence.",
+     "zh": "我们从该分布的这一部分进行过采样，以加速收敛。"
+    },
+    {
+     "en": "This finding was the inspiration for the DDT to allocate the bulk of its parameters to the encoder.",
+     "zh": "这一发现正是 DDT 将其大部分参数分配给编码器的灵感来源。"
+    }
+   ]
+  },
+  {
+   "en": "DDT splits one DiT into a large structure encoder and a shallow detail decoder",
+   "zh": "DDT 将一个 DiT 拆分为一个大型结构编码器和一个浅层细节解码器",
+   "sents": null
+  },
+  {
+   "en": "Within the encoder they apply REPresentation Alignment (REPA) , an auxiliary loss that accelerates training by aligning the hidden states of an early layer of the model to the DINO representation of the clean image ( ). If you keep REPA loss active throughout all of training in standard DiTs, it actually hurts overall FID .",
+   "zh": "在编码器中，他们应用了表征对齐（REPA），这是一种辅助损失，通过将模型早期层的隐藏状态与干净图像的 DINO 表征对齐来加速训练（ ）。 如果在标准 DiT 的整个训练过程中始终保持 REPA 损失处于激活状态，实际上会损害整体 FID。",
+   "sents": [
+    {
+     "en": "Within the encoder they apply REPresentation Alignment (REPA) , an auxiliary loss that accelerates training by aligning the hidden states of an early layer of the model to the DINO representation of the clean image ( ).",
+     "zh": "在编码器中，他们应用了表征对齐（REPA），这是一种辅助损失，通过将模型早期层的隐藏状态与干净图像的 DINO 表征对齐来加速训练（ ）。"
+    },
+    {
+     "en": "If you keep REPA loss active throughout all of training in standard DiTs, it actually hurts overall FID .",
+     "zh": "如果在标准 DiT 的整个训练过程中始终保持 REPA 损失处于激活状态，实际上会损害整体 FID。"
+    }
+   ]
+  },
+  {
+   "en": "The DDT avoids this problem by giving the decoder the noised image ( ) so it can extract the finegrained details that REPA might otherwise destroy. Moreover, the DDT frees up the decoder to focus solely on details by creating an information bottleneck. The decoder doesn't get the class label. Given its limited capacity, it's forced to rely on the encoder's hidden states to ascertain structure. And in turn, it allocates its parameters to focus on detail recovery.",
+   "zh": "DDT 通过将带噪图像（ ）提供给解码器来避免这个问题，从而能够提取出 REPA 可能会破坏的细粒度细节。 此外，DDT 通过创建信息瓶颈，让解码器得以专注于细节本身。 解码器不会获得类别标签。 由于其容量有限，它被迫依赖编码器的隐藏状态来确定结构。 反过来，它将其参数分配用于专注于细节恢复。",
+   "sents": [
+    {
+     "en": "The DDT avoids this problem by giving the decoder the noised image ( ) so it can extract the finegrained details that REPA might otherwise destroy.",
+     "zh": "DDT 通过将带噪图像（ ）提供给解码器来避免这个问题，从而能够提取出 REPA 可能会破坏的细粒度细节。"
+    },
+    {
+     "en": "Moreover, the DDT frees up the decoder to focus solely on details by creating an information bottleneck.",
+     "zh": "此外，DDT 通过创建信息瓶颈，让解码器得以专注于细节本身。"
+    },
+    {
+     "en": "The decoder doesn't get the class label.",
+     "zh": "解码器不会获得类别标签。"
+    },
+    {
+     "en": "Given its limited capacity, it's forced to rely on the encoder's hidden states to ascertain structure.",
+     "zh": "由于其容量有限，它被迫依赖编码器的隐藏状态来确定结构。"
+    },
+    {
+     "en": "And in turn, it allocates its parameters to focus on detail recovery.",
+     "zh": "反过来，它将其参数分配用于专注于细节恢复。"
+    }
+   ]
+  },
+  {
+   "en": "Naturally, we tried to port over the core ideas from the DDT so that we could recover detail in our pixel space model. We call this new architecture JiT-DDT (creative, we know).",
+   "zh": "自然地，我们尝试将 DDT 的核心思想移植过来，以便在像素空间模型中恢复细节。 我们将这一新架构称为 JiT-DDT（我们知道，这名字很有创意）。",
+   "sents": [
+    {
+     "en": "Naturally, we tried to port over the core ideas from the DDT so that we could recover detail in our pixel space model.",
+     "zh": "自然地，我们尝试将 DDT 的核心思想移植过来，以便在像素空间模型中恢复细节。"
+    },
+    {
+     "en": "We call this new architecture JiT-DDT (creative, we know).",
+     "zh": "我们将这一新架构称为 JiT-DDT（我们知道，这名字很有创意）。"
+    }
+   ]
+  },
+  {
+   "en": "Ours is trained with x-prediction, v-loss, unlike the DDT which was trained with the classic v-prediction, v-loss formulation.",
+   "zh": "我们的模型采用 x-预测、v-损失进行训练，而 DDT 采用的是经典的 v-预测、v-损失公式进行训练。",
+   "sents": null
+  },
+  {
+   "en": "This is crucial. If you downsample an image, you strip it of most of its high frequency detail, leaving behind low-frequency structure. So in an x-prediction-world, we can get our encoder to learn structure explicitly by predicting a low-resolution version of our input image, .",
+   "zh": "这一点至关重要。 如果你对图像进行下采样，就会去除它大部分高频细节，只留下低频结构。 因此，在x预测的世界里，我们可以让编码器通过预测输入图像的低分辨率版本来显式地学习结构，。",
+   "sents": [
+    {
+     "en": "This is crucial.",
+     "zh": "这一点至关重要。"
+    },
+    {
+     "en": "If you downsample an image, you strip it of most of its high frequency detail, leaving behind low-frequency structure.",
+     "zh": "如果你对图像进行下采样，就会去除它大部分高频细节，只留下低频结构。"
+    },
+    {
+     "en": "So in an x-prediction-world, we can get our encoder to learn structure explicitly by predicting a low-resolution version of our input image, .",
+     "zh": "因此，在x预测的世界里，我们可以让编码器通过预测输入图像的低分辨率版本来显式地学习结构，。"
+    }
+   ]
+  },
+  {
+   "en": "Concretely, we split our DiT in half. We give the encoder and decoder their own input patchification and output heads, so they can specialize. We have the encoder predict a 64×64 version of the input 512×512 image (8× downsampled) and pass its hidden states to the decoder. This way the decoder gets a structural sketch of the output, its own view of the noised image, and the text prompt to create the full resolution image.",
+   "zh": "具体来说，我们将 DiT 从中间拆分为两半。 我们让编码器和解码器各自拥有独立的输入分块化与输出头，以便它们能够各自特化。 我们让编码器预测输入 512×512 图像的 64×64 版本（8 倍下采样），并将其隐藏状态传递给解码器。 这样，解码器就能获得输出的结构草图、对加噪图像的自身视角以及文本提示，从而生成完整分辨率的图像。",
+   "sents": [
+    {
+     "en": "Concretely, we split our DiT in half.",
+     "zh": "具体来说，我们将 DiT 从中间拆分为两半。"
+    },
+    {
+     "en": "We give the encoder and decoder their own input patchification and output heads, so they can specialize.",
+     "zh": "我们让编码器和解码器各自拥有独立的输入分块化与输出头，以便它们能够各自特化。"
+    },
+    {
+     "en": "We have the encoder predict a 64×64 version of the input 512×512 image (8× downsampled) and pass its hidden states to the decoder.",
+     "zh": "我们让编码器预测输入 512×512 图像的 64×64 版本（8 倍下采样），并将其隐藏状态传递给解码器。"
+    },
+    {
+     "en": "This way the decoder gets a structural sketch of the output, its own view of the noised image, and the text prompt to create the full resolution image.",
+     "zh": "这样，解码器就能获得输出的结构草图、对加噪图像的自身视角以及文本提示，从而生成完整分辨率的图像。"
+    }
+   ]
+  },
+  {
+   "en": "JiT-DDT: the encoder plans a 64×64 image; the decoder uses that plan, full-resolution x_t and text to generate the 512×512 image",
+   "zh": "JiT-DDT：编码器规划一张 64×64 的图像；解码器利用该规划、全分辨率的 x_t 和文本，生成 512×512 的图像",
+   "sents": null
+  },
+  {
+   "en": "One added benefit of this design is that we can have asymmetric patch sizes between the encoder and the decoder. If we're training on 512×512 images, the encoder will be tasked with regressing the 64×64 version of the image. It needs less information to do this task, so we can use 64×64 patches and operate on a 64-token sequence. Meanwhile, the decoder can use smaller patches to help recover detail (e.g. 32×32 patches or even 16×16 patches).",
+   "zh": "这种设计的一个额外好处是，编码器和解码器之间可以使用不对称的patch大小。 如果我们在512×512的图像上训练，编码器的任务是对图像的64×64版本进行回归。 完成这个任务所需的信息更少，因此我们可以使用64×64的patch，并在一个64个token的序列上进行操作。 同时，解码器可以使用更小的patch来帮助恢复细节（例如32×32的patch，甚至16×16的patch）。",
+   "sents": [
+    {
+     "en": "One added benefit of this design is that we can have asymmetric patch sizes between the encoder and the decoder.",
+     "zh": "这种设计的一个额外好处是，编码器和解码器之间可以使用不对称的patch大小。"
+    },
+    {
+     "en": "If we're training on 512×512 images, the encoder will be tasked with regressing the 64×64 version of the image.",
+     "zh": "如果我们在512×512的图像上训练，编码器的任务是对图像的64×64版本进行回归。"
+    },
+    {
+     "en": "It needs less information to do this task, so we can use 64×64 patches and operate on a 64-token sequence.",
+     "zh": "完成这个任务所需的信息更少，因此我们可以使用64×64的patch，并在一个64个token的序列上进行操作。"
+    },
+    {
+     "en": "Meanwhile, the decoder can use smaller patches to help recover detail (e.g. 32×32 patches or even 16×16 patches).",
+     "zh": "同时，解码器可以使用更小的patch来帮助恢复细节（例如32×32的patch，甚至16×16的patch）。"
+    }
+   ]
+  },
+  {
+   "en": "We make two additional deviations from the original DDT's architecture:",
+   "zh": "我们对原始 DDT 的架构做了另外两处改动：",
+   "sents": null
+  },
+  {
+   "en": "The JiT-DDT loss: the encoder is scored on the 64×64 plan, the decoder on the 512×512 image",
+   "zh": "JiT-DDT 损失：编码器在 64×64 平面上评分，解码器在 512×512 图像上评分",
+   "sents": null
+  },
+  {
+   "en": "We compute the MSE loss twice, once for the encoder against an 8× downsampled version of x₀ and once for the decoder against the original x₀. We keep the alignment loss in the encoder, moving it earlier in the network (tapped after block 6 of 12, against DINOv3 features of x₀ downsampled 4× to match the token grid of the encoder's h₆). And, we keep the perceptual losses on the full resolution outputs of the decoder. The gradient runs end to end, so the decoder's loss trains the encoder too.",
+   "zh": "我们计算两次 MSE 损失，一次针对编码器，使用 x₀ 的 8× 下采样版本；一次针对解码器，使用原始的 x₀。 我们保留编码器中的对齐损失，并将其移到网络中更靠前的位置（在 12 个块中的第 6 块之后引出，针对 x₀ 下采样 4× 后的 DINOv3 特征，以匹配编码器 h₆ 的 token 网格）。 此外，我们保留解码器全分辨率输出上的感知损失。 梯度是端到端传播的，因此解码器的损失也会训练编码器。",
+   "sents": [
+    {
+     "en": "We compute the MSE loss twice, once for the encoder against an 8× downsampled version of x₀ and once for the decoder against the original x₀.",
+     "zh": "我们计算两次 MSE 损失，一次针对编码器，使用 x₀ 的 8× 下采样版本；一次针对解码器，使用原始的 x₀。"
+    },
+    {
+     "en": "We keep the alignment loss in the encoder, moving it earlier in the network (tapped after block 6 of 12, against DINOv3 features of x₀ downsampled 4× to match the token grid of the encoder's h₆).",
+     "zh": "我们保留编码器中的对齐损失，并将其移到网络中更靠前的位置（在 12 个块中的第 6 块之后引出，针对 x₀ 下采样 4× 后的 DINOv3 特征，以匹配编码器 h₆ 的 token 网格）。"
+    },
+    {
+     "en": "And, we keep the perceptual losses on the full resolution outputs of the decoder.",
+     "zh": "此外，我们保留解码器全分辨率输出上的感知损失。"
+    },
+    {
+     "en": "The gradient runs end to end, so the decoder's loss trains the encoder too.",
+     "zh": "梯度是端到端传播的，因此解码器的损失也会训练编码器。"
+    }
+   ]
+  },
+  {
+   "en": "JiT-DDT 64/32 (baseline) reduces the oversaturation issue",
+   "zh": "JiT-DDT 64/32（基线）缓解了过饱和问题",
+   "sents": null
+  },
+  {
+   "en": "We were honestly surprised that the images from the JiT-DDT weren't that much better than the JiT. So, we ablated a bunch of different training and architecture decisions (e.g. warm-start the encoder before adding the decoder, dropping text from the decoder, etc.).",
+   "zh": "说实话，我们惊讶地发现 JiT-DDT 生成的图像并没有比 JiT 好多少。 因此，我们对一系列不同的训练和架构决策进行了消融实验（例如在添加解码器之前先对编码器进行预热启动、在解码器中去掉文本输入等）。",
+   "sents": [
+    {
+     "en": "We were honestly surprised that the images from the JiT-DDT weren't that much better than the JiT.",
+     "zh": "说实话，我们惊讶地发现 JiT-DDT 生成的图像并没有比 JiT 好多少。"
+    },
+    {
+     "en": "So, we ablated a bunch of different training and architecture decisions (e.g. warm-start the encoder before adding the decoder, dropping text from the decoder, etc.).",
+     "zh": "因此，我们对一系列不同的训练和架构决策进行了消融实验（例如在添加解码器之前先对编码器进行预热启动、在解码器中去掉文本输入等）。"
+    }
+   ]
+  },
+  {
+   "en": "Nothing worked, until we started tweaking the noise schedule. It's the most obvious knob to tune, but somehow we haven't found any research dialing this in for pixel-space models.",
+   "zh": "一切都不奏效，直到我们开始调整噪声调度。 这是最显而易见的可调旋钮，但不知为何，我们还没找到任何针对像素空间模型深入研究这一项的工作。",
+   "sents": [
+    {
+     "en": "Nothing worked, until we started tweaking the noise schedule.",
+     "zh": "一切都不奏效，直到我们开始调整噪声调度。"
+    },
+    {
+     "en": "It's the most obvious knob to tune, but somehow we haven't found any research dialing this in for pixel-space models.",
+     "zh": "这是最显而易见的可调旋钮，但不知为何，我们还没找到任何针对像素空间模型深入研究这一项的工作。"
+    }
+   ]
+  },
+  {
+   "en": "Partway through training, widen the noise schedule toward clean images",
+   "zh": "训练进行到一半时，将噪声计划向干净图像方向展宽",
+   "sents": null
+  },
+  {
+   "en": "share of training timesteps within 0.08 to 0.13 · hover the plot to move",
+   "zh": "训练时间步中位于 0.08 到 0.13 之间的比例 · 悬停于图表上以移动",
+   "sents": null
+  },
+  {
+   "en": "Widening the noise schedule helps JiT-DDT recover details like freckles and hair texture",
+   "zh": "拓宽噪声调度有助于 JiT-DDT 恢复雀斑和发丝纹理等细节。",
+   "sents": null
+  },
+  {
+   "en": "Last fall, Alibaba's Z-Image became the best small, open-weight model on the market. Their technical report contains a lot of juicy details, but we were most interested in the tweaks they made to the architecture:",
+   "zh": "去年秋天，阿里巴巴的 Z-Image 成为市场上最好的小型开放权重模型。 它们的技术报告包含许多有料的细节，但我们最感兴趣的是他们对架构所做的调整：",
+   "sents": [
+    {
+     "en": "Last fall, Alibaba's Z-Image became the best small, open-weight model on the market.",
+     "zh": "去年秋天，阿里巴巴的 Z-Image 成为市场上最好的小型开放权重模型。"
+    },
+    {
+     "en": "Their technical report contains a lot of juicy details, but we were most interested in the tweaks they made to the architecture:",
+     "zh": "它们的技术报告包含许多有料的细节，但我们最感兴趣的是他们对架构所做的调整："
+    }
+   ]
+  },
+  {
+   "en": "Refiners clearly helped our model. They're cheaper versions of the MM-DiT blocks invented by BFL in FLUX. Both help the model massage the modalities before combining them in a shared DiT trunk. The other knobs (AdaLN truncation, post-norm gate + tanh, RMSNorm) didn't move the needle for us, so we omit them from our experiments.",
+   "zh": "Refiners 显然对我们的模型有帮助。 它们是 BFL 在 FLUX 中发明的 MM-DiT 块的更廉价版本。 两者都有助于模型在将各模态合并到共享 DiT 主干之前对模态进行调整。 其他一些调节项（AdaLN 截断、后置范数门控 + tanh、RMSNorm）对我们没有产生明显效果，因此我们在实验中省略了它们。",
+   "sents": [
+    {
+     "en": "Refiners clearly helped our model.",
+     "zh": "Refiners 显然对我们的模型有帮助。"
+    },
+    {
+     "en": "They're cheaper versions of the MM-DiT blocks invented by BFL in FLUX.",
+     "zh": "它们是 BFL 在 FLUX 中发明的 MM-DiT 块的更廉价版本。"
+    },
+    {
+     "en": "Both help the model massage the modalities before combining them in a shared DiT trunk.",
+     "zh": "两者都有助于模型在将各模态合并到共享 DiT 主干之前对模态进行调整。"
+    },
+    {
+     "en": "The other knobs (AdaLN truncation, post-norm gate + tanh, RMSNorm) didn't move the needle for us, so we omit them from our experiments.",
+     "zh": "其他一些调节项（AdaLN 截断、后置范数门控 + tanh、RMSNorm）对我们没有产生明显效果，因此我们在实验中省略了它们。"
+    }
+   ]
+  },
+  {
+   "en": "Refiners fix the excessive freckling and the color grading",
+   "zh": "精修器可修复过度的雀斑问题和调色问题。",
+   "sents": null
+  },
+  {
+   "en": "JiT-DDT 64/32 + noise shifting + refiners",
+   "zh": "JiT-DDT 64/32 + 噪声偏移 + 精炼器（refiners）",
+   "sents": null
+  },
+  {
+   "en": "The encoder and the decoder each get four modality-specific blocks before the shared DiT trunk: two for image, two for text (8 new blocks in total, 477M additional parameters).",
+   "zh": "编码器和解码器在共享的 DiT 主干之前各有四个模态专用块：两个用于图像，两个用于文本（共新增 8 个块，额外增加 4.77 亿参数）。",
+   "sents": null
+  },
+  {
+   "en": "We trimmed one shared block from each stack (2 total) which brought the refiner model within ~5% of the no-refiner model's FLOPs. The modality-specific blocks are much cheaper to run, since they see about half the sequence length of the shared blocks.",
+   "zh": "我们从每个堆叠中各删减了一个共享块（共 2 个），这使得精炼模型的 FLOPs 与无精炼模型的 FLOPs 相差约 5% 以内。 模态特定块的运行成本低得多，因为它们处理的序列长度约为共享块的一半。",
+   "sents": [
+    {
+     "en": "We trimmed one shared block from each stack (2 total) which brought the refiner model within ~5% of the no-refiner model's FLOPs.",
+     "zh": "我们从每个堆叠中各删减了一个共享块（共 2 个），这使得精炼模型的 FLOPs 与无精炼模型的 FLOPs 相差约 5% 以内。"
+    },
+    {
+     "en": "The modality-specific blocks are much cheaper to run, since they see about half the sequence length of the shared blocks.",
+     "zh": "模态特定块的运行成本低得多，因为它们处理的序列长度约为共享块的一半。"
+    }
+   ]
+  },
+  {
+   "en": "Note that the two runs shift the schedule at different points: the refiner model switches at 80M samples and trains 58M more under the wider schedule, while the previous model switches at 109M and trains 33M more.",
+   "zh": "请注意，两次运行在不同节点切换了训练计划：精炼模型在 8000 万样本时切换，并在更宽的计划下继续训练了 5800 万样本，而先前的模型在 1.09 亿样本时切换，并继续训练了 3300 万样本。",
+   "sents": null
+  },
+  {
+   "en": "We've covered a lot of ground, so let's recap real quick.",
+   "zh": "我们已经讲了很多内容，现在快速回顾一下。",
+   "sents": null
+  },
+  {
+   "en": "Our goal is to reduce tokens in the DiT context window. That way we can accelerate training and inference. Traditionally, DiTs have struggled to learn from high-dimensional inputs because of the curse of dimensionality implicit to v-prediction.",
+   "zh": "我们的目标是减少 DiT 上下文窗口中的 token。 这样我们就可以加速训练和推理。 传统上，由于 v-prediction 固有的维数灾难，DiT 一直难以从高维输入中学习。",
+   "sents": [
+    {
+     "en": "Our goal is to reduce tokens in the DiT context window.",
+     "zh": "我们的目标是减少 DiT 上下文窗口中的 token。"
+    },
+    {
+     "en": "That way we can accelerate training and inference.",
+     "zh": "这样我们就可以加速训练和推理。"
+    },
+    {
+     "en": "Traditionally, DiTs have struggled to learn from high-dimensional inputs because of the curse of dimensionality implicit to v-prediction.",
+     "zh": "传统上，由于 v-prediction 固有的维数灾难，DiT 一直难以从高维输入中学习。"
+    }
+   ]
+  },
+  {
+   "en": "If we swap in x-prediction, we can get DiTs to successfully learn from high dimensional samples. We can use this fact to apply linear patchification, throw away the VAE, and push the compression problem into the DiT. This way we can develop the latent space specifically for generation and at the same time get the token savings we're looking for.",
+   "zh": "如果我们换用 x 预测，就能让 DiT 成功地从高维样本中学习。 我们可以利用这一事实来应用线性分块，去掉 VAE，并把压缩问题转移给 DiT。 这样我们就可以专门为生成来构建潜空间，同时获得我们想要的 token 节省。",
+   "sents": [
+    {
+     "en": "If we swap in x-prediction, we can get DiTs to successfully learn from high dimensional samples.",
+     "zh": "如果我们换用 x 预测，就能让 DiT 成功地从高维样本中学习。"
+    },
+    {
+     "en": "We can use this fact to apply linear patchification, throw away the VAE, and push the compression problem into the DiT.",
+     "zh": "我们可以利用这一事实来应用线性分块，去掉 VAE，并把压缩问题转移给 DiT。"
+    },
+    {
+     "en": "This way we can develop the latent space specifically for generation and at the same time get the token savings we're looking for.",
+     "zh": "这样我们就可以专门为生成来构建潜空间，同时获得我们想要的 token 节省。"
+    }
+   ]
+  },
+  {
+   "en": "The one downside to this approach is that the JiT struggles to learn finegrained details out of the box. Humans perceive these details quite easily, so we need these if we want to generate good images and videos. Our JiT-DDT is one way we can get pixel-space models to learn structure and detail.",
+   "zh": "这种方法的一个缺点是，即插即用训练（JiT）开箱即用时难以学习细粒度的细节。 人类很容易感知这些细节，所以如果我们想生成好的图像和视频，就需要这些细节。 我们的 JiT-DDT 是让像素空间模型学习结构与细节的一种方式。",
+   "sents": [
+    {
+     "en": "The one downside to this approach is that the JiT struggles to learn finegrained details out of the box.",
+     "zh": "这种方法的一个缺点是，即插即用训练（JiT）开箱即用时难以学习细粒度的细节。"
+    },
+    {
+     "en": "Humans perceive these details quite easily, so we need these if we want to generate good images and videos.",
+     "zh": "人类很容易感知这些细节，所以如果我们想生成好的图像和视频，就需要这些细节。"
+    },
+    {
+     "en": "Our JiT-DDT is one way we can get pixel-space models to learn structure and detail.",
+     "zh": "我们的 JiT-DDT 是让像素空间模型学习结构与细节的一种方式。"
+    }
+   ]
+  },
+  {
+   "en": "JiT-DDT trains in 3.6× fewer GPU-hours at 4× pixels",
+   "zh": "JiT-DDT 在 4 倍像素下以少 3.6 倍的 GPU 小时进行训练",
+   "sents": null
+  },
+  {
+   "en": "We think that it's useful to look at the JiT-DDT in the context of three papers ( iREPA , Self-Flow , RAE v2 ), to try to unpack why our architecture works in the first place.",
+   "zh": "我们认为，结合三篇论文（iREPA、Self-Flow、RAE v2）来看 JiT-DDT 是有用的，这有助于我们首先弄清楚为什么我们的架构能够奏效。",
+   "sents": null
+  },
+  {
+   "en": "As we mentioned earlier, REPA has become a standard way to accelerate DiT convergence. The original authors tried a few different vision encoders and found that DINOv2 worked the best. But, it wasn't until iREPA late last year that anyone took a serious look into why DINO seems to work so well.",
+   "zh": "正如我们之前提到的，REPA 已成为加速 DiT 收敛的标准方法。 原作者尝试了几种不同的视觉编码器，发现 DINOv2 效果最好。 但直到去年年底 iREPA 出现之前，还没有人认真研究过 DINO 为什么效果如此之好。",
+   "sents": [
+    {
+     "en": "As we mentioned earlier, REPA has become a standard way to accelerate DiT convergence.",
+     "zh": "正如我们之前提到的，REPA 已成为加速 DiT 收敛的标准方法。"
+    },
+    {
+     "en": "The original authors tried a few different vision encoders and found that DINOv2 worked the best.",
+     "zh": "原作者尝试了几种不同的视觉编码器，发现 DINOv2 效果最好。"
+    },
+    {
+     "en": "But, it wasn't until iREPA late last year that anyone took a serious look into why DINO seems to work so well.",
+     "zh": "但直到去年年底 iREPA 出现之前，还没有人认真研究过 DINO 为什么效果如此之好。"
+    }
+   ]
+  },
+  {
+   "en": "iREPA trained a bunch of generative image models on ImageNet with REPA, using a larger test bed of vision encoders. DINOv3, modern JEPA variants and Masked Autoencoders. They looked at the models' gFID scores and tried to determine whether generation quality could be attributed to either the vision encoder's understanding of the holistic image or its understanding of spatial structure.",
+   "zh": "iREPA 在 ImageNet 上使用 REPA 训练了一批生成式图像模型，并采用了更大规模的视觉编码器测试平台。 包括 DINOv3、现代的 JEPA 变体以及掩码自编码器。 他们查看了这些模型的 gFID 分数，试图确定生成质量究竟可以归因于视觉编码器对图像整体的理解，还是对其空间结构的理解。",
+   "sents": [
+    {
+     "en": "iREPA trained a bunch of generative image models on ImageNet with REPA, using a larger test bed of vision encoders.",
+     "zh": "iREPA 在 ImageNet 上使用 REPA 训练了一批生成式图像模型，并采用了更大规模的视觉编码器测试平台。"
+    },
+    {
+     "en": "DINOv3, modern JEPA variants and Masked Autoencoders.",
+     "zh": "包括 DINOv3、现代的 JEPA 变体以及掩码自编码器。"
+    },
+    {
+     "en": "They looked at the models' gFID scores and tried to determine whether generation quality could be attributed to either the vision encoder's understanding of the holistic image or its understanding of spatial structure.",
+     "zh": "他们查看了这些模型的 gFID 分数，试图确定生成质量究竟可以归因于视觉编码器对图像整体的理解，还是对其空间结构的理解。"
+    }
+   ]
+  },
+  {
+   "en": "For holistic understanding, they relied on linear ImageNet probes. For spatial structure, they constructed a suite of self-similarity metrics. These quantify how much more correlated patches from an object are to each other than patches from other objects in the same image (e.g. patches of a lion's mane should be more correlated with other parts of the lion's mane than patches of the background skyline).",
+   "zh": "为了进行全面的理解，他们依赖于线性 ImageNet 探针。 为了分析空间结构，他们构建了一套自相似性度量指标。 这些指标用于量化同一图像中来自同一物体的图像块之间的相关性比来自其他物体的图像块高多少（例如，狮鬃的图像块应当与狮鬃其他部分的相关性高于与背景天际线图像块的相关性）。",
+   "sents": [
+    {
+     "en": "For holistic understanding, they relied on linear ImageNet probes.",
+     "zh": "为了进行全面的理解，他们依赖于线性 ImageNet 探针。"
+    },
+    {
+     "en": "For spatial structure, they constructed a suite of self-similarity metrics.",
+     "zh": "为了分析空间结构，他们构建了一套自相似性度量指标。"
+    },
+    {
+     "en": "These quantify how much more correlated patches from an object are to each other than patches from other objects in the same image (e.g. patches of a lion's mane should be more correlated with other parts of the lion's mane than patches of the background skyline).",
+     "zh": "这些指标用于量化同一图像中来自同一物体的图像块之间的相关性比来自其他物体的图像块高多少（例如，狮鬃的图像块应当与狮鬃其他部分的相关性高于与背景天际线图像块的相关性）。"
+    }
+   ]
+  },
+  {
+   "en": "They found that higher ImageNet probe accuracy predicted worse gFID, while higher spatial self-similarity predicted much better gFID. Accordingly, it seems like REPA accelerates training by getting early layers of the network to see local structure, not holistic visual concepts.",
+   "zh": "他们发现，更高的 ImageNet 探测准确率预测出更差的 gFID，而更高的空间自相似性则预测出好得多的 gFID。 因此，REPA 似乎是通过让网络的早期层看到局部结构而非整体视觉概念来加速训练的。",
+   "sents": [
+    {
+     "en": "They found that higher ImageNet probe accuracy predicted worse gFID, while higher spatial self-similarity predicted much better gFID.",
+     "zh": "他们发现，更高的 ImageNet 探测准确率预测出更差的 gFID，而更高的空间自相似性则预测出好得多的 gFID。"
+    },
+    {
+     "en": "Accordingly, it seems like REPA accelerates training by getting early layers of the network to see local structure, not holistic visual concepts.",
+     "zh": "因此，REPA 似乎是通过让网络的早期层看到局部结构而非整体视觉概念来加速训练的。"
+    }
+   ]
+  },
+  {
+   "en": "Higher ImageNet accuracy, worse gFID; higher self-similarity, better gFID",
+   "zh": "更高的 ImageNet 准确率，更差的 gFID；更高的自相似性，更好的 gFID",
+   "sents": null
+  },
+  {
+   "en": "Here, we have two distinct vision encoders, WebSSL-1B and SpatialPE-B. WebSSL-1B scores higher on the ImageNet probe (76.0% vs. 53.1%) but lower on spatial self-similarity (0.18 vs. 0.34).",
+   "zh": "这里，我们有两个不同的视觉编码器：WebSSL-1B 和 SpatialPE-B。 WebSSL-1B 在 ImageNet 探测任务上得分更高（76.0% 对 53.1%），但在空间自相似性上得分更低（0.18 对 0.34）。",
+   "sents": [
+    {
+     "en": "Here, we have two distinct vision encoders, WebSSL-1B and SpatialPE-B.",
+     "zh": "这里，我们有两个不同的视觉编码器：WebSSL-1B 和 SpatialPE-B。"
+    },
+    {
+     "en": "WebSSL-1B scores higher on the ImageNet probe (76.0% vs. 53.1%) but lower on spatial self-similarity (0.18 vs. 0.34).",
+     "zh": "WebSSL-1B 在 ImageNet 探测任务上得分更高（76.0% 对 53.1%），但在空间自相似性上得分更低（0.18 对 0.34）。"
+    }
+   ]
+  },
+  {
+   "en": "Pay attention to the red box in the middle column, highlighting the dead grass. Yellow is most correlated, green is somewhat correlated, and blue is least correlated. In WebSSL-1B, the grass is correlated with everything but the lion (e.g. correlated with the sky). Meanwhile in SpatialPE-B, it's only correlated with the other blades of grass.",
+   "zh": "注意中间列的红色方框，它高亮标出了枯草。 黄色表示相关性最强，绿色表示有一定相关性，蓝色表示相关性最弱。 在 WebSSL-1B 中，草与除狮子之外的所有内容都相关（例如与天空相关）。 而在 SpatialPE-B 中，草只与其他草叶相关。",
+   "sents": [
+    {
+     "en": "Pay attention to the red box in the middle column, highlighting the dead grass.",
+     "zh": "注意中间列的红色方框，它高亮标出了枯草。"
+    },
+    {
+     "en": "Yellow is most correlated, green is somewhat correlated, and blue is least correlated.",
+     "zh": "黄色表示相关性最强，绿色表示有一定相关性，蓝色表示相关性最弱。"
+    },
+    {
+     "en": "In WebSSL-1B, the grass is correlated with everything but the lion (e.g. correlated with the sky).",
+     "zh": "在 WebSSL-1B 中，草与除狮子之外的所有内容都相关（例如与天空相关）。"
+    },
+    {
+     "en": "Meanwhile in SpatialPE-B, it's only correlated with the other blades of grass.",
+     "zh": "而在 SpatialPE-B 中，草只与其他草叶相关。"
+    }
+   ]
+  },
+  {
+   "en": "The iREPA authors find that DiT aligned to WebSSL-1B generates worse images than those aligned to SpatialPE-B (gFID 26.1 vs. 21.0). Figure from iREPA (2025).",
+   "zh": "iREPA 的作者发现，与 WebSSL-1B 对齐的 DiT 生成的图像质量劣于与 SpatialPE-B 对齐的 DiT（gFID 26.1 对 21.0）。 图像来自 iREPA（2025）。",
+   "sents": [
+    {
+     "en": "The iREPA authors find that DiT aligned to WebSSL-1B generates worse images than those aligned to SpatialPE-B (gFID 26.1 vs. 21.0).",
+     "zh": "iREPA 的作者发现，与 WebSSL-1B 对齐的 DiT 生成的图像质量劣于与 SpatialPE-B 对齐的 DiT（gFID 26.1 对 21.0）。"
+    },
+    {
+     "en": "Figure from iREPA (2025).",
+     "zh": "图像来自 iREPA（2025）。"
+    }
+   ]
+  },
+  {
+   "en": "We think that this finding rhymes with the encoder-prediction task in our JiT-DDT. Downsampling images (e.g. 512×512 to 64×64) strips images of all detail, leaving us only with structure. By predicting the low-resolution image early in the JiT-DDT, we are providing a similar signal.",
+   "zh": "我们认为这一发现与我们 JiT-DDT 中的编码器预测任务相呼应。 对图像进行下采样（例如从 512×512 到 64×64）会剥除图像的所有细节，只留下结构。 通过让 JiT-DDT 在早期预测低分辨率图像，我们提供了类似的信号。",
+   "sents": [
+    {
+     "en": "We think that this finding rhymes with the encoder-prediction task in our JiT-DDT.",
+     "zh": "我们认为这一发现与我们 JiT-DDT 中的编码器预测任务相呼应。"
+    },
+    {
+     "en": "Downsampling images (e.g. 512×512 to 64×64) strips images of all detail, leaving us only with structure.",
+     "zh": "对图像进行下采样（例如从 512×512 到 64×64）会剥除图像的所有细节，只留下结构。"
+    },
+    {
+     "en": "By predicting the low-resolution image early in the JiT-DDT, we are providing a similar signal.",
+     "zh": "通过让 JiT-DDT 在早期预测低分辨率图像，我们提供了类似的信号。"
+    }
+   ]
+  },
+  {
+   "en": "Taking a step back, it feels really weird that we're aligning a multibillion parameter DiT to the hidden space of a ~100M unsupervised vision encoder. Bigger models should have more capacity, so it's sus that we're relying so much on the representation space of a tiny model.",
+   "zh": "退一步来看，我们把一个数十亿参数的 DiT 对齐到一个约 1 亿参数的无监督视觉编码器的隐空间，这件事感觉真的很奇怪。 更大的模型本应有更强的容量，所以我们如此依赖一个小模型的表示空间，这很可疑。",
+   "sents": [
+    {
+     "en": "Taking a step back, it feels really weird that we're aligning a multibillion parameter DiT to the hidden space of a ~100M unsupervised vision encoder.",
+     "zh": "退一步来看，我们把一个数十亿参数的 DiT 对齐到一个约 1 亿参数的无监督视觉编码器的隐空间，这件事感觉真的很奇怪。"
+    },
+    {
+     "en": "Bigger models should have more capacity, so it's sus that we're relying so much on the representation space of a tiny model.",
+     "zh": "更大的模型本应有更强的容量，所以我们如此依赖一个小模型的表示空间，这很可疑。"
+    }
+   ]
+  },
+  {
+   "en": "Black Forest Labs (the authors of Stable Diffusion and FLUX) seem to agree with our premise. In Self-Flow , they throw away DINO and achieve better FID results by aligning to the hidden states later in the network.",
+   "zh": "Black Forest Labs（Stable Diffusion 和 FLUX 的作者）似乎认同我们的前提。 在 Self-Flow 中，他们舍弃了 DINO，通过向网络后段的隐藏状态对齐，取得了更好的 FID 结果。",
+   "sents": [
+    {
+     "en": "Black Forest Labs (the authors of Stable Diffusion and FLUX) seem to agree with our premise.",
+     "zh": "Black Forest Labs（Stable Diffusion 和 FLUX 的作者）似乎认同我们的前提。"
+    },
+    {
+     "en": "In Self-Flow , they throw away DINO and achieve better FID results by aligning to the hidden states later in the network.",
+     "zh": "在 Self-Flow 中，他们舍弃了 DINO，通过向网络后段的隐藏状态对齐，取得了更好的 FID 结果。"
+    }
+   ]
+  },
+  {
+   "en": "Another paper from last year found that the later layers of the DiT learn structure quite quickly, while early layers lag significantly. If the deeper layers already learn this structure without external intervention, we can simply align to them. This way you accelerate learning, without the representational ceiling imposed by traditional REPA.",
+   "zh": "去年的另一篇论文发现，DiT 的后面几层学结构学得相当快，而前面几层明显滞后。 如果更深的层无需外部干预就已经学到了这种结构，我们可以直接向它们对齐。 这样你就能加速学习，同时不受传统 REPA 所带来的表征上限的限制。",
+   "sents": [
+    {
+     "en": "Another paper from last year found that the later layers of the DiT learn structure quite quickly, while early layers lag significantly.",
+     "zh": "去年的另一篇论文发现，DiT 的后面几层学结构学得相当快，而前面几层明显滞后。"
+    },
+    {
+     "en": "If the deeper layers already learn this structure without external intervention, we can simply align to them.",
+     "zh": "如果更深的层无需外部干预就已经学到了这种结构，我们可以直接向它们对齐。"
+    },
+    {
+     "en": "This way you accelerate learning, without the representational ceiling imposed by traditional REPA.",
+     "zh": "这样你就能加速学习，同时不受传统 REPA 所带来的表征上限的限制。"
+    }
+   ]
+  },
+  {
+   "en": "We see Self-Flow and our JiT-DDT as cousins of sorts, tackling 3 core problems with different solutions:",
+   "zh": "我们认为 Self-Flow 和我们的 JiT-DDT 算是“近亲”，它们用不同的解决方案解决 3 个核心问题：",
+   "sents": null
+  },
+  {
+   "en": "Early on, we tried JiT + Self-Flow and it performed worse than JiT + PixelREPA .",
+   "zh": "早期，我们尝试了 JiT + Self-Flow，其表现比 JiT + PixelREPA 更差。",
+   "sents": null
+  },
+  {
+   "en": "Our gut is that this discrepancy just comes down to the amount of samples seen during the training. We use 100-150M samples per experiment. We can't tell from BFL's primary figure how many images they used in ImageNet training.",
+   "zh": "我们的直觉是，这种差异只是源于训练期间所见样本的数量。 我们在每个实验中使用1亿至1.5亿个样本。 我们无法从BFL的主图中看出他们在ImageNet训练中使用了多少图像。",
+   "sents": [
+    {
+     "en": "Our gut is that this discrepancy just comes down to the amount of samples seen during the training.",
+     "zh": "我们的直觉是，这种差异只是源于训练期间所见样本的数量。"
+    },
+    {
+     "en": "We use 100-150M samples per experiment.",
+     "zh": "我们在每个实验中使用1亿至1.5亿个样本。"
+    },
+    {
+     "en": "We can't tell from BFL's primary figure how many images they used in ImageNet training.",
+     "zh": "我们无法从BFL的主图中看出他们在ImageNet训练中使用了多少图像。"
+    }
+   ]
+  },
+  {
+   "en": "When we dropped PixelREPA from our JiT-DDT, the images were 5-10% worse. So, it looks like distillation from the auxiliary vision model remains helpful in low sample regimes.",
+   "zh": "当我们从 JiT-DDT 中去掉 PixelREPA 后，图像效果变差了 5-10%。 因此，在低样本场景下，从辅助视觉模型进行蒸馏似乎仍然是有帮助的。",
+   "sents": [
+    {
+     "en": "When we dropped PixelREPA from our JiT-DDT, the images were 5-10% worse.",
+     "zh": "当我们从 JiT-DDT 中去掉 PixelREPA 后，图像效果变差了 5-10%。"
+    },
+    {
+     "en": "So, it looks like distillation from the auxiliary vision model remains helpful in low sample regimes.",
+     "zh": "因此，在低样本场景下，从辅助视觉模型进行蒸馏似乎仍然是有帮助的。"
+    }
+   ]
+  },
+  {
+   "en": "Since we view JiT-DDT as a cousin of Self-Flow, we'd like to eventually train our architecture on 10x more samples with/without PixelREPA and see if we can get better generations without the auxiliary vision encoder.",
+   "zh": "由于我们将 JiT-DDT 视为 Self-Flow 的近亲，我们希望最终能在多 10 倍的样本上（使用/不使用 PixelREPA）训练我们的架构，看看能否在没有辅助视觉编码器的情况下获得更好的生成结果。",
+   "sents": null
+  },
+  {
+   "en": "One more thing to call out is that there is a clear discrepancy in the effect the REPA has in pixel space versus VAE latent space. Plain REPA actively hurt our JiT. That's why we switched to PixelREPA in the first place. We ablated whether to keep PixelREPA on for the entirety of training or switch it off midway (as is conventional wisdom). The results were a wash; PixelREPA's masking op might be a regularizer helping us avoid overfitting to DINO space.",
+   "zh": "还有一点需要指出的是，REPA 在像素空间与 VAE 潜空间中的作用存在明显差异。 原始的 REPA 实际上损害了我们的 JiT。 这正是我们最初改用 PixelREPA 的原因。 我们消融实验比较了是在整个训练过程中一直保持 PixelREPA 开启，还是在训练中途将其关闭（这是常规做法）。 结果不相上下；PixelREPA 的掩码操作可能起到了正则化的作用，帮助我们避免过拟合于 DINO 空间。",
+   "sents": [
+    {
+     "en": "One more thing to call out is that there is a clear discrepancy in the effect the REPA has in pixel space versus VAE latent space.",
+     "zh": "还有一点需要指出的是，REPA 在像素空间与 VAE 潜空间中的作用存在明显差异。"
+    },
+    {
+     "en": "Plain REPA actively hurt our JiT.",
+     "zh": "原始的 REPA 实际上损害了我们的 JiT。"
+    },
+    {
+     "en": "That's why we switched to PixelREPA in the first place.",
+     "zh": "这正是我们最初改用 PixelREPA 的原因。"
+    },
+    {
+     "en": "We ablated whether to keep PixelREPA on for the entirety of training or switch it off midway (as is conventional wisdom).",
+     "zh": "我们消融实验比较了是在整个训练过程中一直保持 PixelREPA 开启，还是在训练中途将其关闭（这是常规做法）。"
+    },
+    {
+     "en": "The results were a wash; PixelREPA's masking op might be a regularizer helping us avoid overfitting to DINO space.",
+     "zh": "结果不相上下；PixelREPA 的掩码操作可能起到了正则化的作用，帮助我们避免过拟合于 DINO 空间。"
+    }
+   ]
+  },
+  {
+   "en": "While Self-Flow finds a path forward without DINO alignment, others have gone the other way. In RAE v2 , the authors achieve SOTA on ImageNet FID by training a DiT in DINO space.",
+   "zh": "虽然 Self-Flow 在没有 DINO 对齐的情况下也找到了一条前进的路径，但其他工作则走向了相反的方向。 在 RAE v2 中，作者通过在 DINO 空间中训练一个 DiT，在 ImageNet FID 上达到了最先进（SOTA）水平。",
+   "sents": [
+    {
+     "en": "While Self-Flow finds a path forward without DINO alignment, others have gone the other way.",
+     "zh": "虽然 Self-Flow 在没有 DINO 对齐的情况下也找到了一条前进的路径，但其他工作则走向了相反的方向。"
+    },
+    {
+     "en": "In RAE v2 , the authors achieve SOTA on ImageNet FID by training a DiT in DINO space.",
+     "zh": "在 RAE v2 中，作者通过在 DINO 空间中训练一个 DiT，在 ImageNet FID 上达到了最先进（SOTA）水平。"
+    }
+   ]
+  },
+  {
+   "en": "Instead of using patches like our pixel space models or VAEs like BFL, they run DINOv3 on all of their images, summing together the hidden states across many layers of DINO to come up with a representation. They then train two independent models, the flow matching generative model and a decoder from DINO space back to pixel space.",
+   "zh": "他们的做法不是像我们的像素空间模型那样使用图块，也不像 BFL 那样使用 VAE，而是对所有图像运行 DINOv3，将 DINO 多个层的隐藏状态相加，得到一个表示。 然后他们训练两个相互独立的模型：一个流匹配生成模型，以及一个从 DINO 空间解码回像素空间的解码器。",
+   "sents": [
+    {
+     "en": "Instead of using patches like our pixel space models or VAEs like BFL, they run DINOv3 on all of their images, summing together the hidden states across many layers of DINO to come up with a representation.",
+     "zh": "他们的做法不是像我们的像素空间模型那样使用图块，也不像 BFL 那样使用 VAE，而是对所有图像运行 DINOv3，将 DINO 多个层的隐藏状态相加，得到一个表示。"
+    },
+    {
+     "en": "They then train two independent models, the flow matching generative model and a decoder from DINO space back to pixel space.",
+     "zh": "然后他们训练两个相互独立的模型：一个流匹配生成模型，以及一个从 DINO 空间解码回像素空间的解码器。"
+    }
+   ]
+  },
+  {
+   "en": "If you're training in DINO space already, it'd be logical to axe out REPA. But turns out, it still unlocks better generations in RAE v2. Let's pause for a second. That's really weird.",
+   "zh": "如果你已经在 DINO 空间中训练，那么去掉 REPA 才是合乎逻辑的做法。 但事实证明，它在 RAE v2 中仍能带来更好的生成效果。 让我们先停一下。这真的很奇怪。",
+   "sents": [
+    {
+     "en": "If you're training in DINO space already, it'd be logical to axe out REPA.",
+     "zh": "如果你已经在 DINO 空间中训练，那么去掉 REPA 才是合乎逻辑的做法。"
+    },
+    {
+     "en": "But turns out, it still unlocks better generations in RAE v2.",
+     "zh": "但事实证明，它在 RAE v2 中仍能带来更好的生成效果。"
+    },
+    {
+     "en": "Let's pause for a second. That's really weird.",
+     "zh": "让我们先停一下。这真的很奇怪。"
+    }
+   ]
+  },
+  {
+   "en": "The authors find that REPA reduces to x-prediction within RAE v2, because the DiT's latent space and the alignment loss are both derived from DINO. Obviously, this rhymes with our JiT-DDT; we're also doing x-prediction early in our DiT via our encoder. But, we think this points at a deeper point — the DiT has a gradient propagation problem.",
+   "zh": "作者发现，在 RAE v2 中，REPA 可以归约为 x-prediction，因为 DiT 的潜在空间和对齐损失都源自 DINO。 显然，这与我们的 JiT-DDT 相呼应；我们也是通过编码器在 DiT 的早期阶段进行 x-prediction。 但我们认为，这指向了一个更深层次的问题——DiT 存在梯度传播问题。",
+   "sents": [
+    {
+     "en": "The authors find that REPA reduces to x-prediction within RAE v2, because the DiT's latent space and the alignment loss are both derived from DINO.",
+     "zh": "作者发现，在 RAE v2 中，REPA 可以归约为 x-prediction，因为 DiT 的潜在空间和对齐损失都源自 DINO。"
+    },
+    {
+     "en": "Obviously, this rhymes with our JiT-DDT; we're also doing x-prediction early in our DiT via our encoder.",
+     "zh": "显然，这与我们的 JiT-DDT 相呼应；我们也是通过编码器在 DiT 的早期阶段进行 x-prediction。"
+    },
+    {
+     "en": "But, we think this points at a deeper point — the DiT has a gradient propagation problem.",
+     "zh": "但我们认为，这指向了一个更深层次的问题——DiT 存在梯度传播问题。"
+    }
+   ]
+  },
+  {
+   "en": "Self-Flow in latent space, RAE v2 in DINO space, and JiT-DDT in pixel space all improve model performance by introducing a loss term earlier in the network. It seems like all these models need additional gradient highways to learn more effectively. We're actively digging into this and will report back on this soon.",
+   "zh": "潜空间中的 Self-Flow、DINO 空间中的 RAE v2 以及像素空间中的 JiT-DDT，都是通过在网络较早的位置引入一个损失项来提升模型性能的。 看起来这些模型都需要额外的梯度高速公路才能更有效地学习。 我们正在积极深入研究这一点，并将很快汇报相关进展。",
+   "sents": [
+    {
+     "en": "Self-Flow in latent space, RAE v2 in DINO space, and JiT-DDT in pixel space all improve model performance by introducing a loss term earlier in the network.",
+     "zh": "潜空间中的 Self-Flow、DINO 空间中的 RAE v2 以及像素空间中的 JiT-DDT，都是通过在网络较早的位置引入一个损失项来提升模型性能的。"
+    },
+    {
+     "en": "It seems like all these models need additional gradient highways to learn more effectively.",
+     "zh": "看起来这些模型都需要额外的梯度高速公路才能更有效地学习。"
+    },
+    {
+     "en": "We're actively digging into this and will report back on this soon.",
+     "zh": "我们正在积极深入研究这一点，并将很快汇报相关进展。"
+    }
+   ]
+  },
+  {
+   "en": "Below are side-by-side comparisons of Linum v2 and JiT-DDT on 26 different prompts. All images generated by Linum v2 are 256×256 and all JiT-DDT images are 512×512. A few things stand out:",
+   "zh": "以下是 Linum v2 与 JiT-DDT 在 26 个不同提示词上的并排对比。 Linum v2 生成的所有图像均为 256×256，所有 JiT-DDT 图像均为 512×512。有几点值得注意：",
+   "sents": [
+    {
+     "en": "Below are side-by-side comparisons of Linum v2 and JiT-DDT on 26 different prompts.",
+     "zh": "以下是 Linum v2 与 JiT-DDT 在 26 个不同提示词上的并排对比。"
+    },
+    {
+     "en": "All images generated by Linum v2 are 256×256 and all JiT-DDT images are 512×512. A few things stand out:",
+     "zh": "Linum v2 生成的所有图像均为 256×256，所有 JiT-DDT 图像均为 512×512。有几点值得注意："
+    }
+   ]
+  },
+  {
+   "en": "Three golden-brown croissants rest in a row on a rustic wooden plate, the plate itself sitting atop a folded beige cloth napkin on a weathered wooden table, viewed from a slight high angle. Each flaky crescent is dusted with a sprinkle of vibrant red pepper flakes. Natural side light rakes across the laminated layers to emphasize their crisp, buttery texture. A shallow depth of field softens the table edge and background.",
+   "zh": "三个金黄棕色的牛角面包并排摆放在一个质朴的木盘上，木盘置于风化木桌上的一块折叠的米色布餐巾之上，视角略微俯视。 每个酥脆的月牙形面包上都撒有少许鲜艳的红辣椒碎。 自然的侧光掠过层叠的酥皮，凸显其酥脆、黄油画包般的质感。 浅景深柔化了桌边与背景。",
+   "sents": [
+    {
+     "en": "Three golden-brown croissants rest in a row on a rustic wooden plate, the plate itself sitting atop a folded beige cloth napkin on a weathered wooden table, viewed from a slight high angle.",
+     "zh": "三个金黄棕色的牛角面包并排摆放在一个质朴的木盘上，木盘置于风化木桌上的一块折叠的米色布餐巾之上，视角略微俯视。"
+    },
+    {
+     "en": "Each flaky crescent is dusted with a sprinkle of vibrant red pepper flakes.",
+     "zh": "每个酥脆的月牙形面包上都撒有少许鲜艳的红辣椒碎。"
+    },
+    {
+     "en": "Natural side light rakes across the laminated layers to emphasize their crisp, buttery texture.",
+     "zh": "自然的侧光掠过层叠的酥皮，凸显其酥脆、黄油画包般的质感。"
+    },
+    {
+     "en": "A shallow depth of field softens the table edge and background.",
+     "zh": "浅景深柔化了桌边与背景。"
+    }
+   ]
+  },
+  {
+   "en": "A golden retriever jumps out of fresh powder snow in a sunlit forest clearing, centered in the frame with its ears perked up. Fine snow dusts its paws and catches the low morning light. Tall evergreen and bare deciduous trees ring the clearing in the background, softened by a shallow depth of field. The crisp, high-key winter light leaves the brightest snow overexposed.",
+   "zh": "一只金毛寻回犬从阳光照耀的林间空地的新雪中跃起，位于画面中央，耳朵竖起。 细细的雪末沾在它的爪子上，在清晨的低角度光线中闪闪发亮。 高大的常绿树和光秃的落叶树在背景中环绕着空地，因浅景深而显得柔和。 清冽的高调冬日光线使最亮的积雪部分过曝。",
+   "sents": [
+    {
+     "en": "A golden retriever jumps out of fresh powder snow in a sunlit forest clearing, centered in the frame with its ears perked up.",
+     "zh": "一只金毛寻回犬从阳光照耀的林间空地的新雪中跃起，位于画面中央，耳朵竖起。"
+    },
+    {
+     "en": "Fine snow dusts its paws and catches the low morning light.",
+     "zh": "细细的雪末沾在它的爪子上，在清晨的低角度光线中闪闪发亮。"
+    },
+    {
+     "en": "Tall evergreen and bare deciduous trees ring the clearing in the background, softened by a shallow depth of field.",
+     "zh": "高大的常绿树和光秃的落叶树在背景中环绕着空地，因浅景深而显得柔和。"
+    },
+    {
+     "en": "The crisp, high-key winter light leaves the brightest snow overexposed.",
+     "zh": "清冽的高调冬日光线使最亮的积雪部分过曝。"
+    }
+   ]
+  },
+  {
+   "en": "A close-up portrait of a young white woman with vibrant, fiery red hair cascading over her shoulders in soft waves, framed from the shoulders up and centered against a softly blurred warm-toned background. Her fair, lightly freckled complexion sets off piercing green eyes and a subtle, closed-lipped smile. Soft natural light enters from the left of the frame, highlighting the texture of her hair and the curve of her cheek while leaving the right side in gentle shadow. A shallow depth of field renders the background into smooth, neutral bokeh. Lights dangle out of focus on the left side of the frame.",
+   "zh": "一幅年轻白人女性的特写肖像，她拥有一头充满活力的火红色长发，呈柔和的波浪状垂落在肩上，画面取景自肩部以上，人物居中，背景为柔和虚化的暖色调。 她白皙且带有淡淡雀斑的肤色衬托出一双锐利的绿眼睛，嘴角带着一丝含蓄的抿唇微笑。 柔和的自然光从画面左侧射入，凸显了她发丝的质感与脸颊的曲线，而右侧则处于轻柔的阴影之中。 浅景深效果使背景化为平滑、中性的虚化光斑。 画面左侧悬挂的灯光失焦呈现。",
+   "sents": [
+    {
+     "en": "A close-up portrait of a young white woman with vibrant, fiery red hair cascading over her shoulders in soft waves, framed from the shoulders up and centered against a softly blurred warm-toned background.",
+     "zh": "一幅年轻白人女性的特写肖像，她拥有一头充满活力的火红色长发，呈柔和的波浪状垂落在肩上，画面取景自肩部以上，人物居中，背景为柔和虚化的暖色调。"
+    },
+    {
+     "en": "Her fair, lightly freckled complexion sets off piercing green eyes and a subtle, closed-lipped smile.",
+     "zh": "她白皙且带有淡淡雀斑的肤色衬托出一双锐利的绿眼睛，嘴角带着一丝含蓄的抿唇微笑。"
+    },
+    {
+     "en": "Soft natural light enters from the left of the frame, highlighting the texture of her hair and the curve of her cheek while leaving the right side in gentle shadow.",
+     "zh": "柔和的自然光从画面左侧射入，凸显了她发丝的质感与脸颊的曲线，而右侧则处于轻柔的阴影之中。"
+    },
+    {
+     "en": "A shallow depth of field renders the background into smooth, neutral bokeh.",
+     "zh": "浅景深效果使背景化为平滑、中性的虚化光斑。"
+    },
+    {
+     "en": "Lights dangle out of focus on the left side of the frame.",
+     "zh": "画面左侧悬挂的灯光失焦呈现。"
+    }
+   ]
+  },
+  {
+   "en": "A 3D animated image of a small rounded robot with big expressive blue eyes standing near a potted sunflower on a windowsill, centered in the frame and rendered with soft subsurface lighting. Its dented metal body has a cheerful yellow paint job with scuffs. Warm morning light streams through the window behind it, casting a gentle glow on the leaves. The background kitchen is softly blurred",
+   "zh": "一段3D动画图像：一个小型圆润的机器人站在窗台上的一盆向日葵旁，它有一双大大的、富有表现力的蓝眼睛，画面居中构图，并采用柔和的次表面光照渲染。 它那有凹痕的金属身体涂着欢快的黄色油漆，带有磨损痕迹。 温暖的晨光从它身后的窗户倾泻而入，在叶子上投下柔和的光晕。 背景中的厨房被柔和地虚化。",
+   "sents": [
+    {
+     "en": "A 3D animated image of a small rounded robot with big expressive blue eyes standing near a potted sunflower on a windowsill, centered in the frame and rendered with soft subsurface lighting.",
+     "zh": "一段3D动画图像：一个小型圆润的机器人站在窗台上的一盆向日葵旁，它有一双大大的、富有表现力的蓝眼睛，画面居中构图，并采用柔和的次表面光照渲染。"
+    },
+    {
+     "en": "Its dented metal body has a cheerful yellow paint job with scuffs.",
+     "zh": "它那有凹痕的金属身体涂着欢快的黄色油漆，带有磨损痕迹。"
+    },
+    {
+     "en": "Warm morning light streams through the window behind it, casting a gentle glow on the leaves.",
+     "zh": "温暖的晨光从它身后的窗户倾泻而入，在叶子上投下柔和的光晕。"
+    },
+    {
+     "en": "The background kitchen is softly blurred",
+     "zh": "背景中的厨房被柔和地虚化。"
+    }
+   ]
+  },
+  {
+   "en": "An antique wooden globe on a brass stand sits on a leather-topped desk in a dim study, positioned slightly left of center, its aged map showing faded oceans and hand-drawn continents. A green banker's lamp on the right casts warm light across the globe and a stack of leather-bound books. A window behind shows a rainy gray evening. The rich browns and greens give the scene a scholarly, quiet mood.",
+   "zh": "一盏黄铜底座上的古董木质地球仪摆放在昏暗书房里一张皮革桌面的书桌上，位置略偏中左，其老旧的地图上显示着褪色的海洋和手绘的大陆。 右侧一盏绿色银行家台灯将温暖的光线洒在地球仪和一摞皮革装订的书籍上。 身后的窗外显示出阴雨的灰色傍晚。 浓郁的棕色与绿色赋予这个场景一种书卷气的静谧氛围。",
+   "sents": [
+    {
+     "en": "An antique wooden globe on a brass stand sits on a leather-topped desk in a dim study, positioned slightly left of center, its aged map showing faded oceans and hand-drawn continents.",
+     "zh": "一盏黄铜底座上的古董木质地球仪摆放在昏暗书房里一张皮革桌面的书桌上，位置略偏中左，其老旧的地图上显示着褪色的海洋和手绘的大陆。"
+    },
+    {
+     "en": "A green banker's lamp on the right casts warm light across the globe and a stack of leather-bound books.",
+     "zh": "右侧一盏绿色银行家台灯将温暖的光线洒在地球仪和一摞皮革装订的书籍上。"
+    },
+    {
+     "en": "A window behind shows a rainy gray evening.",
+     "zh": "身后的窗外显示出阴雨的灰色傍晚。"
+    },
+    {
+     "en": "The rich browns and greens give the scene a scholarly, quiet mood.",
+     "zh": "浓郁的棕色与绿色赋予这个场景一种书卷气的静谧氛围。"
+    }
+   ]
+  },
+  {
+   "en": "A Bengal tiger wades through a shallow jungle river, its orange and black striped body centered in the frame and water splashing around its chest as it moves toward the viewer. Dense green foliage and hanging vines line the riverbanks. Dappled sunlight through the canopy throws bright spots across the water and the tiger's wet fur. Its amber eyes are fixed directly ahead in sharp focus.",
+   "zh": "一只孟加拉虎涉水穿过浅浅的丛林河流，它橙黑相间条纹的身躯位于画面中央，当它朝观看者走来时，水花在它的胸前四溅。 茂密的绿色枝叶和垂落的藤蔓沿河岸排列。 透过树冠洒下的斑驳阳光在水面和老虎湿润的毛皮上投下明亮的光斑。 它琥珀色的双眼直视前方，清晰对焦。",
+   "sents": [
+    {
+     "en": "A Bengal tiger wades through a shallow jungle river, its orange and black striped body centered in the frame and water splashing around its chest as it moves toward the viewer.",
+     "zh": "一只孟加拉虎涉水穿过浅浅的丛林河流，它橙黑相间条纹的身躯位于画面中央，当它朝观看者走来时，水花在它的胸前四溅。"
+    },
+    {
+     "en": "Dense green foliage and hanging vines line the riverbanks.",
+     "zh": "茂密的绿色枝叶和垂落的藤蔓沿河岸排列。"
+    },
+    {
+     "en": "Dappled sunlight through the canopy throws bright spots across the water and the tiger's wet fur.",
+     "zh": "透过树冠洒下的斑驳阳光在水面和老虎湿润的毛皮上投下明亮的光斑。"
+    },
+    {
+     "en": "Its amber eyes are fixed directly ahead in sharp focus.",
+     "zh": "它琥珀色的双眼直视前方，清晰对焦。"
+    }
+   ]
+  },
+  {
+   "en": "A three-tier chocolate birthday cake covered in glossy ganache and topped with a ring of lit rainbow candles sits centered on a white marble table in a dark room. The candle flames cast a warm, flickering glow across the cake and the scattered confetti below. Fresh raspberries and mint leaves decorate the edges. The background is nearly black, making the flames and dripping ganache the focal point.",
+   "zh": "在昏暗的房间里，一座三层巧克力生日蛋糕覆盖着光亮的甘纳许，顶部插着一圈点燃的彩虹色蜡烛，摆在白色大理石桌面的正中央。 烛火在蛋糕和下方散落的彩纸上投下温暖摇曳的光晕。 新鲜的覆盆子和薄荷叶点缀在边缘。 背景近乎纯黑，使烛火和滴落的甘纳许成为视觉焦点。",
+   "sents": [
+    {
+     "en": "A three-tier chocolate birthday cake covered in glossy ganache and topped with a ring of lit rainbow candles sits centered on a white marble table in a dark room.",
+     "zh": "在昏暗的房间里，一座三层巧克力生日蛋糕覆盖着光亮的甘纳许，顶部插着一圈点燃的彩虹色蜡烛，摆在白色大理石桌面的正中央。"
+    },
+    {
+     "en": "The candle flames cast a warm, flickering glow across the cake and the scattered confetti below.",
+     "zh": "烛火在蛋糕和下方散落的彩纸上投下温暖摇曳的光晕。"
+    },
+    {
+     "en": "Fresh raspberries and mint leaves decorate the edges.",
+     "zh": "新鲜的覆盆子和薄荷叶点缀在边缘。"
+    },
+    {
+     "en": "The background is nearly black, making the flames and dripping ganache the focal point.",
+     "zh": "背景近乎纯黑，使烛火和滴落的甘纳许成为视觉焦点。"
+    }
+   ]
+  },
+  {
+   "en": "A close-up portrait of a sweat-drenched boxer with wrapped hands raised in a guard, framed from the shoulders up and centered against the dark ropes of a gym ring. A single hard light from the upper right carves sharp highlights along his brow and cheekbones and leaves the left side of his face in deep shadow. Beads of sweat catch the light. The background of hanging heavy bags is nearly black and completely out of focus.",
+   "zh": "一幅特写肖像：一名汗流浃背的拳击手缠着护手绷带，双手抬起呈防守姿势，画面取景于肩部以上，居中置于健身房拳台深色围绳的背景前。 来自右上方的单一硬光在他的眉弓和颧骨上刻出锐利的高光，并使他脸部的左侧隐入深深的阴影之中。 汗珠折射着光线。 背景中悬挂的重型沙袋近乎黑色，且完全失焦。",
+   "sents": [
+    {
+     "en": "A close-up portrait of a sweat-drenched boxer with wrapped hands raised in a guard, framed from the shoulders up and centered against the dark ropes of a gym ring.",
+     "zh": "一幅特写肖像：一名汗流浃背的拳击手缠着护手绷带，双手抬起呈防守姿势，画面取景于肩部以上，居中置于健身房拳台深色围绳的背景前。"
+    },
+    {
+     "en": "A single hard light from the upper right carves sharp highlights along his brow and cheekbones and leaves the left side of his face in deep shadow.",
+     "zh": "来自右上方的单一硬光在他的眉弓和颧骨上刻出锐利的高光，并使他脸部的左侧隐入深深的阴影之中。"
+    },
+    {
+     "en": "Beads of sweat catch the light.",
+     "zh": "汗珠折射着光线。"
+    },
+    {
+     "en": "The background of hanging heavy bags is nearly black and completely out of focus.",
+     "zh": "背景中悬挂的重型沙袋近乎黑色，且完全失焦。"
+    }
+   ]
+  },
+  {
+   "en": "An expressive charcoal drawing of a galloping horse in profile moving from right to left, its mane and tail rendered in loose, energetic strokes on textured white paper. Heavy blacks define the body and legs while smudged gray tones suggest dust and motion around the hooves. The background is left mostly untouched with a few sweeping gestural marks. The drawing feels raw and immediate, with visible finger smudges.",
+   "zh": "一幅富有表现力的炭笔画，描绘一匹从右向左奔跑的马的侧面，其鬃毛和尾巴以松散而充满活力的笔触呈现在有纹理的白纸上。 浓重的黑色勾勒出身体和腿部，而涂抹的灰色调在马蹄周围暗示出尘土与动感。 背景基本保持空白，仅点缀着几处大幅度的即兴笔触。 这幅画给人原始而直接的感觉，上面可见手指涂抹的痕迹。",
+   "sents": [
+    {
+     "en": "An expressive charcoal drawing of a galloping horse in profile moving from right to left, its mane and tail rendered in loose, energetic strokes on textured white paper.",
+     "zh": "一幅富有表现力的炭笔画，描绘一匹从右向左奔跑的马的侧面，其鬃毛和尾巴以松散而充满活力的笔触呈现在有纹理的白纸上。"
+    },
+    {
+     "en": "Heavy blacks define the body and legs while smudged gray tones suggest dust and motion around the hooves.",
+     "zh": "浓重的黑色勾勒出身体和腿部，而涂抹的灰色调在马蹄周围暗示出尘土与动感。"
+    },
+    {
+     "en": "The background is left mostly untouched with a few sweeping gestural marks.",
+     "zh": "背景基本保持空白，仅点缀着几处大幅度的即兴笔触。"
+    },
+    {
+     "en": "The drawing feels raw and immediate, with visible finger smudges.",
+     "zh": "这幅画给人原始而直接的感觉，上面可见手指涂抹的痕迹。"
+    }
+   ]
+  },
+  {
+   "en": "A middle-aged Asian chef in a white double-breasted jacket tosses vegetables in a flaming wok, positioned center-left in a busy stainless-steel restaurant kitchen. Orange flames leap from the pan and light his focused face from below, while cool blue fluorescent light fills the background. Steam and small sparks scatter across the frame. Shot at a slight low angle with a fast shutter that freezes the tumbling vegetables mid-air.",
+   "zh": "一位身穿白色双排扣厨师服的中年亚洲厨师在火焰腾腾的炒锅中颠炒蔬菜，位于繁忙的不锈钢餐厅厨房的中央偏左位置。 橙色火苗从锅中跃起，自下而上照亮他专注的脸庞，而背景则充满冷蓝色的荧光灯光。 蒸汽和小火星散布在整个画面中。 以轻微仰角、高速快门拍摄，将空中翻滚的蔬菜定格在半空中。",
+   "sents": [
+    {
+     "en": "A middle-aged Asian chef in a white double-breasted jacket tosses vegetables in a flaming wok, positioned center-left in a busy stainless-steel restaurant kitchen.",
+     "zh": "一位身穿白色双排扣厨师服的中年亚洲厨师在火焰腾腾的炒锅中颠炒蔬菜，位于繁忙的不锈钢餐厅厨房的中央偏左位置。"
+    },
+    {
+     "en": "Orange flames leap from the pan and light his focused face from below, while cool blue fluorescent light fills the background.",
+     "zh": "橙色火苗从锅中跃起，自下而上照亮他专注的脸庞，而背景则充满冷蓝色的荧光灯光。"
+    },
+    {
+     "en": "Steam and small sparks scatter across the frame.",
+     "zh": "蒸汽和小火星散布在整个画面中。"
+    },
+    {
+     "en": "Shot at a slight low angle with a fast shutter that freezes the tumbling vegetables mid-air.",
+     "zh": "以轻微仰角、高速快门拍摄，将空中翻滚的蔬菜定格在半空中。"
+    }
+   ]
+  },
+  {
+   "en": "Sweeping orange sand dunes stretch to the horizon under a clear sky at sunrise, with a sharp crest running diagonally from the lower left to the upper right of the frame. Low sunlight from the right carves the dunes into bright ridges and deep purple shadows. Fine wind-blown ripples texture the sand in the foreground. A lone line of camel tracks curves over the nearest dune toward the distance.",
+   "zh": "日出时分，澄澈的天空下，辽阔的橙色沙丘绵延至地平线，一道锐利的沙脊自画面左下角斜向延伸至右上角。 来自右侧的低角度阳光将沙丘雕刻成明亮的脊线和深紫色的阴影。 风吹形成的细密波纹为前景的沙地增添了质感。 一行孤独的骆驼足迹蜿蜒越过最近的沙丘，伸向远方。",
+   "sents": [
+    {
+     "en": "Sweeping orange sand dunes stretch to the horizon under a clear sky at sunrise, with a sharp crest running diagonally from the lower left to the upper right of the frame.",
+     "zh": "日出时分，澄澈的天空下，辽阔的橙色沙丘绵延至地平线，一道锐利的沙脊自画面左下角斜向延伸至右上角。"
+    },
+    {
+     "en": "Low sunlight from the right carves the dunes into bright ridges and deep purple shadows.",
+     "zh": "来自右侧的低角度阳光将沙丘雕刻成明亮的脊线和深紫色的阴影。"
+    },
+    {
+     "en": "Fine wind-blown ripples texture the sand in the foreground.",
+     "zh": "风吹形成的细密波纹为前景的沙地增添了质感。"
+    },
+    {
+     "en": "A lone line of camel tracks curves over the nearest dune toward the distance.",
+     "zh": "一行孤独的骆驼足迹蜿蜒越过最近的沙丘，伸向远方。"
+    }
+   ]
+  },
+  {
+   "en": "A weathered elderly fisherman with a white beard and deep sun-creased wrinkles sits on the edge of a wooden dock, framed from the chest up and slightly right of center. He wears a faded navy knit cap and a yellow oilskin jacket and looks off to the left with pale blue eyes. Golden late-afternoon light rakes across his face from the left, catching the texture of his skin and beard. A calm harbor with moored boats blurs softly into the background.",
+   "zh": "一位饱经风霜的年长渔民留着白胡子，脸上布满深深晒出的皱纹，他坐在木质码头的边缘，画面取其胸部以上，位于画面中心略偏右的位置。 他头戴一顶褪色的藏青色针织帽，身穿黄色油布夹克，淡蓝色的眼睛望向左侧。 金色的午后余晖从左侧斜照在他的脸上，映衬出他皮肤和胡须的质感。 一个停泊着船只的平静海港在背景中柔和地虚化。",
+   "sents": [
+    {
+     "en": "A weathered elderly fisherman with a white beard and deep sun-creased wrinkles sits on the edge of a wooden dock, framed from the chest up and slightly right of center.",
+     "zh": "一位饱经风霜的年长渔民留着白胡子，脸上布满深深晒出的皱纹，他坐在木质码头的边缘，画面取其胸部以上，位于画面中心略偏右的位置。"
+    },
+    {
+     "en": "He wears a faded navy knit cap and a yellow oilskin jacket and looks off to the left with pale blue eyes.",
+     "zh": "他头戴一顶褪色的藏青色针织帽，身穿黄色油布夹克，淡蓝色的眼睛望向左侧。"
+    },
+    {
+     "en": "Golden late-afternoon light rakes across his face from the left, catching the texture of his skin and beard.",
+     "zh": "金色的午后余晖从左侧斜照在他的脸上，映衬出他皮肤和胡须的质感。"
+    },
+    {
+     "en": "A calm harbor with moored boats blurs softly into the background.",
+     "zh": "一个停泊着船只的平静海港在背景中柔和地虚化。"
+    }
+   ]
+  },
+  {
+   "en": "A close-up of dark espresso pouring from a chrome portafilter into a small white ceramic cup, centered in the frame, with a thick golden crema swirling on the surface. The stainless-steel espresso machine fills the background in soft focus. Warm cafe lighting from the upper left reflects in the chrome and the liquid stream. Small droplets are frozen mid-splash near the rim of the cup.",
+   "zh": "特写镜头：深色浓缩咖啡从镀铬咖啡手柄注入一只小白瓷杯，位于画面中央，厚实的金色油脂在液面旋转。 不锈钢浓缩咖啡机在背景中虚化呈现。 左上方的温暖咖啡馆灯光映照在镀铬部件与液流上。 小水珠在杯沿附近定格于溅起的瞬间。",
+   "sents": [
+    {
+     "en": "A close-up of dark espresso pouring from a chrome portafilter into a small white ceramic cup, centered in the frame, with a thick golden crema swirling on the surface.",
+     "zh": "特写镜头：深色浓缩咖啡从镀铬咖啡手柄注入一只小白瓷杯，位于画面中央，厚实的金色油脂在液面旋转。"
+    },
+    {
+     "en": "The stainless-steel espresso machine fills the background in soft focus.",
+     "zh": "不锈钢浓缩咖啡机在背景中虚化呈现。"
+    },
+    {
+     "en": "Warm cafe lighting from the upper left reflects in the chrome and the liquid stream.",
+     "zh": "左上方的温暖咖啡馆灯光映照在镀铬部件与液流上。"
+    },
+    {
+     "en": "Small droplets are frozen mid-splash near the rim of the cup.",
+     "zh": "小水珠在杯沿附近定格于溅起的瞬间。"
+    }
+   ]
+  },
+  {
+   "en": "A smiling middle-aged woman in a green canvas apron arranges a bouquet of peonies and eucalyptus behind the counter of a small flower shop, framed from the waist up and centered. Buckets of tulips, roses, and sunflowers crowd the foreground in the lower third, and shelves of potted plants fill the background. Soft daylight from a storefront window on the right falls across her face and the pale pink petals. The depth of field is shallow, keeping her and the bouquet sharp.",
+   "zh": "一位面带微笑的中年女子系着绿色帆布围裙，在一家小花店的柜台后整理一束牡丹和桉树叶花束，画面取腰部以上居中构图。 郁金香、玫瑰和向日葵的花桶挤满画面下三分之一的前景，背景里摆满盆栽植物的货架。 来自右侧橱窗的柔和日光洒落在她的脸庞和淡粉色的花瓣上。 景深较浅，使她和花束保持清晰。",
+   "sents": [
+    {
+     "en": "A smiling middle-aged woman in a green canvas apron arranges a bouquet of peonies and eucalyptus behind the counter of a small flower shop, framed from the waist up and centered.",
+     "zh": "一位面带微笑的中年女子系着绿色帆布围裙，在一家小花店的柜台后整理一束牡丹和桉树叶花束，画面取腰部以上居中构图。"
+    },
+    {
+     "en": "Buckets of tulips, roses, and sunflowers crowd the foreground in the lower third, and shelves of potted plants fill the background.",
+     "zh": "郁金香、玫瑰和向日葵的花桶挤满画面下三分之一的前景，背景里摆满盆栽植物的货架。"
+    },
+    {
+     "en": "Soft daylight from a storefront window on the right falls across her face and the pale pink petals.",
+     "zh": "来自右侧橱窗的柔和日光洒落在她的脸庞和淡粉色的花瓣上。"
+    },
+    {
+     "en": "The depth of field is shallow, keeping her and the bouquet sharp.",
+     "zh": "景深较浅，使她和花束保持清晰。"
+    }
+   ]
+  },
+  {
+   "en": "A shaggy Highland cow with long ginger hair covering its eyes and wide curved horns stands in a misty green Scottish field, framed from the chest up and centered, looking toward the viewer. Soft overcast light gives the fur a warm, tactile quality. Rolling hills and a low stone wall fade into fog behind it. Dew glistens on the grass in the foreground and the cow's wet nose catches a small highlight.",
+   "zh": "一头毛茸茸的高地牛站在雾气弥漫的苏格兰绿色田野中，长长的姜黄色毛发遮住双眼，弯角宽阔，画面取胸部以上并居中构图，牛望向观者。 柔和的阴天光线让牛毛呈现出温暖而富有质感的触感。 起伏的丘陵和一道低矮的石墙在它身后渐渐隐入雾中。 前景的草叶上闪着露珠，牛湿润的鼻头上掠过一点小小的高光。",
+   "sents": [
+    {
+     "en": "A shaggy Highland cow with long ginger hair covering its eyes and wide curved horns stands in a misty green Scottish field, framed from the chest up and centered, looking toward the viewer.",
+     "zh": "一头毛茸茸的高地牛站在雾气弥漫的苏格兰绿色田野中，长长的姜黄色毛发遮住双眼，弯角宽阔，画面取胸部以上并居中构图，牛望向观者。"
+    },
+    {
+     "en": "Soft overcast light gives the fur a warm, tactile quality.",
+     "zh": "柔和的阴天光线让牛毛呈现出温暖而富有质感的触感。"
+    },
+    {
+     "en": "Rolling hills and a low stone wall fade into fog behind it.",
+     "zh": "起伏的丘陵和一道低矮的石墙在它身后渐渐隐入雾中。"
+    },
+    {
+     "en": "Dew glistens on the grass in the foreground and the cow's wet nose catches a small highlight.",
+     "zh": "前景的草叶上闪着露珠，牛湿润的鼻头上掠过一点小小的高光。"
+    }
+   ]
+  },
+  {
+   "en": "Dozens of colorful hot-air balloons in stripes of red, yellow, blue, and green drift over a misty valley at dawn, with the largest balloon filling the upper left of the frame and the others scattered toward the horizon. Low sunlight from the right rims the balloons in warm gold. Rounded rock formations and green fields sit below, partly hidden by mist. The sky is a pale wash of peach and lavender.",
+   "zh": "数十个色彩缤纷的热气球有着红、黄、蓝、绿的条纹，在黎明时分漂浮在雾气缭绕的山谷上空，其中最大的气球占据画面左上方，其余气球散布在地平线附近。 右侧低垂的阳光为气球镶上温暖的金色轮廓。 下方是圆润的岩石地貌和绿色的田野，部分被雾气遮掩。 天空呈现淡桃色与薰衣草色的柔和晕染。",
+   "sents": [
+    {
+     "en": "Dozens of colorful hot-air balloons in stripes of red, yellow, blue, and green drift over a misty valley at dawn, with the largest balloon filling the upper left of the frame and the others scattered toward the horizon.",
+     "zh": "数十个色彩缤纷的热气球有着红、黄、蓝、绿的条纹，在黎明时分漂浮在雾气缭绕的山谷上空，其中最大的气球占据画面左上方，其余气球散布在地平线附近。"
+    },
+    {
+     "en": "Low sunlight from the right rims the balloons in warm gold.",
+     "zh": "右侧低垂的阳光为气球镶上温暖的金色轮廓。"
+    },
+    {
+     "en": "Rounded rock formations and green fields sit below, partly hidden by mist.",
+     "zh": "下方是圆润的岩石地貌和绿色的田野，部分被雾气遮掩。"
+    },
+    {
+     "en": "The sky is a pale wash of peach and lavender.",
+     "zh": "天空呈现淡桃色与薰衣草色的柔和晕染。"
+    }
+   ]
+  },
+  {
+   "en": "A Roman-style mosaic of a large fish swimming to the left, composed of thousands of small tesserae tiles in blues, greens, gold, and terracotta, filling the frame against a background of pale stone tiles. The fish's scales are picked out with alternating light and dark tiles, and a wavy band of blue tiles runs along the bottom. Grout lines and slight irregularities in the tile edges are visible. Even, diffuse light shows the surface texture.",
+   "zh": "一幅罗马风格的马赛克镶嵌画，一条大鱼向左游动，由数千块蓝色、绿色、金色和赤陶色的小镶嵌片组成，铺满整个画面，背景为浅色石材镶嵌片。 鱼的鳞片用明暗交替的镶嵌片勾勒出来，底部有一条由蓝色镶嵌片组成的波浪形饰带。 可以看到填缝线条以及镶嵌片边缘的轻微不规则之处。 均匀的漫射光展现出表面质感。",
+   "sents": [
+    {
+     "en": "A Roman-style mosaic of a large fish swimming to the left, composed of thousands of small tesserae tiles in blues, greens, gold, and terracotta, filling the frame against a background of pale stone tiles.",
+     "zh": "一幅罗马风格的马赛克镶嵌画，一条大鱼向左游动，由数千块蓝色、绿色、金色和赤陶色的小镶嵌片组成，铺满整个画面，背景为浅色石材镶嵌片。"
+    },
+    {
+     "en": "The fish's scales are picked out with alternating light and dark tiles, and a wavy band of blue tiles runs along the bottom.",
+     "zh": "鱼的鳞片用明暗交替的镶嵌片勾勒出来，底部有一条由蓝色镶嵌片组成的波浪形饰带。"
+    },
+    {
+     "en": "Grout lines and slight irregularities in the tile edges are visible.",
+     "zh": "可以看到填缝线条以及镶嵌片边缘的轻微不规则之处。"
+    },
+    {
+     "en": "Even, diffuse light shows the surface texture.",
+     "zh": "均匀的漫射光展现出表面质感。"
+    }
+   ]
+  },
+  {
+   "en": "A close-up of a mottled orange octopus draped over a coral outcrop, its curling arms and suckers filling the lower half of the frame as it looks toward the viewer with a golden eye. Deep blue water and small drifting particles fill the background. Dappled sunlight from the surface above casts shifting light patterns across its textured skin. Small purple sea fans and yellow coral polyps frame the edges.",
+   "zh": "一只斑驳的橙色章鱼的特写，它趴在珊瑚礁上，卷曲的腕足和吸盘占据画面下半部分，金色的眼睛望向观者。 深蓝色的海水和细小的漂浮颗粒填满背景。 来自上方水面的斑驳阳光在其富有质感的皮肤上投下变幻的光影。 小型紫色海扇和黄色珊瑚虫点缀在画面边缘。",
+   "sents": [
+    {
+     "en": "A close-up of a mottled orange octopus draped over a coral outcrop, its curling arms and suckers filling the lower half of the frame as it looks toward the viewer with a golden eye.",
+     "zh": "一只斑驳的橙色章鱼的特写，它趴在珊瑚礁上，卷曲的腕足和吸盘占据画面下半部分，金色的眼睛望向观者。"
+    },
+    {
+     "en": "Deep blue water and small drifting particles fill the background.",
+     "zh": "深蓝色的海水和细小的漂浮颗粒填满背景。"
+    },
+    {
+     "en": "Dappled sunlight from the surface above casts shifting light patterns across its textured skin.",
+     "zh": "来自上方水面的斑驳阳光在其富有质感的皮肤上投下变幻的光影。"
+    },
+    {
+     "en": "Small purple sea fans and yellow coral polyps frame the edges.",
+     "zh": "小型紫色海扇和黄色珊瑚虫点缀在画面边缘。"
+    }
+   ]
+  },
+  {
+   "en": "A dramatic oil painting in the style of nineteenth-century marine art depicting a three-masted sailing ship heeling in a violent storm, positioned center-left as enormous green-gray waves crest around it. Torn sails and rigging strain in the wind, and a break in the dark clouds on the upper right lets a shaft of pale light fall on the foam. Thick impasto brushstrokes render the spray and cloud. The palette is deep blues, grays, and bone whites.",
+   "zh": "一幅十九世纪海洋艺术风格的戏剧性油画，描绘一艘三桅帆船在狂暴的风暴中倾斜，位于画面中左位置，巨大的灰绿色海浪在其周围掀起浪峰。 破碎的船帆和索具在风中紧绷，右上方乌云的裂口处透出一道苍白的光束洒在泡沫上。 厚重的厚涂笔触描绘出飞沫与云层。 色调为深蓝、灰色和骨白色。",
+   "sents": [
+    {
+     "en": "A dramatic oil painting in the style of nineteenth-century marine art depicting a three-masted sailing ship heeling in a violent storm, positioned center-left as enormous green-gray waves crest around it.",
+     "zh": "一幅十九世纪海洋艺术风格的戏剧性油画，描绘一艘三桅帆船在狂暴的风暴中倾斜，位于画面中左位置，巨大的灰绿色海浪在其周围掀起浪峰。"
+    },
+    {
+     "en": "Torn sails and rigging strain in the wind, and a break in the dark clouds on the upper right lets a shaft of pale light fall on the foam.",
+     "zh": "破碎的船帆和索具在风中紧绷，右上方乌云的裂口处透出一道苍白的光束洒在泡沫上。"
+    },
+    {
+     "en": "Thick impasto brushstrokes render the spray and cloud.",
+     "zh": "厚重的厚涂笔触描绘出飞沫与云层。"
+    },
+    {
+     "en": "The palette is deep blues, grays, and bone whites.",
+     "zh": "色调为深蓝、灰色和骨白色。"
+    }
+   ]
+  },
+  {
+   "en": "A black vintage typewriter with round chrome-rimmed keys sits on a wooden desk with a sheet of white paper rolled into its carriage, centered and photographed straight on from a slight high angle. A single line of typed text is visible on the page. Soft window light from the right highlights the keys and casts gentle shadows between them. A small brass lamp and a stack of books blur in the background.",
+   "zh": "一台黑色复古打字机，配有镀铬包边的圆形按键，摆放在木质书桌上，一张白纸卷入其卷纸架中，画面居中，从略微俯视的角度正面拍摄。 纸页上可见一行打出的文字。 右侧柔和的窗光照亮按键，并在按键之间投下淡淡的阴影。 一盏小铜灯和一摞书在背景中虚化。",
+   "sents": [
+    {
+     "en": "A black vintage typewriter with round chrome-rimmed keys sits on a wooden desk with a sheet of white paper rolled into its carriage, centered and photographed straight on from a slight high angle.",
+     "zh": "一台黑色复古打字机，配有镀铬包边的圆形按键，摆放在木质书桌上，一张白纸卷入其卷纸架中，画面居中，从略微俯视的角度正面拍摄。"
+    },
+    {
+     "en": "A single line of typed text is visible on the page.",
+     "zh": "纸页上可见一行打出的文字。"
+    },
+    {
+     "en": "Soft window light from the right highlights the keys and casts gentle shadows between them.",
+     "zh": "右侧柔和的窗光照亮按键，并在按键之间投下淡淡的阴影。"
+    },
+    {
+     "en": "A small brass lamp and a stack of books blur in the background.",
+     "zh": "一盏小铜灯和一摞书在背景中虚化。"
+    }
+   ]
+  },
+  {
+   "en": "A detailed graphite pencil sketch of an old man's face in three-quarter view, framed from the shoulders up and centered on cream-colored paper. Fine cross-hatching builds up the deep wrinkles around his eyes and the texture of his short beard, while lighter strokes suggest a flat cap. The left side of the face is shaded in darker tones and the right fades into untouched paper. A few faint construction lines remain visible near the edges.",
+   "zh": "一幅老人面部四分之三视角的精细石墨铅笔素描，取景自肩部以上，构图居中于米白色纸张上。 细密的交叉排线塑造出他眼周深深的皱纹和短胡须的质感，而较轻的笔触勾勒出一顶平顶帽。 面部左侧以较深的色调绘制阴影，右侧则渐渐隐入未曾着色的纸面。 边缘附近仍可见几条淡淡的定位辅助线。",
+   "sents": [
+    {
+     "en": "A detailed graphite pencil sketch of an old man's face in three-quarter view, framed from the shoulders up and centered on cream-colored paper.",
+     "zh": "一幅老人面部四分之三视角的精细石墨铅笔素描，取景自肩部以上，构图居中于米白色纸张上。"
+    },
+    {
+     "en": "Fine cross-hatching builds up the deep wrinkles around his eyes and the texture of his short beard, while lighter strokes suggest a flat cap.",
+     "zh": "细密的交叉排线塑造出他眼周深深的皱纹和短胡须的质感，而较轻的笔触勾勒出一顶平顶帽。"
+    },
+    {
+     "en": "The left side of the face is shaded in darker tones and the right fades into untouched paper.",
+     "zh": "面部左侧以较深的色调绘制阴影，右侧则渐渐隐入未曾着色的纸面。"
+    },
+    {
+     "en": "A few faint construction lines remain visible near the edges.",
+     "zh": "边缘附近仍可见几条淡淡的定位辅助线。"
+    }
+   ]
+  },
+  {
+   "en": "A steaming bowl of tonkotsu ramen sits centered on a dark wooden counter, viewed from a slight high angle, with slices of pork belly, a soft-boiled egg halved to show its orange yolk, green onions, and a sheet of nori arranged on top of the noodles. Wooden chopsticks rest across the rim on the right. Steam rises and catches a warm overhead light. The cloudy broth and glistening pork are rendered in sharp, appetizing detail.",
+   "zh": "一碗热气腾腾的豚骨拉面放在深色木质吧台的中央，视角略微俯视，面条上铺着几片五花肉、一个溏心蛋（对半切开，露出橙黄色的蛋黄）、葱花和一片海苔。 一双木筷搭在右侧碗沿上。 蒸汽袅袅升起，映在温暖的顶灯下。 浑浊的汤底和油亮的五花肉以清晰诱人的细节呈现。",
+   "sents": [
+    {
+     "en": "A steaming bowl of tonkotsu ramen sits centered on a dark wooden counter, viewed from a slight high angle, with slices of pork belly, a soft-boiled egg halved to show its orange yolk, green onions, and a sheet of nori arranged on top of the noodles.",
+     "zh": "一碗热气腾腾的豚骨拉面放在深色木质吧台的中央，视角略微俯视，面条上铺着几片五花肉、一个溏心蛋（对半切开，露出橙黄色的蛋黄）、葱花和一片海苔。"
+    },
+    {
+     "en": "Wooden chopsticks rest across the rim on the right.",
+     "zh": "一双木筷搭在右侧碗沿上。"
+    },
+    {
+     "en": "Steam rises and catches a warm overhead light.",
+     "zh": "蒸汽袅袅升起，映在温暖的顶灯下。"
+    },
+    {
+     "en": "The cloudy broth and glistening pork are rendered in sharp, appetizing detail.",
+     "zh": "浑浊的汤底和油亮的五花肉以清晰诱人的细节呈现。"
+    }
+   ]
+  },
+  {
+   "en": "A vintage red bicycle with a wicker basket of fresh baguettes leans against a sun-bleached yellow plaster wall, positioned center-right in the frame. A green wooden window shutter and a small pot of red geraniums sit on the sill above the bike on the left. Bright afternoon sunlight from the right casts a crisp shadow of the bicycle across the wall and the cobblestones. The colors are warm and saturated.",
+   "zh": "一辆复古红色自行车斜靠在被阳光晒得发白的黄色灰泥墙上，车筐里装满新鲜法棍面包，位于画面中央偏右的位置。 左侧自行车上方，一扇绿色木制百叶窗和一小盆红色天竺葵摆放在窗台上。 右侧明媚的午后阳光在墙上和鹅卵石地面上投下自行车轮廓清晰的影子。 色彩温暖而浓郁。",
+   "sents": [
+    {
+     "en": "A vintage red bicycle with a wicker basket of fresh baguettes leans against a sun-bleached yellow plaster wall, positioned center-right in the frame.",
+     "zh": "一辆复古红色自行车斜靠在被阳光晒得发白的黄色灰泥墙上，车筐里装满新鲜法棍面包，位于画面中央偏右的位置。"
+    },
+    {
+     "en": "A green wooden window shutter and a small pot of red geraniums sit on the sill above the bike on the left.",
+     "zh": "左侧自行车上方，一扇绿色木制百叶窗和一小盆红色天竺葵摆放在窗台上。"
+    },
+    {
+     "en": "Bright afternoon sunlight from the right casts a crisp shadow of the bicycle across the wall and the cobblestones.",
+     "zh": "右侧明媚的午后阳光在墙上和鹅卵石地面上投下自行车轮廓清晰的影子。"
+    },
+    {
+     "en": "The colors are warm and saturated.",
+     "zh": "色彩温暖而浓郁。"
+    }
+   ]
+  },
+  {
+   "en": "A bearded street musician in a brown corduroy jacket plays a saxophone beneath a dripping awning on a rainy city street at dusk, positioned right of center. Neon signs in pink and teal reflect in the wet pavement in the lower half of the frame, and blurred pedestrians with umbrellas pass on the left. Cool ambient light mixes with a warm glow from a shop window behind him. Raindrops streak across the foreground.",
+   "zh": "黄昏时分，在雨中的城市街道上，一名身穿棕色灯芯绒夹克的络腮胡街头乐手在一处滴水的遮阳篷下吹奏萨克斯，位于画面中偏右的位置。 画面下半部分，粉色和青绿色的霓虹灯招牌映照在湿漉漉的人行道上，模糊的撑伞行人在左侧经过。 冷色的环境光与身后商店橱窗透出的温暖光芒交织在一起。 雨滴在前景中划出道道痕迹。",
+   "sents": [
+    {
+     "en": "A bearded street musician in a brown corduroy jacket plays a saxophone beneath a dripping awning on a rainy city street at dusk, positioned right of center.",
+     "zh": "黄昏时分，在雨中的城市街道上，一名身穿棕色灯芯绒夹克的络腮胡街头乐手在一处滴水的遮阳篷下吹奏萨克斯，位于画面中偏右的位置。"
+    },
+    {
+     "en": "Neon signs in pink and teal reflect in the wet pavement in the lower half of the frame, and blurred pedestrians with umbrellas pass on the left.",
+     "zh": "画面下半部分，粉色和青绿色的霓虹灯招牌映照在湿漉漉的人行道上，模糊的撑伞行人在左侧经过。"
+    },
+    {
+     "en": "Cool ambient light mixes with a warm glow from a shop window behind him.",
+     "zh": "冷色的环境光与身后商店橱窗透出的温暖光芒交织在一起。"
+    },
+    {
+     "en": "Raindrops streak across the foreground.",
+     "zh": "雨滴在前景中划出道道痕迹。"
+    }
+   ]
+  },
+  {
+   "en": "A macro photograph of a bright green tree frog with orange toes and red eyes perched on a floating lily pad, centered in the frame and viewed at water level. Dew drops bead on its glossy skin and the leaf's surface. Soft, diffused morning light gives an even glow, and the pond behind dissolves into a smooth green and blue bokeh. A single pink water lily blooms softly out of focus in the upper right.",
+   "zh": "一张微距摄影照片：一只鲜绿色的树蛙，脚趾呈橙色、眼睛呈红色，栖息在一片漂浮的睡莲叶上，位于画面中心，以水面平视角度拍摄。 露珠在其光亮的皮肤和叶片表面上凝结成珠。 柔和的漫射晨光带来均匀的光泽，背后的池塘融化为平滑的绿色与蓝色散景。 一朵粉色睡莲在画面右上方柔和绽放，处于焦外虚化中。",
+   "sents": [
+    {
+     "en": "A macro photograph of a bright green tree frog with orange toes and red eyes perched on a floating lily pad, centered in the frame and viewed at water level.",
+     "zh": "一张微距摄影照片：一只鲜绿色的树蛙，脚趾呈橙色、眼睛呈红色，栖息在一片漂浮的睡莲叶上，位于画面中心，以水面平视角度拍摄。"
+    },
+    {
+     "en": "Dew drops bead on its glossy skin and the leaf's surface.",
+     "zh": "露珠在其光亮的皮肤和叶片表面上凝结成珠。"
+    },
+    {
+     "en": "Soft, diffused morning light gives an even glow, and the pond behind dissolves into a smooth green and blue bokeh.",
+     "zh": "柔和的漫射晨光带来均匀的光泽，背后的池塘融化为平滑的绿色与蓝色散景。"
+    },
+    {
+     "en": "A single pink water lily blooms softly out of focus in the upper right.",
+     "zh": "一朵粉色睡莲在画面右上方柔和绽放，处于焦外虚化中。"
+    }
+   ]
+  },
+  {
+   "en": "A vintage silver and black film camera rests on a scuffed oak desk beside a stack of faded photographs and a coiled leather strap, centered in the frame and viewed from a slight high angle. Warm afternoon light from a window on the left glints along the chrome dials and lens ring. A half-empty cup of black coffee sits out of focus in the upper right. The shallow depth of field keeps the lens crisp while the desk edge softens.",
+   "zh": "一台复古的银黑双色胶片相机放在一张布满磨损痕迹的橡木书桌上，旁边是一叠褪色的照片和一根盘绕的皮质背带，相机位于画面中央，视角为略微俯视。 来自左侧窗户的午后暖光在镀铬旋钮和镜头环上闪着微光。 画面右上方有一杯半满的黑咖啡，处于失焦状态。 浅景深让镜头保持清晰锐利，而书桌边缘则显得柔和模糊。",
+   "sents": [
+    {
+     "en": "A vintage silver and black film camera rests on a scuffed oak desk beside a stack of faded photographs and a coiled leather strap, centered in the frame and viewed from a slight high angle.",
+     "zh": "一台复古的银黑双色胶片相机放在一张布满磨损痕迹的橡木书桌上，旁边是一叠褪色的照片和一根盘绕的皮质背带，相机位于画面中央，视角为略微俯视。"
+    },
+    {
+     "en": "Warm afternoon light from a window on the left glints along the chrome dials and lens ring.",
+     "zh": "来自左侧窗户的午后暖光在镀铬旋钮和镜头环上闪着微光。"
+    },
+    {
+     "en": "A half-empty cup of black coffee sits out of focus in the upper right.",
+     "zh": "画面右上方有一杯半满的黑咖啡，处于失焦状态。"
+    },
+    {
+     "en": "The shallow depth of field keeps the lens crisp while the desk edge softens.",
+     "zh": "浅景深让镜头保持清晰锐利，而书桌边缘则显得柔和模糊。"
+    }
+   ]
+  },
+  {
+   "en": "We wrote all the words on this page. We used Claude Fable 5.1 to help us build the diagrams.",
+   "zh": "本页上的所有文字均由我们撰写。 我们使用 Claude Fable 5.1 来帮助我们构建图表。",
+   "sents": [
+    {
+     "en": "We wrote all the words on this page.",
+     "zh": "本页上的所有文字均由我们撰写。"
+    },
+    {
+     "en": "We used Claude Fable 5.1 to help us build the diagrams.",
+     "zh": "我们使用 Claude Fable 5.1 来帮助我们构建图表。"
+    }
+   ]
+  },
+  {
+   "en": "The Huggingface Model Card and Github Repo were written automatically by Claude Fable 5.1. We pointed Claude to our internal, experiment repo and had it pull out (and clean up) the necessary code.",
+   "zh": "Huggingface 模型卡和 GitHub 仓库由 Claude Fable 5.1 自动撰写。 我们让 Claude 指向我们的内部实验仓库，并让它提取（并清理）所需的代码。",
+   "sents": [
+    {
+     "en": "The Huggingface Model Card and Github Repo were written automatically by Claude Fable 5.1.",
+     "zh": "Huggingface 模型卡和 GitHub 仓库由 Claude Fable 5.1 自动撰写。"
+    },
+    {
+     "en": "We pointed Claude to our internal, experiment repo and had it pull out (and clean up) the necessary code.",
+     "zh": "我们让 Claude 指向我们的内部实验仓库，并让它提取（并清理）所需的代码。"
+    }
+   ]
+  },
+  {
+   "en": "We're two brothers training text-to-video models from scratch, trying to make animation accessible to everyone.",
+   "zh": "我们是两兄弟，正在从零开始训练文本生成视频模型，努力让动画创作变得人人可及。",
+   "sents": null
+  },
+  {
+   "en": "We posted this over on Hacker News . Check the link, if you want to join the discussion.",
+   "zh": "我们把这条内容发布到了 Hacker News 上。 如果你想参与讨论，请查看该链接。",
+   "sents": [
+    {
+     "en": "We posted this over on Hacker News .",
+     "zh": "我们把这条内容发布到了 Hacker News 上。"
+    },
+    {
+     "en": "Check the link, if you want to join the discussion.",
+     "zh": "如果你想参与讨论，请查看该链接。"
+    }
+   ]
+  },
+  {
+   "en": "Technical deep dives on building generative video models from the ground up, plus updates on new releases from Linum.",
+   "zh": "从零开始构建生成式视频模型的技术深度解析，以及 Linum 新版本发布的最新动态。",
+   "sents": null
+  }
+ ]
+}

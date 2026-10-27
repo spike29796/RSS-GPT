@@ -1,0 +1,278 @@
+{
+ "id": "dbbe6496eb04c278",
+ "source": "hackernews",
+ "link": "https://blog.matthewbrunelle.com/swap-zram-zswap-and-hibernate-on-nixos/",
+ "title": "Swap, ZRAM, Zswap and Hibernate on NixOS",
+ "title_zh": "NixOS 内存管理技术配置",
+ "published": "Wed, 23 Sep 2026 18:07:04 +0000",
+ "translated_at": "2026-10-26T05:54:46Z",
+ "paragraphs": [
+  {
+   "en": "Note: I'm going to NixCon 2026 , say hello if you're going as well!",
+   "zh": "注意：我要去参加 NixCon 2026 了，如果你也要去，欢迎来打个招呼！",
+   "sents": null
+  },
+  {
+   "en": "Whether to use swap is a perennial fight online. The conversation is often muddled when people conflate recommendations for servers with recommendations for workstations. In my case, I'm going to focus on desktops and laptops.",
+   "zh": "是否使用 swap（交换分区）一直是网上经久不衰的争论。 当人们把针对服务器的建议与针对工作站的建议混为一谈时，讨论往往变得混乱不堪。 就我而言，我将重点讨论台式机和笔记本电脑。",
+   "sents": [
+    {
+     "en": "Whether to use swap is a perennial fight online.",
+     "zh": "是否使用 swap（交换分区）一直是网上经久不衰的争论。"
+    },
+    {
+     "en": "The conversation is often muddled when people conflate recommendations for servers with recommendations for workstations.",
+     "zh": "当人们把针对服务器的建议与针对工作站的建议混为一谈时，讨论往往变得混乱不堪。"
+    },
+    {
+     "en": "In my case, I'm going to focus on desktops and laptops.",
+     "zh": "就我而言，我将重点讨论台式机和笔记本电脑。"
+    }
+   ]
+  },
+  {
+   "en": "I use swap because I like suspend-then-hibernate, or \"Standby, then hibernate\" in the KDE settings: ![[Pasted image 20260917120542.png]]",
+   "zh": "我使用 swap 是因为我喜欢「先挂起后休眠」（suspend-then-hibernate），即 KDE 设置中的「待机后休眠」（Standby, then hibernate）：![[Pasted image 20260917120542.png]]",
+   "sents": null
+  },
+  {
+   "en": "This will first ACPI S3 suspend to RAM, then after a delay go into S4 Hibernate. I think this strikes a nice balance: if I step away for a bit I don't have to wait for things to start up, but I don't have to worry if I forget to fully power off my machine.",
+   "zh": "这会先进行 ACPI S3 挂起到内存，然后在一段延迟后进入 S4 休眠。 我认为这是一个不错的平衡：如果我短暂离开，不需要等待东西重新启动；而如果我忘记彻底关机，也不必担心。",
+   "sents": [
+    {
+     "en": "This will first ACPI S3 suspend to RAM, then after a delay go into S4 Hibernate.",
+     "zh": "这会先进行 ACPI S3 挂起到内存，然后在一段延迟后进入 S4 休眠。"
+    },
+    {
+     "en": "I think this strikes a nice balance: if I step away for a bit I don't have to wait for things to start up, but I don't have to worry if I forget to fully power off my machine.",
+     "zh": "我认为这是一个不错的平衡：如果我短暂离开，不需要等待东西重新启动；而如果我忘记彻底关机，也不必担心。"
+    }
+   ]
+  },
+  {
+   "en": "To use hibernate you need swap to save your system state to disk.",
+   "zh": "要使用休眠功能，你需要交换空间（swap）来将系统状态保存到磁盘。",
+   "sents": null
+  },
+  {
+   "en": "There are also arguments over swap files vs swap partitions . I mostly want to note that swap files can complicate hibernate. That is because when you resume from hibernate initramfs needs to know the location of the swap space before the file systems are mounted. On a UEFI system the details are saved into an EFI variable when hibernation starts.",
+   "zh": "关于交换文件与交换分区的优劣也存在争论。 我主要想指出的是，交换文件可能会使休眠变得复杂。 这是因为从休眠中恢复时，initramfs 需要在文件系统挂载之前知道交换空间的位置。 在 UEFI 系统上，休眠开始时相关细节会被保存到一个 EFI 变量中。",
+   "sents": [
+    {
+     "en": "There are also arguments over swap files vs swap partitions .",
+     "zh": "关于交换文件与交换分区的优劣也存在争论。"
+    },
+    {
+     "en": "I mostly want to note that swap files can complicate hibernate.",
+     "zh": "我主要想指出的是，交换文件可能会使休眠变得复杂。"
+    },
+    {
+     "en": "That is because when you resume from hibernate initramfs needs to know the location of the swap space before the file systems are mounted.",
+     "zh": "这是因为从休眠中恢复时，initramfs 需要在文件系统挂载之前知道交换空间的位置。"
+    },
+    {
+     "en": "On a UEFI system the details are saved into an EFI variable when hibernation starts.",
+     "zh": "在 UEFI 系统上，休眠开始时相关细节会被保存到一个 EFI 变量中。"
+    }
+   ]
+  },
+  {
+   "en": "I set up my desktop with a simple swap partition:",
+   "zh": "我用一个简单的交换分区设置了台式机：",
+   "sents": null
+  },
+  {
+   "en": "swapDevices = [ {device = \"/dev/disk/by-uuid/f2fc399a-9703-450b-88df-5671b776fc71\";} ]; I set up my laptop with LUKS encryption and a swap file:",
+   "zh": "swapDevices = [ {device = \"/dev/disk/by-uuid/f2fc399a-9703-450b-88df-5671b776fc71\";} ]; 我在笔记本电脑上设置了 LUKS 加密和一个交换文件：",
+   "sents": null
+  },
+  {
+   "en": "fileSystems.\"/.swapvol\" = { device = \"/dev/disk/by-uuid/33682d1d-87c4-4166-8d3b-66d900387e42\"; fsType = \"btrfs\"; options = [\"subvol=swap\"]; }; ... swapDevices = [ { device = \"/.swapvol/swapfile\"; size = 32 * 1024; } ]; This is based on the disko luks-btrfs-subvolumes template .",
+   "zh": "fileSystems.\"/.swapvol\" = { device = \"/dev/disk/by-uuid/33682d1d-87c4-4166-8d3b-66d900387e42\"; fsType = \"btrfs\"; options = [\"subvol=swap\"]; }; ... swapDevices = [ { device = \"/.swapvol/swapfile\"; size = 32 * 1024; } ]; 此示例基于 disko 的 luks-btrfs-subvolumes 模板。",
+   "sents": null
+  },
+  {
+   "en": "The good news is that for a while now NixOS understands the nuances of hibernate on swap files and can handle figuring out the offsets.",
+   "zh": "好消息是，NixOS 已经能够理解在交换文件上进行休眠的细微差别，并可以自动计算出偏移量，这已经有一段时间了。",
+   "sents": null
+  },
+  {
+   "en": "If I'm going to use swap I want to make sure I use it right. The piece In Defence of Swap and the followup Debunking zswap and zram myths provide a lot of important context. As a starting point, Chris Down recommends using zswap with disk-backed swap.",
+   "zh": "如果我要使用交换分区，我想确保用得正确。 《为交换分区辩护》（In Defence of Swap）及其后续文章《驳斥关于 zswap 和 zram 的迷思》（Debunking zswap and zram myths）提供了很多重要的背景信息。 作为起点，Chris Down 建议在基于磁盘的交换分区之上使用 zswap。",
+   "sents": [
+    {
+     "en": "If I'm going to use swap I want to make sure I use it right.",
+     "zh": "如果我要使用交换分区，我想确保用得正确。"
+    },
+    {
+     "en": "The piece In Defence of Swap and the followup Debunking zswap and zram myths provide a lot of important context.",
+     "zh": "《为交换分区辩护》（In Defence of Swap）及其后续文章《驳斥关于 zswap 和 zram 的迷思》（Debunking zswap and zram myths）提供了很多重要的背景信息。"
+    },
+    {
+     "en": "As a starting point, Chris Down recommends using zswap with disk-backed swap.",
+     "zh": "作为起点，Chris Down 建议在基于磁盘的交换分区之上使用 zswap。"
+    }
+   ]
+  },
+  {
+   "en": "boot.zswap.enable = true; boot.kernel.sysctl.\"vm.swappiness\" = 100; Yes, literally just that. I like the fact that the config is not long and complicated. Just because it's a couple of lines does not make it any less important.",
+   "zh": "boot.zswap.enable = true; boot.kernel.sysctl.\"vm.swappiness\" = 100; 是的，真的就这么简单。 我喜欢的一点是这个配置并不冗长复杂。 它虽然只有几行，但并不意味着它就不那么重要。",
+   "sents": [
+    {
+     "en": "boot.zswap.enable = true; boot.kernel.sysctl.\"vm.swappiness\" = 100; Yes, literally just that.",
+     "zh": "boot.zswap.enable = true; boot.kernel.sysctl.\"vm.swappiness\" = 100; 是的，真的就这么简单。"
+    },
+    {
+     "en": "I like the fact that the config is not long and complicated.",
+     "zh": "我喜欢的一点是这个配置并不冗长复杂。"
+    },
+    {
+     "en": "Just because it's a couple of lines does not make it any less important.",
+     "zh": "它虽然只有几行，但并不意味着它就不那么重要。"
+    }
+   ]
+  },
+  {
+   "en": "Why that particular swappiness value? Swappiness controls the relative cost of swapping and filesystem paging so it will depend on your particular hardware. Chris suggests that a swappiness of 100 works well on systems with SSDs, but that it's \"non-trivial to tune this value based on instinct alone\" and you should test different values. The kernel docs agree and say you can even go higher on SSDs.",
+   "zh": "为什么是那个特定的 swappiness 值？ Swappiness 控制交换（swapping）与文件系统分页（filesystem paging）的相对代价，因此它取决于你的具体硬件。 Chris 建议 swappiness 为 100 在配备 SSD 的系统上效果很好，但也指出“仅凭直觉来调优这个值并非易事”，你应该测试不同的值。 内核文档也认同这一点，并表示在 SSD 上你甚至可以设置得更高。",
+   "sents": [
+    {
+     "en": "Why that particular swappiness value?",
+     "zh": "为什么是那个特定的 swappiness 值？"
+    },
+    {
+     "en": "Swappiness controls the relative cost of swapping and filesystem paging so it will depend on your particular hardware.",
+     "zh": "Swappiness 控制交换（swapping）与文件系统分页（filesystem paging）的相对代价，因此它取决于你的具体硬件。"
+    },
+    {
+     "en": "Chris suggests that a swappiness of 100 works well on systems with SSDs, but that it's \"non-trivial to tune this value based on instinct alone\" and you should test different values.",
+     "zh": "Chris 建议 swappiness 为 100 在配备 SSD 的系统上效果很好，但也指出“仅凭直觉来调优这个值并非易事”，你应该测试不同的值。"
+    },
+    {
+     "en": "The kernel docs agree and say you can even go higher on SSDs.",
+     "zh": "内核文档也认同这一点，并表示在 SSD 上你甚至可以设置得更高。"
+    }
+   ]
+  },
+  {
+   "en": "However, I haven't found clear instructions anywhere on how to test and compare different swappiness values, especially for workstation usage. If you have any recommendations, I would appreciate hearing about them. For now, 100 is serving me well with my SSDs.",
+   "zh": "然而，我在任何地方都没有找到关于如何测试和比较不同 swappiness 值的明确说明，尤其是针对工作站使用场景。 如果你有任何建议，我很乐意听听。 目前，100 在我的 SSD 上运行得很好。",
+   "sents": [
+    {
+     "en": "However, I haven't found clear instructions anywhere on how to test and compare different swappiness values, especially for workstation usage.",
+     "zh": "然而，我在任何地方都没有找到关于如何测试和比较不同 swappiness 值的明确说明，尤其是针对工作站使用场景。"
+    },
+    {
+     "en": "If you have any recommendations, I would appreciate hearing about them.",
+     "zh": "如果你有任何建议，我很乐意听听。"
+    },
+    {
+     "en": "For now, 100 is serving me well with my SSDs.",
+     "zh": "目前，100 在我的 SSD 上运行得很好。"
+    }
+   ]
+  },
+  {
+   "en": "Before I read Chris's second article I was using zramSwap.enable since I thought this was what he advocated. However, I had that wrong and it was actually the opposite. I didn't realize this until April of this year when boot.zswap was added. So to clarify, zramSwap is what is normally just referred to as zram . It is likely not what you want when using disk based swap. In my case I wanted hibernation so this was the wrong choice.",
+   "zh": "在读 Chris 的第二篇文章之前，我一直在使用 zramSwap.enable，因为我认为这是他所主张的做法。 然而，我理解错了，实际情况恰恰相反。 直到今年 4 月 boot.zswap 被添加进来时，我才意识到这一点。 需要澄清的是，zramSwap 就是通常大家所说的 zram。 在使用基于磁盘的交换空间时，它很可能不是你想要的。 就我的情况而言，我需要休眠功能，所以这是一个错误的选择。",
+   "sents": [
+    {
+     "en": "Before I read Chris's second article I was using zramSwap.enable since I thought this was what he advocated.",
+     "zh": "在读 Chris 的第二篇文章之前，我一直在使用 zramSwap.enable，因为我认为这是他所主张的做法。"
+    },
+    {
+     "en": "However, I had that wrong and it was actually the opposite.",
+     "zh": "然而，我理解错了，实际情况恰恰相反。"
+    },
+    {
+     "en": "I didn't realize this until April of this year when boot.zswap was added.",
+     "zh": "直到今年 4 月 boot.zswap 被添加进来时，我才意识到这一点。"
+    },
+    {
+     "en": "So to clarify, zramSwap is what is normally just referred to as zram .",
+     "zh": "需要澄清的是，zramSwap 就是通常大家所说的 zram。"
+    },
+    {
+     "en": "It is likely not what you want when using disk based swap.",
+     "zh": "在使用基于磁盘的交换空间时，它很可能不是你想要的。"
+    },
+    {
+     "en": "In my case I wanted hibernation so this was the wrong choice.",
+     "zh": "就我的情况而言，我需要休眠功能，所以这是一个错误的选择。"
+    }
+   ]
+  },
+  {
+   "en": "After my realization I removed zramSwap.enable and started using boot.zswap :",
+   "zh": "意识到这一点后，我移除了 zramSwap.enable 并开始使用 boot.zswap：",
+   "sents": null
+  },
+  {
+   "en": "boot.initrd.systemd.enable = true; boot.zswap = { enable = true; compressor = \"lz4\"; }; boot.kernel.sysctl.\"vm.swappiness\" = 100; You'll notice that the compression algorithm for zswap can be controlled through boot.zswap.compressor . The Linux kernel defaults to lzo since it strikes a good balance of speed and compression. Whereas NixOS defaults to zstd with the reasoning that it has the best compression ratio and is good for Nix builds.",
+   "zh": "boot.initrd.systemd.enable = true; boot.zswap = { enable = true; compressor = \"lz4\"; }; boot.kernel.sysctl.\"vm.swappiness\" = 100; 你会注意到 zswap 的压缩算法可以通过 boot.zswap.compressor 来控制。 Linux 内核默认使用 lzo，因为它在速度和压缩率之间取得了良好的平衡。 而 NixOS 默认使用 zstd，理由是它的压缩率最高，并且对 Nix 构建很有帮助。",
+   "sents": [
+    {
+     "en": "boot.initrd.systemd.enable = true; boot.zswap = { enable = true; compressor = \"lz4\"; }; boot.kernel.sysctl.\"vm.swappiness\" = 100; You'll notice that the compression algorithm for zswap can be controlled through boot.zswap.compressor .",
+     "zh": "boot.initrd.systemd.enable = true; boot.zswap = { enable = true; compressor = \"lz4\"; }; boot.kernel.sysctl.\"vm.swappiness\" = 100; 你会注意到 zswap 的压缩算法可以通过 boot.zswap.compressor 来控制。"
+    },
+    {
+     "en": "The Linux kernel defaults to lzo since it strikes a good balance of speed and compression.",
+     "zh": "Linux 内核默认使用 lzo，因为它在速度和压缩率之间取得了良好的平衡。"
+    },
+    {
+     "en": "Whereas NixOS defaults to zstd with the reasoning that it has the best compression ratio and is good for Nix builds.",
+     "zh": "而 NixOS 默认使用 zstd，理由是它的压缩率最高，并且对 Nix 构建很有帮助。"
+    }
+   ]
+  },
+  {
+   "en": "Up until recently I was running lz4 which has the fastest compression and lowest latency. I made the decision after reading around the ArchWiki which primarily uses that as the compressor. Realistically though compression speed is often not the limit when you are dealing with memory spilling over to disk. A better compression ratio lets you fit more pages into the compressed pool in memory, so you use the disk less.",
+   "zh": "直到最近我一直在用 lz4，它拥有最快的压缩速度和最低的延迟。 我是在查阅 ArchWiki 之后做出这个决定的，该维基主要使用它作为压缩器。 不过实际上，当内存溢出到磁盘时，压缩速度往往并不是瓶颈。 更好的压缩比能让你在内存的压缩池中容纳更多页面，从而减少对磁盘的使用。",
+   "sents": [
+    {
+     "en": "Up until recently I was running lz4 which has the fastest compression and lowest latency.",
+     "zh": "直到最近我一直在用 lz4，它拥有最快的压缩速度和最低的延迟。"
+    },
+    {
+     "en": "I made the decision after reading around the ArchWiki which primarily uses that as the compressor.",
+     "zh": "我是在查阅 ArchWiki 之后做出这个决定的，该维基主要使用它作为压缩器。"
+    },
+    {
+     "en": "Realistically though compression speed is often not the limit when you are dealing with memory spilling over to disk.",
+     "zh": "不过实际上，当内存溢出到磁盘时，压缩速度往往并不是瓶颈。"
+    },
+    {
+     "en": "A better compression ratio lets you fit more pages into the compressed pool in memory, so you use the disk less.",
+     "zh": "更好的压缩比能让你在内存的压缩池中容纳更多页面，从而减少对磁盘的使用。"
+    }
+   ]
+  },
+  {
+   "en": "So now I use the NixOS default of zstd . Also, when I added that config lz4 required boot.initrd.systemd.enable . That setting now defaults to true so I can drop that line as well. That leaves us with just two lines of config.",
+   "zh": "所以现在我使用 NixOS 默认的 zstd。 另外，当我添加那个配置时，lz4 需要启用 boot.initrd.systemd.enable。 该设置现在默认为 true，所以我也可以把那一行删掉。 这样就只剩下两行配置了。",
+   "sents": [
+    {
+     "en": "So now I use the NixOS default of zstd .",
+     "zh": "所以现在我使用 NixOS 默认的 zstd。"
+    },
+    {
+     "en": "Also, when I added that config lz4 required boot.initrd.systemd.enable .",
+     "zh": "另外，当我添加那个配置时，lz4 需要启用 boot.initrd.systemd.enable。"
+    },
+    {
+     "en": "That setting now defaults to true so I can drop that line as well.",
+     "zh": "该设置现在默认为 true，所以我也可以把那一行删掉。"
+    },
+    {
+     "en": "That leaves us with just two lines of config.",
+     "zh": "这样就只剩下两行配置了。"
+    }
+   ]
+  },
+  {
+   "en": "No spam, no sharing to third party. Only you and me.",
+   "zh": "无垃圾邮件，不会分享给第三方。只有你和我。",
+   "sents": null
+  }
+ ]
+}

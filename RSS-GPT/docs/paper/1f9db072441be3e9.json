@@ -1,0 +1,377 @@
+{
+ "id": "1f9db072441be3e9",
+ "source": "hackernews",
+ "link": "https://go.dev/blog/http-connection-reuse",
+ "title": "Better HTTP/1 connection reuse in Go 1.27",
+ "title_zh": "Go 1.27 中更高效的 HTTP/1 连接重用",
+ "published": "Wed, 14 Oct 2026 16:29:33 +0000",
+ "translated_at": "2026-10-26T08:14:55Z",
+ "paragraphs": [
+  {
+   "en": "Stories about how and why companies use Go",
+   "zh": "关于公司如何以及为何使用 Go 的故事",
+   "sents": null
+  },
+  {
+   "en": "How Go can help keep you secure by default",
+   "zh": "Go 如何帮助你在默认情况下保持安全",
+   "sents": null
+  },
+  {
+   "en": "A complete introduction to building software with Go",
+   "zh": "使用 Go 构建软件的完整入门指南",
+   "sents": null
+  },
+  {
+   "en": "Reference documentation for Go's standard library",
+   "zh": "Go 标准库的参考文档",
+   "sents": null
+  },
+  {
+   "en": "Tips for writing clear, performant, and idiomatic Go code",
+   "zh": "编写清晰、高效且符合 Go 语言习惯的代码的技巧",
+   "sents": null
+  },
+  {
+   "en": "Learn and network with Go developers from around the world",
+   "zh": "与来自世界各地的 Go 开发者一起学习交流",
+   "sents": null
+  },
+  {
+   "en": "Nicholas Husin and Damien Neil 14 October 2026",
+   "zh": "Nicholas Husin 和 Damien Neil，2026年10月14日",
+   "sents": null
+  },
+  {
+   "en": "func getStatus(url string) (int, error) { resp, err := http.Get(url) if err != nil { return 0, err } defer resp.Body.Close() return resp.StatusCode, nil } It sends a GET request to url and returns the HTTP status code.",
+   "zh": "func getStatus(url string) (int, error) { resp, err := http.Get(url) if err != nil { return 0, err } defer resp.Body.Close() return resp.StatusCode, nil } 它向 url 发送一个 GET 请求，并返回 HTTP 状态码。",
+   "sents": null
+  },
+  {
+   "en": "Using HTTP/1 ( GODEBUG=http2client=0 ), calling this function 100 times against index.golang.org takes ~710 milliseconds on Go 1.26 on my machine. On Go 1.27, the same program takes ~150 milliseconds.",
+   "zh": "使用 HTTP/1（GODEBUG=http2client=0）时，在我的机器上用 Go 1.26 对 index.golang.org 调用该函数 100 次大约需要 710 毫秒。 在 Go 1.27 上，同样的程序大约只需 150 毫秒。",
+   "sents": [
+    {
+     "en": "Using HTTP/1 ( GODEBUG=http2client=0 ), calling this function 100 times against index.golang.org takes ~710 milliseconds on Go 1.26 on my machine.",
+     "zh": "使用 HTTP/1（GODEBUG=http2client=0）时，在我的机器上用 Go 1.26 对 index.golang.org 调用该函数 100 次大约需要 710 毫秒。"
+    },
+    {
+     "en": "On Go 1.27, the same program takes ~150 milliseconds.",
+     "zh": "在 Go 1.27 上，同样的程序大约只需 150 毫秒。"
+    }
+   ]
+  },
+  {
+   "en": "That is almost 5 times faster! How is such a drastic performance difference possible?",
+   "zh": "这几乎快了 5 倍！ 如此巨大的性能差异是如何产生的呢？",
+   "sents": [
+    {
+     "en": "That is almost 5 times faster!",
+     "zh": "这几乎快了 5 倍！"
+    },
+    {
+     "en": "How is such a drastic performance difference possible?",
+     "zh": "如此巨大的性能差异是如何产生的呢？"
+    }
+   ]
+  },
+  {
+   "en": "To understand the difference, consider what happens on the network when we make an HTTP request.",
+   "zh": "要理解其中的区别，让我们看看发起 HTTP 请求时网络上会发生什么。",
+   "sents": null
+  },
+  {
+   "en": "Go’s net/http package supports HTTP/1.0, HTTP/1.1, and HTTP/2. All three run over TCP, and usually over TLS when talking to HTTPS endpoints. Making a request over a new connection looks something like this:",
+   "zh": "Go 的 net/http 包支持 HTTP/1.0、HTTP/1.1 和 HTTP/2。 这三者都运行在 TCP 之上，与 HTTPS 端点通信时通常还运行在 TLS 之上。 通过新连接发起请求的过程大致如下：",
+   "sents": [
+    {
+     "en": "Go’s net/http package supports HTTP/1.0, HTTP/1.1, and HTTP/2.",
+     "zh": "Go 的 net/http 包支持 HTTP/1.0、HTTP/1.1 和 HTTP/2。"
+    },
+    {
+     "en": "All three run over TCP, and usually over TLS when talking to HTTPS endpoints.",
+     "zh": "这三者都运行在 TCP 之上，与 HTTPS 端点通信时通常还运行在 TLS 之上。"
+    },
+    {
+     "en": "Making a request over a new connection looks something like this:",
+     "zh": "通过新连接发起请求的过程大致如下："
+    }
+   ]
+  },
+  {
+   "en": "These round trips (plus some CPU time spent on TLS handshakes) add up quickly. In cross-region communications, one-way latencies often reach or exceed the 50 ms (100 ms RTT) shown in the diagram above. Compared to the 300 ms spent just setting up the connection, the HTTP request itself can be cheap to serve, taking only a little over 1 RTT when bandwidth is plentiful or the HTTP response is small.",
+   "zh": "这些往返（加上 TLS 握手所消耗的一些 CPU 时间）会迅速累积起来。 在跨区域通信中，单向延迟通常达到甚至超过上图所示的 50 毫秒（往返延迟 100 毫秒）。 相比于仅建立连接就花费的 300 毫秒，HTTP 请求本身的处理成本可能很低，在带宽充足或 HTTP 响应较小的情况下，只需略多于 1 个往返延迟即可完成。",
+   "sents": [
+    {
+     "en": "These round trips (plus some CPU time spent on TLS handshakes) add up quickly.",
+     "zh": "这些往返（加上 TLS 握手所消耗的一些 CPU 时间）会迅速累积起来。"
+    },
+    {
+     "en": "In cross-region communications, one-way latencies often reach or exceed the 50 ms (100 ms RTT) shown in the diagram above.",
+     "zh": "在跨区域通信中，单向延迟通常达到甚至超过上图所示的 50 毫秒（往返延迟 100 毫秒）。"
+    },
+    {
+     "en": "Compared to the 300 ms spent just setting up the connection, the HTTP request itself can be cheap to serve, taking only a little over 1 RTT when bandwidth is plentiful or the HTTP response is small.",
+     "zh": "相比于仅建立连接就花费的 300 毫秒，HTTP 请求本身的处理成本可能很低，在带宽充足或 HTTP 响应较小的情况下，只需略多于 1 个往返延迟即可完成。"
+    }
+   ]
+  },
+  {
+   "en": "Even in more favorable conditions, opening a new connection can still be expensive. Our opening benchmark queries index.golang.org , which is distributed worldwide and supports TLS 1.3. This means that latency is relatively low, and the TLS handshake can actually finish in just 1 RTT. Even so, the performance difference is still very noticeable.",
+   "zh": "即使在更有利的条件下，打开新连接的开销仍然可能很高。 我们的打开连接基准测试查询的是 index.golang.org，该站点分布在世界各地并支持 TLS 1.3。 这意味着延迟相对较低，TLS 握手实际上只需 1 个 RTT 就能完成。 即便如此，性能差异仍然非常明显。",
+   "sents": [
+    {
+     "en": "Even in more favorable conditions, opening a new connection can still be expensive.",
+     "zh": "即使在更有利的条件下，打开新连接的开销仍然可能很高。"
+    },
+    {
+     "en": "Our opening benchmark queries index.golang.org , which is distributed worldwide and supports TLS 1.3.",
+     "zh": "我们的打开连接基准测试查询的是 index.golang.org，该站点分布在世界各地并支持 TLS 1.3。"
+    },
+    {
+     "en": "This means that latency is relatively low, and the TLS handshake can actually finish in just 1 RTT.",
+     "zh": "这意味着延迟相对较低，TLS 握手实际上只需 1 个 RTT 就能完成。"
+    },
+    {
+     "en": "Even so, the performance difference is still very noticeable.",
+     "zh": "即便如此，性能差异仍然非常明显。"
+    }
+   ]
+  },
+  {
+   "en": "To avoid paying this setup cost on every request, HTTP clients and servers try to reuse existing connections across multiple requests when possible. The mechanics of this differ based on the HTTP version:",
+   "zh": "为了避免在每个请求上都付出这种建立连接的开销，HTTP 客户端和服务器会尽可能在多个请求之间复用已有的连接。 其具体机制因 HTTP 版本而异：",
+   "sents": [
+    {
+     "en": "To avoid paying this setup cost on every request, HTTP clients and servers try to reuse existing connections across multiple requests when possible.",
+     "zh": "为了避免在每个请求上都付出这种建立连接的开销，HTTP 客户端和服务器会尽可能在多个请求之间复用已有的连接。"
+    },
+    {
+     "en": "The mechanics of this differ based on the HTTP version:",
+     "zh": "其具体机制因 HTTP 版本而异："
+    }
+   ]
+  },
+  {
+   "en": "In HTTP/1 (both HTTP/1.0 and HTTP/1.1), multiple requests and responses on the same connection are sent sequentially on the wire. If two GET requests are sent to index.golang.org over the same TCP connection, the responses arrive as a single stream of bytes:",
+   "zh": "在 HTTP/1（包括 HTTP/1.0 和 HTTP/1.1）中，同一连接上的多个请求和响应是以串行方式在线路上发送的。 如果两个 GET 请求通过同一条 TCP 连接发送到 index.golang.org，响应会以单一字节流的形式到达：",
+   "sents": [
+    {
+     "en": "In HTTP/1 (both HTTP/1.0 and HTTP/1.1), multiple requests and responses on the same connection are sent sequentially on the wire.",
+     "zh": "在 HTTP/1（包括 HTTP/1.0 和 HTTP/1.1）中，同一连接上的多个请求和响应是以串行方式在线路上发送的。"
+    },
+    {
+     "en": "If two GET requests are sent to index.golang.org over the same TCP connection, the responses arrive as a single stream of bytes:",
+     "zh": "如果两个 GET 请求通过同一条 TCP 连接发送到 index.golang.org，响应会以单一字节流的形式到达："
+    }
+   ]
+  },
+  {
+   "en": "As shown in the diagram, net/http.Get reads and parses the status line and headers from the byte stream to populate net/http.Response , then returns immediately. The response body remains unread on the connection and is consumed only as the caller reads from net/http.Response.Body .",
+   "zh": "如图所示，net/http.Get 从字节流中读取并解析状态行和响应头以填充 net/http.Response ，然后立即返回。 响应体在连接上保持未读取状态，只有当调用方从 net/http.Response.Body 读取时才会被消费。",
+   "sents": [
+    {
+     "en": "As shown in the diagram, net/http.Get reads and parses the status line and headers from the byte stream to populate net/http.Response , then returns immediately.",
+     "zh": "如图所示，net/http.Get 从字节流中读取并解析状态行和响应头以填充 net/http.Response ，然后立即返回。"
+    },
+    {
+     "en": "The response body remains unread on the connection and is consumed only as the caller reads from net/http.Response.Body .",
+     "zh": "响应体在连接上保持未读取状态，只有当调用方从 net/http.Response.Body 读取时才会被消费。"
+    }
+   ]
+  },
+  {
+   "en": "Because responses are sent back-to-back on the same stream, net/http can only find the start of the next response after the current response body has been read to the very end (as determined by the Content-Length or Transfer-Encoding header).",
+   "zh": "由于响应是在同一个流上背靠背发送的，net/http 只有在当前响应体被读取到最末尾（由 Content-Length 或 Transfer-Encoding 头部决定）之后，才能找到下一个响应的起始位置。",
+   "sents": null
+  },
+  {
+   "en": "Now look back at our example program, where we never read resp.Body :",
+   "zh": "现在回顾一下我们的示例程序，在该程序中我们从未读取过 resp.Body：",
+   "sents": null
+  },
+  {
+   "en": "func getStatus(url string) (int, error) { resp, err := http.Get(url) if err != nil { return 0, err } defer resp.Body.Close() return resp.StatusCode, nil } Through Go 1.26, when resp.Body.Close is called, net/http sees that there is still an unread response body. Realizing that it cannot reuse the connection, it abandons the existing connection and creates new connections for its next requests, causing it to repeatedly incur the cost of establishing new connections.",
+   "zh": "func getStatus(url string) (int, error) { resp, err := http.Get(url) if err != nil { return 0, err } defer resp.Body.Close() return resp.StatusCode, nil } 在 Go 1.26 及之前，当 resp.Body.Close 被调用时，net/http 会发现响应体仍有未读取的内容。 意识到无法复用该连接后，它会放弃现有连接，并为后续请求创建新连接，从而反复承担建立新连接的开销。",
+   "sents": [
+    {
+     "en": "func getStatus(url string) (int, error) { resp, err := http.Get(url) if err != nil { return 0, err } defer resp.Body.Close() return resp.StatusCode, nil } Through Go 1.26, when resp.Body.Close is called, net/http sees that there is still an unread response body.",
+     "zh": "func getStatus(url string) (int, error) { resp, err := http.Get(url) if err != nil { return 0, err } defer resp.Body.Close() return resp.StatusCode, nil } 在 Go 1.26 及之前，当 resp.Body.Close 被调用时，net/http 会发现响应体仍有未读取的内容。"
+    },
+    {
+     "en": "Realizing that it cannot reuse the connection, it abandons the existing connection and creates new connections for its next requests, causing it to repeatedly incur the cost of establishing new connections.",
+     "zh": "意识到无法复用该连接后，它会放弃现有连接，并为后续请求创建新连接，从而反复承担建立新连接的开销。"
+    }
+   ]
+  },
+  {
+   "en": "(HTTP/2 does not have this problem. Because it multiplexes streams of frames over a single connection rather than sending responses strictly back-to-back, an unread response body on one stream does not block other requests from sharing the connection.)",
+   "zh": "（HTTP/2 没有这个问题。 因为它通过单一连接多路复用帧流，而不是严格地将响应一个接一个地依次发送，所以某个流上未读取的响应体不会阻塞共享该连接的其他请求。）",
+   "sents": [
+    {
+     "en": "(HTTP/2 does not have this problem.",
+     "zh": "（HTTP/2 没有这个问题。"
+    },
+    {
+     "en": "Because it multiplexes streams of frames over a single connection rather than sending responses strictly back-to-back, an unread response body on one stream does not block other requests from sharing the connection.)",
+     "zh": "因为它通过单一连接多路复用帧流，而不是严格地将响应一个接一个地依次发送，所以某个流上未读取的响应体不会阻塞共享该连接的其他请求。）"
+    }
+   ]
+  },
+  {
+   "en": "This subtlety of HTTP/1 connection reuse can cause silent performance degradation in seemingly innocuous code.",
+   "zh": "HTTP/1 连接复用中的这一细微问题，可能会在看似无害的代码中导致静默的性能下降。",
+   "sents": null
+  },
+  {
+   "en": "As in our opening example, a client might only care about an API response’s status code. However, the API endpoint it is talking to might send bodies that provide more detailed but ultimately unused information, such as {\"success\": true, \"message\": \"update processed\"} . This will unfortunately cause connection reuse to fail.",
+   "zh": "如同开头的例子，客户端可能只关心 API 响应的状态码。 然而，它所调用的 API 端点可能会发送包含更详细但最终未被使用的信息的响应体，例如 {\"success\": true, \"message\": \"update processed\"}。 这很遗憾会导致连接复用失败。",
+   "sents": [
+    {
+     "en": "As in our opening example, a client might only care about an API response’s status code.",
+     "zh": "如同开头的例子，客户端可能只关心 API 响应的状态码。"
+    },
+    {
+     "en": "However, the API endpoint it is talking to might send bodies that provide more detailed but ultimately unused information, such as {\"success\": true, \"message\": \"update processed\"} .",
+     "zh": "然而，它所调用的 API 端点可能会发送包含更详细但最终未被使用的信息的响应体，例如 {\"success\": true, \"message\": \"update processed\"}。"
+    },
+    {
+     "en": "This will unfortunately cause connection reuse to fail.",
+     "zh": "这很遗憾会导致连接复用失败。"
+    }
+   ]
+  },
+  {
+   "en": "Even programs that do read the response body can run into this issue if they stop just short of the end of the body. For example, encoding/json.Decoder stops reading as soon as it sees the closing } of a JSON object. If a server sends a JSON response terminated with a newline, decoding the JSON object will leave the newline still unread. The connection cannot be reused for a new request until that newline is consumed. Thus, a healthy connection might end up being abandoned, even though it was only a single byte away from being reusable.",
+   "zh": "即使是确实读取了响应体的程序，如果在距离响应体结尾还差一点时停止读取，也可能遇到这个问题。 例如，encoding/json.Decoder 一看到 JSON 对象的结束 } 就会停止读取。 如果服务器发送的 JSON 响应以换行符结尾，解码 JSON 对象后该换行符仍然未被读取。 在该换行符被读取之前，连接无法被复用于新的请求。 因此，一个健康的连接可能最终被弃用，尽管它距离可复用只差一个字节。",
+   "sents": [
+    {
+     "en": "Even programs that do read the response body can run into this issue if they stop just short of the end of the body.",
+     "zh": "即使是确实读取了响应体的程序，如果在距离响应体结尾还差一点时停止读取，也可能遇到这个问题。"
+    },
+    {
+     "en": "For example, encoding/json.Decoder stops reading as soon as it sees the closing } of a JSON object.",
+     "zh": "例如，encoding/json.Decoder 一看到 JSON 对象的结束 } 就会停止读取。"
+    },
+    {
+     "en": "If a server sends a JSON response terminated with a newline, decoding the JSON object will leave the newline still unread.",
+     "zh": "如果服务器发送的 JSON 响应以换行符结尾，解码 JSON 对象后该换行符仍然未被读取。"
+    },
+    {
+     "en": "The connection cannot be reused for a new request until that newline is consumed.",
+     "zh": "在该换行符被读取之前，连接无法被复用于新的请求。"
+    },
+    {
+     "en": "Thus, a healthy connection might end up being abandoned, even though it was only a single byte away from being reusable.",
+     "zh": "因此，一个健康的连接可能最终被弃用，尽管它距离可复用只差一个字节。"
+    }
+   ]
+  },
+  {
+   "en": "The unread body problem has been a long-standing sharp edge. Over the years, many Go developers came up with their own workarounds. Most commonly, this is done by draining the response body prior to closing it:",
+   "zh": "未读取响应体的问题一直是一个长期存在的尖锐痛点。 多年来，许多 Go 开发者都想出了他们自己的变通方案。 最常见的做法是在关闭响应体之前先将其排空：",
+   "sents": [
+    {
+     "en": "The unread body problem has been a long-standing sharp edge.",
+     "zh": "未读取响应体的问题一直是一个长期存在的尖锐痛点。"
+    },
+    {
+     "en": "Over the years, many Go developers came up with their own workarounds.",
+     "zh": "多年来，许多 Go 开发者都想出了他们自己的变通方案。"
+    },
+    {
+     "en": "Most commonly, this is done by draining the response body prior to closing it:",
+     "zh": "最常见的做法是在关闭响应体之前先将其排空："
+    }
+   ]
+  },
+  {
+   "en": "func getStatus(url string) (int, error) { resp, err := http.Get(url) if err != nil { return 0, err } drainAndCloseBody(resp.Body) return resp.StatusCode, nil } func drainAndCloseBody(body io.ReadCloser) { io.Copy(io.Discard, body) // Drain the response body before closing it. body.Close() } While this works for small responses, if the unread body is large, establishing a new TCP connection can be faster than downloading and discarding the rest of the body. A better approach is to cap the number of bytes we are willing to drain:",
+   "zh": "func getStatus(url string) (int, error) { resp, err := http.Get(url) if err != nil { return 0, err } drainAndCloseBody(resp.Body) return resp.StatusCode, nil } func drainAndCloseBody(body io.ReadCloser) { io.Copy(io.Discard, body) // 在关闭之前排空响应主体。 body.Close() } 这种做法对小的响应有效，但如果未读取的主体很大，那么建立一个新的 TCP 连接可能比下载并丢弃主体的剩余部分更快。 更好的方法是为我们愿意排空的字节数设置一个上限：",
+   "sents": [
+    {
+     "en": "func getStatus(url string) (int, error) { resp, err := http.Get(url) if err != nil { return 0, err } drainAndCloseBody(resp.Body) return resp.StatusCode, nil } func drainAndCloseBody(body io.ReadCloser) { io.Copy(io.Discard, body) // Drain the response body before closing it. body.Close() } While this works for small responses, if the unread body is large, establishing a new TCP connection can be faster than downloading and discarding the rest of the body.",
+     "zh": "func getStatus(url string) (int, error) { resp, err := http.Get(url) if err != nil { return 0, err } drainAndCloseBody(resp.Body) return resp.StatusCode, nil } func drainAndCloseBody(body io.ReadCloser) { io.Copy(io.Discard, body) // 在关闭之前排空响应主体。 body.Close() } 这种做法对小的响应有效，但如果未读取的主体很大，那么建立一个新的 TCP 连接可能比下载并丢弃主体的剩余部分更快。"
+    },
+    {
+     "en": "A better approach is to cap the number of bytes we are willing to drain:",
+     "zh": "更好的方法是为我们愿意排空的字节数设置一个上限："
+    }
+   ]
+  },
+  {
+   "en": "func drainAndCloseBody(body io.ReadCloser) { io.CopyN(io.Discard, body, 256<<10) // Only drain up to 256 KB. body.Close() } However, a server might send a response body that trickles in slowly, so we also need to cap the time we spend draining:",
+   "zh": "```go\nfunc drainAndCloseBody(body io.ReadCloser) {\n    io.CopyN(io.Discard, body, 256<<10) // 最多只清空 256 KB。\n    body.Close()\n}\n```\n\n不过，服务器发送的响应体可能会缓慢地一点点传入，所以我们还需要限制清空操作所花费的时间：",
+   "sents": null
+  },
+  {
+   "en": "func drainAndCloseBody(body io.ReadCloser) { drainDone := make(chan struct{}, 1) go func() { io.CopyN(io.Discard, body, 256<<10) // Only drain up to 256 KB. drainDone <- struct{}{} }() // Only spend at most 50 ms trying to drain the response body. select { case <-drainDone: case <-time.After(50 * time.Millisecond): // If we reach the 50 ms timeout, body.Close will run and interrupt the // io.CopyN, preventing goroutine leaks. } body.Close() } Of course, we also do not want to block for up to 50 milliseconds when closing a response body. Instead, we can drain the body asynchronously in the background and let it race against subsequent requests:",
+   "zh": "func drainAndCloseBody(body io.ReadCloser) { drainDone := make(chan struct{}, 1) go func() { io.CopyN(io.Discard, body, 256<<10) // 只排空最多 256 KB。 drainDone <- struct{}{} }() // 最多只花 50 毫秒尝试排空响应主体。 select { case <-drainDone: case <-time.After(50 * time.Millisecond): // 如果到达 50 毫秒超时，body.Close 将会运行并中断 // io.CopyN，从而防止智能体（goroutine）泄漏。 } body.Close() } 当然，我们也不希望在关闭响应主体时阻塞长达 50 毫秒。 相反，我们可以在后台异步排空响应主体，并让它与后续请求进行竞争：",
+   "sents": [
+    {
+     "en": "func drainAndCloseBody(body io.ReadCloser) { drainDone := make(chan struct{}, 1) go func() { io.CopyN(io.Discard, body, 256<<10) // Only drain up to 256 KB. drainDone <- struct{}{} }() // Only spend at most 50 ms trying to drain the response body. select { case <-drainDone: case <-time.After(50 * time.Millisecond): // If we reach the 50 ms timeout, body.Close will run and interrupt the // io.CopyN, preventing goroutine leaks. } body.Close() } Of course, we also do not want to block for up to 50 milliseconds when closing a response body.",
+     "zh": "func drainAndCloseBody(body io.ReadCloser) { drainDone := make(chan struct{}, 1) go func() { io.CopyN(io.Discard, body, 256<<10) // 只排空最多 256 KB。 drainDone <- struct{}{} }() // 最多只花 50 毫秒尝试排空响应主体。 select { case <-drainDone: case <-time.After(50 * time.Millisecond): // 如果到达 50 毫秒超时，body.Close 将会运行并中断 // io.CopyN，从而防止智能体（goroutine）泄漏。 } body.Close() } 当然，我们也不希望在关闭响应主体时阻塞长达 50 毫秒。"
+    },
+    {
+     "en": "Instead, we can drain the body asynchronously in the background and let it race against subsequent requests:",
+     "zh": "相反，我们可以在后台异步排空响应主体，并让它与后续请求进行竞争："
+    }
+   ]
+  },
+  {
+   "en": "func drainAndCloseBody(body io.ReadCloser) { drainDone := make(chan struct{}, 1) go func() { io.CopyN(io.Discard, body, 256<<10) // Only drain up to 256 KB. drainDone <- struct{}{} }() go func() { // Only spend at most 50 ms trying to drain the response body. select { case <-drainDone: // If the drain can finish before a new request is sent, the // connection will be reused; otherwise, a new connection is // created, and the current connection will be put in a pool of // idle connections, potentially being reused for another future // request. case <-time.After(50 * time.Millisecond): // If we reach the 50 ms timeout, body.Close will run and interrupt // the io.CopyN, preventing goroutine leaks. } body.Close() }() } As we can see, draining response bodies safely is surprisingly tricky and cumbersome. Worse, as the practice of draining response bodies spread, some nuances were often lost. This has led to misunderstandings such as attempting to drain response bodies for HTTP/2 connections, when doing so is unnecessary.",
+   "zh": "func drainAndCloseBody(body io.ReadCloser) { drainDone := make(chan struct{}, 1) go func() { io.CopyN(io.Discard, body, 256<<10) // 只排空最多 256 KB。 drainDone <- struct{}{} }() go func() { // 最多只花 50 毫秒尝试排空响应体。 select { case <-drainDone: // 如果排空能在发送新请求之前完成，连接将被复用；否则， // 会创建新连接，而当前连接会被放入空闲连接池中， // 并可能被未来的另一个请求复用。 case <-time.After(50 * time.Millisecond): // 如果到达 50 毫秒超时，body.Close 将会运行并中断 // io.CopyN，从而防止智能体泄漏。 } body.Close() }() } 可以看到，安全地排空响应体竟然如此棘手和繁琐。 更糟糕的是，随着排空响应体的做法传播开来，一些细微之处常常被遗漏。 这导致了一些误解，例如试图为 HTTP/2 连接排空响应体，而这样做其实是不必要的。",
+   "sents": [
+    {
+     "en": "func drainAndCloseBody(body io.ReadCloser) { drainDone := make(chan struct{}, 1) go func() { io.CopyN(io.Discard, body, 256<<10) // Only drain up to 256 KB. drainDone <- struct{}{} }() go func() { // Only spend at most 50 ms trying to drain the response body. select { case <-drainDone: // If the drain can finish before a new request is sent, the // connection will be reused; otherwise, a new connection is // created, and the current connection will be put in a pool of // idle connections, potentially being reused for another future // request. case <-time.After(50 * time.Millisecond): // If we reach the 50 ms timeout, body.Close will run and interrupt // the io.CopyN, preventing goroutine leaks. } body.Close() }() } As we can see, draining response bodies safely is surprisingly tricky and cumbersome.",
+     "zh": "func drainAndCloseBody(body io.ReadCloser) { drainDone := make(chan struct{}, 1) go func() { io.CopyN(io.Discard, body, 256<<10) // 只排空最多 256 KB。 drainDone <- struct{}{} }() go func() { // 最多只花 50 毫秒尝试排空响应体。 select { case <-drainDone: // 如果排空能在发送新请求之前完成，连接将被复用；否则， // 会创建新连接，而当前连接会被放入空闲连接池中， // 并可能被未来的另一个请求复用。 case <-time.After(50 * time.Millisecond): // 如果到达 50 毫秒超时，body.Close 将会运行并中断 // io.CopyN，从而防止智能体泄漏。 } body.Close() }() } 可以看到，安全地排空响应体竟然如此棘手和繁琐。"
+    },
+    {
+     "en": "Worse, as the practice of draining response bodies spread, some nuances were often lost.",
+     "zh": "更糟糕的是，随着排空响应体的做法传播开来，一些细微之处常常被遗漏。"
+    },
+    {
+     "en": "This has led to misunderstandings such as attempting to drain response bodies for HTTP/2 connections, when doing so is unnecessary.",
+     "zh": "这导致了一些误解，例如试图为 HTTP/2 连接排空响应体，而这样做其实是不必要的。"
+    }
+   ]
+  },
+  {
+   "en": "Starting in Go 1.27, net/http.Transport automatically does everything we have implemented in the code above: it will asynchronously drain an unread HTTP/1 response body for up to 50 ms or 256 KB. It also implements additional optimizations; for example, when a response contains the Connection: close header, draining the body is guaranteed to be wasted work, and it therefore skips doing so. Note that this behavior might evolve in future versions of Go, as other possible enhancements become apparent.",
+   "zh": "从 Go 1.27 开始，net/http.Transport 会自动完成我们在上面代码中实现的所有工作：它会异步清空未读取的 HTTP/1 响应体，最多持续 50 毫秒或 256 KB。 它还实现了额外的优化；例如，当响应包含 Connection: close 头时，清空响应体注定是无用功，因此它会跳过这一步。 请注意，随着其他可能的改进变得明显，这一行为在 Go 的未来版本中可能会发生变化。",
+   "sents": [
+    {
+     "en": "Starting in Go 1.27, net/http.Transport automatically does everything we have implemented in the code above: it will asynchronously drain an unread HTTP/1 response body for up to 50 ms or 256 KB.",
+     "zh": "从 Go 1.27 开始，net/http.Transport 会自动完成我们在上面代码中实现的所有工作：它会异步清空未读取的 HTTP/1 响应体，最多持续 50 毫秒或 256 KB。"
+    },
+    {
+     "en": "It also implements additional optimizations; for example, when a response contains the Connection: close header, draining the body is guaranteed to be wasted work, and it therefore skips doing so.",
+     "zh": "它还实现了额外的优化；例如，当响应包含 Connection: close 头时，清空响应体注定是无用功，因此它会跳过这一步。"
+    },
+    {
+     "en": "Note that this behavior might evolve in future versions of Go, as other possible enhancements become apparent.",
+     "zh": "请注意，随着其他可能的改进变得明显，这一行为在 Go 的未来版本中可能会发生变化。"
+    }
+   ]
+  },
+  {
+   "en": "As a general best practice, we now recommend that users simply close their HTTP bodies once they no longer need them, like in our original example:",
+   "zh": "作为一项通用的最佳实践，我们现在建议用户在不再需要 HTTP 响应体时直接将其关闭，就像我们最初的示例中那样：",
+   "sents": null
+  },
+  {
+   "en": "func getStatus(url string) (int, error) { resp, err := http.Get(url) if err != nil { return 0, err } defer resp.Body.Close() return resp.StatusCode, nil } Go is all about simplicity. Let your code stay clean and simple, and let net/http deal with the complexities on your behalf.",
+   "zh": "func getStatus(url string) (int, error) { resp, err := http.Get(url) if err != nil { return 0, err } defer resp.Body.Close() return resp.StatusCode, nil } Go 的核心理念就是简洁。 让你的代码保持干净简单，让 net/http 代你处理那些复杂的事情。",
+   "sents": [
+    {
+     "en": "func getStatus(url string) (int, error) { resp, err := http.Get(url) if err != nil { return 0, err } defer resp.Body.Close() return resp.StatusCode, nil } Go is all about simplicity.",
+     "zh": "func getStatus(url string) (int, error) { resp, err := http.Get(url) if err != nil { return 0, err } defer resp.Body.Close() return resp.StatusCode, nil } Go 的核心理念就是简洁。"
+    },
+    {
+     "en": "Let your code stay clean and simple, and let net/http deal with the complexities on your behalf.",
+     "zh": "让你的代码保持干净简单，让 net/http 代你处理那些复杂的事情。"
+    }
+   ]
+  }
+ ]
+}

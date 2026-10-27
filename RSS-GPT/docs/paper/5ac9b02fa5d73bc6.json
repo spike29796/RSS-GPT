@@ -1,0 +1,846 @@
+{
+ "id": "5ac9b02fa5d73bc6",
+ "source": "hackernews",
+ "link": "https://agentlien.github.io/texture/",
+ "title": "Anatomy of a Texture",
+ "title_zh": "纹理剖析",
+ "published": "Wed, 16 Sep 2026 14:28:28 +0000",
+ "translated_at": "2026-10-26T07:46:07Z",
+ "paragraphs": [
+  {
+   "en": "Last year I had to write code which converted texture data between gaming platforms. Going into it, I seriously underestimated the complexity of texture memory layouts.",
+   "zh": "去年我不得不编写一些在不同游戏平台之间转换纹理数据的代码。 着手做的时候，我严重低估了纹理内存布局的复杂性。",
+   "sents": [
+    {
+     "en": "Last year I had to write code which converted texture data between gaming platforms.",
+     "zh": "去年我不得不编写一些在不同游戏平台之间转换纹理数据的代码。"
+    },
+    {
+     "en": "Going into it, I seriously underestimated the complexity of texture memory layouts.",
+     "zh": "着手做的时候，我严重低估了纹理内存布局的复杂性。"
+    }
+   ]
+  },
+  {
+   "en": "I'm currently working on a team at 505 Games porting a custom PC game engine to consoles. One of the many challenges faced has been around texture conversion. I knew there were a lot of complexities and subtleties to it. I recognized most of them in isolation. But, it wasn't until I had to write working code which handled all these details in tandem that the full complexity really sank in. And so, I thought this would make for an interesting blog post!",
+   "zh": "我目前在 505 Games 的一个团队工作，负责将一个自定义 PC 游戏引擎移植到主机平台。 遇到的诸多挑战之一是纹理转换。 我知道这其中有很多复杂之处和微妙细节。 单独来看，其中大部分我都能认出来。 但是，直到我不得不编写能同时处理所有这些细节的可运行代码时，我才真正体会到其全部的复杂性。 于是，我觉得这会是一篇有趣的博客文章！",
+   "sents": [
+    {
+     "en": "I'm currently working on a team at 505 Games porting a custom PC game engine to consoles.",
+     "zh": "我目前在 505 Games 的一个团队工作，负责将一个自定义 PC 游戏引擎移植到主机平台。"
+    },
+    {
+     "en": "One of the many challenges faced has been around texture conversion.",
+     "zh": "遇到的诸多挑战之一是纹理转换。"
+    },
+    {
+     "en": "I knew there were a lot of complexities and subtleties to it.",
+     "zh": "我知道这其中有很多复杂之处和微妙细节。"
+    },
+    {
+     "en": "I recognized most of them in isolation.",
+     "zh": "单独来看，其中大部分我都能认出来。"
+    },
+    {
+     "en": "But, it wasn't until I had to write working code which handled all these details in tandem that the full complexity really sank in.",
+     "zh": "但是，直到我不得不编写能同时处理所有这些细节的可运行代码时，我才真正体会到其全部的复杂性。"
+    },
+    {
+     "en": "And so, I thought this would make for an interesting blog post!",
+     "zh": "于是，我觉得这会是一篇有趣的博客文章！"
+    }
+   ]
+  },
+  {
+   "en": "This blog post will explain the complexity of texture memory layout, along with why it is necessary. This will be done through the lens of someone trying to debug the calculation of memory addresses for each part of a console texture. Due to the subject matter, this post will have to get a little bit more technical.",
+   "zh": "这篇博文将解释纹理内存布局的复杂性，以及为什么需要这样做。 我们将从一个试图调试控制台纹理各部分内存地址计算过程的人的视角来完成这件事。 由于主题所限，这篇文章会稍微偏技术性一些。",
+   "sents": [
+    {
+     "en": "This blog post will explain the complexity of texture memory layout, along with why it is necessary.",
+     "zh": "这篇博文将解释纹理内存布局的复杂性，以及为什么需要这样做。"
+    },
+    {
+     "en": "This will be done through the lens of someone trying to debug the calculation of memory addresses for each part of a console texture.",
+     "zh": "我们将从一个试图调试控制台纹理各部分内存地址计算过程的人的视角来完成这件事。"
+    },
+    {
+     "en": "Due to the subject matter, this post will have to get a little bit more technical.",
+     "zh": "由于主题所限，这篇文章会稍微偏技术性一些。"
+    }
+   ]
+  },
+  {
+   "en": "I will assume an understanding of programming fundamentals, memory layouts, as well as familiarity with basic video game technology and digital imagery.",
+   "zh": "我将假定读者已了解编程基础知识和内存布局，并熟悉基本的电子游戏技术和数字图像。",
+   "sents": null
+  },
+  {
+   "en": "Throughout this article we'll use a 1024x1024 RGBA texture using BC7 as an example. For illustration purposes, let's use a simple wood texture.",
+   "zh": "在本文中，我们将始终以一张 1024x1024 的 RGBA 纹理（使用 BC7 格式）为例。 为了便于说明，我们使用一张简单的木纹纹理。",
+   "sents": [
+    {
+     "en": "Throughout this article we'll use a 1024x1024 RGBA texture using BC7 as an example.",
+     "zh": "在本文中，我们将始终以一张 1024x1024 的 RGBA 纹理（使用 BC7 格式）为例。"
+    },
+    {
+     "en": "For illustration purposes, let's use a simple wood texture.",
+     "zh": "为了便于说明，我们使用一张简单的木纹纹理。"
+    }
+   ]
+  },
+  {
+   "en": "Converting this texture between platforms requires us to keep track of a lot of details. For the purpose of this article I will explain the following: block compression, texel ordering, mips, and texture tiles. There are other details such as pitch, depth, and texture array index. These mainly require simple offsets which are slightly annoying but do not add any interesting theory, so I will ignore them.",
+   "zh": "在不同平台之间转换这种纹理需要我们记录大量的细节。 在本文中，我将解释以下内容：块压缩、纹素排序、mip 以及纹理瓦片。 还有其他一些细节，例如间距（pitch）、深度（depth）和纹理数组索引。 这些主要只涉及一些简单的偏移量，虽然略显麻烦，但并不包含任何有趣的理论，因此我会忽略它们。",
+   "sents": [
+    {
+     "en": "Converting this texture between platforms requires us to keep track of a lot of details.",
+     "zh": "在不同平台之间转换这种纹理需要我们记录大量的细节。"
+    },
+    {
+     "en": "For the purpose of this article I will explain the following: block compression, texel ordering, mips, and texture tiles.",
+     "zh": "在本文中，我将解释以下内容：块压缩、纹素排序、mip 以及纹理瓦片。"
+    },
+    {
+     "en": "There are other details such as pitch, depth, and texture array index.",
+     "zh": "还有其他一些细节，例如间距（pitch）、深度（depth）和纹理数组索引。"
+    },
+    {
+     "en": "These mainly require simple offsets which are slightly annoying but do not add any interesting theory, so I will ignore them.",
+     "zh": "这些主要只涉及一些简单的偏移量，虽然略显麻烦，但并不包含任何有趣的理论，因此我会忽略它们。"
+    }
+   ]
+  },
+  {
+   "en": "Here is what that image would look like if we ignore all of these complications and interpret the result as a simple stream of color values:",
+   "zh": "如果我们忽略所有这些复杂因素，把结果简单地解释为一串颜色值，那么该图像将如下所示：",
+   "sents": null
+  },
+  {
+   "en": "Figure 2. 1024x1024 chaotic rainbow noise",
+   "zh": "图 2. 1024x1024 混沌彩虹噪声",
+   "sents": null
+  },
+  {
+   "en": "Platform specifics If this post is about texture formats, why am I talking about memory locations? All the details we will go through have some very important similarities and distinctions between platforms. In particular, textures are decomposed into the same hierarchy of building blocks across platforms. However, at every level of the hierarchy the order of these elements in memory may differ between platforms. This means that given a memory area to hold the texture, the act of converting a texture between platforms can be seen as a problem of calculating, for each of these elements, its expected memory address after conversion.",
+   "zh": "平台细节 如果这篇文章讲的是纹理格式，为什么我要谈内存位置呢？ 我们将要讨论的所有细节，在不同平台之间既有非常重要的相似之处，也有非常重要的区别。 特别是，在各平台上，纹理都被分解为相同的构建模块层级结构。 然而，在该层级的每一层上，这些元素在内存中的排列顺序在不同平台之间可能有所不同。 这意味着，给定一块用于存放纹理的内存区域，在平台之间转换纹理这一行为，可以看作是为每个这些元素计算其在转换后预期内存地址的问题。",
+   "sents": [
+    {
+     "en": "Platform specifics If this post is about texture formats, why am I talking about memory locations?",
+     "zh": "平台细节 如果这篇文章讲的是纹理格式，为什么我要谈内存位置呢？"
+    },
+    {
+     "en": "All the details we will go through have some very important similarities and distinctions between platforms.",
+     "zh": "我们将要讨论的所有细节，在不同平台之间既有非常重要的相似之处，也有非常重要的区别。"
+    },
+    {
+     "en": "In particular, textures are decomposed into the same hierarchy of building blocks across platforms.",
+     "zh": "特别是，在各平台上，纹理都被分解为相同的构建模块层级结构。"
+    },
+    {
+     "en": "However, at every level of the hierarchy the order of these elements in memory may differ between platforms.",
+     "zh": "然而，在该层级的每一层上，这些元素在内存中的排列顺序在不同平台之间可能有所不同。"
+    },
+    {
+     "en": "This means that given a memory area to hold the texture, the act of converting a texture between platforms can be seen as a problem of calculating, for each of these elements, its expected memory address after conversion.",
+     "zh": "这意味着，给定一块用于存放纹理的内存区域，在平台之间转换纹理这一行为，可以看作是为每个这些元素计算其在转换后预期内存地址的问题。"
+    }
+   ]
+  },
+  {
+   "en": "We will primarily discuss most of these components in a platform-agnostic way. Where a distinction is necessary, we will rely on the view taken by DirectX 12.",
+   "zh": "我们将主要以平台无关的方式来讨论这些组件中的大部分。 在需要区分时，我们将采用 DirectX 12 所采取的观点。",
+   "sents": [
+    {
+     "en": "We will primarily discuss most of these components in a platform-agnostic way.",
+     "zh": "我们将主要以平台无关的方式来讨论这些组件中的大部分。"
+    },
+    {
+     "en": "Where a distinction is necessary, we will rely on the view taken by DirectX 12.",
+     "zh": "在需要区分时，我们将采用 DirectX 12 所采取的观点。"
+    }
+   ]
+  },
+  {
+   "en": "Idealized view Given a general understanding of digital images, how might one expect a 2D texture to be represented in memory? Images have a number of color channels, each having a specific bit depth. A common bit depth is 8, meaning one byte per channel. This gives us values in the range [0,255] per color. An image comprises a grid of color samples, typically across two dimensions: width and height. For ordinary images these samples are called pixels. For textures we call them texels. Given this, the naive assumption would be that an RGBA image with 32-bit color depth is just a stream of texels sweeping from left to right, row by row, with each texel represented as four consecutive bytes: one for each channel. While some simple textures really do work this way, this is unfortunately very far from how most textures are represented in modern video games.",
+   "zh": "理想化的观点：在了解数字图像的一般概念之后，人们会如何期望一张 2D 纹理在内存中的表示方式呢？ 图像拥有若干颜色通道，每个通道具有特定的位深。 常见的位深是 8，即每个通道一个字节。 这使每种颜色的取值范围在 [0,255] 之间。 图像由一个颜色采样点网格构成，通常跨越两个维度：宽度和高度。 对于普通图像，这些采样点被称为像素。 对于纹理，我们称之为纹素。 基于此，一种朴素的假设是：具有 32 位色深的 RGBA 图像只是一串纹素，从左到右、逐行扫过，每个纹素表示为四个连续的字节，每个通道一个字节。 虽然某些简单的纹理确实如此，但遗憾的是，这与现代视频游戏中大多数纹理的表示方式相去甚远。",
+   "sents": [
+    {
+     "en": "Idealized view Given a general understanding of digital images, how might one expect a 2D texture to be represented in memory?",
+     "zh": "理想化的观点：在了解数字图像的一般概念之后，人们会如何期望一张 2D 纹理在内存中的表示方式呢？"
+    },
+    {
+     "en": "Images have a number of color channels, each having a specific bit depth.",
+     "zh": "图像拥有若干颜色通道，每个通道具有特定的位深。"
+    },
+    {
+     "en": "A common bit depth is 8, meaning one byte per channel.",
+     "zh": "常见的位深是 8，即每个通道一个字节。"
+    },
+    {
+     "en": "This gives us values in the range [0,255] per color.",
+     "zh": "这使每种颜色的取值范围在 [0,255] 之间。"
+    },
+    {
+     "en": "An image comprises a grid of color samples, typically across two dimensions: width and height.",
+     "zh": "图像由一个颜色采样点网格构成，通常跨越两个维度：宽度和高度。"
+    },
+    {
+     "en": "For ordinary images these samples are called pixels.",
+     "zh": "对于普通图像，这些采样点被称为像素。"
+    },
+    {
+     "en": "For textures we call them texels.",
+     "zh": "对于纹理，我们称之为纹素。"
+    },
+    {
+     "en": "Given this, the naive assumption would be that an RGBA image with 32-bit color depth is just a stream of texels sweeping from left to right, row by row, with each texel represented as four consecutive bytes: one for each channel.",
+     "zh": "基于此，一种朴素的假设是：具有 32 位色深的 RGBA 图像只是一串纹素，从左到右、逐行扫过，每个纹素表示为四个连续的字节，每个通道一个字节。"
+    },
+    {
+     "en": "While some simple textures really do work this way, this is unfortunately very far from how most textures are represented in modern video games.",
+     "zh": "虽然某些简单的纹理确实如此，但遗憾的是，这与现代视频游戏中大多数纹理的表示方式相去甚远。"
+    }
+   ]
+  },
+  {
+   "en": "The reason is performance. There's a number of orthogonal techniques applied, each of which complicate texture representation but improve rendering performance. Most (e.g. texel ordering & texture tiles) exist to improve cache locality. That is, doing our best to store data as close as possible to all other data we expect to need at the same time. Good locality drastically decreases the amount of time wasted waiting for memory transfers - which is one of the most expensive operations in modern computer hardware. While block compression also helps with locality, it primarily improves memory transfer speed by decreasing texture size in memory. Finally, we have mips which drastically reduce rendering cost by downsampling the entire texture in multiple steps ahead of time - allowing us to avoid the many expensive texture samples we'd otherwise need any time we want to average all texels in a surrounding area.",
+   "zh": "原因在于性能。 这里应用了多种相互正交的技术，每一种都让纹理表示变得更复杂，但能提升渲染性能。 其中大多数（例如纹素排序与纹理瓦片）的存在都是为了改善缓存局部性。 也就是说，尽力把数据存储得尽可能靠近我们预期会同时需要的其他数据。 良好的局部性能大幅减少浪费在等待内存传输上的时间——这是现代计算机硬件中最昂贵的操作之一。 块压缩虽然也有助于局部性，但它主要是通过减小纹理在内存中的大小来提升内存传输速度。 最后，我们有多级纹理（mips），它通过提前以多个步骤对整张纹理进行降采样来大幅降低渲染成本——使我们免于在需要对周围区域所有纹素求平均时进行大量昂贵的纹理采样。",
+   "sents": [
+    {
+     "en": "The reason is performance.",
+     "zh": "原因在于性能。"
+    },
+    {
+     "en": "There's a number of orthogonal techniques applied, each of which complicate texture representation but improve rendering performance.",
+     "zh": "这里应用了多种相互正交的技术，每一种都让纹理表示变得更复杂，但能提升渲染性能。"
+    },
+    {
+     "en": "Most (e.g. texel ordering & texture tiles) exist to improve cache locality.",
+     "zh": "其中大多数（例如纹素排序与纹理瓦片）的存在都是为了改善缓存局部性。"
+    },
+    {
+     "en": "That is, doing our best to store data as close as possible to all other data we expect to need at the same time.",
+     "zh": "也就是说，尽力把数据存储得尽可能靠近我们预期会同时需要的其他数据。"
+    },
+    {
+     "en": "Good locality drastically decreases the amount of time wasted waiting for memory transfers - which is one of the most expensive operations in modern computer hardware.",
+     "zh": "良好的局部性能大幅减少浪费在等待内存传输上的时间——这是现代计算机硬件中最昂贵的操作之一。"
+    },
+    {
+     "en": "While block compression also helps with locality, it primarily improves memory transfer speed by decreasing texture size in memory.",
+     "zh": "块压缩虽然也有助于局部性，但它主要是通过减小纹理在内存中的大小来提升内存传输速度。"
+    },
+    {
+     "en": "Finally, we have mips which drastically reduce rendering cost by downsampling the entire texture in multiple steps ahead of time - allowing us to avoid the many expensive texture samples we'd otherwise need any time we want to average all texels in a surrounding area.",
+     "zh": "最后，我们有多级纹理（mips），它通过提前以多个步骤对整张纹理进行降采样来大幅降低渲染成本——使我们免于在需要对周围区域所有纹素求平均时进行大量昂贵的纹理采样。"
+    }
+   ]
+  },
+  {
+   "en": "From the perspective of someone debugging texture loading across platforms, every one of these techniques is another wrinkle to keep track of.",
+   "zh": "从跨平台调试纹理加载的角度来看，这些技术中的每一种都是需要留意的又一个棘手问题。",
+   "sents": null
+  },
+  {
+   "en": "Let us take a look at how an actual texel is represented in a typical modern video game texture. For simplicity, let us assume the original image is RGBA with 8 bits per channel as above. This gives us a total of 32 bits (4 bytes) per texel if uncompressed. However, most modern textures use block compression. Block compression shrinks the memory size of textures to decrease data transfer times.",
+   "zh": "让我们看看在现代典型的视频游戏纹理中，一个实际的纹素是如何表示的。 为简单起见，我们假设原始图像是每个通道 8 位的 RGBA 格式，如上所述。 如果不压缩，这意味着每个纹素总共占用 32 位（4 字节）。 然而，大多数现代纹理都使用块压缩。 块压缩可以缩小纹理的内存占用，以减少数据传输时间。",
+   "sents": [
+    {
+     "en": "Let us take a look at how an actual texel is represented in a typical modern video game texture.",
+     "zh": "让我们看看在现代典型的视频游戏纹理中，一个实际的纹素是如何表示的。"
+    },
+    {
+     "en": "For simplicity, let us assume the original image is RGBA with 8 bits per channel as above.",
+     "zh": "为简单起见，我们假设原始图像是每个通道 8 位的 RGBA 格式，如上所述。"
+    },
+    {
+     "en": "This gives us a total of 32 bits (4 bytes) per texel if uncompressed.",
+     "zh": "如果不压缩，这意味着每个纹素总共占用 32 位（4 字节）。"
+    },
+    {
+     "en": "However, most modern textures use block compression.",
+     "zh": "然而，大多数现代纹理都使用块压缩。"
+    },
+    {
+     "en": "Block compression shrinks the memory size of textures to decrease data transfer times.",
+     "zh": "块压缩可以缩小纹理的内存占用，以减少数据传输时间。"
+    }
+   ]
+  },
+  {
+   "en": "The most common block compression format these days is BC7. This is a very complex format with more quirks than I can explain in this article - I don't even know them all in detail. At its core, BC7 is a lossy compression format leaning on clever assumptions about similarity of adjacent texels. It stores texels in 4x4 blocks. Each block specifies pairs of reference colors called end points. Each texel then gets its color by specifying an index identifying an interpolated value between these end points. A single block is 16 bytes large and describes 16 texels - which amortizes to a single byte per texel; a compression factor of 4x for an RGBA texture with 8-bit channels. Despite this large compression factor it is very hard for the human eye to tell the difference between BC7 compressed textures and uncompressed textures - even in side by side screenshots. This is great news for game developers who need to optimize streaming of large numbers of big textures. Another advantage of compressing texels in blocks is that a lot of effects require sampling multiple adjacent texels. Making nearby texels closer in memory increases cache locality and speeds up memory access.",
+   "zh": "如今最常见的块压缩格式是 BC7。 这是一种非常复杂的格式，其古怪之处之多超出了本文所能解释的范围——我甚至都不完全了解所有细节。 从核心上讲，BC7 是一种有损压缩格式，它依赖于对相邻纹理像素相似性的巧妙假设。 它以 4x4 的块来存储纹理像素。 每个块指定成对的参考颜色，称为端点。 然后每个纹理像素通过指定一个索引来获得其颜色，该索引标识这些端点之间的一个插值。 单个块大小为 16 字节，描述 16 个纹理像素——平均下来每个纹理像素一个字节；对于 8 位通道的 RGBA 纹理，压缩率为 4 倍。 尽管压缩率如此之高，但人眼很难分辨 BC7 压缩纹理与未压缩纹理之间的差别——即使是在并排的截图中。 对于需要优化大量大型纹理流式传输的游戏开发者来说，这是个好消息。 以块为单位压缩纹理像素的另一个优势是，许多特效需要对多个相邻纹理像素进行采样。 让相邻的纹理像素在内存中靠得更近，可以提高缓存局部性并加快内存访问速度。",
+   "sents": [
+    {
+     "en": "The most common block compression format these days is BC7.",
+     "zh": "如今最常见的块压缩格式是 BC7。"
+    },
+    {
+     "en": "This is a very complex format with more quirks than I can explain in this article - I don't even know them all in detail.",
+     "zh": "这是一种非常复杂的格式，其古怪之处之多超出了本文所能解释的范围——我甚至都不完全了解所有细节。"
+    },
+    {
+     "en": "At its core, BC7 is a lossy compression format leaning on clever assumptions about similarity of adjacent texels.",
+     "zh": "从核心上讲，BC7 是一种有损压缩格式，它依赖于对相邻纹理像素相似性的巧妙假设。"
+    },
+    {
+     "en": "It stores texels in 4x4 blocks.",
+     "zh": "它以 4x4 的块来存储纹理像素。"
+    },
+    {
+     "en": "Each block specifies pairs of reference colors called end points.",
+     "zh": "每个块指定成对的参考颜色，称为端点。"
+    },
+    {
+     "en": "Each texel then gets its color by specifying an index identifying an interpolated value between these end points.",
+     "zh": "然后每个纹理像素通过指定一个索引来获得其颜色，该索引标识这些端点之间的一个插值。"
+    },
+    {
+     "en": "A single block is 16 bytes large and describes 16 texels - which amortizes to a single byte per texel; a compression factor of 4x for an RGBA texture with 8-bit channels.",
+     "zh": "单个块大小为 16 字节，描述 16 个纹理像素——平均下来每个纹理像素一个字节；对于 8 位通道的 RGBA 纹理，压缩率为 4 倍。"
+    },
+    {
+     "en": "Despite this large compression factor it is very hard for the human eye to tell the difference between BC7 compressed textures and uncompressed textures - even in side by side screenshots.",
+     "zh": "尽管压缩率如此之高，但人眼很难分辨 BC7 压缩纹理与未压缩纹理之间的差别——即使是在并排的截图中。"
+    },
+    {
+     "en": "This is great news for game developers who need to optimize streaming of large numbers of big textures.",
+     "zh": "对于需要优化大量大型纹理流式传输的游戏开发者来说，这是个好消息。"
+    },
+    {
+     "en": "Another advantage of compressing texels in blocks is that a lot of effects require sampling multiple adjacent texels.",
+     "zh": "以块为单位压缩纹理像素的另一个优势是，许多特效需要对多个相邻纹理像素进行采样。"
+    },
+    {
+     "en": "Making nearby texels closer in memory increases cache locality and speeds up memory access.",
+     "zh": "让相邻的纹理像素在内存中靠得更近，可以提高缓存局部性并加快内存访问速度。"
+    }
+   ]
+  },
+  {
+   "en": "Here you can see what our above texture looks like if we correctly treat our texture as a series of 16 byte chunks each representing a 4x4 BC7 block. We can now see blocks of the correct colors, though out of order.",
+   "zh": "在这里，如果我们正确地把该纹理当作一系列 16 字节的数据块，每个数据块代表一个 4x4 的 BC7 块，就能看到上述纹理所呈现的效果。 现在我们可以看到颜色正确的块了，只是顺序不对。",
+   "sents": [
+    {
+     "en": "Here you can see what our above texture looks like if we correctly treat our texture as a series of 16 byte chunks each representing a 4x4 BC7 block.",
+     "zh": "在这里，如果我们正确地把该纹理当作一系列 16 字节的数据块，每个数据块代表一个 4x4 的 BC7 块，就能看到上述纹理所呈现的效果。"
+    },
+    {
+     "en": "We can now see blocks of the correct colors, though out of order.",
+     "zh": "现在我们可以看到颜色正确的块了，只是顺序不对。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 3. 1024x1024 jumbled mix of texels out of order",
+   "zh": "图 3. 1024x1024 乱序混合的纹素",
+   "sents": null
+  },
+  {
+   "en": "Code which would otherwise read/write a single texel now has to check whether to deal with a texel or block. For non-compressed textures width and height are just an index across each dimension. Compressed textures need to iterate across blocks of 4x4 texels at a time. Compression also affects how to calculate the size of a texture in memory. Memory size depends on resolution, number of channels, channel bit depth, and potential compression mode.",
+   "zh": "原本只需读写单个纹素的代码，现在必须判断要处理的是纹素还是块。 对于非压缩纹理，宽度和高度只是各维度上的索引。 压缩纹理则需要每次按 4x4 纹素的块进行遍历。 压缩还会影响如何计算纹理在内存中的大小。 内存大小取决于分辨率、通道数量、通道位深以及可能的压缩模式。",
+   "sents": [
+    {
+     "en": "Code which would otherwise read/write a single texel now has to check whether to deal with a texel or block.",
+     "zh": "原本只需读写单个纹素的代码，现在必须判断要处理的是纹素还是块。"
+    },
+    {
+     "en": "For non-compressed textures width and height are just an index across each dimension.",
+     "zh": "对于非压缩纹理，宽度和高度只是各维度上的索引。"
+    },
+    {
+     "en": "Compressed textures need to iterate across blocks of 4x4 texels at a time.",
+     "zh": "压缩纹理则需要每次按 4x4 纹素的块进行遍历。"
+    },
+    {
+     "en": "Compression also affects how to calculate the size of a texture in memory.",
+     "zh": "压缩还会影响如何计算纹理在内存中的大小。"
+    },
+    {
+     "en": "Memory size depends on resolution, number of channels, channel bit depth, and potential compression mode.",
+     "zh": "内存大小取决于分辨率、通道数量、通道位深以及可能的压缩模式。"
+    }
+   ]
+  },
+  {
+   "en": "The amount of clever tricks employed by BC7 is bad news for debugging. It makes a memory dump practically inscrutable without tooling. Graphics debuggers contain built-in tools to visualize and analyze textures. Unfortunately, that often doesn't help when the result looks like the above figures. It is also non-trivial to write visually interpretable debug information to a compressed texture. If you write raw values ignoring compression you'll get a mess of meaningless colors.",
+   "zh": "BC7 所采用的大量巧妙技巧对调试来说是坏消息。 这使得内存转储在没有工具的情况下几乎无法解读。 图形调试器内置了用于可视化和分析纹理的工具。 遗憾的是，当结果看起来像上面那些图时，这些工具往往帮不上忙。 向压缩纹理写入视觉上可解读的调试信息也并非易事。 如果忽略压缩而直接写入原始值，你会得到一堆毫无意义的颜色。",
+   "sents": [
+    {
+     "en": "The amount of clever tricks employed by BC7 is bad news for debugging.",
+     "zh": "BC7 所采用的大量巧妙技巧对调试来说是坏消息。"
+    },
+    {
+     "en": "It makes a memory dump practically inscrutable without tooling.",
+     "zh": "这使得内存转储在没有工具的情况下几乎无法解读。"
+    },
+    {
+     "en": "Graphics debuggers contain built-in tools to visualize and analyze textures.",
+     "zh": "图形调试器内置了用于可视化和分析纹理的工具。"
+    },
+    {
+     "en": "Unfortunately, that often doesn't help when the result looks like the above figures.",
+     "zh": "遗憾的是，当结果看起来像上面那些图时，这些工具往往帮不上忙。"
+    },
+    {
+     "en": "It is also non-trivial to write visually interpretable debug information to a compressed texture.",
+     "zh": "向压缩纹理写入视觉上可解读的调试信息也并非易事。"
+    },
+    {
+     "en": "If you write raw values ignoring compression you'll get a mess of meaningless colors.",
+     "zh": "如果忽略压缩而直接写入原始值，你会得到一堆毫无意义的颜色。"
+    }
+   ]
+  },
+  {
+   "en": "What really complicates visual debugging is that any accidental offset which changes your byte alignment renders all data visually incoherent. This is because it affects which parts of the blocks are read as end points and which are interpreted as indices. If you write debug information because you have a problem with your texture address computations it can even be a challenge to find where this information ended up.",
+   "zh": "真正让可视化调试变得复杂的是，任何改变字节对齐的意外偏移都会使所有数据在视觉上变得杂乱无章。 这是因为它会影响块中哪些部分被读取为端点，哪些部分被解释为索引。 如果你因为纹理地址计算出现问题而编写调试信息，甚至要找到这些信息最终落在哪里都可能是个挑战。",
+   "sents": [
+    {
+     "en": "What really complicates visual debugging is that any accidental offset which changes your byte alignment renders all data visually incoherent.",
+     "zh": "真正让可视化调试变得复杂的是，任何改变字节对齐的意外偏移都会使所有数据在视觉上变得杂乱无章。"
+    },
+    {
+     "en": "This is because it affects which parts of the blocks are read as end points and which are interpreted as indices.",
+     "zh": "这是因为它会影响块中哪些部分被读取为端点，哪些部分被解释为索引。"
+    },
+    {
+     "en": "If you write debug information because you have a problem with your texture address computations it can even be a challenge to find where this information ended up.",
+     "zh": "如果你因为纹理地址计算出现问题而编写调试信息，甚至要找到这些信息最终落在哪里都可能是个挑战。"
+    }
+   ]
+  },
+  {
+   "en": "Luckily, I found a few useful tricks for debugging.",
+   "zh": "幸运的是，我找到了一些调试的实用技巧。",
+   "sents": null
+  },
+  {
+   "en": "In most cases, you can simply replace each 16 byte block (128 bits) with 4 separate 32-bit integers of your choice. For instance, this is just enough to store x, y, z coordinates and mip level. That way, you can easily identify the exact memory offset by reading the memory dump of any given texel block and comparing its written values to the actual coordinates.",
+   "zh": "在大多数情况下，你只需将每个 16 字节块（128 位）替换为 4 个由你自行选择的独立 32 位整数即可。 例如，这足以存储 x、y、z 坐标以及 mip 级别。 这样，你就可以通过读取任意给定纹素块的内存转储，并将其写入的值与实际坐标进行比较，轻松确定确切的内存偏移量。",
+   "sents": [
+    {
+     "en": "In most cases, you can simply replace each 16 byte block (128 bits) with 4 separate 32-bit integers of your choice.",
+     "zh": "在大多数情况下，你只需将每个 16 字节块（128 位）替换为 4 个由你自行选择的独立 32 位整数即可。"
+    },
+    {
+     "en": "For instance, this is just enough to store x, y, z coordinates and mip level.",
+     "zh": "例如，这足以存储 x、y、z 坐标以及 mip 级别。"
+    },
+    {
+     "en": "That way, you can easily identify the exact memory offset by reading the memory dump of any given texel block and comparing its written values to the actual coordinates.",
+     "zh": "这样，你就可以通过读取任意给定纹素块的内存转储，并将其写入的值与实际坐标进行比较，轻松确定确切的内存偏移量。"
+    }
+   ]
+  },
+  {
+   "en": "In some cases I needed to write larger chunks of data to specific texture locations matching some debug criteria. In these cases you can write 16 bytes of all zeroes to get a block of 4x4 texels which is technically invalid but guaranteed to render as black. I've been using a series of black blocks as visual markers. Just enough to get a few visible blocks even with alignment issues. Between these markers I write my raw debug data values. This way I can visually identify debug portions in a texture view, find the memory location of the corresponding texel, then use memory dumps to read the actual values between the markers.",
+   "zh": "在某些情况下，我需要将较大的数据块写入符合某些调试条件的特定纹理位置。 在这些情况下，你可以写入 16 个全零字节来获得一个 4x4 纹素块，这在技术上虽然是无效的，但可以保证渲染为黑色。 我一直在使用一系列黑色块作为视觉标记。 即使存在对齐问题，也刚好足以获得几个可见的块。 在这些标记之间，我写入我的原始调试数据值。 这样我就可以在纹理视图中直观地识别出调试部分，找到对应纹素的内存位置，然后使用内存转储读取标记之间的实际值。",
+   "sents": [
+    {
+     "en": "In some cases I needed to write larger chunks of data to specific texture locations matching some debug criteria.",
+     "zh": "在某些情况下，我需要将较大的数据块写入符合某些调试条件的特定纹理位置。"
+    },
+    {
+     "en": "In these cases you can write 16 bytes of all zeroes to get a block of 4x4 texels which is technically invalid but guaranteed to render as black.",
+     "zh": "在这些情况下，你可以写入 16 个全零字节来获得一个 4x4 纹素块，这在技术上虽然是无效的，但可以保证渲染为黑色。"
+    },
+    {
+     "en": "I've been using a series of black blocks as visual markers.",
+     "zh": "我一直在使用一系列黑色块作为视觉标记。"
+    },
+    {
+     "en": "Just enough to get a few visible blocks even with alignment issues.",
+     "zh": "即使存在对齐问题，也刚好足以获得几个可见的块。"
+    },
+    {
+     "en": "Between these markers I write my raw debug data values.",
+     "zh": "在这些标记之间，我写入我的原始调试数据值。"
+    },
+    {
+     "en": "This way I can visually identify debug portions in a texture view, find the memory location of the corresponding texel, then use memory dumps to read the actual values between the markers.",
+     "zh": "这样我就可以在纹理视图中直观地识别出调试部分，找到对应纹素的内存位置，然后使用内存转储读取标记之间的实际值。"
+    }
+   ]
+  },
+  {
+   "en": "It's easy to imagine texture memory as a byte stream sweeping texel by texel, row by row. Unfortunately, such a layout is not ideal. We want to do everything we can to increase locality of neighboring texels. That is, texels which are visually close to each other should also be close in memory. This matters because nearby texels will often be sampled together. To that effect, textures often use different memory layout patterns. Such a pattern is called a swizzle. When iterating over all texels in a texture, the swizzle allows you to transform a texel index to the coordinates of the corresponding texel. The most well-known swizzle is probably the Morton order. This swizzle means the order of texels in memory isn't left to right, row by row, but rather moves in a fractal Z pattern across the texture. Use the slider to see the difference. The left and right view show the same image each multiplied by a linear and z-ordered mask respectively. Meaning that 4x4 texel elements go from black toward their original color as their index increases.",
+   "zh": "我们很容易把纹理内存想象成一个逐纹理元素（texel）、逐行扫过的字节流。 遗憾的是，这样的布局并不理想。 我们要尽一切可能提高相邻纹理元素的局部性。 也就是说，视觉上彼此靠近的纹理元素在内存中也应该彼此靠近。 这一点很重要，因为相邻的纹理元素通常会被一起采样。 为此，纹理通常采用不同的内存布局模式。 这种模式被称为「重排」（swizzle）。 当遍历纹理中的所有纹理元素时，重排可以让你把一个纹理元素索引变换为对应纹理元素的坐标。 最著名的重排大概是莫顿序（Morton order）。 这种重排意味着纹理元素在内存中的顺序不是从左到右逐行排列，而是以分形 Z 形图案在纹理中移动。 拖动滑块来查看区别。 左右视图显示的是同一幅图像，分别乘以线性掩码和 Z 序掩码。 意思是，随着索引增大，4x4 纹理元素块从黑色逐渐恢复到其原始颜色。",
+   "sents": [
+    {
+     "en": "It's easy to imagine texture memory as a byte stream sweeping texel by texel, row by row.",
+     "zh": "我们很容易把纹理内存想象成一个逐纹理元素（texel）、逐行扫过的字节流。"
+    },
+    {
+     "en": "Unfortunately, such a layout is not ideal.",
+     "zh": "遗憾的是，这样的布局并不理想。"
+    },
+    {
+     "en": "We want to do everything we can to increase locality of neighboring texels.",
+     "zh": "我们要尽一切可能提高相邻纹理元素的局部性。"
+    },
+    {
+     "en": "That is, texels which are visually close to each other should also be close in memory.",
+     "zh": "也就是说，视觉上彼此靠近的纹理元素在内存中也应该彼此靠近。"
+    },
+    {
+     "en": "This matters because nearby texels will often be sampled together.",
+     "zh": "这一点很重要，因为相邻的纹理元素通常会被一起采样。"
+    },
+    {
+     "en": "To that effect, textures often use different memory layout patterns.",
+     "zh": "为此，纹理通常采用不同的内存布局模式。"
+    },
+    {
+     "en": "Such a pattern is called a swizzle.",
+     "zh": "这种模式被称为「重排」（swizzle）。"
+    },
+    {
+     "en": "When iterating over all texels in a texture, the swizzle allows you to transform a texel index to the coordinates of the corresponding texel.",
+     "zh": "当遍历纹理中的所有纹理元素时，重排可以让你把一个纹理元素索引变换为对应纹理元素的坐标。"
+    },
+    {
+     "en": "The most well-known swizzle is probably the Morton order.",
+     "zh": "最著名的重排大概是莫顿序（Morton order）。"
+    },
+    {
+     "en": "This swizzle means the order of texels in memory isn't left to right, row by row, but rather moves in a fractal Z pattern across the texture.",
+     "zh": "这种重排意味着纹理元素在内存中的顺序不是从左到右逐行排列，而是以分形 Z 形图案在纹理中移动。"
+    },
+    {
+     "en": "Use the slider to see the difference.",
+     "zh": "拖动滑块来查看区别。"
+    },
+    {
+     "en": "The left and right view show the same image each multiplied by a linear and z-ordered mask respectively.",
+     "zh": "左右视图显示的是同一幅图像，分别乘以线性掩码和 Z 序掩码。"
+    },
+    {
+     "en": "Meaning that 4x4 texel elements go from black toward their original color as their index increases.",
+     "zh": "意思是，随着索引增大，4x4 纹理元素块从黑色逐渐恢复到其原始颜色。"
+    }
+   ]
+  },
+  {
+   "en": "There are other possible orders, and which one is needed depends on the details of your specific texture. This choice may also differ for the same texture across platforms. Meaning you may need to completely re-order the texels when converting a texture from one platform to another. In the general case, your conversion code has to take into consideration both which ordering is used for the source and target platform.",
+   "zh": "还有其他可能的排列顺序，具体需要哪一种取决于你特定纹理的细节。 对于同一纹理，在不同平台上这种选择也可能不同。 也就是说，在把纹理从一个平台转换到另一个平台时，你可能需要完全重新排列纹素。 在一般情况下，你的转换代码必须同时考虑源平台和目标平台所使用的排列顺序。",
+   "sents": [
+    {
+     "en": "There are other possible orders, and which one is needed depends on the details of your specific texture.",
+     "zh": "还有其他可能的排列顺序，具体需要哪一种取决于你特定纹理的细节。"
+    },
+    {
+     "en": "This choice may also differ for the same texture across platforms.",
+     "zh": "对于同一纹理，在不同平台上这种选择也可能不同。"
+    },
+    {
+     "en": "Meaning you may need to completely re-order the texels when converting a texture from one platform to another.",
+     "zh": "也就是说，在把纹理从一个平台转换到另一个平台时，你可能需要完全重新排列纹素。"
+    },
+    {
+     "en": "In the general case, your conversion code has to take into consideration both which ordering is used for the source and target platform.",
+     "zh": "在一般情况下，你的转换代码必须同时考虑源平台和目标平台所使用的排列顺序。"
+    }
+   ]
+  },
+  {
+   "en": "As with block compression, this re-ordering makes debugging more complex than it already is. Correctly aligned texture memory using the wrong swizzle will make your image look like 4x4 puzzle pieces all jumbled up. See Figure 3 above.",
+   "zh": "与块压缩一样，这种重排序让调试比原本就复杂的过程更加复杂。 如果纹理内存对齐正确但使用了错误的重排方式，你的图像会看起来像 4x4 的拼图块被完全打乱了。参见上面的图 3。",
+   "sents": [
+    {
+     "en": "As with block compression, this re-ordering makes debugging more complex than it already is.",
+     "zh": "与块压缩一样，这种重排序让调试比原本就复杂的过程更加复杂。"
+    },
+    {
+     "en": "Correctly aligned texture memory using the wrong swizzle will make your image look like 4x4 puzzle pieces all jumbled up. See Figure 3 above.",
+     "zh": "如果纹理内存对齐正确但使用了错误的重排方式，你的图像会看起来像 4x4 的拼图块被完全打乱了。参见上面的图 3。"
+    }
+   ]
+  },
+  {
+   "en": "All of this is getting quite complicated, but with a bit of grit we can sort it out. Of course, it gets worse.",
+   "zh": "这一切变得相当复杂，但只要下点功夫，我们就能把它理清楚。 当然，情况还会更糟。",
+   "sents": [
+    {
+     "en": "All of this is getting quite complicated, but with a bit of grit we can sort it out.",
+     "zh": "这一切变得相当复杂，但只要下点功夫，我们就能把它理清楚。"
+    },
+    {
+     "en": "Of course, it gets worse.",
+     "zh": "当然，情况还会更糟。"
+    }
+   ]
+  },
+  {
+   "en": "Textures aren't actually single images. Each texture contains a series of increasingly scaled down versions of the same image, called mips. The largest version (mip 0) has the size of the original image. Each consecutive mip is half the width and height of the previous one. The reason for this is that when rendering, we want the resolution of sampled texels to match the resolution of the render target. For a textured surface further from the camera, each pixel will overlap several texels. This means we need to sample a larger area of the texture, which is relatively expensive. Not doing so will cause aliasing artifacts such as shimmering and Moiré patterns. The solution is to create mips ahead of time. When rendering a textured surface the shader can then use the mip where texel size most closely matches the render target pixel size. Real-world renderers use more advanced texture filtering techniques, but they all rely on mips to precompute area sampling.",
+   "zh": "纹理实际上并不是单张图片。 每个纹理都包含一系列逐渐缩小尺寸的同一位图版本，称为 mip。 最大的版本（mip 0）与原始图片的尺寸相同。 相邻的下一个 mip 的宽度和高度都是前一个的一半。 这样做的原因是，在渲染时，我们希望采样纹素的分辨率与渲染目标的分辨率相匹配。 对于距离相机较远的带纹理表面，每个像素会覆盖多个纹素。 这意味着我们需要采样纹理中更大的区域，而这样做的开销相对较大。 如果不这样做，会产生走样伪影，例如闪烁和摩尔纹。 解决方案是提前创建 mip。 在渲染带纹理的表面时，着色器就可以使用纹素尺寸与渲染目标像素尺寸最接近的那个 mip。 现实中的渲染器会使用更高级的纹理过滤技术，但它们都依赖 mip 来预计算区域采样。",
+   "sents": [
+    {
+     "en": "Textures aren't actually single images.",
+     "zh": "纹理实际上并不是单张图片。"
+    },
+    {
+     "en": "Each texture contains a series of increasingly scaled down versions of the same image, called mips.",
+     "zh": "每个纹理都包含一系列逐渐缩小尺寸的同一位图版本，称为 mip。"
+    },
+    {
+     "en": "The largest version (mip 0) has the size of the original image.",
+     "zh": "最大的版本（mip 0）与原始图片的尺寸相同。"
+    },
+    {
+     "en": "Each consecutive mip is half the width and height of the previous one.",
+     "zh": "相邻的下一个 mip 的宽度和高度都是前一个的一半。"
+    },
+    {
+     "en": "The reason for this is that when rendering, we want the resolution of sampled texels to match the resolution of the render target.",
+     "zh": "这样做的原因是，在渲染时，我们希望采样纹素的分辨率与渲染目标的分辨率相匹配。"
+    },
+    {
+     "en": "For a textured surface further from the camera, each pixel will overlap several texels.",
+     "zh": "对于距离相机较远的带纹理表面，每个像素会覆盖多个纹素。"
+    },
+    {
+     "en": "This means we need to sample a larger area of the texture, which is relatively expensive.",
+     "zh": "这意味着我们需要采样纹理中更大的区域，而这样做的开销相对较大。"
+    },
+    {
+     "en": "Not doing so will cause aliasing artifacts such as shimmering and Moiré patterns.",
+     "zh": "如果不这样做，会产生走样伪影，例如闪烁和摩尔纹。"
+    },
+    {
+     "en": "The solution is to create mips ahead of time.",
+     "zh": "解决方案是提前创建 mip。"
+    },
+    {
+     "en": "When rendering a textured surface the shader can then use the mip where texel size most closely matches the render target pixel size.",
+     "zh": "在渲染带纹理的表面时，着色器就可以使用纹素尺寸与渲染目标像素尺寸最接近的那个 mip。"
+    },
+    {
+     "en": "Real-world renderers use more advanced texture filtering techniques, but they all rely on mips to precompute area sampling.",
+     "zh": "现实中的渲染器会使用更高级的纹理过滤技术，但它们都依赖 mip 来预计算区域采样。"
+    }
+   ]
+  },
+  {
+   "en": "Mips are largely laid out in well-defined order one after the other in memory. However, whether they are stored in ascending or descending order varies between platforms. This means you cannot simply iterate over them and increase both source and destination pointer in lockstep. For each mip you need to figure out where in memory it starts for the source and target platform.",
+   "zh": "各级 mip 在内存中基本上是按照明确定义的顺序依次排列的。 然而，它们是按升序还是降序存储则因平台而异。 这意味着你不能简单地遍历它们并同时以相同的步调递增源指针和目标指针。 对于每个 mip，你需要确定它在源平台和目标平台上的内存中的起始位置。",
+   "sents": [
+    {
+     "en": "Mips are largely laid out in well-defined order one after the other in memory.",
+     "zh": "各级 mip 在内存中基本上是按照明确定义的顺序依次排列的。"
+    },
+    {
+     "en": "However, whether they are stored in ascending or descending order varies between platforms.",
+     "zh": "然而，它们是按升序还是降序存储则因平台而异。"
+    },
+    {
+     "en": "This means you cannot simply iterate over them and increase both source and destination pointer in lockstep.",
+     "zh": "这意味着你不能简单地遍历它们并同时以相同的步调递增源指针和目标指针。"
+    },
+    {
+     "en": "For each mip you need to figure out where in memory it starts for the source and target platform.",
+     "zh": "对于每个 mip，你需要确定它在源平台和目标平台上的内存中的起始位置。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 5. Illustration of the 256x256 mip next to all higher mips.",
+   "zh": "图 5. 256x256 的 mip 与所有更高层级 mip 的对比示意图。",
+   "sents": [
+    {
+     "en": "Figure 5.",
+     "zh": "图 5."
+    },
+    {
+     "en": "Illustration of the 256x256 mip next to all higher mips.",
+     "zh": "256x256 的 mip 与所有更高层级 mip 的对比示意图。"
+    }
+   ]
+  },
+  {
+   "en": "The next complication is tiles. Again, we want to optimize cache locality when working on a texel and its surroundings. Another way this is done is by splitting texture memory into tiles. These tiles each hold a square piece of the underlying mip. This layout also allows games to stream only the visible parts of large textures. Within each tile, adjacent texels are block compressed and swizzled as described above. Tiles are laid out linearly in memory from top left to bottom right. A tile is typically 64KiB. This means a 1024x1024 texture mip using BC7 is made up of 16 tiles in a 4x4 grid, with each tile containing a 256x256 texel square. With BC7, each tile contains 4096 blocks of 4x4 texels each, laid out according to whatever swizzle pattern we're using.",
+   "zh": "下一个复杂之处是瓦片。 同样，我们在处理一个纹素及其周围纹素时，希望优化缓存局部性。 另一种实现方式是将纹理内存分割成瓦片。 每个瓦片保存底层 mip 的一个方形区块。 这种布局还允许游戏只流式传输大型纹理中可见的部分。 在每个瓦片内部，相邻的纹素会按照前文所述方式进行块压缩和重排。 瓦片在内存中从左上到右下线性排列。 一个瓦片通常为 64KiB。 这意味着一张使用 BC7 的 1024x1024 纹理 mip 由 16 个瓦片组成，呈 4x4 网格排列，每个瓦片包含一个 256x256 纹素的方块。 使用 BC7 时，每个瓦片包含 4096 个 4x4 纹素的块，按照我们所使用的任意重排模式进行排列。",
+   "sents": [
+    {
+     "en": "The next complication is tiles.",
+     "zh": "下一个复杂之处是瓦片。"
+    },
+    {
+     "en": "Again, we want to optimize cache locality when working on a texel and its surroundings.",
+     "zh": "同样，我们在处理一个纹素及其周围纹素时，希望优化缓存局部性。"
+    },
+    {
+     "en": "Another way this is done is by splitting texture memory into tiles.",
+     "zh": "另一种实现方式是将纹理内存分割成瓦片。"
+    },
+    {
+     "en": "These tiles each hold a square piece of the underlying mip.",
+     "zh": "每个瓦片保存底层 mip 的一个方形区块。"
+    },
+    {
+     "en": "This layout also allows games to stream only the visible parts of large textures.",
+     "zh": "这种布局还允许游戏只流式传输大型纹理中可见的部分。"
+    },
+    {
+     "en": "Within each tile, adjacent texels are block compressed and swizzled as described above.",
+     "zh": "在每个瓦片内部，相邻的纹素会按照前文所述方式进行块压缩和重排。"
+    },
+    {
+     "en": "Tiles are laid out linearly in memory from top left to bottom right.",
+     "zh": "瓦片在内存中从左上到右下线性排列。"
+    },
+    {
+     "en": "A tile is typically 64KiB.",
+     "zh": "一个瓦片通常为 64KiB。"
+    },
+    {
+     "en": "This means a 1024x1024 texture mip using BC7 is made up of 16 tiles in a 4x4 grid, with each tile containing a 256x256 texel square.",
+     "zh": "这意味着一张使用 BC7 的 1024x1024 纹理 mip 由 16 个瓦片组成，呈 4x4 网格排列，每个瓦片包含一个 256x256 纹素的方块。"
+    },
+    {
+     "en": "With BC7, each tile contains 4096 blocks of 4x4 texels each, laid out according to whatever swizzle pattern we're using.",
+     "zh": "使用 BC7 时，每个瓦片包含 4096 个 4x4 纹素的块，按照我们所使用的任意重排模式进行排列。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 6. 1024x1024 texture with each tile masked by a different tint",
+   "zh": "图 6. 1024x1024 贴图，每个图块使用不同的色调进行遮罩",
+   "sents": null
+  },
+  {
+   "en": "Thinking of how to store this in memory, it's easy to consider a hierarchical view as described above. Textures are made of mips. Mips are made of tiles. Tiles are made of blocks or texels. Of course, the smallest mips will be much smaller than a full tile, so giving them a full tile each would be very wasteful. For our example texture we could fit the last 8 mips in a single 64KiB tile! Doing this for every texture the memory savings quickly add up. Hence, most platforms pack all mips smaller than a full tile into as few tiles as possible. This is called the mip tail. In fact, figure 5 shows precisely the 256x256 mip which fills a single tile next to all higher mips, showing that together they fit in a single packed tile.",
+   "zh": "思考如何在内存中存储它，很容易想到采用如上所述的层级视图。 纹理由多个 mip 组成，mip 由多个 tile 组成。 tile 由多个 block 或 texel 组成。 当然，最小的 mip 会远小于一个完整的 tile，因此为每个 mip 分配一个完整的 tile 会非常浪费。 对于我们的示例纹理，最后 8 个 mip 可以放进一个 64KiB 的 tile 中！ 对每个纹理都这样做，节省的内存会迅速累积。 因此，大多数平台会把所有小于一个完整 tile 的 mip 打包进尽可能少的 tile 中。 这称为 mip tail（mip 尾部）。 事实上，图 5 恰好展示了填满单个 tile 的 256x256 mip 以及所有更高的 mip，表明它们合起来可以放进一个打包的 tile 中。",
+   "sents": [
+    {
+     "en": "Thinking of how to store this in memory, it's easy to consider a hierarchical view as described above.",
+     "zh": "思考如何在内存中存储它，很容易想到采用如上所述的层级视图。"
+    },
+    {
+     "en": "Textures are made of mips. Mips are made of tiles.",
+     "zh": "纹理由多个 mip 组成，mip 由多个 tile 组成。"
+    },
+    {
+     "en": "Tiles are made of blocks or texels.",
+     "zh": "tile 由多个 block 或 texel 组成。"
+    },
+    {
+     "en": "Of course, the smallest mips will be much smaller than a full tile, so giving them a full tile each would be very wasteful.",
+     "zh": "当然，最小的 mip 会远小于一个完整的 tile，因此为每个 mip 分配一个完整的 tile 会非常浪费。"
+    },
+    {
+     "en": "For our example texture we could fit the last 8 mips in a single 64KiB tile!",
+     "zh": "对于我们的示例纹理，最后 8 个 mip 可以放进一个 64KiB 的 tile 中！"
+    },
+    {
+     "en": "Doing this for every texture the memory savings quickly add up.",
+     "zh": "对每个纹理都这样做，节省的内存会迅速累积。"
+    },
+    {
+     "en": "Hence, most platforms pack all mips smaller than a full tile into as few tiles as possible.",
+     "zh": "因此，大多数平台会把所有小于一个完整 tile 的 mip 打包进尽可能少的 tile 中。"
+    },
+    {
+     "en": "This is called the mip tail.",
+     "zh": "这称为 mip tail（mip 尾部）。"
+    },
+    {
+     "en": "In fact, figure 5 shows precisely the 256x256 mip which fills a single tile next to all higher mips, showing that together they fit in a single packed tile.",
+     "zh": "事实上，图 5 恰好展示了填满单个 tile 的 256x256 mip 以及所有更高的 mip，表明它们合起来可以放进一个打包的 tile 中。"
+    }
+   ]
+  },
+  {
+   "en": "This means we need to handle both mips spanning multiple tiles and tiles containing multiple packed mips.",
+   "zh": "这意味着我们需要同时处理跨越多个图块的 mip，以及包含多个打包 mip 的图块。",
+   "sents": null
+  },
+  {
+   "en": "While everything above is nearly sufficient to convert a contiguous linear texture to console specific memory layout, there is a final wrinkle. In a modern game engine textures are often streamed tile by tile into a shared area of texture memory (called a heap in DirectX12). Each tile of a texture is mapped to its own memory area within this heap. With different mips getting streamed in and out on demand we may get fragmentation of texture memory. This means different tiles of a texture may not end up in a contiguous area of texture memory. Which in turn means if we are writing data to texture memory we need to create a translation from tile index of a texture to the specific address where this tile is mapped. Then we add an offset within the given tile to get actual memory address. A simpler take would be to base our calculations on the base address for the first texel of our texture plus a global offset. But for non-contiguous textures this would overwrite tiles from other textures and in turn leave some of our own tiles uninitialized. This is similar to an actual bug I caused during this project, and it took me quite some time to realize the faulty assumption!",
+   "zh": "尽管上述内容几乎足以将一块连续的线性纹理转换为控制台特定的内存布局，但还有最后一个棘手的问题。 在现代游戏引擎中，纹理通常按瓦片（tile）逐个流式传输到纹理内存的共享区域中（在 DirectX12 中称为堆 heap）。 纹理的每个瓦片都映射到该堆内属于它自己的内存区域。 由于不同的 mip 会按需流入和流出，我们可能会遇到纹理内存的碎片化。 这意味着同一纹理的不同瓦片最终可能不会位于连续的纹理内存区域中。 这又意味着，如果我们向纹理内存写入数据，就需要建立一个从纹理瓦片索引到该瓦片所映射的具体地址的转换。 然后再加上给定瓦片内的偏移量，即可得到实际的内存地址。 一种更简单的做法是基于纹理第一个纹素的基地址加上一个全局偏移量来进行计算。 但对于非连续的纹理来说，这会覆盖其他纹理的瓦片，同时也会让我们自己的一部分瓦片处于未初始化的状态。 这类似于我在这个项目中实际造成过的一个 bug，我花了相当长的时间才意识到那个错误的假设！",
+   "sents": [
+    {
+     "en": "While everything above is nearly sufficient to convert a contiguous linear texture to console specific memory layout, there is a final wrinkle.",
+     "zh": "尽管上述内容几乎足以将一块连续的线性纹理转换为控制台特定的内存布局，但还有最后一个棘手的问题。"
+    },
+    {
+     "en": "In a modern game engine textures are often streamed tile by tile into a shared area of texture memory (called a heap in DirectX12).",
+     "zh": "在现代游戏引擎中，纹理通常按瓦片（tile）逐个流式传输到纹理内存的共享区域中（在 DirectX12 中称为堆 heap）。"
+    },
+    {
+     "en": "Each tile of a texture is mapped to its own memory area within this heap.",
+     "zh": "纹理的每个瓦片都映射到该堆内属于它自己的内存区域。"
+    },
+    {
+     "en": "With different mips getting streamed in and out on demand we may get fragmentation of texture memory.",
+     "zh": "由于不同的 mip 会按需流入和流出，我们可能会遇到纹理内存的碎片化。"
+    },
+    {
+     "en": "This means different tiles of a texture may not end up in a contiguous area of texture memory.",
+     "zh": "这意味着同一纹理的不同瓦片最终可能不会位于连续的纹理内存区域中。"
+    },
+    {
+     "en": "Which in turn means if we are writing data to texture memory we need to create a translation from tile index of a texture to the specific address where this tile is mapped.",
+     "zh": "这又意味着，如果我们向纹理内存写入数据，就需要建立一个从纹理瓦片索引到该瓦片所映射的具体地址的转换。"
+    },
+    {
+     "en": "Then we add an offset within the given tile to get actual memory address.",
+     "zh": "然后再加上给定瓦片内的偏移量，即可得到实际的内存地址。"
+    },
+    {
+     "en": "A simpler take would be to base our calculations on the base address for the first texel of our texture plus a global offset.",
+     "zh": "一种更简单的做法是基于纹理第一个纹素的基地址加上一个全局偏移量来进行计算。"
+    },
+    {
+     "en": "But for non-contiguous textures this would overwrite tiles from other textures and in turn leave some of our own tiles uninitialized.",
+     "zh": "但对于非连续的纹理来说，这会覆盖其他纹理的瓦片，同时也会让我们自己的一部分瓦片处于未初始化的状态。"
+    },
+    {
+     "en": "This is similar to an actual bug I caused during this project, and it took me quite some time to realize the faulty assumption!",
+     "zh": "这类似于我在这个项目中实际造成过的一个 bug，我花了相当长的时间才意识到那个错误的假设！"
+    }
+   ]
+  },
+  {
+   "en": "Summary Combining all of these gives you a rough view of how a texture is laid out in memory and how it may differ between platforms. Putting it all together in my conversion code took surprisingly much work. Along the way I kept bumping into special cases and specific textures which broke implicit assumptions I'd made. Hopefully, you can now share my appreciation for this aspect of the complexity which goes into making your games run just a little bit faster.",
+   "zh": "总结：把以上所有内容结合起来，你就能大致了解纹理在内存中的布局方式，以及它在不同平台上可能存在的差异。 在我的转换代码中把所有这些整合起来，工作量之大出乎意料。 在这个过程中，我不断遇到各种特殊情况以及特定的纹理，它们打破了我此前做出的种种隐含假设。 希望现在你也能和我一样，体会到让游戏运行得稍微快一点所需应对的这一复杂层面。",
+   "sents": [
+    {
+     "en": "Summary Combining all of these gives you a rough view of how a texture is laid out in memory and how it may differ between platforms.",
+     "zh": "总结：把以上所有内容结合起来，你就能大致了解纹理在内存中的布局方式，以及它在不同平台上可能存在的差异。"
+    },
+    {
+     "en": "Putting it all together in my conversion code took surprisingly much work.",
+     "zh": "在我的转换代码中把所有这些整合起来，工作量之大出乎意料。"
+    },
+    {
+     "en": "Along the way I kept bumping into special cases and specific textures which broke implicit assumptions I'd made.",
+     "zh": "在这个过程中，我不断遇到各种特殊情况以及特定的纹理，它们打破了我此前做出的种种隐含假设。"
+    },
+    {
+     "en": "Hopefully, you can now share my appreciation for this aspect of the complexity which goes into making your games run just a little bit faster.",
+     "zh": "希望现在你也能和我一样，体会到让游戏运行得稍微快一点所需应对的这一复杂层面。"
+    }
+   ]
+  },
+  {
+   "en": "Hello, My name is Daniel \"Agentlien\" Kvick and I'm a Graphics Programmer with a passion for games. I currently work as a Senior Software Engineer at 505 Games.",
+   "zh": "你好，我叫 Daniel \"Agentlien\" Kvick，是一名对游戏充满热情的图形程序员。 我目前在 505 Games 担任高级软件工程师。",
+   "sents": [
+    {
+     "en": "Hello, My name is Daniel \"Agentlien\" Kvick and I'm a Graphics Programmer with a passion for games.",
+     "zh": "你好，我叫 Daniel \"Agentlien\" Kvick，是一名对游戏充满热情的图形程序员。"
+    },
+    {
+     "en": "I currently work as a Senior Software Engineer at 505 Games.",
+     "zh": "我目前在 505 Games 担任高级软件工程师。"
+    }
+   ]
+  },
+  {
+   "en": "Here you'll find a selection of things I have worked on.",
+   "zh": "在这里你可以找到我做过的一些作品精选。",
+   "sents": null
+  }
+ ]
+}

@@ -1,0 +1,2660 @@
+{
+ "id": "2a70d59635a98d40",
+ "source": "hackernews",
+ "link": "https://rohanbansal.com/qorl",
+ "title": "Training a 4B model to produce 81% faster query plans than Postgres",
+ "title_zh": "Qorl 4B 模型训练以加速 Postgres 查询计划生成",
+ "published": "Wed, 16 Sep 2026 18:50:00 +0000",
+ "translated_at": "2026-10-26T07:32:35Z",
+ "paragraphs": [
+  {
+   "en": "...or how to make Qwen learn query optimization via agentic reinforcement learning",
+   "zh": "……或者如何通过智能体强化学习让 Qwen 学会查询优化",
+   "sents": null
+  },
+  {
+   "en": "Four RL rollouts commence for a single query. Qwen produces a candidate strategy per rollout and sends it off to Postgres for measurement against its own default plan. Scalar rewards are assigned to each rollout, which flow backwards to update Qwen's weights.",
+   "zh": "四个针对单个查询的强化学习 rollout 开始进行。 Qwen 在每次 rollout 中生成一个候选策略，并将其发送到 Postgres，与其自身的默认计划进行比较测量。 每个 rollout 被赋予标量奖励，奖励反向流动以更新 Qwen 的权重。",
+   "sents": [
+    {
+     "en": "Four RL rollouts commence for a single query.",
+     "zh": "四个针对单个查询的强化学习 rollout 开始进行。"
+    },
+    {
+     "en": "Qwen produces a candidate strategy per rollout and sends it off to Postgres for measurement against its own default plan.",
+     "zh": "Qwen 在每次 rollout 中生成一个候选策略，并将其发送到 Postgres，与其自身的默认计划进行比较测量。"
+    },
+    {
+     "en": "Scalar rewards are assigned to each rollout, which flow backwards to update Qwen's weights.",
+     "zh": "每个 rollout 被赋予标量奖励，奖励反向流动以更新 Qwen 的权重。"
+    }
+   ]
+  },
+  {
+   "en": "Leis et al. asked this exact question in 2015. Then, they asked it again 10 years later .",
+   "zh": "Leis 等人在 2015 年提出了完全相同的问题。 然后，他们在 10 年后再次提出了这个问题。",
+   "sents": [
+    {
+     "en": "Leis et al. asked this exact question in 2015.",
+     "zh": "Leis 等人在 2015 年提出了完全相同的问题。"
+    },
+    {
+     "en": "Then, they asked it again 10 years later .",
+     "zh": "然后，他们在 10 年后再次提出了这个问题。"
+    }
+   ]
+  },
+  {
+   "en": "Despite an enormous body of research spanning a decade since their original exploration, they found that query optimizers continue to leave much to be desired.",
+   "zh": "尽管自最初探索以来已有长达十年的大量研究，他们发现查询优化器仍有许多不足之处。",
+   "sents": null
+  },
+  {
+   "en": "I was surprised when I first learned about this. A Postgres database should know everything about the stuff that lives in its tables, no? How hard can it be?",
+   "zh": "当我第一次了解到这件事时，我感到很惊讶。 一个 Postgres 数据库应该对存储在它表中的所有内容了如指掌，不是吗？这能有多难呢？",
+   "sents": [
+    {
+     "en": "I was surprised when I first learned about this.",
+     "zh": "当我第一次了解到这件事时，我感到很惊讶。"
+    },
+    {
+     "en": "A Postgres database should know everything about the stuff that lives in its tables, no? How hard can it be?",
+     "zh": "一个 Postgres 数据库应该对存储在它表中的所有内容了如指掌，不是吗？这能有多难呢？"
+    }
+   ]
+  },
+  {
+   "en": "As it turns out: enormously hard. In fact, one particular task a query optimizer needs to do, join ordering, is known to be NP-hard .",
+   "zh": "结果表明：极其困难。 事实上，查询优化器需要完成的一项特定任务——连接顺序选择，已被证明是 NP 难问题。",
+   "sents": [
+    {
+     "en": "As it turns out: enormously hard.",
+     "zh": "结果表明：极其困难。"
+    },
+    {
+     "en": "In fact, one particular task a query optimizer needs to do, join ordering, is known to be NP-hard .",
+     "zh": "事实上，查询优化器需要完成的一项特定任务——连接顺序选择，已被证明是 NP 难问题。"
+    }
+   ]
+  },
+  {
+   "en": "So query optimizers are hard. What’s not as hard is verifying whether a query plan an optimizer picks is good or not. Put simply, a good query optimizer produces plans that run fast, and a bad one produces slow plans. Language models are particularly good at learning how to do tasks with easily verifiable outputs. Because there’s a single axis to optimize for—execution time of a query—the problem beautifully reduces to reinforcing the behaviors that guide a model to produce faster query plans.",
+   "zh": "所以说，查询优化器很难做。 没那么难的是验证优化器选出的查询计划是好还是不好。 简单来说，好的查询优化器生成的计划运行速度快，差的查询优化器生成的计划运行速度慢。 语言模型特别擅长学习如何完成那些输出易于验证的任务。 因为只有一个可以优化的维度——查询的执行时间——这个问题就完美地简化为强化那些引导模型生成更快查询计划的行为。",
+   "sents": [
+    {
+     "en": "So query optimizers are hard.",
+     "zh": "所以说，查询优化器很难做。"
+    },
+    {
+     "en": "What’s not as hard is verifying whether a query plan an optimizer picks is good or not.",
+     "zh": "没那么难的是验证优化器选出的查询计划是好还是不好。"
+    },
+    {
+     "en": "Put simply, a good query optimizer produces plans that run fast, and a bad one produces slow plans.",
+     "zh": "简单来说，好的查询优化器生成的计划运行速度快，差的查询优化器生成的计划运行速度慢。"
+    },
+    {
+     "en": "Language models are particularly good at learning how to do tasks with easily verifiable outputs.",
+     "zh": "语言模型特别擅长学习如何完成那些输出易于验证的任务。"
+    },
+    {
+     "en": "Because there’s a single axis to optimize for—execution time of a query—the problem beautifully reduces to reinforcing the behaviors that guide a model to produce faster query plans.",
+     "zh": "因为只有一个可以优化的维度——查询的执行时间——这个问题就完美地简化为强化那些引导模型生成更快查询计划的行为。"
+    }
+   ]
+  },
+  {
+   "en": "What follows is a breakdown of an experiment I ran to explore the question: can a small, open-weights model be post-trained via supervised fine-tuning (SFT) and agentic reinforcement learning (RL) to produce Postgres query plans that beat Postgres’s default plans?",
+   "zh": "以下是我在探索这个问题时所做实验的详细拆解：能否通过监督微调（SFT）和智能体强化学习（RL）对一个小的开放权重模型进行后训练，使其生成的 Postgres 查询计划优于 Postgres 的默认计划？",
+   "sents": null
+  },
+  {
+   "en": "The answer to our question is a resounding yes. Highlights include:",
+   "zh": "我们问题的答案是响亮的“是”。亮点包括：",
+   "sents": null
+  },
+  {
+   "en": "Consider the following slice of the IMDb dataset :",
+   "zh": "请考虑以下 IMDb 数据集的切片：",
+   "sents": null
+  },
+  {
+   "en": "-- An IMDb title (movie, series, episode, etc.) [~1M rows] title ( id integer PRIMARY KEY , title text , production_year integer , kind_id integer -- FK -> kind_type ) -- Movie <> company junction table [~2M rows] movie_companies ( id integer PRIMARY KEY , movie_id integer , -- FK -> title.id company_id integer , -- FK -> company_name.id company_type_id integer , -- FK -> company_type.id note text ) -- A company's name, origin, etc. [~100k rows] company_name ( id integer PRIMARY KEY , name text , country_code text -- '[us]', '[jp]', ... ) -- Lookup table of company roles for a title [4 rows] company_type ( id integer PRIMARY KEY , kind text -- 'production companies', 'distributors', ... ) -- Lookup table for what a title _is_ [7 rows] kind_type ( id integer PRIMARY KEY , kind text -- 'movie', 'tv series', 'episode', ... ) Let’s say I’m trying to answer the question: “Which Japanese companies put out the most titles in the 2000s?” We might write the following query:",
+   "zh": "-- 一个 IMDb 条目（电影、剧集、单集等） [约100万行] title ( id integer PRIMARY KEY , title text , production_year integer , kind_id integer -- 外键 -> kind_type ) -- 电影 <> 公司的联结表 [约200万行] movie_companies ( id integer PRIMARY KEY , movie_id integer , -- 外键 -> title.id company_id integer , -- 外键 -> company_name.id company_type_id integer , -- 外键 -> company_type.id note text ) -- 公司的名称、来源等信息 [约10万行] company_name ( id integer PRIMARY KEY , name text , country_code text -- '[us]'、'[jp]' 等 ) -- 某条目所涉公司角色的查找表 [4行] company_type ( id integer PRIMARY KEY , kind text -- 'production companies'（制作公司）、'distributors'（发行公司） 等 ) -- 某条目“是什么”的查找表 [7行] kind_type ( id integer PRIMARY KEY , kind text -- 'movie'（电影）、'tv series'（电视剧）、'episode'（单集） 等 ) 假设我想回答这样一个问题：「在2000年代，哪些日本公司发行了最多的条目？」我们可能会写出如下查询：",
+   "sents": [
+    {
+     "en": "-- An IMDb title (movie, series, episode, etc.) [~1M rows] title ( id integer PRIMARY KEY , title text , production_year integer , kind_id integer -- FK -> kind_type ) -- Movie <> company junction table [~2M rows] movie_companies ( id integer PRIMARY KEY , movie_id integer , -- FK -> title.id company_id integer , -- FK -> company_name.id company_type_id integer , -- FK -> company_type.id note text ) -- A company's name, origin, etc.",
+     "zh": "-- 一个 IMDb 条目（电影、剧集、单集等） [约100万行] title ( id integer PRIMARY KEY , title text , production_year integer , kind_id integer -- 外键 -> kind_type ) -- 电影 <> 公司的联结表 [约200万行] movie_companies ( id integer PRIMARY KEY , movie_id integer , -- 外键 -> title.id company_id integer , -- 外键 -> company_name.id company_type_id integer , -- 外键 -> company_type.id note text ) -- 公司的名称、来源等信息"
+    },
+    {
+     "en": "[~100k rows] company_name ( id integer PRIMARY KEY , name text , country_code text -- '[us]', '[jp]', ... ) -- Lookup table of company roles for a title [4 rows] company_type ( id integer PRIMARY KEY , kind text -- 'production companies', 'distributors', ... ) -- Lookup table for what a title _is_ [7 rows] kind_type ( id integer PRIMARY KEY , kind text -- 'movie', 'tv series', 'episode', ... ) Let’s say I’m trying to answer the question: “Which Japanese companies put out the most titles in the 2000s?” We might write the following query:",
+     "zh": "[约10万行] company_name ( id integer PRIMARY KEY , name text , country_code text -- '[us]'、'[jp]' 等 ) -- 某条目所涉公司角色的查找表 [4行] company_type ( id integer PRIMARY KEY , kind text -- 'production companies'（制作公司）、'distributors'（发行公司） 等 ) -- 某条目“是什么”的查找表 [7行] kind_type ( id integer PRIMARY KEY , kind text -- 'movie'（电影）、'tv series'（电视剧）、'episode'（单集） 等 ) 假设我想回答这样一个问题：「在2000年代，哪些日本公司发行了最多的条目？」我们可能会写出如下查询："
+    }
+   ]
+  },
+  {
+   "en": "SELECT cn . name , COUNT ( * ) AS titles FROM title AS t, movie_companies AS mc, company_name AS cn WHERE t . id = mc . movie_id AND mc . company_id = cn . id AND cn . country_code = ' [jp] ' AND t . production_year BETWEEN 2000 AND 2009 GROUP BY cn . name ORDER BY titles DESC LIMIT 10 ; Running this query outputs 10 Japanese companies with the number of titles they were associated with between 2000 and 2009, sorted from highest to lowest.",
+   "zh": "SELECT cn . name , COUNT ( * ) AS titles FROM title AS t, movie_companies AS mc, company_name AS cn WHERE t . id = mc . movie_id AND mc . company_id = cn . id AND cn . country_code = ' [jp] ' AND t . production_year BETWEEN 2000 AND 2009 GROUP BY cn . name ORDER BY titles DESC LIMIT 10 ; 运行此查询将输出10家日本公司及其在2000年至2009年间关联的作品数量，按从高到低排序。",
+   "sents": null
+  },
+  {
+   "en": "The path Postgres took to get this data for us is not a foregone conclusion, and it has everything to do with what we call selective predicates (i.e. the filtering conditions in a WHERE clause).",
+   "zh": "Postgres 为我们获取这些数据的路径并非注定如此，而这与我们所说的选择性谓词（即 WHERE 子句中的过滤条件）息息相关。",
+   "sents": null
+  },
+  {
+   "en": "To illustrate this, let’s imagine our same query without the Japanese company filter or the date range filter:",
+   "zh": "为了说明这一点，让我们想象同样的查询，但不带日本公司过滤条件或日期范围过滤条件：",
+   "sents": null
+  },
+  {
+   "en": "SELECT cn . name , COUNT ( * ) AS titles FROM title AS t, movie_companies AS mc, company_name AS cn WHERE t . id = mc . movie_id AND mc . company_id = cn . id GROUP BY cn . name ORDER BY titles DESC LIMIT 10 ; mc can only join with cn via mc.company_id = cn.id , and t can only join with mc via t.id = mc.movie_id .",
+   "zh": "SELECT cn . name , COUNT ( * ) AS titles FROM title AS t, movie_companies AS mc, company_name AS cn WHERE t . id = mc . movie_id AND mc . company_id = cn . id GROUP BY cn . name ORDER BY titles DESC LIMIT 10 ; mc 只能通过 mc.company_id = cn.id 与 cn 进行连接，t 只能通过 t.id = mc.movie_id 与 mc 进行连接。",
+   "sents": null
+  },
+  {
+   "en": "These constraints produce two There are technically eight join trees if we take commutativity into account. In this case, we don’t because it doesn’t affect the size of the relations resulting from the joins. valid join trees:",
+   "zh": "这些约束产生了两种有效的连接树。（如果考虑交换性，技术上其实有八种连接树。） 在本例中，我们不考虑它，因为它不影响连接所得关系的大小。有效的连接树：",
+   "sents": [
+    {
+     "en": "These constraints produce two There are technically eight join trees if we take commutativity into account.",
+     "zh": "这些约束产生了两种有效的连接树。（如果考虑交换性，技术上其实有八种连接树。）"
+    },
+    {
+     "en": "In this case, we don’t because it doesn’t affect the size of the relations resulting from the joins. valid join trees:",
+     "zh": "在本例中，我们不考虑它，因为它不影响连接所得关系的大小。有效的连接树："
+    }
+   ]
+  },
+  {
+   "en": "The cardinality of a table or query result is the number of rows it contains. Assume the relevant tables have the following cardinalities:",
+   "zh": "表或查询结果的基数是指它所包含的行数。 假设相关表的基数如下：",
+   "sents": [
+    {
+     "en": "The cardinality of a table or query result is the number of rows it contains.",
+     "zh": "表或查询结果的基数是指它所包含的行数。"
+    },
+    {
+     "en": "Assume the relevant tables have the following cardinalities:",
+     "zh": "假设相关表的基数如下："
+    }
+   ]
+  },
+  {
+   "en": "Taking into account our joins, we get the following cardinalities:",
+   "zh": "考虑到我们的连接（joins），我们得到以下基数：",
+   "sents": null
+  },
+  {
+   "en": "Regardless of the order in which these three tables are joined, the same 2m rows are always passed into the second join.",
+   "zh": "无论这三张表以何种顺序进行连接，始终有同样的 200 万行数据被传入第二个连接。",
+   "sents": null
+  },
+  {
+   "en": "Now let’s add back our selective predicates:",
+   "zh": "现在让我们把选择性谓词加回来：",
+   "sents": null
+  },
+  {
+   "en": "The first join ordering filters the 2m movie_companies entries down to the 5% slice of companies that are Japanese. Assuming uniform distribution (we’ll discuss later why we assume this), this join results in approximately 100k rows. Joining the result with the filtered title table keeps only the 20% of those rows from the 2000s.",
+   "zh": "第一个连接顺序将 200 万条 movie_companies 记录过滤为其中 5% 的日本公司。 假设数据均匀分布（我们稍后会讨论为什么要做这个假设），这次连接的结果约为 10 万行。 将该结果与过滤后的 title 表连接后，只保留其中来自 2000 年代的 20% 的行。",
+   "sents": [
+    {
+     "en": "The first join ordering filters the 2m movie_companies entries down to the 5% slice of companies that are Japanese.",
+     "zh": "第一个连接顺序将 200 万条 movie_companies 记录过滤为其中 5% 的日本公司。"
+    },
+    {
+     "en": "Assuming uniform distribution (we’ll discuss later why we assume this), this join results in approximately 100k rows.",
+     "zh": "假设数据均匀分布（我们稍后会讨论为什么要做这个假设），这次连接的结果约为 10 万行。"
+    },
+    {
+     "en": "Joining the result with the filtered title table keeps only the 20% of those rows from the 2000s.",
+     "zh": "将该结果与过滤后的 title 表连接后，只保留其中来自 2000 年代的 20% 的行。"
+    }
+   ]
+  },
+  {
+   "en": "The second join ordering filters the 2m movie_companies entries down to the 20% slice of titles that were made in the 2000s. The same uniformity assumption holds, so the first join results in 400k rows, meaning we’re passing 400k rows into the second join.",
+   "zh": "第二个连接顺序将 200 万条 movie_companies 记录过滤为 2000 年代制作的影片（titles）的 20% 部分。 同样基于均匀性假设，因此第一个连接产生 40 万行，这意味着我们将 40 万行传入第二个连接。",
+   "sents": [
+    {
+     "en": "The second join ordering filters the 2m movie_companies entries down to the 20% slice of titles that were made in the 2000s.",
+     "zh": "第二个连接顺序将 200 万条 movie_companies 记录过滤为 2000 年代制作的影片（titles）的 20% 部分。"
+    },
+    {
+     "en": "The same uniformity assumption holds, so the first join results in 400k rows, meaning we’re passing 400k rows into the second join.",
+     "zh": "同样基于均匀性假设，因此第一个连接产生 40 万行，这意味着我们将 40 万行传入第二个连接。"
+    }
+   ]
+  },
+  {
+   "en": "We do 4x the work if we picked the second join ordering.",
+   "zh": "如果我们选择了第二种连接顺序，就要做 4 倍的工作。",
+   "sents": null
+  },
+  {
+   "en": "Factoring commutativity back in now While commutativity doesn’t change the number of rows produced, it must be considered now because it does affect performance regarding the join algorithm used. , there are 4 different outer/inner join orientations , resulting in 8 possible combinations:",
+   "zh": "现在把交换律重新纳入考虑，虽然交换律不会改变产生的行数，但现在必须考虑它，因为它确实会影响所使用的连接算法的性能。，有 4 种不同的外/内连接方向，因此产生 8 种可能的组合：",
+   "sents": null
+  },
+  {
+   "en": "( c n ⋈ m c ) ⋈ t (cn \\bowtie mc) \\bowtie t ( c n ⋈ m c ) ⋈ t t ⋈ ( c n ⋈ m c ) t \\bowtie (cn \\bowtie mc) t ⋈ ( c n ⋈ m c )",
+   "zh": "( c n ⋈ m c ) ⋈ t (cn \\bowtie mc) \\bowtie t ( c n ⋈ m c ) ⋈ t t ⋈ ( c n ⋈ m c ) t \\bowtie (cn \\bowtie mc) t ⋈ ( c n ⋈ m c )",
+   "sents": null
+  },
+  {
+   "en": "( m c ⋈ c n ) ⋈ t (mc \\bowtie cn) \\bowtie t ( m c ⋈ c n ) ⋈ t t ⋈ ( m c ⋈ c n ) t \\bowtie (mc \\bowtie cn) t ⋈ ( m c ⋈ c n )",
+   "zh": "( m c ⋈ c n ) ⋈ t (mc \\bowtie cn) \\bowtie t ( m c ⋈ c n ) ⋈ t t ⋈ ( m c ⋈ c n ) t \\bowtie (mc \\bowtie cn) t ⋈ ( m c ⋈ c n )",
+   "sents": null
+  },
+  {
+   "en": "( t ⋈ m c ) ⋈ c n (t \\bowtie mc) \\bowtie cn ( t ⋈ m c ) ⋈ c n c n ⋈ ( t ⋈ m c ) cn \\bowtie (t \\bowtie mc) c n ⋈ ( t ⋈ m c )",
+   "zh": "( t ⋈ m c ) ⋈ c n (t \\bowtie mc) \\bowtie cn ( t ⋈ m c ) ⋈ c n\nc n ⋈ ( t ⋈ m c ) cn \\bowtie (t \\bowtie mc) c n ⋈ ( t ⋈ m c )",
+   "sents": null
+  },
+  {
+   "en": "( m c ⋈ t ) ⋈ c n (mc \\bowtie t) \\bowtie cn ( m c ⋈ t ) ⋈ c n c n ⋈ ( m c ⋈ t ) cn \\bowtie (mc \\bowtie t) c n ⋈ ( m c ⋈ t )",
+   "zh": "( m c ⋈ t ) ⋈ c n (mc \\bowtie t) \\bowtie cn ( m c ⋈ t ) ⋈ c n c n ⋈ ( m c ⋈ t ) cn \\bowtie (mc \\bowtie t) c n ⋈ ( m c ⋈ t )",
+   "sents": null
+  },
+  {
+   "en": "Lastly, each table can be scanned in different ways. Considering just four types of scans:",
+   "zh": "最后，每张表可以以不同的方式进行扫描。 仅考虑四种类型的扫描：",
+   "sents": [
+    {
+     "en": "Lastly, each table can be scanned in different ways.",
+     "zh": "最后，每张表可以以不同的方式进行扫描。"
+    },
+    {
+     "en": "Considering just four types of scans:",
+     "zh": "仅考虑四种类型的扫描："
+    }
+   ]
+  },
+  {
+   "en": "2 Join trees: which pair of tables joins first. × 2 2 Orientations: each of the 2 joins can swap which input is outer and which is inner. × 3 2 Algorithms: each of the 2 joins picks hash, merge, or nested loop. × 4 3 Scans: each of the 3 tables is either read sequentially or via index, index-only or bitmap scans. = 4 , 608",
+   "zh": "2 连接树：哪一对表先连接。× 2 2 连接方向：2 个连接中的每一个都可以交换哪个输入作为外层、哪个作为内层。× 3 2 算法：2 个连接中的每一个都选择哈希、归并或嵌套循环。× 4 3 扫描：3 个表中的每一个要么顺序读取，要么通过索引扫描、仅索引扫描或位图扫描读取。= 4 , 608",
+   "sents": null
+  },
+  {
+   "en": "There are 4,608 different ways to run this query This is actually an undercount. Plans can run in parallel, aggregates can be hashed or sorted, etc. It’s also worth noting that Postgres doesn’t evaluate all of these plans. It uses dynamic programming (and a genetic algorithm for queries involving 12+ joins) to prune the search space. !",
+   "zh": "运行这个查询有 4,608 种不同的方式，这实际上还是被低估的数字。 计划可以并行运行，聚合可以用哈希或排序的方式执行，等等。 同样值得注意的是，Postgres 并不会评估所有这些计划。 它使用动态规划（对于涉及 12 个以上连接的查询则使用遗传算法）来剪枝搜索空间。",
+   "sents": [
+    {
+     "en": "There are 4,608 different ways to run this query This is actually an undercount.",
+     "zh": "运行这个查询有 4,608 种不同的方式，这实际上还是被低估的数字。"
+    },
+    {
+     "en": "Plans can run in parallel, aggregates can be hashed or sorted, etc.",
+     "zh": "计划可以并行运行，聚合可以用哈希或排序的方式执行，等等。"
+    },
+    {
+     "en": "It’s also worth noting that Postgres doesn’t evaluate all of these plans.",
+     "zh": "同样值得注意的是，Postgres 并不会评估所有这些计划。"
+    },
+    {
+     "en": "It uses dynamic programming (and a genetic algorithm for queries involving 12+ joins) to prune the search space. !",
+     "zh": "它使用动态规划（对于涉及 12 个以上连接的查询则使用遗传算法）来剪枝搜索空间。"
+    }
+   ]
+  },
+  {
+   "en": "To make matters worse, every join combinatorially explodes the search space:",
+   "zh": "更糟糕的是，每一次连接都会使搜索空间呈组合爆炸式增长：",
+   "sents": null
+  },
+  {
+   "en": "SELECT cn . name , COUNT ( * ) AS titles FROM movie_companies AS mc, company_name AS cn WHERE mc . company_id = cn . id AND cn . country_code = ' [jp] ' GROUP BY cn . name ORDER BY titles DESC LIMIT 10 ; 1 Join trees: with two tables there is only one way to join them. × 2 1 Orientation: 1 join means there are only 2 orientations. × 3 1 Algorithm: the join algorithm can be a hash join, merge join or nested loop. × 4 2 Scans: each of the 2 tables is either read sequentially or via index, index-only or bitmap scans. = 96",
+   "zh": "SELECT cn . name , COUNT ( * ) AS titles FROM movie_companies AS mc, company_name AS cn WHERE mc . company_id = cn . id AND cn . country_code = ' [jp] ' GROUP BY cn . name ORDER BY titles DESC LIMIT 10 ; 1 连接树：只有两张表时，连接方式只有一种。 × 2 1 方向：1 个连接意味着只有 2 种方向。 × 3 1 算法：连接算法可以是哈希连接、合并连接或嵌套循环。 × 4 2 扫描：这 2 张表中的每一张都可以通过顺序扫描、索引扫描、仅索引扫描或位图扫描来读取。 = 96",
+   "sents": null
+  },
+  {
+   "en": "SELECT cn . name , COUNT ( * ) AS titles FROM title AS t, movie_companies AS mc, company_name AS cn WHERE t . id = mc . movie_id AND mc . company_id = cn . id AND cn . country_code = ' [jp] ' AND t . production_year BETWEEN 2000 AND 2009 GROUP BY cn . name ORDER BY titles DESC LIMIT 10 ; 2 Join trees: the ways 3 tables can be joined up, before any swapping of inputs. × 2 2 Orientations: each of the 2 joins can swap which input is outer and which is inner. × 3 2 Algorithms: each of the 2 joins picks hash, merge, or nested loop. × 4 3 Scans: each of the 3 tables is either read sequentially or via index, index-only or bitmap scans. = 4 , 608",
+   "zh": "SELECT cn . name , COUNT ( * ) AS titles FROM title AS t, movie_companies AS mc, company_name AS cn WHERE t . id = mc . movie_id AND mc . company_id = cn . id AND cn . country_code = ' [jp] ' AND t . production_year BETWEEN 2000 AND 2009 GROUP BY cn . name ORDER BY titles DESC LIMIT 10 ; 2 连接树：在对输入进行任何交换之前，3 张表可以连接的方式。× 2 2 方向：2 个连接中的每一个都可以交换哪个输入是外层、哪个是内层。× 3 2 算法：2 个连接中的每一个都可以选择哈希、归并或嵌套循环。× 4 3 扫描：3 张表中的每一张可以顺序读取，或通过索引、仅索引或位图扫描读取。= 4 , 608",
+   "sents": null
+  },
+  {
+   "en": "SELECT MIN ( t . title ) AS movie_title FROM keyword AS k, movie_info AS mi, movie_keyword AS mk, title AS t WHERE k . keyword LIKE ' %sequel% ' AND mi . info IN ( ' Bulgaria ' ) AND t . production_year > 2010 AND t . id = mi . movie_id AND t . id = mk . movie_id AND mk . movie_id = mi . movie_id AND k . id = mk . keyword_id ; 8 Join trees: the ways 4 tables can be joined up, before any swapping of inputs. × 2 3 Orientations: each of the 3 joins can swap which input is outer and which is inner. × 3 3 Algorithms: each of the 3 joins picks hash, merge, or nested loop. × 4 4 Scans: each of the 4 tables is either read sequentially or via index, index-only or bitmap scans. = 442 , 368",
+   "zh": "SELECT MIN ( t . title ) AS movie_title FROM keyword AS k, movie_info AS mi, movie_keyword AS mk, title AS t WHERE k . keyword LIKE ' %sequel% ' AND mi . info IN ( ' Bulgaria ' ) AND t . production_year > 2010 AND t . id = mi . movie_id AND t . id = mk . movie_id AND mk . movie_id = mi . movie_id AND k . id = mk . keyword_id ; 8 种连接树：4 张表在交换输入之前可以进行的连接方式。× 2 3 种方向：3 个连接中的每一个都可以交换哪个输入作为外层、哪个作为内层。× 3 3 种算法：3 个连接中的每一个都选择哈希、归并或嵌套循环。× 4 4 种扫描：4 张表中的每一张都可以通过顺序读取、索引扫描、仅索引扫描或位图扫描来读取。= 442 , 368",
+   "sents": null
+  },
+  {
+   "en": "SELECT MIN ( t . title ) AS movie_title FROM company_name AS cn, keyword AS k, movie_companies AS mc, movie_keyword AS mk, title AS t WHERE cn . country_code = ' [de] ' AND k . keyword = ' character-name-in-title ' AND cn . id = mc . company_id AND mc . movie_id = t . id AND t . id = mk . movie_id AND mk . keyword_id = k . id AND mc . movie_id = mk . movie_id ; 25 Join trees: the ways 5 tables can be joined up, before any swapping of inputs. × 2 4 Orientations: each of the 4 joins can swap which input is outer and which is inner. × 3 4 Algorithms: each of the 4 joins picks hash, merge, or nested loop. × 4 5 Scans: each of the 5 tables is either read sequentially or via index, index-only or bitmap scans. = 33 , 177 , 600",
+   "zh": "SELECT MIN ( t . title ) AS movie_title FROM company_name AS cn, keyword AS k, movie_companies AS mc, movie_keyword AS mk, title AS t WHERE cn . country_code = ' [de] ' AND k . keyword = ' character-name-in-title ' AND cn . id = mc . company_id AND mc . movie_id = t . id AND t . id = mk . movie_id AND mk . keyword_id = k . id AND mc . movie_id = mk . movie_id ; 25 种连接树：在交换任何输入之前，5 张表可以连接的方式。× 2 4 种方向：4 个连接中的每一个都可以交换哪个输入是外层、哪个是内层。× 3 4 种算法：4 个连接中的每一个都选择哈希、归并或嵌套循环。× 4 5 种扫描：5 张表中的每一张要么顺序读取，要么通过索引、仅索引或位图扫描读取。= 33 , 177 , 600",
+   "sents": null
+  },
+  {
+   "en": "SELECT MIN ( lt . link ) AS link_type, MIN ( t1 . title ) AS first_movie, MIN ( t2 . title ) AS second_movie FROM keyword AS k, link_type AS lt, movie_keyword AS mk, movie_link AS ml, title AS t1, title AS t2 WHERE k . keyword = ' 10,000-mile-club ' AND mk . keyword_id = k . id AND t1 . id = mk . movie_id AND ml . movie_id = t1 . id AND ml . linked_movie_id = t2 . id AND lt . id = ml . link_type_id AND mk . movie_id = t1 . id ; 56 Join trees: the ways 6 tables can be joined up, before any swapping of inputs. × 2 5 Orientations: each of the 5 joins can swap which input is outer and which is inner. × 3 5 Algorithms: each of the 5 joins picks hash, merge, or nested loop. × 4 6 Scans: each of the 6 tables is either read sequentially or via index, index-only or bitmap scans. = 1 , 783 , 627 , 776",
+   "zh": "SELECT MIN ( lt . link ) AS link_type, MIN ( t1 . title ) AS first_movie, MIN ( t2 . title ) AS second_movie FROM keyword AS k, link_type AS lt, movie_keyword AS mk, movie_link AS ml, title AS t1, title AS t2 WHERE k . keyword = ' 10,000-mile-club ' AND mk . keyword_id = k . id AND t1 . id = mk . movie_id AND ml . movie_id = t1 . id AND ml . linked_movie_id = t2 . id AND lt . id = ml . link_type_id AND mk . movie_id = t1 . id ; 56 种连接树：6 张表在交换输入之前可以进行的连接方式。× 2 5 种方向：5 个连接中的每一个都可以交换哪个输入作为外层、哪个作为内层。× 3 5 种算法：5 个连接中的每一个都可以选择哈希、归并或嵌套循环。× 4 6 种扫描：6 张表中的每一张都可以选择顺序读取，或通过索引、仅索引或位图扫描。= 1 , 783 , 627 , 776",
+   "sents": null
+  },
+  {
+   "en": "SELECT MIN ( a1 . name ) AS writer_pseudo_name, MIN ( t . title ) AS movie_title FROM aka_name AS a1, cast_info AS ci, company_name AS cn, movie_companies AS mc, name AS n1, role_type AS rt, title AS t WHERE cn . country_code = ' [us] ' AND rt . role = ' writer ' AND a1 . person_id = n1 . id AND n1 . id = ci . person_id AND ci . movie_id = t . id AND t . id = mc . movie_id AND mc . company_id = cn . id AND ci . role_id = rt . id AND a1 . person_id = ci . person_id AND ci . movie_id = mc . movie_id ; 696 Join trees: the ways 7 tables can be joined up, before any swapping of inputs. × 2 6 Orientations: each of the 6 joins can swap which input is outer and which is inner. × 3 6 Algorithms: each of the 6 joins picks hash, merge, or nested loop. × 4 7 Scans: each of the 7 tables is either read sequentially or via index, index-only or bitmap scans. = 532 , 030 , 685 , 184",
+   "zh": "SELECT MIN ( a1 . name ) AS writer_pseudo_name, MIN ( t . title ) AS movie_title FROM aka_name AS a1, cast_info AS ci, company_name AS cn, movie_companies AS mc, name AS n1, role_type AS rt, title AS t WHERE cn . country_code = ' [us] ' AND rt . role = ' writer ' AND a1 . person_id = n1 . id AND n1 . id = ci . person_id AND ci . movie_id = t . id AND t . id = mc . movie_id AND mc . company_id = cn . id AND ci . role_id = rt . id AND a1 . person_id = ci . person_id AND ci . movie_id = mc . movie_id ; 696 连接树：在交换任何输入之前，7 张表可以进行的连接方式。× 2 6 方向：6 个连接中的每一个都可以交换哪个输入作为外层、哪个作为内层。× 3 6 算法：6 个连接中的每一个都选择哈希、归并或嵌套循环。× 4 7 扫描：7 张表中的每一张既可以顺序读取，也可以通过索引扫描、仅索引扫描或位图扫描读取。= 532 , 030 , 685 , 184",
+   "sents": null
+  },
+  {
+   "en": "SELECT MIN ( an . name ) AS cool_actor_pseudonym, MIN ( t . title ) AS series_named_after_char FROM aka_name AS an, cast_info AS ci, company_name AS cn, keyword AS k, movie_companies AS mc, movie_keyword AS mk, name AS n, title AS t WHERE cn . country_code = ' [us] ' AND k . keyword = ' character-name-in-title ' AND an . person_id = n . id AND n . id = ci . person_id AND ci . movie_id = t . id AND t . id = mk . movie_id AND mk . keyword_id = k . id AND t . id = mc . movie_id AND mc . company_id = cn . id AND an . person_id = ci . person_id AND ci . movie_id = mc . movie_id AND ci . movie_id = mk . movie_id AND mc . movie_id = mk . movie_id ; 4 , 698 Join trees: the ways 8 tables can be joined up, before any swapping of inputs. × 2 7 Orientations: each of the 7 joins can swap which input is outer and which is inner. × 3 7 Algorithms: each of the 7 joins picks hash, merge, or nested loop. × 4 8 Scans: each of the 8 tables is either read sequentially or via index, index-only or bitmap scans. = 86 , 188 , 970 , 999 , 808",
+   "zh": "SELECT MIN ( an . name ) AS cool_actor_pseudonym, MIN ( t . title ) AS series_named_after_char FROM aka_name AS an, cast_info AS ci, company_name AS cn, keyword AS k, movie_companies AS mc, movie_keyword AS mk, name AS n, title AS t WHERE cn . country_code = ' [us] ' AND k . keyword = ' character-name-in-title ' AND an . person_id = n . id AND n . id = ci . person_id AND ci . movie_id = t . id AND t . id = mk . movie_id AND mk . keyword_id = k . id AND t . id = mc . movie_id AND mc . company_id = cn . id AND an . person_id = ci . person_id AND ci . movie_id = mc . movie_id AND ci . movie_id = mk . movie_id AND mc . movie_id = mk . movie_id ; 4 , 698 棵连接树：8 张表在交换输入之前可以连接的方式。 × 2 7 种方向：7 个连接中的每一个都可以交换哪个输入作为外层、哪个作为内层。 × 3 7 种算法：7 个连接中的每一个都选择哈希、归并或嵌套循环。 × 4 8 种扫描：8 张表中的每一张既可以顺序读取，也可以通过索引扫描、仅索引扫描或位图扫描读取。 = 86 , 188 , 970 , 999 , 808",
+   "sents": null
+  },
+  {
+   "en": "SELECT MIN ( cn . name ) AS producing_company, MIN ( miidx . info ) AS rating, MIN ( t . title ) AS movie FROM company_name AS cn, company_type AS ct, info_type AS it, info_type AS it2, kind_type AS kt, movie_companies AS mc, movie_info AS mi, movie_info_idx AS miidx, title AS t WHERE cn . country_code = ' [us] ' AND ct . kind = ' production companies ' AND it . info = ' rating ' AND it2 . info = ' release dates ' AND kt . kind = ' movie ' AND mi . movie_id = t . id AND it2 . id = mi . info_type_id AND kt . id = t . kind_id AND mc . movie_id = t . id AND cn . id = mc . company_id AND ct . id = mc . company_type_id AND miidx . movie_id = t . id AND it . id = miidx . info_type_id AND mi . movie_id = miidx . movie_id AND mi . movie_id = mc . movie_id AND miidx . movie_id = mc . movie_id ; 20 , 340 Join trees: the ways 9 tables can be joined up, before any swapping of inputs. × 2 8 Orientations: each of the 8 joins can swap which input is outer and which is inner. × 3 8 Algorithms: each of the 8 joins picks hash, merge, or nested loop. × 4 9 Scans: each of the 9 tables is either read sequentially or via index, index-only or bitmap scans. = 8 , 955 , 727 , 561 , 359 , 360",
+   "zh": "SELECT MIN ( cn . name ) AS producing_company, MIN ( miidx . info ) AS rating, MIN ( t . title ) AS movie FROM company_name AS cn, company_type AS ct, info_type AS it, info_type AS it2, kind_type AS kt, movie_companies AS mc, movie_info AS mi, movie_info_idx AS miidx, title AS t WHERE cn . country_code = ' [us] ' AND ct . kind = ' production companies ' AND it . info = ' rating ' AND it2 . info = ' release dates ' AND kt . kind = ' movie ' AND mi . movie_id = t . id AND it2 . id = mi . info_type_id AND kt . id = t . kind_id AND mc . movie_id = t . id AND cn . id = mc . company_id AND ct . id = mc . company_type_id AND miidx . movie_id = t . id AND it . id = miidx . info_type_id AND mi . movie_id = miidx . movie_id AND mi . movie_id = mc . movie_id AND miidx . movie_id = mc . movie_id ; 20 , 340 连接树：9 张表在交换任何输入之前可以进行的连接方式。× 2 8 种方向：8 个连接中的每一个都可以交换哪个输入作为外层、哪个作为内层。× 3 8 种算法：8 个连接中的每一个都选择哈希、归并或嵌套循环。× 4 9 种扫描：9 张表中的每一张要么顺序读取，要么通过索引扫描、仅索引扫描或位图扫描读取。= 8 , 955 , 727 , 561 , 359 , 360",
+   "sents": null
+  },
+  {
+   "en": "SELECT MIN ( n . name ) AS voicing_actress, MIN ( t . title ) AS jap_engl_voiced_movie FROM aka_name AS an, char_name AS chn, cast_info AS ci, company_name AS cn, info_type AS it, movie_companies AS mc, movie_info AS mi, name AS n, role_type AS rt, title AS t WHERE ci . note IN ( ' (voice) ' , ' (voice: Japanese version) ' , ' (voice) (uncredited) ' , ' (voice: English version) ' ) AND cn . country_code = ' [us] ' AND it . info = ' release dates ' AND n . gender = ' f ' AND rt . role = ' actress ' AND t . production_year > 2000 AND t . id = mi . movie_id AND t . id = mc . movie_id AND t . id = ci . movie_id AND mc . movie_id = ci . movie_id AND mc . movie_id = mi . movie_id AND mi . movie_id = ci . movie_id AND cn . id = mc . company_id AND it . id = mi . info_type_id AND n . id = ci . person_id AND rt . id = ci . role_id AND n . id = an . person_id AND ci . person_id = an . person_id AND chn . id = ci . person_role_id ; 242 , 160 Join trees: the ways 10 tables can be joined up, before any swapping of inputs. × 2 9 Orientations: each of the 9 joins can swap which input is outer and which is inner. × 3 9 Algorithms: each of the 9 joins picks hash, merge, or nested loop. × 4 10 Scans: each of the 10 tables is either read sequentially or via index, index-only or bitmap scans. = 2 , 558 , 960 , 455 , 762 , 575 , 360",
+   "zh": "SELECT MIN ( n . name ) AS voicing_actress, MIN ( t . title ) AS jap_engl_voiced_movie FROM aka_name AS an, char_name AS chn, cast_info AS ci, company_name AS cn, info_type AS it, movie_companies AS mc, movie_info AS mi, name AS n, role_type AS rt, title AS t WHERE ci . note IN ( ' (voice) ' , ' (voice: Japanese version) ' , ' (voice) (uncredited) ' , ' (voice: English version) ' ) AND cn . country_code = ' [us] ' AND it . info = ' release dates ' AND n . gender = ' f ' AND rt . role = ' actress ' AND t . production_year > 2000 AND t . id = mi . movie_id AND t . id = mc . movie_id AND t . id = ci . movie_id AND mc . movie_id = ci . movie_id AND mc . movie_id = mi . movie_id AND mi . movie_id = ci . movie_id AND cn . id = mc . company_id AND it . id = mi . info_type_id AND n . id = ci . person_id AND rt . id = ci . role_id AND n . id = an . person_id AND ci . person_id = an . person_id AND chn . id = ci . person_role_id ; 242 , 160 棵连接树：在交换任何输入之前，10 张表可以连接的方式。 × 2 9 种方向：9 个连接中的每一个都可以交换哪个输入作为外层、哪个作为内层。 × 3 9 种算法：9 个连接中的每一个都选择哈希、归并或嵌套循环。 × 4 10 种扫描：10 张表中的每一张既可以顺序读取，也可以通过索引、仅索引或位图扫描读取。 = 2 , 558 , 960 , 455 , 762 , 575 , 360",
+   "sents": null
+  },
+  {
+   "en": "SELECT MIN ( kt . kind ) AS movie_kind, MIN ( t . title ) AS complete_us_internet_movie FROM complete_cast AS cc, comp_cast_type AS cct1, company_name AS cn, company_type AS ct, info_type AS it1, keyword AS k, kind_type AS kt, movie_companies AS mc, movie_info AS mi, movie_keyword AS mk, title AS t WHERE cct1 . kind = ' complete+verified ' AND cn . country_code = ' [us] ' AND it1 . info = ' release dates ' AND kt . kind IN ( ' movie ' ) AND mi . note LIKE ' %internet% ' AND mi . info IS NOT NULL AND ( mi . info LIKE ' USA:% 199% ' OR mi . info LIKE ' USA:% 200% ' ) AND t . production_year > 2000 AND kt . id = t . kind_id AND t . id = mi . movie_id AND t . id = mk . movie_id AND t . id = mc . movie_id AND t . id = cc . movie_id AND mk . movie_id = mi . movie_id AND mk . movie_id = mc . movie_id AND mk . movie_id = cc . movie_id AND mi . movie_id = mc . movie_id AND mi . movie_id = cc . movie_id AND mc . movie_id = cc . movie_id AND k . id = mk . keyword_id AND it1 . id = mi . info_type_id AND cn . id = mc . company_id AND ct . id = mc . company_type_id AND cct1 . id = cc . status_id ; 1 , 490 , 850 Join trees: the ways 11 tables can be joined up, before any swapping of inputs. × 2 10 Orientations: each of the 10 joins can swap which input is outer and which is inner. × 3 10 Algorithms: each of the 10 joins picks hash, merge, or nested loop. × 4 11 Scans: each of the 11 tables is either read sequentially or via index, index-only or bitmap scans. = 378 , 099 , 722 , 048 , 923 , 238 , 400",
+   "zh": "SELECT MIN ( kt . kind ) AS movie_kind, MIN ( t . title ) AS complete_us_internet_movie FROM complete_cast AS cc, comp_cast_type AS cct1, company_name AS cn, company_type AS ct, info_type AS it1, keyword AS k, kind_type AS kt, movie_companies AS mc, movie_info AS mi, movie_keyword AS mk, title AS t WHERE cct1 . kind = ' complete+verified ' AND cn . country_code = ' [us] ' AND it1 . info = ' release dates ' AND kt . kind IN ( ' movie ' ) AND mi . note LIKE ' %internet% ' AND mi . info IS NOT NULL AND ( mi . info LIKE ' USA:% 199% ' OR mi . info LIKE ' USA:% 200% ' ) AND t . production_year > 2000 AND kt . id = t . kind_id AND t . id = mi . movie_id AND t . id = mk . movie_id AND t . id = mc . movie_id AND t . id = cc . movie_id AND mk . movie_id = mi . movie_id AND mk . movie_id = mc . movie_id AND mk . movie_id = cc . movie_id AND mi . movie_id = mc . movie_id AND mi . movie_id = cc . movie_id AND mc . movie_id = cc . movie_id AND k . id = mk . keyword_id AND it1 . id = mi . info_type_id AND cn . id = mc . company_id AND ct . id = mc . company_type_id AND cct1 . id = cc . status_id ; 1 , 490 , 850 连接树：在对输入做任何交换之前，11 张表可以进行的连接方式。 × 2 10 连接方向：10 个连接中的每一个都可以交换哪个输入作为外层、哪个作为内层。 × 3 10 连接算法：10 个连接中的每一个都选择哈希连接、合并连接或嵌套循环连接。 × 4 11 扫描方式：11 张表中的每一张都可以通过顺序读取，或者通过索引扫描、仅索引扫描或位图扫描来读取。 = 378 , 099 , 722 , 048 , 923 , 238 , 400",
+   "sents": null
+  },
+  {
+   "en": "SELECT MIN ( chn . name ) AS character_name, MIN ( mi_idx . info ) AS rating, MIN ( t . title ) AS complete_hero_movie FROM complete_cast AS cc, comp_cast_type AS cct1, comp_cast_type AS cct2, char_name AS chn, cast_info AS ci, info_type AS it2, keyword AS k, kind_type AS kt, movie_info_idx AS mi_idx, movie_keyword AS mk, name AS n, title AS t WHERE cct1 . kind = ' cast ' AND cct2 . kind LIKE ' %complete% ' AND chn . name IS NOT NULL AND ( chn . name LIKE ' %man% ' OR chn . name LIKE ' %Man% ' ) AND it2 . info = ' rating ' AND k . keyword IN ( ' superhero ' , ' marvel-comics ' , ' based-on-comic ' , ' fight ' ) AND kt . kind = ' movie ' AND mi_idx . info > ' 8.0 ' AND t . production_year > 2005 AND kt . id = t . kind_id AND t . id = mk . movie_id AND t . id = ci . movie_id AND t . id = cc . movie_id AND t . id = mi_idx . movie_id AND mk . movie_id = ci . movie_id AND mk . movie_id = cc . movie_id AND mk . movie_id = mi_idx . movie_id AND ci . movie_id = cc . movie_id AND ci . movie_id = mi_idx . movie_id AND cc . movie_id = mi_idx . movie_id AND chn . id = ci . person_role_id AND n . id = ci . person_id AND k . id = mk . keyword_id AND cct1 . id = cc . subject_id AND cct2 . id = cc . status_id AND it2 . id = mi_idx . info_type_id ; 11 , 932 , 560 Join trees: the ways 12 tables can be joined up, before any swapping of inputs. × 2 11 Orientations: each of the 11 joins can swap which input is outer and which is inner. × 3 11 Algorithms: each of the 11 joins picks hash, merge, or nested loop. × 4 12 Scans: each of the 12 tables is either read sequentially or via index, index-only or bitmap scans. = 72 , 630 , 206 , 166 , 931 , 876 , 085 , 760 lots!",
+   "zh": "SELECT MIN ( chn . name ) AS character_name, MIN ( mi_idx . info ) AS rating, MIN ( t . title ) AS complete_hero_movie FROM complete_cast AS cc, comp_cast_type AS cct1, comp_cast_type AS cct2, char_name AS chn, cast_info AS ci, info_type AS it2, keyword AS k, kind_type AS kt, movie_info_idx AS mi_idx, movie_keyword AS mk, name AS n, title AS t WHERE cct1 . kind = ' cast ' AND cct2 . kind LIKE ' %complete% ' AND chn . name IS NOT NULL AND ( chn . name LIKE ' %man% ' OR chn . name LIKE ' %Man% ' ) AND it2 . info = ' rating ' AND k . keyword IN ( ' superhero ' , ' marvel-comics ' , ' based-on-comic ' , ' fight ' ) AND kt . kind = ' movie ' AND mi_idx . info > ' 8.0 ' AND t . production_year > 2005 AND kt . id = t . kind_id AND t . id = mk . movie_id AND t . id = ci . movie_id AND t . id = cc . movie_id AND t . id = mi_idx . movie_id AND mk . movie_id = ci . movie_id AND mk . movie_id = cc . movie_id AND mk . movie_id = mi_idx . movie_id AND ci . movie_id = cc . movie_id AND ci . movie_id = mi_idx . movie_id AND cc . movie_id = mi_idx . movie_id AND chn . id = ci . person_role_id AND n . id = ci . person_id AND k . id = mk . keyword_id AND cct1 . id = cc . subject_id AND cct2 . id = cc . status_id AND it2 . id = mi_idx . info_type_id ; 11 , 932 , 560 连接树：12 张表在进行任何输入交换之前可以连接的方式。× 2 11 方向：11 个连接中的每一个都可以交换哪个输入作为外层、哪个作为内层。× 3 11 算法：11 个连接中的每一个都选择哈希、合并或嵌套循环。× 4 12 扫描：12 张表中的每一张要么顺序读取，要么通过索引扫描、仅索引扫描或位图扫描读取。= 72 , 630 , 206 , 166 , 931 , 876 , 085 , 760 种大量的组合！",
+   "sents": null
+  },
+  {
+   "en": "Postgres is in a tough spot here. It would be reasonable to think it could simply count cardinalities and pick the plan that minimizes the number of rows passed through to successive joins.",
+   "zh": "Postgres 在这里处境艰难。 人们有理由认为，它可以简单地统计基数，然后选择使传递给后续连接的行数最少的执行计划。",
+   "sents": [
+    {
+     "en": "Postgres is in a tough spot here.",
+     "zh": "Postgres 在这里处境艰难。"
+    },
+    {
+     "en": "It would be reasonable to think it could simply count cardinalities and pick the plan that minimizes the number of rows passed through to successive joins.",
+     "zh": "人们有理由认为，它可以简单地统计基数，然后选择使传递给后续连接的行数最少的执行计划。"
+    }
+   ]
+  },
+  {
+   "en": "But this would imply Postgres can count cardinalities during query planning. It can’t. In order to know this, it would need to actually run each join and count the resulting rows. This defeats the whole point of a fast query optimizer. A query optimizer does not aim to be exact in its cost minimization… it aims to be good enough across many types of queries.",
+   "zh": "但这意味着 Postgres 能在查询规划期间统计基数。它不能。 要想知道这一点，它需要实际运行每一次连接并统计产生的行数。 这就完全违背了快速查询优化器的初衷。 查询优化器的目标并不是在成本最小化上做到精确……而是在多种类型的查询上都做到足够好。",
+   "sents": [
+    {
+     "en": "But this would imply Postgres can count cardinalities during query planning. It can’t.",
+     "zh": "但这意味着 Postgres 能在查询规划期间统计基数。它不能。"
+    },
+    {
+     "en": "In order to know this, it would need to actually run each join and count the resulting rows.",
+     "zh": "要想知道这一点，它需要实际运行每一次连接并统计产生的行数。"
+    },
+    {
+     "en": "This defeats the whole point of a fast query optimizer.",
+     "zh": "这就完全违背了快速查询优化器的初衷。"
+    },
+    {
+     "en": "A query optimizer does not aim to be exact in its cost minimization… it aims to be good enough across many types of queries.",
+     "zh": "查询优化器的目标并不是在成本最小化上做到精确……而是在多种类型的查询上都做到足够好。"
+    }
+   ]
+  },
+  {
+   "en": "Instead, Postgres uses statistics to estimate cardinalities. The planner queries the pg_statistic table, getting back common values for each column and their frequencies, and a histogram for the rest. Things get a bit more complicated when you tack on joins. Postgres doesn’t know how the rows in one table are distributed over the other. To get around this, it assumes that the frequency of a given value in the first table can simply be applied over the second table. This is the uniform distribution assumption I mentioned earlier.",
+   "zh": "相反，Postgres 使用统计信息来估算基数。 查询规划器会查询 pg_statistic 表，获取每一列的常见值及其出现频率，以及其余值的直方图。 当你再加上连接（join）时，情况就变得更复杂一些了。 Postgres 并不知道一张表中的行在另一张表上是怎样分布的。 为了解决这个问题，它假设第一张表中某个给定值的出现频率可以直接套用到第二张表上。 这就是我前面提到的均匀分布假设。",
+   "sents": [
+    {
+     "en": "Instead, Postgres uses statistics to estimate cardinalities.",
+     "zh": "相反，Postgres 使用统计信息来估算基数。"
+    },
+    {
+     "en": "The planner queries the pg_statistic table, getting back common values for each column and their frequencies, and a histogram for the rest.",
+     "zh": "查询规划器会查询 pg_statistic 表，获取每一列的常见值及其出现频率，以及其余值的直方图。"
+    },
+    {
+     "en": "Things get a bit more complicated when you tack on joins.",
+     "zh": "当你再加上连接（join）时，情况就变得更复杂一些了。"
+    },
+    {
+     "en": "Postgres doesn’t know how the rows in one table are distributed over the other.",
+     "zh": "Postgres 并不知道一张表中的行在另一张表上是怎样分布的。"
+    },
+    {
+     "en": "To get around this, it assumes that the frequency of a given value in the first table can simply be applied over the second table.",
+     "zh": "为了解决这个问题，它假设第一张表中某个给定值的出现频率可以直接套用到第二张表上。"
+    },
+    {
+     "en": "This is the uniform distribution assumption I mentioned earlier.",
+     "zh": "这就是我前面提到的均匀分布假设。"
+    }
+   ]
+  },
+  {
+   "en": "Assuming a uniform distribution is fine as a heuristic, but when it fails, it fails hard. Looking back at an earlier join ordering ( c n ′ ⋈ m c ) ≈ 100 k , then ⋈ t ′ ≈ 20 k (cn' \\bowtie mc) \\approx 100\\text{k}, \\text{ then } \\bowtie\\ t' \\approx 20\\text{k} ( c n ′ ⋈ m c ) ≈ 100 k , then ⋈ t ′ ≈ 20 k , we filtered 2m movie_companies entries on the assumption that 5% of them were from Japanese companies. But what if the 5% of companies that are Japanese were actually responsible for 50% of the movies? The first join would produce 1m rows! The cost model says pick the first join ordering; in reality, the second one is actually better since it only sends 400k rows through to the second join.",
+   "zh": "把分布假设为均匀分布作为一种启发式方法是可以的，但一旦失效，就会败得很惨。 回顾之前的连接顺序 (cn' ⋈ mc) ≈ 100k，然后 ⋈ t' ≈ 20k，我们在假设其中 5% 来自日本公司的情况下，过滤掉了 200 万条 movie_companies 记录。 但如果那 5% 的日本公司实际上制作了 50% 的电影怎么办？ 第一个连接将会产生 100 万行数据！ 代价模型说应该选择第一个连接顺序；但实际上第二个更好，因为它只把 40 万行传递给第二个连接。",
+   "sents": [
+    {
+     "en": "Assuming a uniform distribution is fine as a heuristic, but when it fails, it fails hard.",
+     "zh": "把分布假设为均匀分布作为一种启发式方法是可以的，但一旦失效，就会败得很惨。"
+    },
+    {
+     "en": "Looking back at an earlier join ordering ( c n ′ ⋈ m c ) ≈ 100 k , then ⋈ t ′ ≈ 20 k (cn' \\bowtie mc) \\approx 100\\text{k}, \\text{ then } \\bowtie\\ t' \\approx 20\\text{k} ( c n ′ ⋈ m c ) ≈ 100 k , then ⋈ t ′ ≈ 20 k , we filtered 2m movie_companies entries on the assumption that 5% of them were from Japanese companies.",
+     "zh": "回顾之前的连接顺序 (cn' ⋈ mc) ≈ 100k，然后 ⋈ t' ≈ 20k，我们在假设其中 5% 来自日本公司的情况下，过滤掉了 200 万条 movie_companies 记录。"
+    },
+    {
+     "en": "But what if the 5% of companies that are Japanese were actually responsible for 50% of the movies?",
+     "zh": "但如果那 5% 的日本公司实际上制作了 50% 的电影怎么办？"
+    },
+    {
+     "en": "The first join would produce 1m rows!",
+     "zh": "第一个连接将会产生 100 万行数据！"
+    },
+    {
+     "en": "The cost model says pick the first join ordering; in reality, the second one is actually better since it only sends 400k rows through to the second join.",
+     "zh": "代价模型说应该选择第一个连接顺序；但实际上第二个更好，因为它只把 40 万行传递给第二个连接。"
+    }
+   ]
+  },
+  {
+   "en": "One bad estimate in an early join can cascade through the rest of the join tree, corrupting all other estimates.",
+   "zh": "连接树早期阶段的一个错误估算可能会级联影响到其余的连接树，从而破坏所有其他的估算结果。",
+   "sents": null
+  },
+  {
+   "en": "Postgres always picks the plan with the lowest cost, and we can’t change its cost model without modifying its source code, so how can we actually steer it to pick different plans that have higher costs?",
+   "zh": "Postgres 总是选择成本最低的计划，而我们无法在不修改其源代码的情况下改变它的成本模型，那么我们究竟该如何引导它选择成本更高的其他计划呢？",
+   "sents": null
+  },
+  {
+   "en": "pg_hint_plan is a beautifully simple third-party extension: just by adding structured “hints” as comments above SQL statements, you can nudge Postgres towards plans that use the instructions provided in the hint. For example:",
+   "zh": "pg_hint_plan 是一个设计简洁优美的第三方扩展：只需在 SQL 语句上方以注释的形式添加结构化的「提示」（hint），就可以引导 Postgres 采用提示中所给指令的执行计划。例如：",
+   "sents": null
+  },
+  {
+   "en": "/*+ The hint block. It is an ordinary SQL comment with a leading + , so Postgres ignores it and pg_hint_plan reads it. HashJoin(a b) Join a and b using a hash join. SeqScan(a) Read table a with a sequential scan rather than an index. */ EXPLAIN EXPLAIN prints the plan Postgres would use instead of running the query. SELECT * FROM pgbench_branches b JOIN pgbench_accounts a ON b.bid = a.bid ORDER BY a.aid; QUERY PLAN --------------------------------------------------------------------------------- Sort The root of the plan. Rows flow upward, so this runs last: it orders the joined rows by a.aid . (cost=31465.84..31715.84 rows=100000 width=197) Postgres’s estimates for this node: startup cost..total cost, estimated rows out, and average row width in bytes. Sort Key: a.aid -> Hash Join The join method the HashJoin(a b) hint asked for. (cost=1.02..4016.02 rows=100000 width=197) Hash Cond: (a.bid = b.bid) The join condition, taken from the ON clause. -> Seq Scan on pgbench_accounts a The scan method the SeqScan(a) hint asked for. This is the probe side: each row looks up a match in the hash table. (cost=0.00..2640.00 rows=100000 width=97) -> Hash The build side. The small table is read first and loaded into an in-memory hash table keyed on bid . (cost=1.01..1.01 rows=1 width=100) -> Seq Scan on pgbench_branches b (cost=0.00..1.01 rows=1 width=100) (7 rows) Example from pg_hint_plan ’s documentation .",
+   "zh": "/*+ 提示块。 它是一个以 + 开头的普通 SQL 注释，因此 Postgres 会忽略它，而 pg_hint_plan 会读取它。 HashJoin(a b) 使用哈希连接来连接 a 和 b。 SeqScan(a) 以顺序扫描而非索引方式读取表 a。 */ EXPLAIN EXPLAIN 会打印 Postgres 本应使用的执行计划，而不是实际运行查询。 SELECT * FROM pgbench_branches b JOIN pgbench_accounts a ON b.bid = a.bid ORDER BY a.aid; QUERY PLAN --------------------------------------------------------------------------------- Sort 计划的根节点。 行数据向上流动，所以这一步最后执行：它按 a.aid 对连接后的行进行排序。 (cost=31465.84..31715.84 rows=100000 width=197) Postgres 对该节点的估算：启动成本..总成本、预计输出行数，以及以字节为单位的平均行宽。 Sort Key: a.aid -> Hash Join HashJoin(a b) 提示所要求的连接方法。 (cost=1.02..4016.02 rows=100000 width=197) Hash Cond: (a.bid = b.bid) 连接条件，取自 ON 子句。 -> Seq Scan on pgbench_accounts a SeqScan(a) 提示所要求的扫描方法。 这是探测侧：每一行都在哈希表中查找匹配项。 (cost=0.00..2640.00 rows=100000 width=97) -> Hash 构建侧。 先读取较小的表，并将其加载到以 bid 为键的内存哈希表中。 (cost=1.01..1.01 rows=1 width=100) -> Seq Scan on pgbench_branches b (cost=0.00..1.01 rows=1 width=100) (7 rows) 示例来自 pg_hint_plan 的文档。",
+   "sents": [
+    {
+     "en": "/*+ The hint block.",
+     "zh": "/*+ 提示块。"
+    },
+    {
+     "en": "It is an ordinary SQL comment with a leading + , so Postgres ignores it and pg_hint_plan reads it.",
+     "zh": "它是一个以 + 开头的普通 SQL 注释，因此 Postgres 会忽略它，而 pg_hint_plan 会读取它。"
+    },
+    {
+     "en": "HashJoin(a b) Join a and b using a hash join.",
+     "zh": "HashJoin(a b) 使用哈希连接来连接 a 和 b。"
+    },
+    {
+     "en": "SeqScan(a) Read table a with a sequential scan rather than an index. */ EXPLAIN EXPLAIN prints the plan Postgres would use instead of running the query.",
+     "zh": "SeqScan(a) 以顺序扫描而非索引方式读取表 a。 */ EXPLAIN EXPLAIN 会打印 Postgres 本应使用的执行计划，而不是实际运行查询。"
+    },
+    {
+     "en": "SELECT * FROM pgbench_branches b JOIN pgbench_accounts a ON b.bid = a.bid ORDER BY a.aid; QUERY PLAN --------------------------------------------------------------------------------- Sort The root of the plan.",
+     "zh": "SELECT * FROM pgbench_branches b JOIN pgbench_accounts a ON b.bid = a.bid ORDER BY a.aid; QUERY PLAN --------------------------------------------------------------------------------- Sort 计划的根节点。"
+    },
+    {
+     "en": "Rows flow upward, so this runs last: it orders the joined rows by a.aid .",
+     "zh": "行数据向上流动，所以这一步最后执行：它按 a.aid 对连接后的行进行排序。"
+    },
+    {
+     "en": "(cost=31465.84..31715.84 rows=100000 width=197) Postgres’s estimates for this node: startup cost..total cost, estimated rows out, and average row width in bytes.",
+     "zh": "(cost=31465.84..31715.84 rows=100000 width=197) Postgres 对该节点的估算：启动成本..总成本、预计输出行数，以及以字节为单位的平均行宽。"
+    },
+    {
+     "en": "Sort Key: a.aid -> Hash Join The join method the HashJoin(a b) hint asked for.",
+     "zh": "Sort Key: a.aid -> Hash Join HashJoin(a b) 提示所要求的连接方法。"
+    },
+    {
+     "en": "(cost=1.02..4016.02 rows=100000 width=197) Hash Cond: (a.bid = b.bid) The join condition, taken from the ON clause. -> Seq Scan on pgbench_accounts a The scan method the SeqScan(a) hint asked for.",
+     "zh": "(cost=1.02..4016.02 rows=100000 width=197) Hash Cond: (a.bid = b.bid) 连接条件，取自 ON 子句。 -> Seq Scan on pgbench_accounts a SeqScan(a) 提示所要求的扫描方法。"
+    },
+    {
+     "en": "This is the probe side: each row looks up a match in the hash table.",
+     "zh": "这是探测侧：每一行都在哈希表中查找匹配项。"
+    },
+    {
+     "en": "(cost=0.00..2640.00 rows=100000 width=97) -> Hash The build side.",
+     "zh": "(cost=0.00..2640.00 rows=100000 width=97) -> Hash 构建侧。"
+    },
+    {
+     "en": "The small table is read first and loaded into an in-memory hash table keyed on bid .",
+     "zh": "先读取较小的表，并将其加载到以 bid 为键的内存哈希表中。"
+    },
+    {
+     "en": "(cost=1.01..1.01 rows=1 width=100) -> Seq Scan on pgbench_branches b (cost=0.00..1.01 rows=1 width=100) (7 rows) Example from pg_hint_plan ’s documentation .",
+     "zh": "(cost=1.01..1.01 rows=1 width=100) -> Seq Scan on pgbench_branches b (cost=0.00..1.01 rows=1 width=100) (7 rows) 示例来自 pg_hint_plan 的文档。"
+    }
+   ]
+  },
+  {
+   "en": "The hint mandates usage of a HashJoin for joining pgbench_accounts and pgbench_branches , and doing a sequential scan of the pgbench_accounts table; the actual query plan follows suit nicely.",
+   "zh": "该提示强制要求在连接 pgbench_accounts 与 pgbench_branches 时使用 HashJoin，并对 pgbench_accounts 表进行顺序扫描；实际的查询计划也很好地遵循了这一要求。",
+   "sents": null
+  },
+  {
+   "en": "Given that we can influence Postgres to pick different—and potentially better—query plans using pg_hint_plan hints, the question we’re starting with is:",
+   "zh": "既然我们可以使用 pg_hint_plan 提示来影响 Postgres 选择不同的——也可能更好的——查询计划，那么我们要探讨的起点问题是：",
+   "sents": null
+  },
+  {
+   "en": "Can a language model learn to produce hints that result in better query plans?",
+   "zh": "语言模型能否学会生成能够带来更优查询计划的提示？",
+   "sents": null
+  },
+  {
+   "en": "What might make this a worthwhile problem to solve?",
+   "zh": "是什么让这个问题值得解决？",
+   "sents": null
+  },
+  {
+   "en": "My first idea was to give the model the query and the exact same set of information Postgres’s planner has. This amounts to seeing if we could build a better cardinality estimator. I came to the conclusion this is not a worthwhile avenue to explore; we would be fighting decades of cardinality estimation research. Furthermore, the inference latency alone would far outweigh any learned usefulness compared to Postgres’s ultra-fast query optimizer.",
+   "zh": "我最初的想法是把查询以及 Postgres 规划器所拥有的完全相同的一组信息提供给模型。 这相当于看看我们能否构建一个更好的基数估计器。 我得出的结论是，这不是一条值得探索的路径；我们将要与数十年的基数估计研究成果相抗衡。 此外，仅推理延迟一项就会远远超过其相比 Postgres 超高速查询优化器所能带来的任何学习上的收益。",
+   "sents": [
+    {
+     "en": "My first idea was to give the model the query and the exact same set of information Postgres’s planner has.",
+     "zh": "我最初的想法是把查询以及 Postgres 规划器所拥有的完全相同的一组信息提供给模型。"
+    },
+    {
+     "en": "This amounts to seeing if we could build a better cardinality estimator.",
+     "zh": "这相当于看看我们能否构建一个更好的基数估计器。"
+    },
+    {
+     "en": "I came to the conclusion this is not a worthwhile avenue to explore; we would be fighting decades of cardinality estimation research.",
+     "zh": "我得出的结论是，这不是一条值得探索的路径；我们将要与数十年的基数估计研究成果相抗衡。"
+    },
+    {
+     "en": "Furthermore, the inference latency alone would far outweigh any learned usefulness compared to Postgres’s ultra-fast query optimizer.",
+     "zh": "此外，仅推理延迟一项就会远远超过其相比 Postgres 超高速查询优化器所能带来的任何学习上的收益。"
+    }
+   ]
+  },
+  {
+   "en": "The second idea—and what I believe is the correct formulation—lies in a specific database usage pattern: heavy analytic workloads. If queries are getting run thousands of times using sub-optimal default Postgres plans, efficiency gains are being left on the table. Instead, a model could be trained to find a better way to run a specific query. The training process might require execution of that query tens to hundreds of times upfront, but the amortized cost across all runs of the query would be drastically lower.",
+   "zh": "第二个思路——我认为也是正确的表述——在于一种特定的数据库使用模式：重分析型工作负载。 如果查询以欠佳的默认 Postgres 计划被运行成千上万次，效率上的收益就被白白浪费了。 相反，可以训练一个模型来为某个特定查询找到更好的执行方式。 训练过程可能需要预先执行该查询数十到数百次，但摊销到该查询所有运行上的成本会大幅降低。",
+   "sents": [
+    {
+     "en": "The second idea—and what I believe is the correct formulation—lies in a specific database usage pattern: heavy analytic workloads.",
+     "zh": "第二个思路——我认为也是正确的表述——在于一种特定的数据库使用模式：重分析型工作负载。"
+    },
+    {
+     "en": "If queries are getting run thousands of times using sub-optimal default Postgres plans, efficiency gains are being left on the table.",
+     "zh": "如果查询以欠佳的默认 Postgres 计划被运行成千上万次，效率上的收益就被白白浪费了。"
+    },
+    {
+     "en": "Instead, a model could be trained to find a better way to run a specific query.",
+     "zh": "相反，可以训练一个模型来为某个特定查询找到更好的执行方式。"
+    },
+    {
+     "en": "The training process might require execution of that query tens to hundreds of times upfront, but the amortized cost across all runs of the query would be drastically lower.",
+     "zh": "训练过程可能需要预先执行该查询数十到数百次，但摊销到该查询所有运行上的成本会大幅降低。"
+    }
+   ]
+  },
+  {
+   "en": "The goal isn’t to try and beat Postgres on the time/efficiency Pareto frontier for one-off queries, but we may be able to beat it on queries that run over and over again.",
+   "zh": "我们的目标并不是试图在一次性查询的时间/效率帕累托前沿上击败 Postgres，但对于反复运行的查询，我们或许能够击败它。",
+   "sents": null
+  },
+  {
+   "en": "I decided to start with a small 4B model because it would be easiest to train/inference myself on the 2x RTX 3090 rig (affectionately named FLOPper) I have at home.",
+   "zh": "我决定从小型 4B 模型开始，因为这样最容易在我家里的 2x RTX 3090 设备（被亲昵地命名为 FLOPper）上自行进行训练/推理。",
+   "sents": null
+  },
+  {
+   "en": "Around the time I started this project, the Qwen 3.8 family of models was released, unfortunately without a 4B variant. However, I came across a Qwen 3.8 4B distillation from a small lab in Germany called Empero and was intrigued. They used Qwen 3.8’s 2.4T model as a teacher model to distill learnings into Qwen 3.5 4B, producing empero-ai/Qwen3.8-4B-Distill . This distilled model is not outright better than its base 3.5 model; it performs better on MMLU tasks and slightly worse on GSM8K tasks. In other words, this distillation performs better when evaluated on breadth of general knowledge, and slightly worse on multi-step mathematical reasoning. As to which is better for our task, I do not know; I decided to stick with the distilled model either way.",
+   "zh": "在我启动这个项目的前后，Qwen 3.8 系列模型发布了，可惜没有 4B 版本。 不过，我偶然发现了一家名为 Empero 的德国小型实验室对 Qwen 3.8 4B 做的蒸馏版本，颇感兴趣。 他们以 Qwen 3.8 的 2.4T 模型作为教师模型，将所学知识蒸馏到 Qwen 3.5 4B 中，产出了 empero-ai/Qwen3.8-4B-Distill。 这个蒸馏模型并非全面优于其基座 3.5 模型；它在 MMLU 任务上表现更好，而在 GSM8K 任务上略差一些。 换句话说，这一蒸馏版本在评估通用知识的广度时表现更好，而在多步数学推理上略差。 至于哪个更适合我们的任务，我并不清楚；无论如何，我决定坚持使用蒸馏模型。",
+   "sents": [
+    {
+     "en": "Around the time I started this project, the Qwen 3.8 family of models was released, unfortunately without a 4B variant.",
+     "zh": "在我启动这个项目的前后，Qwen 3.8 系列模型发布了，可惜没有 4B 版本。"
+    },
+    {
+     "en": "However, I came across a Qwen 3.8 4B distillation from a small lab in Germany called Empero and was intrigued.",
+     "zh": "不过，我偶然发现了一家名为 Empero 的德国小型实验室对 Qwen 3.8 4B 做的蒸馏版本，颇感兴趣。"
+    },
+    {
+     "en": "They used Qwen 3.8’s 2.4T model as a teacher model to distill learnings into Qwen 3.5 4B, producing empero-ai/Qwen3.8-4B-Distill .",
+     "zh": "他们以 Qwen 3.8 的 2.4T 模型作为教师模型，将所学知识蒸馏到 Qwen 3.5 4B 中，产出了 empero-ai/Qwen3.8-4B-Distill。"
+    },
+    {
+     "en": "This distilled model is not outright better than its base 3.5 model; it performs better on MMLU tasks and slightly worse on GSM8K tasks.",
+     "zh": "这个蒸馏模型并非全面优于其基座 3.5 模型；它在 MMLU 任务上表现更好，而在 GSM8K 任务上略差一些。"
+    },
+    {
+     "en": "In other words, this distillation performs better when evaluated on breadth of general knowledge, and slightly worse on multi-step mathematical reasoning.",
+     "zh": "换句话说，这一蒸馏版本在评估通用知识的广度时表现更好，而在多步数学推理上略差。"
+    },
+    {
+     "en": "As to which is better for our task, I do not know; I decided to stick with the distilled model either way.",
+     "zh": "至于哪个更适合我们的任务，我并不清楚；无论如何，我决定坚持使用蒸馏模型。"
+    }
+   ]
+  },
+  {
+   "en": "With the model locked in, I built a lightweight agent harness, qo-agent , that would orchestrate hint production. It was given the following six tools:",
+   "zh": "模型确定后，我构建了一个轻量级智能体框架 qo-agent，用它来协调提示的生成。 它被赋予以下六个工具：",
+   "sents": [
+    {
+     "en": "With the model locked in, I built a lightweight agent harness, qo-agent , that would orchestrate hint production.",
+     "zh": "模型确定后，我构建了一个轻量级智能体框架 qo-agent，用它来协调提示的生成。"
+    },
+    {
+     "en": "It was given the following six tools:",
+     "zh": "它被赋予以下六个工具："
+    }
+   ]
+  },
+  {
+   "en": "To take advantage of structured outputs, the agent was instructed to produce PlanAction JSON objects. Calls to evaluate_candidate then compiled PlanAction objects into hints and prepended them to the original query.",
+   "zh": "为了利用结构化输出，该智能体被指示生成 PlanAction JSON 对象。 随后对 evaluate_candidate 的调用将 PlanAction 对象编译为提示，并将其前置到原始查询之前。",
+   "sents": [
+    {
+     "en": "To take advantage of structured outputs, the agent was instructed to produce PlanAction JSON objects.",
+     "zh": "为了利用结构化输出，该智能体被指示生成 PlanAction JSON 对象。"
+    },
+    {
+     "en": "Calls to evaluate_candidate then compiled PlanAction objects into hints and prepended them to the original query.",
+     "zh": "随后对 evaluate_candidate 的调用将 PlanAction 对象编译为提示，并将其前置到原始查询之前。"
+    }
+   ]
+  },
+  {
+   "en": "Agent → A tool call made by the model. get_plan(\"default\") Ask the harness for the plan Postgres picks on its own. This returns the planner’s estimates only; nothing is executed. Tool ← The harness’s reply, fed back into the model’s context. Default plan: (t ⋈ mc) ⋈ cn, hash joins, estimated rows per node Agent → evaluate_candidate({ Propose one PlanAction . The harness validates it with a plain EXPLAIN, compiles it to hints, and, with execution feedback on, runs the query once after a warmup and reports the timing. \"leading\": { \"left\": { \"left\": \"cn\", \"right\": \"mc\" }, \"right\": \"t\" }, The join tree: join cn with mc first, then join the result with t . This is the first tree from the figure earlier. \"joins\": [{ \"relations\": [\"cn\", \"mc\"], \"force\": \"hash\" }] Force a hash join for the cn ⋈ mc step. }) Tool ← c1 The id the harness assigns to this candidate. get_plan and finish refer to candidates by id. · valid · novel plan · 118 ms · 0.91× default Execution feedback: the candidate’s measured time and its preliminary ratio to the default’s median. Below 1 means slower than Postgres. · 2 attempts left Every submission, valid or not, consumes one of the rollout’s candidate attempts. Agent → evaluate_candidate({ \"leading\": { \"left\": { \"left\": \"t\", \"right\": \"mc\" }, \"right\": \"cn\" }, Try the other tree: t with mc first, then cn . \"joins\": [{ \"relations\": [\"t\", \"mc\"], \"force\": \"nestloop\" }], A nested loop for the first join, so the filtered t rows probe mc one at a time. \"scans\": [{ \"relation\": \"mc\", \"force\": \"index\" }] Make the inner side of that loop an index scan on mc . }) Tool ← c2 · valid · novel plan · 87 ms · 1.24× default Faster than the default: a ratio above 1 is a speedup. · 1 attempt left Agent → evaluate_candidate({ \"leading\": { \"left\": { \"left\": \"t\", \"right\": \"mc\" }, \"right\": \"cn\" }, \"joins\": [{ \"relations\": [\"t\", \"mc\"], \"force\": \"hash\" }] Same tree as c2 , but a hash join for the first step, to see whether the nested loop was the win. }) Tool ← c3 · valid · novel plan · 100 ms · 1.08× default · 0 attempts left The candidate budget is spent. From here the only tool the model is offered is finish . Agent → finish({ \"selected_candidate_id\": \"c2\" }) End the search by naming a candidate, including an earlier one. The harness then measures it against the default with the final paired protocol. Tool ← Finished · selected c2 A sample trajectory where the agent is permitted to submit up to three candidates.",
+   "zh": "智能体 → 模型发起的工具调用。get_plan(\"default\") 向运行框架询问 Postgres 自己选出的计划。 这只返回规划器的估计值；不会执行任何操作。 工具 ← 运行框架的回复，被馈送回模型的上下文。 默认计划：(t ⋈ mc) ⋈ cn，哈希连接，每个节点的估计行数。智能体 → evaluate_candidate({ 提出一个 PlanAction。 运行框架用普通的 EXPLAIN 验证它，将其编译为提示（hints），并在开启执行反馈的情况下，先预热再运行一次查询并报告耗时。 \"leading\": { \"left\": { \"left\": \"cn\", \"right\": \"mc\" }, \"right\": \"t\" }, 连接树：先连接 cn 与 mc，再将结果与 t 连接。 这是前面示意图中的第一棵树。 \"joins\": [{ \"relations\": [\"cn\", \"mc\"], \"force\": \"hash\" }] 为 cn ⋈ mc 这一步强制使用哈希连接。}) 工具 ← c1 运行框架为此候选方案分配的编号。get_plan 和 finish 通过编号引用候选方案。· 有效 · 新颖计划 · 118 毫秒 · 0.91 倍默认值 执行反馈：该候选方案的实测耗时及其相对默认计划中位数的初步比值。 低于 1 表示比 Postgres 慢。· 剩余 2 次尝试机会 每次提交，无论有效与否，都会消耗本轮（rollout）候选方案尝试次数中的一次。 智能体 → evaluate_candidate({ \"leading\": { \"left\": { \"left\": \"t\", \"right\": \"mc\" }, \"right\": \"cn\" }, 试试另一棵树：先连接 t 与 mc，再连接 cn。 \"joins\": [{ \"relations\": [\"t\", \"mc\"], \"force\": \"nestloop\" }], 第一个连接使用嵌套循环，使过滤后的 t 行逐行探测 mc。 \"scans\": [{ \"relation\": \"mc\", \"force\": \"index\" }] 使该循环的内侧是对 mc 的索引扫描。}) 工具 ← c2 · 有效 · 新颖计划 · 87 毫秒 · 1.24 倍默认值 比默认计划更快：比值高于 1 即为加速。· 剩余 1 次尝试机会 智能体 → evaluate_candidate({ \"leading\": { \"left\": { \"left\": \"t\", \"right\": \"mc\" }, \"right\": \"cn\" }, \"joins\": [{ \"relations\": [\"t\", \"mc\"], \"force\": \"hash\" }] 与 c2 相同的树，但第一步改用哈希连接，以验证是否是嵌套循环带来了提升。}) 工具 ← c3 · 有效 · 新颖计划 · 100 毫秒 · 1.08 倍默认值 · 剩余 0 次尝试机会 候选方案预算已用尽。 从这里开始，模型可用的唯一工具是 finish。 智能体 → finish({ \"selected_candidate_id\": \"c2\" }) 通过指定一个候选方案来结束搜索，包括之前提交过的候选方案。 运行框架随后用最终配对协议将其与默认计划进行对比测量。 工具 ← 已完成 · 已选择 c2 一个示例轨迹，其中智能体被允许提交最多三个候选方案。",
+   "sents": [
+    {
+     "en": "Agent → A tool call made by the model. get_plan(\"default\") Ask the harness for the plan Postgres picks on its own.",
+     "zh": "智能体 → 模型发起的工具调用。get_plan(\"default\") 向运行框架询问 Postgres 自己选出的计划。"
+    },
+    {
+     "en": "This returns the planner’s estimates only; nothing is executed.",
+     "zh": "这只返回规划器的估计值；不会执行任何操作。"
+    },
+    {
+     "en": "Tool ← The harness’s reply, fed back into the model’s context.",
+     "zh": "工具 ← 运行框架的回复，被馈送回模型的上下文。"
+    },
+    {
+     "en": "Default plan: (t ⋈ mc) ⋈ cn, hash joins, estimated rows per node Agent → evaluate_candidate({ Propose one PlanAction .",
+     "zh": "默认计划：(t ⋈ mc) ⋈ cn，哈希连接，每个节点的估计行数。智能体 → evaluate_candidate({ 提出一个 PlanAction。"
+    },
+    {
+     "en": "The harness validates it with a plain EXPLAIN, compiles it to hints, and, with execution feedback on, runs the query once after a warmup and reports the timing.",
+     "zh": "运行框架用普通的 EXPLAIN 验证它，将其编译为提示（hints），并在开启执行反馈的情况下，先预热再运行一次查询并报告耗时。"
+    },
+    {
+     "en": "\"leading\": { \"left\": { \"left\": \"cn\", \"right\": \"mc\" }, \"right\": \"t\" }, The join tree: join cn with mc first, then join the result with t .",
+     "zh": "\"leading\": { \"left\": { \"left\": \"cn\", \"right\": \"mc\" }, \"right\": \"t\" }, 连接树：先连接 cn 与 mc，再将结果与 t 连接。"
+    },
+    {
+     "en": "This is the first tree from the figure earlier.",
+     "zh": "这是前面示意图中的第一棵树。"
+    },
+    {
+     "en": "\"joins\": [{ \"relations\": [\"cn\", \"mc\"], \"force\": \"hash\" }] Force a hash join for the cn ⋈ mc step. }) Tool ← c1 The id the harness assigns to this candidate. get_plan and finish refer to candidates by id. · valid · novel plan · 118 ms · 0.91× default Execution feedback: the candidate’s measured time and its preliminary ratio to the default’s median.",
+     "zh": "\"joins\": [{ \"relations\": [\"cn\", \"mc\"], \"force\": \"hash\" }] 为 cn ⋈ mc 这一步强制使用哈希连接。}) 工具 ← c1 运行框架为此候选方案分配的编号。get_plan 和 finish 通过编号引用候选方案。· 有效 · 新颖计划 · 118 毫秒 · 0.91 倍默认值 执行反馈：该候选方案的实测耗时及其相对默认计划中位数的初步比值。"
+    },
+    {
+     "en": "Below 1 means slower than Postgres. · 2 attempts left Every submission, valid or not, consumes one of the rollout’s candidate attempts.",
+     "zh": "低于 1 表示比 Postgres 慢。· 剩余 2 次尝试机会 每次提交，无论有效与否，都会消耗本轮（rollout）候选方案尝试次数中的一次。"
+    },
+    {
+     "en": "Agent → evaluate_candidate({ \"leading\": { \"left\": { \"left\": \"t\", \"right\": \"mc\" }, \"right\": \"cn\" }, Try the other tree: t with mc first, then cn .",
+     "zh": "智能体 → evaluate_candidate({ \"leading\": { \"left\": { \"left\": \"t\", \"right\": \"mc\" }, \"right\": \"cn\" }, 试试另一棵树：先连接 t 与 mc，再连接 cn。"
+    },
+    {
+     "en": "\"joins\": [{ \"relations\": [\"t\", \"mc\"], \"force\": \"nestloop\" }], A nested loop for the first join, so the filtered t rows probe mc one at a time.",
+     "zh": "\"joins\": [{ \"relations\": [\"t\", \"mc\"], \"force\": \"nestloop\" }], 第一个连接使用嵌套循环，使过滤后的 t 行逐行探测 mc。"
+    },
+    {
+     "en": "\"scans\": [{ \"relation\": \"mc\", \"force\": \"index\" }] Make the inner side of that loop an index scan on mc . }) Tool ← c2 · valid · novel plan · 87 ms · 1.24× default Faster than the default: a ratio above 1 is a speedup. · 1 attempt left Agent → evaluate_candidate({ \"leading\": { \"left\": { \"left\": \"t\", \"right\": \"mc\" }, \"right\": \"cn\" }, \"joins\": [{ \"relations\": [\"t\", \"mc\"], \"force\": \"hash\" }] Same tree as c2 , but a hash join for the first step, to see whether the nested loop was the win. }) Tool ← c3 · valid · novel plan · 100 ms · 1.08× default · 0 attempts left The candidate budget is spent.",
+     "zh": "\"scans\": [{ \"relation\": \"mc\", \"force\": \"index\" }] 使该循环的内侧是对 mc 的索引扫描。}) 工具 ← c2 · 有效 · 新颖计划 · 87 毫秒 · 1.24 倍默认值 比默认计划更快：比值高于 1 即为加速。· 剩余 1 次尝试机会 智能体 → evaluate_candidate({ \"leading\": { \"left\": { \"left\": \"t\", \"right\": \"mc\" }, \"right\": \"cn\" }, \"joins\": [{ \"relations\": [\"t\", \"mc\"], \"force\": \"hash\" }] 与 c2 相同的树，但第一步改用哈希连接，以验证是否是嵌套循环带来了提升。}) 工具 ← c3 · 有效 · 新颖计划 · 100 毫秒 · 1.08 倍默认值 · 剩余 0 次尝试机会 候选方案预算已用尽。"
+    },
+    {
+     "en": "From here the only tool the model is offered is finish .",
+     "zh": "从这里开始，模型可用的唯一工具是 finish。"
+    },
+    {
+     "en": "Agent → finish({ \"selected_candidate_id\": \"c2\" }) End the search by naming a candidate, including an earlier one.",
+     "zh": "智能体 → finish({ \"selected_candidate_id\": \"c2\" }) 通过指定一个候选方案来结束搜索，包括之前提交过的候选方案。"
+    },
+    {
+     "en": "The harness then measures it against the default with the final paired protocol.",
+     "zh": "运行框架随后用最终配对协议将其与默认计划进行对比测量。"
+    },
+    {
+     "en": "Tool ← Finished · selected c2 A sample trajectory where the agent is permitted to submit up to three candidates.",
+     "zh": "工具 ← 已完成 · 已选择 c2 一个示例轨迹，其中智能体被允许提交最多三个候选方案。"
+    }
+   ]
+  },
+  {
+   "en": "Benchmarks An agent is useless without something to benchmark its performance against. Fortunately for us, the hard work of creating these benchmarks was already done.",
+   "zh": "基准测试：如果没有可以用来衡量其表现的基准，智能体就毫无用处。 对我们来说幸运的是，创建这些基准测试的繁重工作已经有人完成了。",
+   "sents": [
+    {
+     "en": "Benchmarks An agent is useless without something to benchmark its performance against.",
+     "zh": "基准测试：如果没有可以用来衡量其表现的基准，智能体就毫无用处。"
+    },
+    {
+     "en": "Fortunately for us, the hard work of creating these benchmarks was already done.",
+     "zh": "对我们来说幸运的是，创建这些基准测试的繁重工作已经有人完成了。"
+    }
+   ]
+  },
+  {
+   "en": "Leis et al. introduced the Join Order Benchmark (JOB) in How Good Are Query Optimizers, Really? . They used it to evaluate cardinality estimation and join-order optimization using our familiar IMDb dataset.",
+   "zh": "Leis 等人在 How Good Are Query Optimizers, Really? 一文中提出了连接顺序基准测试（Join Order Benchmark，JOB）。 他们使用我们熟悉的 IMDb 数据集，通过它来评估基数估计与连接顺序优化。",
+   "sents": [
+    {
+     "en": "Leis et al. introduced the Join Order Benchmark (JOB) in How Good Are Query Optimizers, Really? .",
+     "zh": "Leis 等人在 How Good Are Query Optimizers, Really? 一文中提出了连接顺序基准测试（Join Order Benchmark，JOB）。"
+    },
+    {
+     "en": "They used it to evaluate cardinality estimation and join-order optimization using our familiar IMDb dataset.",
+     "zh": "他们使用我们熟悉的 IMDb 数据集，通过它来评估基数估计与连接顺序优化。"
+    }
+   ]
+  },
+  {
+   "en": "It consists of 113 queries spread across 33 query templates. Query templates differ via their relational skeleton. They reference different tables and connect them with different join predicates. You can think about them as a structural family of questions that can be answered. Queries derived from templates preserve the tables used and the join graph topology but change selection predicates.",
+   "zh": "它由 33 个查询模板衍生的 113 条查询组成。 查询模板通过它们的关系骨架相互区别。 它们引用不同的表，并用不同的连接谓词将这些表连接起来。 你可以把它们看作是一个能够被回答的问题的结构化家族。 从模板衍生出的查询保留所使用的表和连接图拓扑，但会改变选择谓词。",
+   "sents": [
+    {
+     "en": "It consists of 113 queries spread across 33 query templates.",
+     "zh": "它由 33 个查询模板衍生的 113 条查询组成。"
+    },
+    {
+     "en": "Query templates differ via their relational skeleton.",
+     "zh": "查询模板通过它们的关系骨架相互区别。"
+    },
+    {
+     "en": "They reference different tables and connect them with different join predicates.",
+     "zh": "它们引用不同的表，并用不同的连接谓词将这些表连接起来。"
+    },
+    {
+     "en": "You can think about them as a structural family of questions that can be answered.",
+     "zh": "你可以把它们看作是一个能够被回答的问题的结构化家族。"
+    },
+    {
+     "en": "Queries derived from templates preserve the tables used and the join graph topology but change selection predicates.",
+     "zh": "从模板衍生出的查询保留所使用的表和连接图拓扑，但会改变选择谓词。"
+    }
+   ]
+  },
+  {
+   "en": "SELECT MIN ( t . title ) AS movie_title FROM company_name AS cn JOIN movie_companies AS mc ON mc . company_id = cn . id JOIN title AS t ON t . id = mc . movie_id JOIN movie_keyword AS mk ON mk . movie_id = t . id JOIN keyword AS k ON k . id = mk . keyword_id WHERE cn . country_code = :country_code AND k . keyword = ' character-name-in-title ' ; Query template 2 — “What is the alphabetically first title of a movie associated with a company from country X and tagged with the keyword character-name-in-title?”",
+   "zh": "SELECT MIN ( t . title ) AS movie_title FROM company_name AS cn JOIN movie_companies AS mc ON mc . company_id = cn . id JOIN title AS t ON t . id = mc . movie_id JOIN movie_keyword AS mk ON mk . movie_id = t . id JOIN keyword AS k ON k . id = mk . keyword_id WHERE cn . country_code = :country_code AND k . keyword = ' character-name-in-title ' ; 查询模板 2 —— “与来自国家 X 的公司相关联且带有关键词 character-name-in-title 标签的电影，按字母顺序排在最前的片名是什么？”",
+   "sents": null
+  },
+  {
+   "en": "…and here are two real queries from JOB derived from this template:",
+   "zh": "……以下是源自该模板的来自 JOB 的两个真实查询：",
+   "sents": null
+  },
+  {
+   "en": "SELECT MIN ( t . title ) AS movie_title FROM company_name AS cn, keyword AS k, movie_companies AS mc, movie_keyword AS mk, title AS t WHERE cn . country_code = ' [de] ' AND k . keyword = ' character-name-in-title ' AND cn . id = mc . company_id AND mc . movie_id = t . id AND t . id = mk . movie_id AND mk . keyword_id = k . id AND mc . movie_id = mk . movie_id ; Query 2a — “What is the alphabetically first such movie title associated with a German company?”",
+   "zh": "SELECT MIN ( t . title ) AS movie_title FROM company_name AS cn, keyword AS k, movie_companies AS mc, movie_keyword AS mk, title AS t WHERE cn . country_code = ' [de] ' AND k . keyword = ' character-name-in-title ' AND cn . id = mc . company_id AND mc . movie_id = t . id AND t . id = mk . movie_id AND mk . keyword_id = k . id AND mc . movie_id = mk . movie_id ; 查询 2a —— “与德国公司相关的此类电影中，按字母顺序排在最前面的电影标题是什么？”",
+   "sents": null
+  },
+  {
+   "en": "SELECT MIN ( t . title ) AS movie_title FROM company_name AS cn, keyword AS k, movie_companies AS mc, movie_keyword AS mk, title AS t WHERE cn . country_code = ' [us] ' AND k . keyword = ' character-name-in-title ' AND cn . id = mc . company_id AND mc . movie_id = t . id AND t . id = mk . movie_id AND mk . keyword_id = k . id AND mc . movie_id = mk . movie_id ; Query 2d — “What is the alphabetically first such movie title associated with a U.S. company?”",
+   "zh": "SELECT MIN ( t . title ) AS movie_title FROM company_name AS cn, keyword AS k, movie_companies AS mc, movie_keyword AS mk, title AS t WHERE cn . country_code = ' [us] ' AND k . keyword = ' character-name-in-title ' AND cn . id = mc . company_id AND mc . movie_id = t . id AND t . id = mk . movie_id AND mk . keyword_id = k . id AND mc . movie_id = mk . movie_id ; 查询 2d —「与美国公司相关联的此类电影标题中，按字母顺序排在最前的是哪一部？」",
+   "sents": null
+  },
+  {
+   "en": "Another relevant benchmark is the Cardinality Estimation Benchmark (CEB), introduced in Flow-loss: Learning Cardinality Estimates That Matter . It uses the same IMDb database and is a much larger benchmark consisting of ~13.6k synthetically generated queries organized across 16 query templates CEB’s definition of a template is looser than JOB's. Two CEB templates can share the same join graph, differing only in their selectivity predicates. In JOB, every template's join graph is unique. .",
+   "zh": "另一个相关的基准是基数估计基准（CEB），它在 Flow-loss: Learning Cardinality Estimates That Matter 中被提出。 它使用相同的 IMDb 数据库，是一个规模大得多的基准，包含约 13.6k 个按 16 个查询模板组织的合成生成的查询，CEB 对模板的定义比 JOB 的更宽松。 两个 CEB 模板可以共享相同的连接图，仅在选择性谓词上有所不同。 在 JOB 中，每个模板的连接图都是唯一的。",
+   "sents": [
+    {
+     "en": "Another relevant benchmark is the Cardinality Estimation Benchmark (CEB), introduced in Flow-loss: Learning Cardinality Estimates That Matter .",
+     "zh": "另一个相关的基准是基数估计基准（CEB），它在 Flow-loss: Learning Cardinality Estimates That Matter 中被提出。"
+    },
+    {
+     "en": "It uses the same IMDb database and is a much larger benchmark consisting of ~13.6k synthetically generated queries organized across 16 query templates CEB’s definition of a template is looser than JOB's.",
+     "zh": "它使用相同的 IMDb 数据库，是一个规模大得多的基准，包含约 13.6k 个按 16 个查询模板组织的合成生成的查询，CEB 对模板的定义比 JOB 的更宽松。"
+    },
+    {
+     "en": "Two CEB templates can share the same join graph, differing only in their selectivity predicates.",
+     "zh": "两个 CEB 模板可以共享相同的连接图，仅在选择性谓词上有所不同。"
+    },
+    {
+     "en": "In JOB, every template's join graph is unique. .",
+     "zh": "在 JOB 中，每个模板的连接图都是唯一的。"
+    }
+   ]
+  },
+  {
+   "en": "Due to its size, CEB was a good fit for training the model. JOB would be used to validate the model’s performance.",
+   "zh": "由于其规模较大，CEB 非常适合用于训练模型。 JOB 则被用来验证模型的性能。",
+   "sents": [
+    {
+     "en": "Due to its size, CEB was a good fit for training the model.",
+     "zh": "由于其规模较大，CEB 非常适合用于训练模型。"
+    },
+    {
+     "en": "JOB would be used to validate the model’s performance.",
+     "zh": "JOB 则被用来验证模型的性能。"
+    }
+   ]
+  },
+  {
+   "en": "You might be wondering if it makes sense to both train and test on IMDb. If it works well, hasn’t the model just learned this specific database well?",
+   "zh": "你可能会疑惑，在 IMDb 上既训练又测试是否有意义。 如果效果很好，难道不说明模型只是学会了这个特定数据集吗？",
+   "sents": [
+    {
+     "en": "You might be wondering if it makes sense to both train and test on IMDb.",
+     "zh": "你可能会疑惑，在 IMDb 上既训练又测试是否有意义。"
+    },
+    {
+     "en": "If it works well, hasn’t the model just learned this specific database well?",
+     "zh": "如果效果很好，难道不说明模型只是学会了这个特定数据集吗？"
+    }
+   ]
+  },
+  {
+   "en": "I would argue this is precisely the point. We want our model to learn IMDb well. Given our problem formulation, if this agent is continually getting used for a company’s analytic workloads across its specific databases, we need not generalize to all databases.",
+   "zh": "我认为这恰恰是关键所在。 我们希望我们的模型学好 IMDb。 根据我们的问题设定，如果这个智能体持续被用于某家公司针对其特定数据库的分析工作负载，我们就无需泛化到所有数据库。",
+   "sents": [
+    {
+     "en": "I would argue this is precisely the point.",
+     "zh": "我认为这恰恰是关键所在。"
+    },
+    {
+     "en": "We want our model to learn IMDb well.",
+     "zh": "我们希望我们的模型学好 IMDb。"
+    },
+    {
+     "en": "Given our problem formulation, if this agent is continually getting used for a company’s analytic workloads across its specific databases, we need not generalize to all databases.",
+     "zh": "根据我们的问题设定，如果这个智能体持续被用于某家公司针对其特定数据库的分析工作负载，我们就无需泛化到所有数据库。"
+    }
+   ]
+  },
+  {
+   "en": "The real issue is making sure we’re not overfitting to JOB query templates during training over CEB. The model should learn IMDb in a way where given any query, even for structural query families it hasn’t seen before, it’s still capable of producing a good plan. In practice, this means we need to prune CEB queries that have the same shape as any of the JOB queries.",
+   "zh": "真正的问题在于确保我们在 CEB 上训练时不会对 JOB 查询模板过拟合。 模型应该以这样一种方式学习 IMDb：给定任意查询，即使是它从未见过的结构性查询族，它仍然能够生成一个好的计划。 在实践中，这意味着我们需要剪除 CEB 中与任意 JOB 查询形状相同的查询。",
+   "sents": [
+    {
+     "en": "The real issue is making sure we’re not overfitting to JOB query templates during training over CEB.",
+     "zh": "真正的问题在于确保我们在 CEB 上训练时不会对 JOB 查询模板过拟合。"
+    },
+    {
+     "en": "The model should learn IMDb in a way where given any query, even for structural query families it hasn’t seen before, it’s still capable of producing a good plan.",
+     "zh": "模型应该以这样一种方式学习 IMDb：给定任意查询，即使是它从未见过的结构性查询族，它仍然能够生成一个好的计划。"
+    },
+    {
+     "en": "In practice, this means we need to prune CEB queries that have the same shape as any of the JOB queries.",
+     "zh": "在实践中，这意味着我们需要剪除 CEB 中与任意 JOB 查询形状相同的查询。"
+    }
+   ]
+  },
+  {
+   "en": "Let’s define a query’s “topology” as its structural join-graph (de-aliased table names as nodes and joins as edges). The join graph excludes all selectivity predicates; we’re only interested in joins here.",
+   "zh": "我们将查询的「拓扑」定义为其结构化的连接图（以去别名的表名作为节点，以连接作为边）。 该连接图不包含任何选择性谓词；我们在这里只关心连接。",
+   "sents": [
+    {
+     "en": "Let’s define a query’s “topology” as its structural join-graph (de-aliased table names as nodes and joins as edges).",
+     "zh": "我们将查询的「拓扑」定义为其结构化的连接图（以去别名的表名作为节点，以连接作为边）。"
+    },
+    {
+     "en": "The join graph excludes all selectivity predicates; we’re only interested in joins here.",
+     "zh": "该连接图不包含任何选择性谓词；我们在这里只关心连接。"
+    }
+   ]
+  },
+  {
+   "en": "CEB queries sharing a topology with a JOB query would be removed from the training set. I wrote a small script to convert all JOB and CEB queries to their topologies and checked if there was any overlap. There wasn’t, so no filtering was required.",
+   "zh": "与 JOB 查询具有相同拓扑结构的 CEB 查询会从训练集中移除。 我写了一个小脚本，把所有 JOB 和 CEB 查询转换为它们的拓扑结构，并检查是否存在重叠。 结果没有重叠，因此不需要进行过滤。",
+   "sents": [
+    {
+     "en": "CEB queries sharing a topology with a JOB query would be removed from the training set.",
+     "zh": "与 JOB 查询具有相同拓扑结构的 CEB 查询会从训练集中移除。"
+    },
+    {
+     "en": "I wrote a small script to convert all JOB and CEB queries to their topologies and checked if there was any overlap.",
+     "zh": "我写了一个小脚本，把所有 JOB 和 CEB 查询转换为它们的拓扑结构，并检查是否存在重叠。"
+    },
+    {
+     "en": "There wasn’t, so no filtering was required.",
+     "zh": "结果没有重叠，因此不需要进行过滤。"
+    }
+   ]
+  },
+  {
+   "en": "JOB: 113 queries, 33 templates, 33 topologies",
+   "zh": "任务：113 个查询、33 个模板、33 个拓扑",
+   "sents": null
+  },
+  {
+   "en": "CEB: 13,646 queries, 16 templates, 12 topologies",
+   "zh": "CEB：13,646 个查询，16 个模板，12 种拓扑结构",
+   "sents": null
+  },
+  {
+   "en": "JOB and CEB templates displayed as an identicon of their topologies.",
+   "zh": "JOB 和 CEB 模板以其拓扑结构的 identicon（一致标识图）形式显示。",
+   "sents": null
+  },
+  {
+   "en": "Before getting into benchmarking the agent and doing training runs, we have to talk about how Postgres was actually run , because it directly impacts the training process.",
+   "zh": "在开始对智能体进行基准测试和训练运行之前，我们必须先谈谈 Postgres 实际上是如何运行的，因为这会直接影响训练过程。",
+   "sents": null
+  },
+  {
+   "en": "If we run the exact same query on Postgres 20 times in a row, it won’t take the same amount of time each run. In day-to-day work, this isn’t a big deal. But the whole thesis, and the training process itself, relies on measuring whether one way of running a query is faster than the Postgres default. This means we need to do everything in our power to de-noise Postgres.",
+   "zh": "如果我们对 Postgres 连续运行完全相同的查询 20 次，每次运行所耗的时间并不会相同。 在日常工作中，这并不是什么大问题。 但整个论点以及训练过程本身，都依赖于衡量某种查询执行方式是否比 Postgres 的默认方式更快。 这意味着我们要竭尽所能地为 Postgres 去噪。",
+   "sents": [
+    {
+     "en": "If we run the exact same query on Postgres 20 times in a row, it won’t take the same amount of time each run.",
+     "zh": "如果我们对 Postgres 连续运行完全相同的查询 20 次，每次运行所耗的时间并不会相同。"
+    },
+    {
+     "en": "In day-to-day work, this isn’t a big deal.",
+     "zh": "在日常工作中，这并不是什么大问题。"
+    },
+    {
+     "en": "But the whole thesis, and the training process itself, relies on measuring whether one way of running a query is faster than the Postgres default.",
+     "zh": "但整个论点以及训练过程本身，都依赖于衡量某种查询执行方式是否比 Postgres 的默认方式更快。"
+    },
+    {
+     "en": "This means we need to do everything in our power to de-noise Postgres.",
+     "zh": "这意味着我们要竭尽所能地为 Postgres 去噪。"
+    }
+   ]
+  },
+  {
+   "en": "First, I needed to understand just how noisy Postgres query executions are.",
+   "zh": "首先，我需要了解 Postgres 查询执行到底有多嘈杂。",
+   "sents": null
+  },
+  {
+   "en": "I started by building a “calibration” capability into my experimentation workflow. The calibration process was simple: run N N N Docker containers built from a Postgres image, each given a fixed slice of CPU cores and RAM to use. I set N = 4 N = 4 N = 4 to begin; anything lower might make future training far too slow, and anything higher might lead to more CPU contention, which means more noise. Each container was given 4 cores to use and capped at 8 GB of memory.",
+   "zh": "我首先在我的实验工作流中构建了一个「校准」功能。 校准过程很简单：运行 N N N 个由 Postgres 镜像构建的 Docker 容器，每个容器分配固定的 CPU 核心数和内存配额。 我起初设 N = 4 N = 4 N = 4；更低的话可能使未来的训练太慢，更高的话可能导致更多的 CPU 争用，也就意味着更多噪声。 每个容器被分配 4 个核心，内存上限为 8 GB。",
+   "sents": [
+    {
+     "en": "I started by building a “calibration” capability into my experimentation workflow.",
+     "zh": "我首先在我的实验工作流中构建了一个「校准」功能。"
+    },
+    {
+     "en": "The calibration process was simple: run N N N Docker containers built from a Postgres image, each given a fixed slice of CPU cores and RAM to use.",
+     "zh": "校准过程很简单：运行 N N N 个由 Postgres 镜像构建的 Docker 容器，每个容器分配固定的 CPU 核心数和内存配额。"
+    },
+    {
+     "en": "I set N = 4 N = 4 N = 4 to begin; anything lower might make future training far too slow, and anything higher might lead to more CPU contention, which means more noise.",
+     "zh": "我起初设 N = 4 N = 4 N = 4；更低的话可能使未来的训练太慢，更高的话可能导致更多的 CPU 争用，也就意味着更多噪声。"
+    },
+    {
+     "en": "Each container was given 4 cores to use and capped at 8 GB of memory.",
+     "zh": "每个容器被分配 4 个核心，内存上限为 8 GB。"
+    }
+   ]
+  },
+  {
+   "en": "On startup, each container initialized Postgres with identical settings and loaded the IMDb data. Calibration then opened a thread pool of size four and pushed all 113 queries onto a shared queue. Whenever a container finished measuring a query, it pulled the next one off the queue.",
+   "zh": "启动时，每个容器都以相同的设置初始化 Postgres，并加载了 IMDb 数据。 校准随后开启了一个大小为四的线程池，并将全部 113 条查询推送到一个共享队列中。 每当一个容器完成对某条查询的测量，它就会从队列中取出下一条查询。",
+   "sents": [
+    {
+     "en": "On startup, each container initialized Postgres with identical settings and loaded the IMDb data.",
+     "zh": "启动时，每个容器都以相同的设置初始化 Postgres，并加载了 IMDb 数据。"
+    },
+    {
+     "en": "Calibration then opened a thread pool of size four and pushed all 113 queries onto a shared queue.",
+     "zh": "校准随后开启了一个大小为四的线程池，并将全部 113 条查询推送到一个共享队列中。"
+    },
+    {
+     "en": "Whenever a container finished measuring a query, it pulled the next one off the queue.",
+     "zh": "每当一个容器完成对某条查询的测量，它就会从队列中取出下一条查询。"
+    }
+   ]
+  },
+  {
+   "en": "The actual measurement process had two phases:",
+   "zh": "实际的测量过程分为两个阶段：",
+   "sents": null
+  },
+  {
+   "en": "So what does it mean to warm a query up? We need to bust out some OS fundamentals to understand.",
+   "zh": "那么预热一个查询到底是什么意思呢？ 我们需要用一些操作系统的基础知识来理解这一点。",
+   "sents": [
+    {
+     "en": "So what does it mean to warm a query up?",
+     "zh": "那么预热一个查询到底是什么意思呢？"
+    },
+    {
+     "en": "We need to bust out some OS fundamentals to understand.",
+     "zh": "我们需要用一些操作系统的基础知识来理解这一点。"
+    }
+   ]
+  },
+  {
+   "en": "Whenever Postgres executes a query, it asks the operating system (in our case, Linux) for pages of data. Linux first checks its own filesystem cache, the page cache. If the pages are present, Linux sends them over; else it reads them from disk, stores them in its cache and then sends them over. Postgres, in turn, keeps received pages in its own shared_buffers cache for easy reuse. When shared_buffers begins to overflow, Postgres evicts pages. If it needs those pages again, it must ask Linux once more.",
+   "zh": "每当 Postgres 执行查询时，它都会向操作系统（在我们的例子中是 Linux）请求数据页。 Linux 会先检查自己的文件系统缓存，即页缓存（page cache）。 如果这些页已存在，Linux 就直接发送它们；否则，它会从磁盘读取这些页，存入自己的缓存，然后再发送。 而 Postgres 会将收到的页保存在自己的 shared_buffers 缓存中，以便重复使用。 当 shared_buffers 开始溢出时，Postgres 会逐出（淘汰）一些页。 如果它再次需要这些页，就必须再次向 Linux 请求。",
+   "sents": [
+    {
+     "en": "Whenever Postgres executes a query, it asks the operating system (in our case, Linux) for pages of data.",
+     "zh": "每当 Postgres 执行查询时，它都会向操作系统（在我们的例子中是 Linux）请求数据页。"
+    },
+    {
+     "en": "Linux first checks its own filesystem cache, the page cache.",
+     "zh": "Linux 会先检查自己的文件系统缓存，即页缓存（page cache）。"
+    },
+    {
+     "en": "If the pages are present, Linux sends them over; else it reads them from disk, stores them in its cache and then sends them over.",
+     "zh": "如果这些页已存在，Linux 就直接发送它们；否则，它会从磁盘读取这些页，存入自己的缓存，然后再发送。"
+    },
+    {
+     "en": "Postgres, in turn, keeps received pages in its own shared_buffers cache for easy reuse.",
+     "zh": "而 Postgres 会将收到的页保存在自己的 shared_buffers 缓存中，以便重复使用。"
+    },
+    {
+     "en": "When shared_buffers begins to overflow, Postgres evicts pages.",
+     "zh": "当 shared_buffers 开始溢出时，Postgres 会逐出（淘汰）一些页。"
+    },
+    {
+     "en": "If it needs those pages again, it must ask Linux once more.",
+     "zh": "如果它再次需要这些页，就必须再次向 Linux 请求。"
+    }
+   ]
+  },
+  {
+   "en": "Every time there’s a cache hit in shared_buffers for a page, Postgres increments a counter called “shared hit blocks” (SHBs). If it has to ask Linux, it increments “shared read blocks” (SRBs).",
+   "zh": "每当 shared_buffers 中发生一次针对某个页的缓存命中时，Postgres 就会增加一个名为 \"shared hit blocks\"（共享命中块，SHBs）的计数器。 如果它必须向 Linux 请求，则会增加 \"shared read blocks\"（共享读取块，SRBs）的计数。",
+   "sents": [
+    {
+     "en": "Every time there’s a cache hit in shared_buffers for a page, Postgres increments a counter called “shared hit blocks” (SHBs).",
+     "zh": "每当 shared_buffers 中发生一次针对某个页的缓存命中时，Postgres 就会增加一个名为 \"shared hit blocks\"（共享命中块，SHBs）的计数器。"
+    },
+    {
+     "en": "If it has to ask Linux, it increments “shared read blocks” (SRBs).",
+     "zh": "如果它必须向 Linux 请求，则会增加 \"shared read blocks\"（共享读取块，SRBs）的计数。"
+    }
+   ]
+  },
+  {
+   "en": "Postgres conveniently reports both counters if we run EXPLAIN with the BUFFERS option. For example, running EXPLAIN (ANALYZE, TIMING OFF, BUFFERS, FORMAT JSON) outputs something like:",
+   "zh": "如果我们在运行 EXPLAIN 时加上 BUFFERS 选项，Postgres 会方便地同时报告这两个计数器。 例如，运行 EXPLAIN (ANALYZE, TIMING OFF, BUFFERS, FORMAT JSON) 会输出类似以下的内容：",
+   "sents": [
+    {
+     "en": "Postgres conveniently reports both counters if we run EXPLAIN with the BUFFERS option.",
+     "zh": "如果我们在运行 EXPLAIN 时加上 BUFFERS 选项，Postgres 会方便地同时报告这两个计数器。"
+    },
+    {
+     "en": "For example, running EXPLAIN (ANALYZE, TIMING OFF, BUFFERS, FORMAT JSON) outputs something like:",
+     "zh": "例如，运行 EXPLAIN (ANALYZE, TIMING OFF, BUFFERS, FORMAT JSON) 会输出类似以下的内容："
+    }
+   ]
+  },
+  {
+   "en": "{ \" Plan \" : { \" Node Type \" : \" Aggregate \" , \" Shared Hit Blocks \" : 1800786 , \" Shared Read Blocks \" : 52990 , ... }, \" Execution Time \" : 189.2 , ..., } These counters give us some notion of the “warmness” of a query. After each warmup run, we compared its hit and read counts to the previous run’s. If both were within 2% of each other (and the plan hadn’t changed), we called the query warm and started measuring. A query needed at least two warmups to have something to compare, and was cut off at five regardless. The idea was that if the counters stopped moving, the data could be considered settled and cache churn would be minimized during the 20 measurements.",
+   "zh": "{ \" Plan \" : { \" Node Type \" : \" Aggregate \" , \" Shared Hit Blocks \" : 1800786 , \" Shared Read Blocks \" : 52990 , ... }, \" Execution Time \" : 189.2 , ..., } 这些计数器让我们能够大致了解一个查询的“热度”。 在每次预热运行之后，我们会将其命中数和读取数与上一次运行的结果进行比较。 如果两者相差在 2% 以内（并且执行计划没有变化），我们就认为该查询已预热完成，并开始测量。 一个查询至少需要两次预热才能有可比较的对象，且无论情况如何，最多预热五次就截止。 我们的思路是：如果这些计数器不再变动，就可以认为数据已经稳定，从而在 20 次测量期间将缓存扰动降到最低。",
+   "sents": [
+    {
+     "en": "{ \" Plan \" : { \" Node Type \" : \" Aggregate \" , \" Shared Hit Blocks \" : 1800786 , \" Shared Read Blocks \" : 52990 , ... }, \" Execution Time \" : 189.2 , ..., } These counters give us some notion of the “warmness” of a query.",
+     "zh": "{ \" Plan \" : { \" Node Type \" : \" Aggregate \" , \" Shared Hit Blocks \" : 1800786 , \" Shared Read Blocks \" : 52990 , ... }, \" Execution Time \" : 189.2 , ..., } 这些计数器让我们能够大致了解一个查询的“热度”。"
+    },
+    {
+     "en": "After each warmup run, we compared its hit and read counts to the previous run’s.",
+     "zh": "在每次预热运行之后，我们会将其命中数和读取数与上一次运行的结果进行比较。"
+    },
+    {
+     "en": "If both were within 2% of each other (and the plan hadn’t changed), we called the query warm and started measuring.",
+     "zh": "如果两者相差在 2% 以内（并且执行计划没有变化），我们就认为该查询已预热完成，并开始测量。"
+    },
+    {
+     "en": "A query needed at least two warmups to have something to compare, and was cut off at five regardless.",
+     "zh": "一个查询至少需要两次预热才能有可比较的对象，且无论情况如何，最多预热五次就截止。"
+    },
+    {
+     "en": "The idea was that if the counters stopped moving, the data could be considered settled and cache churn would be minimized during the 20 measurements.",
+     "zh": "我们的思路是：如果这些计数器不再变动，就可以认为数据已经稳定，从而在 20 次测量期间将缓存扰动降到最低。"
+    }
+   ]
+  },
+  {
+   "en": "Query A Query B Shared hit blocks 0 Shared read blocks 0",
+   "zh": "查询 A 查询 B 共享命中块数 0 共享读取块数 0",
+   "sents": null
+  },
+  {
+   "en": "I set shared_buffers to a conservative 128 MB and ran the first calibration:",
+   "zh": "我将 shared_buffers 设置为保守的 128 MB，并运行了第一次校准：",
+   "sents": null
+  },
+  {
+   "en": "Still reading from Linux after warmup Fully resident in shared_buffers",
+   "zh": "预热后仍从 Linux 读取 完全驻留在 shared_buffers 中",
+   "sents": null
+  },
+  {
+   "en": "Half the queries were declared warm after only two runs. Not bad… at least until I dug deeper. The SRB counts weren’t dropping to zero; rather, they were hovering steady at some large number. With only 128 MB of shared_buffers against an 8.5 GB database, Postgres was consistently missing its own cache on every execution and asking Linux for more pages. “Stable” did not mean “resident.”",
+   "zh": "仅运行两次后，就有一半的查询被判定为热查询。 不错……至少在我深入探究之前是这样。 SRB 计数并没有降到零，而是稳定地停留在某个很大的数字上。 相对于 8.5 GB 的数据库，shared_buffers 只有 128 MB，Postgres 在每次执行时都无法命中自己的缓存，只能不断向 Linux 请求更多页面。“稳定”并不意味着“常驻”。",
+   "sents": [
+    {
+     "en": "Half the queries were declared warm after only two runs.",
+     "zh": "仅运行两次后，就有一半的查询被判定为热查询。"
+    },
+    {
+     "en": "Not bad… at least until I dug deeper.",
+     "zh": "不错……至少在我深入探究之前是这样。"
+    },
+    {
+     "en": "The SRB counts weren’t dropping to zero; rather, they were hovering steady at some large number.",
+     "zh": "SRB 计数并没有降到零，而是稳定地停留在某个很大的数字上。"
+    },
+    {
+     "en": "With only 128 MB of shared_buffers against an 8.5 GB database, Postgres was consistently missing its own cache on every execution and asking Linux for more pages. “Stable” did not mean “resident.”",
+     "zh": "相对于 8.5 GB 的数据库，shared_buffers 只有 128 MB，Postgres 在每次执行时都无法命中自己的缓存，只能不断向 Linux 请求更多页面。“稳定”并不意味着“常驻”。"
+    }
+   ]
+  },
+  {
+   "en": "Linux’s page cache is fast, so this isn’t the end of the world. Unfortunately, a new problem emerged when I actually looked at the 20 measurements taken for various queries. Let’s look at one query in particular, job-13b :",
+   "zh": "Linux 的页缓存非常快，所以这并不是世界末日。 不幸的是，当我实际查看为各种查询所测的 20 次测量结果时，出现了一个新问题。 我们来看其中一个具体的查询，job-13b：",
+   "sents": [
+    {
+     "en": "Linux’s page cache is fast, so this isn’t the end of the world.",
+     "zh": "Linux 的页缓存非常快，所以这并不是世界末日。"
+    },
+    {
+     "en": "Unfortunately, a new problem emerged when I actually looked at the 20 measurements taken for various queries.",
+     "zh": "不幸的是，当我实际查看为各种查询所测的 20 次测量结果时，出现了一个新问题。"
+    },
+    {
+     "en": "Let’s look at one query in particular, job-13b :",
+     "zh": "我们来看其中一个具体的查询，job-13b："
+    }
+   ]
+  },
+  {
+   "en": "14 of the 20 landed between 186 and 204 ms. The other 6 landed between 227 and 253 ms, somewhere between 14% and 26% slower. The query wasn’t even uniformly noisy, it just had two different speeds at different times, and a third of the time it ran at the slower speed.",
+   "zh": "20次中有14次落在186到204毫秒之间。 其余6次落在227到253毫秒之间，大约慢了14%到26%。 这条查询的波动甚至不是均匀的，它只是在不同的时间有两种不同的速度，而有三分之一的时间它以较慢的速度运行。",
+   "sents": [
+    {
+     "en": "14 of the 20 landed between 186 and 204 ms.",
+     "zh": "20次中有14次落在186到204毫秒之间。"
+    },
+    {
+     "en": "The other 6 landed between 227 and 253 ms, somewhere between 14% and 26% slower.",
+     "zh": "其余6次落在227到253毫秒之间，大约慢了14%到26%。"
+    },
+    {
+     "en": "The query wasn’t even uniformly noisy, it just had two different speeds at different times, and a third of the time it ran at the slower speed.",
+     "zh": "这条查询的波动甚至不是均匀的，它只是在不同的时间有两种不同的速度，而有三分之一的时间它以较慢的速度运行。"
+    }
+   ]
+  },
+  {
+   "en": "I initially wanted to quantify noise using the coefficient of variation :",
+   "zh": "我最初想用变异系数来量化噪声：",
+   "sents": null
+  },
+  {
+   "en": "The CV tells us the “wobble” of a measurement. If a query takes 100 ms and has a CV of 5%, we could say it wobbles by about 5 ms. For job-13b , the CV was 10.3%. It wasn’t great. CV is also not a great measurement to use here. Because it’s built on the mean, it’s easily influenced by a few outlier runs.",
+   "zh": "变异系数（CV）告诉我们一次测量的“波动”程度。 如果一个查询耗时 100 毫秒，CV 为 5%，我们可以说它的波动幅度大约是 5 毫秒。 对于 job-13b，CV 是 10.3%。这不算好。 CV 在这里也不是一个合适的度量指标。 因为它基于均值，所以很容易受少数离群运行的影响。",
+   "sents": [
+    {
+     "en": "The CV tells us the “wobble” of a measurement.",
+     "zh": "变异系数（CV）告诉我们一次测量的“波动”程度。"
+    },
+    {
+     "en": "If a query takes 100 ms and has a CV of 5%, we could say it wobbles by about 5 ms.",
+     "zh": "如果一个查询耗时 100 毫秒，CV 为 5%，我们可以说它的波动幅度大约是 5 毫秒。"
+    },
+    {
+     "en": "For job-13b , the CV was 10.3%. It wasn’t great.",
+     "zh": "对于 job-13b，CV 是 10.3%。这不算好。"
+    },
+    {
+     "en": "CV is also not a great measurement to use here.",
+     "zh": "CV 在这里也不是一个合适的度量指标。"
+    },
+    {
+     "en": "Because it’s built on the mean, it’s easily influenced by a few outlier runs.",
+     "zh": "因为它基于均值，所以很容易受少数离群运行的影响。"
+    }
+   ]
+  },
+  {
+   "en": "We don’t actually care as much about how spread out the 20 runs are. We do care about how often this causes our measurement criteria during training runs to get fooled.",
+   "zh": "我们其实并不那么在意这 20 次运行的分散程度如何。 我们在意的是这种情况多频繁地导致我们在训练运行中的衡量标准被蒙骗。",
+   "sents": [
+    {
+     "en": "We don’t actually care as much about how spread out the 20 runs are.",
+     "zh": "我们其实并不那么在意这 20 次运行的分散程度如何。"
+    },
+    {
+     "en": "We do care about how often this causes our measurement criteria during training runs to get fooled.",
+     "zh": "我们在意的是这种情况多频繁地导致我们在训练运行中的衡量标准被蒙骗。"
+    }
+   ]
+  },
+  {
+   "en": "Bear with me here as I skip ahead a little bit in order to provide more color on what exactly we needed to measure.",
+   "zh": "请允许我稍微跳过一点内容，以便更详细地说明我们究竟需要测量什么。",
+   "sents": null
+  },
+  {
+   "en": "To de-noise during actual agent runs, I couldn’t just run the agent’s proposed plan a single time. Instead, I ran three interleaved (candidate, default) pairs sequentially. Three was picked somewhat arbitrarily to provide some measure of variability while being small enough to prevent agent evaluation runs from spending most of their time in Postgres. Once the three candidate/default execution time tuples were obtained, the medians of both the three candidates and the three defaults were taken and expressed as a ratio of each other to determine the final speedup or slowdown. If the two medians differed by less than an arbitrarily declared 5%, it was a tie. Outside of that tie zone, a candidate could be declared as a speedup or a slowdown.",
+   "zh": "为了在智能体实际运行过程中进行去噪，我不能只把智能体提出的方案运行一次。 相反，我按顺序运行了三对交替进行的（候选，默认）组合。 选择三次在某种程度上是任意的，目的是提供一定的可变性，同时又要足够小，以免智能体评估运行把大部分时间都花在 Postgres 上。 一旦获得了三组候选/默认执行时间元组，就分别取三个候选和三个默认值的中位数，并将两者表示为彼此的比值，以确定最终的加速或减速。 如果两个中位数相差小于任意设定的 5%，则为平局。 在该平局区间之外，候选方案可以被判定为加速或减速。",
+   "sents": [
+    {
+     "en": "To de-noise during actual agent runs, I couldn’t just run the agent’s proposed plan a single time.",
+     "zh": "为了在智能体实际运行过程中进行去噪，我不能只把智能体提出的方案运行一次。"
+    },
+    {
+     "en": "Instead, I ran three interleaved (candidate, default) pairs sequentially.",
+     "zh": "相反，我按顺序运行了三对交替进行的（候选，默认）组合。"
+    },
+    {
+     "en": "Three was picked somewhat arbitrarily to provide some measure of variability while being small enough to prevent agent evaluation runs from spending most of their time in Postgres.",
+     "zh": "选择三次在某种程度上是任意的，目的是提供一定的可变性，同时又要足够小，以免智能体评估运行把大部分时间都花在 Postgres 上。"
+    },
+    {
+     "en": "Once the three candidate/default execution time tuples were obtained, the medians of both the three candidates and the three defaults were taken and expressed as a ratio of each other to determine the final speedup or slowdown.",
+     "zh": "一旦获得了三组候选/默认执行时间元组，就分别取三个候选和三个默认值的中位数，并将两者表示为彼此的比值，以确定最终的加速或减速。"
+    },
+    {
+     "en": "If the two medians differed by less than an arbitrarily declared 5%, it was a tie.",
+     "zh": "如果两个中位数相差小于任意设定的 5%，则为平局。"
+    },
+    {
+     "en": "Outside of that tie zone, a candidate could be declared as a speedup or a slowdown.",
+     "zh": "在该平局区间之外，候选方案可以被判定为加速或减速。"
+    }
+   ]
+  },
+  {
+   "en": "Now let’s go back to our earlier job-13b example. We had 14 executions in one clump, and 6 in another slower clump. The median of three strategy sounds good until you realize that if, in theory, at least two of the three measurements landed in that “slower” clump, the median would bias towards the less frequent slower clump.",
+   "zh": "现在让我们回到之前的 job-13b 示例。 我们有 14 次执行聚在一组，另有 6 次聚在较慢的另一组。 三取中位数策略听起来不错，直到你意识到：如果理论上三个测量值中至少有两个落在那个「较慢」的组里，中位数就会偏向出现频率较低的较慢组。",
+   "sents": [
+    {
+     "en": "Now let’s go back to our earlier job-13b example.",
+     "zh": "现在让我们回到之前的 job-13b 示例。"
+    },
+    {
+     "en": "We had 14 executions in one clump, and 6 in another slower clump.",
+     "zh": "我们有 14 次执行聚在一组，另有 6 次聚在较慢的另一组。"
+    },
+    {
+     "en": "The median of three strategy sounds good until you realize that if, in theory, at least two of the three measurements landed in that “slower” clump, the median would bias towards the less frequent slower clump.",
+     "zh": "三取中位数策略听起来不错，直到你意识到：如果理论上三个测量值中至少有两个落在那个「较慢」的组里，中位数就会偏向出现频率较低的较慢组。"
+    }
+   ]
+  },
+  {
+   "en": "Imagine a candidate plan that executes identically to the default. No real difference exists, so the correct reward is zero. Draw three timings for the “candidate” and three for the “default” out of the 20 we observed. There are ( 20 3 ) = 1,140 \\binom{20}{3} = 1{,}140 ( 3 20 ​ ) = 1 , 140 ways to draw three from 20; for job-13b , 230 of them contain at least two slow runs, so one side’s median lands in the slow clump ~20% of the time.",
+   "zh": "设想一个候选方案，其执行方式与默认方案完全相同。 由于不存在真正的差异，因此正确的奖励应为零。 在我们观测到的 20 个数据中，为「候选」抽三个时间，再为「默认」抽三个时间。 从 20 个数据中抽三个共有 ( 20 3 ) = 1,140 \\binom{20}{3} = 1{,}140 ( 3 20 ​ ) = 1 , 140 种抽法；对于 job-13b ，其中 230 种抽法至少包含两个慢运行，因此某一侧的中位数落入慢数据簇的概率约为 20%。",
+   "sents": [
+    {
+     "en": "Imagine a candidate plan that executes identically to the default.",
+     "zh": "设想一个候选方案，其执行方式与默认方案完全相同。"
+    },
+    {
+     "en": "No real difference exists, so the correct reward is zero.",
+     "zh": "由于不存在真正的差异，因此正确的奖励应为零。"
+    },
+    {
+     "en": "Draw three timings for the “candidate” and three for the “default” out of the 20 we observed.",
+     "zh": "在我们观测到的 20 个数据中，为「候选」抽三个时间，再为「默认」抽三个时间。"
+    },
+    {
+     "en": "There are ( 20 3 ) = 1,140 \\binom{20}{3} = 1{,}140 ( 3 20 ​ ) = 1 , 140 ways to draw three from 20; for job-13b , 230 of them contain at least two slow runs, so one side’s median lands in the slow clump ~20% of the time.",
+     "zh": "从 20 个数据中抽三个共有 ( 20 3 ) = 1,140 \\binom{20}{3} = 1{,}140 ( 3 20 ​ ) = 1 , 140 种抽法；对于 job-13b ，其中 230 种抽法至少包含两个慢运行，因此某一侧的中位数落入慢数据簇的概率约为 20%。"
+    }
+   ]
+  },
+  {
+   "en": "That’s a totally phantom 14-26% speedup or slowdown that we would show to our model as signal ~20% of the time. Dangerous!",
+   "zh": "这就是我们大约 20% 的情况下会展示给模型作为信号的、完全是虚幻的 14-26% 提速或减速。危险啊！",
+   "sents": null
+  },
+  {
+   "en": "job-13b 128 MB shared_buffers · a no-op candidate (i.e. one that is identical to the default)",
+   "zh": "job-13b 128 MB shared_buffers · 一个无操作候选（即与默认值完全相同的候选）",
+   "sents": null
+  },
+  {
+   "en": "0 rounds · ties 0 · phantom wins 0 · phantom losses 0 · fooled 0%",
+   "zh": "0 轮 · 平局 0 · 虚假胜局 0 · 虚假败局 0 · 被骗 0%",
+   "sents": null
+  },
+  {
+   "en": "So we can’t just rely on CV as the golden number to minimize, as two queries with the exact same CV can fool the measurement reward at different rates depending on whether the spreads are a uniform blur or two clumps sitting more than 5% apart. The actual number to minimize is this fooling rate itself.",
+   "zh": "所以我们不能只把 CV（变异系数）当作要最小化的黄金指标，因为两个 CV 完全相同的查询，其欺骗测量奖励的比率可能不同，取决于散布是均匀的模糊，还是相距超过 5% 的两团聚集。 真正需要最小化的数字正是这个欺骗率本身。",
+   "sents": [
+    {
+     "en": "So we can’t just rely on CV as the golden number to minimize, as two queries with the exact same CV can fool the measurement reward at different rates depending on whether the spreads are a uniform blur or two clumps sitting more than 5% apart.",
+     "zh": "所以我们不能只把 CV（变异系数）当作要最小化的黄金指标，因为两个 CV 完全相同的查询，其欺骗测量奖励的比率可能不同，取决于散布是均匀的模糊，还是相距超过 5% 的两团聚集。"
+    },
+    {
+     "en": "The actual number to minimize is this fooling rate itself.",
+     "zh": "真正需要最小化的数字正是这个欺骗率本身。"
+    }
+   ]
+  },
+  {
+   "en": "I wrote a small script to compute the fooling rate directly from raw calibration data. It worked by sliding a window of six sequential runs across the 20. For each window, we took interleaved pairs of size two to represent an interleaved (candidate, default) pair. A window of size six gives us pairings like: (t1, t2), (t3, t4), (t5, t6) . In any given pair, t n t_n t n ​ and t n + 1 t_{n+1} t n + 1 ​ can alternate roles of being the candidate query, or the default query. That means for each pair, there are two possibilities, and therefore for each window of three tuples, there are 2 × 2 × 2 = 8 2 \\times 2 \\times 2 = 8 2 × 2 × 2 = 8 possibilities. 20 measurements means we’ll slide this window 15 times, so we have 15 × 8 = 120 15 \\times 8 = 120 15 × 8 = 120 total possibilities Each possibility is a binary value indicating whether or not that specific, simulated formulation of candidate/default pairs resulted in a ratio of medians between the two greater than the 5% tie-zone. for a given query.",
+   "zh": "我写了一个小脚本，直接从原始校准数据计算愚弄率。 它的工作方式是在这 20 个数据上滑动一个包含六次连续运行的窗口。 对于每个窗口，我们取大小为二的交错对来表示一个交错的（候选、默认）对。 大小为六的窗口给我们这样的配对：(t1, t2), (t3, t4), (t5, t6)。 在任意给定的一对中，t_n 和 t_{n+1} 可以交替扮演候选查询或默认查询的角色。 这意味着每一对有两种可能性，因此每个包含三个元组的窗口有 2 × 2 × 2 = 8 种可能性。20 次测量意味着我们会滑动这个窗口 15 次，所以总共有 15 × 8 = 120 种可能性。每种可能性是一个二进制值，表示该特定的、模拟的候选/默认对构造方式是否导致两者之间的中位数之比对于给定查询超过了 5% 的平局区间。",
+   "sents": [
+    {
+     "en": "I wrote a small script to compute the fooling rate directly from raw calibration data.",
+     "zh": "我写了一个小脚本，直接从原始校准数据计算愚弄率。"
+    },
+    {
+     "en": "It worked by sliding a window of six sequential runs across the 20.",
+     "zh": "它的工作方式是在这 20 个数据上滑动一个包含六次连续运行的窗口。"
+    },
+    {
+     "en": "For each window, we took interleaved pairs of size two to represent an interleaved (candidate, default) pair.",
+     "zh": "对于每个窗口，我们取大小为二的交错对来表示一个交错的（候选、默认）对。"
+    },
+    {
+     "en": "A window of size six gives us pairings like: (t1, t2), (t3, t4), (t5, t6) .",
+     "zh": "大小为六的窗口给我们这样的配对：(t1, t2), (t3, t4), (t5, t6)。"
+    },
+    {
+     "en": "In any given pair, t n t_n t n ​ and t n + 1 t_{n+1} t n + 1 ​ can alternate roles of being the candidate query, or the default query.",
+     "zh": "在任意给定的一对中，t_n 和 t_{n+1} 可以交替扮演候选查询或默认查询的角色。"
+    },
+    {
+     "en": "That means for each pair, there are two possibilities, and therefore for each window of three tuples, there are 2 × 2 × 2 = 8 2 \\times 2 \\times 2 = 8 2 × 2 × 2 = 8 possibilities. 20 measurements means we’ll slide this window 15 times, so we have 15 × 8 = 120 15 \\times 8 = 120 15 × 8 = 120 total possibilities Each possibility is a binary value indicating whether or not that specific, simulated formulation of candidate/default pairs resulted in a ratio of medians between the two greater than the 5% tie-zone. for a given query.",
+     "zh": "这意味着每一对有两种可能性，因此每个包含三个元组的窗口有 2 × 2 × 2 = 8 种可能性。20 次测量意味着我们会滑动这个窗口 15 次，所以总共有 15 × 8 = 120 种可能性。每种可能性是一个二进制值，表示该特定的、模拟的候选/默认对构造方式是否导致两者之间的中位数之比对于给定查询超过了 5% 的平局区间。"
+    }
+   ]
+  },
+  {
+   "en": "We derive two metrics from these raw numbers. First, we calculate the no-op error rate for a given query as the ratio of the 120 simulated possibilities that do differ by more than 5% against the number that don’t. We sum these percentages up across all 113 JOB queries and then divide by 113. This number, which we’ll call the “mean no-op error rate,” gives us the percentage likelihood that the reward may get fooled for any JOB query when doing our three paired measurements strategy. Second, we sort the no-op error rates for all 113 queries, lowest to highest. The number that is 90% of the way to the end of this sorted list is reported as the “p90 query,” and gives us a measure of the fooling rate for the worst-offending queries.",
+   "zh": "我们从这些原始数字中推导出两个指标。 首先，我们将给定查询的无操作错误率计算为：120个模拟可能性中变化超过5%的数量与不超过5%的数量之间的比值。 我们将所有113个JOB查询的这些百分比加总，然后除以113。 这个数字，我们称之为「平均无操作错误率」，给出了在执行我们的三次配对测量策略时，任何JOB查询的奖励可能被欺骗的百分比概率。 其次，我们将所有113个查询的无操作错误率从低到高排序。 位于这个排序列表末尾90%位置的数字被报告为「p90查询」，它为我们衡量了最严重违规查询的被欺骗率。",
+   "sents": [
+    {
+     "en": "We derive two metrics from these raw numbers.",
+     "zh": "我们从这些原始数字中推导出两个指标。"
+    },
+    {
+     "en": "First, we calculate the no-op error rate for a given query as the ratio of the 120 simulated possibilities that do differ by more than 5% against the number that don’t.",
+     "zh": "首先，我们将给定查询的无操作错误率计算为：120个模拟可能性中变化超过5%的数量与不超过5%的数量之间的比值。"
+    },
+    {
+     "en": "We sum these percentages up across all 113 JOB queries and then divide by 113.",
+     "zh": "我们将所有113个JOB查询的这些百分比加总，然后除以113。"
+    },
+    {
+     "en": "This number, which we’ll call the “mean no-op error rate,” gives us the percentage likelihood that the reward may get fooled for any JOB query when doing our three paired measurements strategy.",
+     "zh": "这个数字，我们称之为「平均无操作错误率」，给出了在执行我们的三次配对测量策略时，任何JOB查询的奖励可能被欺骗的百分比概率。"
+    },
+    {
+     "en": "Second, we sort the no-op error rates for all 113 queries, lowest to highest.",
+     "zh": "其次，我们将所有113个查询的无操作错误率从低到高排序。"
+    },
+    {
+     "en": "The number that is 90% of the way to the end of this sorted list is reported as the “p90 query,” and gives us a measure of the fooling rate for the worst-offending queries.",
+     "zh": "位于这个排序列表末尾90%位置的数字被报告为「p90查询」，它为我们衡量了最严重违规查询的被欺骗率。"
+    }
+   ]
+  },
+  {
+   "en": "At 128 MB for shared_buffers and four concurrent containers, the “fool rate” script produced the following mean no-op error rates and p90 query numbers I ran the calibration twice per config to provide a sense of how much two runs may disagree with each other. :",
+   "zh": "在 shared_buffers 为 128 MB、四个并发容器的情况下，“fool rate” 脚本产生了以下平均无操作（no-op）错误率和 p90 查询数。我对每个配置运行了两次校准，以便了解两次运行的结果可能有多大差异。：",
+   "sents": null
+  },
+  {
+   "en": "The numbers aren’t good. One in twenty no-op plans get rewarded, and one in ~10 queries gets fooled more than 13% of the time.",
+   "zh": "数字并不好看。 每二十个空操作计划中就有一个会获得奖励，而且大约每十次查询中就有一次会被欺骗的概率超过 13%。",
+   "sents": [
+    {
+     "en": "The numbers aren’t good.",
+     "zh": "数字并不好看。"
+    },
+    {
+     "en": "One in twenty no-op plans get rewarded, and one in ~10 queries gets fooled more than 13% of the time.",
+     "zh": "每二十个空操作计划中就有一个会获得奖励，而且大约每十次查询中就有一次会被欺骗的概率超过 13%。"
+    }
+   ]
+  },
+  {
+   "en": "I focused on two memory-related settings Postgres exposes:",
+   "zh": "我重点关注了 Postgres 暴露出的两个与内存相关的设置：",
+   "sents": null
+  },
+  {
+   "en": "Surprisingly, work_mem had no effect on noise at all, and shared_buffers carried all of the weight!",
+   "zh": "令人惊讶的是，work_mem 对噪声完全没有影响，而 shared_buffers 承担了全部的作用！",
+   "sents": null
+  },
+  {
+   "en": "With 2 GB of shared_buffers , the median query ended warmup with its SRB counter at exactly zero: its working set was fully resident in Postgres’s own cache. The no-op error rate dropped by roughly 4x, and the 90th percentile query went from being fooled 13%–20% of the time to almost never. Our two-clump query, job-13b , went from a CV of 10.3% to 0.9%, with all 20 runs landing within 7 ms of each other.",
+   "zh": "在共享缓冲区为 2 GB 的情况下，中位数查询在预热结束时其 SRB 计数器恰好为零：它的工作集完全驻留在 Postgres 自己的缓存中。 无操作错误率下降了大约 4 倍，第 90 百分位查询被误判的比例从 13%–20% 降到几乎为零。 我们的双聚集查询 job-13b 的变异系数从 10.3% 降到 0.9%，全部 20 次运行的耗时相互之间相差不超过 7 毫秒。",
+   "sents": [
+    {
+     "en": "With 2 GB of shared_buffers , the median query ended warmup with its SRB counter at exactly zero: its working set was fully resident in Postgres’s own cache.",
+     "zh": "在共享缓冲区为 2 GB 的情况下，中位数查询在预热结束时其 SRB 计数器恰好为零：它的工作集完全驻留在 Postgres 自己的缓存中。"
+    },
+    {
+     "en": "The no-op error rate dropped by roughly 4x, and the 90th percentile query went from being fooled 13%–20% of the time to almost never.",
+     "zh": "无操作错误率下降了大约 4 倍，第 90 百分位查询被误判的比例从 13%–20% 降到几乎为零。"
+    },
+    {
+     "en": "Our two-clump query, job-13b , went from a CV of 10.3% to 0.9%, with all 20 runs landing within 7 ms of each other.",
+     "zh": "我们的双聚集查询 job-13b 的变异系数从 10.3% 降到 0.9%，全部 20 次运行的耗时相互之间相差不超过 7 毫秒。"
+    }
+   ]
+  },
+  {
+   "en": "One neat benefit emerged that I wasn’t initially chasing: the default plans themselves got faster. The summed runtime of all 113 JOB queries fell from 95 seconds to 60 seconds, just from cache residency. In other words, actually taking our measurements for both candidates and defaults would now be significantly faster, meaning the training process would take less time.",
+   "zh": "还出现了一个我最初并未追求的额外好处：默认计划本身变得更快了。 全部 113 个 JOB 查询的总运行时间从 95 秒降到了 60 秒，而这仅仅是因为缓存驻留。 换句话说，现在实际对候选和默认配置进行测量会明显更快，这意味着训练过程将花费更少的时间。",
+   "sents": [
+    {
+     "en": "One neat benefit emerged that I wasn’t initially chasing: the default plans themselves got faster.",
+     "zh": "还出现了一个我最初并未追求的额外好处：默认计划本身变得更快了。"
+    },
+    {
+     "en": "The summed runtime of all 113 JOB queries fell from 95 seconds to 60 seconds, just from cache residency.",
+     "zh": "全部 113 个 JOB 查询的总运行时间从 95 秒降到了 60 秒，而这仅仅是因为缓存驻留。"
+    },
+    {
+     "en": "In other words, actually taking our measurements for both candidates and defaults would now be significantly faster, meaning the training process would take less time.",
+     "zh": "换句话说，现在实际对候选和默认配置进行测量会明显更快，这意味着训练过程将花费更少的时间。"
+    }
+   ]
+  },
+  {
+   "en": "I locked in 2 GB shared_buffers and 4 MB work_mem for the rest of the project.",
+   "zh": "在项目的其余部分，我锁定了 2 GB 的 shared_buffers 和 4 MB 的 work_mem。",
+   "sents": null
+  },
+  {
+   "en": "I used two metrics for benchmarking agent performance.",
+   "zh": "我使用了两项指标来对智能体的性能进行基准测试。",
+   "sents": null
+  },
+  {
+   "en": "The geometric mean speedup gives all queries equal weight. For example, in a two-query sample, if query 1 runs 2x faster than its baseline, and query 2 runs 0.5x faster than its baseline, then S g e o = 1.00 x S_{geo} = 1.00\\text{x} S g eo ​ = 1.00 x . It doesn’t matter if query 1’s baseline took 5 minutes and our candidate took 2.5 minutes, but query 2 only regressed from 25s to 50s, as they are equally weighted.",
+   "zh": "几何平均加速比赋予所有查询相同的权重。 例如，在一个包含两个查询的样本中，如果查询 1 比其基线快 2 倍，而查询 2 比其基线快 0.5 倍，那么 S_{geo} = 1.00x。 此时查询 1 的基线耗时 5 分钟而我们的候选方案耗时 2.5 分钟，而查询 2 只从 25 秒退化到 50 秒，这都无关紧要，因为它们的权重相同。",
+   "sents": [
+    {
+     "en": "The geometric mean speedup gives all queries equal weight.",
+     "zh": "几何平均加速比赋予所有查询相同的权重。"
+    },
+    {
+     "en": "For example, in a two-query sample, if query 1 runs 2x faster than its baseline, and query 2 runs 0.5x faster than its baseline, then S g e o = 1.00 x S_{geo} = 1.00\\text{x} S g eo ​ = 1.00 x .",
+     "zh": "例如，在一个包含两个查询的样本中，如果查询 1 比其基线快 2 倍，而查询 2 比其基线快 0.5 倍，那么 S_{geo} = 1.00x。"
+    },
+    {
+     "en": "It doesn’t matter if query 1’s baseline took 5 minutes and our candidate took 2.5 minutes, but query 2 only regressed from 25s to 50s, as they are equally weighted.",
+     "zh": "此时查询 1 的基线耗时 5 分钟而我们的候选方案耗时 2.5 分钟，而查询 2 只从 25 秒退化到 50 秒，这都无关紧要，因为它们的权重相同。"
+    }
+   ]
+  },
+  {
+   "en": "Total workload speedup treats the entire query set as one batch. We simply add all the baseline times and divide by the sum of the candidate times. In our above example, S w o r k l o a d = 1.4 x S_{workload} = 1.4\\text{x} S w or k l o a d ​ = 1.4 x .",
+   "zh": "总工作负载加速比将整个查询集合视为一个批次。 我们只需将所有基线时间相加，再除以候选方案时间的总和。 在上面的示例中，S w o r k l o a d = 1.4 x S_{workload} = 1.4\\text{x} S w or k l o a d ​ = 1.4 x。",
+   "sents": [
+    {
+     "en": "Total workload speedup treats the entire query set as one batch.",
+     "zh": "总工作负载加速比将整个查询集合视为一个批次。"
+    },
+    {
+     "en": "We simply add all the baseline times and divide by the sum of the candidate times.",
+     "zh": "我们只需将所有基线时间相加，再除以候选方案时间的总和。"
+    },
+    {
+     "en": "In our above example, S w o r k l o a d = 1.4 x S_{workload} = 1.4\\text{x} S w or k l o a d ​ = 1.4 x .",
+     "zh": "在上面的示例中，S w o r k l o a d = 1.4 x S_{workload} = 1.4\\text{x} S w or k l o a d ​ = 1.4 x。"
+    }
+   ]
+  },
+  {
+   "en": "Both metrics tell different stories. The total workload speedup is a measure of practicality. A data analyst building out a suite of analytics queries wants to decrease the overall runtime across the batch. But from a model training standpoint, the total workload speedup could be entirely influenced by a single query plan the agent chanced upon; the rest of the batch could be degenerate. This implies the model hasn’t actually learned anything interesting; it just got lucky. Because the geometric mean speedup cares not for absolutes, it gives us a measure of actual learning across the batch: values above 1x imply that the average query is executing faster.",
+   "zh": "这两项指标讲述了不同的故事。 总工作负载加速比衡量的是实用性。 一位正在构建一套分析查询的数据分析师，希望降低整批查询的总体运行时间。 但从模型训练的角度来看，总工作负载加速比可能完全受智能体偶然遇到的单个查询计划的影响；批次中的其余查询可能都很糟糕。 这意味着模型实际上并没有学到任何有价值的东西；它只是运气好而已。 由于几何平均加速比不关注绝对值，它为我们提供了衡量整批查询中实际学习效果的指标：高于 1x 的值意味着平均查询的执行速度更快。",
+   "sents": [
+    {
+     "en": "Both metrics tell different stories.",
+     "zh": "这两项指标讲述了不同的故事。"
+    },
+    {
+     "en": "The total workload speedup is a measure of practicality.",
+     "zh": "总工作负载加速比衡量的是实用性。"
+    },
+    {
+     "en": "A data analyst building out a suite of analytics queries wants to decrease the overall runtime across the batch.",
+     "zh": "一位正在构建一套分析查询的数据分析师，希望降低整批查询的总体运行时间。"
+    },
+    {
+     "en": "But from a model training standpoint, the total workload speedup could be entirely influenced by a single query plan the agent chanced upon; the rest of the batch could be degenerate.",
+     "zh": "但从模型训练的角度来看，总工作负载加速比可能完全受智能体偶然遇到的单个查询计划的影响；批次中的其余查询可能都很糟糕。"
+    },
+    {
+     "en": "This implies the model hasn’t actually learned anything interesting; it just got lucky.",
+     "zh": "这意味着模型实际上并没有学到任何有价值的东西；它只是运气好而已。"
+    },
+    {
+     "en": "Because the geometric mean speedup cares not for absolutes, it gives us a measure of actual learning across the batch: values above 1x imply that the average query is executing faster.",
+     "zh": "由于几何平均加速比不关注绝对值，它为我们提供了衡量整批查询中实际学习效果的指标：高于 1x 的值意味着平均查询的执行速度更快。"
+    }
+   ]
+  },
+  {
+   "en": "Before running the untrained 4B model through the qo-agent harness, I wanted to validate this problem was actually solveable by today’s frontier models. If a model like GPT-6 Astra or Qwen 3.8 2.4T couldn’t improve upon the default Postgres query plan, I couldn’t really expect the 4B model to either.",
+   "zh": "在将未经训练的 4B 模型接入 qo-agent 智能体框架运行之前，我想先验证这个问题是否真的能被当今的前沿模型解决。 如果像 GPT-6 Astra 或 Qwen 3.8 2.4T 这样的模型都无法改进默认的 Postgres 查询计划，那我也很难指望 4B 模型能做到。",
+   "sents": [
+    {
+     "en": "Before running the untrained 4B model through the qo-agent harness, I wanted to validate this problem was actually solveable by today’s frontier models.",
+     "zh": "在将未经训练的 4B 模型接入 qo-agent 智能体框架运行之前，我想先验证这个问题是否真的能被当今的前沿模型解决。"
+    },
+    {
+     "en": "If a model like GPT-6 Astra or Qwen 3.8 2.4T couldn’t improve upon the default Postgres query plan, I couldn’t really expect the 4B model to either.",
+     "zh": "如果像 GPT-6 Astra 或 Qwen 3.8 2.4T 这样的模型都无法改进默认的 Postgres 查询计划，那我也很难指望 4B 模型能做到。"
+    }
+   ]
+  },
+  {
+   "en": "I took a small sample of 10 JOB queries and benchmarked them on both Astra and Qwen 3.8 2.4T running through the qo-agent harness:",
+   "zh": "我从 JOB 查询中抽取了 10 条小样本，在 Astra 和通过 qo-agent 测试框架运行的 Qwen 3.8 2.4T 上进行了基准测试：",
+   "sents": null
+  },
+  {
+   "en": "Evaluations of Astra and Qwen 3.8 2.4T run on the same slice of 10 JOB queries. The frontier models were benchmarked at different candidate numbers (i.e. how many candidates they were allowed to generate during a complete trajectory; either a single candidate or 5) and for Astra, whether reasoning summaries I was a little surprised to see Astra performance worsen with reasoning summaries on compared to the 5-candidate evaluation done right before it, but these evaluations were only run a single time on a small 10-query slice of JOB, so I chalked up the worse results to random variance. were enabled or not. Astra was inferenced through OpenAI’s API, and Qwen 3.8 2.4T through Modal via OpenRouter .",
+   "zh": "对 Astra 和 Qwen 3.8 2.4T 的评估均在相同的 10 条 JOB 查询切片上运行。 前沿模型在不同的候选数量下进行基准测试（即在完整轨迹中允许其生成多少个候选；单个候选或 5 个），对于 Astra，还测试了是否启用推理摘要，看到 Astra 在启用推理摘要时的表现比之前紧接着进行的 5 候选评估更差，我有些惊讶，但这些评估只在 JOB 的一个 10 条查询的小切片上运行了一次，所以我把较差的结果归因于随机波动。 Astra 通过 OpenAI 的 API 进行推理，而 Qwen 3.8 2.4T 则通过 OpenRouter 经由 Modal 进行推理。",
+   "sents": [
+    {
+     "en": "Evaluations of Astra and Qwen 3.8 2.4T run on the same slice of 10 JOB queries.",
+     "zh": "对 Astra 和 Qwen 3.8 2.4T 的评估均在相同的 10 条 JOB 查询切片上运行。"
+    },
+    {
+     "en": "The frontier models were benchmarked at different candidate numbers (i.e. how many candidates they were allowed to generate during a complete trajectory; either a single candidate or 5) and for Astra, whether reasoning summaries I was a little surprised to see Astra performance worsen with reasoning summaries on compared to the 5-candidate evaluation done right before it, but these evaluations were only run a single time on a small 10-query slice of JOB, so I chalked up the worse results to random variance. were enabled or not.",
+     "zh": "前沿模型在不同的候选数量下进行基准测试（即在完整轨迹中允许其生成多少个候选；单个候选或 5 个），对于 Astra，还测试了是否启用推理摘要，看到 Astra 在启用推理摘要时的表现比之前紧接着进行的 5 候选评估更差，我有些惊讶，但这些评估只在 JOB 的一个 10 条查询的小切片上运行了一次，所以我把较差的结果归因于随机波动。"
+    },
+    {
+     "en": "Astra was inferenced through OpenAI’s API, and Qwen 3.8 2.4T through Modal via OpenRouter .",
+     "zh": "Astra 通过 OpenAI 的 API 进行推理，而 Qwen 3.8 2.4T 则通过 OpenRouter 经由 Modal 进行推理。"
+    }
+   ]
+  },
+  {
+   "en": "Given the difference between the single-candidate scores and the 5-candidate scores, the agent was clearly capable of doing in-context learning across sequential executions of its candidates. This gave me the confidence to stick with an agentic multi-turn approach rather than try and train the 4B model to get really good at one-shotting a plan.",
+   "zh": "鉴于单候选得分与 5 候选得分之间的差异，该智能体显然有能力在其候选方案的多次顺序执行中进行上下文学习。 这让我有信心坚持采用多轮智能体方法，而不是试图训练 4B 模型使其非常擅长一次性生成完整计划。",
+   "sents": [
+    {
+     "en": "Given the difference between the single-candidate scores and the 5-candidate scores, the agent was clearly capable of doing in-context learning across sequential executions of its candidates.",
+     "zh": "鉴于单候选得分与 5 候选得分之间的差异，该智能体显然有能力在其候选方案的多次顺序执行中进行上下文学习。"
+    },
+    {
+     "en": "This gave me the confidence to stick with an agentic multi-turn approach rather than try and train the 4B model to get really good at one-shotting a plan.",
+     "zh": "这让我有信心坚持采用多轮智能体方法，而不是试图训练 4B 模型使其非常擅长一次性生成完整计划。"
+    }
+   ]
+  },
+  {
+   "en": "During a run of the agent, each candidate was warmed once and then measured once. After exhausting the candidate attempts budget, the model was only presented with a single tool to call, finish , and the model was told to select the best scoring candidate (or keep the default plan). After the candidate was selected, three interleaved (candidate, default) pairs were run and passed through a clipper:",
+   "zh": "在智能体的一次运行中，每个候选方案各被预热一次，然后测量一次。 在耗尽候选尝试的预算后，模型只会看到一个可供调用的单一工具 finish，并被要求选出得分最高的候选方案（或保留默认计划）。 在候选方案被选定后，运行三组交错的（候选方案，默认）配对，并将其送入裁剪器：",
+   "sents": [
+    {
+     "en": "During a run of the agent, each candidate was warmed once and then measured once.",
+     "zh": "在智能体的一次运行中，每个候选方案各被预热一次，然后测量一次。"
+    },
+    {
+     "en": "After exhausting the candidate attempts budget, the model was only presented with a single tool to call, finish , and the model was told to select the best scoring candidate (or keep the default plan).",
+     "zh": "在耗尽候选尝试的预算后，模型只会看到一个可供调用的单一工具 finish，并被要求选出得分最高的候选方案（或保留默认计划）。"
+    },
+    {
+     "en": "After the candidate was selected, three interleaved (candidate, default) pairs were run and passed through a clipper:",
+     "zh": "在候选方案被选定后，运行三组交错的（候选方案，默认）配对，并将其送入裁剪器："
+    }
+   ]
+  },
+  {
+   "en": "The clipper constrained the result of the division between the two medians to be between [ 0.1 , 10 ] [0.1, 10] [ 0.1 , 10 ] . These clipper values were picked somewhat arbitrarily; I found they prevented the geometric mean speedup from getting overly influenced by an extreme speedup or an extreme regression.",
+   "zh": "该截断器将两条中位数相除的结果限制在 [0.1, 10] 之间。 这些截断值的选择有些随意；我发现它们能防止几何平均加速比受到极端加速或极端回退的过度影响。",
+   "sents": [
+    {
+     "en": "The clipper constrained the result of the division between the two medians to be between [ 0.1 , 10 ] [0.1, 10] [ 0.1 , 10 ] .",
+     "zh": "该截断器将两条中位数相除的结果限制在 [0.1, 10] 之间。"
+    },
+    {
+     "en": "These clipper values were picked somewhat arbitrarily; I found they prevented the geometric mean speedup from getting overly influenced by an extreme speedup or an extreme regression.",
+     "zh": "这些截断值的选择有些随意；我发现它们能防止几何平均加速比受到极端加速或极端回退的过度影响。"
+    }
+   ]
+  },
+  {
+   "en": "Conclusion: frontier intelligence is capable of agentically doing query optimization.",
+   "zh": "结论：前沿智能体有能力以智能体方式完成查询优化。",
+   "sents": null
+  },
+  {
+   "en": "We’re now ready to evaluate the untrained 4B model on JOB and see how it does!",
+   "zh": "我们现在准备在 JOB 上评估未经训练的 4B 模型，看看它的表现如何！",
+   "sents": null
+  },
+  {
+   "en": "The same 5-candidate plan budget per agent trajectory configuration was employed. The results were dismal:",
+   "zh": "在每个智能体轨迹配置中采用了同样的5个候选计划预算。结果惨不忍睹：",
+   "sents": null
+  },
+  {
+   "en": "Only the last three rows contribute to the score, leaving 15 valid trajectories out of 113. Nine of those 15 result in a score of 1.00x by construction (the plan was identical A candidate plan was determined to be equal to the default plan if their EXPLAIN outputs with cost and row estimates stripped were equivalent. to the default, or the model chose to keep the default). That left just six candidate plans that were:",
+   "zh": "只有最后三行对评分有贡献，因此 113 条轨迹中只有 15 条是有效的。 这 15 条中有 9 条按构造方式得分为 1.00x（当候选方案在去除成本与行数估算后的 EXPLAIN 输出等价时，即判定该候选方案与默认方案相同。候选方案被认为等同于默认方案，或是智能体选择保留默认方案）。 这只剩下六个候选方案，它们是：",
+   "sents": [
+    {
+     "en": "Only the last three rows contribute to the score, leaving 15 valid trajectories out of 113.",
+     "zh": "只有最后三行对评分有贡献，因此 113 条轨迹中只有 15 条是有效的。"
+    },
+    {
+     "en": "Nine of those 15 result in a score of 1.00x by construction (the plan was identical A candidate plan was determined to be equal to the default plan if their EXPLAIN outputs with cost and row estimates stripped were equivalent. to the default, or the model chose to keep the default).",
+     "zh": "这 15 条中有 9 条按构造方式得分为 1.00x（当候选方案在去除成本与行数估算后的 EXPLAIN 输出等价时，即判定该候选方案与默认方案相同。候选方案被认为等同于默认方案，或是智能体选择保留默认方案）。"
+    },
+    {
+     "en": "That left just six candidate plans that were:",
+     "zh": "这只剩下六个候选方案，它们是："
+    }
+   ]
+  },
+  {
+   "en": "Five of the six plans resulted in speedups of 1.02x–1.30x, and one of them landed at 0.05x.",
+   "zh": "六个计划中有五个带来了 1.02x–1.30x 的加速，而其中一个仅为 0.05x。",
+   "sents": null
+  },
+  {
+   "en": "Not only was the model terrible at this task, it couldn’t even grok the harness wrapped around it either.",
+   "zh": "这个模型不仅在这个任务上表现糟糕，甚至连围绕它的测试框架都无法理解。",
+   "sents": null
+  },
+  {
+   "en": "I first needed to get the 4B model to speak the “language” of the qo-agent harness. I would make it good at query optimization after.",
+   "zh": "我首先需要让 4B 模型学会说 qo-agent 框架的「语言」。 之后我会再让它擅长查询优化。",
+   "sents": [
+    {
+     "en": "I first needed to get the 4B model to speak the “language” of the qo-agent harness.",
+     "zh": "我首先需要让 4B 模型学会说 qo-agent 框架的「语言」。"
+    },
+    {
+     "en": "I would make it good at query optimization after.",
+     "zh": "之后我会再让它擅长查询优化。"
+    }
+   ]
+  },
+  {
+   "en": "We can use supervised fine-tuning (SFT) to do this. Specifically, we can do off-policy distillation.",
+   "zh": "我们可以使用监督微调（SFT）来做到这一点。 具体来说，我们可以进行离线策略蒸馏。",
+   "sents": [
+    {
+     "en": "We can use supervised fine-tuning (SFT) to do this.",
+     "zh": "我们可以使用监督微调（SFT）来做到这一点。"
+    },
+    {
+     "en": "Specifically, we can do off-policy distillation.",
+     "zh": "具体来说，我们可以进行离线策略蒸馏。"
+    }
+   ]
+  },
+  {
+   "en": "Off-policy distillation is a training method by which a student model (sometimes referred to as a policy) learns to imitate outputs produced by a teacher model. It’s called “off-policy” because the training data is not generated by the student model/policy itself. It’s remarkably simple. A complete teacher trajectory (sometimes referred to as a demonstration) is shown to the student model. For every token in the trajectory, the probability the student model gave to generating that token results in a per-token loss. Averaging these per-token losses leads to a demonstration-level loss. Standard backpropagation via chain rule then lets you compute gradients for all trainable parameters in the student model, and the configured optimizer can nudge parameter values in a way where loss gets minimized in a single pass.",
+   "zh": "离策略蒸馏是一种训练方法，通过该方法，学生模型（有时被称为策略）学习模仿教师模型产生的输出。 它之所以被称为「离策略」，是因为训练数据并非由学生模型/策略自身生成。这种方法非常简单。 一条完整的教师轨迹（有时被称为示范）会展示给学生模型。 对于轨迹中的每个 token，学生模型赋予生成该 token 的概率会产生一个逐 token 损失。 对这些逐 token 损失求平均，就得到了示范级别的损失。 然后通过链式法则进行标准反向传播，即可计算学生模型中所有可训练参数的梯度，配置好的优化器可以调整参数值，使得损失在单次遍历中被最小化。",
+   "sents": [
+    {
+     "en": "Off-policy distillation is a training method by which a student model (sometimes referred to as a policy) learns to imitate outputs produced by a teacher model.",
+     "zh": "离策略蒸馏是一种训练方法，通过该方法，学生模型（有时被称为策略）学习模仿教师模型产生的输出。"
+    },
+    {
+     "en": "It’s called “off-policy” because the training data is not generated by the student model/policy itself. It’s remarkably simple.",
+     "zh": "它之所以被称为「离策略」，是因为训练数据并非由学生模型/策略自身生成。这种方法非常简单。"
+    },
+    {
+     "en": "A complete teacher trajectory (sometimes referred to as a demonstration) is shown to the student model.",
+     "zh": "一条完整的教师轨迹（有时被称为示范）会展示给学生模型。"
+    },
+    {
+     "en": "For every token in the trajectory, the probability the student model gave to generating that token results in a per-token loss.",
+     "zh": "对于轨迹中的每个 token，学生模型赋予生成该 token 的概率会产生一个逐 token 损失。"
+    },
+    {
+     "en": "Averaging these per-token losses leads to a demonstration-level loss.",
+     "zh": "对这些逐 token 损失求平均，就得到了示范级别的损失。"
+    },
+    {
+     "en": "Standard backpropagation via chain rule then lets you compute gradients for all trainable parameters in the student model, and the configured optimizer can nudge parameter values in a way where loss gets minimized in a single pass.",
+     "zh": "然后通过链式法则进行标准反向传播，即可计算学生模型中所有可训练参数的梯度，配置好的优化器可以调整参数值，使得损失在单次遍历中被最小化。"
+    }
+   ]
+  },
+  {
+   "en": "What’s super neat about off-policy distillation is that we don’t need a lot of data for it to work well. Because each demonstration provides us thousands to tens of thousands of token predictions, our student model’s weights adapt quickly.",
+   "zh": "离线策略蒸馏（off-policy distillation）非常巧妙的一点在于，我们不需要大量数据就能让它运作良好。 由于每个示范都能为我们提供数千到数万个 token 的预测，我们的学生模型（student model）的权重能够快速适应。",
+   "sents": [
+    {
+     "en": "What’s super neat about off-policy distillation is that we don’t need a lot of data for it to work well.",
+     "zh": "离线策略蒸馏（off-policy distillation）非常巧妙的一点在于，我们不需要大量数据就能让它运作良好。"
+    },
+    {
+     "en": "Because each demonstration provides us thousands to tens of thousands of token predictions, our student model’s weights adapt quickly.",
+     "zh": "由于每个示范都能为我们提供数千到数万个 token 的预测，我们的学生模型（student model）的权重能够快速适应。"
+    }
+   ]
+  },
+  {
+   "en": "How do we actually get these demonstrations though? We could write them all by hand, but that would take far too long. One step up would be writing a tool to randomly generate valid-looking trajectories Fun fact: I tried this initially. It actually works decently and was able to teach the 4B model the harness. However, it caused a bunch of other issues, mostly around making the model less likely to generate novel candidate plans. . But these ignore that we have the best teacher of all already available: smarter, larger models.",
+   "zh": "不过我们究竟要如何获得这些示范呢？ 我们可以全部手写，但那会花费太长时间。 往上一步的做法是编写一个工具来随机生成看起来有效的轨迹，有趣的事实：我最初就是这么尝试的。 它实际上效果还不错，成功教会了 4B 模型这个框架。 然而，它引发了许多其他问题，主要是导致模型生成新颖候选计划的可能性降低。. 但这些做法忽略了一点：我们其实已经拥有最好的老师，那就是更聪明、更大的模型。",
+   "sents": [
+    {
+     "en": "How do we actually get these demonstrations though?",
+     "zh": "不过我们究竟要如何获得这些示范呢？"
+    },
+    {
+     "en": "We could write them all by hand, but that would take far too long.",
+     "zh": "我们可以全部手写，但那会花费太长时间。"
+    },
+    {
+     "en": "One step up would be writing a tool to randomly generate valid-looking trajectories Fun fact: I tried this initially.",
+     "zh": "往上一步的做法是编写一个工具来随机生成看起来有效的轨迹，有趣的事实：我最初就是这么尝试的。"
+    },
+    {
+     "en": "It actually works decently and was able to teach the 4B model the harness.",
+     "zh": "它实际上效果还不错，成功教会了 4B 模型这个框架。"
+    },
+    {
+     "en": "However, it caused a bunch of other issues, mostly around making the model less likely to generate novel candidate plans. .",
+     "zh": "然而，它引发了许多其他问题，主要是导致模型生成新颖候选计划的可能性降低。."
+    },
+    {
+     "en": "But these ignore that we have the best teacher of all already available: smarter, larger models.",
+     "zh": "但这些做法忽略了一点：我们其实已经拥有最好的老师，那就是更聪明、更大的模型。"
+    }
+   ]
+  },
+  {
+   "en": "The strategy is simple: generate a bunch of trajectories by running a smart model through the qo-agent harness, and distill those trajectories into our student 4B model.",
+   "zh": "策略很简单：通过 qo-agent 框架运行一个聪明的模型来生成一批轨迹，然后将这些轨迹蒸馏到我们的学生 4B 模型中。",
+   "sents": null
+  },
+  {
+   "en": "Imagine we decide to use GPT-6 Astra as our teacher model. It produces trajectories in OpenAI’s Responses API format. Our Qwen model doesn’t understand this format; we need to transpile the human-friendly Responses API JSON format into a model-friendly token format. This is where the concept of rendering comes in. Rendering libraries can take in a trajectory’s text and convert it to a raw sequence of tokens a specific model actually understands.",
+   "zh": "想象一下，我们决定使用 GPT-6 Astra 作为我们的教师模型。 它以 OpenAI 的 Responses API 格式生成轨迹。 我们的 Qwen 模型不理解这种格式；我们需要把对人类友好的 Responses API JSON 格式转译为对模型友好的 token 格式。 这就是渲染概念的用武之地。 渲染库可以接收轨迹的文本，并将其转换为特定模型真正能够理解的原始 token 序列。",
+   "sents": [
+    {
+     "en": "Imagine we decide to use GPT-6 Astra as our teacher model.",
+     "zh": "想象一下，我们决定使用 GPT-6 Astra 作为我们的教师模型。"
+    },
+    {
+     "en": "It produces trajectories in OpenAI’s Responses API format.",
+     "zh": "它以 OpenAI 的 Responses API 格式生成轨迹。"
+    },
+    {
+     "en": "Our Qwen model doesn’t understand this format; we need to transpile the human-friendly Responses API JSON format into a model-friendly token format.",
+     "zh": "我们的 Qwen 模型不理解这种格式；我们需要把对人类友好的 Responses API JSON 格式转译为对模型友好的 token 格式。"
+    },
+    {
+     "en": "This is where the concept of rendering comes in.",
+     "zh": "这就是渲染概念的用武之地。"
+    },
+    {
+     "en": "Rendering libraries can take in a trajectory’s text and convert it to a raw sequence of tokens a specific model actually understands.",
+     "zh": "渲染库可以接收轨迹的文本，并将其转换为特定模型真正能够理解的原始 token 序列。"
+    }
+   ]
+  },
+  {
+   "en": "Another consideration with agent trajectories is determining which tokens our model should actually be predicting. The model never produces certain tokens in a trajectory, like the system prompt, any user prompts or the results of a tool call after a harness executes it. The model should still see these tokens when predicting the next token though; they’re still part of the context, but we should only compute losses for tokens the model is responsible for predicting. We can employ a strategy called loss-masking here. A loss-masking library lets us label the parts of a teacher trajectory that are context-only, versus the parts our student model is responsible for predicting.",
+   "zh": "关于智能体轨迹的另一个考虑因素是确定我们的模型实际应该预测哪些 token。 在一条轨迹中，模型从不生成某些 token，例如系统提示词、任何用户提示词，以及工具调用在框架执行后产生的结果。 不过，模型在预测下一个 token 时仍然应该看到这些 token；它们仍然是上下文的一部分，但我们只应针对模型负责预测的 token 计算损失。 我们可以在这里采用一种称为损失掩码（loss-masking）的策略。 损失掩码库让我们能够标记教师轨迹中仅作为上下文的部分，以及学生模型负责预测的部分。",
+   "sents": [
+    {
+     "en": "Another consideration with agent trajectories is determining which tokens our model should actually be predicting.",
+     "zh": "关于智能体轨迹的另一个考虑因素是确定我们的模型实际应该预测哪些 token。"
+    },
+    {
+     "en": "The model never produces certain tokens in a trajectory, like the system prompt, any user prompts or the results of a tool call after a harness executes it.",
+     "zh": "在一条轨迹中，模型从不生成某些 token，例如系统提示词、任何用户提示词，以及工具调用在框架执行后产生的结果。"
+    },
+    {
+     "en": "The model should still see these tokens when predicting the next token though; they’re still part of the context, but we should only compute losses for tokens the model is responsible for predicting.",
+     "zh": "不过，模型在预测下一个 token 时仍然应该看到这些 token；它们仍然是上下文的一部分，但我们只应针对模型负责预测的 token 计算损失。"
+    },
+    {
+     "en": "We can employ a strategy called loss-masking here.",
+     "zh": "我们可以在这里采用一种称为损失掩码（loss-masking）的策略。"
+    },
+    {
+     "en": "A loss-masking library lets us label the parts of a teacher trajectory that are context-only, versus the parts our student model is responsible for predicting.",
+     "zh": "损失掩码库让我们能够标记教师轨迹中仅作为上下文的部分，以及学生模型负责预测的部分。"
+    }
+   ]
+  },
+  {
+   "en": "Finally, when fine-tuning over agent trajectories, we generally don’t include the entire trajectory as a single trainable unit. Instead, the trajectory is broken up into a set of (context, reply) pairs. The context in these pairs is additive and includes previous model replies.",
+   "zh": "最后，在对智能体轨迹进行微调时，我们通常不会把整条轨迹作为一个单一的可训练单元。 相反，轨迹会被拆分成一组（上下文，回复）对。 这些对中的上下文是累加式的，并包含模型之前的回复。",
+   "sents": [
+    {
+     "en": "Finally, when fine-tuning over agent trajectories, we generally don’t include the entire trajectory as a single trainable unit.",
+     "zh": "最后，在对智能体轨迹进行微调时，我们通常不会把整条轨迹作为一个单一的可训练单元。"
+    },
+    {
+     "en": "Instead, the trajectory is broken up into a set of (context, reply) pairs.",
+     "zh": "相反，轨迹会被拆分成一组（上下文，回复）对。"
+    },
+    {
+     "en": "The context in these pairs is additive and includes previous model replies.",
+     "zh": "这些对中的上下文是累加式的，并包含模型之前的回复。"
+    }
+   ]
+  },
+  {
+   "en": "Tokens the model is scored on Context only, no loss",
+   "zh": "仅对上下文中的 Token 计分，无损失（no loss）",
+   "sents": null
+  },
+  {
+   "en": "Our 4B model has 4.66 billion tunable parameters. If we wanted to update all of these parameters in a single pass during SFT, we would need a GPU with at least 64 GB of VRAM. I wanted to test my hypotheses first on my consumer-grade RTX 3090s, each of which carries 24 GB of VRAM, so I needed something more parameter-efficient here.",
+   "zh": "我们的 4B 模型拥有 46.6 亿个可调参数。 如果我们想在 SFT 的单次过程中更新所有这些参数，就需要一块显存至少为 64 GB 的 GPU。 我想先在自己的消费级 RTX 3090 上验证假设，每块卡的显存为 24 GB，因此我需要一种参数效率更高的方法。",
+   "sents": [
+    {
+     "en": "Our 4B model has 4.66 billion tunable parameters.",
+     "zh": "我们的 4B 模型拥有 46.6 亿个可调参数。"
+    },
+    {
+     "en": "If we wanted to update all of these parameters in a single pass during SFT, we would need a GPU with at least 64 GB of VRAM.",
+     "zh": "如果我们想在 SFT 的单次过程中更新所有这些参数，就需要一块显存至少为 64 GB 的 GPU。"
+    },
+    {
+     "en": "I wanted to test my hypotheses first on my consumer-grade RTX 3090s, each of which carries 24 GB of VRAM, so I needed something more parameter-efficient here.",
+     "zh": "我想先在自己的消费级 RTX 3090 上验证假设，每块卡的显存为 24 GB，因此我需要一种参数效率更高的方法。"
+    }
+   ]
+  },
+  {
+   "en": "Low-rank adapters , or LoRAs, are the canonical way to do this. At a high-level, they work by freezing the model’s weights as they are, instead letting you train a much smaller pair of matrices that when multiplied together, result in an adjustment to selected weights in your original model.",
+   "zh": "低秩适配器（Low-rank adapters），即 LoRA，是实现这一目标的标准方法。 从高层来看，它们的工作原理是将模型权重原样冻结，转而让你训练一对小得多的矩阵，这对矩阵相乘后会对原模型中选定的权重产生一个调整量。",
+   "sents": [
+    {
+     "en": "Low-rank adapters , or LoRAs, are the canonical way to do this.",
+     "zh": "低秩适配器（Low-rank adapters），即 LoRA，是实现这一目标的标准方法。"
+    },
+    {
+     "en": "At a high-level, they work by freezing the model’s weights as they are, instead letting you train a much smaller pair of matrices that when multiplied together, result in an adjustment to selected weights in your original model.",
+     "zh": "从高层来看，它们的工作原理是将模型权重原样冻结，转而让你训练一对小得多的矩阵，这对矩阵相乘后会对原模型中选定的权重产生一个调整量。"
+    }
+   ]
+  },
+  {
+   "en": "4.66 billion weights come in at 9.32 GB in bf16 . The tiny LoRA I actually ended up training was only 42.5 MB and contained only 21.2 million trainable parameters.",
+   "zh": "46.6亿个权重以 bf16 格式计算共占 9.32 GB 。 我实际训练的那个微型 LoRA 只有 42.5 MB ，仅包含 2120 万个可训练参数。",
+   "sents": [
+    {
+     "en": "4.66 billion weights come in at 9.32 GB in bf16 .",
+     "zh": "46.6亿个权重以 bf16 格式计算共占 9.32 GB 。"
+    },
+    {
+     "en": "The tiny LoRA I actually ended up training was only 42.5 MB and contained only 21.2 million trainable parameters.",
+     "zh": "我实际训练的那个微型 LoRA 只有 42.5 MB ，仅包含 2120 万个可训练参数。"
+    }
+   ]
+  },
+  {
+   "en": "We previously learned that frontier models could operate well in qo-agent ; the next decision was picking between GPT-6 Astra or Qwen 3.8 2.4T.",
+   "zh": "我们此前已经了解到，前沿模型能够在 qo-agent 中良好运行；下一个决定是在 GPT-6 Astra 和 Qwen 3.8 2.4T 之间进行选择。",
+   "sents": null
+  },
+  {
+   "en": "Let’s look back at the results from evaluating both models on 10 JOB queries, this time zooming into context length in tokens:",
+   "zh": "让我们回顾一下在10个JOB查询上评估两个模型的结果，这次深入查看以token为单位的上下文长度：",
+   "sents": null
+  },
+  {
+   "en": "The same five-candidate evaluations over the 10 JOB queries mentioned earlier, this time measured by how much context each trajectory consumed.",
+   "zh": "同样是前文提到的 10 个 JOB 查询上的五候选评估，这次以每条轨迹消耗了多少上下文来衡量。",
+   "sents": null
+  },
+  {
+   "en": "It seems like Astra wins on all fronts. However, Astra’s biggest drawback is that when run through the API, reasoning tokens aren’t supplied . Instead, the API gives you a short summary in place of reasoning tokens. On the other hand, Qwen 3.8 2.4T is an open-weights model and is happy to provide all of its reasoning tokens.",
+   "zh": "看起来 Astra 在各个方面都胜出。 然而，Astra 最大的缺点是，当通过 API 运行时，它不提供推理 token。 相反，API 会给你一段简短的摘要来代替推理 token。 另一方面，Qwen 3.8 2.4T 是一个开放权重模型，并且乐于提供它的全部推理 token。",
+   "sents": [
+    {
+     "en": "It seems like Astra wins on all fronts.",
+     "zh": "看起来 Astra 在各个方面都胜出。"
+    },
+    {
+     "en": "However, Astra’s biggest drawback is that when run through the API, reasoning tokens aren’t supplied .",
+     "zh": "然而，Astra 最大的缺点是，当通过 API 运行时，它不提供推理 token。"
+    },
+    {
+     "en": "Instead, the API gives you a short summary in place of reasoning tokens.",
+     "zh": "相反，API 会给你一段简短的摘要来代替推理 token。"
+    },
+    {
+     "en": "On the other hand, Qwen 3.8 2.4T is an open-weights model and is happy to provide all of its reasoning tokens.",
+     "zh": "另一方面，Qwen 3.8 2.4T 是一个开放权重模型，并且乐于提供它的全部推理 token。"
+    }
+   ]
+  },
+  {
+   "en": "I was wary about training off of trajectories containing only reasoning summaries. The How to Steal Reasoning Without Reasoning Traces paper talked about this exact thing: training off reasoning summaries resulted in the student model’s performance decreasing. To combat this, the authors devised a new method: trace inversion. Trace inversion calls for synthetically expanding a reasoning summary into what the raw reasoning tokens may have looked like. Although they’re not exactly the ones Astra actually produced during inference, the longer reasoning blocks led to improved performance when transferred over to a smaller model. This provided some level of comfort; if I picked Astra and performance suffered, I could experiment with trace inversion.",
+   "zh": "我对仅包含推理摘要的轨迹进行训练持谨慎态度。 《How to Steal Reasoning Without Reasoning Traces》这篇论文恰好谈到了这一点：基于推理摘要进行训练导致学生模型的性能下降。 为了解决这个问题，论文作者设计了一种新方法：轨迹反演。 轨迹反演要求将推理摘要合成式地扩展为原始推理标记可能呈现的样子。 尽管这些推理块并非 Astra 在推理过程中实际产生的那些，但较长的推理块在迁移到更小的模型时带来了性能提升。 这让我多少放心了一些；如果我选择 Astra 而性能受到影响，我可以尝试轨迹反演。",
+   "sents": [
+    {
+     "en": "I was wary about training off of trajectories containing only reasoning summaries.",
+     "zh": "我对仅包含推理摘要的轨迹进行训练持谨慎态度。"
+    },
+    {
+     "en": "The How to Steal Reasoning Without Reasoning Traces paper talked about this exact thing: training off reasoning summaries resulted in the student model’s performance decreasing.",
+     "zh": "《How to Steal Reasoning Without Reasoning Traces》这篇论文恰好谈到了这一点：基于推理摘要进行训练导致学生模型的性能下降。"
+    },
+    {
+     "en": "To combat this, the authors devised a new method: trace inversion.",
+     "zh": "为了解决这个问题，论文作者设计了一种新方法：轨迹反演。"
+    },
+    {
+     "en": "Trace inversion calls for synthetically expanding a reasoning summary into what the raw reasoning tokens may have looked like.",
+     "zh": "轨迹反演要求将推理摘要合成式地扩展为原始推理标记可能呈现的样子。"
+    },
+    {
+     "en": "Although they’re not exactly the ones Astra actually produced during inference, the longer reasoning blocks led to improved performance when transferred over to a smaller model.",
+     "zh": "尽管这些推理块并非 Astra 在推理过程中实际产生的那些，但较长的推理块在迁移到更小的模型时带来了性能提升。"
+    },
+    {
+     "en": "This provided some level of comfort; if I picked Astra and performance suffered, I could experiment with trace inversion.",
+     "zh": "这让我多少放心了一些；如果我选择 Astra 而性能受到影响，我可以尝试轨迹反演。"
+    }
+   ]
+  },
+  {
+   "en": "The other consideration was context lengths. Given I was only doing SFT off a single RTX 3090 to start, I needed any given trajectory to not exceed ~50k tokens in sequence length. If it did, the training process might OOM given the 3090’s limited 24 GB of VRAM. All Astra trajectories fit under that budget, but some of the Qwen 3.8 2.4T ones didn’t.",
+   "zh": "另一个需要考虑的因素是上下文长度。 鉴于我一开始只在单张 RTX 3090 上做 SFT，我需要确保任何一条轨迹的序列长度都不超过约 5 万 token。 否则，受限于 3090 仅有 24 GB 的显存，训练过程可能会发生内存溢出（OOM）。 所有 Astra 轨迹都在这一预算之内，但部分 Qwen 3.8 2.4T 的轨迹没有。",
+   "sents": [
+    {
+     "en": "The other consideration was context lengths.",
+     "zh": "另一个需要考虑的因素是上下文长度。"
+    },
+    {
+     "en": "Given I was only doing SFT off a single RTX 3090 to start, I needed any given trajectory to not exceed ~50k tokens in sequence length.",
+     "zh": "鉴于我一开始只在单张 RTX 3090 上做 SFT，我需要确保任何一条轨迹的序列长度都不超过约 5 万 token。"
+    },
+    {
+     "en": "If it did, the training process might OOM given the 3090’s limited 24 GB of VRAM.",
+     "zh": "否则，受限于 3090 仅有 24 GB 的显存，训练过程可能会发生内存溢出（OOM）。"
+    },
+    {
+     "en": "All Astra trajectories fit under that budget, but some of the Qwen 3.8 2.4T ones didn’t.",
+     "zh": "所有 Astra 轨迹都在这一预算之内，但部分 Qwen 3.8 2.4T 的轨迹没有。"
+    }
+   ]
+  },
+  {
+   "en": "I decided to try out SFT on the Astra traces. If performance suffered, I could explore trace inversion; if that didn’t work, I could rent beefier GPUs for training, bump our global context limit, and use Qwen 3.8 2.4T traces instead.",
+   "zh": "我决定在 Astra 轨迹上试一下 SFT。 如果性能下降，我可以探索轨迹反转；如果那也不奏效，我可以租用更强大的 GPU 来训练，提高我们的全局上下文上限，并改用 Qwen 3.8 2.4T 的轨迹。",
+   "sents": [
+    {
+     "en": "I decided to try out SFT on the Astra traces.",
+     "zh": "我决定在 Astra 轨迹上试一下 SFT。"
+    },
+    {
+     "en": "If performance suffered, I could explore trace inversion; if that didn’t work, I could rent beefier GPUs for training, bump our global context limit, and use Qwen 3.8 2.4T traces instead.",
+     "zh": "如果性能下降，我可以探索轨迹反转；如果那也不奏效，我可以租用更强大的 GPU 来训练，提高我们的全局上下文上限，并改用 Qwen 3.8 2.4T 的轨迹。"
+    }
+   ]
+  },
+  {
+   "en": "I began by generating 120 Astra trajectories over a random slice of queries from CEB, with reasoning summaries enabled. 100 trajectories would be used for training, and 20 would be used as a held-out validation set. All trajectories were rendered via Prime Intellect’s renderers library into Qwen format, loss-masked appropriately and unrolled and packed into usable training demonstrations. I then used Prime Intellect’s prime-rl library to run SFT, training the smaller ~21 million parameter LoRA. 100 Astra trajectories became 382 training rows after unrolling and packing. I allowed training to run for just a single epoch, meaning every example was trained on exactly once, and used a batch size of one (each demonstration updated the weights). Finally, I evaluated the resulting LoRA over JOB:",
+   "zh": "我首先从 CEB 中随机抽取一部分查询，生成 120 条开启了推理摘要的 Astra 轨迹。其中 100 条轨迹用于训练，20 条作为留出的验证集。 所有轨迹通过 Prime Intellect 的 renderers 库渲染成 Qwen 格式，适当地做了损失掩码，并展开、打包成可用的训练示例。 然后我使用 Prime Intellect 的 prime-rl 库运行 SFT，训练那个较小的约 2100 万参数的 LoRA。100 条 Astra 轨迹经过展开和打包后变成了 382 条训练数据。 我让训练只运行单个 epoch，也就是说每个样本只被训练恰好一次，并使用批量大小为一（每个示例都会更新一次权重）。 最后，我在 JOB 上评估了得到的 LoRA：",
+   "sents": [
+    {
+     "en": "I began by generating 120 Astra trajectories over a random slice of queries from CEB, with reasoning summaries enabled. 100 trajectories would be used for training, and 20 would be used as a held-out validation set.",
+     "zh": "我首先从 CEB 中随机抽取一部分查询，生成 120 条开启了推理摘要的 Astra 轨迹。其中 100 条轨迹用于训练，20 条作为留出的验证集。"
+    },
+    {
+     "en": "All trajectories were rendered via Prime Intellect’s renderers library into Qwen format, loss-masked appropriately and unrolled and packed into usable training demonstrations.",
+     "zh": "所有轨迹通过 Prime Intellect 的 renderers 库渲染成 Qwen 格式，适当地做了损失掩码，并展开、打包成可用的训练示例。"
+    },
+    {
+     "en": "I then used Prime Intellect’s prime-rl library to run SFT, training the smaller ~21 million parameter LoRA. 100 Astra trajectories became 382 training rows after unrolling and packing.",
+     "zh": "然后我使用 Prime Intellect 的 prime-rl 库运行 SFT，训练那个较小的约 2100 万参数的 LoRA。100 条 Astra 轨迹经过展开和打包后变成了 382 条训练数据。"
+    },
+    {
+     "en": "I allowed training to run for just a single epoch, meaning every example was trained on exactly once, and used a batch size of one (each demonstration updated the weights).",
+     "zh": "我让训练只运行单个 epoch，也就是说每个样本只被训练恰好一次，并使用批量大小为一（每个示例都会更新一次权重）。"
+    },
+    {
+     "en": "Finally, I evaluated the resulting LoRA over JOB:",
+     "zh": "最后，我在 JOB 上评估了得到的 LoRA："
+    }
+   ]
+  },
+  {
+   "en": "The one-epoch adapter against the untrained model on all 113 JOB queries. A query counts as scored when its trajectory ended with a measured candidate, a duplicate of the default plan, or the default itself. Wins and regressions are scored queries more than 5% faster or slower than the default.",
+   "zh": "在全部 113 条 JOB 查询上，将单轮训练的适配器与未训练的模型进行对比。 当某条查询的执行轨迹以一个被测量的候选计划、默认计划的副本或默认计划本身结束时，该查询计为已评分。 胜出和回退是指已评分查询比默认计划快或慢超过 5% 的情况。",
+   "sents": [
+    {
+     "en": "The one-epoch adapter against the untrained model on all 113 JOB queries.",
+     "zh": "在全部 113 条 JOB 查询上，将单轮训练的适配器与未训练的模型进行对比。"
+    },
+    {
+     "en": "A query counts as scored when its trajectory ended with a measured candidate, a duplicate of the default plan, or the default itself.",
+     "zh": "当某条查询的执行轨迹以一个被测量的候选计划、默认计划的副本或默认计划本身结束时，该查询计为已评分。"
+    },
+    {
+     "en": "Wins and regressions are scored queries more than 5% faster or slower than the default.",
+     "zh": "胜出和回退是指已评分查询比默认计划快或慢超过 5% 的情况。"
+    }
+   ]
+  },
+  {
+   "en": "Promising! The adapter learned the harness.",
+   "zh": "有希望！ 适配器学会了测试框架。",
+   "sents": [
+    {
+     "en": "Promising!",
+     "zh": "有希望！"
+    },
+    {
+     "en": "The adapter learned the harness.",
+     "zh": "适配器学会了测试框架。"
+    }
+   ]
+  },
+  {
+   "en": "I could now either generate more fresh trajectories, or do more epochs over the dataset we already had. Given the latter is cheaper, I decided on more epochs.",
+   "zh": "现在我可以选择生成更多新的轨迹，或者对我们已有的数据集做更多轮次的训练。 鉴于后者成本更低，我决定做更多轮次。",
+   "sents": [
+    {
+     "en": "I could now either generate more fresh trajectories, or do more epochs over the dataset we already had.",
+     "zh": "现在我可以选择生成更多新的轨迹，或者对我们已有的数据集做更多轮次的训练。"
+    },
+    {
+     "en": "Given the latter is cheaper, I decided on more epochs.",
+     "zh": "鉴于后者成本更低，我决定做更多轮次。"
+    }
+   ]
+  },
+  {
+   "en": "It was around this point that I got impatient and wanted the training process to run even faster, so I rented a 2x H100 node on Lambda .",
+   "zh": "大约就是在这个时候，我开始感到不耐烦，希望训练过程能运行得更快，于是我在 Lambda 上租用了一台配备 2 块 H100 的节点。",
+   "sents": null
+  },
+  {
+   "en": "Now training on an H100 Switching to the H100 meant we had 80 GB VRAM at our disposal instead of 24 GB. We could have bumped the context token limit greatly, but I decided to barrel through with the roughly ~50k token limit we set. instead of a single RTX 3090, I did two more training runs Training runs were a lot faster on the H100. The first epoch took four hours on the RTX 3090; the second took only 45 minutes on the H100. over the existing LoRA; a second epoch and then a third:",
+   "zh": "现在在 H100 上训练。切换到 H100 意味着我们拥有 80 GB 显存可供使用，而不是 24 GB。 我们本可以大幅提高上下文 token 上限，但我决定继续使用我们设定的约 50k token 上限。用两块（而不是单块）RTX 3090，我进行了两次额外的训练。训练在 H100 上快了很多。 第一个 epoch 在 RTX 3090 上花了四个小时；第二个 epoch 在 H100 上只花了 45 分钟。在现有 LoRA 之上；然后是第二个 epoch 和第三个 epoch：",
+   "sents": [
+    {
+     "en": "Now training on an H100 Switching to the H100 meant we had 80 GB VRAM at our disposal instead of 24 GB.",
+     "zh": "现在在 H100 上训练。切换到 H100 意味着我们拥有 80 GB 显存可供使用，而不是 24 GB。"
+    },
+    {
+     "en": "We could have bumped the context token limit greatly, but I decided to barrel through with the roughly ~50k token limit we set. instead of a single RTX 3090, I did two more training runs Training runs were a lot faster on the H100.",
+     "zh": "我们本可以大幅提高上下文 token 上限，但我决定继续使用我们设定的约 50k token 上限。用两块（而不是单块）RTX 3090，我进行了两次额外的训练。训练在 H100 上快了很多。"
+    },
+    {
+     "en": "The first epoch took four hours on the RTX 3090; the second took only 45 minutes on the H100. over the existing LoRA; a second epoch and then a third:",
+     "zh": "第一个 epoch 在 RTX 3090 上花了四个小时；第二个 epoch 在 H100 上只花了 45 分钟。在现有 LoRA 之上；然后是第二个 epoch 和第三个 epoch："
+    }
+   ]
+  },
+  {
+   "en": "Two and three epochs over the same 100 Astra trajectories, evaluated on JOB. Before epochs two and three, the qo-agent harness was upgraded to allow the model to keep the default plan after a search, which is why many more queries are scored. The two- and three-epoch rows were evaluated under identical settings.",
+   "zh": "在相同的 100 条 Astra 轨迹上进行两轮和三轮训练，并在 JOB 上评估。 在第二和第三轮之前，qo-智能体框架升级为允许模型在搜索后保留默认计划，这也是更多查询被评分的原因。 两轮和三轮的结果是在完全相同的设置下评估的。",
+   "sents": [
+    {
+     "en": "Two and three epochs over the same 100 Astra trajectories, evaluated on JOB.",
+     "zh": "在相同的 100 条 Astra 轨迹上进行两轮和三轮训练，并在 JOB 上评估。"
+    },
+    {
+     "en": "Before epochs two and three, the qo-agent harness was upgraded to allow the model to keep the default plan after a search, which is why many more queries are scored.",
+     "zh": "在第二和第三轮之前，qo-智能体框架升级为允许模型在搜索后保留默认计划，这也是更多查询被评分的原因。"
+    },
+    {
+     "en": "The two- and three-epoch rows were evaluated under identical settings.",
+     "zh": "两轮和三轮的结果是在完全相同的设置下评估的。"
+    }
+   ]
+  },
+  {
+   "en": "Two epochs improved our results, but three epochs regressed them! This was especially interesting because validation loss didn’t budge at all during the second epoch:",
+   "zh": "两个轮次改善了我们的结果，但三个轮次反而使结果倒退了！ 这一点特别有意思，因为在第二个轮次期间验证损失完全没有变化：",
+   "sents": [
+    {
+     "en": "Two epochs improved our results, but three epochs regressed them!",
+     "zh": "两个轮次改善了我们的结果，但三个轮次反而使结果倒退了！"
+    },
+    {
+     "en": "This was especially interesting because validation loss didn’t budge at all during the second epoch:",
+     "zh": "这一点特别有意思，因为在第二个轮次期间验证损失完全没有变化："
+    }
+   ]
+  },
+  {
+   "en": "Validation loss on the 20 held-out trajectories",
+   "zh": "在20条保留轨迹上的验证损失",
+   "sents": null
+  },
+  {
+   "en": "Optimizer updates, one per packed training row",
+   "zh": "优化器更新，每个打包训练行对应一次更新",
+   "sents": null
+  },
+  {
+   "en": "A very good lesson that a flat validation loss doesn’t necessarily mean the model has stopped learning useful behavior.",
+   "zh": "一个很好的教训是：验证损失趋于平坦并不一定意味着模型已经停止学习有用的行为。",
+   "sents": null
+  },
+  {
+   "en": "I still felt we had more to learn from SFT though before proceeding with RL. I did zero filtering on the training trajectory dataset, and hadn’t carefully audited if I was missing any capabilities. It turns out I was, mostly around the model’s ability to construct valid Leading trees.",
+   "zh": "不过在进入强化学习之前，我仍觉得我们在监督微调（SFT）方面还有很多东西要学。 我对训练轨迹数据集没有做任何过滤，也没有认真审计是否遗漏了某些能力。 结果发现确实遗漏了，主要是在模型构建有效 Leading 树的能力方面。",
+   "sents": [
+    {
+     "en": "I still felt we had more to learn from SFT though before proceeding with RL.",
+     "zh": "不过在进入强化学习之前，我仍觉得我们在监督微调（SFT）方面还有很多东西要学。"
+    },
+    {
+     "en": "I did zero filtering on the training trajectory dataset, and hadn’t carefully audited if I was missing any capabilities.",
+     "zh": "我对训练轨迹数据集没有做任何过滤，也没有认真审计是否遗漏了某些能力。"
+    },
+    {
+     "en": "It turns out I was, mostly around the model’s ability to construct valid Leading trees.",
+     "zh": "结果发现确实遗漏了，主要是在模型构建有效 Leading 树的能力方面。"
+    }
+   ]
+  },
+  {
+   "en": "I generated another 320 Astra trajectories; 300 for training, and 20 for validation. I filtered out just six training trajectories where Astra opted to keep the default plan without even trying a single candidate. I did two more epochs in two separate runs:",
+   "zh": "我又生成了320条Astra轨迹，其中300条用于训练，20条用于验证。 我过滤掉了仅有的六条训练轨迹，在这些轨迹中Astra选择保留默认计划，甚至没有尝试任何一个候选方案。 我在两次单独的运行中又进行了两个epoch的训练：",
+   "sents": [
+    {
+     "en": "I generated another 320 Astra trajectories; 300 for training, and 20 for validation.",
+     "zh": "我又生成了320条Astra轨迹，其中300条用于训练，20条用于验证。"
+    },
+    {
+     "en": "I filtered out just six training trajectories where Astra opted to keep the default plan without even trying a single candidate.",
+     "zh": "我过滤掉了仅有的六条训练轨迹，在这些轨迹中Astra选择保留默认计划，甚至没有尝试任何一个候选方案。"
+    },
+    {
+     "en": "I did two more epochs in two separate runs:",
+     "zh": "我在两次单独的运行中又进行了两个epoch的训练："
+    }
+   ]
+  },
+  {
+   "en": "Continuing the two-epoch adapter on the 300 new trajectories, evaluated on JOB.",
+   "zh": "继续在300条新轨迹上训练双轮次（two-epoch）适配器，并在JOB上进行评估。",
+   "sents": null
+  },
+  {
+   "en": "Our 4B model not only learned the harness; it was now genuinely making good calls on various JOB queries! Fortunately, training on reasoning summaries didn’t harm performance.",
+   "zh": "我们的 4B 模型不仅学会了这套评估框架，而且在处理各种 JOB 查询时确实能做出明智的判断了！ 幸运的是，在推理摘要上进行训练并没有损害性能。",
+   "sents": [
+    {
+     "en": "Our 4B model not only learned the harness; it was now genuinely making good calls on various JOB queries!",
+     "zh": "我们的 4B 模型不仅学会了这套评估框架，而且在处理各种 JOB 查询时确实能做出明智的判断了！"
+    },
+    {
+     "en": "Fortunately, training on reasoning summaries didn’t harm performance.",
+     "zh": "幸运的是，在推理摘要上进行训练并没有损害性能。"
+    }
+   ]
+  },
+  {
+   "en": "The model now spoke the “language” of the qo-agent harness, and we got some free performance gains out of SFT too. It was time to make it very good at query optimization.",
+   "zh": "模型现在能够「说」qo-智能体框架的「语言」，而且我们还通过 SFT 顺便获得了一些性能提升。 接下来是时候让它在查询优化方面变得非常出色了。",
+   "sents": [
+    {
+     "en": "The model now spoke the “language” of the qo-agent harness, and we got some free performance gains out of SFT too.",
+     "zh": "模型现在能够「说」qo-智能体框架的「语言」，而且我们还通过 SFT 顺便获得了一些性能提升。"
+    },
+    {
+     "en": "It was time to make it very good at query optimization.",
+     "zh": "接下来是时候让它在查询优化方面变得非常出色了。"
+    }
+   ]
+  },
+  {
+   "en": "Agentic RL differs from SFT in that we actually run the current policy over training queries inside the agent harness N N N times. Each run (also referred to as a rollout) results in a final output that’s scored against some verifiable criteria. Lastly, each rollout’s score is then weighted relative to the other same-query rollouts. A positive “advantage” is reinforced by making the model’s weights more likely to produce that trajectory in future runs, and a negative advantage is penalized; the weights are updated to be less likely to produce that trajectory in future runs.",
+   "zh": "智能体强化学习（Agentic RL）与监督微调（SFT）的不同之处在于，我们实际上会在智能体框架内，对训练查询运行当前策略 N N N 次。 每次运行（也称为一次 rollout）都会产生一个最终输出，该输出会根据某些可验证的标准进行评分。 最后，每次 rollout 的得分会相对于同一查询的其他 rollout 得分进行加权。 正“优势”通过使模型权重在未来的运行中更有可能产生该轨迹来得到强化，而负优势则受到惩罚；权重会被更新为在未来的运行中更不可能产生该轨迹。",
+   "sents": [
+    {
+     "en": "Agentic RL differs from SFT in that we actually run the current policy over training queries inside the agent harness N N N times.",
+     "zh": "智能体强化学习（Agentic RL）与监督微调（SFT）的不同之处在于，我们实际上会在智能体框架内，对训练查询运行当前策略 N N N 次。"
+    },
+    {
+     "en": "Each run (also referred to as a rollout) results in a final output that’s scored against some verifiable criteria.",
+     "zh": "每次运行（也称为一次 rollout）都会产生一个最终输出，该输出会根据某些可验证的标准进行评分。"
+    },
+    {
+     "en": "Lastly, each rollout’s score is then weighted relative to the other same-query rollouts.",
+     "zh": "最后，每次 rollout 的得分会相对于同一查询的其他 rollout 得分进行加权。"
+    },
+    {
+     "en": "A positive “advantage” is reinforced by making the model’s weights more likely to produce that trajectory in future runs, and a negative advantage is penalized; the weights are updated to be less likely to produce that trajectory in future runs.",
+     "zh": "正“优势”通过使模型权重在未来的运行中更有可能产生该轨迹来得到强化，而负优势则受到惩罚；权重会被更新为在未来的运行中更不可能产生该轨迹。"
+    }
+   ]
+  },
+  {
+   "en": "The initial reward algorithm was simple:",
+   "zh": "最初的奖励算法很简单：",
+   "sents": null
+  },
+  {
+   "en": "The speedup was calculated as the median of three default plan measurements divided by the median of three candidate plan measurements.",
+   "zh": "加速比的计算方式为：三次默认计划测量的中位数除以三次候选计划测量的中位数。",
+   "sents": null
+  },
+  {
+   "en": "For every evaluated candidate that was invalid, we subtracted 0.1 from the natural log of the speedup ratio. We subtracted a further 0.05 if the rollout resulted in a plan that shared the same fingerprint as the default Postgres plan. Finally, if the trajectory ended with no valid candidate at all, a flat 3 was subtracted from the reward in lieu of any of the 0.1 or 0.05 subtractions.",
+   "zh": "对于每个被评估且无效的候选方案，我们从加速比的自然对数中减去 0.1。 如果该次 rollout 生成的计划与默认 Postgres 计划具有相同的指纹，我们再额外减去 0.05。 最后，如果该轨迹最终没有任何有效候选方案，则从奖励中直接减去 3，以代替任何 0.1 或 0.05 的减扣。",
+   "sents": [
+    {
+     "en": "For every evaluated candidate that was invalid, we subtracted 0.1 from the natural log of the speedup ratio.",
+     "zh": "对于每个被评估且无效的候选方案，我们从加速比的自然对数中减去 0.1。"
+    },
+    {
+     "en": "We subtracted a further 0.05 if the rollout resulted in a plan that shared the same fingerprint as the default Postgres plan.",
+     "zh": "如果该次 rollout 生成的计划与默认 Postgres 计划具有相同的指纹，我们再额外减去 0.05。"
+    },
+    {
+     "en": "Finally, if the trajectory ended with no valid candidate at all, a flat 3 was subtracted from the reward in lieu of any of the 0.1 or 0.05 subtractions.",
+     "zh": "最后，如果该轨迹最终没有任何有效候选方案，则从奖励中直接减去 3，以代替任何 0.1 或 0.05 的减扣。"
+    }
+   ]
+  },
+  {
+   "en": "The first few RL runs I did using this reward resulted in a model that was terrified of producing invalid plans due to the extremely harsh -3 condition. The model played it safe instead, returning Postgres’s default plan over and over again, accepting the smaller 0.05 reward hits.",
+   "zh": "我最初用这个奖励做的几次强化学习运行，得到的模型因为极其严苛的 -3 条件而对产出无效计划心存恐惧。 模型反而采取了保守策略，一次又一次地返回 Postgres 的默认计划，宁可接受较小的 0.05 奖励损失。",
+   "sents": [
+    {
+     "en": "The first few RL runs I did using this reward resulted in a model that was terrified of producing invalid plans due to the extremely harsh -3 condition.",
+     "zh": "我最初用这个奖励做的几次强化学习运行，得到的模型因为极其严苛的 -3 条件而对产出无效计划心存恐惧。"
+    },
+    {
+     "en": "The model played it safe instead, returning Postgres’s default plan over and over again, accepting the smaller 0.05 reward hits.",
+     "zh": "模型反而采取了保守策略，一次又一次地返回 Postgres 的默认计划，宁可接受较小的 0.05 奖励损失。"
+    }
+   ]
+  },
+  {
+   "en": "GRPO exacerbated this issue. The plain GRPO algorithm converts multiple rollout rewards into relative “advantages”:",
+   "zh": "GRPO 加剧了这一问题。 原始的 GRPO 算法将多轮采样的奖励转换为相对「优势」：",
+   "sents": [
+    {
+     "en": "GRPO exacerbated this issue.",
+     "zh": "GRPO 加剧了这一问题。"
+    },
+    {
+     "en": "The plain GRPO algorithm converts multiple rollout rewards into relative “advantages”:",
+     "zh": "原始的 GRPO 算法将多轮采样的奖励转换为相对「优势」："
+    }
+   ]
+  },
+  {
+   "en": "GRPO as prime-rl implements it : simply subtract the group’s mean reward from each rollout’s reward. The GRPO paper also divides by the group’s standard deviation.",
+   "zh": "GRPO 在 prime-rl 中的实现方式：直接从每次 rollout 的奖励中减去该组的平均奖励。 GRPO 论文中还会除以该组奖励的标准差。",
+   "sents": [
+    {
+     "en": "GRPO as prime-rl implements it : simply subtract the group’s mean reward from each rollout’s reward.",
+     "zh": "GRPO 在 prime-rl 中的实现方式：直接从每次 rollout 的奖励中减去该组的平均奖励。"
+    },
+    {
+     "en": "The GRPO paper also divides by the group’s standard deviation.",
+     "zh": "GRPO 论文中还会除以该组奖励的标准差。"
+    }
+   ]
+  },
+  {
+   "en": "Let’s say we perform four rollouts for a given query resulting in the following plans, execution speeds and rewards:",
+   "zh": "假设我们针对某个查询执行四次 rollout，得到以下计划、执行速度和奖励：",
+   "sents": null
+  },
+  {
+   "en": "We’re reinforcing bad behavior by telling the model it’s okay to produce plans that end up being equivalent to Postgres’s default plan!",
+   "zh": "我们这是在强化不良行为——告诉模型“生成最终等同于 Postgres 默认计划的计划也没关系”！",
+   "sents": null
+  },
+  {
+   "en": "Both the busted reward algorithm and GRPO needed to be swapped out for something that could actually score advantages relative to the default plan’s execution time.",
+   "zh": "爆掉的奖励算法和 GRPO 都需要被替换掉，换成能够真正根据默认计划的执行时间来评分优势的东西。",
+   "sents": null
+  },
+  {
+   "en": "Changes include clipping the speedup ratio to bound scalar reward values, soft-thresholding by 0.05 to account for measurement noise, and scoring zero if the agent called keep_default or finish(default) . Trajectories ending without a valid candidate incurred a flat 0.1 fee instead of the previous 3.0, and candidate plans that fingerprinted to the default plan accrued small 0.02 fees.",
+   "zh": "修改内容包括：将加速比裁剪以限定标量奖励值，使用 0.05 的软阈值以应对测量噪声，并且当智能体调用了 keep_default 或 finish(default) 时记零分。 未以有效候选结束的轨迹将被收取固定的 0.1 费用（而非之前的 3.0），而指纹识别为默认计划的候选计划则会被收取 0.02 的小额费用。",
+   "sents": [
+    {
+     "en": "Changes include clipping the speedup ratio to bound scalar reward values, soft-thresholding by 0.05 to account for measurement noise, and scoring zero if the agent called keep_default or finish(default) .",
+     "zh": "修改内容包括：将加速比裁剪以限定标量奖励值，使用 0.05 的软阈值以应对测量噪声，并且当智能体调用了 keep_default 或 finish(default) 时记零分。"
+    },
+    {
+     "en": "Trajectories ending without a valid candidate incurred a flat 0.1 fee instead of the previous 3.0, and candidate plans that fingerprinted to the default plan accrued small 0.02 fees.",
+     "zh": "未以有效候选结束的轨迹将被收取固定的 0.1 费用（而非之前的 3.0），而指纹识别为默认计划的候选计划则会被收取 0.02 的小额费用。"
+    }
+   ]
+  },
+  {
+   "en": "prime-rl -flavored GRPO was swapped out for a custom “anchored” variant:",
+   "zh": "prime-rl 风格的 GRPO 被替换为一种自定义的「锚定」变体：",
+   "sents": null
+  },
+  {
+   "en": "Let’s take a look how our modified GRPO performs under the same four rollouts demonstrated above:",
+   "zh": "让我们看看修改后的 GRPO 在上文演示的相同四个 rollout 下的表现：",
+   "sents": null
+  },
+  {
+   "en": "The modified GRPO successfully applies a negative advantage to all four of these poor rollouts, down-weighting their likelihood across the board.",
+   "zh": "修改后的 GRPO 成功地对这四个糟糕的 rollout 全部施加了负优势，从而全面降低了它们的生成概率。",
+   "sents": null
+  },
+  {
+   "en": "With the reward and relative advantage model locked in, I could begin training…",
+   "zh": "奖励与相对优势模型确定之后，我就可以开始训练了……",
+   "sents": null
+  },
+  {
+   "en": "…as soon as I built out a mechanism for Postgres measurements to happen on FLOPper and training/inference to happen on the 2x H100 node. I would have loved to keep Postgres measurements on the Lambda node; alas, I ran a bunch of Postgres calibrations on their boxes and am reasonably confident I was sharing the non-GPU bits of the box with other folks, as the noise was off the charts compared to FLOPper.",
+   "zh": "……一旦我搭建好了一个机制，让 Postgres 测量在 FLOPper 上进行，而训练/推理在 2x H100 节点上运行。 我本很想把 Postgres 测量留在 Lambda 节点上；可惜，我在他们的机器上跑了一系列 Postgres 校准，并有相当的把握认为自己是在和其他人共享该机器的非 GPU 部分，因为与 FLOPper 相比，噪声大得离谱。",
+   "sents": [
+    {
+     "en": "…as soon as I built out a mechanism for Postgres measurements to happen on FLOPper and training/inference to happen on the 2x H100 node.",
+     "zh": "……一旦我搭建好了一个机制，让 Postgres 测量在 FLOPper 上进行，而训练/推理在 2x H100 节点上运行。"
+    },
+    {
+     "en": "I would have loved to keep Postgres measurements on the Lambda node; alas, I ran a bunch of Postgres calibrations on their boxes and am reasonably confident I was sharing the non-GPU bits of the box with other folks, as the noise was off the charts compared to FLOPper.",
+     "zh": "我本很想把 Postgres 测量留在 Lambda 节点上；可惜，我在他们的机器上跑了一系列 Postgres 校准，并有相当的把握认为自己是在和其他人共享该机器的非 GPU 部分，因为与 FLOPper 相比，噪声大得离谱。"
+    }
+   ]
+  },
+  {
+   "en": "I connected FLOPper to the Lambda node via Tailscale; the resulting process would be:",
+   "zh": "我通过 Tailscale 将 FLOPper 连接到 Lambda 节点；由此产生的流程为：",
+   "sents": null
+  },
+  {
+   "en": "Now training could start. I began by merging the final SFT adapter into the base model, creating a new base model in the process, and initialized a new adapter for RL training.",
+   "zh": "现在可以开始训练了。 我首先将最终的 SFT 适配器合并进基座模型，并在此过程中创建了一个新的基座模型，然后初始化了一个新的适配器用于强化学习训练。",
+   "sents": [
+    {
+     "en": "Now training could start.",
+     "zh": "现在可以开始训练了。"
+    },
+    {
+     "en": "I began by merging the final SFT adapter into the base model, creating a new base model in the process, and initialized a new adapter for RL training.",
+     "zh": "我首先将最终的 SFT 适配器合并进基座模型，并在此过程中创建了一个新的基座模型，然后初始化了一个新的适配器用于强化学习训练。"
+    }
+   ]
+  },
+  {
+   "en": "I started with an extremely conservative learning rate of 1e-06 , a batch size of 8, four rollouts per query, and did just 120 optimizer updates to prove out the mechanism.",
+   "zh": "我从极其保守的学习率 1e-06 开始，批量大小为 8，每个查询进行四次 rollout，并且只做了 120 次优化器更新来验证机制是否可行。",
+   "sents": null
+  },
+  {
+   "en": "The trained LoRA was evaluated against JOB, and completely flopped:",
+   "zh": "训练好的 LoRA 在 JOB 上进行了评估，结果完全失败：",
+   "sents": null
+  },
+  {
+   "en": "The first RL checkpoint against the SFT checkpoint it started from, evaluated on all 113 JOB queries.",
+   "zh": "针对其起始所用的 SFT 检查点训练出的第一个 RL 检查点，在全部 113 个 JOB 查询上进行了评估。",
+   "sents": null
+  },
+  {
+   "en": "Either the reward design wasn’t good, modified GRPO wasn’t working, or we simply weren’t being aggressive enough.",
+   "zh": "要么是奖励设计不够好，要么是改进版 GRPO 不起作用，又或者我们只是不够激进。",
+   "sents": null
+  },
+  {
+   "en": "The latter was easiest to test. I increased the learning rate one order-of-magnitude from 1e-06 to 1e-05 , bumped the batch size to 16 and the number of rollouts per query from four to eight, and decided to do 600 optimizer updates instead of just 120.",
+   "zh": "后者最容易测试。 我将学习率从 1e-06 提高一个数量级到 1e-05，把批大小增加到 16，把每个查询的 rollout 次数从四次增加到八次，并决定进行 600 次优化器更新，而不是只做 120 次。",
+   "sents": [
+    {
+     "en": "The latter was easiest to test.",
+     "zh": "后者最容易测试。"
+    },
+    {
+     "en": "I increased the learning rate one order-of-magnitude from 1e-06 to 1e-05 , bumped the batch size to 16 and the number of rollouts per query from four to eight, and decided to do 600 optimizer updates instead of just 120.",
+     "zh": "我将学习率从 1e-06 提高一个数量级到 1e-05，把批大小增加到 16，把每个查询的 rollout 次数从四次增加到八次，并决定进行 600 次优化器更新，而不是只做 120 次。"
+    }
+   ]
+  },
+  {
+   "en": "Around this time, I learned that for a rollout, 92% of the rollout’s time was spent in vLLM inference! Given the increase in the number of optimizer updates, I needed to be smarter about this.",
+   "zh": "大约在这个时候，我了解到在一次 rollout 中，92% 的时间都花在了 vLLM 推理上！ 鉴于优化器更新次数的增加，我需要在这方面做得更聪明些。",
+   "sents": [
+    {
+     "en": "Around this time, I learned that for a rollout, 92% of the rollout’s time was spent in vLLM inference!",
+     "zh": "大约在这个时候，我了解到在一次 rollout 中，92% 的时间都花在了 vLLM 推理上！"
+    },
+    {
+     "en": "Given the increase in the number of optimizer updates, I needed to be smarter about this.",
+     "zh": "鉴于优化器更新次数的增加，我需要在这方面做得更聪明些。"
+    }
+   ]
+  },
+  {
+   "en": "I refactored the training process so that rollouts leased an available Postgres worker only for the times where measurements were needed. Because of this new async approach, I could saturate vLLM and the trainer much further, and was able to run 20 rollouts concurrently, each contending for the same four Postgres workers.",
+   "zh": "我重构了训练流程，使得 rollout（采样）只在需要测量的时候才租用一个可用的 Postgres worker。 得益于这种新的异步方法，我可以让 vLLM 和训练器的负载更加饱和，并且能够并发运行 20 个 rollout，每个 rollout 都去竞争同样的四个 Postgres worker。",
+   "sents": [
+    {
+     "en": "I refactored the training process so that rollouts leased an available Postgres worker only for the times where measurements were needed.",
+     "zh": "我重构了训练流程，使得 rollout（采样）只在需要测量的时候才租用一个可用的 Postgres worker。"
+    },
+    {
+     "en": "Because of this new async approach, I could saturate vLLM and the trainer much further, and was able to run 20 rollouts concurrently, each contending for the same four Postgres workers.",
+     "zh": "得益于这种新的异步方法，我可以让 vLLM 和训练器的负载更加饱和，并且能够并发运行 20 个 rollout，每个 rollout 都去竞争同样的四个 Postgres worker。"
+    }
+   ]
+  },
+  {
+   "en": "Hold a worker for the whole rollout · 4 in flight",
+   "zh": "在整个发布期间持有一个 worker · 4 个进行中",
+   "sents": null
+  },
+  {
+   "en": "rollouts finished 0 workers measuring 0% of the time",
+   "zh": "rollouts 已完成 0 个 worker 正在测量 0% 的时间",
+   "sents": null
+  },
+  {
+   "en": "Lease a worker only to measure · 20 in flight",
+   "zh": "仅为了测量而租用工作者 · 20 个进行中",
+   "sents": null
+  },
+  {
+   "en": "vLLM inference on the H100 Measuring on a worker Waiting for a worker Worker held but idle",
+   "zh": "在 H100 上进行 vLLM 推理 在工作节点上进行测量 正在等待工作节点 工作节点被占用但处于空闲状态",
+   "sents": null
+  },
+  {
+   "en": "Requiring rollouts to hold a worker for their lifetime caps the maximum number of concurrent rollouts at the number of available workers. Using a worker lease strategy only when Postgres is needed lets us run 20 concurrent rollouts and increases the share of time Postgres workers are actually being utilized.",
+   "zh": "要求滚动更新在其整个生命周期内占用一个工作节点，会将并发滚动更新的最大数量限制为可用工作节点的数量。 仅在需要 Postgres 时才使用工作节点租约策略，这让我们能够运行 20 个并发滚动更新，并提高了 Postgres 工作节点实际被利用的时间占比。",
+   "sents": [
+    {
+     "en": "Requiring rollouts to hold a worker for their lifetime caps the maximum number of concurrent rollouts at the number of available workers.",
+     "zh": "要求滚动更新在其整个生命周期内占用一个工作节点，会将并发滚动更新的最大数量限制为可用工作节点的数量。"
+    },
+    {
+     "en": "Using a worker lease strategy only when Postgres is needed lets us run 20 concurrent rollouts and increases the share of time Postgres workers are actually being utilized.",
+     "zh": "仅在需要 Postgres 时才使用工作节点租约策略，这让我们能够运行 20 个并发滚动更新，并提高了 Postgres 工作节点实际被利用的时间占比。"
+    }
+   ]
+  },
+  {
+   "en": "I ran two stacked 600-optimizer update RL runs, back-to-back. The share of rollouts earning positive advantages steadily increased:",
+   "zh": "我先后连续运行了两轮叠加 600 个优化器更新的强化学习训练。 获得正优势的 rollout 占比稳步上升：",
+   "sents": [
+    {
+     "en": "I ran two stacked 600-optimizer update RL runs, back-to-back.",
+     "zh": "我先后连续运行了两轮叠加 600 个优化器更新的强化学习训练。"
+    },
+    {
+     "en": "The share of rollouts earning positive advantages steadily increased:",
+     "zh": "获得正优势的 rollout 占比稳步上升："
+    }
+   ]
+  },
+  {
+   "en": "Measured plan faster than Postgres Positive advantage",
+   "zh": "测得的计划速度优于 Postgres 的正向优势",
+   "sents": null
+  },
+  {
+   "en": "The training signal across both 600-update runs from the anchored credit assigned to every rollout that reached the trainer. Both the share of rollouts with plans beating Postgres and the share of rollouts with positive advantages steadily climb throughout the run.",
+   "zh": "两次 600 次更新的训练运行中，训练信号来自分配给每个到达训练器的 rollout 的锚定信用。 计划优于 Postgres 的 rollout 占比以及具有正向优势的 rollout 占比在整个训练过程中稳步上升。",
+   "sents": [
+    {
+     "en": "The training signal across both 600-update runs from the anchored credit assigned to every rollout that reached the trainer.",
+     "zh": "两次 600 次更新的训练运行中，训练信号来自分配给每个到达训练器的 rollout 的锚定信用。"
+    },
+    {
+     "en": "Both the share of rollouts with plans beating Postgres and the share of rollouts with positive advantages steadily climb throughout the run.",
+     "zh": "计划优于 Postgres 的 rollout 占比以及具有正向优势的 rollout 占比在整个训练过程中稳步上升。"
+    }
+   ]
+  },
+  {
+   "en": "And the results from both checkpoints against JOB:",
+   "zh": "以及两个检查点（checkpoint）在 JOB 上的结果：",
+   "sents": null
+  },
+  {
+   "en": "Both 600-update checkpoints against the SFT checkpoint they descend from, evaluated on all 113 JOB queries.",
+   "zh": "两个 600 步更新的检查点均与其所源自的 SFT 检查点进行对比，并在全部 113 个 JOB 查询上进行评估。",
+   "sents": null
+  },
+  {
+   "en": "The valid candidate rate rose nicely, alongside both the geometric mean speedup and total workload speedup!",
+   "zh": "有效候选率显著上升，几何平均加速比和总工作负载加速比也随之提升！",
+   "sents": null
+  },
+  {
+   "en": "I ran the final RL checkpoint against JOB again, this time doing three rollouts per query instead of just one. In other words, each query could produce up to 15 candidates max, and the best-of-15 was picked for each query This is roughly how I would expect someone trying to tune a workload of queries to use a model specially trained on this task. They would care more about the best candidate possible sampled from many rollouts, rather than just a single rollout. :",
+   "zh": "我将最终的 RL 检查点再次对 JOB 运行，这次每个查询做三次 rollout，而不是只做一次。 换句话说，每个查询最多可以产生 15 个候选，然后为每个查询挑选 best-of-15。这大致就是我希望那些试图调优查询工作负载的人在针对该任务专门训练的模型上使用的方式。 他们会更关心从多次 rollout 中采样出的尽可能好的候选，而不是只做单次 rollout。：",
+   "sents": [
+    {
+     "en": "I ran the final RL checkpoint against JOB again, this time doing three rollouts per query instead of just one.",
+     "zh": "我将最终的 RL 检查点再次对 JOB 运行，这次每个查询做三次 rollout，而不是只做一次。"
+    },
+    {
+     "en": "In other words, each query could produce up to 15 candidates max, and the best-of-15 was picked for each query This is roughly how I would expect someone trying to tune a workload of queries to use a model specially trained on this task.",
+     "zh": "换句话说，每个查询最多可以产生 15 个候选，然后为每个查询挑选 best-of-15。这大致就是我希望那些试图调优查询工作负载的人在针对该任务专门训练的模型上使用的方式。"
+    },
+    {
+     "en": "They would care more about the best candidate possible sampled from many rollouts, rather than just a single rollout. :",
+     "zh": "他们会更关心从多次 rollout 中采样出的尽可能好的候选，而不是只做单次 rollout。："
+    }
+   ]
+  },
+  {
+   "en": "The final 1,200-update RL checkpoint with three trajectories per JOB query. The first row averages the model’s own final selections over all 339 trajectories. The second applies a fixed rule within each trajectory, choosing the candidate with the best preliminary feedback if it beat 1.05x and the default otherwise. The third applies the same rule across a query’s three trajectories, so each query gets one answer chosen from up to 15 candidates.",
+   "zh": "在 JOB 查询上每个查询三条轨迹训练得到的最终 1,200 次更新的强化学习检查点。 第一行是该模型自身在全部 339 条轨迹上的最终选择的平均值。 第二行是在每条轨迹内应用固定规则：如果最佳候选的初步反馈超过 1.05 倍则选择该候选，否则选择默认项。 第三行是跨同一查询的三条轨迹应用相同规则，因此每个查询从最多 15 个候选中选出一个答案。",
+   "sents": [
+    {
+     "en": "The final 1,200-update RL checkpoint with three trajectories per JOB query.",
+     "zh": "在 JOB 查询上每个查询三条轨迹训练得到的最终 1,200 次更新的强化学习检查点。"
+    },
+    {
+     "en": "The first row averages the model’s own final selections over all 339 trajectories.",
+     "zh": "第一行是该模型自身在全部 339 条轨迹上的最终选择的平均值。"
+    },
+    {
+     "en": "The second applies a fixed rule within each trajectory, choosing the candidate with the best preliminary feedback if it beat 1.05x and the default otherwise.",
+     "zh": "第二行是在每条轨迹内应用固定规则：如果最佳候选的初步反馈超过 1.05 倍则选择该候选，否则选择默认项。"
+    },
+    {
+     "en": "The third applies the same rule across a query’s three trajectories, so each query gets one answer chosen from up to 15 candidates.",
+     "zh": "第三行是跨同一查询的三条轨迹应用相同规则，因此每个查询从最多 15 个候选中选出一个答案。"
+    }
+   ]
+  },
+  {
+   "en": "When taking the best feedback across three rollouts, we saw a 1.81x geometric mean speedup, and coincidentally a 1.81x total workload speedup too.",
+   "zh": "当在三次 rollout 中选取最佳反馈时，我们观察到 1.81 倍的几何平均加速，巧合的是，总工作负载的加速也达到了 1.81 倍。",
+   "sents": null
+  },
+  {
+   "en": "After all this training, what did the model actually learn?",
+   "zh": "经过这么多训练后，模型到底学到了什么？",
+   "sents": null
+  },
+  {
+   "en": "This project would have been free Barring the price of electricity for continually running FLOPper when both GPUs were fully utilized, which at current rates costs about ~$9/day. had it not been for my impatience to get training results faster “What about the Astra traces?,” you might ask. I did not experiment with it, but I do think the 4B model could have eventually learned the harness language through just RL alone, as DeepSeek-R1-Zero showed. It might have just taken a lot more rollouts. . I paid ~$800 to rent a 2x H100 SXM node from Lambda for ~95 hours, and ~$400 in OpenAI API fees to generate the Astra trajectory demonstrations.",
+   "zh": "这个项目本来可以不花钱，除了在两块 GPU 都满负荷运行时持续运行 FLOPper 所需的电费，按当前费率大约每天 9 美元。要不是因为我不耐烦想更快拿到训练结果的话。你可能会问：“那 Astra 轨迹呢？” 我没有做过这个实验，但我确实认为 4B 模型最终可以仅凭强化学习就学会 harness 语言，正如 DeepSeek-R1-Zero 所展示的那样。 只是可能需要多得多的大规模 rollout。 我花了约 800 美元从 Lambda 租用一台 2x H100 SXM 节点约 95 小时，并花了约 400 美元的 OpenAI API 费用来生成 Astra 轨迹示范。",
+   "sents": [
+    {
+     "en": "This project would have been free Barring the price of electricity for continually running FLOPper when both GPUs were fully utilized, which at current rates costs about ~$9/day. had it not been for my impatience to get training results faster “What about the Astra traces?,” you might ask.",
+     "zh": "这个项目本来可以不花钱，除了在两块 GPU 都满负荷运行时持续运行 FLOPper 所需的电费，按当前费率大约每天 9 美元。要不是因为我不耐烦想更快拿到训练结果的话。你可能会问：“那 Astra 轨迹呢？”"
+    },
+    {
+     "en": "I did not experiment with it, but I do think the 4B model could have eventually learned the harness language through just RL alone, as DeepSeek-R1-Zero showed.",
+     "zh": "我没有做过这个实验，但我确实认为 4B 模型最终可以仅凭强化学习就学会 harness 语言，正如 DeepSeek-R1-Zero 所展示的那样。"
+    },
+    {
+     "en": "It might have just taken a lot more rollouts. .",
+     "zh": "只是可能需要多得多的大规模 rollout。"
+    },
+    {
+     "en": "I paid ~$800 to rent a 2x H100 SXM node from Lambda for ~95 hours, and ~$400 in OpenAI API fees to generate the Astra trajectory demonstrations.",
+     "zh": "我花了约 800 美元从 Lambda 租用一台 2x H100 SXM 节点约 95 小时，并花了约 400 美元的 OpenAI API 费用来生成 Astra 轨迹示范。"
+    }
+   ]
+  },
+  {
+   "en": "Via off-policy distillation and reinforcement learning, a tiny 4B model went from not being able to understand the harness it was wrapped in, to achieving a 1.81x geometric mean speedup and a summed latency decrease of 44.7% across a workload of join-heavy SQL queries Given three attempts per query in a best-of-15 measurement, as previously mentioned. .",
+   "zh": "通过离策略蒸馏和强化学习，一个微小的 4B 模型从无法理解它所处的运行框架，到在以连接为主的 SQL 查询工作负载上实现了 1.81 倍的几何平均加速，总延迟降低了 44.7%。如前所述，在最佳 15 次测量中，每个查询有三次尝试机会。",
+   "sents": null
+  },
+  {
+   "en": "It’s easy to take tiny models for granted when 5T+ parameter behemoths exist. We shouldn’t.",
+   "zh": "当 5T+ 参数的巨型模型存在时，人们很容易把微型模型视为理所当然。但我们不应该这样。",
+   "sents": null
+  },
+  {
+   "en": "Frontier intelligence is extremely powerful; the distillation I did off Astra trajectories is proof enough that large models are not going anywhere.",
+   "zh": "前沿智能极其强大；我对 Astra 轨迹所做的蒸馏足以证明，大模型绝不会被淘汰。",
+   "sents": null
+  },
+  {
+   "en": "But I do believe this experiment proves out a hypothesis many companies are waking up to: they have the data; it’s not a far-cry to build out an RL environment and spend a small sum to train and inference open-weights models on niche, domain-specific tasks. I think small models will be increasingly used for this, as they are faster and cheaper to train.",
+   "zh": "但我确实相信，这个实验验证了许多公司正在意识到的一个假设：他们拥有数据；搭建一个强化学习环境，并花费少量资金在细分领域的特定任务上训练和推理开源权重模型，并非遥不可及。 我认为小模型将越来越多地被用于此类场景，因为它们训练起来更快、成本更低。",
+   "sents": [
+    {
+     "en": "But I do believe this experiment proves out a hypothesis many companies are waking up to: they have the data; it’s not a far-cry to build out an RL environment and spend a small sum to train and inference open-weights models on niche, domain-specific tasks.",
+     "zh": "但我确实相信，这个实验验证了许多公司正在意识到的一个假设：他们拥有数据；搭建一个强化学习环境，并花费少量资金在细分领域的特定任务上训练和推理开源权重模型，并非遥不可及。"
+    },
+    {
+     "en": "I think small models will be increasingly used for this, as they are faster and cheaper to train.",
+     "zh": "我认为小模型将越来越多地被用于此类场景，因为它们训练起来更快、成本更低。"
+    }
+   ]
+  },
+  {
+   "en": "I architected the infra/training stack myself plus used my own GPUs as a learning exercise, but there are a growing number of out-of-the-box solutions for companies to easily train their own models.",
+   "zh": "基础设施和训练技术栈是我自己搭建的，同时使用自己的 GPU 作为一种学习实践，不过目前已有越来越多开箱即用的解决方案，可以帮助企业轻松训练自己的模型。",
+   "sents": null
+  },
+  {
+   "en": "I’m personally very excited to see how this space continues to grow!",
+   "zh": "我个人非常期待看到这个领域如何继续发展壮大！",
+   "sents": null
+  },
+  {
+   "en": "As for what I’d want to try next, just a few ideas:",
+   "zh": "至于接下来我想尝试什么，这里有几个想法：",
+   "sents": null
+  },
+  {
+   "en": "I did this research while on sabbatical at the Recurse Center . Many thanks to the folks here who helped inspire this research direction!",
+   "zh": "我是在 Recurse Center 休学术假期间完成这项研究的。 非常感谢这里的许多朋友，他们帮助启发了这个研究方向！",
+   "sents": [
+    {
+     "en": "I did this research while on sabbatical at the Recurse Center .",
+     "zh": "我是在 Recurse Center 休学术假期间完成这项研究的。"
+    },
+    {
+     "en": "Many thanks to the folks here who helped inspire this research direction!",
+     "zh": "非常感谢这里的许多朋友，他们帮助启发了这个研究方向！"
+    }
+   ]
+  },
+  {
+   "en": "All code for this project is available here .",
+   "zh": "本项目的所有代码均可在此处获取。",
+   "sents": null
+  },
+  {
+   "en": "Bansal, Rohan. “Training a 4B model to produce 81% faster query plans than Postgres”. rohanbansal.com (Sep 2026). https://rohanbansal.com/qorl Or use the BibTeX citation:",
+   "zh": "Bansal, Rohan. “训练一个 4B 模型，生成比 Postgres 快 81% 的查询计划”. rohanbansal.com (2026 年 9 月). https://rohanbansal.com/qorl 或者使用 BibTeX 引用格式：",
+   "sents": null
+  }
+ ]
+}

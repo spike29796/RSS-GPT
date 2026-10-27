@@ -1,0 +1,614 @@
+{
+ "id": "341f11e78b1225e8",
+ "source": "hackernews",
+ "link": "https://www.anthropic.com/research/attack-surface-reduction",
+ "title": "Using Claude to reduce the attack surface of code",
+ "title_zh": "使用 Claude 减少代码的攻击面",
+ "published": "Wed, 21 Oct 2026 03:36:43 +0000",
+ "translated_at": "2026-10-26T06:48:24Z",
+ "paragraphs": [
+  {
+   "en": "Over the past year, we’ve published lots of data that shows that frontier AI models are more than capable of discovering and exploiting security vulnerabilities. Showing how previously unknown vulnerabilities might be exploited is, however, only the start of what frontier AI models can do for cyber defense. In this post, we summarize some of our initial research into automated attack surface analysis and reduction: the process of using AI models to map the code that is reachable, then removing or restricting access to anything than a given deployment doesn’t need to expose.",
+   "zh": "过去一年里，我们发布了大量数据，表明前沿 AI 模型完全有能力发现并利用安全漏洞。 然而，展示此前未知的漏洞可能如何被利用，只是前沿 AI 模型在网络防御方面所能做之事的开端。 在本文中，我们总结了我们在自动化攻击面分析与缩减方面的一些初步研究：即利用 AI 模型映射可达的代码，然后移除或限制对给定部署无需暴露的任何内容的访问。",
+   "sents": [
+    {
+     "en": "Over the past year, we’ve published lots of data that shows that frontier AI models are more than capable of discovering and exploiting security vulnerabilities.",
+     "zh": "过去一年里，我们发布了大量数据，表明前沿 AI 模型完全有能力发现并利用安全漏洞。"
+    },
+    {
+     "en": "Showing how previously unknown vulnerabilities might be exploited is, however, only the start of what frontier AI models can do for cyber defense.",
+     "zh": "然而，展示此前未知的漏洞可能如何被利用，只是前沿 AI 模型在网络防御方面所能做之事的开端。"
+    },
+    {
+     "en": "In this post, we summarize some of our initial research into automated attack surface analysis and reduction: the process of using AI models to map the code that is reachable, then removing or restricting access to anything than a given deployment doesn’t need to expose.",
+     "zh": "在本文中，我们总结了我们在自动化攻击面分析与缩减方面的一些初步研究：即利用 AI 模型映射可达的代码，然后移除或限制对给定部署无需暴露的任何内容的访问。"
+    }
+   ]
+  },
+  {
+   "en": "Automated attack surface analysis and reduction can meaningfully improve the security of deployed software in the near term. Securing software by finding and fixing individual vulnerabilities alone scales poorly: fixing even a critical vulnerability tells you nothing about the vulnerabilities that remain. By contrast, reducing code reachability can reduce the severity of unknown vulnerabilities, including the ones that might be under active exploitation. These techniques don’t remove the unknown vulnerabilities in the code, but they do make the vulnerabilities harder to reach, and thereby reduce their severity. Minimizing codebases’ attack surface results in better security without ever having to find or fix an individual vulnerability.",
+   "zh": "自动化的攻击面分析与缩减能够在短期内切实提升已部署软件的安全性。 仅靠发现并修复单个漏洞来保障软件安全，扩展性很差：即使修复了一个严重漏洞，也无法说明剩余漏洞的情况。 相比之下，缩减代码可达性能够降低未知漏洞的严重性，包括那些可能正被积极利用的漏洞。 这些技术并不能消除代码中的未知漏洞，但它们确实能让漏洞更难被触及，从而降低其严重性。 最小化代码库的攻击面可以在无需逐个发现或修复漏洞的情况下带来更好的安全性。",
+   "sents": [
+    {
+     "en": "Automated attack surface analysis and reduction can meaningfully improve the security of deployed software in the near term.",
+     "zh": "自动化的攻击面分析与缩减能够在短期内切实提升已部署软件的安全性。"
+    },
+    {
+     "en": "Securing software by finding and fixing individual vulnerabilities alone scales poorly: fixing even a critical vulnerability tells you nothing about the vulnerabilities that remain.",
+     "zh": "仅靠发现并修复单个漏洞来保障软件安全，扩展性很差：即使修复了一个严重漏洞，也无法说明剩余漏洞的情况。"
+    },
+    {
+     "en": "By contrast, reducing code reachability can reduce the severity of unknown vulnerabilities, including the ones that might be under active exploitation.",
+     "zh": "相比之下，缩减代码可达性能够降低未知漏洞的严重性，包括那些可能正被积极利用的漏洞。"
+    },
+    {
+     "en": "These techniques don’t remove the unknown vulnerabilities in the code, but they do make the vulnerabilities harder to reach, and thereby reduce their severity.",
+     "zh": "这些技术并不能消除代码中的未知漏洞，但它们确实能让漏洞更难被触及，从而降低其严重性。"
+    },
+    {
+     "en": "Minimizing codebases’ attack surface results in better security without ever having to find or fix an individual vulnerability.",
+     "zh": "最小化代码库的攻击面可以在无需逐个发现或修复漏洞的情况下带来更好的安全性。"
+    }
+   ]
+  },
+  {
+   "en": "Below, we preview some of the data we’ve collected from applying attack surface reduction techniques to large open-source codebases using Claude. Our aim in doing so is to show that Claude can meaningfully, and economically, improve software security through the methods we outline. Specifically, we ran Claude over 25 projects (in a variety of languages), and it discovered 493 issues. With these results in mind, we discuss how developers can apply similar techniques to their own code.",
+   "zh": "下面，我们预览部分数据——这些数据来自我们使用 Claude 对大型开源代码库应用攻击面削减技术所收集的结果。 我们这样做，旨在表明 Claude 能够通过我们概述的方法，以有意义且经济高效的方式提升软件安全性。 具体而言，我们让 Claude 扫描了 25 个项目（涵盖多种语言），共发现了 493 个问题。 结合这些结果，我们探讨开发者如何将类似技术应用于自己的代码。",
+   "sents": [
+    {
+     "en": "Below, we preview some of the data we’ve collected from applying attack surface reduction techniques to large open-source codebases using Claude.",
+     "zh": "下面，我们预览部分数据——这些数据来自我们使用 Claude 对大型开源代码库应用攻击面削减技术所收集的结果。"
+    },
+    {
+     "en": "Our aim in doing so is to show that Claude can meaningfully, and economically, improve software security through the methods we outline.",
+     "zh": "我们这样做，旨在表明 Claude 能够通过我们概述的方法，以有意义且经济高效的方式提升软件安全性。"
+    },
+    {
+     "en": "Specifically, we ran Claude over 25 projects (in a variety of languages), and it discovered 493 issues.",
+     "zh": "具体而言，我们让 Claude 扫描了 25 个项目（涵盖多种语言），共发现了 493 个问题。"
+    },
+    {
+     "en": "With these results in mind, we discuss how developers can apply similar techniques to their own code.",
+     "zh": "结合这些结果，我们探讨开发者如何将类似技术应用于自己的代码。"
+    }
+   ]
+  },
+  {
+   "en": "Over time, software has a tendency to become more complicated, with new layers of abstractions, new dependencies, and new features slowly piling on top of one-another. This can often cause it to function very differently to how its original developers intended. And it is a big part of why attackers are often so successful: they study exactly how a piece of code behaves in practice, rather than how its developers intended or designed it to work.",
+   "zh": "随着时间推移，软件往往会变得更加复杂，新的抽象层、新的依赖和新的功能慢慢地层层叠加。 这常常会导致软件的实际运行方式与其原始开发者的意图大相径庭。 这也是攻击者往往如此成功的一个重要原因：他们研究的正是代码在实际运行中的行为，而不是开发者期望或设计的工作方式。",
+   "sents": [
+    {
+     "en": "Over time, software has a tendency to become more complicated, with new layers of abstractions, new dependencies, and new features slowly piling on top of one-another.",
+     "zh": "随着时间推移，软件往往会变得更加复杂，新的抽象层、新的依赖和新的功能慢慢地层层叠加。"
+    },
+    {
+     "en": "This can often cause it to function very differently to how its original developers intended.",
+     "zh": "这常常会导致软件的实际运行方式与其原始开发者的意图大相径庭。"
+    },
+    {
+     "en": "And it is a big part of why attackers are often so successful: they study exactly how a piece of code behaves in practice, rather than how its developers intended or designed it to work.",
+     "zh": "这也是攻击者往往如此成功的一个重要原因：他们研究的正是代码在实际运行中的行为，而不是开发者期望或设计的工作方式。"
+    }
+   ]
+  },
+  {
+   "en": "Automated attack surface analysis and reduction techniques aim to discover unnecessary attack surfaces, then move that code behind an appropriate gate. This might involve moving code from pre-authentication to post-authentication, from 0-click to 1-click, from on-by-default to explicit opt-in, or from the first message of a protocol to deeper in the session state machine. Some code is meant to be reachable before these stages, but a lot it is not, and, given the complexity that comes with code churn across thousands or millions of lines of code, unnecessary exposure of features often goes unnoticed.",
+   "zh": "自动化的攻击面分析与缩减技术旨在发现不必要的攻击面，然后将相关代码移到适当的门控之后。 这可能涉及把代码从未经身份验证阶段移到身份验证之后，从 0 次点击移到 1 次点击，从默认开启移到显式选择加入，或从协议的第一条消息移到会话状态机更深的位置。 有些代码本应可以在这些阶段之前被访问，但很多代码并非如此，而且考虑到数千乃至数百万行代码的频繁变更所带来的复杂性，不必要的功能暴露往往不被察觉。",
+   "sents": [
+    {
+     "en": "Automated attack surface analysis and reduction techniques aim to discover unnecessary attack surfaces, then move that code behind an appropriate gate.",
+     "zh": "自动化的攻击面分析与缩减技术旨在发现不必要的攻击面，然后将相关代码移到适当的门控之后。"
+    },
+    {
+     "en": "This might involve moving code from pre-authentication to post-authentication, from 0-click to 1-click, from on-by-default to explicit opt-in, or from the first message of a protocol to deeper in the session state machine.",
+     "zh": "这可能涉及把代码从未经身份验证阶段移到身份验证之后，从 0 次点击移到 1 次点击，从默认开启移到显式选择加入，或从协议的第一条消息移到会话状态机更深的位置。"
+    },
+    {
+     "en": "Some code is meant to be reachable before these stages, but a lot it is not, and, given the complexity that comes with code churn across thousands or millions of lines of code, unnecessary exposure of features often goes unnoticed.",
+     "zh": "有些代码本应可以在这些阶段之前被访问，但很多代码并非如此，而且考虑到数千乃至数百万行代码的频繁变更所带来的复杂性，不必要的功能暴露往往不被察觉。"
+    }
+   ]
+  },
+  {
+   "en": "There are numerous ways to reduce the attack surface of code. In our own research efforts, we focused on three methods in particular:",
+   "zh": "有许多方法可以减少代码的攻击面。 在我们自己的研究工作中，我们特别关注了三种方法：",
+   "sents": [
+    {
+     "en": "There are numerous ways to reduce the attack surface of code.",
+     "zh": "有许多方法可以减少代码的攻击面。"
+    },
+    {
+     "en": "In our own research efforts, we focused on three methods in particular:",
+     "zh": "在我们自己的研究工作中，我们特别关注了三种方法："
+    }
+   ]
+  },
+  {
+   "en": "We wanted to understand how well Claude could take these three descriptions of attack surface and discover real issues in large and complex codebases. We analyzed 25 open source projects (representing over five million lines of code), written in languages including C, C++, Java, PHP, and Python. Claude created an inventory of over 17,000 configuration options across these projects. Of those, 3,842 related to the configuration of a control or feature that was security relevant.",
+   "zh": "我们想了解 Claude 能在多大程度上依据这三份攻击面描述，在大型且复杂的代码库中发现真实问题。 我们分析了 25 个开源项目（代表超过五百万行代码），这些项目使用 C、C++、Java、PHP 和 Python 等语言编写。 Claude 在这些项目中创建了包含超过 17,000 个配置选项的清单。 其中，3,842 个涉及安全相关的控制或功能的配置。",
+   "sents": [
+    {
+     "en": "We wanted to understand how well Claude could take these three descriptions of attack surface and discover real issues in large and complex codebases.",
+     "zh": "我们想了解 Claude 能在多大程度上依据这三份攻击面描述，在大型且复杂的代码库中发现真实问题。"
+    },
+    {
+     "en": "We analyzed 25 open source projects (representing over five million lines of code), written in languages including C, C++, Java, PHP, and Python.",
+     "zh": "我们分析了 25 个开源项目（代表超过五百万行代码），这些项目使用 C、C++、Java、PHP 和 Python 等语言编写。"
+    },
+    {
+     "en": "Claude created an inventory of over 17,000 configuration options across these projects.",
+     "zh": "Claude 在这些项目中创建了包含超过 17,000 个配置选项的清单。"
+    },
+    {
+     "en": "Of those, 3,842 related to the configuration of a control or feature that was security relevant.",
+     "zh": "其中，3,842 个涉及安全相关的控制或功能的配置。"
+    }
+   ]
+  },
+  {
+   "en": "For the purposes of our research, we broke down these open source projects into three broad categories:",
+   "zh": "在我们的研究中，我们将这些开源项目分为三大类：",
+   "sents": null
+  },
+  {
+   "en": "These categories help to contextualize our results. For example, we’d expect a significant percentage of a Public codebase to be reachable in the default configuration (since it’s designed to serve any user), but the opposite to be true for projects in the Gated category.",
+   "zh": "这些类别有助于为我们的结果提供背景语境。 例如，我们预期 Public 类别的代码库在默认配置下会有较大比例的代码可达（因为其设计目标就是服务任何用户），而 Gated 类别的项目则恰恰相反。",
+   "sents": [
+    {
+     "en": "These categories help to contextualize our results.",
+     "zh": "这些类别有助于为我们的结果提供背景语境。"
+    },
+    {
+     "en": "For example, we’d expect a significant percentage of a Public codebase to be reachable in the default configuration (since it’s designed to serve any user), but the opposite to be true for projects in the Gated category.",
+     "zh": "例如，我们预期 Public 类别的代码库在默认配置下会有较大比例的代码可达（因为其设计目标就是服务任何用户），而 Gated 类别的项目则恰恰相反。"
+    }
+   ]
+  },
+  {
+   "en": "Claude found 493 issues using the three methods described above. Several themes stuck out to us from its results.",
+   "zh": "Claude 使用上述三种方法发现了 493 个问题。 从其结果中，我们注意到了几个突出的主题。",
+   "sents": [
+    {
+     "en": "Claude found 493 issues using the three methods described above.",
+     "zh": "Claude 使用上述三种方法发现了 493 个问题。"
+    },
+    {
+     "en": "Several themes stuck out to us from its results.",
+     "zh": "从其结果中，我们注意到了几个突出的主题。"
+    }
+   ]
+  },
+  {
+   "en": "First, Claude found that all eleven gated projects had code that was unintentionally reachable (although this code wasn’t a significant percentage of the total lines of code for any of those projects). Specifically, Claude discovered 93 unnecessary pre-authentication surfaces in the default configuration of the gated cohort, 37 locations where code executed, or state was recorded, before authentication, and 61 configuration combinations that silently weakened a pre-authentication control configured by the administrator. None of these issues would have been immediately exploitable on their own, but they create a much larger attack surface than is necessary.",
+   "zh": "首先，Claude 发现所有十一个门控项目的代码中都存在无意间可达的代码（尽管这些代码在其中任何一个项目的总代码行数中都只占很小的比例）。 具体来说，Claude 在门控项目组的默认配置中发现了 93 个不必要的身份验证前攻击面、37 处在身份验证之前就执行代码或记录状态的位置，以及 61 种会悄然削弱管理员所配置的身份验证前控制措施的配置组合。 这些问题本身都不能被直接利用，但它们造成的攻击面远超必要的范围。",
+   "sents": [
+    {
+     "en": "First, Claude found that all eleven gated projects had code that was unintentionally reachable (although this code wasn’t a significant percentage of the total lines of code for any of those projects).",
+     "zh": "首先，Claude 发现所有十一个门控项目的代码中都存在无意间可达的代码（尽管这些代码在其中任何一个项目的总代码行数中都只占很小的比例）。"
+    },
+    {
+     "en": "Specifically, Claude discovered 93 unnecessary pre-authentication surfaces in the default configuration of the gated cohort, 37 locations where code executed, or state was recorded, before authentication, and 61 configuration combinations that silently weakened a pre-authentication control configured by the administrator.",
+     "zh": "具体来说，Claude 在门控项目组的默认配置中发现了 93 个不必要的身份验证前攻击面、37 处在身份验证之前就执行代码或记录状态的位置，以及 61 种会悄然削弱管理员所配置的身份验证前控制措施的配置组合。"
+    },
+    {
+     "en": "None of these issues would have been immediately exploitable on their own, but they create a much larger attack surface than is necessary.",
+     "zh": "这些问题本身都不能被直接利用，但它们造成的攻击面远超必要的范围。"
+    }
+   ]
+  },
+  {
+   "en": "Second, Claude’s work mitigating configuration interaction issues produced some of the most interesting and impactful findings (across all project types). Claude found 162 security sensitive configuration combinations that were accepted both without an error or warning and without any documentation of the expected behavior of their interaction. In 94 of those cases, the combination silently turned off a security control. The other 68 cases were inconsistencies in the same security mechanisms (e.g. a listener or login path would remain reachable even though the configuration would say it was disabled; two settings would conflict, and the one that would take precedence would depend on their order in the configuration file, or a protection configured by the administrator would do nothing while its code remained reachable). While some of these configuration combinations might be non-standard or infrequently used, there would be nothing preventing an administrator of these projects from configuring and deploying the code in this way.",
+   "zh": "其次，Claude 在缓解配置交互问题方面的工作产生了一些最有趣、最具影响力的发现（在所有项目类型中皆是如此）。 Claude 发现了 162 组对安全敏感的配置组合，这些组合既没有引发错误或警告而被接受，也没有任何文档说明其交互的预期行为。 在其中 94 个案例中，这类组合会静默关闭一项安全控制。 其余 68 个案例是同一安全机制中的不一致问题（例如，即使配置表明某监听器或登录路径已被禁用，它仍然可达；两个设置发生冲突，而哪一个优先生效取决于它们在配置文件中的先后顺序；或者管理员配置的某项保护毫无作用，而其相关代码仍然可达）。 尽管其中一些配置组合可能是非标准的或不常使用的，但没有任何东西能阻止这些项目的管理员以这种方式配置并部署代码。",
+   "sents": [
+    {
+     "en": "Second, Claude’s work mitigating configuration interaction issues produced some of the most interesting and impactful findings (across all project types).",
+     "zh": "其次，Claude 在缓解配置交互问题方面的工作产生了一些最有趣、最具影响力的发现（在所有项目类型中皆是如此）。"
+    },
+    {
+     "en": "Claude found 162 security sensitive configuration combinations that were accepted both without an error or warning and without any documentation of the expected behavior of their interaction.",
+     "zh": "Claude 发现了 162 组对安全敏感的配置组合，这些组合既没有引发错误或警告而被接受，也没有任何文档说明其交互的预期行为。"
+    },
+    {
+     "en": "In 94 of those cases, the combination silently turned off a security control.",
+     "zh": "在其中 94 个案例中，这类组合会静默关闭一项安全控制。"
+    },
+    {
+     "en": "The other 68 cases were inconsistencies in the same security mechanisms (e.g. a listener or login path would remain reachable even though the configuration would say it was disabled; two settings would conflict, and the one that would take precedence would depend on their order in the configuration file, or a protection configured by the administrator would do nothing while its code remained reachable).",
+     "zh": "其余 68 个案例是同一安全机制中的不一致问题（例如，即使配置表明某监听器或登录路径已被禁用，它仍然可达；两个设置发生冲突，而哪一个优先生效取决于它们在配置文件中的先后顺序；或者管理员配置的某项保护毫无作用，而其相关代码仍然可达）。"
+    },
+    {
+     "en": "While some of these configuration combinations might be non-standard or infrequently used, there would be nothing preventing an administrator of these projects from configuring and deploying the code in this way.",
+     "zh": "尽管其中一些配置组合可能是非标准的或不常使用的，但没有任何东西能阻止这些项目的管理员以这种方式配置并部署代码。"
+    }
+   ]
+  },
+  {
+   "en": "Claude also found one specific pattern that turned up independently in four unrelated projects. This would work as follows. An administrator would write an access rule for remote clients using a hostname or a wildcard pattern, instead of an IP address. When a client connects, the server would compare that rule against the client’s hostname. Whether the server ever learned that hostname would depend on a separate option that controlled reverse DNS lookups (which most projects had configured off). With lookups off, the server would only have the client’s IP address. The server would compare the rule against that address as plain text. But a hostname pattern can never match an IP address. This means that a deny rule would never fire, and the list would fail open. Some of the affected projects mention in their documentation that hostname rules depend on DNS lookups being enabled, but none state that a deny list written this way would have fail open behavior.",
+   "zh": "Claude 还发现了一个在四个互不相关的项目中独立出现的特定模式。 其运作方式如下。 管理员会使用主机名或通配符模式（而非 IP 地址）为远程客户端编写一条访问规则。 当客户端连接时，服务器会将该规则与客户端的主机名进行比较。 服务器是否曾获知该主机名，取决于一个控制反向 DNS 查询的独立选项（大多数项目都将其配置为关闭）。 在关闭查询的情况下，服务器只会拥有客户端的 IP 地址。 服务器会将该规则与这个地址作为纯文本进行比较。 但主机名模式永远无法匹配 IP 地址。 这意味着拒绝规则永远不会触发，该列表将呈现失效开放（fail open）的行为。 一些受影响的项目在其文档中提到，主机名规则依赖于启用 DNS 查询，但没有一个项目说明以这种方式编写的拒绝列表会出现失效开放的行为。",
+   "sents": [
+    {
+     "en": "Claude also found one specific pattern that turned up independently in four unrelated projects.",
+     "zh": "Claude 还发现了一个在四个互不相关的项目中独立出现的特定模式。"
+    },
+    {
+     "en": "This would work as follows.",
+     "zh": "其运作方式如下。"
+    },
+    {
+     "en": "An administrator would write an access rule for remote clients using a hostname or a wildcard pattern, instead of an IP address.",
+     "zh": "管理员会使用主机名或通配符模式（而非 IP 地址）为远程客户端编写一条访问规则。"
+    },
+    {
+     "en": "When a client connects, the server would compare that rule against the client’s hostname.",
+     "zh": "当客户端连接时，服务器会将该规则与客户端的主机名进行比较。"
+    },
+    {
+     "en": "Whether the server ever learned that hostname would depend on a separate option that controlled reverse DNS lookups (which most projects had configured off).",
+     "zh": "服务器是否曾获知该主机名，取决于一个控制反向 DNS 查询的独立选项（大多数项目都将其配置为关闭）。"
+    },
+    {
+     "en": "With lookups off, the server would only have the client’s IP address.",
+     "zh": "在关闭查询的情况下，服务器只会拥有客户端的 IP 地址。"
+    },
+    {
+     "en": "The server would compare the rule against that address as plain text.",
+     "zh": "服务器会将该规则与这个地址作为纯文本进行比较。"
+    },
+    {
+     "en": "But a hostname pattern can never match an IP address.",
+     "zh": "但主机名模式永远无法匹配 IP 地址。"
+    },
+    {
+     "en": "This means that a deny rule would never fire, and the list would fail open.",
+     "zh": "这意味着拒绝规则永远不会触发，该列表将呈现失效开放（fail open）的行为。"
+    },
+    {
+     "en": "Some of the affected projects mention in their documentation that hostname rules depend on DNS lookups being enabled, but none state that a deny list written this way would have fail open behavior.",
+     "zh": "一些受影响的项目在其文档中提到，主机名规则依赖于启用 DNS 查询，但没有一个项目说明以这种方式编写的拒绝列表会出现失效开放的行为。"
+    }
+   ]
+  },
+  {
+   "en": "Third, Claude often discovered that two configuration options would conflict in a way that silently dropped a security check. In one case, an administrator could require every connecting client to prove its identity with a certificate. In another, the code was only intended to delay that check until it was required, but in fact disabled the check entirely. A server that was configured to accept only trusted clients would therefore accept a connection from anyone. This exposed a large body of request handling code (which was supposed to be behind the certificate check) to unauthenticated clients. The software accepted both configuration options together with no warning under default settings; the documentation never mentioned that the certificate requirement had been dropped. This conflicting set of configuration options had been present in the software for 21 years.",
+   "zh": "第三，Claude 经常发现两个配置选项会以某种方式发生冲突，从而悄悄地丢弃一项安全检查。 在一个案例中，管理员可以要求每个连接的客户端用证书证明其身份。 在另一个案例中，代码本意只是将该检查延迟到需要时再执行，但实际上却完全禁用了该检查。 因此，一个被配置为仅接受受信任客户端的服务器会接受来自任何人的连接。 这使得大量请求处理代码（本应处于证书检查的保护之下）暴露给未经身份验证的客户端。 在默认设置下，该软件同时接受这两个配置选项而不发出任何警告；文档从未提及证书要求已被丢弃。 这组相互冲突的配置选项在该软件中已经存在了 21 年。",
+   "sents": [
+    {
+     "en": "Third, Claude often discovered that two configuration options would conflict in a way that silently dropped a security check.",
+     "zh": "第三，Claude 经常发现两个配置选项会以某种方式发生冲突，从而悄悄地丢弃一项安全检查。"
+    },
+    {
+     "en": "In one case, an administrator could require every connecting client to prove its identity with a certificate.",
+     "zh": "在一个案例中，管理员可以要求每个连接的客户端用证书证明其身份。"
+    },
+    {
+     "en": "In another, the code was only intended to delay that check until it was required, but in fact disabled the check entirely.",
+     "zh": "在另一个案例中，代码本意只是将该检查延迟到需要时再执行，但实际上却完全禁用了该检查。"
+    },
+    {
+     "en": "A server that was configured to accept only trusted clients would therefore accept a connection from anyone.",
+     "zh": "因此，一个被配置为仅接受受信任客户端的服务器会接受来自任何人的连接。"
+    },
+    {
+     "en": "This exposed a large body of request handling code (which was supposed to be behind the certificate check) to unauthenticated clients.",
+     "zh": "这使得大量请求处理代码（本应处于证书检查的保护之下）暴露给未经身份验证的客户端。"
+    },
+    {
+     "en": "The software accepted both configuration options together with no warning under default settings; the documentation never mentioned that the certificate requirement had been dropped.",
+     "zh": "在默认设置下，该软件同时接受这两个配置选项而不发出任何警告；文档从未提及证书要求已被丢弃。"
+    },
+    {
+     "en": "This conflicting set of configuration options had been present in the software for 21 years.",
+     "zh": "这组相互冲突的配置选项在该软件中已经存在了 21 年。"
+    }
+   ]
+  },
+  {
+   "en": "Finally, Claude discovered an issue in a project that left authentication off by default (and expected the administrator to turn it on). The option that required TLS client certificates was honored on most of the project’s network endpoints, but silently ignored on a few others (ones which loaded their TLS settings through a path with a different namespace). This meant that a client with no certificate could complete the TLS handshake and open a session on an affected endpoint. Nothing would be logged about the ignored setting. Whether the option takes effect would depend on the namespace used by the administrator in the configuration. One form of the setting name works on every endpoint, but the shorter form—which most examples use—is dropped on the affected ones.",
+   "zh": "最终，Claude 在一个项目中发现了默认关闭身份验证（并期望管理员手动开启）的问题。 要求 TLS 客户端证书的该选项在项目的大多数网络端点上得到了遵守，但在少数其他端点上被静默忽略（这些端点通过一个具有不同命名空间的路径加载其 TLS 设置）。 这意味着没有证书的客户端可以在受影响的端点上完成 TLS 握手并建立会话。 被忽略的设置不会有任何日志记录。 该选项是否生效取决于管理员在配置中使用的命名空间。 一种形式的设置名称在每个端点上都有效，但较短的形式——大多数示例使用的形式——在受影响的端点上会被丢弃。",
+   "sents": [
+    {
+     "en": "Finally, Claude discovered an issue in a project that left authentication off by default (and expected the administrator to turn it on).",
+     "zh": "最终，Claude 在一个项目中发现了默认关闭身份验证（并期望管理员手动开启）的问题。"
+    },
+    {
+     "en": "The option that required TLS client certificates was honored on most of the project’s network endpoints, but silently ignored on a few others (ones which loaded their TLS settings through a path with a different namespace).",
+     "zh": "要求 TLS 客户端证书的该选项在项目的大多数网络端点上得到了遵守，但在少数其他端点上被静默忽略（这些端点通过一个具有不同命名空间的路径加载其 TLS 设置）。"
+    },
+    {
+     "en": "This meant that a client with no certificate could complete the TLS handshake and open a session on an affected endpoint.",
+     "zh": "这意味着没有证书的客户端可以在受影响的端点上完成 TLS 握手并建立会话。"
+    },
+    {
+     "en": "Nothing would be logged about the ignored setting.",
+     "zh": "被忽略的设置不会有任何日志记录。"
+    },
+    {
+     "en": "Whether the option takes effect would depend on the namespace used by the administrator in the configuration.",
+     "zh": "该选项是否生效取决于管理员在配置中使用的命名空间。"
+    },
+    {
+     "en": "One form of the setting name works on every endpoint, but the shorter form—which most examples use—is dropped on the affected ones.",
+     "zh": "一种形式的设置名称在每个端点上都有效，但较短的形式——大多数示例使用的形式——在受影响的端点上会被丢弃。"
+    }
+   ]
+  },
+  {
+   "en": "Surprisingly, when measured as a percentage of the total lines of code, the project for which Claude achieved the largest reduction in attack surface was OpenSSH. OpenSSH is a high quality C codebase that provides secure remote access. Claude traced the input paths of the SSH daemon in the 10.4 release and found roughly 4,500 lines of new and experimental code for ML-DSA-44, a post-quantum signature algorithm, that an unauthenticated client could reach in the default configuration. ML-DSA is not enabled by default, but the code was reachable regardless, even when an administrator explicitly excluded the algorithm. The daemon parsed whichever key type the client sent, (and, for certificates, it also verified the embedded CA signature). Only then did it check whether that key type was allowed. There is no good reason for this complex, memory unsafe code to be reachable when it hasn’t been enabled by the configuration. Those 4,500 lines of code in ML-DSA-44 are about 16% of OpenSSH’s own pre-authentication code in a default sshd. We reported this to the OpenSSH developers along with patches. The 10.5 release moved the check before parsing.",
+   "zh": "令人惊讶的是，若以占总代码行数的百分比来衡量，Claude 在攻击面缩减方面效果最显著的项目是 OpenSSH。 OpenSSH 是一个高质量的 C 代码库，用于提供安全的远程访问。 Claude 追踪了 10.4 版本中 SSH 守护进程的输入路径，发现大约有 4,500 行针对 ML-DSA-44（一种后量子签名算法）的新增实验性代码，在默认配置下未经认证的客户端即可触达这些代码。 ML-DSA 默认并未启用，但无论何种情况，这些代码都是可触达的，即使管理员明确排除了该算法也是如此。 守护进程会解析客户端发送的任何密钥类型（对于证书，它还会验证内嵌的 CA 签名）。 只有在此之后，它才检查该密钥类型是否被允许。 对于这类复杂的、内存不安全的代码来说，在未被配置启用的情况下仍然可被触达，是没有任何充分理由的。 ML-DSA-44 的这 4,500 行代码约占默认配置 sshd 中 OpenSSH 自身预认证代码的 16%。 我们连同补丁一起向 OpenSSH 开发者报告了此问题。 10.5 版本将该项检查移到了解析之前。",
+   "sents": [
+    {
+     "en": "Surprisingly, when measured as a percentage of the total lines of code, the project for which Claude achieved the largest reduction in attack surface was OpenSSH.",
+     "zh": "令人惊讶的是，若以占总代码行数的百分比来衡量，Claude 在攻击面缩减方面效果最显著的项目是 OpenSSH。"
+    },
+    {
+     "en": "OpenSSH is a high quality C codebase that provides secure remote access.",
+     "zh": "OpenSSH 是一个高质量的 C 代码库，用于提供安全的远程访问。"
+    },
+    {
+     "en": "Claude traced the input paths of the SSH daemon in the 10.4 release and found roughly 4,500 lines of new and experimental code for ML-DSA-44, a post-quantum signature algorithm, that an unauthenticated client could reach in the default configuration.",
+     "zh": "Claude 追踪了 10.4 版本中 SSH 守护进程的输入路径，发现大约有 4,500 行针对 ML-DSA-44（一种后量子签名算法）的新增实验性代码，在默认配置下未经认证的客户端即可触达这些代码。"
+    },
+    {
+     "en": "ML-DSA is not enabled by default, but the code was reachable regardless, even when an administrator explicitly excluded the algorithm.",
+     "zh": "ML-DSA 默认并未启用，但无论何种情况，这些代码都是可触达的，即使管理员明确排除了该算法也是如此。"
+    },
+    {
+     "en": "The daemon parsed whichever key type the client sent, (and, for certificates, it also verified the embedded CA signature).",
+     "zh": "守护进程会解析客户端发送的任何密钥类型（对于证书，它还会验证内嵌的 CA 签名）。"
+    },
+    {
+     "en": "Only then did it check whether that key type was allowed.",
+     "zh": "只有在此之后，它才检查该密钥类型是否被允许。"
+    },
+    {
+     "en": "There is no good reason for this complex, memory unsafe code to be reachable when it hasn’t been enabled by the configuration.",
+     "zh": "对于这类复杂的、内存不安全的代码来说，在未被配置启用的情况下仍然可被触达，是没有任何充分理由的。"
+    },
+    {
+     "en": "Those 4,500 lines of code in ML-DSA-44 are about 16% of OpenSSH’s own pre-authentication code in a default sshd.",
+     "zh": "ML-DSA-44 的这 4,500 行代码约占默认配置 sshd 中 OpenSSH 自身预认证代码的 16%。"
+    },
+    {
+     "en": "We reported this to the OpenSSH developers along with patches.",
+     "zh": "我们连同补丁一起向 OpenSSH 开发者报告了此问题。"
+    },
+    {
+     "en": "The 10.5 release moved the check before parsing.",
+     "zh": "10.5 版本将该项检查移到了解析之前。"
+    }
+   ]
+  },
+  {
+   "en": "Claude then noted two gaps in the 10.5 check. The first was a mismatch between what the client claimed and what it sent. The check looked at the algorithm name advertised by the client, but the parser was chosen by a type string embedded inside the key blob. A client could advertise ssh-ed25519, pass the check, and still send an ML-DSA key that would be parsed.",
+   "zh": "随后 Claude 指出了 10.5 检查中的两个缺口。 第一个是客户端声称的内容与其实际发送内容之间的不匹配。 该检查查看的是客户端宣称的算法名称，但解析器是由密钥数据块内嵌的类型字符串选定的。 客户端可以宣称使用 ssh-ed25519，通过该检查，然后仍然发送一个会被解析的 ML-DSA 密钥。",
+   "sents": [
+    {
+     "en": "Claude then noted two gaps in the 10.5 check.",
+     "zh": "随后 Claude 指出了 10.5 检查中的两个缺口。"
+    },
+    {
+     "en": "The first was a mismatch between what the client claimed and what it sent.",
+     "zh": "第一个是客户端声称的内容与其实际发送内容之间的不匹配。"
+    },
+    {
+     "en": "The check looked at the algorithm name advertised by the client, but the parser was chosen by a type string embedded inside the key blob.",
+     "zh": "该检查查看的是客户端宣称的算法名称，但解析器是由密钥数据块内嵌的类型字符串选定的。"
+    },
+    {
+     "en": "A client could advertise ssh-ed25519, pass the check, and still send an ML-DSA key that would be parsed.",
+     "zh": "客户端可以宣称使用 ssh-ed25519，通过该检查，然后仍然发送一个会被解析的 ML-DSA 密钥。"
+    }
+   ]
+  },
+  {
+   "en": "The second gap was in the 10.5 check’s certificates. Certificate key types were enabled by default. Given a certificate supplied by an attacker, sshd would deserialize the embedded CA public key and run a full signature verification with it, for any supported algorithm, before consulting the configuration. The user key signature path was properly gated behind the list of public keys allowed to connect to the server, but the CA signature path was not. That made every public key signature verifier in the binary reachable by any client that could complete a key exchange. We built a proof of concept and worked through several iterations of a fix with the maintainers. The resulting change placed the checks inside the parser itself. The encoded key type and the certificate’s CA signature algorithm are now compared against the configured allow lists before the corresponding deserialization or signature verification.",
+   "zh": "第二个漏洞存在于 10.5 检查的证书中。 证书密钥类型默认是启用的。 在查阅配置之前，对于攻击者提供的证书，sshd 会反序列化其中嵌入的 CA 公钥，并用它对任何受支持的算法执行完整的签名验证。 用户密钥签名路径有妥善的管控，仅限于允许连接到服务器的公钥列表，但 CA 签名路径却没有这样的管控。 这使得二进制文件中的每一个公钥签名验证器都能被任何可以完成密钥交换的客户端触达。 我们构建了概念验证，并与维护者一起对修复方案进行了多次迭代。 最终的修改将这些检查放到了解析器内部。 现在，编码的密钥类型和证书的 CA 签名算法会在执行相应的反序列化或签名验证之前，先与配置的允许列表进行比对。",
+   "sents": [
+    {
+     "en": "The second gap was in the 10.5 check’s certificates.",
+     "zh": "第二个漏洞存在于 10.5 检查的证书中。"
+    },
+    {
+     "en": "Certificate key types were enabled by default.",
+     "zh": "证书密钥类型默认是启用的。"
+    },
+    {
+     "en": "Given a certificate supplied by an attacker, sshd would deserialize the embedded CA public key and run a full signature verification with it, for any supported algorithm, before consulting the configuration.",
+     "zh": "在查阅配置之前，对于攻击者提供的证书，sshd 会反序列化其中嵌入的 CA 公钥，并用它对任何受支持的算法执行完整的签名验证。"
+    },
+    {
+     "en": "The user key signature path was properly gated behind the list of public keys allowed to connect to the server, but the CA signature path was not.",
+     "zh": "用户密钥签名路径有妥善的管控，仅限于允许连接到服务器的公钥列表，但 CA 签名路径却没有这样的管控。"
+    },
+    {
+     "en": "That made every public key signature verifier in the binary reachable by any client that could complete a key exchange.",
+     "zh": "这使得二进制文件中的每一个公钥签名验证器都能被任何可以完成密钥交换的客户端触达。"
+    },
+    {
+     "en": "We built a proof of concept and worked through several iterations of a fix with the maintainers.",
+     "zh": "我们构建了概念验证，并与维护者一起对修复方案进行了多次迭代。"
+    },
+    {
+     "en": "The resulting change placed the checks inside the parser itself.",
+     "zh": "最终的修改将这些检查放到了解析器内部。"
+    },
+    {
+     "en": "The encoded key type and the certificate’s CA signature algorithm are now compared against the configured allow lists before the corresponding deserialization or signature verification.",
+     "zh": "现在，编码的密钥类型和证书的 CA 签名算法会在执行相应的反序列化或签名验证之前，先与配置的允许列表进行比对。"
+    }
+   ]
+  },
+  {
+   "en": "This fix removed roughly a fifth of the OpenSSH code that an unauthenticated client previously could have reached in a default build. Almost all of that was the new ML-DSA code, which is now unreachable even for a client that lies about its key type or hides an ML-DSA CA key inside an otherwise acceptable certificate. Certificates signed with an allowed CA algorithm are still parsed and verified, but the check now runs before parsing. The maintainers shipped the changes described here in version 10.6 .",
+   "zh": "此次修复移除了默认构建中未经身份验证的客户端此前可能触及的约五分之一的 OpenSSH 代码。 其中几乎全部是新的 ML-DSA 代码，现在即使客户端谎报其密钥类型、或在一个本可接受的证书中隐藏 ML-DSA CA 密钥，也无法触及这些代码。 使用允许的 CA 算法签名的证书仍会被解析和验证，但该检查现在在解析之前运行。 维护者在 10.6 版本中发布了本文所述的更改。",
+   "sents": [
+    {
+     "en": "This fix removed roughly a fifth of the OpenSSH code that an unauthenticated client previously could have reached in a default build.",
+     "zh": "此次修复移除了默认构建中未经身份验证的客户端此前可能触及的约五分之一的 OpenSSH 代码。"
+    },
+    {
+     "en": "Almost all of that was the new ML-DSA code, which is now unreachable even for a client that lies about its key type or hides an ML-DSA CA key inside an otherwise acceptable certificate.",
+     "zh": "其中几乎全部是新的 ML-DSA 代码，现在即使客户端谎报其密钥类型、或在一个本可接受的证书中隐藏 ML-DSA CA 密钥，也无法触及这些代码。"
+    },
+    {
+     "en": "Certificates signed with an allowed CA algorithm are still parsed and verified, but the check now runs before parsing.",
+     "zh": "使用允许的 CA 算法签名的证书仍会被解析和验证，但该检查现在在解析之前运行。"
+    },
+    {
+     "en": "The maintainers shipped the changes described here in version 10.6 .",
+     "zh": "维护者在 10.6 版本中发布了本文所述的更改。"
+    }
+   ]
+  },
+  {
+   "en": "OpenSSH is some of the most heavily audited code in the world. If unnecessary reachability survives there, it can survive anywhere. This suggests that reducing the attack surface of codebases is likely to pay dividends across many important codebases.",
+   "zh": "OpenSSH 是世界上经过最严格审计的代码之一。 如果不必要的可达性在那里都能存活，那么它在任何地方都能存活。 这表明，减少代码库的攻击面很可能在许多重要代码库中带来收益。",
+   "sents": [
+    {
+     "en": "OpenSSH is some of the most heavily audited code in the world.",
+     "zh": "OpenSSH 是世界上经过最严格审计的代码之一。"
+    },
+    {
+     "en": "If unnecessary reachability survives there, it can survive anywhere.",
+     "zh": "如果不必要的可达性在那里都能存活，那么它在任何地方都能存活。"
+    },
+    {
+     "en": "This suggests that reducing the attack surface of codebases is likely to pay dividends across many important codebases.",
+     "zh": "这表明，减少代码库的攻击面很可能在许多重要代码库中带来收益。"
+    }
+   ]
+  },
+  {
+   "en": "It is perhaps impossible to measure how many unknown vulnerabilities are in any given codebase. And there is plenty of data that shows attackers can and will find those vulnerabilities with enough time (particularly if equipped with frontier AI models). But a defender who reduces unnecessary attack surface in their code reduces the risk from all of the unknown vulnerabilities in that code at once—including any that are already being quietly exploited. OpenSSH is some of the most audited C code in the world. Yet it shipped around 4,500 lines of experimental signature parsing code that could have been reached by an attacker prior to any configuration check.",
+   "zh": "或许无法测量任意给定的代码库中究竟存在多少未知漏洞。 而且有大量数据表明，攻击者只要有足够的时间就能够并且将会找到这些漏洞（尤其是在装备了前沿 AI 模型的情况下）。 但通过减少代码中不必要的攻击面，防御者可以同时降低该代码中所有未知漏洞带来的风险——包括任何已被悄悄利用的漏洞。 OpenSSH 是世界上受到最严格审计的 C 代码之一。 然而它包含了约 4500 行实验性的签名解析代码，这些代码在任何配置检查之前就可能被攻击者触及。",
+   "sents": [
+    {
+     "en": "It is perhaps impossible to measure how many unknown vulnerabilities are in any given codebase.",
+     "zh": "或许无法测量任意给定的代码库中究竟存在多少未知漏洞。"
+    },
+    {
+     "en": "And there is plenty of data that shows attackers can and will find those vulnerabilities with enough time (particularly if equipped with frontier AI models).",
+     "zh": "而且有大量数据表明，攻击者只要有足够的时间就能够并且将会找到这些漏洞（尤其是在装备了前沿 AI 模型的情况下）。"
+    },
+    {
+     "en": "But a defender who reduces unnecessary attack surface in their code reduces the risk from all of the unknown vulnerabilities in that code at once—including any that are already being quietly exploited.",
+     "zh": "但通过减少代码中不必要的攻击面，防御者可以同时降低该代码中所有未知漏洞带来的风险——包括任何已被悄悄利用的漏洞。"
+    },
+    {
+     "en": "OpenSSH is some of the most audited C code in the world.",
+     "zh": "OpenSSH 是世界上受到最严格审计的 C 代码之一。"
+    },
+    {
+     "en": "Yet it shipped around 4,500 lines of experimental signature parsing code that could have been reached by an attacker prior to any configuration check.",
+     "zh": "然而它包含了约 4500 行实验性的签名解析代码，这些代码在任何配置检查之前就可能被攻击者触及。"
+    }
+   ]
+  },
+  {
+   "en": "We have combined the attack surface reduction techniques we described above into one reusable Claude skill, which we are working to integrate into OSS-Scanner . The skill runs three passes on a codebase. Each time it starts fresh (with an empty context window), except for a short piece of context it receives from the prior pass.",
+   "zh": "我们已将上文描述的攻击面缩减技术整合成一个可复用的 Claude skill，并正致力于将其集成到 OSS-Scanner 中。 该 skill 会对代码库运行三轮扫描。 每一轮都从头开始（使用空的上下文窗口），除了从上一轮接收的一小段上下文。",
+   "sents": [
+    {
+     "en": "We have combined the attack surface reduction techniques we described above into one reusable Claude skill, which we are working to integrate into OSS-Scanner .",
+     "zh": "我们已将上文描述的攻击面缩减技术整合成一个可复用的 Claude skill，并正致力于将其集成到 OSS-Scanner 中。"
+    },
+    {
+     "en": "The skill runs three passes on a codebase.",
+     "zh": "该 skill 会对代码库运行三轮扫描。"
+    },
+    {
+     "en": "Each time it starts fresh (with an empty context window), except for a short piece of context it receives from the prior pass.",
+     "zh": "每一轮都从头开始（使用空的上下文窗口），除了从上一轮接收的一小段上下文。"
+    }
+   ]
+  },
+  {
+   "en": "In the first pass, the skill looks at whether there is code that the default configuration allows to be reached but which isn’t used by any intended functionality. In the second pass, it looks at the code that runs before any hard gates (like authentication) or before protocol state machine entry points, in any configuration. Finally, third, the skill assesses which combinations of configurations silently switch a security control off or degrade its efficacy. In every pass, Claude creates an inventory of the entry points from the code and confirms each finding with a dynamic trace of the program. For default configuration findings, it designs and implements a gate and ensures that this causes no change in the program’s default behavior. It does so by running the project's own test suite (along with a black box regression suite) against the baseline; it requires modified builds to have identical results. Any gate that would change a non-default configuration is set aside for a human to decide. For the other two passes, it proposes changes like reordering a configuration check, adding a guard to enforce state ordering, or rejecting the combination at configuration load. Even without using this specific skill, we think the broad methodology outlined here is likely to be effective.",
+   "zh": "在第一遍中，该技能会检查是否存在默认配置允许到达、但未被任何预期功能使用的代码。 在第二遍中，它会检查在任何配置下、运行于任何硬性关卡（如身份验证）之前或协议状态机入口点之前的代码。 最后，第三遍中，该技能会评估哪些配置组合会静默关闭某个安全控制或降低其效力。 在每一遍中，Claude 都会根据代码创建入口点清单，并通过程序的动态追踪来确认每项发现。 针对默认配置的发现，它会设计并实现一个关卡，并确保这不会改变程序的默认行为。 其做法是让项目自身的测试套件（以及一个黑盒回归测试套件）针对基线运行；它要求修改后的构建结果完全一致。 任何会改变非默认配置的关卡都会被搁置，交由人工决定。 对于另外两遍，它会提出诸如重新排列配置检查顺序、添加守卫以强制状态顺序，或在配置加载时拒绝该组合等修改建议。 即使不使用这个特定技能，我们认为这里概述的总体方法很可能是有效的。",
+   "sents": [
+    {
+     "en": "In the first pass, the skill looks at whether there is code that the default configuration allows to be reached but which isn’t used by any intended functionality.",
+     "zh": "在第一遍中，该技能会检查是否存在默认配置允许到达、但未被任何预期功能使用的代码。"
+    },
+    {
+     "en": "In the second pass, it looks at the code that runs before any hard gates (like authentication) or before protocol state machine entry points, in any configuration.",
+     "zh": "在第二遍中，它会检查在任何配置下、运行于任何硬性关卡（如身份验证）之前或协议状态机入口点之前的代码。"
+    },
+    {
+     "en": "Finally, third, the skill assesses which combinations of configurations silently switch a security control off or degrade its efficacy.",
+     "zh": "最后，第三遍中，该技能会评估哪些配置组合会静默关闭某个安全控制或降低其效力。"
+    },
+    {
+     "en": "In every pass, Claude creates an inventory of the entry points from the code and confirms each finding with a dynamic trace of the program.",
+     "zh": "在每一遍中，Claude 都会根据代码创建入口点清单，并通过程序的动态追踪来确认每项发现。"
+    },
+    {
+     "en": "For default configuration findings, it designs and implements a gate and ensures that this causes no change in the program’s default behavior.",
+     "zh": "针对默认配置的发现，它会设计并实现一个关卡，并确保这不会改变程序的默认行为。"
+    },
+    {
+     "en": "It does so by running the project's own test suite (along with a black box regression suite) against the baseline; it requires modified builds to have identical results.",
+     "zh": "其做法是让项目自身的测试套件（以及一个黑盒回归测试套件）针对基线运行；它要求修改后的构建结果完全一致。"
+    },
+    {
+     "en": "Any gate that would change a non-default configuration is set aside for a human to decide.",
+     "zh": "任何会改变非默认配置的关卡都会被搁置，交由人工决定。"
+    },
+    {
+     "en": "For the other two passes, it proposes changes like reordering a configuration check, adding a guard to enforce state ordering, or rejecting the combination at configuration load.",
+     "zh": "对于另外两遍，它会提出诸如重新排列配置检查顺序、添加守卫以强制状态顺序，或在配置加载时拒绝该组合等修改建议。"
+    },
+    {
+     "en": "Even without using this specific skill, we think the broad methodology outlined here is likely to be effective.",
+     "zh": "即使不使用这个特定技能，我们认为这里概述的总体方法很可能是有效的。"
+    }
+   ]
+  },
+  {
+   "en": "The techniques outlined in this post offer only a very limited view into what is possible in attack surface reduction. For instance, Claude is also capable of analyzing and comparing runtime logs against configurations to ensure that only required functionality has been enabled: disabling unused parsers, legacy protocols, and dashboards reduces security risk at little cost.",
+   "zh": "本文概述的技术只是对攻击面缩减的可能方式提供了非常有限的视角。 例如，Claude 还能够分析运行时日志并与配置进行比较，以确保只启用了必需的功能：禁用未使用的解析器、旧协议和仪表板，几乎不花什么成本就能降低安全风险。",
+   "sents": [
+    {
+     "en": "The techniques outlined in this post offer only a very limited view into what is possible in attack surface reduction.",
+     "zh": "本文概述的技术只是对攻击面缩减的可能方式提供了非常有限的视角。"
+    },
+    {
+     "en": "For instance, Claude is also capable of analyzing and comparing runtime logs against configurations to ensure that only required functionality has been enabled: disabling unused parsers, legacy protocols, and dashboards reduces security risk at little cost.",
+     "zh": "例如，Claude 还能够分析运行时日志并与配置进行比较，以确保只启用了必需的功能：禁用未使用的解析器、旧协议和仪表板，几乎不花什么成本就能降低安全风险。"
+    }
+   ]
+  },
+  {
+   "en": "We encourage organizations to explore using Claude to analyze and reduce the attack surface of the software they depend on. We expect this to be one of the most practical ways that developers can measurably improve the security of the code the world already runs on.",
+   "zh": "我们鼓励各组织探索使用 Claude 来分析并缩小其所依赖软件的攻击面。 我们预计这将是开发者能够切实提升全球现有代码安全性的最实用方式之一。",
+   "sents": [
+    {
+     "en": "We encourage organizations to explore using Claude to analyze and reduce the attack surface of the software they depend on.",
+     "zh": "我们鼓励各组织探索使用 Claude 来分析并缩小其所依赖软件的攻击面。"
+    },
+    {
+     "en": "We expect this to be one of the most practical ways that developers can measurably improve the security of the code the world already runs on.",
+     "zh": "我们预计这将是开发者能够切实提升全球现有代码安全性的最实用方式之一。"
+    }
+   ]
+  },
+  {
+   "en": "AI research and products that put safety at the frontier. AI will have a vast impact on the world. Anthropic is a public benefit corporation dedicated to securing its benefits and mitigating its risks.",
+   "zh": "将安全置于前沿的 AI 研究与产品。 AI 将对世界产生巨大影响。 Anthropic 是一家致力于保障 AI 收益并降低其风险的公益企业。",
+   "sents": [
+    {
+     "en": "AI research and products that put safety at the frontier.",
+     "zh": "将安全置于前沿的 AI 研究与产品。"
+    },
+    {
+     "en": "AI will have a vast impact on the world.",
+     "zh": "AI 将对世界产生巨大影响。"
+    },
+    {
+     "en": "Anthropic is a public benefit corporation dedicated to securing its benefits and mitigating its risks.",
+     "zh": "Anthropic 是一家致力于保障 AI 收益并降低其风险的公益企业。"
+    }
+   ]
+  }
+ ]
+}
