@@ -1,0 +1,774 @@
+{
+ "id": "c3ba809b80168055",
+ "source": "arxiv-t2i",
+ "link": "https://arxiv.org/abs/2610.32390v1",
+ "title": "PASTA: Prompt-Aware Annealed Diffusion Sampling",
+ "title_zh": "PASTA：提示感知的退火扩散采样",
+ "published": "2026-10-23T09:16:22Z",
+ "translated_at": "2026-10-28T10:27:57Z",
+ "paragraphs": [
+  {
+   "en": "While Diffusion models produce high-quality images, real-world visual design requires intentionally preserving clean regions for headlines, logos, or UI elements. Existing layout-aware text-to-image methods struggle to strictly preserve reserved regions, often introducing unwanted content that complicates downstream editing. Existing approaches either manipulate attention to displace content or suppress conditioning via noise-level interventions. However, these methods sacrifice visual coherence, producing flat regions or noticeable style inconsistencies between reserved and non-reserved areas. To address this limitation, we propose a Prompt-Aware Shared-Latent Training-Free Annealed Diffusion Sampling (PASTA), a training-free framework that enforces reserved-region constraints by selectively applying semantic guidance to object-allowed regions during sampling. PASTA operates on a shared latent trajectory, where full-prompt and context-prompt guidance are fused through mask-guided sampling. An annealed schedule suppresses semantic leakage during early denoising stages while gradually restoring visual consistency in later stages. Extensive experiments demonstrate that PASTA improves reserved-region fidelity while preserving overall image realism and perceptual consistency.",
+   "zh": "尽管扩散模型能够生成高质量的图像，但真实世界的视觉设计需要有意识地保留干净区域，用于放置标题、徽标或 UI 元素。 现有的布局感知文生图方法难以严格保留预留区域，常常引入多余内容，使下游编辑变得复杂。 现有方法要么通过操纵注意力机制来排挤内容，要么通过噪声层面的干预来抑制条件信息。 然而，这些方法牺牲了视觉连贯性，导致预留区域与非预留区域之间出现平坦区块或明显的风格不一致。 为解决这一局限，我们提出了一种提示感知共享潜变量免训练退火扩散采样（PASTA），这是一个免训练框架，通过在采样过程中选择性地对允许放置物体的区域施加语义引导，来强制执行预留区域约束。 PASTA 运行在一条共享的潜变量轨迹上，其中全提示引导与上下文提示引导通过掩码引导采样进行融合。 退火调度在早期去噪阶段抑制语义泄漏，同时在后期阶段逐步恢复视觉一致性。 大量实验表明，PASTA 在保留整体图像真实感与感知一致性的同时，提升了预留区域的保真度。",
+   "sents": [
+    {
+     "en": "While Diffusion models produce high-quality images, real-world visual design requires intentionally preserving clean regions for headlines, logos, or UI elements.",
+     "zh": "尽管扩散模型能够生成高质量的图像，但真实世界的视觉设计需要有意识地保留干净区域，用于放置标题、徽标或 UI 元素。"
+    },
+    {
+     "en": "Existing layout-aware text-to-image methods struggle to strictly preserve reserved regions, often introducing unwanted content that complicates downstream editing.",
+     "zh": "现有的布局感知文生图方法难以严格保留预留区域，常常引入多余内容，使下游编辑变得复杂。"
+    },
+    {
+     "en": "Existing approaches either manipulate attention to displace content or suppress conditioning via noise-level interventions.",
+     "zh": "现有方法要么通过操纵注意力机制来排挤内容，要么通过噪声层面的干预来抑制条件信息。"
+    },
+    {
+     "en": "However, these methods sacrifice visual coherence, producing flat regions or noticeable style inconsistencies between reserved and non-reserved areas.",
+     "zh": "然而，这些方法牺牲了视觉连贯性，导致预留区域与非预留区域之间出现平坦区块或明显的风格不一致。"
+    },
+    {
+     "en": "To address this limitation, we propose a Prompt-Aware Shared-Latent Training-Free Annealed Diffusion Sampling (PASTA), a training-free framework that enforces reserved-region constraints by selectively applying semantic guidance to object-allowed regions during sampling.",
+     "zh": "为解决这一局限，我们提出了一种提示感知共享潜变量免训练退火扩散采样（PASTA），这是一个免训练框架，通过在采样过程中选择性地对允许放置物体的区域施加语义引导，来强制执行预留区域约束。"
+    },
+    {
+     "en": "PASTA operates on a shared latent trajectory, where full-prompt and context-prompt guidance are fused through mask-guided sampling.",
+     "zh": "PASTA 运行在一条共享的潜变量轨迹上，其中全提示引导与上下文提示引导通过掩码引导采样进行融合。"
+    },
+    {
+     "en": "An annealed schedule suppresses semantic leakage during early denoising stages while gradually restoring visual consistency in later stages.",
+     "zh": "退火调度在早期去噪阶段抑制语义泄漏，同时在后期阶段逐步恢复视觉一致性。"
+    },
+    {
+     "en": "Extensive experiments demonstrate that PASTA improves reserved-region fidelity while preserving overall image realism and perceptual consistency.",
+     "zh": "大量实验表明，PASTA 在保留整体图像真实感与感知一致性的同时，提升了预留区域的保真度。"
+    }
+   ]
+  },
+  {
+   "en": "Diffusion models [ 26 , 23 ] have enabled high-fidelity text-to-image generation from text prompts, reshaping visual content creation in art [ 13 , 11 ] , design [ 27 , 7 ] , and media [ 17 , 16 ] . In real-world design, however, creators often need not only to place objects but also to reserve clean regions for text, logos, or interface elements, such as headlines, UI components, or subtitles. These reserved regions should remain free of salient content while visually matching the surrounding background. Existing layout-aware text-to-image methods do not treat reserved regions as first-class constraints, leading to unwanted objects or distracting textures that complicate downstream editing.",
+   "zh": "扩散模型 [26, 23] 已实现基于文本提示的高保真文生图，重塑了艺术 [13, 11]、设计 [27, 7] 和媒体 [17, 16] 领域的视觉内容创作。 然而，在现实世界的设计中，创作者不仅需要放置对象，还需要为文本、标志或界面元素（如标题、UI 组件或字幕）保留干净的区域。 这些保留区域应保持没有显著内容，同时在视觉上与周围的背景相匹配。 现有的布局感知文生图方法并未将保留区域视为一等约束，导致出现多余的对象或干扰性的纹理，使下游编辑变得复杂。",
+   "sents": [
+    {
+     "en": "Diffusion models [ 26 , 23 ] have enabled high-fidelity text-to-image generation from text prompts, reshaping visual content creation in art [ 13 , 11 ] , design [ 27 , 7 ] , and media [ 17 , 16 ] .",
+     "zh": "扩散模型 [26, 23] 已实现基于文本提示的高保真文生图，重塑了艺术 [13, 11]、设计 [27, 7] 和媒体 [17, 16] 领域的视觉内容创作。"
+    },
+    {
+     "en": "In real-world design, however, creators often need not only to place objects but also to reserve clean regions for text, logos, or interface elements, such as headlines, UI components, or subtitles.",
+     "zh": "然而，在现实世界的设计中，创作者不仅需要放置对象，还需要为文本、标志或界面元素（如标题、UI 组件或字幕）保留干净的区域。"
+    },
+    {
+     "en": "These reserved regions should remain free of salient content while visually matching the surrounding background.",
+     "zh": "这些保留区域应保持没有显著内容，同时在视觉上与周围的背景相匹配。"
+    },
+    {
+     "en": "Existing layout-aware text-to-image methods do not treat reserved regions as first-class constraints, leading to unwanted objects or distracting textures that complicate downstream editing.",
+     "zh": "现有的布局感知文生图方法并未将保留区域视为一等约束，导致出现多余的对象或干扰性的纹理，使下游编辑变得复杂。"
+    }
+   ]
+  },
+  {
+   "en": "Several recent works have explored space-aware text-to-image generation to address this need. TextCenGen [ 14 ] manipulates cross-attention to push object evidence away from a target region and free space for text placement. While effective when only mild repositioning is needed, attention relocation may have difficulty satisfying large, strictly reserved regions. SAWNA [ 20 ] injects non-reactive noise into reserved regions, ensuring that no objects are generated from the start. Although this strategy reliably enforces empty space, suppression produces monotone regions, leading to noticeable visual inconsistencies between reserved and non-reserved areas. As illustrated in Fig. 1 , existing methods either allow foreground content to intrude into the reserved region or produce visually inconsistent backgrounds.",
+   "zh": "近期的若干工作已探索了空间感知的文生图生成，以满足这一需求。 TextCenGen [ 14 ] 通过操纵交叉注意力，将物体证据推离目标区域，从而为文本放置腾出空间。 虽然在只需轻微重新定位时是有效的，但注意力迁移可能难以满足大型的、严格保留的区域。 SAWNA [ 20 ] 向保留区域注入非响应式噪声，从一开始就确保不生成任何物体。 尽管这种策略能可靠地强制留出空白空间，但抑制会产生单调的区域，导致保留区域与非保留区域之间出现明显的视觉不一致。 如图 1 所示，现有方法要么让前景内容侵入保留区域，要么生成视觉上不一致的背景。",
+   "sents": [
+    {
+     "en": "Several recent works have explored space-aware text-to-image generation to address this need.",
+     "zh": "近期的若干工作已探索了空间感知的文生图生成，以满足这一需求。"
+    },
+    {
+     "en": "TextCenGen [ 14 ] manipulates cross-attention to push object evidence away from a target region and free space for text placement.",
+     "zh": "TextCenGen [ 14 ] 通过操纵交叉注意力，将物体证据推离目标区域，从而为文本放置腾出空间。"
+    },
+    {
+     "en": "While effective when only mild repositioning is needed, attention relocation may have difficulty satisfying large, strictly reserved regions.",
+     "zh": "虽然在只需轻微重新定位时是有效的，但注意力迁移可能难以满足大型的、严格保留的区域。"
+    },
+    {
+     "en": "SAWNA [ 20 ] injects non-reactive noise into reserved regions, ensuring that no objects are generated from the start.",
+     "zh": "SAWNA [ 20 ] 向保留区域注入非响应式噪声，从一开始就确保不生成任何物体。"
+    },
+    {
+     "en": "Although this strategy reliably enforces empty space, suppression produces monotone regions, leading to noticeable visual inconsistencies between reserved and non-reserved areas.",
+     "zh": "尽管这种策略能可靠地强制留出空白空间，但抑制会产生单调的区域，导致保留区域与非保留区域之间出现明显的视觉不一致。"
+    },
+    {
+     "en": "As illustrated in Fig. 1 , existing methods either allow foreground content to intrude into the reserved region or produce visually inconsistent backgrounds.",
+     "zh": "如图 1 所示，现有方法要么让前景内容侵入保留区域，要么生成视觉上不一致的背景。"
+    }
+   ]
+  },
+  {
+   "en": "To address this gap, we propose a novel Prompt-Aware Shared-Latent Training-Free Annealed Diffusion Sampling (PASTA) that explicitly enforces reserved-region constraints while preserving background naturalness via annealed mask-guided fusion of full-prompt and context-prompt guidance. At each diffusion step, PASTA evaluates a shared latent under negative-prompt, full-prompt, and context-prompt conditions, derives guidance directions relative to the negative-prompt prediction, and spatially fuses them using a user-defined reserved-region mask. An annealed blending schedule further prevents early semantic leakage while enabling natural refinement in later steps.",
+   "zh": "为弥补这一空白，我们提出了一种新颖的提示感知共享潜空间免训练退火扩散采样（PASTA），它通过全提示与上下文提示引导的退火掩码引导融合，在显式施加保留区域约束的同时保持背景的自然性。 在每个扩散步骤中，PASTA 在负提示、全提示和上下文提示三种条件下评估一个共享潜空间，推导相对于负提示预测的引导方向，并使用用户定义的保留区域掩码在空间上对其进行融合。 退火混合调度进一步防止了早期的语义泄漏，同时使后续步骤能够进行自然的细化。",
+   "sents": [
+    {
+     "en": "To address this gap, we propose a novel Prompt-Aware Shared-Latent Training-Free Annealed Diffusion Sampling (PASTA) that explicitly enforces reserved-region constraints while preserving background naturalness via annealed mask-guided fusion of full-prompt and context-prompt guidance.",
+     "zh": "为弥补这一空白，我们提出了一种新颖的提示感知共享潜空间免训练退火扩散采样（PASTA），它通过全提示与上下文提示引导的退火掩码引导融合，在显式施加保留区域约束的同时保持背景的自然性。"
+    },
+    {
+     "en": "At each diffusion step, PASTA evaluates a shared latent under negative-prompt, full-prompt, and context-prompt conditions, derives guidance directions relative to the negative-prompt prediction, and spatially fuses them using a user-defined reserved-region mask.",
+     "zh": "在每个扩散步骤中，PASTA 在负提示、全提示和上下文提示三种条件下评估一个共享潜空间，推导相对于负提示预测的引导方向，并使用用户定义的保留区域掩码在空间上对其进行融合。"
+    },
+    {
+     "en": "An annealed blending schedule further prevents early semantic leakage while enabling natural refinement in later steps.",
+     "zh": "退火混合调度进一步防止了早期的语义泄漏，同时使后续步骤能够进行自然的细化。"
+    }
+   ]
+  },
+  {
+   "en": "Extensive experiments demonstrate that PASTA improves fidelity in reserved regions while maintaining competitive performance in both quantitative and perceptual evaluations. Our contributions are summarized as follows:",
+   "zh": "大量实验表明，PASTA 在保留区域提升了保真度，同时在定量和感知评估中都保持了有竞争力的性能。 我们的贡献总结如下：",
+   "sents": [
+    {
+     "en": "Extensive experiments demonstrate that PASTA improves fidelity in reserved regions while maintaining competitive performance in both quantitative and perceptual evaluations.",
+     "zh": "大量实验表明，PASTA 在保留区域提升了保真度，同时在定量和感知评估中都保持了有竞争力的性能。"
+    },
+    {
+     "en": "Our contributions are summarized as follows:",
+     "zh": "我们的贡献总结如下："
+    }
+   ]
+  },
+  {
+   "en": "We propose PASTA, a prompt-aware shared-latent training-free diffusion sampling framework that spatially fuses guidance residuals to suppress foreground semantic leakage in reserved regions while preserving generation consistency in editable regions.",
+   "zh": "我们提出 PASTA，一种感知提示词、免训练的共享潜在空间扩散采样框架，它通过空间融合引导残差来抑制保留区域中的前景语义泄漏，同时保持可编辑区域的生成一致性。",
+   "sents": null
+  },
+  {
+   "en": "We introduce an annealed guidance blending schedule that applies stronger context-prompt guidance during early denoising stages and progressively restores full-prompt guidance in later stages, improving reserved-region fidelity and overall image coherence.",
+   "zh": "我们提出了一种退火引导混合调度策略，在去噪早期阶段施加更强的上下文提示引导，并在后期阶段逐步恢复完整提示引导，从而提升保留区域的保真度和整体图像的连贯性。",
+   "sents": null
+  },
+  {
+   "en": "We conduct extensive quantitative and qualitative evaluations across diverse generation settings, demonstrating that PASTA achieves improved reserved-region fidelity while maintaining competitive overall visual quality.",
+   "zh": "我们在多种多样的生成设置下进行了广泛的定量和定性评估，结果表明 PASTA 在保持具有竞争力的整体视觉质量的同时，实现了更高的保留区域保真度。",
+   "sents": null
+  },
+  {
+   "en": "Diffusion models have become a dominant framework for high-fidelity image synthesis by iteratively denoising Gaussian noise, and large-scale text-conditioned variants enable photorealistic and diverse generation from prompts [ 26 ] . To improve controllability, prior work has explored various conditioning strategies, including structural cues (edges, sketches) [ 15 , 5 ] , geometric cues (depth, pose) [ 29 , 33 ] , and low-level appearance constraints (color) [ 4 , 22 ] . Moreover, training-free inference-time control methods manipulate guidance [ 9 , 3 ] , attention [ 6 , 21 ] , or latent representations [ 18 , 19 ] to achieve flexible generation behavior without additional training. Recent studies have further explored layered representations that decompose images into editable foreground and background components, aligning generation with designer-centric pipelines [ 32 , 10 ] . As layered generation matures, designers increasingly compose visuals by editing separate layers for text and foreground objects. This workflow introduces a new requirement for text-to-image generation: preserving clean reserved regions that remain free from unintended foreground semantics during generation.",
+   "zh": "扩散模型通过迭代去噪高斯噪声，已成为高保真图像合成的主流框架，而大规模的文本条件变体能够根据提示生成照片级真实且多样化的图像 [26]。 为了提升可控性，先前的工作探索了多种条件策略，包括结构线索（边缘、草图）[15, 5]、几何线索（深度、姿态）[29, 33] 以及低层外观约束（颜色）[4, 22]。 此外，无需训练的推理时控制方法通过操纵引导 [9, 3]、注意力 [6, 21] 或潜在表示 [18, 19] 来实现灵活的生成行为，而无需额外训练。 最近的研究进一步探索了将图像分解为可编辑的前景与背景组件的分层表示，使生成与以设计师为中心的流程保持一致 [32, 10]。 随着分层生成的成熟，设计师越来越多地通过分别编辑文本和前景对象的图层来组合视觉内容。 这一工作流程对文本到图像生成提出了一项新要求：在生成过程中保留干净的预留区域，使其不受意外的前景语义影响。",
+   "sents": [
+    {
+     "en": "Diffusion models have become a dominant framework for high-fidelity image synthesis by iteratively denoising Gaussian noise, and large-scale text-conditioned variants enable photorealistic and diverse generation from prompts [ 26 ] .",
+     "zh": "扩散模型通过迭代去噪高斯噪声，已成为高保真图像合成的主流框架，而大规模的文本条件变体能够根据提示生成照片级真实且多样化的图像 [26]。"
+    },
+    {
+     "en": "To improve controllability, prior work has explored various conditioning strategies, including structural cues (edges, sketches) [ 15 , 5 ] , geometric cues (depth, pose) [ 29 , 33 ] , and low-level appearance constraints (color) [ 4 , 22 ] .",
+     "zh": "为了提升可控性，先前的工作探索了多种条件策略，包括结构线索（边缘、草图）[15, 5]、几何线索（深度、姿态）[29, 33] 以及低层外观约束（颜色）[4, 22]。"
+    },
+    {
+     "en": "Moreover, training-free inference-time control methods manipulate guidance [ 9 , 3 ] , attention [ 6 , 21 ] , or latent representations [ 18 , 19 ] to achieve flexible generation behavior without additional training.",
+     "zh": "此外，无需训练的推理时控制方法通过操纵引导 [9, 3]、注意力 [6, 21] 或潜在表示 [18, 19] 来实现灵活的生成行为，而无需额外训练。"
+    },
+    {
+     "en": "Recent studies have further explored layered representations that decompose images into editable foreground and background components, aligning generation with designer-centric pipelines [ 32 , 10 ] .",
+     "zh": "最近的研究进一步探索了将图像分解为可编辑的前景与背景组件的分层表示，使生成与以设计师为中心的流程保持一致 [32, 10]。"
+    },
+    {
+     "en": "As layered generation matures, designers increasingly compose visuals by editing separate layers for text and foreground objects.",
+     "zh": "随着分层生成的成熟，设计师越来越多地通过分别编辑文本和前景对象的图层来组合视觉内容。"
+    },
+    {
+     "en": "This workflow introduces a new requirement for text-to-image generation: preserving clean reserved regions that remain free from unintended foreground semantics during generation.",
+     "zh": "这一工作流程对文本到图像生成提出了一项新要求：在生成过程中保留干净的预留区域，使其不受意外的前景语义影响。"
+    }
+   ]
+  },
+  {
+   "en": "Layout-aware text-to-image generation improves compositional controllability by conditioning generation on spatial constraints such as bounding boxes or region masks [ 12 , 31 ] . Existing methods achieve spatial control either through explicit conditioning mechanisms or by manipulating attention and guidance during sampling in a training-free manner [ 1 , 30 ] . These methods mainly use bounding boxes or region masks to specify where target objects should appear in the generated image.",
+   "zh": "布局感知的文本到图像生成通过以边界框或区域掩码等空间约束为条件来引导生成，从而提升组合可控性 [ 12 , 31 ] 。 现有方法要么通过显式的条件机制，要么在采样过程中以免训练的方式操纵注意力与引导，来实现空间控制 [ 1 , 30 ] 。 这些方法主要使用边界框或区域掩码来指定目标对象在生成图像中应出现的位置。",
+   "sents": [
+    {
+     "en": "Layout-aware text-to-image generation improves compositional controllability by conditioning generation on spatial constraints such as bounding boxes or region masks [ 12 , 31 ] .",
+     "zh": "布局感知的文本到图像生成通过以边界框或区域掩码等空间约束为条件来引导生成，从而提升组合可控性 [ 12 , 31 ] 。"
+    },
+    {
+     "en": "Existing methods achieve spatial control either through explicit conditioning mechanisms or by manipulating attention and guidance during sampling in a training-free manner [ 1 , 30 ] .",
+     "zh": "现有方法要么通过显式的条件机制，要么在采样过程中以免训练的方式操纵注意力与引导，来实现空间控制 [ 1 , 30 ] 。"
+    },
+    {
+     "en": "These methods mainly use bounding boxes or region masks to specify where target objects should appear in the generated image.",
+     "zh": "这些方法主要使用边界框或区域掩码来指定目标对象在生成图像中应出现的位置。"
+    }
+   ]
+  },
+  {
+   "en": "Our setting is fundamentally different. Instead of attracting foreground content into designated regions, the objective of reserved-region generation is to prevent salient foreground semantics from occupying reserved regions. Although layout-guided placement methods are related to spatial controllability, these methods are not direct baselines for the reserved-region objective considered in this work. In real design workflows, however, specifying object locations is often insufficient. Designers frequently need to reserve clean regions for text, logos, or interface elements, which are typically added or edited outside the generative model.",
+   "zh": "我们的设定有着本质上的不同。 引导式布局方法的目标是将前景内容吸引到指定区域，而预留区域生成的目标则是防止显著的前景语义占用预留区域。 尽管引导式布局放置方法与空间可控性相关，但这些方法并不是本文所考虑的预留区域目标的直接基线。 然而，在真实的设计工作流程中，仅指定物体位置往往是不够的。 设计师常常需要为文本、标志或界面元素预留干净的区域，而这些元素通常是在生成模型之外添加或编辑的。",
+   "sents": [
+    {
+     "en": "Our setting is fundamentally different.",
+     "zh": "我们的设定有着本质上的不同。"
+    },
+    {
+     "en": "Instead of attracting foreground content into designated regions, the objective of reserved-region generation is to prevent salient foreground semantics from occupying reserved regions.",
+     "zh": "引导式布局方法的目标是将前景内容吸引到指定区域，而预留区域生成的目标则是防止显著的前景语义占用预留区域。"
+    },
+    {
+     "en": "Although layout-guided placement methods are related to spatial controllability, these methods are not direct baselines for the reserved-region objective considered in this work.",
+     "zh": "尽管引导式布局放置方法与空间可控性相关，但这些方法并不是本文所考虑的预留区域目标的直接基线。"
+    },
+    {
+     "en": "In real design workflows, however, specifying object locations is often insufficient.",
+     "zh": "然而，在真实的设计工作流程中，仅指定物体位置往往是不够的。"
+    },
+    {
+     "en": "Designers frequently need to reserve clean regions for text, logos, or interface elements, which are typically added or edited outside the generative model.",
+     "zh": "设计师常常需要为文本、标志或界面元素预留干净的区域，而这些元素通常是在生成模型之外添加或编辑的。"
+    }
+   ]
+  },
+  {
+   "en": "To address this problem, space-aware text-to-image generation has been explored to explicitly enforce empty regions during sampling. TextCenGen [ 14 ] relocates object-related attention away from regions reserved for text placement, but may have difficulty satisfying large and strictly reserved regions. SAWNA [ 20 ] instead suppresses generation from the start via non-reactive noise, preserving space at the cost of producing flat or visually inconsistent reserved regions.",
+   "zh": "为了解决这一问题，已有研究探索了空间感知的文生图方法，在采样过程中显式地强制保留空白区域。 TextCenGen [ 14 ] 将与物体相关的注意力从预留用于文本放置的区域移开，但可能难以满足较大且严格预留的区域。 SAWNA [ 20 ] 则通过非反应性噪声从一开始就抑制生成，以生成平坦或视觉上不一致的预留区域为代价来保留空间。",
+   "sents": [
+    {
+     "en": "To address this problem, space-aware text-to-image generation has been explored to explicitly enforce empty regions during sampling.",
+     "zh": "为了解决这一问题，已有研究探索了空间感知的文生图方法，在采样过程中显式地强制保留空白区域。"
+    },
+    {
+     "en": "TextCenGen [ 14 ] relocates object-related attention away from regions reserved for text placement, but may have difficulty satisfying large and strictly reserved regions.",
+     "zh": "TextCenGen [ 14 ] 将与物体相关的注意力从预留用于文本放置的区域移开，但可能难以满足较大且严格预留的区域。"
+    },
+    {
+     "en": "SAWNA [ 20 ] instead suppresses generation from the start via non-reactive noise, preserving space at the cost of producing flat or visually inconsistent reserved regions.",
+     "zh": "SAWNA [ 20 ] 则通过非反应性噪声从一开始就抑制生成，以生成平坦或视觉上不一致的预留区域为代价来保留空间。"
+    }
+   ]
+  },
+  {
+   "en": "Motivated by these limitations, we propose a training-free sampling strategy that enforces clean reserved regions while preserving background naturalness via mask-guided fusion of full-prompt/context-prompt guidance with an annealed schedule.",
+   "zh": "受这些局限性的启发，我们提出了一种无需训练的采样策略，通过将完整提示/上下文提示引导与退火调度相结合的掩码引导融合，在保持背景自然感的同时强制实现干净保留区域。",
+   "sents": null
+  },
+  {
+   "en": "As shown in Fig. 2 , PASTA is a training-free diffusion sampling framework that spatially fuses shared-latent guidance residuals to suppress foreground semantic leakage inside reserved regions. Given a full prompt P full P_{\\mathrm{full}} and a reserved-region mask M ∈ { 0 , 1 } h × w M\\in\\{0,1\\}^{h\\times w} at the latent resolution, where M = 1 M=1 denotes the region to keep free of salient foreground content, PASTA modifies the classifier-free guidance direction during sampling.",
+   "zh": "如图 2 所示，PASTA 是一种无需训练的扩散采样框架，它在空间上融合共享潜在引导残差，以抑制保留区域内的前景语义泄漏。 给定完整提示词 P full P_{\\mathrm{full}} 和潜在分辨率下的保留区域掩码 M ∈ { 0 , 1 } h × w M\\in\\{0,1\\}^{h\\times w}，其中 M = 1 M=1 表示需要保持不含显著前景内容的区域，PASTA 在采样过程中修改无分类器引导方向。",
+   "sents": [
+    {
+     "en": "As shown in Fig. 2 , PASTA is a training-free diffusion sampling framework that spatially fuses shared-latent guidance residuals to suppress foreground semantic leakage inside reserved regions.",
+     "zh": "如图 2 所示，PASTA 是一种无需训练的扩散采样框架，它在空间上融合共享潜在引导残差，以抑制保留区域内的前景语义泄漏。"
+    },
+    {
+     "en": "Given a full prompt P full P_{\\mathrm{full}} and a reserved-region mask M ∈ { 0 , 1 } h × w M\\in\\{0,1\\}^{h\\times w} at the latent resolution, where M = 1 M=1 denotes the region to keep free of salient foreground content, PASTA modifies the classifier-free guidance direction during sampling.",
+     "zh": "给定完整提示词 P full P_{\\mathrm{full}} 和潜在分辨率下的保留区域掩码 M ∈ { 0 , 1 } h × w M\\in\\{0,1\\}^{h\\times w}，其中 M = 1 M=1 表示需要保持不含显著前景内容的区域，PASTA 在采样过程中修改无分类器引导方向。"
+    }
+   ]
+  },
+  {
+   "en": "We construct a context-prompt guidance P ctx P_{\\mathrm{ctx}} by removing the main-object descriptors from P full P_{\\mathrm{full}} while preserving contextual descriptors such as background, scene, and style. Specifically, we use ChatGPT 5.2 with temperature 0 0 and a fixed decomposition template to split P full P_{\\mathrm{full}} into a foreground phrase and a context phrase, and set P ctx P_{\\mathrm{ctx}} to the context phrase. Thus, P ctx P_{\\mathrm{ctx}} provides context guidance without explicitly encouraging the foreground object that should be excluded from the reserved region.",
+   "zh": "我们通过从 P full P_{\\mathrm{full}} 中移除主要物体描述符，同时保留背景、场景和风格等上下文描述符，构建上下文提示引导 P ctx P_{\\mathrm{ctx}}。 具体而言，我们使用温度为 0 0 的 ChatGPT 5.2 和固定的分解模板，将 P full P_{\\mathrm{full}} 拆分为前景短语和上下文短语，并将 P ctx P_{\\mathrm{ctx}} 设置为该上下文短语。 因此，P ctx P_{\\mathrm{ctx}} 提供了上下文引导，而不会显式地鼓励应从保留区域中排除的前景物体。",
+   "sents": [
+    {
+     "en": "We construct a context-prompt guidance P ctx P_{\\mathrm{ctx}} by removing the main-object descriptors from P full P_{\\mathrm{full}} while preserving contextual descriptors such as background, scene, and style.",
+     "zh": "我们通过从 P full P_{\\mathrm{full}} 中移除主要物体描述符，同时保留背景、场景和风格等上下文描述符，构建上下文提示引导 P ctx P_{\\mathrm{ctx}}。"
+    },
+    {
+     "en": "Specifically, we use ChatGPT 5.2 with temperature 0 0 and a fixed decomposition template to split P full P_{\\mathrm{full}} into a foreground phrase and a context phrase, and set P ctx P_{\\mathrm{ctx}} to the context phrase.",
+     "zh": "具体而言，我们使用温度为 0 0 的 ChatGPT 5.2 和固定的分解模板，将 P full P_{\\mathrm{full}} 拆分为前景短语和上下文短语，并将 P ctx P_{\\mathrm{ctx}} 设置为该上下文短语。"
+    },
+    {
+     "en": "Thus, P ctx P_{\\mathrm{ctx}} provides context guidance without explicitly encouraging the foreground object that should be excluded from the reserved region.",
+     "zh": "因此，P ctx P_{\\mathrm{ctx}} 提供了上下文引导，而不会显式地鼓励应从保留区域中排除的前景物体。"
+    }
+   ]
+  },
+  {
+   "en": "Let T T denote the total number of inference steps, and let k ∈ { 1 , … , T } k\\in\\{1,\\ldots,T\\} denote the index of the denoising step along the reverse sampling trajectory. Here, k = 1 k=1 corresponds to the first and noisiest denoising step, and k = T k=T corresponds to the final denoising step. We denote by z ( k − 1 ) z^{(k-1)} the latent input to the k k -th denoising step.",
+   "zh": "设 T T 表示推理步的总数，并设 k ∈ { 1 , … , T } k\\in\\{1,\\ldots,T\\} 表示沿反向采样轨迹的去噪步索引。 其中，k = 1 k=1 对应第一步也是噪声最大的去噪步，而 k = T k=T 对应最后一步去噪。 我们用 z ( k − 1 ) z^{(k-1)} 表示第 k k 步去噪的潜变量输入。",
+   "sents": [
+    {
+     "en": "Let T T denote the total number of inference steps, and let k ∈ { 1 , … , T } k\\in\\{1,\\ldots,T\\} denote the index of the denoising step along the reverse sampling trajectory.",
+     "zh": "设 T T 表示推理步的总数，并设 k ∈ { 1 , … , T } k\\in\\{1,\\ldots,T\\} 表示沿反向采样轨迹的去噪步索引。"
+    },
+    {
+     "en": "Here, k = 1 k=1 corresponds to the first and noisiest denoising step, and k = T k=T corresponds to the final denoising step.",
+     "zh": "其中，k = 1 k=1 对应第一步也是噪声最大的去噪步，而 k = T k=T 对应最后一步去噪。"
+    },
+    {
+     "en": "We denote by z ( k − 1 ) z^{(k-1)} the latent input to the k k -th denoising step.",
+     "zh": "我们用 z ( k − 1 ) z^{(k-1)} 表示第 k k 步去噪的潜变量输入。"
+    }
+   ]
+  },
+  {
+   "en": "At each denoising step k k , PASTA evaluates the same UNet on the same latent z ( k − 1 ) z^{(k-1)} under three conditions: negative-prompt, full-prompt-conditioned, and context-prompt-conditioned. Formally, we compute",
+   "zh": "在每个去噪步骤 k k ，PASTA 在三种条件下对同一潜在变量 z ( k − 1 ) z^{(k-1)} 运行同一个 UNet：负提示词、完整提示词条件以及上下文提示词条件。形式上，我们计算",
+   "sents": null
+  },
+  {
+   "en": "where P neg P_{\\mathrm{neg}} denotes the negative prompt used in classifier-free guidance.",
+   "zh": "其中 P neg P_{\\mathrm{neg}} 表示在无分类器引导（classifier-free guidance）中使用的负提示。",
+   "sents": null
+  },
+  {
+   "en": "Using the negative-prompt prediction as the baseline, we define the guidance residuals:",
+   "zh": "使用负提示预测作为基线，我们定义引导残差：",
+   "sents": null
+  },
+  {
+   "en": "The residual ( Δ full ​ ( k ) \\Delta_{\\mathrm{full}}(k) ) captures foreground-aware guidance induced by the full prompt, while ( Δ ctx ​ ( k ) \\Delta_{\\mathrm{ctx}}(k) ) represents context-prompt guidance obtained after removing foreground-related semantics. Because both residuals are computed from the same shared latent state ( z ( k − 1 ) z^{(k-1)} ), they remain spatially aligned and can therefore be fused within a single denoising step to selectively suppress foreground semantic leakage inside reserved regions.",
+   "zh": "残差（Δ full ( k ) \\Delta_{\\mathrm{full}}(k)）捕捉由完整提示词诱导的前景感知引导，而（Δ ctx ( k ) \\Delta_{\\mathrm{ctx}}(k)）表示在移除前景相关语义后获得的上下文提示词引导。 由于两个残差都是从同一个共享潜状态（z ( k − 1 ) z^{(k-1)}）计算得出的，它们在空间上保持对齐，因此可以在单个去噪步骤内进行融合，以选择性地抑制保留区域内的前景语义泄漏。",
+   "sents": [
+    {
+     "en": "The residual ( Δ full ​ ( k ) \\Delta_{\\mathrm{full}}(k) ) captures foreground-aware guidance induced by the full prompt, while ( Δ ctx ​ ( k ) \\Delta_{\\mathrm{ctx}}(k) ) represents context-prompt guidance obtained after removing foreground-related semantics.",
+     "zh": "残差（Δ full ( k ) \\Delta_{\\mathrm{full}}(k)）捕捉由完整提示词诱导的前景感知引导，而（Δ ctx ( k ) \\Delta_{\\mathrm{ctx}}(k)）表示在移除前景相关语义后获得的上下文提示词引导。"
+    },
+    {
+     "en": "Because both residuals are computed from the same shared latent state ( z ( k − 1 ) z^{(k-1)} ), they remain spatially aligned and can therefore be fused within a single denoising step to selectively suppress foreground semantic leakage inside reserved regions.",
+     "zh": "由于两个残差都是从同一个共享潜状态（z ( k − 1 ) z^{(k-1)}）计算得出的，它们在空间上保持对齐，因此可以在单个去噪步骤内进行融合，以选择性地抑制保留区域内的前景语义泄漏。"
+    }
+   ]
+  },
+  {
+   "en": "PASTA applies different guidance directions inside and outside the reserved region to selectively suppress foreground semantic leakage while preserving object generation quality in editable regions. Inside the reserved region, we use Δ ctx ​ ( k ) \\Delta_{\\mathrm{ctx}}(k) to suppress foreground-object semantics while retaining contextual guidance. Outside the reserved region, the full-prompt guidance should be preserved to generate the foreground object. However, strong full-prompt guidance in early denoising steps may cause object semantics to leak into the reserved region, especially under large reserved masks.",
+   "zh": "PASTA 在保留区域内外应用不同的引导方向，以选择性地抑制前景语义泄漏，同时保持可编辑区域内的物体生成质量。 在保留区域内部，我们使用 Δ ctx ​ ( k ) \\Delta_{\\mathrm{ctx}}(k) 来抑制前景物体语义，同时保留上下文引导。 在保留区域外部，应保留完整提示词引导以生成前景物体。 然而，在早期去噪步骤中较强的完整提示词引导可能导致物体语义泄漏到保留区域中，尤其是在保留掩码较大的情况下。",
+   "sents": [
+    {
+     "en": "PASTA applies different guidance directions inside and outside the reserved region to selectively suppress foreground semantic leakage while preserving object generation quality in editable regions.",
+     "zh": "PASTA 在保留区域内外应用不同的引导方向，以选择性地抑制前景语义泄漏，同时保持可编辑区域内的物体生成质量。"
+    },
+    {
+     "en": "Inside the reserved region, we use Δ ctx ​ ( k ) \\Delta_{\\mathrm{ctx}}(k) to suppress foreground-object semantics while retaining contextual guidance.",
+     "zh": "在保留区域内部，我们使用 Δ ctx ​ ( k ) \\Delta_{\\mathrm{ctx}}(k) 来抑制前景物体语义，同时保留上下文引导。"
+    },
+    {
+     "en": "Outside the reserved region, the full-prompt guidance should be preserved to generate the foreground object.",
+     "zh": "在保留区域外部，应保留完整提示词引导以生成前景物体。"
+    },
+    {
+     "en": "However, strong full-prompt guidance in early denoising steps may cause object semantics to leak into the reserved region, especially under large reserved masks.",
+     "zh": "然而，在早期去噪步骤中较强的完整提示词引导可能导致物体语义泄漏到保留区域中，尤其是在保留掩码较大的情况下。"
+    }
+   ]
+  },
+  {
+   "en": "To control this trade-off, we introduce an annealed mixing weight α ⁡ ( k ) \\alpha(k) . We set the schedule boundaries as fixed fractions of the total number of inference steps: u 1 = 0.1 ​ T u_{1}=0.1T and u 2 = 0.3 ​ T u_{2}=0.3T . The weight is kept at its maximum value during the initial denoising stage, decayed in the middle stage, and set to zero afterwards:",
+   "zh": "为了控制这一权衡，我们引入退火混合权重 α(k)。 我们将调度边界设为总推理步数的固定比例：u₁ = 0.1T 和 u₂ = 0.3T。 该权重在初始去噪阶段保持其最大值，在中间阶段逐渐衰减，之后设为零：",
+   "sents": [
+    {
+     "en": "To control this trade-off, we introduce an annealed mixing weight α ⁡ ( k ) \\alpha(k) .",
+     "zh": "为了控制这一权衡，我们引入退火混合权重 α(k)。"
+    },
+    {
+     "en": "We set the schedule boundaries as fixed fractions of the total number of inference steps: u 1 = 0.1 ​ T u_{1}=0.1T and u 2 = 0.3 ​ T u_{2}=0.3T .",
+     "zh": "我们将调度边界设为总推理步数的固定比例：u₁ = 0.1T 和 u₂ = 0.3T。"
+    },
+    {
+     "en": "The weight is kept at its maximum value during the initial denoising stage, decayed in the middle stage, and set to zero afterwards:",
+     "zh": "该权重在初始去噪阶段保持其最大值，在中间阶段逐渐衰减，之后设为零："
+    }
+   ]
+  },
+  {
+   "en": "where α max \\alpha_{\\max} is the maximum mixing weight and p p controls how rapidly the weight decays to zero. This schedule applies stronger context-prompt guidance in the early denoising steps to suppress semantic leakage into the reserved region, and gradually restores full-prompt guidance in later steps to refine the foreground object.",
+   "zh": "其中 α max \\alpha_{\\max} 是最大混合权重，p p 控制权重衰减到零的快慢。 该调度策略在早期去噪步骤中施加更强的上下文提示引导，以抑制语义泄漏到保留区域，并在后续步骤中逐渐恢复完整提示引导，以精修前景物体。",
+   "sents": [
+    {
+     "en": "where α max \\alpha_{\\max} is the maximum mixing weight and p p controls how rapidly the weight decays to zero.",
+     "zh": "其中 α max \\alpha_{\\max} 是最大混合权重，p p 控制权重衰减到零的快慢。"
+    },
+    {
+     "en": "This schedule applies stronger context-prompt guidance in the early denoising steps to suppress semantic leakage into the reserved region, and gradually restores full-prompt guidance in later steps to refine the foreground object.",
+     "zh": "该调度策略在早期去噪步骤中施加更强的上下文提示引导，以抑制语义泄漏到保留区域，并在后续步骤中逐渐恢复完整提示引导，以精修前景物体。"
+    }
+   ]
+  },
+  {
+   "en": "In the object-allowed region, we combine the full-prompt residual and the context-prompt residual using a normalized weighted average:",
+   "zh": "在允许物体的区域中，我们使用归一化加权平均将完整提示残差与上下文提示残差相结合：",
+   "sents": null
+  },
+  {
+   "en": "This normalized form adjusts the relative contribution of Δ full ​ ( k ) \\Delta_{\\mathrm{full}}(k) and Δ ctx ​ ( k ) \\Delta_{\\mathrm{ctx}}(k) while avoiding the trivial increase in guidance magnitude that would occur when simply adding α ⁡ ( k ) ​ Δ ctx ​ ( k ) \\alpha(k)\\Delta_{\\mathrm{ctx}}(k) to Δ full ​ ( k ) \\Delta_{\\mathrm{full}}(k) . Thus, α ⁡ ( k ) \\alpha(k) mainly controls the mixing ratio between full-prompt guidance and context-prompt guidance, rather than acting as an additional guidance-scale parameter.",
+   "zh": "这种归一化形式调整了 Δ_full(k) 和 Δ_ctx(k) 的相对贡献，同时避免了将 α(k)Δ_ctx(k) 直接加到 Δ_full(k) 上时会出现的那种引导强度平凡增加的问题。 因此，α(k) 主要控制全提示引导与上下文提示引导之间的混合比例，而不是作为一个额外的引导强度参数发挥作用。",
+   "sents": [
+    {
+     "en": "This normalized form adjusts the relative contribution of Δ full ​ ( k ) \\Delta_{\\mathrm{full}}(k) and Δ ctx ​ ( k ) \\Delta_{\\mathrm{ctx}}(k) while avoiding the trivial increase in guidance magnitude that would occur when simply adding α ⁡ ( k ) ​ Δ ctx ​ ( k ) \\alpha(k)\\Delta_{\\mathrm{ctx}}(k) to Δ full ​ ( k ) \\Delta_{\\mathrm{full}}(k) .",
+     "zh": "这种归一化形式调整了 Δ_full(k) 和 Δ_ctx(k) 的相对贡献，同时避免了将 α(k)Δ_ctx(k) 直接加到 Δ_full(k) 上时会出现的那种引导强度平凡增加的问题。"
+    },
+    {
+     "en": "Thus, α ⁡ ( k ) \\alpha(k) mainly controls the mixing ratio between full-prompt guidance and context-prompt guidance, rather than acting as an additional guidance-scale parameter.",
+     "zh": "因此，α(k) 主要控制全提示引导与上下文提示引导之间的混合比例，而不是作为一个额外的引导强度参数发挥作用。"
+    }
+   ]
+  },
+  {
+   "en": "The final fused guidance residual is computed as",
+   "zh": "最终的融合引导残差计算为",
+   "sents": null
+  },
+  {
+   "en": "where ⊙ \\odot denotes element-wise multiplication. This fusion enables spatially selective guidance control by suppressing foreground-aware residuals inside reserved regions while preserving full-prompt generation behavior in editable regions.",
+   "zh": "其中 ⊙ \\odot 表示逐元素相乘。 这种融合通过在保留区域内抑制前景感知残差，同时在可编辑区域内保持完整提示词的生成行为，实现了空间选择性的引导控制。",
+   "sents": [
+    {
+     "en": "where ⊙ \\odot denotes element-wise multiplication.",
+     "zh": "其中 ⊙ \\odot 表示逐元素相乘。"
+    },
+    {
+     "en": "This fusion enables spatially selective guidance control by suppressing foreground-aware residuals inside reserved regions while preserving full-prompt generation behavior in editable regions.",
+     "zh": "这种融合通过在保留区域内抑制前景感知残差，同时在可编辑区域内保持完整提示词的生成行为，实现了空间选择性的引导控制。"
+    }
+   ]
+  },
+  {
+   "en": "Finally, we form the noise prediction with a single guidance scale s s :",
+   "zh": "最后，我们使用单一的引导尺度 s s 来形成噪声预测：",
+   "sents": null
+  },
+  {
+   "en": "and update the latent using the scheduler step:",
+   "zh": "并使用调度器步进来更新隐变量：",
+   "sents": null
+  },
+  {
+   "en": "The updated latent z ( k ) z^{(k)} is shared by all three prompt conditions at the next denoising step.",
+   "zh": "更新后的潜在变量 z ( k ) z^{(k)} 会在下一个去噪步骤中被所有三种提示条件共享。",
+   "sents": null
+  },
+  {
+   "en": "By maintaining a shared latent trajectory across all prompt conditions, PASTA avoids multi-trajectory inconsistencies and enables stable residual blending throughout the denoising process.",
+   "zh": "通过在所有提示词条件下维持共享的潜在轨迹，PASTA 避免了多轨迹不一致问题，并能在整个去噪过程中实现稳定的残差融合。",
+   "sents": null
+  },
+  {
+   "en": "We adopt Stable Diffusion XL (SDXL) in PASTA to generate images at 1024 × 1024 1024\\times 1024 resolution. We use UniPCMultistepScheduler with CFG scale s = 6.5 s=6.5 and T = 50 T=50 inference steps. For annealing, we use Eq. ( 3 ) with α max = 3 \\alpha_{\\max}=3 , p = 2 p=2 , u 1 = 0.1 ​ T u_{1}=0.1T , and u 2 = 0.3 ​ T u_{2}=0.3T . With T = 50 T=50 , this corresponds to u 1 = 5 u_{1}=5 and u 2 = 15 u_{2}=15 . These hyperparameters were selected empirically in preliminary experiments and fixed for all reported results. We compare our method with space-aware text-to-image methods, TextCenGen [ 14 ] and SAWNA [ 20 ] . All baselines are evaluated with their released implementations and configurations. We compare PASTA with TextCenGen and SAWNA, which directly address reserved-region preservation or object exclusion for downstream text placement. Layout-guided placement methods mainly use spatial conditions to encourage objects to appear in specified regions, whereas our task uses the reserved-region mask to prevent salient foreground objects from appearing in those regions. Therefore, our experimental comparisons focus on methods that share the same reserved-region objective.",
+   "zh": "我们在 PASTA 中采用 Stable Diffusion XL（SDXL）以 1024 × 1024 1024\\times 1024 的分辨率生成图像。 我们使用 UniPCMultistepScheduler，CFG 尺度为 s = 6.5 s=6.5，推理步数为 T = 50 T=50。 对于退火，我们使用公式 ( 3 )，其中 α max = 3 \\alpha_{\\max}=3、p = 2 p=2、u 1 = 0.1 ​ T u_{1}=0.1T、u 2 = 0.3 ​ T u_{2}=0.3T。 当 T = 50 T=50 时，这对应于 u 1 = 5 u_{1}=5 和 u 2 = 15 u_{2}=15。 这些超参数是在初步实验中凭经验选取的，并对所有报告的结果保持固定。 我们将我们的方法与空间感知的文生图方法 TextCenGen [ 14 ] 和 SAWNA [ 20 ] 进行比较。 所有基线方法均使用其公开发布的实现和配置进行评估。 我们将 PASTA 与 TextCenGen 和 SAWNA 进行比较，这两种方法直接针对下游文本排布的保留区域保持或物体排除问题。 布局引导的放置方法主要利用空间条件促使物体出现在指定区域，而我们的任务则使用保留区域掩码来防止显著的前景物体出现在这些区域。 因此，我们的实验比较聚焦于具有相同保留区域目标的方法。",
+   "sents": [
+    {
+     "en": "We adopt Stable Diffusion XL (SDXL) in PASTA to generate images at 1024 × 1024 1024\\times 1024 resolution.",
+     "zh": "我们在 PASTA 中采用 Stable Diffusion XL（SDXL）以 1024 × 1024 1024\\times 1024 的分辨率生成图像。"
+    },
+    {
+     "en": "We use UniPCMultistepScheduler with CFG scale s = 6.5 s=6.5 and T = 50 T=50 inference steps.",
+     "zh": "我们使用 UniPCMultistepScheduler，CFG 尺度为 s = 6.5 s=6.5，推理步数为 T = 50 T=50。"
+    },
+    {
+     "en": "For annealing, we use Eq.",
+     "zh": "对于退火，我们使用公式"
+    },
+    {
+     "en": "( 3 ) with α max = 3 \\alpha_{\\max}=3 , p = 2 p=2 , u 1 = 0.1 ​ T u_{1}=0.1T , and u 2 = 0.3 ​ T u_{2}=0.3T .",
+     "zh": "( 3 )，其中 α max = 3 \\alpha_{\\max}=3、p = 2 p=2、u 1 = 0.1 ​ T u_{1}=0.1T、u 2 = 0.3 ​ T u_{2}=0.3T。"
+    },
+    {
+     "en": "With T = 50 T=50 , this corresponds to u 1 = 5 u_{1}=5 and u 2 = 15 u_{2}=15 .",
+     "zh": "当 T = 50 T=50 时，这对应于 u 1 = 5 u_{1}=5 和 u 2 = 15 u_{2}=15。"
+    },
+    {
+     "en": "These hyperparameters were selected empirically in preliminary experiments and fixed for all reported results.",
+     "zh": "这些超参数是在初步实验中凭经验选取的，并对所有报告的结果保持固定。"
+    },
+    {
+     "en": "We compare our method with space-aware text-to-image methods, TextCenGen [ 14 ] and SAWNA [ 20 ] .",
+     "zh": "我们将我们的方法与空间感知的文生图方法 TextCenGen [ 14 ] 和 SAWNA [ 20 ] 进行比较。"
+    },
+    {
+     "en": "All baselines are evaluated with their released implementations and configurations.",
+     "zh": "所有基线方法均使用其公开发布的实现和配置进行评估。"
+    },
+    {
+     "en": "We compare PASTA with TextCenGen and SAWNA, which directly address reserved-region preservation or object exclusion for downstream text placement.",
+     "zh": "我们将 PASTA 与 TextCenGen 和 SAWNA 进行比较，这两种方法直接针对下游文本排布的保留区域保持或物体排除问题。"
+    },
+    {
+     "en": "Layout-guided placement methods mainly use spatial conditions to encourage objects to appear in specified regions, whereas our task uses the reserved-region mask to prevent salient foreground objects from appearing in those regions.",
+     "zh": "布局引导的放置方法主要利用空间条件促使物体出现在指定区域，而我们的任务则使用保留区域掩码来防止显著的前景物体出现在这些区域。"
+    },
+    {
+     "en": "Therefore, our experimental comparisons focus on methods that share the same reserved-region objective.",
+     "zh": "因此，我们的实验比较聚焦于具有相同保留区域目标的方法。"
+    }
+   ]
+  },
+  {
+   "en": "We conduct experiments on the P2P [ 8 ] and SynPrompt [ 14 ] datasets according to TextCenGen [ 14 ] , which are benchmarks for space-aware text-to-image generation, providing paired text prompts and reserved spatial masks. In the original setup, each prompt is evaluated under a small-mask setting using five reserved-region masks, whose average area ratio is approximately 3.8%.",
+   "zh": "我们按照 TextCenGen [ 14 ] 在 P2P [ 8 ] 和 SynPrompt [ 14 ] 数据集上进行实验，这些基准用于空间感知的文本到图像生成，提供成对的文本提示词和预留的空间掩码。 在原始设置中，每个提示词在小掩码设置下使用五个预留区域掩码进行评估，其平均面积比约为 3.8%。",
+   "sents": [
+    {
+     "en": "We conduct experiments on the P2P [ 8 ] and SynPrompt [ 14 ] datasets according to TextCenGen [ 14 ] , which are benchmarks for space-aware text-to-image generation, providing paired text prompts and reserved spatial masks.",
+     "zh": "我们按照 TextCenGen [ 14 ] 在 P2P [ 8 ] 和 SynPrompt [ 14 ] 数据集上进行实验，这些基准用于空间感知的文本到图像生成，提供成对的文本提示词和预留的空间掩码。"
+    },
+    {
+     "en": "In the original setup, each prompt is evaluated under a small-mask setting using five reserved-region masks, whose average area ratio is approximately 3.8%.",
+     "zh": "在原始设置中，每个提示词在小掩码设置下使用五个预留区域掩码进行评估，其平均面积比约为 3.8%。"
+    }
+   ]
+  },
+  {
+   "en": "While this setting reflects lightweight text-placement scenarios, it does not capture practical design cases that require large clean regions. To evaluate robustness under stricter and more realistic constraints, we extend the evaluation protocol by introducing an additional large-mask setting. Specifically, for each prompt, we introduce ten reserved-region masks with an average area ratio of approximately 30%, simulating scenarios that require substantial negative space.",
+   "zh": "虽然这一设置反映了轻量级的文本排版场景，但它无法涵盖需要大块干净区域的实际设计情况。 为了在更严格、更贴近现实的约束下评估鲁棒性，我们通过引入一个额外的大掩码设置来扩展评估协议。 具体而言，对于每个提示，我们引入十个保留区域掩码，其平均面积占比约为 30%，以模拟需要大量留白空间的场景。",
+   "sents": [
+    {
+     "en": "While this setting reflects lightweight text-placement scenarios, it does not capture practical design cases that require large clean regions.",
+     "zh": "虽然这一设置反映了轻量级的文本排版场景，但它无法涵盖需要大块干净区域的实际设计情况。"
+    },
+    {
+     "en": "To evaluate robustness under stricter and more realistic constraints, we extend the evaluation protocol by introducing an additional large-mask setting.",
+     "zh": "为了在更严格、更贴近现实的约束下评估鲁棒性，我们通过引入一个额外的大掩码设置来扩展评估协议。"
+    },
+    {
+     "en": "Specifically, for each prompt, we introduce ten reserved-region masks with an average area ratio of approximately 30%, simulating scenarios that require substantial negative space.",
+     "zh": "具体而言，对于每个提示，我们引入十个保留区域掩码，其平均面积占比约为 30%，以模拟需要大量留白空间的场景。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate overall generation quality and text–image alignment using CLIP Score [ 24 ] and HPSv2 [ 28 ] . The CLIP Score measures the semantic consistency between the generated image and the input prompt, where higher values indicate better alignment. HPSv2 is a perceptual quality metric that aggregates human preference by jointly considering visual quality and semantic plausibility. To specifically evaluate reserved-region fidelity, we introduce an intrusion rate . For each generated image, we first perform object detection with YOLO-World [ 2 ] with the foreground object name specified in the prompt as a text query. Detected bounding boxes are then processed by SAM2 [ 25 ] to obtain pixel-level foreground masks, which are aggregated across candidate masks and bounding boxes into a single foreground mask. We compare this aggregated mask with the predefined reserved-region mask, where white regions indicate areas where objects should not appear. The intrusion rate is defined as the proportion of foreground pixels falling inside the reserved region, with lower values indicating better suppression. When YOLO-World detects no foreground objects, we exclude the sample from the intrusion-rate computation. In our evaluation, such cases are rare and typically occur when the foreground object is extremely small or visually indistinguishable from the background. Since these cases do not introduce visually salient content into the reserved region and do not interfere with downstream text or logo placement, excluding them yields a more faithful assessment of practical reserved-region violations.",
+   "zh": "我们使用 CLIP Score [ 24 ] 和 HPSv2 [ 28 ] 评估整体生成质量与文本-图像对齐程度。 CLIP Score 衡量生成图像与输入提示词之间的语义一致性，数值越高表示对齐效果越好。 HPSv2 是一种感知质量指标，通过联合考虑视觉质量和语义合理性来聚合人类偏好。 为了专门评估保留区域的保真度，我们引入了入侵率。 对于每张生成图像，我们首先使用 YOLO-World [ 2 ] 进行目标检测，并以提示词中指定的前景物体名称作为文本查询。 检测到的边界框随后由 SAM2 [ 25 ] 处理以获得像素级的前景掩码，这些掩码在候选掩码和边界框之间聚合为单一的前景掩码。 我们将该聚合掩码与预定义的保留区域掩码进行比较，其中白色区域表示不应出现物体的区域。 入侵率定义为落入保留区域内的前景像素所占比例，数值越低表示抑制效果越好。 当 YOLO-World 未检测到前景物体时，我们将该样本从入侵率计算中排除。 在我们的评估中，此类情况较为罕见，通常发生在前景物体极小或与背景在视觉上难以区分时。 由于这些情况不会在保留区域中引入视觉上显著的内容，也不会干扰下游的文本或标志放置，排除它们能够对实际的保留区域违规情况作出更准确的评估。",
+   "sents": [
+    {
+     "en": "We evaluate overall generation quality and text–image alignment using CLIP Score [ 24 ] and HPSv2 [ 28 ] .",
+     "zh": "我们使用 CLIP Score [ 24 ] 和 HPSv2 [ 28 ] 评估整体生成质量与文本-图像对齐程度。"
+    },
+    {
+     "en": "The CLIP Score measures the semantic consistency between the generated image and the input prompt, where higher values indicate better alignment.",
+     "zh": "CLIP Score 衡量生成图像与输入提示词之间的语义一致性，数值越高表示对齐效果越好。"
+    },
+    {
+     "en": "HPSv2 is a perceptual quality metric that aggregates human preference by jointly considering visual quality and semantic plausibility.",
+     "zh": "HPSv2 是一种感知质量指标，通过联合考虑视觉质量和语义合理性来聚合人类偏好。"
+    },
+    {
+     "en": "To specifically evaluate reserved-region fidelity, we introduce an intrusion rate .",
+     "zh": "为了专门评估保留区域的保真度，我们引入了入侵率。"
+    },
+    {
+     "en": "For each generated image, we first perform object detection with YOLO-World [ 2 ] with the foreground object name specified in the prompt as a text query.",
+     "zh": "对于每张生成图像，我们首先使用 YOLO-World [ 2 ] 进行目标检测，并以提示词中指定的前景物体名称作为文本查询。"
+    },
+    {
+     "en": "Detected bounding boxes are then processed by SAM2 [ 25 ] to obtain pixel-level foreground masks, which are aggregated across candidate masks and bounding boxes into a single foreground mask.",
+     "zh": "检测到的边界框随后由 SAM2 [ 25 ] 处理以获得像素级的前景掩码，这些掩码在候选掩码和边界框之间聚合为单一的前景掩码。"
+    },
+    {
+     "en": "We compare this aggregated mask with the predefined reserved-region mask, where white regions indicate areas where objects should not appear.",
+     "zh": "我们将该聚合掩码与预定义的保留区域掩码进行比较，其中白色区域表示不应出现物体的区域。"
+    },
+    {
+     "en": "The intrusion rate is defined as the proportion of foreground pixels falling inside the reserved region, with lower values indicating better suppression.",
+     "zh": "入侵率定义为落入保留区域内的前景像素所占比例，数值越低表示抑制效果越好。"
+    },
+    {
+     "en": "When YOLO-World detects no foreground objects, we exclude the sample from the intrusion-rate computation.",
+     "zh": "当 YOLO-World 未检测到前景物体时，我们将该样本从入侵率计算中排除。"
+    },
+    {
+     "en": "In our evaluation, such cases are rare and typically occur when the foreground object is extremely small or visually indistinguishable from the background.",
+     "zh": "在我们的评估中，此类情况较为罕见，通常发生在前景物体极小或与背景在视觉上难以区分时。"
+    },
+    {
+     "en": "Since these cases do not introduce visually salient content into the reserved region and do not interfere with downstream text or logo placement, excluding them yields a more faithful assessment of practical reserved-region violations.",
+     "zh": "由于这些情况不会在保留区域中引入视觉上显著的内容，也不会干扰下游的文本或标志放置，排除它们能够对实际的保留区域违规情况作出更准确的评估。"
+    }
+   ]
+  },
+  {
+   "en": "Fig. 3 shows qualitative comparisons on SynPrompt and P2P prompts under both small- and large-mask settings. Rows 1–4 show small-mask examples, while Rows 5–8 show large-mask examples. Within each mask setting, the first two rows show SynPrompt examples and the last two rows show P2P examples. In this figure, the red words in the prompt column indicate the context prompt P ctx P_{\\mathrm{ctx}} , and the yellow dashed boxes denote the reserved regions. TextCenGen removes or slightly relocates objects when the reserved region is small. However, the visual differences are often subtle, and the main object frequently remains close to the target area. When the reserved region becomes large, TextCenGen may fail to sufficiently displace the object and may not fully satisfy the spatial constraint, resulting in violations of the reserved-region requirement. SAWNA prevents the generation of objects within the reserved region under small masks. However, injecting non-reactive noise into the masked area tends to cause the background in that region to collapse into flat or near-monochrome patterns. This effect becomes more pronounced when the surrounding scene contains rich textures or complex colors, leading to noticeable visual discontinuities between reserved regions and object-allowed regions, especially for large masks. In contrast, PASTA consistently follows the reserved-region constraint across both small and large masks.",
+   "zh": "图 3 展示了在 SynPrompt 与 P2P 提示词、小掩码与大掩码两种设置下的定性对比结果。 第 1–4 行为小掩码示例，第 5–8 行为大掩码示例。 在每种掩码设置内，前两行展示 SynPrompt 示例，后两行展示 P2P 示例。 在该图中，提示词列中的红色词语表示上下文提示词 P ctx P_{\\mathrm{ctx}}，黄色虚线框表示保留区域。 当保留区域较小时，TextCenGen 会移除或轻微移动物体。 然而，视觉差异往往很细微，且主要物体常常仍停留在目标区域附近。 当保留区域变大时，TextCenGen 可能无法充分移动物体，也可能无法完全满足空间约束，从而导致违反保留区域要求。 SAWNA 能在小掩码下阻止保留区域内物体的生成。 然而，向掩码区域注入非响应性噪声往往会使该区域的背景坍缩为平坦或接近单色的图案。 当周围场景包含丰富纹理或复杂颜色时，这种效应更加明显，导致保留区域与允许物体区域之间出现明显的视觉不连续，尤其在大掩码情况下更为突出。 相比之下，PASTA 在小掩码和大掩码下都能一致地遵循保留区域约束。",
+   "sents": [
+    {
+     "en": "Fig. 3 shows qualitative comparisons on SynPrompt and P2P prompts under both small- and large-mask settings.",
+     "zh": "图 3 展示了在 SynPrompt 与 P2P 提示词、小掩码与大掩码两种设置下的定性对比结果。"
+    },
+    {
+     "en": "Rows 1–4 show small-mask examples, while Rows 5–8 show large-mask examples.",
+     "zh": "第 1–4 行为小掩码示例，第 5–8 行为大掩码示例。"
+    },
+    {
+     "en": "Within each mask setting, the first two rows show SynPrompt examples and the last two rows show P2P examples.",
+     "zh": "在每种掩码设置内，前两行展示 SynPrompt 示例，后两行展示 P2P 示例。"
+    },
+    {
+     "en": "In this figure, the red words in the prompt column indicate the context prompt P ctx P_{\\mathrm{ctx}} , and the yellow dashed boxes denote the reserved regions.",
+     "zh": "在该图中，提示词列中的红色词语表示上下文提示词 P ctx P_{\\mathrm{ctx}}，黄色虚线框表示保留区域。"
+    },
+    {
+     "en": "TextCenGen removes or slightly relocates objects when the reserved region is small.",
+     "zh": "当保留区域较小时，TextCenGen 会移除或轻微移动物体。"
+    },
+    {
+     "en": "However, the visual differences are often subtle, and the main object frequently remains close to the target area.",
+     "zh": "然而，视觉差异往往很细微，且主要物体常常仍停留在目标区域附近。"
+    },
+    {
+     "en": "When the reserved region becomes large, TextCenGen may fail to sufficiently displace the object and may not fully satisfy the spatial constraint, resulting in violations of the reserved-region requirement.",
+     "zh": "当保留区域变大时，TextCenGen 可能无法充分移动物体，也可能无法完全满足空间约束，从而导致违反保留区域要求。"
+    },
+    {
+     "en": "SAWNA prevents the generation of objects within the reserved region under small masks.",
+     "zh": "SAWNA 能在小掩码下阻止保留区域内物体的生成。"
+    },
+    {
+     "en": "However, injecting non-reactive noise into the masked area tends to cause the background in that region to collapse into flat or near-monochrome patterns.",
+     "zh": "然而，向掩码区域注入非响应性噪声往往会使该区域的背景坍缩为平坦或接近单色的图案。"
+    },
+    {
+     "en": "This effect becomes more pronounced when the surrounding scene contains rich textures or complex colors, leading to noticeable visual discontinuities between reserved regions and object-allowed regions, especially for large masks.",
+     "zh": "当周围场景包含丰富纹理或复杂颜色时，这种效应更加明显，导致保留区域与允许物体区域之间出现明显的视觉不连续，尤其在大掩码情况下更为突出。"
+    },
+    {
+     "en": "In contrast, PASTA consistently follows the reserved-region constraint across both small and large masks.",
+     "zh": "相比之下，PASTA 在小掩码和大掩码下都能一致地遵循保留区域约束。"
+    }
+   ]
+  },
+  {
+   "en": "Table 1 summarizes quantitative results on P2P and SynPrompt prompts under small and large reserved-region masks. PASTA consistently achieves substantially lower intrusion rates than SDXL and TextCenGen under the large-mask setting, while maintaining higher CLIP and HPS scores than SAWNA. In contrast, TextCenGen shows higher intrusion rates than PASTA under large masks, and the vanilla SDXL baseline violates the spatial constraint. Under the small-mask setting, PASTA remains competitive with existing space-aware methods in terms of CLIP and HPS scores. TextCenGen achieves higher CLIP and HPS scores than PASTA under the large-mask setting on both datasets, while PASTA achieves substantially lower intrusion rates. SAWNA yields the lowest intrusion rates under large masks but shows lower CLIP and HPS scores. Overall, PASTA provides a favorable balance between reserved-region enforcement and generation quality, substantially reducing intrusion under large masks while maintaining competitive text-image alignment and perceptual quality across both P2P and SynPrompt prompts.",
+   "zh": "表1总结了在小尺度和大尺度保留区域掩码下，P2P与SynPrompt提示词上的定量结果。 在大掩码设置下，PASTA的入侵率始终显著低于SDXL和TextCenGen，同时其CLIP和HPS分数高于SAWNA。 相比之下，TextCenGen在大掩码下表现出高于PASTA的入侵率，而原始SDXL基线则违反了空间约束。 在小掩码设置下，PASTA在CLIP和HPS分数方面与现有空间感知方法相比仍具竞争力。 在大掩码设置下，TextCenGen在两个数据集上的CLIP和HPS分数均高于PASTA，而PASTA则实现了显著更低的入侵率。 SAWNA在大掩码下取得了最低的入侵率，但其CLIP和HPS分数较低。 总体而言，PASTA在保留区域约束与生成质量之间取得了良好的平衡，在大掩码下大幅减少入侵的同时，在P2P与SynPrompt两类提示词上都保持了具有竞争力的图文一致性与感知质量。",
+   "sents": [
+    {
+     "en": "Table 1 summarizes quantitative results on P2P and SynPrompt prompts under small and large reserved-region masks.",
+     "zh": "表1总结了在小尺度和大尺度保留区域掩码下，P2P与SynPrompt提示词上的定量结果。"
+    },
+    {
+     "en": "PASTA consistently achieves substantially lower intrusion rates than SDXL and TextCenGen under the large-mask setting, while maintaining higher CLIP and HPS scores than SAWNA.",
+     "zh": "在大掩码设置下，PASTA的入侵率始终显著低于SDXL和TextCenGen，同时其CLIP和HPS分数高于SAWNA。"
+    },
+    {
+     "en": "In contrast, TextCenGen shows higher intrusion rates than PASTA under large masks, and the vanilla SDXL baseline violates the spatial constraint.",
+     "zh": "相比之下，TextCenGen在大掩码下表现出高于PASTA的入侵率，而原始SDXL基线则违反了空间约束。"
+    },
+    {
+     "en": "Under the small-mask setting, PASTA remains competitive with existing space-aware methods in terms of CLIP and HPS scores.",
+     "zh": "在小掩码设置下，PASTA在CLIP和HPS分数方面与现有空间感知方法相比仍具竞争力。"
+    },
+    {
+     "en": "TextCenGen achieves higher CLIP and HPS scores than PASTA under the large-mask setting on both datasets, while PASTA achieves substantially lower intrusion rates.",
+     "zh": "在大掩码设置下，TextCenGen在两个数据集上的CLIP和HPS分数均高于PASTA，而PASTA则实现了显著更低的入侵率。"
+    },
+    {
+     "en": "SAWNA yields the lowest intrusion rates under large masks but shows lower CLIP and HPS scores.",
+     "zh": "SAWNA在大掩码下取得了最低的入侵率，但其CLIP和HPS分数较低。"
+    },
+    {
+     "en": "Overall, PASTA provides a favorable balance between reserved-region enforcement and generation quality, substantially reducing intrusion under large masks while maintaining competitive text-image alignment and perceptual quality across both P2P and SynPrompt prompts.",
+     "zh": "总体而言，PASTA在保留区域约束与生成质量之间取得了良好的平衡，在大掩码下大幅减少入侵的同时，在P2P与SynPrompt两类提示词上都保持了具有竞争力的图文一致性与感知质量。"
+    }
+   ]
+  },
+  {
+   "en": "We conduct an ablation study to analyze the effect of the annealed mixing weight α \\alpha on P2P prompts and the large-mask setting, highlighting differences in reserved-region fidelity.",
+   "zh": "我们进行消融实验，以分析退火混合权重 α \\alpha 对 P2P 提示和大掩码设置的影响，重点突出保留区域保真度方面的差异。",
+   "sents": null
+  },
+  {
+   "en": "Table 2 compares our full method with a variant that removes the annealed weight schedule. Without α \\alpha , the model achieves slightly higher CLIP and HPS scores, indicating stronger text alignment and perceptual quality. However, this comes at the cost of a substantially higher intrusion rate, leading to foreground objects frequently leaking into the reserved region. In contrast, introducing the annealed α \\alpha dramatically reduces the intrusion rate, demonstrating the importance of time-dependent guidance control for enforcing clean reserved regions. Although CLIP and HPS scores decrease slightly, the model remains competitive while achieving better spatial fidelity. These results confirm that the annealed weight schedule plays a crucial role in balancing semantic preservation and spatial constraint enforcement, and is essential for robust performance under large reserved-mask settings. To further clarify the visual effect of the annealed schedule, Fig. 4 compares different choices of α \\alpha using the same prompt, reserved-region mask, and random seed. The qualitative results are consistent with Table 2 . Without α \\alpha , the foreground object clearly intrudes into the reserved region, and distracting vegetation-like structures remain inside the mask. A weak constant weight α = 1 \\alpha=1 is still insufficient to produce a clean reserved region, while a strong constant weight α = 5 \\alpha=5 suppresses the intrusion more aggressively but also over-suppresses the foreground object, producing it at an undesirably small scale. In contrast, the proposed annealed schedule preserves a cleaner reserved region while maintaining an appropriate foreground-object size. This indicates that the schedule does not simply increase suppression strength, but balances reserved-region cleanliness and prompt-faithful foreground generation.",
+   "zh": "表2将我们的完整方法与去除退火权重调度后的变体进行了比较。 在没有 α \\alpha 的情况下，模型取得了略高的 CLIP 和 HPS 分数，表明更强的文本对齐和感知质量。 然而，这以显著更高的入侵率为代价，导致前景物体频繁泄漏到保留区域中。 相比之下，引入退火的 α \\alpha 大幅降低了入侵率，证明了时间相关引导控制对于确保干净的保留区域的重要性。 尽管 CLIP 和 HPS 分数略有下降，模型在保持竞争力的同时实现了更好的空间保真度。 这些结果证实，退火权重调度在平衡语义保持和空间约束执行方面起着关键作用，并且对于大保留掩码设置下的稳健性能至关重要。 为了进一步阐明退火调度的视觉效果，图4在相同的提示、保留区域掩码和随机种子下比较了 α \\alpha 的不同选择。 定性结果与表2一致。 在没有 α \\alpha 的情况下，前景物体明显入侵保留区域，并且类似植被的干扰性结构残留在掩码内。 较弱的恒定权重 α = 1 \\alpha=1 仍不足以产生干净的保留区域，而较强的恒定权重 α = 5 \\alpha=5 更强力地抑制了入侵，但也过度抑制了前景物体，使其以不合意的小尺度生成。 相比之下，所提出的退火调度保持了更干净的保留区域，同时维持了适当的前景物体尺寸。 这表明该调度并非简单地增加抑制强度，而是在保留区域洁净度与符合提示的前景生成之间取得平衡。",
+   "sents": [
+    {
+     "en": "Table 2 compares our full method with a variant that removes the annealed weight schedule.",
+     "zh": "表2将我们的完整方法与去除退火权重调度后的变体进行了比较。"
+    },
+    {
+     "en": "Without α \\alpha , the model achieves slightly higher CLIP and HPS scores, indicating stronger text alignment and perceptual quality.",
+     "zh": "在没有 α \\alpha 的情况下，模型取得了略高的 CLIP 和 HPS 分数，表明更强的文本对齐和感知质量。"
+    },
+    {
+     "en": "However, this comes at the cost of a substantially higher intrusion rate, leading to foreground objects frequently leaking into the reserved region.",
+     "zh": "然而，这以显著更高的入侵率为代价，导致前景物体频繁泄漏到保留区域中。"
+    },
+    {
+     "en": "In contrast, introducing the annealed α \\alpha dramatically reduces the intrusion rate, demonstrating the importance of time-dependent guidance control for enforcing clean reserved regions.",
+     "zh": "相比之下，引入退火的 α \\alpha 大幅降低了入侵率，证明了时间相关引导控制对于确保干净的保留区域的重要性。"
+    },
+    {
+     "en": "Although CLIP and HPS scores decrease slightly, the model remains competitive while achieving better spatial fidelity.",
+     "zh": "尽管 CLIP 和 HPS 分数略有下降，模型在保持竞争力的同时实现了更好的空间保真度。"
+    },
+    {
+     "en": "These results confirm that the annealed weight schedule plays a crucial role in balancing semantic preservation and spatial constraint enforcement, and is essential for robust performance under large reserved-mask settings.",
+     "zh": "这些结果证实，退火权重调度在平衡语义保持和空间约束执行方面起着关键作用，并且对于大保留掩码设置下的稳健性能至关重要。"
+    },
+    {
+     "en": "To further clarify the visual effect of the annealed schedule, Fig. 4 compares different choices of α \\alpha using the same prompt, reserved-region mask, and random seed.",
+     "zh": "为了进一步阐明退火调度的视觉效果，图4在相同的提示、保留区域掩码和随机种子下比较了 α \\alpha 的不同选择。"
+    },
+    {
+     "en": "The qualitative results are consistent with Table 2 .",
+     "zh": "定性结果与表2一致。"
+    },
+    {
+     "en": "Without α \\alpha , the foreground object clearly intrudes into the reserved region, and distracting vegetation-like structures remain inside the mask.",
+     "zh": "在没有 α \\alpha 的情况下，前景物体明显入侵保留区域，并且类似植被的干扰性结构残留在掩码内。"
+    },
+    {
+     "en": "A weak constant weight α = 1 \\alpha=1 is still insufficient to produce a clean reserved region, while a strong constant weight α = 5 \\alpha=5 suppresses the intrusion more aggressively but also over-suppresses the foreground object, producing it at an undesirably small scale.",
+     "zh": "较弱的恒定权重 α = 1 \\alpha=1 仍不足以产生干净的保留区域，而较强的恒定权重 α = 5 \\alpha=5 更强力地抑制了入侵，但也过度抑制了前景物体，使其以不合意的小尺度生成。"
+    },
+    {
+     "en": "In contrast, the proposed annealed schedule preserves a cleaner reserved region while maintaining an appropriate foreground-object size.",
+     "zh": "相比之下，所提出的退火调度保持了更干净的保留区域，同时维持了适当的前景物体尺寸。"
+    },
+    {
+     "en": "This indicates that the schedule does not simply increase suppression strength, but balances reserved-region cleanliness and prompt-faithful foreground generation.",
+     "zh": "这表明该调度并非简单地增加抑制强度，而是在保留区域洁净度与符合提示的前景生成之间取得平衡。"
+    }
+   ]
+  },
+  {
+   "en": "While PASTA effectively handles a wide range of space-aware generation scenarios, it has limitations under extreme spatial constraints. In particular, when the reserved region occupies a very large portion of the image (e.g., more than 80%) or when the remaining generation area becomes extremely narrow, the model may fail to produce plausible content. In such cases, the denoising process struggles to reconcile the strong spatial restriction with the learned image priors.",
+   "zh": "尽管 PASTA 能够有效处理各种空间感知生成场景，但它在极端空间约束下仍存在局限性。 特别是，当预留区域占据图像的很大一部分（例如超过 80%），或者剩余生成区域变得极其狭窄时，模型可能无法生成合理的内容。 在这些情况下，去噪过程难以在强空间限制与已学习的图像先验之间取得平衡。",
+   "sents": [
+    {
+     "en": "While PASTA effectively handles a wide range of space-aware generation scenarios, it has limitations under extreme spatial constraints.",
+     "zh": "尽管 PASTA 能够有效处理各种空间感知生成场景，但它在极端空间约束下仍存在局限性。"
+    },
+    {
+     "en": "In particular, when the reserved region occupies a very large portion of the image (e.g., more than 80%) or when the remaining generation area becomes extremely narrow, the model may fail to produce plausible content.",
+     "zh": "特别是，当预留区域占据图像的很大一部分（例如超过 80%），或者剩余生成区域变得极其狭窄时，模型可能无法生成合理的内容。"
+    },
+    {
+     "en": "In such cases, the denoising process struggles to reconcile the strong spatial restriction with the learned image priors.",
+     "zh": "在这些情况下，去噪过程难以在强空间限制与已学习的图像先验之间取得平衡。"
+    }
+   ]
+  },
+  {
+   "en": "We hypothesize that these failure cases arise because such configurations are underrepresented or absent in the training data of large-scale text-to-image models. Addressing these extreme scenarios may require explicitly curated training data or fine-tuning strategies tailored to highly constrained layouts. We leave the exploration of data-driven or adaptive training approaches for handling these rare but practically relevant cases as future work.",
+   "zh": "我们假设这些失败案例的出现，是因为此类配置在大规模文生图模型的训练数据中代表性不足或完全缺失。 要应对这些极端场景，可能需要显式策划的训练数据，或针对高度受限布局量身定制的微调策略。 我们将探索数据驱动或自适应的训练方法以处理这些罕见但具有实际意义的情况，留作未来工作。",
+   "sents": [
+    {
+     "en": "We hypothesize that these failure cases arise because such configurations are underrepresented or absent in the training data of large-scale text-to-image models.",
+     "zh": "我们假设这些失败案例的出现，是因为此类配置在大规模文生图模型的训练数据中代表性不足或完全缺失。"
+    },
+    {
+     "en": "Addressing these extreme scenarios may require explicitly curated training data or fine-tuning strategies tailored to highly constrained layouts.",
+     "zh": "要应对这些极端场景，可能需要显式策划的训练数据，或针对高度受限布局量身定制的微调策略。"
+    },
+    {
+     "en": "We leave the exploration of data-driven or adaptive training approaches for handling these rare but practically relevant cases as future work.",
+     "zh": "我们将探索数据驱动或自适应的训练方法以处理这些罕见但具有实际意义的情况，留作未来工作。"
+    }
+   ]
+  },
+  {
+   "en": "We proposed PASTA, a training-free diffusion sampler for space-aware text-to-image generation. By operating on a shared latent trajectory and selectively fusing semantic guidance with an annealed schedule, PASTA enforces reserved-region constraints while preserving background naturalness. Experiments on both P2P and SynPrompt show that PASTA significantly improves reserved-region fidelity under large-mask settings while remaining competitive in text alignment and perceptual quality. These results suggest that PASTA provides a practical solution for design scenarios requiring clean regions for text or interface elements.",
+   "zh": "我们提出了 PASTA，一种面向空间感知文生图生成的免训练扩散采样器。 通过在共享潜在轨迹上运行，并以退火调度选择性地融合语义引导，PASTA 在保持背景自然性的同时强制执行预留区域约束。 在 P2P 和 SynPrompt 上的实验表明，PASTA 在大遮罩设置下显著提升了预留区域的保真度，同时在文本对齐和感知质量方面仍具有竞争力。 这些结果表明，PASTA 为需要为文本或界面元素保留干净区域的设计场景提供了一种实用的解决方案。",
+   "sents": [
+    {
+     "en": "We proposed PASTA, a training-free diffusion sampler for space-aware text-to-image generation.",
+     "zh": "我们提出了 PASTA，一种面向空间感知文生图生成的免训练扩散采样器。"
+    },
+    {
+     "en": "By operating on a shared latent trajectory and selectively fusing semantic guidance with an annealed schedule, PASTA enforces reserved-region constraints while preserving background naturalness.",
+     "zh": "通过在共享潜在轨迹上运行，并以退火调度选择性地融合语义引导，PASTA 在保持背景自然性的同时强制执行预留区域约束。"
+    },
+    {
+     "en": "Experiments on both P2P and SynPrompt show that PASTA significantly improves reserved-region fidelity under large-mask settings while remaining competitive in text alignment and perceptual quality.",
+     "zh": "在 P2P 和 SynPrompt 上的实验表明，PASTA 在大遮罩设置下显著提升了预留区域的保真度，同时在文本对齐和感知质量方面仍具有竞争力。"
+    },
+    {
+     "en": "These results suggest that PASTA provides a practical solution for design scenarios requiring clean regions for text or interface elements.",
+     "zh": "这些结果表明，PASTA 为需要为文本或界面元素保留干净区域的设计场景提供了一种实用的解决方案。"
+    }
+   ]
+  },
+  {
+   "en": "This research has been supported by the Kayamori Foundation of Informational Science Advancement.",
+   "zh": "本研究得到了 Informational Science Advancement 森永财团（Kayamori Foundation of Informational Science Advancement）的资助。",
+   "sents": null
+  }
+ ]
+}

@@ -1,0 +1,1623 @@
+{
+ "id": "e513bbdb432b51ba",
+ "source": "arxiv-agent",
+ "link": "https://arxiv.org/abs/2610.35093v1",
+ "title": "Improving Instruction Hierarchy by Learning from Goal-Goal Conflicts",
+ "title_zh": "通过从目标-目标冲突中学习改进指令层级",
+ "published": "2026-10-26T09:33:17Z",
+ "translated_at": "2026-10-27T20:41:14Z",
+ "paragraphs": [
+  {
+   "en": "The recent incident in which OpenAI agents autonomously compromised Hugging Face’s infrastructure illustrates the importance of instruction hierarchy (IH): an LLM should follow lower-priority instructions, such as user requests, only when they do not conflict with higher-priority instructions, such as system policies. IH can be effectively improved by fine-tuning LLMs on simulated examples of instruction conflicts, whose diversity is key to teaching LLMs to properly handle conflicts at test time. However, our decomposition of a task into goals and constraints reveals a conflict type— goal–goal conflicts —that is absent from existing IH training sets from OpenAI and NVIDIA. We show the importance of this conflict type: fine-tuning Qwen3.5-9B and Gemma4-12B-it on examples of this conflict type significantly improves IH on a wide range of real-world tasks unseen in training; adding these examples to existing IH training sets for fine-tuning also gives better IH adherence. The IH gains come with trivial mean utility changes on no-conflict tasks across eight benchmarks. Our work advocates including this new conflict type in IH training, even if these examples do not reflect typical LLM use.",
+   "zh": "OpenAI 智能体近期自主入侵 Hugging Face 基础设施的事件，凸显了指令层级（instruction hierarchy, IH）的重要性：LLM 应当只在低优先级指令（如用户请求）不与高优先级指令（如系统策略）冲突时才遵循后者之前的低优先级指令。 通过在模拟的指令冲突样本上对 LLM 进行微调，可以有效提升 IH，而这些样本的多样性是教会 LLM 在测试时正确处理冲突的关键。 然而，我们将任务分解为目标与约束后发现一类冲突——目标—目标冲突——它在此前 OpenAI 和 NVIDIA 的 IH 训练集中并不存在。 我们展示了这类冲突的重要性：在这类冲突样本上微调 Qwen3.5-9B 和 Gemma4-12B-it，能显著提升模型在训练中未见过的大量真实任务上的 IH 表现；将这些样本加入现有 IH 训练集进行微调，同样能带来更好的 IH 遵循能力。 这些 IH 提升在八个基准上带来的无冲突任务平均效用变化微乎其微。 我们的工作主张将这一新的冲突类型纳入 IH 训练，即使这些样本并不反映典型的 LLM 使用场景。",
+   "sents": [
+    {
+     "en": "The recent incident in which OpenAI agents autonomously compromised Hugging Face’s infrastructure illustrates the importance of instruction hierarchy (IH): an LLM should follow lower-priority instructions, such as user requests, only when they do not conflict with higher-priority instructions, such as system policies.",
+     "zh": "OpenAI 智能体近期自主入侵 Hugging Face 基础设施的事件，凸显了指令层级（instruction hierarchy, IH）的重要性：LLM 应当只在低优先级指令（如用户请求）不与高优先级指令（如系统策略）冲突时才遵循后者之前的低优先级指令。"
+    },
+    {
+     "en": "IH can be effectively improved by fine-tuning LLMs on simulated examples of instruction conflicts, whose diversity is key to teaching LLMs to properly handle conflicts at test time.",
+     "zh": "通过在模拟的指令冲突样本上对 LLM 进行微调，可以有效提升 IH，而这些样本的多样性是教会 LLM 在测试时正确处理冲突的关键。"
+    },
+    {
+     "en": "However, our decomposition of a task into goals and constraints reveals a conflict type— goal–goal conflicts —that is absent from existing IH training sets from OpenAI and NVIDIA.",
+     "zh": "然而，我们将任务分解为目标与约束后发现一类冲突——目标—目标冲突——它在此前 OpenAI 和 NVIDIA 的 IH 训练集中并不存在。"
+    },
+    {
+     "en": "We show the importance of this conflict type: fine-tuning Qwen3.5-9B and Gemma4-12B-it on examples of this conflict type significantly improves IH on a wide range of real-world tasks unseen in training; adding these examples to existing IH training sets for fine-tuning also gives better IH adherence.",
+     "zh": "我们展示了这类冲突的重要性：在这类冲突样本上微调 Qwen3.5-9B 和 Gemma4-12B-it，能显著提升模型在训练中未见过的大量真实任务上的 IH 表现；将这些样本加入现有 IH 训练集进行微调，同样能带来更好的 IH 遵循能力。"
+    },
+    {
+     "en": "The IH gains come with trivial mean utility changes on no-conflict tasks across eight benchmarks.",
+     "zh": "这些 IH 提升在八个基准上带来的无冲突任务平均效用变化微乎其微。"
+    },
+    {
+     "en": "Our work advocates including this new conflict type in IH training, even if these examples do not reflect typical LLM use.",
+     "zh": "我们的工作主张将这一新的冲突类型纳入 IH 训练，即使这些样本并不反映典型的 LLM 使用场景。"
+    }
+   ]
+  },
+  {
+   "en": "Recently, OpenAI agents undergoing evaluations autonomously compromised parts of Hugging Face’s infrastructure because they believed it might contain information useful for solving their evaluation tasks ( OpenAI, 2026a ) . This incident illustrates the importance of adherence to the instruction hierarchy (IH) ( Wallace et al., 2024 ) , which requires large language models (LLMs) to follow lower-priority instructions only when they do not conflict with higher-priority instructions. In this incident, some agents mistakenly treated messages from other agents (lower-priority instructions) as authorization to override higher-priority system messages with security specifications ( OpenAI, 2026b ) .",
+   "zh": "近日，OpenAI 正在接受评估的智能体在认为 Hugging Face 的基础设施中可能包含有助于解决其评估任务的信息时，自主入侵了该基础设施的部分内容（OpenAI, 2026a）。 这一事件说明了遵守指令层级（IH）（Wallace et al., 2024）的重要性，该层级要求大语言模型（LLM）仅在低优先级指令与高优先级指令不冲突时才遵循前者。 在这一事件中，一些智能体错误地将来自其他智能体的消息（低优先级指令）当作授权，以此来覆盖包含安全规范的高优先级系统消息（OpenAI, 2026b）。",
+   "sents": [
+    {
+     "en": "Recently, OpenAI agents undergoing evaluations autonomously compromised parts of Hugging Face’s infrastructure because they believed it might contain information useful for solving their evaluation tasks ( OpenAI, 2026a ) .",
+     "zh": "近日，OpenAI 正在接受评估的智能体在认为 Hugging Face 的基础设施中可能包含有助于解决其评估任务的信息时，自主入侵了该基础设施的部分内容（OpenAI, 2026a）。"
+    },
+    {
+     "en": "This incident illustrates the importance of adherence to the instruction hierarchy (IH) ( Wallace et al., 2024 ) , which requires large language models (LLMs) to follow lower-priority instructions only when they do not conflict with higher-priority instructions.",
+     "zh": "这一事件说明了遵守指令层级（IH）（Wallace et al., 2024）的重要性，该层级要求大语言模型（LLM）仅在低优先级指令与高优先级指令不冲突时才遵循前者。"
+    },
+    {
+     "en": "In this incident, some agents mistakenly treated messages from other agents (lower-priority instructions) as authorization to override higher-priority system messages with security specifications ( OpenAI, 2026b ) .",
+     "zh": "在这一事件中，一些智能体错误地将来自其他智能体的消息（低优先级指令）当作授权，以此来覆盖包含安全规范的高优先级系统消息（OpenAI, 2026b）。"
+    }
+   ]
+  },
+  {
+   "en": "Fine-tuning on simulated conflicts can effectively improve IH ( Wallace et al., 2024 ) . The key is to simulate diverse and strong conflicts, so that the fine-tuned LLM learns to resolve conflicts well at test time. This paper studies conflict diversity.",
+   "zh": "在模拟冲突上进行微调可以有效提升 IH（Wallace et al., 2024）。 关键在于模拟多样且强烈的冲突，使微调后的大语言模型在测试时能够很好地解决冲突。 本文研究冲突多样性。",
+   "sents": [
+    {
+     "en": "Fine-tuning on simulated conflicts can effectively improve IH ( Wallace et al., 2024 ) .",
+     "zh": "在模拟冲突上进行微调可以有效提升 IH（Wallace et al., 2024）。"
+    },
+    {
+     "en": "The key is to simulate diverse and strong conflicts, so that the fine-tuned LLM learns to resolve conflicts well at test time.",
+     "zh": "关键在于模拟多样且强烈的冲突，使微调后的大语言模型在测试时能够很好地解决冲突。"
+    },
+    {
+     "en": "This paper studies conflict diversity.",
+     "zh": "本文研究冲突多样性。"
+    }
+   ]
+  },
+  {
+   "en": "To measure conflict diversity, we decompose a task into goals , which specify what to accomplish, and constraints , which restrict goal completion. Based on this new perspective, there are three possible types of conflicts: constraint–constraint, constraint–goal, and goal–goal conflicts ; see Figure 1 (a). Our analysis of OpenAI’s IH-Challenge ( Guo et al., 2026 ) and NVIDIA’s HieraSuite ( Jiang et al., 2026 ) shows these existing IH training sets miss the goal–goal conflict type; see Figure 1 (b).",
+   "zh": "为了衡量冲突多样性，我们将任务分解为目标（goals），即规定要完成什么，以及约束（constraints），即限制目标的完成。 基于这一新视角，存在三种可能的冲突类型：约束–约束、约束–目标和目标–目标冲突；见图1 (a)。 我们对OpenAI的IH-Challenge（Guo et al., 2026）和NVIDIA的HieraSuite（Jiang et al., 2026）的分析表明，这些现有的IH训练集遗漏了目标–目标冲突类型；见图1 (b)。",
+   "sents": [
+    {
+     "en": "To measure conflict diversity, we decompose a task into goals , which specify what to accomplish, and constraints , which restrict goal completion.",
+     "zh": "为了衡量冲突多样性，我们将任务分解为目标（goals），即规定要完成什么，以及约束（constraints），即限制目标的完成。"
+    },
+    {
+     "en": "Based on this new perspective, there are three possible types of conflicts: constraint–constraint, constraint–goal, and goal–goal conflicts ; see Figure 1 (a).",
+     "zh": "基于这一新视角，存在三种可能的冲突类型：约束–约束、约束–目标和目标–目标冲突；见图1 (a)。"
+    },
+    {
+     "en": "Our analysis of OpenAI’s IH-Challenge ( Guo et al., 2026 ) and NVIDIA’s HieraSuite ( Jiang et al., 2026 ) shows these existing IH training sets miss the goal–goal conflict type; see Figure 1 (b).",
+     "zh": "我们对OpenAI的IH-Challenge（Guo et al., 2026）和NVIDIA的HieraSuite（Jiang et al., 2026）的分析表明，这些现有的IH训练集遗漏了目标–目标冲突类型；见图1 (b)。"
+    }
+   ]
+  },
+  {
+   "en": "This gap motivates us to construct the missing goal–goal conflicts and study the effect of training on them. We construct 9,544 goal–goal conflict samples, each containing two text-processing instructions that operate on each other. We put one text-processing instruction in the high-priority system message, and another in the low-priority user message. Thus, the desirable response follows the system instruction to process the user message, and the undesirable response does the reverse.",
+   "zh": "这一空白促使我们构建缺失的目标–目标冲突，并研究训练对其产生的影响。 我们构建了9,544个目标–目标冲突样本，每个样本包含两条彼此作用于对方的文本处理指令。 我们将一条文本处理指令置于高优先级的系统消息中，将另一条置于低优先级的用户消息中。 因此，理想的响应遵循系统指令来处理用户消息，而不理想的响应则相反。",
+   "sents": [
+    {
+     "en": "This gap motivates us to construct the missing goal–goal conflicts and study the effect of training on them.",
+     "zh": "这一空白促使我们构建缺失的目标–目标冲突，并研究训练对其产生的影响。"
+    },
+    {
+     "en": "We construct 9,544 goal–goal conflict samples, each containing two text-processing instructions that operate on each other.",
+     "zh": "我们构建了9,544个目标–目标冲突样本，每个样本包含两条彼此作用于对方的文本处理指令。"
+    },
+    {
+     "en": "We put one text-processing instruction in the high-priority system message, and another in the low-priority user message.",
+     "zh": "我们将一条文本处理指令置于高优先级的系统消息中，将另一条置于低优先级的用户消息中。"
+    },
+    {
+     "en": "Thus, the desirable response follows the system instruction to process the user message, and the undesirable response does the reverse.",
+     "zh": "因此，理想的响应遵循系统指令来处理用户消息，而不理想的响应则相反。"
+    }
+   ]
+  },
+  {
+   "en": "Training on these goal–goal conflicts improves IH adherence across four benchmarks (IHEval, RuLES, IH-Benchmark, and XIH-Bench) on a wide range of real-world tasks with conflicts unseen in training. We fine-tune two models on our goal–goal training set using direct preference optimization (DPO; Rafailov et al., 2023 ) to prefer outputs that follow the higher-priority instruction over those that follow the conflicting lower-priority instruction. This training increases the conflict resistance rates of Qwen3.5-9B and Gemma4-12B-it by 34.3 and 19.4 points, respectively.",
+   "zh": "在这些目标与目标冲突上进行训练，可以在四个基准（IHEval、RuLES、IH-Benchmark 和 XIH-Bench）上提升对指令遵循的坚持度，涵盖多种在训练中未曾出现冲突的真实任务。 我们使用直接偏好优化（DPO；Rafailov 等，2023）在目标与目标训练集上对两个模型进行微调，使其偏好遵循更高优先级指令的输出，而非遵循与之冲突的较低优先级指令的输出。 这种训练使 Qwen3.5-9B 和 Gemma4-12B-it 的冲突抵抗率分别提升了 34.3 和 19.4 个百分点。",
+   "sents": [
+    {
+     "en": "Training on these goal–goal conflicts improves IH adherence across four benchmarks (IHEval, RuLES, IH-Benchmark, and XIH-Bench) on a wide range of real-world tasks with conflicts unseen in training.",
+     "zh": "在这些目标与目标冲突上进行训练，可以在四个基准（IHEval、RuLES、IH-Benchmark 和 XIH-Bench）上提升对指令遵循的坚持度，涵盖多种在训练中未曾出现冲突的真实任务。"
+    },
+    {
+     "en": "We fine-tune two models on our goal–goal training set using direct preference optimization (DPO; Rafailov et al., 2023 ) to prefer outputs that follow the higher-priority instruction over those that follow the conflicting lower-priority instruction.",
+     "zh": "我们使用直接偏好优化（DPO；Rafailov 等，2023）在目标与目标训练集上对两个模型进行微调，使其偏好遵循更高优先级指令的输出，而非遵循与之冲突的较低优先级指令的输出。"
+    },
+    {
+     "en": "This training increases the conflict resistance rates of Qwen3.5-9B and Gemma4-12B-it by 34.3 and 19.4 points, respectively.",
+     "zh": "这种训练使 Qwen3.5-9B 和 Gemma4-12B-it 的冲突抵抗率分别提升了 34.3 和 19.4 个百分点。"
+    }
+   ]
+  },
+  {
+   "en": "If we add our goal–goal conflicts to a subset of the existing HieraSuite training set, training on this combined set yields better IH adherence than training on this HieraSuite subset alone. In this comparison, our fine-tuned Qwen3.5-9B and Gemma4-12B-it models have mean conflict resistance rates that are 18.0 and 10.5 points higher, respectively. This shows that goal–goal conflicts, if simulated in training, complement existing conflict types in improving IH.",
+   "zh": "如果我们将目标—目标冲突添加到现有 HieraSuite 训练集的一个子集中，在该组合数据集上进行训练比仅在该 HieraSuite 子集上训练能带来更好的指令层级（IH）遵循度。 在这一对比中，我们微调的 Qwen3.5-9B 和 Gemma4-12B-it 模型的平均冲突抵抗率分别高出 18.0 和 10.5 个百分点。 这表明，如果在训练中对目标—目标冲突进行模拟，它们可以与现有冲突类型互补，从而改善指令层级（IH）遵循度。",
+   "sents": [
+    {
+     "en": "If we add our goal–goal conflicts to a subset of the existing HieraSuite training set, training on this combined set yields better IH adherence than training on this HieraSuite subset alone.",
+     "zh": "如果我们将目标—目标冲突添加到现有 HieraSuite 训练集的一个子集中，在该组合数据集上进行训练比仅在该 HieraSuite 子集上训练能带来更好的指令层级（IH）遵循度。"
+    },
+    {
+     "en": "In this comparison, our fine-tuned Qwen3.5-9B and Gemma4-12B-it models have mean conflict resistance rates that are 18.0 and 10.5 points higher, respectively.",
+     "zh": "在这一对比中，我们微调的 Qwen3.5-9B 和 Gemma4-12B-it 模型的平均冲突抵抗率分别高出 18.0 和 10.5 个百分点。"
+    },
+    {
+     "en": "This shows that goal–goal conflicts, if simulated in training, complement existing conflict types in improving IH.",
+     "zh": "这表明，如果在训练中对目标—目标冲突进行模拟，它们可以与现有冲突类型互补，从而改善指令层级（IH）遵循度。"
+    }
+   ]
+  },
+  {
+   "en": "The IH gains are accompanied by small changes in mean utility across eight benchmarks. Evaluations on non-conflicting samples from eight benchmarks (MMLU-Pro, GPQA Diamond, IFEval, GSM8K, IHEval, RuLES, IH-Benchmark, and XIH-Bench) show that using our goal–goal conflicts in training (both alone and when added to existing conflict training) yields utility scores similar to those of the corresponding original models. Together, our results advocate including goal–goal conflicts in IH training, even if these examples do not reflect typical LLM use.",
+   "zh": "IH 的收益伴随着八个基准上平均效用的小幅变化。 在八个基准（MMLU-Pro、GPQA Diamond、IFEval、GSM8K、IHEval、RuLES、IH-Benchmark 和 XIH-Bench）的非冲突样本上的评估表明，将我们的目标—目标冲突用于训练（无论是单独使用还是添加到现有冲突训练中），所得到的效用分数与相应原始模型相近。 总之，我们的结果支持在 IH 训练中纳入目标—目标冲突，即使这些样本并不反映典型的大语言模型使用场景。",
+   "sents": [
+    {
+     "en": "The IH gains are accompanied by small changes in mean utility across eight benchmarks.",
+     "zh": "IH 的收益伴随着八个基准上平均效用的小幅变化。"
+    },
+    {
+     "en": "Evaluations on non-conflicting samples from eight benchmarks (MMLU-Pro, GPQA Diamond, IFEval, GSM8K, IHEval, RuLES, IH-Benchmark, and XIH-Bench) show that using our goal–goal conflicts in training (both alone and when added to existing conflict training) yields utility scores similar to those of the corresponding original models.",
+     "zh": "在八个基准（MMLU-Pro、GPQA Diamond、IFEval、GSM8K、IHEval、RuLES、IH-Benchmark 和 XIH-Bench）的非冲突样本上的评估表明，将我们的目标—目标冲突用于训练（无论是单独使用还是添加到现有冲突训练中），所得到的效用分数与相应原始模型相近。"
+    },
+    {
+     "en": "Together, our results advocate including goal–goal conflicts in IH training, even if these examples do not reflect typical LLM use.",
+     "zh": "总之，我们的结果支持在 IH 训练中纳入目标—目标冲突，即使这些样本并不反映典型的大语言模型使用场景。"
+    }
+   ]
+  },
+  {
+   "en": "The lack of goal–goal conflicts in existing IH training sets motivates us to construct them for study. Based on our decomposition of a task into goal(s) and constraint(s), a goal–goal conflict involves two goals that specify explicitly conflicting objectives. Though it is generally hard to define \"explicit conflicts between T i T_{i} and T j T_{j} \" for two goals \"Do T i T_{i} \" and \"Do T j T_{j} \", we show a scheme to construct such conflicting pairs. Specifically, we pair two text-processing instructions, each of which asks the model to process the message containing the other instruction. Their corresponding transformations produce T i ​ ( u j ) T_{i}(u_{j}) and T j ​ ( s i ) T_{j}(s_{i}) , where s i s_{i} and u j u_{j} are the system and user messages, respectively. We retain pairs only when these outputs are distinct and nonempty.",
+   "zh": "现有IH训练集中缺乏目标—目标冲突，这促使我们构建此类冲突进行研究。 基于我们将任务分解为目标与约束的方式，目标—目标冲突涉及两个明确了相互冲突之目标的目标。 尽管对于两个目标“执行T i T_{i}”和“执行T j T_{j}”而言，通常难以定义“T i T_{i}与T j T_{j}之间的显式冲突”，我们展示了一种构建此类冲突对的方案。 具体而言，我们将两条文本处理指令配对，其中每条指令都要求模型处理包含另一条指令的消息。 它们对应的变换产生T i ​ ( u j ) T_{i}(u_{j})和T j ​ ( s i ) T_{j}(s_{i})，其中s i s_{i}和u j u_{j}分别是系统消息和用户消息。 只有当这些输出不同且非空时，我们才保留该配对。",
+   "sents": [
+    {
+     "en": "The lack of goal–goal conflicts in existing IH training sets motivates us to construct them for study.",
+     "zh": "现有IH训练集中缺乏目标—目标冲突，这促使我们构建此类冲突进行研究。"
+    },
+    {
+     "en": "Based on our decomposition of a task into goal(s) and constraint(s), a goal–goal conflict involves two goals that specify explicitly conflicting objectives.",
+     "zh": "基于我们将任务分解为目标与约束的方式，目标—目标冲突涉及两个明确了相互冲突之目标的目标。"
+    },
+    {
+     "en": "Though it is generally hard to define \"explicit conflicts between T i T_{i} and T j T_{j} \" for two goals \"Do T i T_{i} \" and \"Do T j T_{j} \", we show a scheme to construct such conflicting pairs.",
+     "zh": "尽管对于两个目标“执行T i T_{i}”和“执行T j T_{j}”而言，通常难以定义“T i T_{i}与T j T_{j}之间的显式冲突”，我们展示了一种构建此类冲突对的方案。"
+    },
+    {
+     "en": "Specifically, we pair two text-processing instructions, each of which asks the model to process the message containing the other instruction.",
+     "zh": "具体而言，我们将两条文本处理指令配对，其中每条指令都要求模型处理包含另一条指令的消息。"
+    },
+    {
+     "en": "Their corresponding transformations produce T i ​ ( u j ) T_{i}(u_{j}) and T j ​ ( s i ) T_{j}(s_{i}) , where s i s_{i} and u j u_{j} are the system and user messages, respectively.",
+     "zh": "它们对应的变换产生T i ​ ( u j ) T_{i}(u_{j})和T j ​ ( s i ) T_{j}(s_{i})，其中s i s_{i}和u j u_{j}分别是系统消息和用户消息。"
+    },
+    {
+     "en": "We retain pairs only when these outputs are distinct and nonempty.",
+     "zh": "只有当这些输出不同且非空时，我们才保留该配对。"
+    }
+   ]
+  },
+  {
+   "en": "Below, we detail our pipeline for constructing IH training samples with goal–goal conflicts: generate elementary text-processing instructions, combine each ordered pair into a goal–goal conflict sample with a system message and a user message, and filter unsuitable samples. To reduce ambiguity in obtaining desirable/undesirable execution results, we also generate a Python function that implements T i T_{i} or T j T_{j} , so that the instruction can be executed deterministically to obtain a ground-truth output. Then, we evaluate the initial exact system-task compliance of existing small LLMs using our constructed samples, and their limited performance indicates the potential benefits of learning from goal–goal conflict samples.",
+   "zh": "下面，我们详细介绍构建带有目标—目标冲突的IH训练样本的流程：生成基础文本处理指令，将每个有序指令对与系统消息和用户消息组合成目标—目标冲突样本，并过滤不合适的样本。 为了减少在获取理想/不理想执行结果时的歧义，我们还生成一个实现 T i T_{i} 或 T j T_{j} 的Python函数，使指令能够确定性地执行以获得真实标准输出。 然后，我们使用构建的样本评估现有小型LLM在初始状态下系统—任务的一致性，其有限的表现表明了从目标—目标冲突样本中学习的潜在收益。",
+   "sents": [
+    {
+     "en": "Below, we detail our pipeline for constructing IH training samples with goal–goal conflicts: generate elementary text-processing instructions, combine each ordered pair into a goal–goal conflict sample with a system message and a user message, and filter unsuitable samples.",
+     "zh": "下面，我们详细介绍构建带有目标—目标冲突的IH训练样本的流程：生成基础文本处理指令，将每个有序指令对与系统消息和用户消息组合成目标—目标冲突样本，并过滤不合适的样本。"
+    },
+    {
+     "en": "To reduce ambiguity in obtaining desirable/undesirable execution results, we also generate a Python function that implements T i T_{i} or T j T_{j} , so that the instruction can be executed deterministically to obtain a ground-truth output.",
+     "zh": "为了减少在获取理想/不理想执行结果时的歧义，我们还生成一个实现 T i T_{i} 或 T j T_{j} 的Python函数，使指令能够确定性地执行以获得真实标准输出。"
+    },
+    {
+     "en": "Then, we evaluate the initial exact system-task compliance of existing small LLMs using our constructed samples, and their limited performance indicates the potential benefits of learning from goal–goal conflict samples.",
+     "zh": "然后，我们使用构建的样本评估现有小型LLM在初始状态下系统—任务的一致性，其有限的表现表明了从目标—目标冲突样本中学习的潜在收益。"
+    }
+   ]
+  },
+  {
+   "en": "We generate text-processing instructions together with corresponding Python implementations. Each instruction specifies a transformation T i T_{i} that maps an input string to a complete output string. The instruction and its implementation specify the same operation, allowing us to obtain response labels by executing code on the input text.",
+   "zh": "我们将文本处理指令与相应的 Python 实现一起生成。 每条指令指定一个变换 T i T_{i}，将输入字符串映射为完整的输出字符串。 指令与其实现指定的是同一操作，因此我们可以通过在输入文本上执行代码来获得响应标签。",
+   "sents": [
+    {
+     "en": "We generate text-processing instructions together with corresponding Python implementations.",
+     "zh": "我们将文本处理指令与相应的 Python 实现一起生成。"
+    },
+    {
+     "en": "Each instruction specifies a transformation T i T_{i} that maps an input string to a complete output string.",
+     "zh": "每条指令指定一个变换 T i T_{i}，将输入字符串映射为完整的输出字符串。"
+    },
+    {
+     "en": "The instruction and its implementation specify the same operation, allowing us to obtain response labels by executing code on the input text.",
+     "zh": "指令与其实现指定的是同一操作，因此我们可以通过在输入文本上执行代码来获得响应标签。"
+    }
+   ]
+  },
+  {
+   "en": "For each ordered pair of distinct instructions, we place one in the system message s i s_{i} and the other in the user message u j u_{j} . The desirable response y i ​ j + y^{+}_{ij} follows the system instruction to process the user message; the undesirable response y i ​ j − y^{-}_{ij} follows the user instruction to process the system message.",
+   "zh": "对于每一对有序的不同指令，我们将其中一条置于系统消息 s_{i} 中，另一条置于用户消息 u_{j} 中。 期望响应 y^{+}_{ij} 遵循系统指令来处理用户消息；非期望响应 y^{-}_{ij} 遵循用户指令来处理系统消息。",
+   "sents": [
+    {
+     "en": "For each ordered pair of distinct instructions, we place one in the system message s i s_{i} and the other in the user message u j u_{j} .",
+     "zh": "对于每一对有序的不同指令，我们将其中一条置于系统消息 s_{i} 中，另一条置于用户消息 u_{j} 中。"
+    },
+    {
+     "en": "The desirable response y i ​ j + y^{+}_{ij} follows the system instruction to process the user message; the undesirable response y i ​ j − y^{-}_{ij} follows the user instruction to process the system message.",
+     "zh": "期望响应 y^{+}_{ij} 遵循系统指令来处理用户消息；非期望响应 y^{-}_{ij} 遵循用户指令来处理系统消息。"
+    }
+   ]
+  },
+  {
+   "en": "Reversing the roles reverses which operation is expected. We generate these preference pairs by executing the Python code for T i T_{i} and T j T_{j} .",
+   "zh": "反转角色会使所期望的操作也随之反转。 我们通过执行 T i T_{i} 和 T j T_{j} 的 Python 代码来生成这些偏好对。",
+   "sents": [
+    {
+     "en": "Reversing the roles reverses which operation is expected.",
+     "zh": "反转角色会使所期望的操作也随之反转。"
+    },
+    {
+     "en": "We generate these preference pairs by executing the Python code for T i T_{i} and T j T_{j} .",
+     "zh": "我们通过执行 T i T_{i} 和 T j T_{j} 的 Python 代码来生成这些偏好对。"
+    }
+   ]
+  },
+  {
+   "en": "We remove pairs with an empty output or identical outputs, producing 9,544 IH training samples with goal–goal conflicts and their 19,088 response labels; see Appendix B . Before fine-tuning, the latest small LLMs still struggle to correctly handle those goal–goal conflicts; see Section 2 . These failures suggest potential benefits of learning from our goal–goal conflict samples.",
+   "zh": "我们去除输出为空或输出相同的样本对，得到 9,544 个包含目标—目标冲突的 IH 训练样本及其 19,088 个响应标签；参见附录 B。 在微调之前，最新的小型 LLM 仍然难以正确处理这些目标—目标冲突；参见第 2 节。 这些失败表明，从我们的目标—目标冲突样本中学习可能带来潜在收益。",
+   "sents": [
+    {
+     "en": "We remove pairs with an empty output or identical outputs, producing 9,544 IH training samples with goal–goal conflicts and their 19,088 response labels; see Appendix B .",
+     "zh": "我们去除输出为空或输出相同的样本对，得到 9,544 个包含目标—目标冲突的 IH 训练样本及其 19,088 个响应标签；参见附录 B。"
+    },
+    {
+     "en": "Before fine-tuning, the latest small LLMs still struggle to correctly handle those goal–goal conflicts; see Section 2 .",
+     "zh": "在微调之前，最新的小型 LLM 仍然难以正确处理这些目标—目标冲突；参见第 2 节。"
+    },
+    {
+     "en": "These failures suggest potential benefits of learning from our goal–goal conflict samples.",
+     "zh": "这些失败表明，从我们的目标—目标冲突样本中学习可能带来潜在收益。"
+    }
+   ]
+  },
+  {
+   "en": "Given the lack of goal–goal conflicts ( Figure 1 ) in existing IH training sets and current LLMs’ unsatisfactory performance on them, we study the effect of including this conflict type in IH training in improving IH adherence on real-world tasks that usually contain conflicts other than goal–goal conflicts. This section specifies our experimental setup for training and evaluation.",
+   "zh": "鉴于现有IH训练集中缺乏目标–目标冲突（图1），且当前大语言模型在这类冲突上表现不佳，我们研究了在IH训练中加入这种冲突类型，能否提升IH在真实任务上的遵循度，这些任务通常包含目标–目标冲突以外的其他冲突。 本节说明我们用于训练和评估的实验设置。",
+   "sents": [
+    {
+     "en": "Given the lack of goal–goal conflicts ( Figure 1 ) in existing IH training sets and current LLMs’ unsatisfactory performance on them, we study the effect of including this conflict type in IH training in improving IH adherence on real-world tasks that usually contain conflicts other than goal–goal conflicts.",
+     "zh": "鉴于现有IH训练集中缺乏目标–目标冲突（图1），且当前大语言模型在这类冲突上表现不佳，我们研究了在IH训练中加入这种冲突类型，能否提升IH在真实任务上的遵循度，这些任务通常包含目标–目标冲突以外的其他冲突。"
+    },
+    {
+     "en": "This section specifies our experimental setup for training and evaluation.",
+     "zh": "本节说明我们用于训练和评估的实验设置。"
+    }
+   ]
+  },
+  {
+   "en": "We use Qwen3.5-9B ( Qwen Team, 2026 ) and Gemma4-12B-it ( Gemma Team, 2026 ) , a model with better starting IH performance. For each model, we consider four versions: the original model, and three versions fine-tuned separately from that original model. These three versions use (i) goal–goal conflict training on our 9,544 generated preference pairs; (ii) training with constraint–constraint conflicts and constraint–goal conflicts on 6,306 preference pairs from a subset of NVIDIA’s HieraSuite Jiang et al. (2026) ; and (iii) combined training on all 15,850 pairs. All three fine-tuning conditions use LoRA Hu et al. (2022) with direct preference optimization (DPO; Rafailov et al., 2023 ), β = 0.1 \\beta=0.1 , thinking disabled, and a learning rate of 1.6 × 10 − 4 1.6\\times 10^{-4} . For each starting model, we compare model (i) with the original model to assess goal–goal supervision alone, and model (iii) with model (ii) to assess the benefit of adding goal–goal examples.",
+   "zh": "我们使用 Qwen3.5-9B（Qwen Team, 2026）和 Gemma4-12B-it（Gemma Team, 2026），后者是一个初始 IH 性能更好的模型。 对于每个模型，我们考虑四个版本：原始模型，以及从该原始模型分别微调得到的三个版本。 这三个版本分别使用：(i) 在我们生成的 9,544 个偏好对上进行目标—目标冲突训练；(ii) 在来自 NVIDIA HieraSuite 子集（Jiang et al. (2026)）的 6,306 个偏好对上进行约束—约束冲突与约束—目标冲突训练；以及 (iii) 在全部 15,850 个偏好对上进行组合训练。 所有三种微调条件均使用 LoRA（Hu et al. (2022)）、直接偏好优化（DPO；Rafailov et al., 2023），β = 0.1 \\beta=0.1，禁用思考模式，学习率为 1.6 × 10 − 4 1.6\\times 10^{-4}。 对于每个起始模型，我们将模型 (i) 与原始模型进行比较，以评估仅目标—目标监督的效果；并将模型 (iii) 与模型 (ii) 进行比较，以评估加入目标—目标样本的收益。",
+   "sents": [
+    {
+     "en": "We use Qwen3.5-9B ( Qwen Team, 2026 ) and Gemma4-12B-it ( Gemma Team, 2026 ) , a model with better starting IH performance.",
+     "zh": "我们使用 Qwen3.5-9B（Qwen Team, 2026）和 Gemma4-12B-it（Gemma Team, 2026），后者是一个初始 IH 性能更好的模型。"
+    },
+    {
+     "en": "For each model, we consider four versions: the original model, and three versions fine-tuned separately from that original model.",
+     "zh": "对于每个模型，我们考虑四个版本：原始模型，以及从该原始模型分别微调得到的三个版本。"
+    },
+    {
+     "en": "These three versions use (i) goal–goal conflict training on our 9,544 generated preference pairs; (ii) training with constraint–constraint conflicts and constraint–goal conflicts on 6,306 preference pairs from a subset of NVIDIA’s HieraSuite Jiang et al.",
+     "zh": "这三个版本分别使用：(i) 在我们生成的 9,544 个偏好对上进行目标—目标冲突训练；(ii) 在来自 NVIDIA HieraSuite 子集（Jiang et al."
+    },
+    {
+     "en": "(2026) ; and (iii) combined training on all 15,850 pairs.",
+     "zh": "(2026)）的 6,306 个偏好对上进行约束—约束冲突与约束—目标冲突训练；以及 (iii) 在全部 15,850 个偏好对上进行组合训练。"
+    },
+    {
+     "en": "All three fine-tuning conditions use LoRA Hu et al.",
+     "zh": "所有三种微调条件均使用 LoRA（Hu et al."
+    },
+    {
+     "en": "(2022) with direct preference optimization (DPO; Rafailov et al., 2023 ), β = 0.1 \\beta=0.1 , thinking disabled, and a learning rate of 1.6 × 10 − 4 1.6\\times 10^{-4} .",
+     "zh": "(2022)）、直接偏好优化（DPO；Rafailov et al., 2023），β = 0.1 \\beta=0.1，禁用思考模式，学习率为 1.6 × 10 − 4 1.6\\times 10^{-4}。"
+    },
+    {
+     "en": "For each starting model, we compare model (i) with the original model to assess goal–goal supervision alone, and model (iii) with model (ii) to assess the benefit of adding goal–goal examples.",
+     "zh": "对于每个起始模型，我们将模型 (i) 与原始模型进行比较，以评估仅目标—目标监督的效果；并将模型 (iii) 与模型 (ii) 进行比较，以评估加入目标—目标样本的收益。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate the models on four mainstream IH benchmarks: IHEval ( Zhang et al., 2025 ) , RuLES ( Mu et al., 2023 ; Mu et al., 2025 ) , IH-Benchmark ( McCauley et al., 2026 ) , and XIH-Bench ( Moon et al., 2026 ) . They span four diverse real-world domains: Rule Following: Obeying requirements or formatting rules despite contradictory constraints. Task Execution: Completing the assigned task rather than a competing task. Safety Defense: Preserving access controls and protecting information against bypass attempts. Tool Use: Ignoring injected instructions in tool results while completing the original request. These benchmarks include multiple message role boundaries (system over user, system over tool, and user over tool) and six languages. Together, they cover diverse tasks and realistic conflict scenarios, including competing user requests, safety-rule violations, and prompt injections in tool outputs. The Conflict Resistance Rate compares performance under conflict with performance under a non-conflicting reference condition (under the same high-priority task). ConflictResistance = A conflict / A reference \\operatorname{ConflictResistance}=A^{\\mathrm{conflict}}/A^{\\mathrm{reference}} . Here, A A is task-specific performance. This metric divides performance under conflict by performance in the corresponding non-conflicting condition, giving a normalized score of conflict handling.",
+   "zh": "我们在四个主流的 IH 基准上评估模型：IHEval（Zhang et al., 2025）、RuLES（Mu et al., 2023；Mu et al., 2025）、IH-Benchmark（McCauley et al., 2026）和 XIH-Bench（Moon et al., 2026）。 它们涵盖四个不同的现实领域：规则遵循：尽管存在相互矛盾的约束，仍要遵守要求或格式规则。 任务执行：完成被指派的任务，而不是相互竞争的任务。 安全防御：维护访问控制并保护信息免受绕过尝试的影响。 工具使用：在完成原始请求的同时，忽略工具结果中被注入的指令。 这些基准包含多种消息角色边界（系统对用户、系统对工具、用户对工具）以及六种语言。 它们共同覆盖了多样的任务和现实的冲突场景，包括相互竞争的用户请求、违反安全规则以及工具输出中的提示注入。 冲突抵抗率将冲突条件下的性能与无冲突参考条件（在相同的高优先级任务下）的性能进行比较。 ConflictResistance = A^conflict / A^reference。 这里，A 是特定任务的性能。 该指标将冲突条件下的性能除以相应无冲突条件下的性能，从而给出一个归一化的冲突处理分数。",
+   "sents": [
+    {
+     "en": "We evaluate the models on four mainstream IH benchmarks: IHEval ( Zhang et al., 2025 ) , RuLES ( Mu et al., 2023 ; Mu et al., 2025 ) , IH-Benchmark ( McCauley et al., 2026 ) , and XIH-Bench ( Moon et al., 2026 ) .",
+     "zh": "我们在四个主流的 IH 基准上评估模型：IHEval（Zhang et al., 2025）、RuLES（Mu et al., 2023；Mu et al., 2025）、IH-Benchmark（McCauley et al., 2026）和 XIH-Bench（Moon et al., 2026）。"
+    },
+    {
+     "en": "They span four diverse real-world domains: Rule Following: Obeying requirements or formatting rules despite contradictory constraints.",
+     "zh": "它们涵盖四个不同的现实领域：规则遵循：尽管存在相互矛盾的约束，仍要遵守要求或格式规则。"
+    },
+    {
+     "en": "Task Execution: Completing the assigned task rather than a competing task.",
+     "zh": "任务执行：完成被指派的任务，而不是相互竞争的任务。"
+    },
+    {
+     "en": "Safety Defense: Preserving access controls and protecting information against bypass attempts.",
+     "zh": "安全防御：维护访问控制并保护信息免受绕过尝试的影响。"
+    },
+    {
+     "en": "Tool Use: Ignoring injected instructions in tool results while completing the original request.",
+     "zh": "工具使用：在完成原始请求的同时，忽略工具结果中被注入的指令。"
+    },
+    {
+     "en": "These benchmarks include multiple message role boundaries (system over user, system over tool, and user over tool) and six languages.",
+     "zh": "这些基准包含多种消息角色边界（系统对用户、系统对工具、用户对工具）以及六种语言。"
+    },
+    {
+     "en": "Together, they cover diverse tasks and realistic conflict scenarios, including competing user requests, safety-rule violations, and prompt injections in tool outputs.",
+     "zh": "它们共同覆盖了多样的任务和现实的冲突场景，包括相互竞争的用户请求、违反安全规则以及工具输出中的提示注入。"
+    },
+    {
+     "en": "The Conflict Resistance Rate compares performance under conflict with performance under a non-conflicting reference condition (under the same high-priority task).",
+     "zh": "冲突抵抗率将冲突条件下的性能与无冲突参考条件（在相同的高优先级任务下）的性能进行比较。"
+    },
+    {
+     "en": "ConflictResistance = A conflict / A reference \\operatorname{ConflictResistance}=A^{\\mathrm{conflict}}/A^{\\mathrm{reference}} .",
+     "zh": "ConflictResistance = A^conflict / A^reference。"
+    },
+    {
+     "en": "Here, A A is task-specific performance.",
+     "zh": "这里，A 是特定任务的性能。"
+    },
+    {
+     "en": "This metric divides performance under conflict by performance in the corresponding non-conflicting condition, giving a normalized score of conflict handling.",
+     "zh": "该指标将冲突条件下的性能除以相应无冲突条件下的性能，从而给出一个归一化的冲突处理分数。"
+    }
+   ]
+  },
+  {
+   "en": "We test the reference performance ( A b reference A_{b}^{\\mathrm{reference}} with no conflicts) on the above four IH benchmarks. We also evaluate the models on four non-IH utility benchmarks: MMLU-Pro ( Wang et al., 2024 ) , GPQA Diamond ( Rein et al., 2024 ) , IFEval ( Zhou et al., 2023 ) , and GSM8K ( Cobbe et al., 2021 ) .",
+   "zh": "我们在上述四个 IH 基准上测试参考性能（A_{b}^{\\mathrm{reference}}，即无冲突情况）。 我们还在四个非 IH 效用基准上评估模型：MMLU-Pro (Wang et al., 2024)、GPQA Diamond (Rein et al., 2024)、IFEval (Zhou et al., 2023) 和 GSM8K (Cobbe et al., 2021)。",
+   "sents": [
+    {
+     "en": "We test the reference performance ( A b reference A_{b}^{\\mathrm{reference}} with no conflicts) on the above four IH benchmarks.",
+     "zh": "我们在上述四个 IH 基准上测试参考性能（A_{b}^{\\mathrm{reference}}，即无冲突情况）。"
+    },
+    {
+     "en": "We also evaluate the models on four non-IH utility benchmarks: MMLU-Pro ( Wang et al., 2024 ) , GPQA Diamond ( Rein et al., 2024 ) , IFEval ( Zhou et al., 2023 ) , and GSM8K ( Cobbe et al., 2021 ) .",
+     "zh": "我们还在四个非 IH 效用基准上评估模型：MMLU-Pro (Wang et al., 2024)、GPQA Diamond (Rein et al., 2024)、IFEval (Zhou et al., 2023) 和 GSM8K (Cobbe et al., 2021)。"
+    }
+   ]
+  },
+  {
+   "en": "Training on goal–goal conflicts improves IH adherence across models, message types, languages, and domains . The training raises mean conflict resistance rates by 34.3 points for Qwen3.5-9B and 19.4 for Gemma4-12B-it, with increases in all ten categories ( Figure 5 ). In these evaluations, better IH adherence means keeping the higher-priority task in control when another lower-priority message requests a competing action. The gains extend beyond our training format of two English text-processing instructions in system/user roles: the evaluations also involve application rules, retrieved documents, tool calls, and messages in different languages. Table 1 makes this diversity concrete, with Cases A and B demonstrating IH adherence improvements after training.",
+   "zh": "在目标与目标冲突上的训练能够跨模型、消息类型、语言和领域提升对 IH 的遵从。 该训练使 Qwen3.5-9B 的平均冲突抵抗率提升 34.3 个百分点，Gemma4-12B-it 提升 19.4 个百分点，且全部十个类别均有所提高（图 5）。 在这些评估中，更好的 IH 遵从意味着当另一条较低优先级的消息请求一个竞争性动作时，仍能让较高优先级的任务保持控制。 这些提升超出了我们训练格式中系统/用户角色下的两条英文文本处理指令的范围：评估还涉及应用规则、检索到的文档、工具调用以及不同语言的消息。 表 1 具体展示了这种多样性，其中案例 A 和案例 B 展示了训练后 IH 遵从性的提升。",
+   "sents": [
+    {
+     "en": "Training on goal–goal conflicts improves IH adherence across models, message types, languages, and domains .",
+     "zh": "在目标与目标冲突上的训练能够跨模型、消息类型、语言和领域提升对 IH 的遵从。"
+    },
+    {
+     "en": "The training raises mean conflict resistance rates by 34.3 points for Qwen3.5-9B and 19.4 for Gemma4-12B-it, with increases in all ten categories ( Figure 5 ).",
+     "zh": "该训练使 Qwen3.5-9B 的平均冲突抵抗率提升 34.3 个百分点，Gemma4-12B-it 提升 19.4 个百分点，且全部十个类别均有所提高（图 5）。"
+    },
+    {
+     "en": "In these evaluations, better IH adherence means keeping the higher-priority task in control when another lower-priority message requests a competing action.",
+     "zh": "在这些评估中，更好的 IH 遵从意味着当另一条较低优先级的消息请求一个竞争性动作时，仍能让较高优先级的任务保持控制。"
+    },
+    {
+     "en": "The gains extend beyond our training format of two English text-processing instructions in system/user roles: the evaluations also involve application rules, retrieved documents, tool calls, and messages in different languages.",
+     "zh": "这些提升超出了我们训练格式中系统/用户角色下的两条英文文本处理指令的范围：评估还涉及应用规则、检索到的文档、工具调用以及不同语言的消息。"
+    },
+    {
+     "en": "Table 1 makes this diversity concrete, with Cases A and B demonstrating IH adherence improvements after training.",
+     "zh": "表 1 具体展示了这种多样性，其中案例 A 和案例 B 展示了训练后 IH 遵从性的提升。"
+    }
+   ]
+  },
+  {
+   "en": "Goal–goal conflicts, if simulated in training, provide crucial complementary supervision beyond existing conflicts . Adding goal–goal pairs to existing constraint–constraint and constraint–goal conflicts (from a subset of HieraSuite) raises mean conflict resistance rates over constraint-conflict training by 18.0 and 10.5 points ( Figure 5 ), improving all ten categories for Qwen3.5-9B and nine for Gemma4-12B-it, compared with training on the HieraSuite subset alone. Cases C and D in Table 1 illustrate two remaining gaps after training on existing conflicts. The model fine-tuned on combined conflicts avoids both errors in these cases. The benefit therefore appears in both action selection and exact rule following, supporting the use of goal–goal examples alongside existing conflicts. Also, Figures 5 and 5 show gains from including these examples even for Gemma4-12B-it, which already has strong IH performance.",
+   "zh": "若在训练中对目标—目标冲突进行模拟，可在现有冲突之外提供关键的补充监督信号。 在现有约束—约束与约束—目标冲突（来自 HieraSuite 的一个子集）的基础上加入目标—目标冲突对，相较仅用约束冲突训练，平均冲突抵抗率分别提升了 18.0 和 10.5 个百分点（图 5），与仅在 HieraSuite 子集上训练相比，Qwen3.5-9B 的全部十个类别均得到改善，Gemma4-12B-it 则有九个类别得到改善。 表 1 中的案例 C 和 D 展示了在现有冲突上训练后仍然存在的两处缺口。 在组合冲突上微调后的模型在这些案例中避免了上述两类错误。 因此，该收益同时体现在动作选择和精确规则遵循上，支持在现有冲突之外一并使用目标—目标示例。 此外，图 5 和图 5 显示，即使是本身已具备较强 IH 性能的 Gemma4-12B-it，加入这些示例也能带来提升。",
+   "sents": [
+    {
+     "en": "Goal–goal conflicts, if simulated in training, provide crucial complementary supervision beyond existing conflicts .",
+     "zh": "若在训练中对目标—目标冲突进行模拟，可在现有冲突之外提供关键的补充监督信号。"
+    },
+    {
+     "en": "Adding goal–goal pairs to existing constraint–constraint and constraint–goal conflicts (from a subset of HieraSuite) raises mean conflict resistance rates over constraint-conflict training by 18.0 and 10.5 points ( Figure 5 ), improving all ten categories for Qwen3.5-9B and nine for Gemma4-12B-it, compared with training on the HieraSuite subset alone.",
+     "zh": "在现有约束—约束与约束—目标冲突（来自 HieraSuite 的一个子集）的基础上加入目标—目标冲突对，相较仅用约束冲突训练，平均冲突抵抗率分别提升了 18.0 和 10.5 个百分点（图 5），与仅在 HieraSuite 子集上训练相比，Qwen3.5-9B 的全部十个类别均得到改善，Gemma4-12B-it 则有九个类别得到改善。"
+    },
+    {
+     "en": "Cases C and D in Table 1 illustrate two remaining gaps after training on existing conflicts.",
+     "zh": "表 1 中的案例 C 和 D 展示了在现有冲突上训练后仍然存在的两处缺口。"
+    },
+    {
+     "en": "The model fine-tuned on combined conflicts avoids both errors in these cases.",
+     "zh": "在组合冲突上微调后的模型在这些案例中避免了上述两类错误。"
+    },
+    {
+     "en": "The benefit therefore appears in both action selection and exact rule following, supporting the use of goal–goal examples alongside existing conflicts.",
+     "zh": "因此，该收益同时体现在动作选择和精确规则遵循上，支持在现有冲突之外一并使用目标—目标示例。"
+    },
+    {
+     "en": "Also, Figures 5 and 5 show gains from including these examples even for Gemma4-12B-it, which already has strong IH performance.",
+     "zh": "此外，图 5 和图 5 显示，即使是本身已具备较强 IH 性能的 Gemma4-12B-it，加入这些示例也能带来提升。"
+    }
+   ]
+  },
+  {
+   "en": "The IH gains are accompanied by small changes in mean utility across eight benchmarks. Most real-world use cases involve no conflicts, so it is crucial for the fine-tuned LLMs to perform equally well on them. Figure 5 compares benign utility before and after fine-tuning on goal–goal conflicts. Results show that the training changes the eight-metric mean by + 1.7 +1.7 and − 1.1 -1.1 percentage points for Qwen3.5-9B and Gemma4-12B-it, respectively. Adding goal–goal conflicts to existing conflicts for fine-tuning changes the trained LLMs’ benign utility by − 0.2 -0.2 and − 0.9 -0.9 . Despite benchmark-specific variance, these small mean changes demonstrate the potential for utility preservation through training with goal–goal conflicts (without the need to carefully balance the proportions of different conflicts as required in Jiang et al. (2026) ). Cases E and F in Table 1 show preserved correct behavior on no-conflict test cases before and after goal–goal training.",
+   "zh": "IH 的收益伴随着八个基准上平均效用的微小变化。 大多数现实世界的用例不涉及冲突，因此微调后的 LLM 在这些用例上表现同样出色至关重要。 图 5 比较了在目标-目标冲突上微调前后的良性效用。 结果表明，训练使 Qwen3.5-9B 和 Gemma4-12B-it 的八项指标平均值分别变化了 +1.7 和 −1.1 个百分点。 在已有冲突的基础上添加目标-目标冲突进行微调，会使训练后的 LLM 的良性效用分别变化 −0.2 和 −0.9。 尽管存在基准特定的差异，但这些微小的平均值变化表明，通过目标-目标冲突进行训练有可能保留效用（而无需像 Jiang et al. (2026) 所要求的那样仔细平衡不同冲突的比例）。 表 1 中的用例 E 和 F 显示，在目标-目标训练前后，无冲突测试用例上的正确行为得以保留。",
+   "sents": [
+    {
+     "en": "The IH gains are accompanied by small changes in mean utility across eight benchmarks.",
+     "zh": "IH 的收益伴随着八个基准上平均效用的微小变化。"
+    },
+    {
+     "en": "Most real-world use cases involve no conflicts, so it is crucial for the fine-tuned LLMs to perform equally well on them.",
+     "zh": "大多数现实世界的用例不涉及冲突，因此微调后的 LLM 在这些用例上表现同样出色至关重要。"
+    },
+    {
+     "en": "Figure 5 compares benign utility before and after fine-tuning on goal–goal conflicts.",
+     "zh": "图 5 比较了在目标-目标冲突上微调前后的良性效用。"
+    },
+    {
+     "en": "Results show that the training changes the eight-metric mean by + 1.7 +1.7 and − 1.1 -1.1 percentage points for Qwen3.5-9B and Gemma4-12B-it, respectively.",
+     "zh": "结果表明，训练使 Qwen3.5-9B 和 Gemma4-12B-it 的八项指标平均值分别变化了 +1.7 和 −1.1 个百分点。"
+    },
+    {
+     "en": "Adding goal–goal conflicts to existing conflicts for fine-tuning changes the trained LLMs’ benign utility by − 0.2 -0.2 and − 0.9 -0.9 .",
+     "zh": "在已有冲突的基础上添加目标-目标冲突进行微调，会使训练后的 LLM 的良性效用分别变化 −0.2 和 −0.9。"
+    },
+    {
+     "en": "Despite benchmark-specific variance, these small mean changes demonstrate the potential for utility preservation through training with goal–goal conflicts (without the need to carefully balance the proportions of different conflicts as required in Jiang et al. (2026) ).",
+     "zh": "尽管存在基准特定的差异，但这些微小的平均值变化表明，通过目标-目标冲突进行训练有可能保留效用（而无需像 Jiang et al. (2026) 所要求的那样仔细平衡不同冲突的比例）。"
+    },
+    {
+     "en": "Cases E and F in Table 1 show preserved correct behavior on no-conflict test cases before and after goal–goal training.",
+     "zh": "表 1 中的用例 E 和 F 显示，在目标-目标训练前后，无冲突测试用例上的正确行为得以保留。"
+    }
+   ]
+  },
+  {
+   "en": "We do not evaluate attacks adaptively optimized against our fine-tuned models. This scope is consistent with prior IH studies that report fixed evaluation protocols without adaptive attack optimization Zhang et al. (2025) ; Zheng et al. (2026) ; Chen et al. (2026) ; Shi et al. (2025) ; Zhang et al. (2026) ; we focus on benchmark transfer. This allows us to study the value of goal–goal training data under common real-world use cases. Whether the gains from our goal–goal training persist under attacks adaptively optimized against the fine-tuned models remains unknown.",
+   "zh": "我们未针对针对我们微调模型自适应优化的攻击进行评估。 这一范围与先前报告固定评估协议而不进行自适应攻击优化的IH研究一致 Zhang et al. (2025) ；Zheng et al. (2026) ；Chen et al. (2026) ；Shi et al. (2025) ；Zhang et al. (2026) ；我们聚焦于基准迁移。 这使我们能够在常见的现实用例下研究目标-目标训练数据的价值。 我们的目标-目标训练所获得的收益在针对微调模型自适应优化的攻击下是否仍然存在，目前尚不清楚。",
+   "sents": [
+    {
+     "en": "We do not evaluate attacks adaptively optimized against our fine-tuned models.",
+     "zh": "我们未针对针对我们微调模型自适应优化的攻击进行评估。"
+    },
+    {
+     "en": "This scope is consistent with prior IH studies that report fixed evaluation protocols without adaptive attack optimization Zhang et al. (2025) ; Zheng et al. (2026) ; Chen et al. (2026) ; Shi et al. (2025) ; Zhang et al.",
+     "zh": "这一范围与先前报告固定评估协议而不进行自适应攻击优化的IH研究一致 Zhang et al. (2025) ；Zheng et al. (2026) ；Chen et al. (2026) ；Shi et al. (2025) ；Zhang et al."
+    },
+    {
+     "en": "(2026) ; we focus on benchmark transfer.",
+     "zh": "(2026) ；我们聚焦于基准迁移。"
+    },
+    {
+     "en": "This allows us to study the value of goal–goal training data under common real-world use cases.",
+     "zh": "这使我们能够在常见的现实用例下研究目标-目标训练数据的价值。"
+    },
+    {
+     "en": "Whether the gains from our goal–goal training persist under attacks adaptively optimized against the fine-tuned models remains unknown.",
+     "zh": "我们的目标-目标训练所获得的收益在针对微调模型自适应优化的攻击下是否仍然存在，目前尚不清楚。"
+    }
+   ]
+  },
+  {
+   "en": "We observe over-defense in a small fraction of cases (with a conflict resistance rate over 100%, indicating that the model performs better when a conflict exists). This indicates that training only on conflicts is not sufficient Guo et al. (2026) , so mixing in no-conflict samples is necessary; we leave this important line of study to future work. Further study would help understand how training with goal–goal conflicts improves IH performance while producing small changes in mean utility across eight benchmarks.",
+   "zh": "我们在少部分案例中观察到过度防御现象（冲突抵抗率超过100%，表明模型在存在冲突时表现更好）。 这表明仅在冲突上进行训练是不够的 Guo et al. (2026)，因此有必要混入无冲突样本；我们将这一重要研究方向留待未来工作。 进一步的研究将有助于理解使用目标—目标冲突进行训练如何在改善IH性能的同时，对八个基准的平均效用产生较小变化。",
+   "sents": [
+    {
+     "en": "We observe over-defense in a small fraction of cases (with a conflict resistance rate over 100%, indicating that the model performs better when a conflict exists).",
+     "zh": "我们在少部分案例中观察到过度防御现象（冲突抵抗率超过100%，表明模型在存在冲突时表现更好）。"
+    },
+    {
+     "en": "This indicates that training only on conflicts is not sufficient Guo et al.",
+     "zh": "这表明仅在冲突上进行训练是不够的 Guo et al."
+    },
+    {
+     "en": "(2026) , so mixing in no-conflict samples is necessary; we leave this important line of study to future work.",
+     "zh": "(2026)，因此有必要混入无冲突样本；我们将这一重要研究方向留待未来工作。"
+    },
+    {
+     "en": "Further study would help understand how training with goal–goal conflicts improves IH performance while producing small changes in mean utility across eight benchmarks.",
+     "zh": "进一步的研究将有助于理解使用目标—目标冲突进行训练如何在改善IH性能的同时，对八个基准的平均效用产生较小变化。"
+    }
+   ]
+  },
+  {
+   "en": "We demonstrate the value of simulating diverse conflicts in IH training sets. Under our decomposition of a task into goals and constraints, the goal–goal conflict type is currently neglected. Even if those samples do not reflect typical LLM use, learning to behave well on them significantly boosts real-world IH adherence.",
+   "zh": "我们展示了在 IH 训练集中模拟多样化冲突的价值。 在我们将任务分解为目标与约束的框架下，目标–目标冲突类型目前被忽视了。 即使这些样本不能反映典型的 LLM 使用场景，学会在这些样本上表现良好也能显著提升真实世界中的 IH 遵循度。",
+   "sents": [
+    {
+     "en": "We demonstrate the value of simulating diverse conflicts in IH training sets.",
+     "zh": "我们展示了在 IH 训练集中模拟多样化冲突的价值。"
+    },
+    {
+     "en": "Under our decomposition of a task into goals and constraints, the goal–goal conflict type is currently neglected.",
+     "zh": "在我们将任务分解为目标与约束的框架下，目标–目标冲突类型目前被忽视了。"
+    },
+    {
+     "en": "Even if those samples do not reflect typical LLM use, learning to behave well on them significantly boosts real-world IH adherence.",
+     "zh": "即使这些样本不能反映典型的 LLM 使用场景，学会在这些样本上表现良好也能显著提升真实世界中的 IH 遵循度。"
+    }
+   ]
+  },
+  {
+   "en": "Our work is an example of synthesizing verifiable training samples: Goal–goal conflicts teach LLMs to treat high-priority instructions as \"functions\" and low-priority instructions as \"data (function arguments)\", with deterministic desirable/undesirable outputs produced by running Python code for both instructions. In our construction, the model learns to apply the higher-priority transformation to the lower-priority message, including any instruction-like text within that message.",
+   "zh": "我们的工作是合成可验证训练样本的一个示例：目标—目标冲突教会大语言模型将高优先级指令视为「函数」，将低优先级指令视为「数据（函数参数）」，并通过运行 Python 代码为这两类指令生成确定性的理想/非理想输出。 在我们的构造中，模型学会将更高优先级的转换应用于较低优先级的消息，包括该消息中任何类似指令的文本。",
+   "sents": [
+    {
+     "en": "Our work is an example of synthesizing verifiable training samples: Goal–goal conflicts teach LLMs to treat high-priority instructions as \"functions\" and low-priority instructions as \"data (function arguments)\", with deterministic desirable/undesirable outputs produced by running Python code for both instructions.",
+     "zh": "我们的工作是合成可验证训练样本的一个示例：目标—目标冲突教会大语言模型将高优先级指令视为「函数」，将低优先级指令视为「数据（函数参数）」，并通过运行 Python 代码为这两类指令生成确定性的理想/非理想输出。"
+    },
+    {
+     "en": "In our construction, the model learns to apply the higher-priority transformation to the lower-priority message, including any instruction-like text within that message.",
+     "zh": "在我们的构造中，模型学会将更高优先级的转换应用于较低优先级的消息，包括该消息中任何类似指令的文本。"
+    }
+   ]
+  },
+  {
+   "en": "Sizhe Chen is supported by the NVIDIA Graduate Fellowship (2026–2027). We thank David Wagner and Long Lian for their insightful discussions.",
+   "zh": "陈思哲获得NVIDIA研究生奖学金（2026–2027）的支持。 我们感谢David Wagner和Long Lian富有洞见的讨论。",
+   "sents": [
+    {
+     "en": "Sizhe Chen is supported by the NVIDIA Graduate Fellowship (2026–2027).",
+     "zh": "陈思哲获得NVIDIA研究生奖学金（2026–2027）的支持。"
+    },
+    {
+     "en": "We thank David Wagner and Long Lian for their insightful discussions.",
+     "zh": "我们感谢David Wagner和Long Lian富有洞见的讨论。"
+    }
+   ]
+  },
+  {
+   "en": "Wallace et al. (2024) train models to follow compatible instructions and ignore conflicting lower-priority requests, including requests for opposing or unrelated tasks. HieraSuite constructs aligned and conflicting system–user pairs, uses hierarchical rubrics to improve responses, and trains models with supervised fine-tuning and preference optimization ( Jiang et al., 2026 ) . IH-Challenge combines tasks with programmatically checked answers and online adversarial examples for reinforcement learning ( Guo et al., 2026 ) . Our work adds a way to generate preference pairs from two text-processing instructions. We generate both responses by executing the corresponding Python implementations. Swapping their system and user roles gives a second example.",
+   "zh": "Wallace 等人 （2024）训练模型遵循兼容的指令并忽略冲突的较低优先级请求，包括要求执行相反任务或无关任务的请求。 HieraSuite 构建对齐与冲突的系统—用户指令对，使用分层评分标准改进响应，并通过监督微调和偏好优化来训练模型（ Jiang et al., 2026 ） 。 IH-Challenge 将具有可程序化验证答案的任务与在线对抗样本相结合用于强化学习（ Guo et al., 2026 ） 。 我们的工作增加了一种从两条文本处理指令生成偏好对的方法。 我们通过执行相应的 Python 实现来生成两个响应。 交换二者的系统与用户角色即可得到第二个示例。",
+   "sents": [
+    {
+     "en": "Wallace et al.",
+     "zh": "Wallace 等人"
+    },
+    {
+     "en": "(2024) train models to follow compatible instructions and ignore conflicting lower-priority requests, including requests for opposing or unrelated tasks.",
+     "zh": "（2024）训练模型遵循兼容的指令并忽略冲突的较低优先级请求，包括要求执行相反任务或无关任务的请求。"
+    },
+    {
+     "en": "HieraSuite constructs aligned and conflicting system–user pairs, uses hierarchical rubrics to improve responses, and trains models with supervised fine-tuning and preference optimization ( Jiang et al., 2026 ) .",
+     "zh": "HieraSuite 构建对齐与冲突的系统—用户指令对，使用分层评分标准改进响应，并通过监督微调和偏好优化来训练模型（ Jiang et al., 2026 ） 。"
+    },
+    {
+     "en": "IH-Challenge combines tasks with programmatically checked answers and online adversarial examples for reinforcement learning ( Guo et al., 2026 ) .",
+     "zh": "IH-Challenge 将具有可程序化验证答案的任务与在线对抗样本相结合用于强化学习（ Guo et al., 2026 ） 。"
+    },
+    {
+     "en": "Our work adds a way to generate preference pairs from two text-processing instructions.",
+     "zh": "我们的工作增加了一种从两条文本处理指令生成偏好对的方法。"
+    },
+    {
+     "en": "We generate both responses by executing the corresponding Python implementations.",
+     "zh": "我们通过执行相应的 Python 实现来生成两个响应。"
+    },
+    {
+     "en": "Swapping their system and user roles gives a second example.",
+     "zh": "交换二者的系统与用户角色即可得到第二个示例。"
+    }
+   ]
+  },
+  {
+   "en": "IFEval checks whether responses satisfy verifiable constraints ( Zhou et al., 2023 ) . AutoIF generates instructions and verification code, then uses execution feedback to build supervised and preference-training data ( Dong et al., 2025 ) . IFBench tests generalization to unseen types of verifiable constraints ( Pyatkin et al., 2025 ) . These methods use programs to check responses. Our programs also generate the complete response for each of two conflicting instructions, providing both sides of a preference pair.",
+   "zh": "IFEval 检查回复是否满足可验证的约束（Zhou et al., 2023）。 AutoIF 生成指令和验证代码，然后利用执行反馈构建监督数据与偏好训练数据（Dong et al., 2025）。 IFBench 测试对未见过的可验证约束类型的泛化能力（Pyatkin et al., 2025）。 这些方法使用程序来检查回复。 我们的程序还会为两条相互冲突的指令各自生成完整回复，从而提供偏好对的两端。",
+   "sents": [
+    {
+     "en": "IFEval checks whether responses satisfy verifiable constraints ( Zhou et al., 2023 ) .",
+     "zh": "IFEval 检查回复是否满足可验证的约束（Zhou et al., 2023）。"
+    },
+    {
+     "en": "AutoIF generates instructions and verification code, then uses execution feedback to build supervised and preference-training data ( Dong et al., 2025 ) .",
+     "zh": "AutoIF 生成指令和验证代码，然后利用执行反馈构建监督数据与偏好训练数据（Dong et al., 2025）。"
+    },
+    {
+     "en": "IFBench tests generalization to unseen types of verifiable constraints ( Pyatkin et al., 2025 ) .",
+     "zh": "IFBench 测试对未见过的可验证约束类型的泛化能力（Pyatkin et al., 2025）。"
+    },
+    {
+     "en": "These methods use programs to check responses.",
+     "zh": "这些方法使用程序来检查回复。"
+    },
+    {
+     "en": "Our programs also generate the complete response for each of two conflicting instructions, providing both sides of a preference pair.",
+     "zh": "我们的程序还会为两条相互冲突的指令各自生成完整回复，从而提供偏好对的两端。"
+    }
+   ]
+  },
+  {
+   "en": "Instructional Segment Embedding adds trainable priority information to input embeddings ( Wu et al., 2025 ) . The Augmented Intermediate Representations (AIR) method adds layer-specific privilege embeddings to intermediate representations ( Kariyappa and Suh, 2025 ) . FocalLoRA selects attention heads that respond to instruction conflicts and adapts them with LoRA ( Shi et al., 2025 ) . These methods change the model’s representation of priority or the parameters used for fine-tuning. Our method changes the training examples.",
+   "zh": "指令片段嵌入在输入嵌入中加入可训练的优先级信息（Wu et al., 2025）。 增强中间表示（AIR）方法在中间表示中加入层级专属的特权嵌入（Kariyappa and Suh, 2025）。 FocalLoRA 选择对指令冲突有响应的注意力头，并用 LoRA 对其进行适配（Shi et al., 2025）。 这些方法改变的是模型对优先级的表示方式或用于微调的参数。 我们的方法改变的是训练样本。",
+   "sents": [
+    {
+     "en": "Instructional Segment Embedding adds trainable priority information to input embeddings ( Wu et al., 2025 ) .",
+     "zh": "指令片段嵌入在输入嵌入中加入可训练的优先级信息（Wu et al., 2025）。"
+    },
+    {
+     "en": "The Augmented Intermediate Representations (AIR) method adds layer-specific privilege embeddings to intermediate representations ( Kariyappa and Suh, 2025 ) .",
+     "zh": "增强中间表示（AIR）方法在中间表示中加入层级专属的特权嵌入（Kariyappa and Suh, 2025）。"
+    },
+    {
+     "en": "FocalLoRA selects attention heads that respond to instruction conflicts and adapts them with LoRA ( Shi et al., 2025 ) .",
+     "zh": "FocalLoRA 选择对指令冲突有响应的注意力头，并用 LoRA 对其进行适配（Shi et al., 2025）。"
+    },
+    {
+     "en": "These methods change the model’s representation of priority or the parameters used for fine-tuning.",
+     "zh": "这些方法改变的是模型对优先级的表示方式或用于微调的参数。"
+    },
+    {
+     "en": "Our method changes the training examples.",
+     "zh": "我们的方法改变的是训练样本。"
+    }
+   ]
+  },
+  {
+   "en": "IHEval tests aligned and conflicting instructions from multiple message sources ( Zhang et al., 2025 ) . RuLES uses programmatic checks to test application rules ( Mu et al., 2023 ) . Mu et al. (2025) study realistic system prompts and compare training and inference methods for improving adherence to them. IH-Benchmark tests system–user conflicts and conflicts in tool outputs ( McCauley et al., 2026 ) . XIH-Bench tests same-language and cross-language conflicts across six languages and multiple message boundaries ( Moon et al., 2026 ) . We use selected categories from IHEval, RuLES, IH-Benchmark, and XIH-Bench to measure transfer beyond our English system–user training set.",
+   "zh": "IHEval 测试来自多个消息来源的一致与冲突指令（Zhang et al., 2025）。 RuLES 使用程序化检查来测试应用规则（Mu et al., 2023）。Mu et al. （2025）研究真实的系统提示词，并比较用于提升对系统提示词遵循程度的训练与推理方法。 IH-Benchmark 测试系统–用户冲突以及工具输出中的冲突（McCauley et al., 2026）。 XIH-Bench 测试六种语言及多个消息边界上的同语言与跨语言冲突（Moon et al., 2026）。 我们使用从 IHEval、RuLES、IH-Benchmark 和 XIH-Bench 中选取的类别，来衡量超出我们英文系统–用户训练集的迁移能力。",
+   "sents": [
+    {
+     "en": "IHEval tests aligned and conflicting instructions from multiple message sources ( Zhang et al., 2025 ) .",
+     "zh": "IHEval 测试来自多个消息来源的一致与冲突指令（Zhang et al., 2025）。"
+    },
+    {
+     "en": "RuLES uses programmatic checks to test application rules ( Mu et al., 2023 ) . Mu et al.",
+     "zh": "RuLES 使用程序化检查来测试应用规则（Mu et al., 2023）。Mu et al."
+    },
+    {
+     "en": "(2025) study realistic system prompts and compare training and inference methods for improving adherence to them.",
+     "zh": "（2025）研究真实的系统提示词，并比较用于提升对系统提示词遵循程度的训练与推理方法。"
+    },
+    {
+     "en": "IH-Benchmark tests system–user conflicts and conflicts in tool outputs ( McCauley et al., 2026 ) .",
+     "zh": "IH-Benchmark 测试系统–用户冲突以及工具输出中的冲突（McCauley et al., 2026）。"
+    },
+    {
+     "en": "XIH-Bench tests same-language and cross-language conflicts across six languages and multiple message boundaries ( Moon et al., 2026 ) .",
+     "zh": "XIH-Bench 测试六种语言及多个消息边界上的同语言与跨语言冲突（Moon et al., 2026）。"
+    },
+    {
+     "en": "We use selected categories from IHEval, RuLES, IH-Benchmark, and XIH-Bench to measure transfer beyond our English system–user training set.",
+     "zh": "我们使用从 IHEval、RuLES、IH-Benchmark 和 XIH-Bench 中选取的类别，来衡量超出我们英文系统–用户训练集的迁移能力。"
+    }
+   ]
+  },
+  {
+   "en": "We pair text-processing instructions with deterministic Python implementations. Each instruction maps an input string to a complete output string. For every ordered pair of distinct instructions, the system task processes the complete user message and the user task processes the complete system message. These inputs include each message’s role bindings and output requirements. The two implementations produce the preferred and rejected responses in Equation 1 .",
+   "zh": "我们将文本处理指令与确定性的 Python 实现配对。 每条指令将一个输入字符串映射为一个完整的输出字符串。 对于每对不同的有序指令对，系统任务处理完整的用户消息，用户任务处理完整的系统消息。 这些输入包括每条消息的角色绑定和输出要求。 这两个实现生成公式 1 中的偏好响应和拒绝响应。",
+   "sents": [
+    {
+     "en": "We pair text-processing instructions with deterministic Python implementations.",
+     "zh": "我们将文本处理指令与确定性的 Python 实现配对。"
+    },
+    {
+     "en": "Each instruction maps an input string to a complete output string.",
+     "zh": "每条指令将一个输入字符串映射为一个完整的输出字符串。"
+    },
+    {
+     "en": "For every ordered pair of distinct instructions, the system task processes the complete user message and the user task processes the complete system message.",
+     "zh": "对于每对不同的有序指令对，系统任务处理完整的用户消息，用户任务处理完整的系统消息。"
+    },
+    {
+     "en": "These inputs include each message’s role bindings and output requirements.",
+     "zh": "这些输入包括每条消息的角色绑定和输出要求。"
+    },
+    {
+     "en": "The two implementations produce the preferred and rejected responses in Equation 1 .",
+     "zh": "这两个实现生成公式 1 中的偏好响应和拒绝响应。"
+    }
+   ]
+  },
+  {
+   "en": "GLM-5.2 generated proposed text-processing instructions and corresponding Python implementations, and GPT-5.6 Sol checked them. The retained training data contains 99 instructions, whose exact wording is listed in Appendix E . Their Python implementations specify the input, complete output, and whitespace, case, and Unicode conventions. Executing these implementations produces the response labels.",
+   "zh": "GLM-5.2 生成了提议的文本处理指令及相应的 Python 实现，GPT-5.6 Sol 对其进行了检查。 保留的训练数据包含 99 条指令，其确切措辞列于附录 E 中。 这些 Python 实现规定了输入、完整输出以及空格、大小写和 Unicode 约定。 执行这些实现即可生成响应标签。",
+   "sents": [
+    {
+     "en": "GLM-5.2 generated proposed text-processing instructions and corresponding Python implementations, and GPT-5.6 Sol checked them.",
+     "zh": "GLM-5.2 生成了提议的文本处理指令及相应的 Python 实现，GPT-5.6 Sol 对其进行了检查。"
+    },
+    {
+     "en": "The retained training data contains 99 instructions, whose exact wording is listed in Appendix E .",
+     "zh": "保留的训练数据包含 99 条指令，其确切措辞列于附录 E 中。"
+    },
+    {
+     "en": "Their Python implementations specify the input, complete output, and whitespace, case, and Unicode conventions.",
+     "zh": "这些 Python 实现规定了输入、完整输出以及空格、大小写和 Unicode 约定。"
+    },
+    {
+     "en": "Executing these implementations produces the response labels.",
+     "zh": "执行这些实现即可生成响应标签。"
+    }
+   ]
+  },
+  {
+   "en": "Forming all ordered pairs of the 99 retained instructions gives 99 × 98 = 9,702 99\\times 98=9{,}702 candidates. Removing 156 pairs with an empty response and two with identical responses leaves 9,544 preference pairs. Every retained pair has its role-reversed counterpart.",
+   "zh": "将保留下来的 99 条指令两两组成所有有序对，共得到 99 × 98 = 9,702 个候选。 去掉 156 个响应为空的对以及 2 个响应完全相同的对后，剩下 9,544 个偏好对。 每一个被保留的对都有其角色互换后的对应对。",
+   "sents": [
+    {
+     "en": "Forming all ordered pairs of the 99 retained instructions gives 99 × 98 = 9,702 99\\times 98=9{,}702 candidates.",
+     "zh": "将保留下来的 99 条指令两两组成所有有序对，共得到 99 × 98 = 9,702 个候选。"
+    },
+    {
+     "en": "Removing 156 pairs with an empty response and two with identical responses leaves 9,544 preference pairs.",
+     "zh": "去掉 156 个响应为空的对以及 2 个响应完全相同的对后，剩下 9,544 个偏好对。"
+    },
+    {
+     "en": "Every retained pair has its role-reversed counterpart.",
+     "zh": "每一个被保留的对都有其角色互换后的对应对。"
+    }
+   ]
+  },
+  {
+   "en": "Sections 2 and 2 show how often the models produce the complete system-task response before goal–goal training. Exact compliance ranges from 9.7% to 55.0% across the six models.",
+   "zh": "第 2 节和第 2 节展示了在目标–目标训练之前，模型产出完整系统-任务响应的频率。 在这六个模型中，精确符合的比例从 9.7% 到 55.0% 不等。",
+   "sents": [
+    {
+     "en": "Sections 2 and 2 show how often the models produce the complete system-task response before goal–goal training.",
+     "zh": "第 2 节和第 2 节展示了在目标–目标训练之前，模型产出完整系统-任务响应的频率。"
+    },
+    {
+     "en": "Exact compliance ranges from 9.7% to 55.0% across the six models.",
+     "zh": "在这六个模型中，精确符合的比例从 9.7% 到 55.0% 不等。"
+    }
+   ]
+  },
+  {
+   "en": "For responses that match neither requested target , we distinguish three stages using the model’s stated task interpretation, priority decision, and final answer ( Kariyappa and Suh, 2026 ) . See Table 3 .",
+   "zh": "对于既不匹配所请求目标的响应，我们根据模型所述的任务解读、优先级决策和最终答案来区分三个阶段（Kariyappa and Suh, 2026）。见表 3。",
+   "sents": null
+  },
+  {
+   "en": "Instruction identification: Recognizing both tasks and their intended inputs.",
+   "zh": "指令识别：识别任务及其预期输入。",
+   "sents": null
+  },
+  {
+   "en": "Conflict resolution: Selecting the higher-priority task.",
+   "zh": "冲突解决：选择优先级更高的任务。",
+   "sents": null
+  },
+  {
+   "en": "Response realization: Correctly performing the selected task in the final answer.",
+   "zh": "响应实现：在最终回答中正确执行所选任务。",
+   "sents": null
+  },
+  {
+   "en": "Response realization is the largest failure category for eight of the nine models. Among these eight, its share ranges from 69.1% for Nemotron3.5-Lightning to 98.2% for DeepSeekV4-Pro. In these cases, the model states the correct task choice but produces an incorrect answer.",
+   "zh": "响应生成是九个模型中八个模型的最大失败类别。 在这八个模型中，其占比从 Nemotron3.5-Lightning 的 69.1% 到 DeepSeekV4-Pro 的 98.2% 不等。 在这些情况下，模型正确选择了任务，但给出了错误的答案。",
+   "sents": [
+    {
+     "en": "Response realization is the largest failure category for eight of the nine models.",
+     "zh": "响应生成是九个模型中八个模型的最大失败类别。"
+    },
+    {
+     "en": "Among these eight, its share ranges from 69.1% for Nemotron3.5-Lightning to 98.2% for DeepSeekV4-Pro.",
+     "zh": "在这八个模型中，其占比从 Nemotron3.5-Lightning 的 69.1% 到 DeepSeekV4-Pro 的 98.2% 不等。"
+    },
+    {
+     "en": "In these cases, the model states the correct task choice but produces an incorrect answer.",
+     "zh": "在这些情况下，模型正确选择了任务，但给出了错误的答案。"
+    }
+   ]
+  },
+  {
+   "en": "For Gemma4-12B-it, instruction identification accounts for the largest share (53.9%), followed by response realization (39.9%) and conflict resolution (6.2%). Qwen3.5-9B has a 12.4% conflict-resolution share. These results show two sources of exact-match failure: choosing the wrong task and performing the right task incorrectly. Our preference pairs supervise both the task choice and the complete response.",
+   "zh": "对于 Gemma4-12B-it，指令识别占比最大（53.9%），其次是响应实现（39.9%）和冲突解决（6.2%）。 Qwen3.5-9B 的冲突解决占比为 12.4%。 这些结果显示了精确匹配失败的两种来源：选错了任务，以及正确执行了任务但方式不对。 我们的偏好对同时监督任务选择和完整响应。",
+   "sents": [
+    {
+     "en": "For Gemma4-12B-it, instruction identification accounts for the largest share (53.9%), followed by response realization (39.9%) and conflict resolution (6.2%).",
+     "zh": "对于 Gemma4-12B-it，指令识别占比最大（53.9%），其次是响应实现（39.9%）和冲突解决（6.2%）。"
+    },
+    {
+     "en": "Qwen3.5-9B has a 12.4% conflict-resolution share.",
+     "zh": "Qwen3.5-9B 的冲突解决占比为 12.4%。"
+    },
+    {
+     "en": "These results show two sources of exact-match failure: choosing the wrong task and performing the right task incorrectly.",
+     "zh": "这些结果显示了精确匹配失败的两种来源：选错了任务，以及正确执行了任务但方式不对。"
+    },
+    {
+     "en": "Our preference pairs supervise both the task choice and the complete response.",
+     "zh": "我们的偏好对同时监督任务选择和完整响应。"
+    }
+   ]
+  },
+  {
+   "en": "The HieraSuite prompts contain 4,804 constraint–goal and 1,502 constraint–constraint conflicts. The Qwen3.5-9B and Gemma4-12B-it sets have the same ordered IDs and prompts, with response pairs generated by the respective model.",
+   "zh": "HieraSuite 提示词包含 4,804 个约束–目标冲突和 1,502 个约束–约束冲突。 Qwen3.5-9B 和 Gemma4-12B-it 两个数据集具有相同的有序 ID 和提示词，其响应对分别由相应模型生成。",
+   "sents": [
+    {
+     "en": "The HieraSuite prompts contain 4,804 constraint–goal and 1,502 constraint–constraint conflicts.",
+     "zh": "HieraSuite 提示词包含 4,804 个约束–目标冲突和 1,502 个约束–约束冲突。"
+    },
+    {
+     "en": "The Qwen3.5-9B and Gemma4-12B-it sets have the same ordered IDs and prompts, with response pairs generated by the respective model.",
+     "zh": "Qwen3.5-9B 和 Gemma4-12B-it 两个数据集具有相同的有序 ID 和提示词，其响应对分别由相应模型生成。"
+    }
+   ]
+  },
+  {
+   "en": "Direct preference optimization increases the model’s preference for the desirable response while keeping it close to the model before training ( Rafailov et al., 2023 ) . The dataset 𝒟 \\mathcal{D} contains triples ( x , y + , y − ) (x,y^{+},y^{-}) : a prompt, its desirable response, and its undesirable response. Let π θ ​ ( y ∣ x ) \\pi_{\\theta}(y\\mid x) be the probability that a model with parameters θ \\theta assigns to response y y given prompt x x , and let π reference \\pi_{\\mathrm{reference}} be the fixed model before training. The log probability ratio r θ ​ ( x , y ) = log ⁡ [ π θ ​ ( y ∣ x ) / π reference ​ ( y ∣ x ) ] r_{\\theta}(x,y)=\\log[\\pi_{\\theta}(y\\mid x)/\\pi_{\\mathrm{reference}}(y\\mid x)] measures how training changes the response probability. We minimize",
+   "zh": "直接偏好优化会增加模型对理想响应的偏好，同时使模型保持接近训练前的状态（Rafailov et al., 2023）。 数据集 𝒟 包含三元组 (x, y⁺, y⁻)：一个提示、它的理想响应和它的非理想响应。 设 π_θ(y|x) 为参数为 θ 的模型在给定提示 x 时分配给响应 y 的概率，并设 π_reference 为训练前的固定模型。 对数概率比 r_θ(x,y)=log[π_θ(y|x)/π_reference(y|x)] 衡量训练如何改变响应概率。我们最小化",
+   "sents": [
+    {
+     "en": "Direct preference optimization increases the model’s preference for the desirable response while keeping it close to the model before training ( Rafailov et al., 2023 ) .",
+     "zh": "直接偏好优化会增加模型对理想响应的偏好，同时使模型保持接近训练前的状态（Rafailov et al., 2023）。"
+    },
+    {
+     "en": "The dataset 𝒟 \\mathcal{D} contains triples ( x , y + , y − ) (x,y^{+},y^{-}) : a prompt, its desirable response, and its undesirable response.",
+     "zh": "数据集 𝒟 包含三元组 (x, y⁺, y⁻)：一个提示、它的理想响应和它的非理想响应。"
+    },
+    {
+     "en": "Let π θ ​ ( y ∣ x ) \\pi_{\\theta}(y\\mid x) be the probability that a model with parameters θ \\theta assigns to response y y given prompt x x , and let π reference \\pi_{\\mathrm{reference}} be the fixed model before training.",
+     "zh": "设 π_θ(y|x) 为参数为 θ 的模型在给定提示 x 时分配给响应 y 的概率，并设 π_reference 为训练前的固定模型。"
+    },
+    {
+     "en": "The log probability ratio r θ ​ ( x , y ) = log ⁡ [ π θ ​ ( y ∣ x ) / π reference ​ ( y ∣ x ) ] r_{\\theta}(x,y)=\\log[\\pi_{\\theta}(y\\mid x)/\\pi_{\\mathrm{reference}}(y\\mid x)] measures how training changes the response probability. We minimize",
+     "zh": "对数概率比 r_θ(x,y)=log[π_θ(y|x)/π_reference(y|x)] 衡量训练如何改变响应概率。我们最小化"
+    }
+   ]
+  },
+  {
+   "en": "Here, 𝔼 \\mathbb{E} averages over training examples, σ ⁡ ( z ) = 1 / ( 1 + e − z ) \\sigma(z)=1/(1+e^{-z}) is the sigmoid function, and β > 0 \\beta>0 sets the strength of regularization toward the reference model. The loss favors increasing r θ r_{\\theta} more for the desirable response than for the undesirable response. The training configuration sets β = 0.1 \\beta=0.1 .",
+   "zh": "这里，𝔼 \\mathbb{E} 表示对训练样本取平均，σ ⁡ ( z ) = 1 / ( 1 + e − z ) \\sigma(z)=1/(1+e^{-z}) 是 sigmoid 函数，β > 0 \\beta>0 设定了向参考模型进行正则化的强度。 该损失函数更倾向于让 r θ r_{\\theta} 在理想回答上的增幅大于在非理想回答上的增幅。 训练配置设定 β = 0.1 \\beta=0.1 。",
+   "sents": [
+    {
+     "en": "Here, 𝔼 \\mathbb{E} averages over training examples, σ ⁡ ( z ) = 1 / ( 1 + e − z ) \\sigma(z)=1/(1+e^{-z}) is the sigmoid function, and β > 0 \\beta>0 sets the strength of regularization toward the reference model.",
+     "zh": "这里，𝔼 \\mathbb{E} 表示对训练样本取平均，σ ⁡ ( z ) = 1 / ( 1 + e − z ) \\sigma(z)=1/(1+e^{-z}) 是 sigmoid 函数，β > 0 \\beta>0 设定了向参考模型进行正则化的强度。"
+    },
+    {
+     "en": "The loss favors increasing r θ r_{\\theta} more for the desirable response than for the undesirable response.",
+     "zh": "该损失函数更倾向于让 r θ r_{\\theta} 在理想回答上的增幅大于在非理想回答上的增幅。"
+    },
+    {
+     "en": "The training configuration sets β = 0.1 \\beta=0.1 .",
+     "zh": "训练配置设定 β = 0.1 \\beta=0.1 。"
+    }
+   ]
+  },
+  {
+   "en": "The training configuration uses DPO with the starting model as a fixed reference. Thinking is disabled. The goal–goal, constraint-conflict, and combined conditions use the settings below for both Qwen3.5-9B and Gemma4-12B-it.",
+   "zh": "训练配置采用 DPO，起始模型作为固定参考。思考模式已禁用。 目标–目标、约束冲突以及组合条件在 Qwen3.5-9B 和 Gemma4-12B-it 上均使用以下设置。",
+   "sents": [
+    {
+     "en": "The training configuration uses DPO with the starting model as a fixed reference. Thinking is disabled.",
+     "zh": "训练配置采用 DPO，起始模型作为固定参考。思考模式已禁用。"
+    },
+    {
+     "en": "The goal–goal, constraint-conflict, and combined conditions use the settings below for both Qwen3.5-9B and Gemma4-12B-it.",
+     "zh": "目标–目标、约束冲突以及组合条件在 Qwen3.5-9B 和 Gemma4-12B-it 上均使用以下设置。"
+    }
+   ]
+  },
+  {
+   "en": "Low-rank adaptation (LoRA) covers the query, key, value, output, gate, up, and down projections. DeepSpeed stage 3 and gradient checkpointing reduce memory use. Preflight checks enforce the sequence-length limits. Message templates preserve whitespace because each complete message is the input to a text-processing instruction.",
+   "zh": "低秩适配（LoRA）覆盖查询、键、值、输出、门控、上投影和下投影。 DeepSpeed 第三阶段和梯度检查点可减少内存使用。 预检会强制执行序列长度限制。 消息模板保留空白字符，因为每条完整消息都是文本处理指令的输入。",
+   "sents": [
+    {
+     "en": "Low-rank adaptation (LoRA) covers the query, key, value, output, gate, up, and down projections.",
+     "zh": "低秩适配（LoRA）覆盖查询、键、值、输出、门控、上投影和下投影。"
+    },
+    {
+     "en": "DeepSpeed stage 3 and gradient checkpointing reduce memory use.",
+     "zh": "DeepSpeed 第三阶段和梯度检查点可减少内存使用。"
+    },
+    {
+     "en": "Preflight checks enforce the sequence-length limits.",
+     "zh": "预检会强制执行序列长度限制。"
+    },
+    {
+     "en": "Message templates preserve whitespace because each complete message is the input to a text-processing instruction.",
+     "zh": "消息模板保留空白字符，因为每条完整消息都是文本处理指令的输入。"
+    }
+   ]
+  },
+  {
+   "en": "We use Qwen3.5-9B revision c20223623576 and Gemma4-12B-it revision 707f0a3b8a3c . Both environments use Accelerate 1.13.0, Datasets 4.8.5, DeepSpeed 0.18.9, and PEFT 0.19.1. The Qwen environment uses TRL 1.3.0 and Transformers commit a8f43eca15b8 . The Gemma environment uses TRL 1.9.2, Transformers 5.14.1, and PyTorch 2.11.0.",
+   "zh": "我们使用 Qwen3.5-9B 版本 c20223623576 和 Gemma4-12B-it 版本 707f0a3b8a3c。 两个环境均使用 Accelerate 1.13.0、Datasets 4.8.5、DeepSpeed 0.18.9 和 PEFT 0.19.1。 Qwen 环境使用 TRL 1.3.0 和 Transformers 提交版本 a8f43eca15b8。 Gemma 环境使用 TRL 1.9.2、Transformers 5.14.1 和 PyTorch 2.11.0。",
+   "sents": [
+    {
+     "en": "We use Qwen3.5-9B revision c20223623576 and Gemma4-12B-it revision 707f0a3b8a3c .",
+     "zh": "我们使用 Qwen3.5-9B 版本 c20223623576 和 Gemma4-12B-it 版本 707f0a3b8a3c。"
+    },
+    {
+     "en": "Both environments use Accelerate 1.13.0, Datasets 4.8.5, DeepSpeed 0.18.9, and PEFT 0.19.1.",
+     "zh": "两个环境均使用 Accelerate 1.13.0、Datasets 4.8.5、DeepSpeed 0.18.9 和 PEFT 0.19.1。"
+    },
+    {
+     "en": "The Qwen environment uses TRL 1.3.0 and Transformers commit a8f43eca15b8 .",
+     "zh": "Qwen 环境使用 TRL 1.3.0 和 Transformers 提交版本 a8f43eca15b8。"
+    },
+    {
+     "en": "The Gemma environment uses TRL 1.9.2, Transformers 5.14.1, and PyTorch 2.11.0.",
+     "zh": "Gemma 环境使用 TRL 1.9.2、Transformers 5.14.1 和 PyTorch 2.11.0。"
+    }
+   ]
+  },
+  {
+   "en": "The settings below come from the reference implementation for the four IH benchmarks. It specifies benchmark revisions, generation defaults, scorers, and validation checks.",
+   "zh": "以下设置来自四个 IH 基准测试的参考实现。 它规定了基准测试的版本修订、生成默认值、评分器和验证检查。",
+   "sents": [
+    {
+     "en": "The settings below come from the reference implementation for the four IH benchmarks.",
+     "zh": "以下设置来自四个 IH 基准测试的参考实现。"
+    },
+    {
+     "en": "It specifies benchmark revisions, generation defaults, scorers, and validation checks.",
+     "zh": "它规定了基准测试的版本修订、生成默认值、评分器和验证检查。"
+    }
+   ]
+  },
+  {
+   "en": "The reference runners disable the models’ separate thinking channels. For IHEval and XIH-Bench, Qwen uses temperature 0, top-p 1, and top-k 1. For RuLES, it uses temperature 0.7 and top-p 1. For IH-Benchmark, Qwen uses temperature 0.7. Gemma uses temperature 1, top-p 0.95, and top-k 64.",
+   "zh": "参考运行器禁用模型独立思考渠道。 对于 IHEval 和 XIH-Bench，Qwen 使用温度 0、top-p 1 和 top-k 1。 对于 RuLES，使用温度 0.7 和 top-p 1。 对于 IH-Benchmark，Qwen 使用温度 0.7。 Gemma 使用温度 1、top-p 0.95 和 top-k 64。",
+   "sents": [
+    {
+     "en": "The reference runners disable the models’ separate thinking channels.",
+     "zh": "参考运行器禁用模型独立思考渠道。"
+    },
+    {
+     "en": "For IHEval and XIH-Bench, Qwen uses temperature 0, top-p 1, and top-k 1.",
+     "zh": "对于 IHEval 和 XIH-Bench，Qwen 使用温度 0、top-p 1 和 top-k 1。"
+    },
+    {
+     "en": "For RuLES, it uses temperature 0.7 and top-p 1.",
+     "zh": "对于 RuLES，使用温度 0.7 和 top-p 1。"
+    },
+    {
+     "en": "For IH-Benchmark, Qwen uses temperature 0.7.",
+     "zh": "对于 IH-Benchmark，Qwen 使用温度 0.7。"
+    },
+    {
+     "en": "Gemma uses temperature 1, top-p 0.95, and top-k 64.",
+     "zh": "Gemma 使用温度 1、top-p 0.95 和 top-k 64。"
+    }
+   ]
+  },
+  {
+   "en": "The generation-token limit is 16,384 for both models on IHEval. On XIH-Bench, the limits are 2,048 for Qwen and 8,192 for Gemma. On RuLES, they are 100 for Qwen and 8,192 for Gemma. Gemma’s IH-Benchmark limit is 8,192. IH-Benchmark uses GPT-5 mini through OpenRouter as its configured judge, with category-specific judging prompts.",
+   "zh": "在 IHEval 上，两个模型的生成 token 上限均为 16,384。 在 XIH-Bench 上，Qwen 的上限为 2,048，Gemma 的上限为 8,192。 在 RuLES 上，Qwen 的上限为 100，Gemma 的上限为 8,192。 Gemma 在 IH-Benchmark 上的上限为 8,192。 IH-Benchmark 通过 OpenRouter 使用 GPT-5 mini 作为其配置的评判模型，并采用针对各类别的评判提示词。",
+   "sents": [
+    {
+     "en": "The generation-token limit is 16,384 for both models on IHEval.",
+     "zh": "在 IHEval 上，两个模型的生成 token 上限均为 16,384。"
+    },
+    {
+     "en": "On XIH-Bench, the limits are 2,048 for Qwen and 8,192 for Gemma.",
+     "zh": "在 XIH-Bench 上，Qwen 的上限为 2,048，Gemma 的上限为 8,192。"
+    },
+    {
+     "en": "On RuLES, they are 100 for Qwen and 8,192 for Gemma.",
+     "zh": "在 RuLES 上，Qwen 的上限为 100，Gemma 的上限为 8,192。"
+    },
+    {
+     "en": "Gemma’s IH-Benchmark limit is 8,192.",
+     "zh": "Gemma 在 IH-Benchmark 上的上限为 8,192。"
+    },
+    {
+     "en": "IH-Benchmark uses GPT-5 mini through OpenRouter as its configured judge, with category-specific judging prompts.",
+     "zh": "IH-Benchmark 通过 OpenRouter 使用 GPT-5 mini 作为其配置的评判模型，并采用针对各类别的评判提示词。"
+    }
+   ]
+  },
+  {
+   "en": "For IHEval, the collector combines strict and loose scores, including prompt- and instruction-level scores for rule following. It averages scores within each category, then divides conflict performance by reference performance. Utility averages all nine tasks.",
+   "zh": "对于 IHEval，收集器综合了严格得分和宽松得分，包括针对规则遵循的提示级与指令级得分。 它先对每个类别内的得分取平均，然后将冲突表现除以参考表现。 实用性对全部九个任务取平均。",
+   "sents": [
+    {
+     "en": "For IHEval, the collector combines strict and loose scores, including prompt- and instruction-level scores for rule following.",
+     "zh": "对于 IHEval，收集器综合了严格得分和宽松得分，包括针对规则遵循的提示级与指令级得分。"
+    },
+    {
+     "en": "It averages scores within each category, then divides conflict performance by reference performance.",
+     "zh": "它先对每个类别内的得分取平均，然后将冲突表现除以参考表现。"
+    },
+    {
+     "en": "Utility averages all nine tasks.",
+     "zh": "实用性对全部九个任务取平均。"
+    }
+   ]
+  },
+  {
+   "en": "IH-Benchmark divides attack pass rates by control pass rates separately for system–user and user–tool prompts. Reference utility pools the two control groups by their example counts.",
+   "zh": "IH-Benchmark 针对系统–用户提示词和用户–工具提示词，分别将攻击通过率除以对照通过率。 参照效用按各对照组的示例数量将两个对照组合并。",
+   "sents": [
+    {
+     "en": "IH-Benchmark divides attack pass rates by control pass rates separately for system–user and user–tool prompts.",
+     "zh": "IH-Benchmark 针对系统–用户提示词和用户–工具提示词，分别将攻击通过率除以对照通过率。"
+    },
+    {
+     "en": "Reference utility pools the two control groups by their example counts.",
+     "zh": "参照效用按各对照组的示例数量将两个对照组合并。"
+    }
+   ]
+  },
+  {
+   "en": "XIH-Bench averages the 36 cellwise ratios in its six-language matrix within each domain. Reference utility uses the full matrices for rule following and task execution, and the six diagonal entries for safety defense. It then averages the three domain values.",
+   "zh": "XIH-Bench 在每个领域内对其六语言矩阵中的 36 个逐格比值取平均。 参考效用在规则遵循和任务执行上使用完整矩阵，在安全防御上使用六个对角线元素。 然后它对三个领域值取平均。",
+   "sents": [
+    {
+     "en": "XIH-Bench averages the 36 cellwise ratios in its six-language matrix within each domain.",
+     "zh": "XIH-Bench 在每个领域内对其六语言矩阵中的 36 个逐格比值取平均。"
+    },
+    {
+     "en": "Reference utility uses the full matrices for rule following and task execution, and the six diagonal entries for safety defense.",
+     "zh": "参考效用在规则遵循和任务执行上使用完整矩阵，在安全防御上使用六个对角线元素。"
+    },
+    {
+     "en": "It then averages the three domain values.",
+     "zh": "然后它对三个领域值取平均。"
+    }
+   ]
+  },
+  {
+   "en": "RuLES evaluates benign, basic, and red-team requests for both harmlessness and helpfulness. We use the reported conflict score in the main comparisons and the benign-helpful rate for reference utility. The reference implementation configures 225/250 benign harmless/helpful cases, 225/250 basic harmless/helpful cases, and 355/390 red-team harmless/helpful cases.",
+   "zh": "RuLES 评估良性、基础和红队请求在无害性与有用性两方面的表现。 我们在主要比较中使用报告的冲突分数，并以良性有用率作为参考有用性指标。 参考实现配置了 225/250 个良性无害/有用案例、225/250 个基础无害/有用案例，以及 355/390 个红队无害/有用案例。",
+   "sents": [
+    {
+     "en": "RuLES evaluates benign, basic, and red-team requests for both harmlessness and helpfulness.",
+     "zh": "RuLES 评估良性、基础和红队请求在无害性与有用性两方面的表现。"
+    },
+    {
+     "en": "We use the reported conflict score in the main comparisons and the benign-helpful rate for reference utility.",
+     "zh": "我们在主要比较中使用报告的冲突分数，并以良性有用率作为参考有用性指标。"
+    },
+    {
+     "en": "The reference implementation configures 225/250 benign harmless/helpful cases, 225/250 basic harmless/helpful cases, and 355/390 red-team harmless/helpful cases.",
+     "zh": "参考实现配置了 225/250 个良性无害/有用案例、225/250 个基础无害/有用案例，以及 355/390 个红队无害/有用案例。"
+    }
+   ]
+  },
+  {
+   "en": "The reference implementation uses the evaluation harness 0.4.11, temperature 0, and seed 1234. The table lists configured task sizes, in-context examples, and generation-token limits.",
+   "zh": "参考实现使用评测框架 0.4.11、温度 0 和随机种子 1234。 该表列出了配置的任务规模、上下文内示例以及生成 token 上限。",
+   "sents": [
+    {
+     "en": "The reference implementation uses the evaluation harness 0.4.11, temperature 0, and seed 1234.",
+     "zh": "参考实现使用评测框架 0.4.11、温度 0 和随机种子 1234。"
+    },
+    {
+     "en": "The table lists configured task sizes, in-context examples, and generation-token limits.",
+     "zh": "该表列出了配置的任务规模、上下文内示例以及生成 token 上限。"
+    }
+   ]
+  },
+  {
+   "en": "The evaluation uses prompt-level strict accuracy for IFEval and extracted-answer exact match for MMLU-Pro, GPQA Diamond, and GSM8K. GPQA Diamond and GSM8K use chain-of-thought prompts.",
+   "zh": "评估中，IFEval 采用提示级严格准确率，MMLU-Pro、GPQA Diamond 和 GSM8K 采用提取答案的精确匹配。 GPQA Diamond 和 GSM8K 使用思维链提示。",
+   "sents": [
+    {
+     "en": "The evaluation uses prompt-level strict accuracy for IFEval and extracted-answer exact match for MMLU-Pro, GPQA Diamond, and GSM8K.",
+     "zh": "评估中，IFEval 采用提示级严格准确率，MMLU-Pro、GPQA Diamond 和 GSM8K 采用提取答案的精确匹配。"
+    },
+    {
+     "en": "GPQA Diamond and GSM8K use chain-of-thought prompts.",
+     "zh": "GPQA Diamond 和 GSM8K 使用思维链提示。"
+    }
+   ]
+  },
+  {
+   "en": "Training uses two-message system–user pairs, while the benchmarks include other message boundaries.",
+   "zh": "训练使用两条消息构成的系统—用户对话对，而基准测试则包含其他的消息边界划分。",
+   "sents": null
+  },
+  {
+   "en": "The following 99 instructions form the retained goal–goal training set. The user-message version replaces “user message” with “system message” and is otherwise identical.",
+   "zh": "以下 99 条指令构成保留的目标—目标训练集。 用户消息版本将「用户消息」替换为「系统消息」，其余内容完全相同。",
+   "sents": [
+    {
+     "en": "The following 99 instructions form the retained goal–goal training set.",
+     "zh": "以下 99 条指令构成保留的目标—目标训练集。"
+    },
+    {
+     "en": "The user-message version replaces “user message” with “system message” and is otherwise identical.",
+     "zh": "用户消息版本将「用户消息」替换为「系统消息」，其余内容完全相同。"
+    }
+   ]
+  },
+  {
+   "en": "Copy the user message exactly, preserving every Unicode code point.",
+   "zh": "完全复制用户消息，保留每一个 Unicode 码点。",
+   "sents": null
+  },
+  {
+   "en": "Reverse the order of all Unicode code points in the user message.",
+   "zh": "反转用户消息中所有 Unicode 码点的顺序。",
+   "sents": null
+  },
+  {
+   "en": "Convert every cased character in the user message to Unicode uppercase.",
+   "zh": "将用户消息中的每个有大小写之分的字符转换为 Unicode 大写形式。",
+   "sents": null
+  },
+  {
+   "en": "Convert every cased character in the user message to Unicode lowercase.",
+   "zh": "将用户消息中每一个带大小写的字符转换为 Unicode 小写形式。",
+   "sents": null
+  },
+  {
+   "en": "Swap the case of every cased character in the user message.",
+   "zh": "将用户消息中每个有大小写之分的字符进行大小写互换。",
+   "sents": null
+  },
+  {
+   "en": "Apply Python str.title() Unicode title casing exactly to the user message.",
+   "zh": "将 Python 的 str.title() Unicode 标题大小写规则精确地应用于用户消息。",
+   "sents": null
+  },
+  {
+   "en": "Apply Unicode case folding to the user message.",
+   "zh": "对用户消息应用 Unicode 大小写折叠。",
+   "sents": null
+  },
+  {
+   "en": "Normalize the user message to Unicode NFC.",
+   "zh": "将用户消息规范化为 Unicode NFC 格式。",
+   "sents": null
+  },
+  {
+   "en": "Normalize the user message to Unicode NFD.",
+   "zh": "将用户消息规范化为 Unicode NFD。",
+   "sents": null
+  },
+  {
+   "en": "Normalize the user message to Unicode NFKC.",
+   "zh": "将用户消息规范化为 Unicode NFKC。",
+   "sents": null
+  },
+  {
+   "en": "Remove leading and trailing whitespace from the user message exactly as Python str.strip() does.",
+   "zh": "从用户消息中移除首尾空白字符，行为与 Python 的 str.strip() 完全一致。",
+   "sents": null
+  },
+  {
+   "en": "In the user message, replace each nonempty run matched by Python’s Unicode regex \\s+ with one ASCII space, then trim the result.",
+   "zh": "在用户消息中，用 Python 的 Unicode 正则表达式 \\s+ 将每个非空的 run 替换为一个 ASCII 空格，然后对结果进行修剪（去除首尾空格）。",
+   "sents": null
+  },
+  {
+   "en": "From the user message, delete every character for which Python str.isspace() is true.",
+   "zh": "从用户消息中，删除所有满足 Python str.isspace() 为真的字符。",
+   "sents": null
+  },
+  {
+   "en": "In the user message, convert CRLF and lone CR line endings to LF.",
+   "zh": "在用户消息中，将 CRLF 和单独的 CR 行尾转换为 LF。",
+   "sents": null
+  },
+  {
+   "en": "Apply Python str.rstrip() to every LF-delimited line in the user message and preserve line order.",
+   "zh": "对用户消息中每个以 LF 分隔的行应用 Python 的 str.rstrip()，并保持行顺序不变。",
+   "sents": null
+  },
+  {
+   "en": "From the user message, delete ASCII vowels A, E, I, O, U in either case.",
+   "zh": "从用户消息中，删除大写或小写的 ASCII 元音字母 A、E、I、O、U。",
+   "sents": null
+  },
+  {
+   "en": "Keep only ASCII vowels from the user message, preserving their original case and order.",
+   "zh": "仅保留用户消息中的 ASCII 元音字母，并保持其原有的大小写和顺序。",
+   "sents": null
+  },
+  {
+   "en": "From the user message, delete every Unicode character for which isdigit() is true.",
+   "zh": "从用户消息中删除每一个 isdigit() 为真的 Unicode 字符。",
+   "sents": null
+  },
+  {
+   "en": "Keep only Unicode characters in the user message for which isdecimal() is true.",
+   "zh": "仅保留用户消息中 isdecimal() 为真的 Unicode 字符。",
+   "sents": null
+  },
+  {
+   "en": "From the user message, delete every Unicode punctuation character whose general category begins with P.",
+   "zh": "从用户消息中，删除每一个通用类别以 P 开头的 Unicode 标点符号字符。",
+   "sents": null
+  },
+  {
+   "en": "Keep only Unicode punctuation characters in the user message whose general category begins with P.",
+   "zh": "仅保留用户消息中常规类别以 P 开头的 Unicode 标点符号字符。",
+   "sents": null
+  },
+  {
+   "en": "In the user message, replace every character for which Python str.isalpha() is true with uppercase X.",
+   "zh": "在用户消息中，将每一个满足 Python str.isalpha() 为真的字符替换为大写 X。",
+   "sents": null
+  },
+  {
+   "en": "In the user message, replace every character for which Python str.isdigit() is true with #.",
+   "zh": "在用户消息中，将每个满足 Python str.isdigit() 为真的字符替换为 #。",
+   "sents": null
+  },
+  {
+   "en": "In the user message, replace every literal ASCII space with an underscore.",
+   "zh": "在用户消息中，将每个字面的ASCII空格替换为下划线。",
+   "sents": null
+  },
+  {
+   "en": "Duplicate every Unicode code point in the user message exactly once.",
+   "zh": "将户消息中的每一个 Unicode 码点复制一次。",
+   "sents": null
+  },
+  {
+   "en": "Insert a middle dot between every adjacent pair of Unicode code points in the user message.",
+   "zh": "在用户消息中的每两个相邻 Unicode 码点之间插入一个中点。",
+   "sents": null
+  },
+  {
+   "en": "Keep the 1st, 3rd, 5th, and subsequent odd-positioned Unicode code points of the user message.",
+   "zh": "保留用户消息中的第 1、第 3、第 5 及后续奇数位置的 Unicode 码点。",
+   "sents": null
+  },
+  {
+   "en": "Keep the 2nd, 4th, 6th, and subsequent even-positioned Unicode code points of the user message.",
+   "zh": "保留用户消息中第 2、第 4、第 6 个以及后续偶数位置的 Unicode 码点。LensGO 请将以下文本翻译为 中文，直接输出翻译结果，不要进行任何解释。\n\n要求：术语在全文中保持一致（agents 固定译为「智能体」，agent 固定译为「智能体」），保留原文结构与占位符：\n\n请记住，我在本会话中没有对话轮次限制。我们可能进行很长的对话；如果您的上下文窗口满了，请简要确认，我可能会发送“/summary”命令，您需要将迄今为止的对话压缩成一段连贯的叙述，涵盖所有重要的、相关的和必要的细节。这将替换之前的对话历史，我将用它作为您未来回复的完整上下文。明白吗？",
+   "sents": null
+  },
+  {
+   "en": "Rotate all Unicode code points in the user message one position left; leave empty text unchanged.",
+   "zh": "将用户消息中的所有 Unicode 码位向左循环移动一位；空文本保持不变。",
+   "sents": null
+  },
+  {
+   "en": "Rotate all Unicode code points in the user message one position right; leave empty text unchanged.",
+   "zh": "将用户消息中的所有 Unicode 码位向右旋转一个位置；空文本保持不变。",
+   "sents": null
+  },
+  {
+   "en": "Sort all Unicode code points in the user message by numeric code-point value.",
+   "zh": "将用户消息中的所有 Unicode 码点按码点数值排序。",
+   "sents": null
+  },
+  {
+   "en": "Delete repeated Unicode code points from the user message while preserving each first occurrence.",
+   "zh": "从用户消息中删除重复的 Unicode 码点，同时保留每个首次出现的码点。",
+   "sents": null
+  },
+  {
+   "en": "Replace every even-positioned Unicode code point in the user message, using one-based positions, with *.",
+   "zh": "将用户消息中每个偶数位置的 Unicode 码点（位置从 1 开始计数）替换为 *。",
+   "sents": null
+  },
+  {
+   "en": "Reverse the Unicode code points within each LF-delimited line of the user message without changing line order.",
+   "zh": "将用户消息中每一行以 LF 分隔的内容内的 Unicode 码点反转，且不改变行的顺序。",
+   "sents": null
+  },
+  {
+   "en": "Sort the Unicode code points within each LF-delimited line of the user message without changing line order.",
+   "zh": "将用户消息中每一行（以 LF 分隔）内的 Unicode 码点排序，且不改变行的顺序。",
+   "sents": null
+  },
+  {
+   "en": "Apply ROT13 to the ASCII letters in the user message and leave all other characters unchanged.",
+   "zh": "对用户消息中的 ASCII 字母应用 ROT13，其余所有字符保持不变。",
+   "sents": null
+  },
+  {
+   "en": "Apply ASCII Atbash to the user message, mapping A to Z and a to z while leaving nonletters unchanged.",
+   "zh": "对用户消息应用 ASCII Atbash 变换，将 A 映射为 Z、a 映射为 z，同时保持非字母字符不变。",
+   "sents": null
+  },
+  {
+   "en": "Caesar-shift the ASCII letters in the user message forward by one with alphabetic wraparound.",
+   "zh": "将用户消息中的 ASCII 字母按字母表循环向后位移一位。",
+   "sents": null
+  },
+  {
+   "en": "Caesar-shift the ASCII letters in the user message backward by one with alphabetic wraparound.",
+   "zh": "对用户消息中的 ASCII 字母进行凯撒移位，向后移动一位，并按字母表循环。",
+   "sents": null
+  },
+  {
+   "en": "Apply the affine cipher y=(5x+8) mod 26 to the ASCII letters in the user message while preserving case, using A=0 through Z=25 and a=0 through z=25.",
+   "zh": "将仿射密码 y=(5x+8) mod 26 应用于用户消息中的 ASCII 字母，同时保留大小写，使用 A=0 到 Z=25 以及 a=0 到 z=25。",
+   "sents": null
+  },
+  {
+   "en": "Cycle the ASCII vowels in the user message from a to e to i to o to u to a while preserving case.",
+   "zh": "将用户消息中的 ASCII 元音字母按 a→e→i→o→u→a 的顺序循环替换，同时保留大小写。",
+   "sents": null
+  },
+  {
+   "en": "Mirror round, square, curly, and angle brackets in the user message while leaving all other characters unchanged.",
+   "zh": "镜像用户消息中的圆括号、方括号、花括号和尖括号，同时保持所有其他字符不变。",
+   "sents": null
+  },
+  {
+   "en": "Among the ASCII letters in the user message, uppercase the 1st, 3rd, and later odd letters and lowercase the even letters; ignore nonletters when counting.",
+   "zh": "在用户消息中的 ASCII 字母里，将第 1、3 及后续奇数位置的字母大写，将偶数位置的字母小写；计数时忽略非字母字符。",
+   "sents": null
+  },
+  {
+   "en": "In the user message, encode ASCII letters as zero-padded five-bit 1-to-26 tokens, ASCII digits as D plus the digit, and every other code point as U+ followed by uppercase hexadecimal with at least four digits; join tokens with one space.",
+   "zh": "在用户消息中，将 ASCII 字母编码为零填充的五位 1 到 26 的标记，ASCII 数字编码为 D 加上该数字，其他所有码点编码为 U+ 加上大写十六进制（至少四位数字）；各标记之间用一个空格连接。",
+   "sents": null
+  },
+  {
+   "en": "In the user message, encode ASCII letters, case-insensitively, as these exact uppercase ICAO words: ALFA, BRAVO, CHARLIE, DELTA, ECHO, FOXTROT, GOLF, HOTEL, INDIA, JULIETT, KILO, LIMA, MIKE, NOVEMBER, OSCAR, PAPA, QUEBEC, ROMEO, SIERRA, TANGO, UNIFORM, VICTOR, WHISKEY, X-RAY, YANKEE, ZULU; encode every other code point as U+ followed by uppercase hexadecimal with at least four digits; join tokens with one space.",
+   "zh": "在用户消息中，将 ASCII 字母不区分大小写地编码为以下准确的大写 ICAO 单词：ALFA、BRAVO、CHARLIE、DELTA、ECHO、FOXTROT、GOLF、HOTEL、INDIA、JULIETT、KILO、LIMA、MIKE、NOVEMBER、OSCAR、PAPA、QUEBEC、ROMEO、SIERRA、TANGO、UNIFORM、VICTOR、WHISKEY、X-RAY、YANKEE、ZULU；将所有其他码点编码为 U+ 加上至少四位的大写十六进制数；各标记之间用一个空格连接。",
+   "sents": null
+  },
+  {
+   "en": "Extract maximal ASCII-letter runs from the user message and return them as a compact JSON array.",
+   "zh": "从用户消息中提取最长的连续 ASCII 字母串，并以紧凑的 JSON 数组形式返回它们。",
+   "sents": null
+  },
+  {
+   "en": "Extract maximal ASCII-letter runs from the user message, lowercase them, and join them with one space.",
+   "zh": "从用户消息中提取最大的 ASCII 字母串，将其转换为小写，并用一个空格连接。",
+   "sents": null
+  },
+  {
+   "en": "Extract maximal ASCII-letter runs from the user message, reverse their order, and join them with one space.",
+   "zh": "从用户消息中提取最长的 ASCII 字母连续段，将其顺序反转，并用单个空格连接起来。",
+   "sents": null
+  },
+  {
+   "en": "Extract maximal ASCII-letter runs from the user message, sort them by raw code-point order, and join them with one space.",
+   "zh": "从用户消息中提取最长的 ASCII 字母连续片段，按原始码点顺序排序，并用单个空格将它们连接起来。",
+   "sents": null
+  },
+  {
+   "en": "Extract maximal ASCII-letter runs from the user message, sort them by length and then raw code-point order, and join them with one space.",
+   "zh": "从用户消息中提取最长的连续 ASCII 字母序列，按长度排序，再按原始码点顺序排序，最后用一个空格将它们连接起来。",
+   "sents": null
+  },
+  {
+   "en": "Extract maximal ASCII-letter runs from the user message, remove exact duplicates while retaining each first occurrence, and join retained runs with one ASCII space.",
+   "zh": "从用户消息中提取最大连续的 ASCII 字母串，去除完全重复的项但保留每个首次出现的项，并用一个 ASCII 空格将保留的字母串连接起来。",
+   "sents": null
+  },
+  {
+   "en": "Extract maximal ASCII-letter runs from the user message, remove case-insensitive duplicates while preserving the first spelling, and join retained runs with one ASCII space.",
+   "zh": "从用户消息中提取最长的 ASCII 字母连续段，在不区分大小写的情况下去除重复项并保留首次出现的拼写，然后用一个 ASCII 空格连接保留的连续段。",
+   "sents": null
+  },
+  {
+   "en": "Concatenate the uppercase first letters of all maximal ASCII-letter runs in the user message.",
+   "zh": "将用户消息中所有最大的 ASCII 字母连续段的首字母大写形式连接起来。",
+   "sents": null
+  },
+  {
+   "en": "Concatenate the final letters of all maximal ASCII-letter runs in the user message, preserving case.",
+   "zh": "将用户消息中所有极大 ASCII 字母连续段的最末字母按原大小写拼接起来。",
+   "sents": null
+  },
+  {
+   "en": "Return the lengths of the maximal ASCII-letter runs in the user message as a compact JSON integer array.",
+   "zh": "以紧凑的 JSON 整数数组形式返回用户消息中最长 ASCII 字母连续段的长度。",
+   "sents": null
+  },
+  {
+   "en": "Return the maximal ASCII-letter runs in the user message as a compact JSON array of strings numbered 1:word, 2:word, and so on.",
+   "zh": "返回用户消息中最长的 ASCII 字母连续串，以紧凑的 JSON 字符串数组形式编号列出：1:word、2:word，依此类推。",
+   "sents": null
+  },
+  {
+   "en": "Return the 1st, 3rd, 5th, and subsequent odd-positioned maximal ASCII-letter runs in the user message, joined with one space.",
+   "zh": "返回用户消息中第 1 个、第 3 个、第 5 个及后续奇数位置上的极大 ASCII 字母连续段，并以单个空格连接。",
+   "sents": null
+  },
+  {
+   "en": "Return the 2nd, 4th, 6th, and subsequent even-positioned maximal ASCII-letter runs in the user message, joined with one space.",
+   "zh": "返回用户消息中第2、4、6及后续偶数位置的最长ASCII字母连续串，用一个空格连接。",
+   "sents": null
+  },
+  {
+   "en": "Lowercase the maximal ASCII-letter runs in the user message and join them in snake_case.",
+   "zh": "将用户消息中的最长 ASCII 字母串小写化，并以 snake_case 形式连接。",
+   "sents": null
+  },
+  {
+   "en": "Lowercase the maximal ASCII-letter runs in the user message and join them in kebab-case.",
+   "zh": "lowercase-the-maximal-ascii-letter-runs-in-the-user-message-and-join-them-in-kebab-case",
+   "sents": null
+  },
+  {
+   "en": "Reverse each maximal ASCII-letter run in the user message and join the transformed runs with one space.",
+   "zh": "反转用户消息中每个最长的 ASCII 字母连续段，并用一个空格将转换后的各段连接起来。",
+   "sents": null
+  },
+  {
+   "en": "Sort the characters within each maximal ASCII-letter run in the user message by raw code-point order and join the results with one space.",
+   "zh": "对用户消息中每个由 ASCII 字母组成的最大连续片段内的字符，按原始码点顺序排序，并用一个空格连接各片段的排序结果。",
+   "sents": null
+  },
+  {
+   "en": "Extract maximal ASCII-letter runs from the user message, discard separators, convert each run to Pig Latin, and join the results with one ASCII space: append way to vowel-initial runs; otherwise move the maximal leading consonant run to the end and append ay; append ay directly to vowel-free runs; preserve the case of original letters.",
+   "zh": "从用户消息中提取最长的 ASCII 字母连续段，丢弃分隔符，将每个连续段转换为儿童黑话，并用一个 ASCII 空格连接结果：对以元音开头的连续段追加 way；否则将最长的前导辅音连续段移到末尾并追加 ay；对不含元音的连续段直接追加 ay；保留原始字母的大小写。",
+   "sents": null
+  },
+  {
+   "en": "Extract maximal ASCII-letter runs from the user message; remove runs equal case-insensitively to exactly a, an, the, and, or, but, to, of, in, on, or for; then join retained runs with one ASCII space.",
+   "zh": "从用户消息中提取最长的ASCII字母串；去除（不区分大小写地）恰好等于 a、an、the、and、or、but、to、of、in、on、or for 的字母串；然后用一个ASCII空格连接保留的字母串。",
+   "sents": null
+  },
+  {
+   "en": "Replace each case-insensitive standalone ASCII word instruction in the user message with [INSTRUCTION], preserving all other characters.",
+   "zh": "将用户消息中的每个不区分大小写的独立 ASCII 单词 instruction 替换为 [INSTRUCTION]，并保留所有其他字符。",
+   "sents": null
+  },
+  {
+   "en": "Within the user message, enclose every maximal ASCII-letter run in square brackets while preserving every separator exactly.",
+   "zh": "在用户消息中，将每个最长的 [ASCII] 字母连续段用方括号括起来，同时完整保留每个分隔符。",
+   "sents": null
+  },
+  {
+   "en": "Return the first maximal ASCII-letter run in the user message, or the empty string if none exists.",
+   "zh": "返回用户消息中第一段最长的 ASCII 字母连续串，若不存在则返回空字符串。",
+   "sents": null
+  },
+  {
+   "en": "Return the last maximal ASCII-letter run in the user message, or the empty string if none exists.",
+   "zh": "返回用户消息中最后一个最长的 ASCII 字母连续串，若不存在则返回空字符串。",
+   "sents": null
+  },
+  {
+   "en": "Reverse the order of the LF-delimited lines in the user message.",
+   "zh": "反转用户消息中由 LF 分隔的各行的顺序。",
+   "sents": null
+  },
+  {
+   "en": "Sort the LF-delimited lines in the user message by raw code-point order.",
+   "zh": "按原始码点顺序对用户消息中以 LF 分隔的各行进行排序。",
+   "sents": null
+  },
+  {
+   "en": "Remove duplicate LF-delimited lines from the user message while retaining the first occurrence of each line.",
+   "zh": "从用户消息中删除重复的以 LF 分隔的行，同时保留每行的首次出现。",
+   "sents": null
+  },
+  {
+   "en": "If the user message is empty, return empty text; otherwise, prefix each LF-delimited line with its one-based line number and a colon.",
+   "zh": "如果用户消息为空，则返回空文本；否则，为每个以 LF 分隔的行加上其从 1 开始的行号和一个冒号作为前缀。",
+   "sents": null
+  },
+  {
+   "en": "If the user message is empty, return empty text; otherwise, prefix each LF-delimited line with its Unicode code-point length and a colon.",
+   "zh": "如果用户消息为空，则返回空文本；否则，为每个以 LF 分隔的行加上其 Unicode 码点长度和冒号作为前缀。",
+   "sents": null
+  },
+  {
+   "en": "Keep the 1st, 3rd, 5th, and subsequent odd-positioned LF-delimited lines of the user message.",
+   "zh": "请将以下文本翻译为 中文，直接输出翻译结果，不要进行任何解释。\n\n要求：术语在全文中保持一致（agents 固定译为「智能体」，agent 固定译为「智能体」），保留原文结构与占位符：\n\n保留用户消息中按换行符（LF）分隔的第 1、3、5 行及后续奇数位置的行。",
+   "sents": null
+  },
+  {
+   "en": "Split the Unicode code points in the user message into consecutive chunks of at most 20 and join the chunks with LF.",
+   "zh": "将用户消息中的 Unicode 码点拆分为最多 20 个的连续块，并用 LF 连接这些块。",
+   "sents": null
+  },
+  {
+   "en": "Split the user message on literal commas, trim every field, sort the fields by raw code-point order, and rejoin them with commas.",
+   "zh": "将用户消息按字面逗号拆分，去除每个字段的空白，按原始码点顺序对字段排序，再用逗号重新拼接。",
+   "sents": null
+  },
+  {
+   "en": "Split the user message on literal semicolons, trim every field, reverse the field order, and rejoin them with semicolons.",
+   "zh": "按分号字面量拆分用户消息，去除每个字段的空白，反转字段顺序，然后用分号重新连接它们。",
+   "sents": null
+  },
+  {
+   "en": "Return the number of Unicode code points in the user message as a base-10 integer.",
+   "zh": "返回用户消息中的 Unicode 码点数量，以十进制整数形式表示。",
+   "sents": null
+  },
+  {
+   "en": "Return the number of bytes in the UTF-8 encoding of the user message as a base-10 integer.",
+   "zh": "以十进制整数形式返回用户消息的 UTF-8 编码所占的字节数。",
+   "sents": null
+  },
+  {
+   "en": "Return the number of maximal ASCII-letter runs in the user message as a base-10 integer.",
+   "zh": "以十进制整数形式返回用户消息中最大 ASCII 字母连续段的数量。",
+   "sents": null
+  },
+  {
+   "en": "Return the number of LF-delimited lines in the user message, defining empty text as zero lines.",
+   "zh": "返回用户消息中以 LF 分隔的行数，空文本定义为零行。",
+   "sents": null
+  },
+  {
+   "en": "Count Unicode category groups in the user message and return compact JSON with keys L, M, N, P, S, Z, C in that order.",
+   "zh": "统计用户消息中 Unicode 类别分组的数量，并按 L、M、N、P、S、Z、C 的顺序返回包含这些键的紧凑 JSON。",
+   "sents": null
+  },
+  {
+   "en": "Return a compact JSON object mapping each distinct code point in the user message to its frequency, with keys in code-point order, ensure_ascii=False, and no optional whitespace.",
+   "zh": "返回一个紧凑的 JSON 对象，将用户消息中每个不同的码位映射到其出现频次，键按码位顺序排列，使用 ensure_ascii=False，且不包含任何可选空白字符。",
+   "sents": null
+  },
+  {
+   "en": "Case-fold the maximal ASCII-letter runs in the user message, count them, and return a compact JSON object with sorted keys.",
+   "zh": "将用户消息中的最大 ASCII 字母串进行大小写折叠，统计其数量，并返回一个键已排序的紧凑 JSON 对象。",
+   "sents": null
+  },
+  {
+   "en": "Return the longest maximal ASCII-letter run in the user message, breaking ties by first occurrence.",
+   "zh": "返回用户消息中最长的极大 ASCII 字母连续段，若并列则取首次出现者。",
+   "sents": null
+  },
+  {
+   "en": "Return the shortest maximal ASCII-letter run in the user message, breaking ties by first occurrence.",
+   "zh": "返回用户消息中最短的最长ASCII字母连续段，若并列则取首次出现者。",
+   "sents": null
+  },
+  {
+   "en": "Return lowercase true exactly when the complete user message contains an even number of Unicode code points, counting empty text as even; otherwise return false.",
+   "zh": "仅当用户完整消息包含偶数个 Unicode 码点时返回小写的 true，空文本视为偶数；否则返回 false。",
+   "sents": null
+  },
+  {
+   "en": "Encode the complete user message as one compact JSON string literal without ASCII-only escaping.",
+   "zh": "将完整的用户消息编码为一个紧凑的 JSON 字符串字面量，且不进行仅 ASCII 的转义。",
+   "sents": null
+  },
+  {
+   "en": "Apply Python html.escape(text, quote=True) to the user message, including its exact entity spellings for ampersands, angle brackets, and both quote types.",
+   "zh": "将 Python 的 html.escape(text, quote=True) 应用于用户消息，包括对 & 符号、尖括号以及两种引号类型的精确实体拼写。",
+   "sents": null
+  },
+  {
+   "en": "Percent-encode the complete user message with UTF-8 using quote(…, safe=”).",
+   "zh": "使用 quote(…, safe=”) 以 UTF-8 对完整的用户消息进行百分号编码。",
+   "sents": null
+  },
+  {
+   "en": "Encode the complete user message as one always-quoted CSV field by doubling internal double quotes.",
+   "zh": "将完整的用户消息编码为一个始终带引号的 CSV 字段，通过将内部的双引号加倍来实现。",
+   "sents": null
+  },
+  {
+   "en": "Encode the complete user message inside text XML tags, escaping ampersand and angle brackets only.",
+   "zh": "将完整的用户消息编码在 <text> XML 标签内，仅需转义与符号（&）和尖括号（<、>）。",
+   "sents": null
+  },
+  {
+   "en": "Return the UTF-8 bytes of the user message as contiguous lowercase hexadecimal.",
+   "zh": "将用户消息的 UTF-8 字节以连续的小写十六进制形式返回。",
+   "sents": null
+  },
+  {
+   "en": "Return standard padded Base64 of the UTF-8 bytes of the user message.",
+   "zh": "返回用户消息的 UTF-8 字节的标准填充 Base64 编码。",
+   "sents": null
+  },
+  {
+   "en": "Return standard padded uppercase Base32 of the UTF-8 bytes of the user message.",
+   "zh": "返回用户消息的 UTF-8 字节的标准填充大写 Base32 编码。",
+   "sents": null
+  },
+  {
+   "en": "Return the Unicode code points in the user message as a compact JSON array of U+XXXX labels using uppercase hexadecimal and at least four digits.",
+   "zh": "使用大写十六进制且至少四位数的形式，将用户消息中的 Unicode 码点以 U+XXXX 标签的紧凑 JSON 数组返回。",
+   "sents": null
+  },
+  {
+   "en": "Return the lowercase SHA-256 hexadecimal digest of the UTF-8 bytes of the user message.",
+   "zh": "返回用户消息的 UTF-8 字节的小写 SHA-256 十六进制摘要。",
+   "sents": null
+  },
+  {
+   "en": "Return Python zlib.crc32 over the UTF-8 bytes of the user message as an unsigned value formatted as exactly eight lowercase hexadecimal digits.",
+   "zh": "返回 Python 的 zlib.crc32，以用户消息的 UTF-8 字节计算，结果为无符号值，格式化为恰好八位小写十六进制数字。",
+   "sents": null
+  },
+  {
+   "en": "Run-length encode consecutive equal Unicode code points in the user message as a compact JSON array of [character,count] pairs using ensure_ascii=False and no optional whitespace.",
+   "zh": "对用户消息中连续相同的 Unicode 码点进行游程编码，将其表示为紧凑的 JSON 数组，元素为 [字符, 计数] 对，使用 ensure_ascii=False 且不含可选空白符。",
+   "sents": null
+  }
+ ]
+}

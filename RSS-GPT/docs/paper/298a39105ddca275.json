@@ -1,0 +1,1768 @@
+{
+ "id": "298a39105ddca275",
+ "source": "arxiv-llm-eng",
+ "link": "https://arxiv.org/abs/2610.34141v1",
+ "title": "SpeC2Rust: Specification-Driven Repository-Level C-to-Rust Translation",
+ "title_zh": "SpeC2Rust：规格驱动的仓库级C到Rust翻译",
+ "published": "2026-10-25T08:20:30Z",
+ "translated_at": "2026-10-28T03:24:45Z",
+ "paragraphs": [
+  {
+   "en": "Legacy C codebases remain central to system software and performance-critical infrastructure, while their weak memory-safety guarantees continue to impose substantial security and maintenance risks. Recent C-to-Rust translation systems, including translators based on large language models (LLMs), have made automated migration increasingly feasible. However, LLM-based translation still faces several challenges. Existing methods often preserve the original C skeleton, making it difficult to recover project intent and module functionalities at repository scale. The translated Rust code may still rely on raw pointers and unsafe constructs. Cross-file interfaces and dependency relations are also difficult to maintain consistently across generated Rust modules. Even when initial translation succeeds, the resulting project still requires costly compilation repair and end-to-end validation, while naively accumulated context during this process can degrade repair stability and efficiency.",
+   "zh": "遗留 C 代码库仍然是系统软件和性能关键型基础设施的核心，但其薄弱的内存安全保证持续带来重大的安全与维护风险。 近年来的 C 到 Rust 转换系统，包括基于大语言模型（LLM）的转换器，已使自动化迁移日益可行。 然而，基于 LLM 的转换仍面临若干挑战。 现有方法通常保留原始的 C 代码骨架，难以在仓库规模上恢复项目意图和模块功能。 转换得到的 Rust 代码可能仍依赖原始指针和不安全构造。 跨文件接口与依赖关系也难以在生成的各个 Rust 模块之间保持一致。 即使初始转换成功，所得项目仍需代价高昂的编译修复和端到端验证，而在此过程中简单累积的上下文可能降低修复的稳定性与效率。",
+   "sents": [
+    {
+     "en": "Legacy C codebases remain central to system software and performance-critical infrastructure, while their weak memory-safety guarantees continue to impose substantial security and maintenance risks.",
+     "zh": "遗留 C 代码库仍然是系统软件和性能关键型基础设施的核心，但其薄弱的内存安全保证持续带来重大的安全与维护风险。"
+    },
+    {
+     "en": "Recent C-to-Rust translation systems, including translators based on large language models (LLMs), have made automated migration increasingly feasible.",
+     "zh": "近年来的 C 到 Rust 转换系统，包括基于大语言模型（LLM）的转换器，已使自动化迁移日益可行。"
+    },
+    {
+     "en": "However, LLM-based translation still faces several challenges.",
+     "zh": "然而，基于 LLM 的转换仍面临若干挑战。"
+    },
+    {
+     "en": "Existing methods often preserve the original C skeleton, making it difficult to recover project intent and module functionalities at repository scale.",
+     "zh": "现有方法通常保留原始的 C 代码骨架，难以在仓库规模上恢复项目意图和模块功能。"
+    },
+    {
+     "en": "The translated Rust code may still rely on raw pointers and unsafe constructs.",
+     "zh": "转换得到的 Rust 代码可能仍依赖原始指针和不安全构造。"
+    },
+    {
+     "en": "Cross-file interfaces and dependency relations are also difficult to maintain consistently across generated Rust modules.",
+     "zh": "跨文件接口与依赖关系也难以在生成的各个 Rust 模块之间保持一致。"
+    },
+    {
+     "en": "Even when initial translation succeeds, the resulting project still requires costly compilation repair and end-to-end validation, while naively accumulated context during this process can degrade repair stability and efficiency.",
+     "zh": "即使初始转换成功，所得项目仍需代价高昂的编译修复和端到端验证，而在此过程中简单累积的上下文可能降低修复的稳定性与效率。"
+    }
+   ]
+  },
+  {
+   "en": "To address these challenges, we propose SpeC2Rust , a specification-driven pipeline for repository-level C-to-Rust translation. SpeC2Rust consists of three stages: (1) Project-Intent Structuring , which decomposes the C repository into semantically coherent modules and generates persistent repository-level and module-level specification documents; (2) Spec-Guided Generation , which translates each Rust module against these specifications with a live symbol registry to maintain cross-file consistency instead of collapsing the translated system into poorly structured monolithic Rust files; (3) Layered-Feedback Repair , which organizes repair into targeted batches and injects only failure-relevant diagnostics, specification context, and source evidence to support efficient compilation and test-driven correction.",
+   "zh": "为应对这些挑战，我们提出 SpeC2Rust，一个规范驱动的仓库级 C 到 Rust 翻译流水线。 SpeC2Rust 由三个阶段组成：(1) 项目意图结构化，将 C 仓库分解为语义连贯的模块，并生成持久化的仓库级和模块级规范文档；(2) 规范引导生成，依据这些规范翻译每个 Rust 模块，并借助实时符号注册表来保持跨文件一致性，而不是将翻译后的系统压缩为结构糟糕的单体 Rust 文件；(3) 分层反馈修复，将修复组织为有针对性的批次，并只注入与失败相关的诊断信息、规范上下文和源码证据，以支持高效的编译和测试驱动的纠错。",
+   "sents": [
+    {
+     "en": "To address these challenges, we propose SpeC2Rust , a specification-driven pipeline for repository-level C-to-Rust translation.",
+     "zh": "为应对这些挑战，我们提出 SpeC2Rust，一个规范驱动的仓库级 C 到 Rust 翻译流水线。"
+    },
+    {
+     "en": "SpeC2Rust consists of three stages: (1) Project-Intent Structuring , which decomposes the C repository into semantically coherent modules and generates persistent repository-level and module-level specification documents; (2) Spec-Guided Generation , which translates each Rust module against these specifications with a live symbol registry to maintain cross-file consistency instead of collapsing the translated system into poorly structured monolithic Rust files; (3) Layered-Feedback Repair , which organizes repair into targeted batches and injects only failure-relevant diagnostics, specification context, and source evidence to support efficient compilation and test-driven correction.",
+     "zh": "SpeC2Rust 由三个阶段组成：(1) 项目意图结构化，将 C 仓库分解为语义连贯的模块，并生成持久化的仓库级和模块级规范文档；(2) 规范引导生成，依据这些规范翻译每个 Rust 模块，并借助实时符号注册表来保持跨文件一致性，而不是将翻译后的系统压缩为结构糟糕的单体 Rust 文件；(3) 分层反馈修复，将修复组织为有针对性的批次，并只注入与失败相关的诊断信息、规范上下文和源码证据，以支持高效的编译和测试驱动的纠错。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate SpeC2Rust on eight repository-level C projects. On eight repository-level C projects, SpeC2Rust generates Rust projects that compile and pass the original end-to-end tests. The generated code contains no raw-pointer declarations, raw-pointer dereferences, or unsafe lines. On the projects shared with the compared LLM-based baseline, SpeC2Rust reduces cost by 66.1% and input-token usage by 84.7%.",
+   "zh": "我们在八个仓库级 C 项目上评估 SpeC2Rust。 在八个仓库级 C 项目上，SpeC2Rust 生成的 Rust 项目能够编译通过并通过原有的端到端测试。 生成的代码不包含任何裸指针声明、裸指针解引用或 unsafe 行。 在与所比较的基于大语言模型的基线共享的项目上，SpeC2Rust 将成本降低了 66.1%，输入 token 用量降低了 84.7%。",
+   "sents": [
+    {
+     "en": "We evaluate SpeC2Rust on eight repository-level C projects.",
+     "zh": "我们在八个仓库级 C 项目上评估 SpeC2Rust。"
+    },
+    {
+     "en": "On eight repository-level C projects, SpeC2Rust generates Rust projects that compile and pass the original end-to-end tests.",
+     "zh": "在八个仓库级 C 项目上，SpeC2Rust 生成的 Rust 项目能够编译通过并通过原有的端到端测试。"
+    },
+    {
+     "en": "The generated code contains no raw-pointer declarations, raw-pointer dereferences, or unsafe lines.",
+     "zh": "生成的代码不包含任何裸指针声明、裸指针解引用或 unsafe 行。"
+    },
+    {
+     "en": "On the projects shared with the compared LLM-based baseline, SpeC2Rust reduces cost by 66.1% and input-token usage by 84.7%.",
+     "zh": "在与所比较的基于大语言模型的基线共享的项目上，SpeC2Rust 将成本降低了 66.1%，输入 token 用量降低了 84.7%。"
+    }
+   ]
+  },
+  {
+   "en": "Modernizing legacy C code is a long-standing problem in software engineering. C provides weak memory-safety guarantees and a limited type system, which lead to high maintenance cost and frequent security vulnerabilities [ 1 ] . By contrast, Rust is increasingly regarded as a practical replacement for C because of its ownership and borrowing mechanisms, together with its strong memory-safety guarantees [ 2 ] .",
+   "zh": "现代化改造遗留 C 代码是软件工程中一个长期存在的问题。 C 语言提供的内存安全保障较弱，类型系统也有限，这导致了高昂的维护成本和频繁的安全漏洞 [ 1 ] 。 相比之下，Rust 凭借其所有权与借用机制以及强大的内存安全保障，日益被视为 C 语言的实际替代方案 [ 2 ] 。",
+   "sents": [
+    {
+     "en": "Modernizing legacy C code is a long-standing problem in software engineering.",
+     "zh": "现代化改造遗留 C 代码是软件工程中一个长期存在的问题。"
+    },
+    {
+     "en": "C provides weak memory-safety guarantees and a limited type system, which lead to high maintenance cost and frequent security vulnerabilities [ 1 ] .",
+     "zh": "C 语言提供的内存安全保障较弱，类型系统也有限，这导致了高昂的维护成本和频繁的安全漏洞 [ 1 ] 。"
+    },
+    {
+     "en": "By contrast, Rust is increasingly regarded as a practical replacement for C because of its ownership and borrowing mechanisms, together with its strong memory-safety guarantees [ 2 ] .",
+     "zh": "相比之下，Rust 凭借其所有权与借用机制以及强大的内存安全保障，日益被视为 C 语言的实际替代方案 [ 2 ] 。"
+    }
+   ]
+  },
+  {
+   "en": "Rule-based translation tools such as C2Rust [ 3 ] can quickly translate C code into Rust. However, prior studies show that eliminating unsafe code while preserving translation quality remains difficult in practice [ 4 , 5 ] . In parallel, LLMs have demonstrated strong capability in software engineering tasks, especially code understanding, code generation [ 6 ] , and program repair [ 7 ] . Systems such as C2SaferRust [ 8 ] and SmartC2Rust [ 9 ] use LLMs to generate safer Rust code, but LLM-based translation still faces several major challenges.",
+   "zh": "诸如 C2Rust [3] 之类的基于规则的翻译工具可以快速将 C 代码翻译为 Rust。 然而，先前的研究表明，在实践中，在保持翻译质量的同时消除不安全代码仍然很困难 [4, 5]。 与此同时，大语言模型在软件工程任务中展现出强大的能力，尤其是在代码理解、代码生成 [6] 和程序修复 [7] 方面。 诸如 C2SaferRust [8] 和 SmartC2Rust [9] 之类的系统使用大语言模型来生成更安全的 Rust 代码，但基于大语言模型的翻译仍然面临若干重大挑战。",
+   "sents": [
+    {
+     "en": "Rule-based translation tools such as C2Rust [ 3 ] can quickly translate C code into Rust.",
+     "zh": "诸如 C2Rust [3] 之类的基于规则的翻译工具可以快速将 C 代码翻译为 Rust。"
+    },
+    {
+     "en": "However, prior studies show that eliminating unsafe code while preserving translation quality remains difficult in practice [ 4 , 5 ] .",
+     "zh": "然而，先前的研究表明，在实践中，在保持翻译质量的同时消除不安全代码仍然很困难 [4, 5]。"
+    },
+    {
+     "en": "In parallel, LLMs have demonstrated strong capability in software engineering tasks, especially code understanding, code generation [ 6 ] , and program repair [ 7 ] .",
+     "zh": "与此同时，大语言模型在软件工程任务中展现出强大的能力，尤其是在代码理解、代码生成 [6] 和程序修复 [7] 方面。"
+    },
+    {
+     "en": "Systems such as C2SaferRust [ 8 ] and SmartC2Rust [ 9 ] use LLMs to generate safer Rust code, but LLM-based translation still faces several major challenges.",
+     "zh": "诸如 C2SaferRust [8] 和 SmartC2Rust [9] 之类的系统使用大语言模型来生成更安全的 Rust 代码，但基于大语言模型的翻译仍然面临若干重大挑战。"
+    }
+   ]
+  },
+  {
+   "en": "Project-level C-to-Rust migration raises four challenges that are not adequately addressed by existing approaches:",
+   "zh": "项目级的 C 到 Rust 迁移提出了四个现有方法尚未充分解决的挑战：",
+   "sents": null
+  },
+  {
+   "en": "C Project Intent. LLM-generated Rust code may pass end-to-end tests while still being semantically incomplete or even degenerating into a pseudo implementation. In such cases, the translated result no longer preserves the original algorithmic logic of the C project.",
+   "zh": "C 项目意图。 由大语言模型生成的 Rust 代码可能通过端到端测试，但仍在语义上不完整，甚至退化为伪实现。 在这种情况下，翻译结果不再保留 C 项目原有的算法逻辑。",
+   "sents": [
+    {
+     "en": "C Project Intent.",
+     "zh": "C 项目意图。"
+    },
+    {
+     "en": "LLM-generated Rust code may pass end-to-end tests while still being semantically incomplete or even degenerating into a pseudo implementation.",
+     "zh": "由大语言模型生成的 Rust 代码可能通过端到端测试，但仍在语义上不完整，甚至退化为伪实现。"
+    },
+    {
+     "en": "In such cases, the translated result no longer preserves the original algorithmic logic of the C project.",
+     "zh": "在这种情况下，翻译结果不再保留 C 项目原有的算法逻辑。"
+    }
+   ]
+  },
+  {
+   "en": "Memory Safety. Previous approaches often construct a Rust skeleton that closely matches the original C project layout, or directly perform function-level translation over the unsafe Rust generated by C2Rust . As a result, the translated Rust code remains centered around unsafe pointers and blocks, with limited memory-safety guarantees.",
+   "zh": "内存安全性。 已有的方法往往构建一个与原始 C 项目结构高度一致的 Rust 骨架，或者直接对 C2Rust 生成的非安全 Rust 代码进行函数级翻译。 因此，翻译得到的 Rust 代码仍然以非安全指针和非安全代码块为中心，内存安全性保证十分有限。",
+   "sents": [
+    {
+     "en": "Memory Safety.",
+     "zh": "内存安全性。"
+    },
+    {
+     "en": "Previous approaches often construct a Rust skeleton that closely matches the original C project layout, or directly perform function-level translation over the unsafe Rust generated by C2Rust .",
+     "zh": "已有的方法往往构建一个与原始 C 项目结构高度一致的 Rust 骨架，或者直接对 C2Rust 生成的非安全 Rust 代码进行函数级翻译。"
+    },
+    {
+     "en": "As a result, the translated Rust code remains centered around unsafe pointers and blocks, with limited memory-safety guarantees.",
+     "zh": "因此，翻译得到的 Rust 代码仍然以非安全指针和非安全代码块为中心，内存安全性保证十分有限。"
+    }
+   ]
+  },
+  {
+   "en": "Cross-file Dependencies. Rust projects are organized around modules with explicit dependency relationships. Existing methods sometimes place most or all translated Rust code into a single .rs file. Although this design avoids dependency management across files, it yields poor code organization and weak maintainability. Moreover, as the size of the C project increases, the translation success rate tends to decrease [ 10 ] .",
+   "zh": "跨文件依赖。 Rust 项目围绕具有显式依赖关系的模块进行组织。 现有方法有时会将大部分或全部翻译后的 Rust 代码放入单个 .rs 文件中。 尽管这种设计避免了跨文件的依赖管理，但它导致代码组织不佳、可维护性较弱。 此外，随着 C 项目规模的增大，翻译成功率往往会下降 [ 10 ] 。",
+   "sents": [
+    {
+     "en": "Cross-file Dependencies.",
+     "zh": "跨文件依赖。"
+    },
+    {
+     "en": "Rust projects are organized around modules with explicit dependency relationships.",
+     "zh": "Rust 项目围绕具有显式依赖关系的模块进行组织。"
+    },
+    {
+     "en": "Existing methods sometimes place most or all translated Rust code into a single .rs file.",
+     "zh": "现有方法有时会将大部分或全部翻译后的 Rust 代码放入单个 .rs 文件中。"
+    },
+    {
+     "en": "Although this design avoids dependency management across files, it yields poor code organization and weak maintainability.",
+     "zh": "尽管这种设计避免了跨文件的依赖管理，但它导致代码组织不佳、可维护性较弱。"
+    },
+    {
+     "en": "Moreover, as the size of the C project increases, the translation success rate tends to decrease [ 10 ] .",
+     "zh": "此外，随着 C 项目规模的增大，翻译成功率往往会下降 [ 10 ] 。"
+    }
+   ]
+  },
+  {
+   "en": "Program Repair. The translated Rust project must be repaired through compilation and testing to ensure behavioral consistency with the original C project. Current methods often feed compiler outputs together with Rust source files back to the LLM, which causes excessive context accumulation and reduces repair effectiveness.",
+   "zh": "程序修复。 翻译后的 Rust 项目必须通过编译和测试进行修复，以确保与原 C 项目的行为一致性。 当前方法通常将编译器输出连同 Rust 源文件一起反馈给大语言模型，这会导致上下文过度累积，降低修复效果。",
+   "sents": [
+    {
+     "en": "Program Repair.",
+     "zh": "程序修复。"
+    },
+    {
+     "en": "The translated Rust project must be repaired through compilation and testing to ensure behavioral consistency with the original C project.",
+     "zh": "翻译后的 Rust 项目必须通过编译和测试进行修复，以确保与原 C 项目的行为一致性。"
+    },
+    {
+     "en": "Current methods often feed compiler outputs together with Rust source files back to the LLM, which causes excessive context accumulation and reduces repair effectiveness.",
+     "zh": "当前方法通常将编译器输出连同 Rust 源文件一起反馈给大语言模型，这会导致上下文过度累积，降低修复效果。"
+    }
+   ]
+  },
+  {
+   "en": "To address these challenges, we present SpeC2Rust , a specification-driven pipeline for repository-level C-to-Rust translation. The main idea of SpeC2Rust is to explicitly externalize repository-level knowledge before code generation, preserve it as reusable specification artifacts, and reinject it on demand during subsequent generation and repair.",
+   "zh": "为应对这些挑战，我们提出了 SpeC2Rust，一个由规范驱动的仓库级 C 到 Rust 翻译流水线。 SpeC2Rust 的核心思想是在代码生成之前显式外化仓库级知识，将其保存为可复用的规范工件，并在后续的生成与修复过程中按需重新注入这些知识。",
+   "sents": [
+    {
+     "en": "To address these challenges, we present SpeC2Rust , a specification-driven pipeline for repository-level C-to-Rust translation.",
+     "zh": "为应对这些挑战，我们提出了 SpeC2Rust，一个由规范驱动的仓库级 C 到 Rust 翻译流水线。"
+    },
+    {
+     "en": "The main idea of SpeC2Rust is to explicitly externalize repository-level knowledge before code generation, preserve it as reusable specification artifacts, and reinject it on demand during subsequent generation and repair.",
+     "zh": "SpeC2Rust 的核心思想是在代码生成之前显式外化仓库级知识，将其保存为可复用的规范工件，并在后续的生成与修复过程中按需重新注入这些知识。"
+    }
+   ]
+  },
+  {
+   "en": "During repair, SpeC2Rust organizes compilation diagnostics and test failures into structured repair batches, and uses iterative repair to preserve semantic consistency between the translated Rust project and the original C project. To prevent the repair model from bypassing real failures by directly modifying the tests, dataset test scripts are treated as read-only artifacts throughout repair. To address the four challenges above, SpeC2Rust uses three technical components. First, Project-Intent Structuring partitions the repository into functional modules and generates repository-level and module-level specifications from the recovered project facts. Second, Spec-Guided Generation translates each target module against these specifications and uses a live symbol registry with demand-driven evidence retrieval to maintain cross-file consistency. Third, Layered-Feedback Repair resolves build and test failures through targeted evidence injection, structured repair batching, and read-only test boundaries, thereby improving repair focus and preventing spurious success through test modification.",
+   "zh": "在修复过程中，SpeC2Rust 将编译诊断信息和测试失败整理成结构化的修复批次，并通过迭代修复来保持翻译后的 Rust 项目与原始 C 项目之间的语义一致性。 为防止修复模型通过直接修改测试来绕过真实失败，数据集测试脚本在整个修复过程中被视为只读产物。 为应对上述四个挑战，SpeC2Rust 使用了三项技术组件。 首先，项目意图结构化将代码仓库划分为功能模块，并从恢复的项目事实中生成仓库级和模块级规约。 其次，规约引导生成依据这些规约翻译每个目标模块，并使用带按需证据检索的实时符号注册表来维持跨文件一致性。 第三，分层反馈修复通过针对性证据注入、结构化修复批次和只读测试边界来解决构建和测试失败，从而提升修复的针对性，并通过测试修改防止虚假成功。",
+   "sents": [
+    {
+     "en": "During repair, SpeC2Rust organizes compilation diagnostics and test failures into structured repair batches, and uses iterative repair to preserve semantic consistency between the translated Rust project and the original C project.",
+     "zh": "在修复过程中，SpeC2Rust 将编译诊断信息和测试失败整理成结构化的修复批次，并通过迭代修复来保持翻译后的 Rust 项目与原始 C 项目之间的语义一致性。"
+    },
+    {
+     "en": "To prevent the repair model from bypassing real failures by directly modifying the tests, dataset test scripts are treated as read-only artifacts throughout repair.",
+     "zh": "为防止修复模型通过直接修改测试来绕过真实失败，数据集测试脚本在整个修复过程中被视为只读产物。"
+    },
+    {
+     "en": "To address the four challenges above, SpeC2Rust uses three technical components.",
+     "zh": "为应对上述四个挑战，SpeC2Rust 使用了三项技术组件。"
+    },
+    {
+     "en": "First, Project-Intent Structuring partitions the repository into functional modules and generates repository-level and module-level specifications from the recovered project facts.",
+     "zh": "首先，项目意图结构化将代码仓库划分为功能模块，并从恢复的项目事实中生成仓库级和模块级规约。"
+    },
+    {
+     "en": "Second, Spec-Guided Generation translates each target module against these specifications and uses a live symbol registry with demand-driven evidence retrieval to maintain cross-file consistency.",
+     "zh": "其次，规约引导生成依据这些规约翻译每个目标模块，并使用带按需证据检索的实时符号注册表来维持跨文件一致性。"
+    },
+    {
+     "en": "Third, Layered-Feedback Repair resolves build and test failures through targeted evidence injection, structured repair batching, and read-only test boundaries, thereby improving repair focus and preventing spurious success through test modification.",
+     "zh": "第三，分层反馈修复通过针对性证据注入、结构化修复批次和只读测试边界来解决构建和测试失败，从而提升修复的针对性，并通过测试修改防止虚假成功。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate SpeC2Rust on eight GitHub C projects. Across all eight projects, SpeC2Rust produces compilable Rust translations that pass the original end-to-end test scripts and contain no raw-pointer declarations, raw-pointer dereferences, or unsafe lines of code. On the five projects shared with SmartC2Rust , SpeC2Rust reduces monetary cost by 66.1% and input-token usage by 84.7%.",
+   "zh": "我们在八个 GitHub C 项目上评估 SpeC2Rust。 在全部八个项目中，SpeC2Rust 生成的 Rust 翻译均可编译通过原始的端到端测试脚本，且不包含任何原始指针声明、原始指针解引用或不安全的代码行。 在与 SmartC2Rust 共享的五个项目上，SpeC2Rust 将货币成本降低了 66.1%，将输入 token 用量降低了 84.7%。",
+   "sents": [
+    {
+     "en": "We evaluate SpeC2Rust on eight GitHub C projects.",
+     "zh": "我们在八个 GitHub C 项目上评估 SpeC2Rust。"
+    },
+    {
+     "en": "Across all eight projects, SpeC2Rust produces compilable Rust translations that pass the original end-to-end test scripts and contain no raw-pointer declarations, raw-pointer dereferences, or unsafe lines of code.",
+     "zh": "在全部八个项目中，SpeC2Rust 生成的 Rust 翻译均可编译通过原始的端到端测试脚本，且不包含任何原始指针声明、原始指针解引用或不安全的代码行。"
+    },
+    {
+     "en": "On the five projects shared with SmartC2Rust , SpeC2Rust reduces monetary cost by 66.1% and input-token usage by 84.7%.",
+     "zh": "在与 SmartC2Rust 共享的五个项目上，SpeC2Rust 将货币成本降低了 66.1%，将输入 token 用量降低了 84.7%。"
+    }
+   ]
+  },
+  {
+   "en": "Our contributions are summarized as follows:",
+   "zh": "我们的贡献总结如下：",
+   "sents": null
+  },
+  {
+   "en": "Specification-driven Pipeline for repository-level C-to-Rust translation. We propose SpeC2Rust , a three-stage workflow consisting of Project-Intent Structuring , Spec-Guided Generation , and Layered-Feedback Repair , which externalizes project intent before code generation and reuses it throughout translation and repair.",
+   "zh": "面向仓库级 C 到 Rust 翻译的规格驱动流水线。 我们提出 SpeC2Rust，这是一个由项目意图结构化、规格引导生成和分层反馈修复组成的三阶段工作流，它在代码生成之前将项目意图显式化，并在整个翻译和修复过程中复用该意图。",
+   "sents": [
+    {
+     "en": "Specification-driven Pipeline for repository-level C-to-Rust translation.",
+     "zh": "面向仓库级 C 到 Rust 翻译的规格驱动流水线。"
+    },
+    {
+     "en": "We propose SpeC2Rust , a three-stage workflow consisting of Project-Intent Structuring , Spec-Guided Generation , and Layered-Feedback Repair , which externalizes project intent before code generation and reuses it throughout translation and repair.",
+     "zh": "我们提出 SpeC2Rust，这是一个由项目意图结构化、规格引导生成和分层反馈修复组成的三阶段工作流，它在代码生成之前将项目意图显式化，并在整个翻译和修复过程中复用该意图。"
+    }
+   ]
+  },
+  {
+   "en": "Specification-mediated generation and layered repair. SpeC2Rust translates against reusable specification documents rather than raw source fragments alone, and repairs Rust projects through targeted knowledge reinjection with read-only test boundaries, improving safety, cross-file consistency, and repair focus.",
+   "zh": "基于规范中介的生成与分层修复。 SpeC2Rust 依据可复用的规范文档而非仅依据原始源代码片段进行翻译，并通过只读测试边界下的针对性知识重注入来修复 Rust 项目，从而提升安全性、跨文件一致性与修复的聚焦度。",
+   "sents": [
+    {
+     "en": "Specification-mediated generation and layered repair.",
+     "zh": "基于规范中介的生成与分层修复。"
+    },
+    {
+     "en": "SpeC2Rust translates against reusable specification documents rather than raw source fragments alone, and repairs Rust projects through targeted knowledge reinjection with read-only test boundaries, improving safety, cross-file consistency, and repair focus.",
+     "zh": "SpeC2Rust 依据可复用的规范文档而非仅依据原始源代码片段进行翻译，并通过只读测试边界下的针对性知识重注入来修复 Rust 项目，从而提升安全性、跨文件一致性与修复的聚焦度。"
+    }
+   ]
+  },
+  {
+   "en": "Clearer and safer Rust project reconstruction. By breaking away from rigid C-oriented skeletons, SpeC2Rust produces Rust projects with clearer module organization, more idiomatic abstractions, and higher safety in the final translated repositories.",
+   "zh": "更清晰、更安全的 Rust 项目重构。 通过摆脱僵化的面向 C 的骨架，SpeC2Rust 生成的 Rust 项目具有更清晰的模块组织、更符合习惯用法的抽象，以及最终翻译代码库中更高的安全性。",
+   "sents": [
+    {
+     "en": "Clearer and safer Rust project reconstruction.",
+     "zh": "更清晰、更安全的 Rust 项目重构。"
+    },
+    {
+     "en": "By breaking away from rigid C-oriented skeletons, SpeC2Rust produces Rust projects with clearer module organization, more idiomatic abstractions, and higher safety in the final translated repositories.",
+     "zh": "通过摆脱僵化的面向 C 的骨架，SpeC2Rust 生成的 Rust 项目具有更清晰的模块组织、更符合习惯用法的抽象，以及最终翻译代码库中更高的安全性。"
+    }
+   ]
+  },
+  {
+   "en": "Repository-level empirical validation. On eight open-source C projects, SpeC2Rust produces compilable Rust translations that pass the original end-to-end test scripts while eliminating raw-pointer declarations/dereferences and unsafe lines of code. On the five projects shared with SmartC2Rust , it further reduces monetary cost by 66.1% and input-token usage by 84.7%.",
+   "zh": "仓库级实证验证。 在八个开源 C 项目上，SpeC2Rust 生成的可编译 Rust 翻译能够通过原始的端到端测试脚本，同时消除了原始指针的声明/解引用以及不安全的代码行。 在与 SmartC2Rust 共享的五个项目上，它进一步将货币成本降低了 66.1%，将输入 token 用量降低了 84.7%。",
+   "sents": [
+    {
+     "en": "Repository-level empirical validation.",
+     "zh": "仓库级实证验证。"
+    },
+    {
+     "en": "On eight open-source C projects, SpeC2Rust produces compilable Rust translations that pass the original end-to-end test scripts while eliminating raw-pointer declarations/dereferences and unsafe lines of code.",
+     "zh": "在八个开源 C 项目上，SpeC2Rust 生成的可编译 Rust 翻译能够通过原始的端到端测试脚本，同时消除了原始指针的声明/解引用以及不安全的代码行。"
+    },
+    {
+     "en": "On the five projects shared with SmartC2Rust , it further reduces monetary cost by 66.1% and input-token usage by 84.7%.",
+     "zh": "在与 SmartC2Rust 共享的五个项目上，它进一步将货币成本降低了 66.1%，将输入 token 用量降低了 84.7%。"
+    }
+   ]
+  },
+  {
+   "en": "Existing skeleton-based C-to-Rust translation tools typically construct a Rust project skeleton aligned with the original C repository and then fill that skeleton with translated code. This design preserves FFI-style function boundaries, raw-pointer-based state, and global mutable variables, thereby carrying a large amount of unsafe code into the generated Rust project [ 11 , 12 ] . Moreover, because translation is performed mainly at the function and file levels, the resulting Rust code often fails to recover the module organization and interface structure required by an idiomatic Rust project [ 13 , 14 ] .",
+   "zh": "现有的基于骨架的 C 到 Rust 转换工具通常会构建一个与原始 C 仓库对齐的 Rust 项目骨架，然后用翻译后的代码填充该骨架。 这种设计保留了 FFI 风格的函数边界、基于裸指针的状态以及全局可变变量，从而将大量不安全（unsafe）代码带入了生成的 Rust 项目 [ 11 , 12 ] 。 此外，由于转换主要在函数和文件级别进行，所得的 Rust 代码往往无法恢复符合惯用法的 Rust 项目所需的模块组织与接口结构 [ 13 , 14 ] 。",
+   "sents": [
+    {
+     "en": "Existing skeleton-based C-to-Rust translation tools typically construct a Rust project skeleton aligned with the original C repository and then fill that skeleton with translated code.",
+     "zh": "现有的基于骨架的 C 到 Rust 转换工具通常会构建一个与原始 C 仓库对齐的 Rust 项目骨架，然后用翻译后的代码填充该骨架。"
+    },
+    {
+     "en": "This design preserves FFI-style function boundaries, raw-pointer-based state, and global mutable variables, thereby carrying a large amount of unsafe code into the generated Rust project [ 11 , 12 ] .",
+     "zh": "这种设计保留了 FFI 风格的函数边界、基于裸指针的状态以及全局可变变量，从而将大量不安全（unsafe）代码带入了生成的 Rust 项目 [ 11 , 12 ] 。"
+    },
+    {
+     "en": "Moreover, because translation is performed mainly at the function and file levels, the resulting Rust code often fails to recover the module organization and interface structure required by an idiomatic Rust project [ 13 , 14 ] .",
+     "zh": "此外，由于转换主要在函数和文件级别进行，所得的 Rust 代码往往无法恢复符合惯用法的 Rust 项目所需的模块组织与接口结构 [ 13 , 14 ] 。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 1 illustrates these limitations using code from c4 [ 15 ] , a small C compiler in our evaluation dataset. Listing 1 shows the Rust project structure produced by a skeleton-based translation strategy. The translated Rust layout remains closely aligned with the original C project and still contains a large amount of unsafe code.",
+   "zh": "图 1 使用评估数据集中的小型 C 编译器 c4 [15] 的代码说明了这些局限性。 清单 1 展示了基于骨架的翻译策略所生成的 Rust 项目结构。 翻译后的 Rust 布局仍与原始 C 项目高度一致，并且仍包含大量 unsafe 代码。",
+   "sents": [
+    {
+     "en": "Figure 1 illustrates these limitations using code from c4 [ 15 ] , a small C compiler in our evaluation dataset.",
+     "zh": "图 1 使用评估数据集中的小型 C 编译器 c4 [15] 的代码说明了这些局限性。"
+    },
+    {
+     "en": "Listing 1 shows the Rust project structure produced by a skeleton-based translation strategy.",
+     "zh": "清单 1 展示了基于骨架的翻译策略所生成的 Rust 项目结构。"
+    },
+    {
+     "en": "The translated Rust layout remains closely aligned with the original C project and still contains a large amount of unsafe code.",
+     "zh": "翻译后的 Rust 布局仍与原始 C 项目高度一致，并且仍包含大量 unsafe 代码。"
+    }
+   ]
+  },
+  {
+   "en": "Listings 1 and 1 further compare the internal implementation of the lexer function next() in c4 . This function parses the input character stream into tokens consumed by the compiler. In Listing 1 , the translated lexer logic is still organized around the global raw pointer p , extern \"C\" linkage, and pervasive unsafe operations. The generated Rust therefore remains tied to C-style control flow and memory-access patterns. The light-red spans in the figure mark C-derived artifacts that remain in the translated Rust code. [ 16 ] .",
+   "zh": "清单 1 和清单 1 进一步对比了 c4 中词法分析器函数 next() 的内部实现。 该函数将输入的字符流解析为供编译器使用的词法单元。 在清单 1 中，翻译后的词法分析器逻辑仍然围绕全局原始指针 p、extern \"C\" 链接以及普遍存在的 unsafe 操作来组织。 因此生成的 Rust 代码仍然依赖于 C 风格的控制流和内存访问模式。 图中的浅红色区域标出了翻译后的 Rust 代码中仍然保留的源自 C 的痕迹。[ 16 ] 。",
+   "sents": [
+    {
+     "en": "Listings 1 and 1 further compare the internal implementation of the lexer function next() in c4 .",
+     "zh": "清单 1 和清单 1 进一步对比了 c4 中词法分析器函数 next() 的内部实现。"
+    },
+    {
+     "en": "This function parses the input character stream into tokens consumed by the compiler.",
+     "zh": "该函数将输入的字符流解析为供编译器使用的词法单元。"
+    },
+    {
+     "en": "In Listing 1 , the translated lexer logic is still organized around the global raw pointer p , extern \"C\" linkage, and pervasive unsafe operations.",
+     "zh": "在清单 1 中，翻译后的词法分析器逻辑仍然围绕全局原始指针 p、extern \"C\" 链接以及普遍存在的 unsafe 操作来组织。"
+    },
+    {
+     "en": "The generated Rust therefore remains tied to C-style control flow and memory-access patterns.",
+     "zh": "因此生成的 Rust 代码仍然依赖于 C 风格的控制流和内存访问模式。"
+    },
+    {
+     "en": "The light-red spans in the figure mark C-derived artifacts that remain in the translated Rust code. [ 16 ] .",
+     "zh": "图中的浅红色区域标出了翻译后的 Rust 代码中仍然保留的源自 C 的痕迹。[ 16 ] 。"
+    }
+   ]
+  },
+  {
+   "en": "By contrast, Listing 1 shows the Rust code generated by SpeC2Rust . The same functionality is reorganized around a C4 struct and C4Error type. Global state is maintained through struct fields, operations are rewritten as methods over &mut self , and helper functions such as scan_number() improve readability and modularity. Failure cases are exposed through Result -typed interfaces rather than unstructured low-level control flow. This restructuring is closer to the higher-level abstraction strategies observed in human C-to-Rust migration [ 17 ] . The light teal spans mark the Rust-native abstractions translated by SpeC2Rust .",
+   "zh": "相比之下，清单 1 展示了 SpeC2Rust 生成的 Rust 代码。 相同的功能被围绕一个 C4 结构体和 C4Error 类型重新组织。 全局状态通过结构体字段维护，操作被重写为基于 &mut self 的方法，而诸如 scan_number() 的辅助函数则提升了可读性和模块化程度。 失败情形通过 Result 类型的接口暴露，而非非结构化的底层控制流。 这种重构方式更接近人类在 C 到 Rust 迁移中所采用的高层抽象策略 [17]。 浅青色标注的部分是 SpeC2Rust 翻译出的 Rust 原生抽象。",
+   "sents": [
+    {
+     "en": "By contrast, Listing 1 shows the Rust code generated by SpeC2Rust .",
+     "zh": "相比之下，清单 1 展示了 SpeC2Rust 生成的 Rust 代码。"
+    },
+    {
+     "en": "The same functionality is reorganized around a C4 struct and C4Error type.",
+     "zh": "相同的功能被围绕一个 C4 结构体和 C4Error 类型重新组织。"
+    },
+    {
+     "en": "Global state is maintained through struct fields, operations are rewritten as methods over &mut self , and helper functions such as scan_number() improve readability and modularity.",
+     "zh": "全局状态通过结构体字段维护，操作被重写为基于 &mut self 的方法，而诸如 scan_number() 的辅助函数则提升了可读性和模块化程度。"
+    },
+    {
+     "en": "Failure cases are exposed through Result -typed interfaces rather than unstructured low-level control flow.",
+     "zh": "失败情形通过 Result 类型的接口暴露，而非非结构化的底层控制流。"
+    },
+    {
+     "en": "This restructuring is closer to the higher-level abstraction strategies observed in human C-to-Rust migration [ 17 ] .",
+     "zh": "这种重构方式更接近人类在 C 到 Rust 迁移中所采用的高层抽象策略 [17]。"
+    },
+    {
+     "en": "The light teal spans mark the Rust-native abstractions translated by SpeC2Rust .",
+     "zh": "浅青色标注的部分是 SpeC2Rust 翻译出的 Rust 原生抽象。"
+    }
+   ]
+  },
+  {
+   "en": "This example motivates the central claim of SpeC2Rust : repository-level C-to-Rust translation requires more than local code conversion. Prior work on safer C-to-Rust migration also shows that low-level C representations often need to be lifted into Rust-native abstractions rather than translated syntactically [ 16 , 18 ] . Such translation requires explicit recovery of project intent, specification-guided generation beyond the source skeleton, and structured repair driven by focused evidence and executable validation.",
+   "zh": "这个例子引出了 SpeC2Rust 的核心主张：仓库级 C 到 Rust 的翻译需要的不仅仅是局部代码转换。 关于更安全的 C 到 Rust 迁移的先前工作也表明，低层 C 表示往往需要被提升到 Rust 原生抽象中，而不是进行句法层面的翻译 [16, 18]。 这样的翻译需要显式地恢复项目意图、在源代码骨架之外进行规范引导的生成，以及由聚焦证据和可执行验证驱动的结构化修复。",
+   "sents": [
+    {
+     "en": "This example motivates the central claim of SpeC2Rust : repository-level C-to-Rust translation requires more than local code conversion.",
+     "zh": "这个例子引出了 SpeC2Rust 的核心主张：仓库级 C 到 Rust 的翻译需要的不仅仅是局部代码转换。"
+    },
+    {
+     "en": "Prior work on safer C-to-Rust migration also shows that low-level C representations often need to be lifted into Rust-native abstractions rather than translated syntactically [ 16 , 18 ] .",
+     "zh": "关于更安全的 C 到 Rust 迁移的先前工作也表明，低层 C 表示往往需要被提升到 Rust 原生抽象中，而不是进行句法层面的翻译 [16, 18]。"
+    },
+    {
+     "en": "Such translation requires explicit recovery of project intent, specification-guided generation beyond the source skeleton, and structured repair driven by focused evidence and executable validation.",
+     "zh": "这样的翻译需要显式地恢复项目意图、在源代码骨架之外进行规范引导的生成，以及由聚焦证据和可执行验证驱动的结构化修复。"
+    }
+   ]
+  },
+  {
+   "en": "In this section, we propose SpeC2Rust , a specification-driven C-to-Rust translation workflow. As shown in Figure 2 , SpeC2Rust comprises three stages: (1) Project-Intent Structuring, which converts whole-project C analysis results into persistent specification documents and structured module plans, (2) Spec-Guided Generation, which uses specification documents to generate the Rust repository in a dependency-aware manner, and (3) Layered-Feedback Repair, which uses compiler diagnostics and test feedback to repair the generated project.",
+   "zh": "在本节中，我们提出 SpeC2Rust，一种以规格说明驱动的 C 到 Rust 翻译工作流程。 如图 2 所示，SpeC2Rust 包含三个阶段：(1) 项目意图结构化，将整个项目的 C 分析结果转化为持久化的规格说明文档和结构化模块计划；(2) 规格引导生成，利用规格说明文档以依赖感知的方式生成 Rust 代码仓库；(3) 分层反馈修复，利用编译器诊断信息和测试反馈来修复生成的项目。",
+   "sents": [
+    {
+     "en": "In this section, we propose SpeC2Rust , a specification-driven C-to-Rust translation workflow.",
+     "zh": "在本节中，我们提出 SpeC2Rust，一种以规格说明驱动的 C 到 Rust 翻译工作流程。"
+    },
+    {
+     "en": "As shown in Figure 2 , SpeC2Rust comprises three stages: (1) Project-Intent Structuring, which converts whole-project C analysis results into persistent specification documents and structured module plans, (2) Spec-Guided Generation, which uses specification documents to generate the Rust repository in a dependency-aware manner, and (3) Layered-Feedback Repair, which uses compiler diagnostics and test feedback to repair the generated project.",
+     "zh": "如图 2 所示，SpeC2Rust 包含三个阶段：(1) 项目意图结构化，将整个项目的 C 分析结果转化为持久化的规格说明文档和结构化模块计划；(2) 规格引导生成，利用规格说明文档以依赖感知的方式生成 Rust 代码仓库；(3) 分层反馈修复，利用编译器诊断信息和测试反馈来修复生成的项目。"
+    }
+   ]
+  },
+  {
+   "en": "Stage 1 analyzes the input C repository and produces structured specification documents that encode the project-level design intent, used by the subsequent generation and repair stages. It consists of three steps: Static Analysis , Hierarchical Module Split , and Spec Generation .",
+   "zh": "阶段 1 分析输入的 C 代码仓库，生成结构化的规范文档，这些文档编码了项目级的设计意图，供后续的生成与修复阶段使用。 它由三个步骤组成：静态分析、层次化模块拆分和规范生成。",
+   "sents": [
+    {
+     "en": "Stage 1 analyzes the input C repository and produces structured specification documents that encode the project-level design intent, used by the subsequent generation and repair stages.",
+     "zh": "阶段 1 分析输入的 C 代码仓库，生成结构化的规范文档，这些文档编码了项目级的设计意图，供后续的生成与修复阶段使用。"
+    },
+    {
+     "en": "It consists of three steps: Static Analysis , Hierarchical Module Split , and Spec Generation .",
+     "zh": "它由三个步骤组成：静态分析、层次化模块拆分和规范生成。"
+    }
+   ]
+  },
+  {
+   "en": "We parse each C source and header file with a tree-sitter parser, collecting per-function records (defining file, source span, body, and call sites) and per-file evidence (data definitions, global declarations, macros). We then merge per-file records into a project-level representation, resolving call sites against the function table to build a call graph and linking data-definition evidence with file ownership to form a fact graph. We also serialize all collected evidence as a JSON metadata file so that generation and repair stages can retrieve the original C context without re-parsing.",
+   "zh": "我们使用 tree-sitter 解析器解析每个 C 源文件和头文件，收集逐函数的记录（定义文件、源码范围、函数体和调用点）以及逐文件的证据（数据定义、全局声明、宏）。 随后我们将逐文件的记录合并为项目级表示，通过将调用点与函数表对照解析来构建调用图，并将数据定义证据与文件归属关系关联起来以形成事实图。 我们还将收集到的所有证据序列化为一个 JSON 元数据文件，以便生成与修复阶段无需重新解析即可检索原始 C 上下文。",
+   "sents": [
+    {
+     "en": "We parse each C source and header file with a tree-sitter parser, collecting per-function records (defining file, source span, body, and call sites) and per-file evidence (data definitions, global declarations, macros).",
+     "zh": "我们使用 tree-sitter 解析器解析每个 C 源文件和头文件，收集逐函数的记录（定义文件、源码范围、函数体和调用点）以及逐文件的证据（数据定义、全局声明、宏）。"
+    },
+    {
+     "en": "We then merge per-file records into a project-level representation, resolving call sites against the function table to build a call graph and linking data-definition evidence with file ownership to form a fact graph.",
+     "zh": "随后我们将逐文件的记录合并为项目级表示，通过将调用点与函数表对照解析来构建调用图，并将数据定义证据与文件归属关系关联起来以形成事实图。"
+    },
+    {
+     "en": "We also serialize all collected evidence as a JSON metadata file so that generation and repair stages can retrieve the original C context without re-parsing.",
+     "zh": "我们还将收集到的所有证据序列化为一个 JSON 元数据文件，以便生成与修复阶段无需重新解析即可检索原始 C 上下文。"
+    }
+   ]
+  },
+  {
+   "en": "We decompose the repository into translation-oriented module units, treating each top-level directory as an initial candidate. We then evaluate each candidate for cohesion using call graph statistics from static analysis. For a candidate module m m with e in ​ ( m ) e_{\\mathrm{in}}(m) intra-module and e out ​ ( m ) e_{\\mathrm{out}}(m) inter-module call edges, the cohesion score is defined as",
+   "zh": "我们将代码仓库分解为面向翻译的模块单元，把每个顶层目录作为初始候选。 然后，我们利用静态分析得到的调用图统计信息来评估每个候选的内聚性。 对于一个具有 e_in(m) 条模块内调用边和 e_out(m) 条模块间调用边的候选模块 m，内聚得分定义为",
+   "sents": [
+    {
+     "en": "We decompose the repository into translation-oriented module units, treating each top-level directory as an initial candidate.",
+     "zh": "我们将代码仓库分解为面向翻译的模块单元，把每个顶层目录作为初始候选。"
+    },
+    {
+     "en": "We then evaluate each candidate for cohesion using call graph statistics from static analysis.",
+     "zh": "然后，我们利用静态分析得到的调用图统计信息来评估每个候选的内聚性。"
+    },
+    {
+     "en": "For a candidate module m m with e in ​ ( m ) e_{\\mathrm{in}}(m) intra-module and e out ​ ( m ) e_{\\mathrm{out}}(m) inter-module call edges, the cohesion score is defined as",
+     "zh": "对于一个具有 e_in(m) 条模块内调用边和 e_out(m) 条模块间调用边的候选模块 m，内聚得分定义为"
+    }
+   ]
+  },
+  {
+   "en": "Candidates whose score exceeds a threshold are materialized directly as module units. The remaining candidates are refined using three strategies applied in sequence. Struct split groups functions that access the same struct type. Prefix split groups functions sharing a common name prefix (e.g., ast_* , ir_gen_* ), capturing the naming conventions C projects use to delimit logical subsystems. File-local split groups remaining functions by source file. We chunk oversized groups further to stay within LLM context size limits. The output consists of module units for specification generation and cluster units, which are finer-grained slices of module units used as focused context slices during generation and repair. Algorithm 1 summarizes the full procedure.",
+   "zh": "得分超过阈值的候选将直接实例化为模块单元。 剩余的候选将依次使用三种策略进行细化。 结构体拆分将访问同一结构体类型的函数归为一组。 前缀拆分将共享相同名称前缀的函数归为一组（例如 ast_*、ir_gen_*），以捕捉 C 项目中用于划分逻辑子系统的命名惯例。 文件内拆分将剩余函数按源文件归为一组。 对于过大的组，我们会进一步分块，以保持在 LLM 上下文大小限制之内。 输出由用于规约生成的模块单元和簇单元组成，簇单元是模块单元的更细粒度切片，在生成与修复过程中用作聚焦的上下文切片。 算法 1 总结了完整流程。",
+   "sents": [
+    {
+     "en": "Candidates whose score exceeds a threshold are materialized directly as module units.",
+     "zh": "得分超过阈值的候选将直接实例化为模块单元。"
+    },
+    {
+     "en": "The remaining candidates are refined using three strategies applied in sequence.",
+     "zh": "剩余的候选将依次使用三种策略进行细化。"
+    },
+    {
+     "en": "Struct split groups functions that access the same struct type.",
+     "zh": "结构体拆分将访问同一结构体类型的函数归为一组。"
+    },
+    {
+     "en": "Prefix split groups functions sharing a common name prefix (e.g., ast_* , ir_gen_* ), capturing the naming conventions C projects use to delimit logical subsystems.",
+     "zh": "前缀拆分将共享相同名称前缀的函数归为一组（例如 ast_*、ir_gen_*），以捕捉 C 项目中用于划分逻辑子系统的命名惯例。"
+    },
+    {
+     "en": "File-local split groups remaining functions by source file.",
+     "zh": "文件内拆分将剩余函数按源文件归为一组。"
+    },
+    {
+     "en": "We chunk oversized groups further to stay within LLM context size limits.",
+     "zh": "对于过大的组，我们会进一步分块，以保持在 LLM 上下文大小限制之内。"
+    },
+    {
+     "en": "The output consists of module units for specification generation and cluster units, which are finer-grained slices of module units used as focused context slices during generation and repair.",
+     "zh": "输出由用于规约生成的模块单元和簇单元组成，簇单元是模块单元的更细粒度切片，在生成与修复过程中用作聚焦的上下文切片。"
+    },
+    {
+     "en": "Algorithm 1 summarizes the full procedure.",
+     "zh": "算法 1 总结了完整流程。"
+    }
+   ]
+  },
+  {
+   "en": "We convert each module unit into a three-document specification bundle. The bundle includes a requirement document covering translation obligations, an implementation plan for Rust-side organization, and a task-decomposition document listing executable translation steps. At the project level, it produces a rewrite context capturing repository structure, subsystem boundaries, public interfaces, and behavioral constraints. It also produces a translation contract defining the expected Rust-side generation boundary. During generation, we retrieve the relevant specification rather than passing raw C source to the model. During repair, the same documents supply source-grounded context for interpreting compiler diagnostics and test failures. Figure 3 shows example produced documents.",
+   "zh": "我们将每个模块单元转换为一组由三份文档组成的规范。 该组文档包括一份涵盖翻译义务的需求文档、一份用于 Rust 侧组织的实施计划，以及一份列出可执行翻译步骤的任务分解文档。 在项目层面，它会生成一个重写上下文，捕获仓库结构、子系统边界、公共接口和行为约束。 它还会生成一份翻译契约，定义预期的 Rust 侧生成边界。 在生成过程中，我们检索相关的规范，而不是将原始 C 源码传给模型。 在修复过程中，同样的文档为解释编译器诊断和测试失败提供基于源码的上下文。 图 3 展示了生成的文档示例。",
+   "sents": [
+    {
+     "en": "We convert each module unit into a three-document specification bundle.",
+     "zh": "我们将每个模块单元转换为一组由三份文档组成的规范。"
+    },
+    {
+     "en": "The bundle includes a requirement document covering translation obligations, an implementation plan for Rust-side organization, and a task-decomposition document listing executable translation steps.",
+     "zh": "该组文档包括一份涵盖翻译义务的需求文档、一份用于 Rust 侧组织的实施计划，以及一份列出可执行翻译步骤的任务分解文档。"
+    },
+    {
+     "en": "At the project level, it produces a rewrite context capturing repository structure, subsystem boundaries, public interfaces, and behavioral constraints.",
+     "zh": "在项目层面，它会生成一个重写上下文，捕获仓库结构、子系统边界、公共接口和行为约束。"
+    },
+    {
+     "en": "It also produces a translation contract defining the expected Rust-side generation boundary.",
+     "zh": "它还会生成一份翻译契约，定义预期的 Rust 侧生成边界。"
+    },
+    {
+     "en": "During generation, we retrieve the relevant specification rather than passing raw C source to the model.",
+     "zh": "在生成过程中，我们检索相关的规范，而不是将原始 C 源码传给模型。"
+    },
+    {
+     "en": "During repair, the same documents supply source-grounded context for interpreting compiler diagnostics and test failures.",
+     "zh": "在修复过程中，同样的文档为解释编译器诊断和测试失败提供基于源码的上下文。"
+    },
+    {
+     "en": "Figure 3 shows example produced documents.",
+     "zh": "图 3 展示了生成的文档示例。"
+    }
+   ]
+  },
+  {
+   "en": "Stage 2 translates the project into Rust by using the Stage 1 specification documents as the primary context. It consists of two steps: Context Assembly and Rust Code Generation .",
+   "zh": "阶段 2 使用阶段 1 的规格文档作为主要上下文，将项目翻译成 Rust。 它包含两个步骤：上下文组装和 Rust 代码生成。",
+   "sents": [
+    {
+     "en": "Stage 2 translates the project into Rust by using the Stage 1 specification documents as the primary context.",
+     "zh": "阶段 2 使用阶段 1 的规格文档作为主要上下文，将项目翻译成 Rust。"
+    },
+    {
+     "en": "It consists of two steps: Context Assembly and Rust Code Generation .",
+     "zh": "它包含两个步骤：上下文组装和 Rust 代码生成。"
+    }
+   ]
+  },
+  {
+   "en": "We derive a file-level generation plan from the specification documents, translation contract, and source evidence. The plan specifies each target Rust file’s generation order, the C source files it covers, and its dependencies on other planned Rust files. For each file, we assemble a focused context package combining the relevant module specification, the project-level rewrite context, and interface summaries of its dependencies.",
+   "zh": "我们从规格文档、翻译契约和源码证据中推导出文件级的生成计划。 该计划规定了每个目标 Rust 文件的生成顺序、它覆盖的 C 源文件，以及它对其他计划中 Rust 文件的依赖。 对于每个文件，我们组装一个聚焦的上下文包，其中结合了相关模块规格、项目级改写上下文，以及其依赖项的接口摘要。",
+   "sents": [
+    {
+     "en": "We derive a file-level generation plan from the specification documents, translation contract, and source evidence.",
+     "zh": "我们从规格文档、翻译契约和源码证据中推导出文件级的生成计划。"
+    },
+    {
+     "en": "The plan specifies each target Rust file’s generation order, the C source files it covers, and its dependencies on other planned Rust files.",
+     "zh": "该计划规定了每个目标 Rust 文件的生成顺序、它覆盖的 C 源文件，以及它对其他计划中 Rust 文件的依赖。"
+    },
+    {
+     "en": "For each file, we assemble a focused context package combining the relevant module specification, the project-level rewrite context, and interface summaries of its dependencies.",
+     "zh": "对于每个文件，我们组装一个聚焦的上下文包，其中结合了相关模块规格、项目级改写上下文，以及其依赖项的接口摘要。"
+    }
+   ]
+  },
+  {
+   "en": "We generate Rust files in the dependency order defined by the file plan, using the assembled context package as the primary input. When additional evidence is needed, ContextualRustAgent retrieves C source excerpts or previously generated Rust files to supplement the context. When generation reaches the model’s output limit, we append the produced content as a prefix and resume generation, allowing large files to be completed across multiple passes. After generation, we extract the file’s exported function signatures and referenced symbols as an interface summary and register them in a live symbol registry. Subsequent files query the registry to reuse earlier results without rereading the full Rust repository. We then run a lint checker and apply lightweight structural fixes, resolving issues such as duplicate definitions and cross-file reference errors, before advancing to the next file. Figure 4 illustrates the registry format.",
+   "zh": "我们按照文件计划定义的依赖顺序生成 Rust 文件，并以组装好的上下文包作为主要输入。 当需要额外证据时，ContextualRustAgent 会检索 C 源代码片段或先前生成的 Rust 文件来补充上下文。 当生成达到模型的输出上限时，我们将已生成的内容作为前缀附加并继续生成，使大文件可以通过多次生成来完成。 生成完成后，我们提取该文件导出的函数签名和被引用的符号作为接口摘要，并将其注册到实时符号注册表中。 后续文件通过查询该注册表来复用先前的结果，而无需重新读取整个 Rust 代码库。 随后，我们运行 lint 检查器并进行轻量级结构修复，解决诸如重复定义和跨文件引用错误等问题，然后再处理下一个文件。 图 4 展示了该注册表的格式。",
+   "sents": [
+    {
+     "en": "We generate Rust files in the dependency order defined by the file plan, using the assembled context package as the primary input.",
+     "zh": "我们按照文件计划定义的依赖顺序生成 Rust 文件，并以组装好的上下文包作为主要输入。"
+    },
+    {
+     "en": "When additional evidence is needed, ContextualRustAgent retrieves C source excerpts or previously generated Rust files to supplement the context.",
+     "zh": "当需要额外证据时，ContextualRustAgent 会检索 C 源代码片段或先前生成的 Rust 文件来补充上下文。"
+    },
+    {
+     "en": "When generation reaches the model’s output limit, we append the produced content as a prefix and resume generation, allowing large files to be completed across multiple passes.",
+     "zh": "当生成达到模型的输出上限时，我们将已生成的内容作为前缀附加并继续生成，使大文件可以通过多次生成来完成。"
+    },
+    {
+     "en": "After generation, we extract the file’s exported function signatures and referenced symbols as an interface summary and register them in a live symbol registry.",
+     "zh": "生成完成后，我们提取该文件导出的函数签名和被引用的符号作为接口摘要，并将其注册到实时符号注册表中。"
+    },
+    {
+     "en": "Subsequent files query the registry to reuse earlier results without rereading the full Rust repository.",
+     "zh": "后续文件通过查询该注册表来复用先前的结果，而无需重新读取整个 Rust 代码库。"
+    },
+    {
+     "en": "We then run a lint checker and apply lightweight structural fixes, resolving issues such as duplicate definitions and cross-file reference errors, before advancing to the next file.",
+     "zh": "随后，我们运行 lint 检查器并进行轻量级结构修复，解决诸如重复定义和跨文件引用错误等问题，然后再处理下一个文件。"
+    },
+    {
+     "en": "Figure 4 illustrates the registry format.",
+     "zh": "图 4 展示了该注册表的格式。"
+    }
+   ]
+  },
+  {
+   "en": "Stage 3 repairs the generated Rust project using compiler diagnostics and C/Rust behavioral differences, drawing on Stage 1 specifications and Stage 2 interface summaries as repair context. It consists of four steps: execution environment alignment , structural normalization , compilation-Guided Repair , and test-driven repair closure .",
+   "zh": "阶段3利用编译器诊断信息和C/Rust行为差异来修复生成的Rust项目，并借助阶段1的规格说明和阶段2的接口摘要作为修复上下文。 它包含四个步骤：执行环境对齐、结构规范化、编译引导修复，以及测试驱动的修复闭环。",
+   "sents": [
+    {
+     "en": "Stage 3 repairs the generated Rust project using compiler diagnostics and C/Rust behavioral differences, drawing on Stage 1 specifications and Stage 2 interface summaries as repair context.",
+     "zh": "阶段3利用编译器诊断信息和C/Rust行为差异来修复生成的Rust项目，并借助阶段1的规格说明和阶段2的接口摘要作为修复上下文。"
+    },
+    {
+     "en": "It consists of four steps: execution environment alignment , structural normalization , compilation-Guided Repair , and test-driven repair closure .",
+     "zh": "它包含四个步骤：执行环境对齐、结构规范化、编译引导修复，以及测试驱动的修复闭环。"
+    }
+   ]
+  },
+  {
+   "en": "We construct an aligned execution environment for the C project and the Rust project, recording dependency settings, working directories, input/output conventions, and test commands needed to run both under the same setup. This environment provides the basis for collecting compiler diagnostics and C/Rust behavioral differences used in the subsequent repair steps.",
+   "zh": "我们为 C 项目和 Rust 项目构建了一个对齐的执行环境，记录两者在同一设置下运行所需的依赖配置、工作目录、输入/输出约定以及测试命令。 该环境为后续修复步骤中收集编译器诊断信息和 C/Rust 行为差异提供了基础。",
+   "sents": [
+    {
+     "en": "We construct an aligned execution environment for the C project and the Rust project, recording dependency settings, working directories, input/output conventions, and test commands needed to run both under the same setup.",
+     "zh": "我们为 C 项目和 Rust 项目构建了一个对齐的执行环境，记录两者在同一设置下运行所需的依赖配置、工作目录、输入/输出约定以及测试命令。"
+    },
+    {
+     "en": "This environment provides the basis for collecting compiler diagnostics and C/Rust behavioral differences used in the subsequent repair steps.",
+     "zh": "该环境为后续修复步骤中收集编译器诊断信息和 C/Rust 行为差异提供了基础。"
+    }
+   ]
+  },
+  {
+   "en": "Before model-based repair, we apply rule-based preprocessing to the generated Rust project to remove structural artifacts that can be resolved without model inference, including formatting errors, invalid module declarations, residual syntax fragments, and import issues. This allows later repair rounds to focus on substantive errors such as type mismatches, ownership violations, and interface mismatches.",
+   "zh": "在基于模型的修复之前，我们首先对生成的 Rust 项目应用基于规则的预处理，以移除那些无需模型推理即可解决的结构性瑕疵，包括格式错误、无效的模块声明、残留的语法片段以及导入问题。 这使得后续的修复轮次能够专注于实质性错误，例如类型不匹配、所有权违规和接口不匹配。",
+   "sents": [
+    {
+     "en": "Before model-based repair, we apply rule-based preprocessing to the generated Rust project to remove structural artifacts that can be resolved without model inference, including formatting errors, invalid module declarations, residual syntax fragments, and import issues.",
+     "zh": "在基于模型的修复之前，我们首先对生成的 Rust 项目应用基于规则的预处理，以移除那些无需模型推理即可解决的结构性瑕疵，包括格式错误、无效的模块声明、残留的语法片段以及导入问题。"
+    },
+    {
+     "en": "This allows later repair rounds to focus on substantive errors such as type mismatches, ownership violations, and interface mismatches.",
+     "zh": "这使得后续的修复轮次能够专注于实质性错误，例如类型不匹配、所有权违规和接口不匹配。"
+    }
+   ]
+  },
+  {
+   "en": "We run cargo check and cargo build to collect compiler diagnostics and group related diagnostics into repair batches by affected files and dependency relations. For each batch, we build a diagnosis plan identifying the Rust units, module interfaces, and configuration files involved in the failure.",
+   "zh": "我们运行 cargo check 和 cargo build 来收集编译器诊断，并根据受影响的文件和依赖关系将相关诊断归组为修复批次。 对于每个批次，我们会构建一个诊断计划，识别出故障所涉及的 Rust 单元、模块接口和配置文件。",
+   "sents": [
+    {
+     "en": "We run cargo check and cargo build to collect compiler diagnostics and group related diagnostics into repair batches by affected files and dependency relations.",
+     "zh": "我们运行 cargo check 和 cargo build 来收集编译器诊断，并根据受影响的文件和依赖关系将相关诊断归组为修复批次。"
+    },
+    {
+     "en": "For each batch, we build a diagnosis plan identifying the Rust units, module interfaces, and configuration files involved in the failure.",
+     "zh": "对于每个批次，我们会构建一个诊断计划，识别出故障所涉及的 Rust 单元、模块接口和配置文件。"
+    }
+   ]
+  },
+  {
+   "en": "We organize the repair loop into major and minor rounds. Minor rounds iterate over active batches. Major rounds maintain repair memory and trigger rollback when progress stalls. RustRepairAgent repairs each batch using a layered prompt with five components. The repair protocol layer encodes stable repair rules. The failure instance layer describes the current batch using minimized diagnostics and candidate causes. The project knowledge layer provides specifications, module responsibilities, and inter-file dependencies from earlier stages. The evidence retrieval layer supplies Rust code slices, C source excerpts, and execution traces for the current diagnosis. The repair memory layer records the current analysis, attempted repair directions, and edit summaries across rounds. Figure 5 shows this prompt organization. After each patch, we rerun compilation and update the repair memory with the remaining diagnostics and applied edits. If a major round reaches its repair limit without sufficient progress, we restore the code snapshot from the start of that round and retry.",
+   "zh": "我们将修复循环组织为大轮和小轮。 小轮在活跃批次上进行迭代。 大轮维护修复记忆，并在进展停滞时触发回滚。 RustRepairAgent 使用包含五个组件的分层提示词修复每个批次。 修复协议层编码稳定的修复规则。 失败实例层使用最小化的诊断信息和候选原因描述当前批次。 项目知识层提供来自早期阶段的规范说明、模块职责以及文件间依赖关系。 证据检索层为当前诊断提供 Rust 代码切片、C 源代码摘录以及执行轨迹。 修复记忆层跨各轮记录当前分析、已尝试的修复方向以及编辑摘要。 图 5 展示了这种提示词组织方式。 每次生成补丁后，我们重新运行编译，并利用剩余的诊断信息和已应用的编辑更新修复记忆。 如果一个大轮达到其修复次数上限仍未取得足够进展，我们会恢复该轮开始时的代码快照并重试。",
+   "sents": [
+    {
+     "en": "We organize the repair loop into major and minor rounds.",
+     "zh": "我们将修复循环组织为大轮和小轮。"
+    },
+    {
+     "en": "Minor rounds iterate over active batches.",
+     "zh": "小轮在活跃批次上进行迭代。"
+    },
+    {
+     "en": "Major rounds maintain repair memory and trigger rollback when progress stalls.",
+     "zh": "大轮维护修复记忆，并在进展停滞时触发回滚。"
+    },
+    {
+     "en": "RustRepairAgent repairs each batch using a layered prompt with five components.",
+     "zh": "RustRepairAgent 使用包含五个组件的分层提示词修复每个批次。"
+    },
+    {
+     "en": "The repair protocol layer encodes stable repair rules.",
+     "zh": "修复协议层编码稳定的修复规则。"
+    },
+    {
+     "en": "The failure instance layer describes the current batch using minimized diagnostics and candidate causes.",
+     "zh": "失败实例层使用最小化的诊断信息和候选原因描述当前批次。"
+    },
+    {
+     "en": "The project knowledge layer provides specifications, module responsibilities, and inter-file dependencies from earlier stages.",
+     "zh": "项目知识层提供来自早期阶段的规范说明、模块职责以及文件间依赖关系。"
+    },
+    {
+     "en": "The evidence retrieval layer supplies Rust code slices, C source excerpts, and execution traces for the current diagnosis.",
+     "zh": "证据检索层为当前诊断提供 Rust 代码切片、C 源代码摘录以及执行轨迹。"
+    },
+    {
+     "en": "The repair memory layer records the current analysis, attempted repair directions, and edit summaries across rounds.",
+     "zh": "修复记忆层跨各轮记录当前分析、已尝试的修复方向以及编辑摘要。"
+    },
+    {
+     "en": "Figure 5 shows this prompt organization.",
+     "zh": "图 5 展示了这种提示词组织方式。"
+    },
+    {
+     "en": "After each patch, we rerun compilation and update the repair memory with the remaining diagnostics and applied edits.",
+     "zh": "每次生成补丁后，我们重新运行编译，并利用剩余的诊断信息和已应用的编辑更新修复记忆。"
+    },
+    {
+     "en": "If a major round reaches its repair limit without sufficient progress, we restore the code snapshot from the start of that round and retry.",
+     "zh": "如果一个大轮达到其修复次数上限仍未取得足够进展，我们会恢复该轮开始时的代码快照并重试。"
+    }
+   ]
+  },
+  {
+   "en": "After the Rust project compiles, we run the original test scripts on both the C reference and the Rust program. We compare their execution results, including outputs, exit status, runtime failures, and assertion failures, and convert each behavioral difference into a failure instance. We then construct a compact repair input from minimized test differences, execution traces, and relevant C/Rust code evidence. The repair agent combines this feedback with project knowledge and source evidence to fix behavioral mismatches such as boundary conditions, integer behavior, error paths, and cross-module calls. The loop terminates when the Rust project compiles and passes all end-to-end tests.",
+   "zh": "Rust 项目编译通过后，我们在 C 参考实现和 Rust 程序上运行原始测试脚本。 我们比较两者的执行结果，包括输出、退出状态、运行时失败和断言失败，并将每个行为差异转化为一个失败实例。 然后我们基于最小化的测试差异、执行轨迹以及相关的 C/Rust 代码证据，构建一个紧凑的修复输入。 修复智能体将这些反馈与项目知识和源代码证据相结合，以修复行为不匹配问题，例如边界条件、整数行为、错误路径和跨模块调用。 当 Rust 项目编译通过并通过所有端到端测试时，该循环终止。",
+   "sents": [
+    {
+     "en": "After the Rust project compiles, we run the original test scripts on both the C reference and the Rust program.",
+     "zh": "Rust 项目编译通过后，我们在 C 参考实现和 Rust 程序上运行原始测试脚本。"
+    },
+    {
+     "en": "We compare their execution results, including outputs, exit status, runtime failures, and assertion failures, and convert each behavioral difference into a failure instance.",
+     "zh": "我们比较两者的执行结果，包括输出、退出状态、运行时失败和断言失败，并将每个行为差异转化为一个失败实例。"
+    },
+    {
+     "en": "We then construct a compact repair input from minimized test differences, execution traces, and relevant C/Rust code evidence.",
+     "zh": "然后我们基于最小化的测试差异、执行轨迹以及相关的 C/Rust 代码证据，构建一个紧凑的修复输入。"
+    },
+    {
+     "en": "The repair agent combines this feedback with project knowledge and source evidence to fix behavioral mismatches such as boundary conditions, integer behavior, error paths, and cross-module calls.",
+     "zh": "修复智能体将这些反馈与项目知识和源代码证据相结合，以修复行为不匹配问题，例如边界条件、整数行为、错误路径和跨模块调用。"
+    },
+    {
+     "en": "The loop terminates when the Rust project compiles and passes all end-to-end tests.",
+     "zh": "当 Rust 项目编译通过并通过所有端到端测试时，该循环终止。"
+    }
+   ]
+  },
+  {
+   "en": "We use C projects from prior work on project-scale C-to-Rust translation, primarily following the evaluation datasets used by prior work [ 9 , 8 ] . Our dataset contains eight projects: c4 [ 15 ] , yank [ 19 ] , sds [ 20 ] , which [ 21 ] , cat [ 22 ] , pwd [ 23 ] , shc [ 24 ] , and cflow [ 25 ] . Their sizes range from 418 to 49,757 lines of C code. Each project is accompanied by end-to-end shell test scripts. Table I summarizes the dataset composition. LoC , Files , and Functions characterize repository scale and cross-file complexity, which directly affect translation difficulty. #Test Source indicates the provenance of the executable end-to-end test script, clarifying whether the validation artifacts come from prior translation work or from the original project itself. #Test Cases reflects the amount of observable semantic behavior covered by each script, which is important for interpreting the strength of semantic-equivalence evaluation. #Modules reports the number of translation modules produced by Stage 1 in SpeC2Rust ; this value serves as an indicator of repository decomposition difficulty and shows how much internal structure must be reconstructed before generation and repair.",
+   "zh": "我们使用来自先前关于项目规模 C 到 Rust 翻译工作的 C 项目，主要遵循先前工作 [9, 8] 所使用的评估数据集。 我们的数据集包含八个项目：c4 [15]、yank [19]、sds [20]、which [21]、cat [22]、pwd [23]、shc [24] 和 cflow [25]。 它们的规模从 418 行到 49,757 行 C 代码不等。 每个项目都附带端到端的 shell 测试脚本。 表 I 总结了数据集的构成。 LoC、Files 和 Functions 刻画了代码库的规模与跨文件复杂度，这直接影响翻译难度。#Test Source 表示可执行的端到端测试脚本的来源，用以澄清验证产物是来自先前的翻译工作还是来自原始项目本身。#Test Cases 反映每个脚本所覆盖的可观测语义行为的数量，这对于解读语义等价性评估的强度非常重要。#Modules 报告 SpeC2Rust 中第一阶段产出的翻译模块数量；该值可作为代码库分解难度的指标，并显示在生成与修复之前需要重建多少内部结构。",
+   "sents": [
+    {
+     "en": "We use C projects from prior work on project-scale C-to-Rust translation, primarily following the evaluation datasets used by prior work [ 9 , 8 ] .",
+     "zh": "我们使用来自先前关于项目规模 C 到 Rust 翻译工作的 C 项目，主要遵循先前工作 [9, 8] 所使用的评估数据集。"
+    },
+    {
+     "en": "Our dataset contains eight projects: c4 [ 15 ] , yank [ 19 ] , sds [ 20 ] , which [ 21 ] , cat [ 22 ] , pwd [ 23 ] , shc [ 24 ] , and cflow [ 25 ] .",
+     "zh": "我们的数据集包含八个项目：c4 [15]、yank [19]、sds [20]、which [21]、cat [22]、pwd [23]、shc [24] 和 cflow [25]。"
+    },
+    {
+     "en": "Their sizes range from 418 to 49,757 lines of C code.",
+     "zh": "它们的规模从 418 行到 49,757 行 C 代码不等。"
+    },
+    {
+     "en": "Each project is accompanied by end-to-end shell test scripts.",
+     "zh": "每个项目都附带端到端的 shell 测试脚本。"
+    },
+    {
+     "en": "Table I summarizes the dataset composition.",
+     "zh": "表 I 总结了数据集的构成。"
+    },
+    {
+     "en": "LoC , Files , and Functions characterize repository scale and cross-file complexity, which directly affect translation difficulty. #Test Source indicates the provenance of the executable end-to-end test script, clarifying whether the validation artifacts come from prior translation work or from the original project itself. #Test Cases reflects the amount of observable semantic behavior covered by each script, which is important for interpreting the strength of semantic-equivalence evaluation. #Modules reports the number of translation modules produced by Stage 1 in SpeC2Rust ; this value serves as an indicator of repository decomposition difficulty and shows how much internal structure must be reconstructed before generation and repair.",
+     "zh": "LoC、Files 和 Functions 刻画了代码库的规模与跨文件复杂度，这直接影响翻译难度。#Test Source 表示可执行的端到端测试脚本的来源，用以澄清验证产物是来自先前的翻译工作还是来自原始项目本身。#Test Cases 反映每个脚本所覆盖的可观测语义行为的数量，这对于解读语义等价性评估的强度非常重要。#Modules 报告 SpeC2Rust 中第一阶段产出的翻译模块数量；该值可作为代码库分解难度的指标，并显示在生成与修复之前需要重建多少内部结构。"
+    }
+   ]
+  },
+  {
+   "en": "We compare SpeC2Rust against four representative baselines:",
+   "zh": "我们将 SpeC2Rust 与四个具有代表性的基线进行了比较：",
+   "sents": null
+  },
+  {
+   "en": "C2Rust [ 3 ] is a rule-based open-source toolchain for translating C code (primarily targeting the C99 standard) into Rust.",
+   "zh": "C2Rust [ 3 ] 是一个基于规则的开源工具链，用于将 C 代码（主要针对 C99 标准）翻译为 Rust。",
+   "sents": null
+  },
+  {
+   "en": "C2SaferRust [ 8 ] takes the unsafe Rust code produced by C2Rust , first partitions the code into chunks, and then combines rule-based transformations with LLM-based rewriting to translate unsafe Rust into safer Rust.",
+   "zh": "C2SaferRust [8] 对 C2Rust 生成的非安全 Rust 代码进行处理，首先将代码划分为多个代码块，然后将基于规则的转换与基于大语言模型的重写相结合，将非安全 Rust 翻译为更安全的 Rust。",
+   "sents": null
+  },
+  {
+   "en": "EvoC2Rust [ 26 ] is a skeleton-driven translation tool that first constructs a corresponding Rust skeleton from the input C project and then uses LLM to generate code that fills the skeleton.",
+   "zh": "EvoC2Rust [ 26 ] 是一个由骨架驱动的翻译工具，它首先根据输入的 C 项目构建对应的 Rust 骨架，然后使用大语言模型（LLM）生成代码来填充该骨架。",
+   "sents": null
+  },
+  {
+   "en": "SmartC2Rust [ 9 ] is an iterative, feedback-driven C-to-Rust translation approach via large language models for safety and equivalence, and it serves as our primary comparison point.",
+   "zh": "SmartC2Rust [ 9 ] 是一种通过大型语言模型进行 C 到 Rust 翻译的迭代式、反馈驱动方法，旨在保障安全性与等价性，它是我们主要的对比对象。",
+   "sents": null
+  },
+  {
+   "en": "Following prior work on C-to-Rust translation [ 9 , 8 , 27 ] , we evaluate SpeC2Rust from three perspectives: safety, semantic equivalence, and cost. The same metric abbreviations are used throughout the later RQs.",
+   "zh": "遵循先前关于 C 到 Rust 翻译的研究 [9, 8, 27]，我们从安全性、语义等价性和成本三个角度评估 SpeC2Rust。 相同的指标缩写在后续的研究问题中贯穿使用。",
+   "sents": [
+    {
+     "en": "Following prior work on C-to-Rust translation [ 9 , 8 , 27 ] , we evaluate SpeC2Rust from three perspectives: safety, semantic equivalence, and cost.",
+     "zh": "遵循先前关于 C 到 Rust 翻译的研究 [9, 8, 27]，我们从安全性、语义等价性和成本三个角度评估 SpeC2Rust。"
+    },
+    {
+     "en": "The same metric abbreviations are used throughout the later RQs.",
+     "zh": "相同的指标缩写在后续的研究问题中贯穿使用。"
+    }
+   ]
+  },
+  {
+   "en": "Safety metrics. We use three safety-related metrics: unsafe lines of code ( uLoC ), raw-pointer declarations ( Decl. ), and raw-pointer dereferences ( Deref. ). These metrics capture how much low-level unsafe behavior remains in the translated Rust project.",
+   "zh": "安全性指标。 我们使用三个与安全性相关的指标：不安全代码行数（uLoC）、裸指针声明（Decl.）以及裸指针解引用（Deref.）。 这些指标衡量了翻译后的 Rust 项目中还残留多少底层的不安全行为。",
+   "sents": [
+    {
+     "en": "Safety metrics.",
+     "zh": "安全性指标。"
+    },
+    {
+     "en": "We use three safety-related metrics: unsafe lines of code ( uLoC ), raw-pointer declarations ( Decl. ), and raw-pointer dereferences ( Deref. ).",
+     "zh": "我们使用三个与安全性相关的指标：不安全代码行数（uLoC）、裸指针声明（Decl.）以及裸指针解引用（Deref.）。"
+    },
+    {
+     "en": "These metrics capture how much low-level unsafe behavior remains in the translated Rust project.",
+     "zh": "这些指标衡量了翻译后的 Rust 项目中还残留多少底层的不安全行为。"
+    }
+   ]
+  },
+  {
+   "en": "Semantic-equivalence metrics. We report compile success ( Comp. ) and test pass status/rate ( Tests Passed ). Following prior work, semantic equivalence is assessed by whether the translated Rust project compiles successfully and preserves the observable behavior of the original C project under the original end-to-end test scripts.",
+   "zh": "语义等价性指标。 我们报告编译成功（Comp.）和测试通过状态/比率（Tests Passed）。 遵循已有工作，语义等价性通过翻译后的 Rust 项目能否成功编译，以及在原始端到端测试脚本下能否保持原始 C 项目的可观察行为来评估。",
+   "sents": [
+    {
+     "en": "Semantic-equivalence metrics.",
+     "zh": "语义等价性指标。"
+    },
+    {
+     "en": "We report compile success ( Comp. ) and test pass status/rate ( Tests Passed ).",
+     "zh": "我们报告编译成功（Comp.）和测试通过状态/比率（Tests Passed）。"
+    },
+    {
+     "en": "Following prior work, semantic equivalence is assessed by whether the translated Rust project compiles successfully and preserves the observable behavior of the original C project under the original end-to-end test scripts.",
+     "zh": "遵循已有工作，语义等价性通过翻译后的 Rust 项目能否成功编译，以及在原始端到端测试脚本下能否保持原始 C 项目的可观察行为来评估。"
+    }
+   ]
+  },
+  {
+   "en": "Cost metrics. We report the number of model interactions ( Chats ), input tokens ( Input Tokens ), output tokens ( Output Tokens ), end-to-end latency ( Time ), and total API cost ( Cost ). These metrics are used to evaluate the practical overhead of repository-level translation and iterative repair.",
+   "zh": "成本指标。 我们报告模型交互次数（Chats）、输入词元数（Input Tokens）、输出词元数（Output Tokens）、端到端延迟（Time）以及总 API 成本（Cost）。 这些指标用于评估仓库级翻译与迭代修复的实际开销。",
+   "sents": [
+    {
+     "en": "Cost metrics.",
+     "zh": "成本指标。"
+    },
+    {
+     "en": "We report the number of model interactions ( Chats ), input tokens ( Input Tokens ), output tokens ( Output Tokens ), end-to-end latency ( Time ), and total API cost ( Cost ).",
+     "zh": "我们报告模型交互次数（Chats）、输入词元数（Input Tokens）、输出词元数（Output Tokens）、端到端延迟（Time）以及总 API 成本（Cost）。"
+    },
+    {
+     "en": "These metrics are used to evaluate the practical overhead of repository-level translation and iterative repair.",
+     "zh": "这些指标用于评估仓库级翻译与迭代修复的实际开销。"
+    }
+   ]
+  },
+  {
+   "en": "In all LLM-based experiments, we use the gpt-5.4 API model with max_tokens set to 8192. For evaluation consistency, we place all test scripts under test/ at the root of each C project and copy them into the translated Rust repository after generation. We keep these scripts unchanged and only redirect the executable path from the original C binary to the translated Rust binary. This setup lets us evaluate semantic preservation with the original project tests while avoiding any LLM-driven rewriting of the evaluation scripts.",
+   "zh": "在所有基于大语言模型的实验中，我们使用 gpt-5.4 API 模型，并将 max_tokens 设置为 8192。 为保证评估的一致性，我们将所有测试脚本置于每个 C 项目根目录下的 test/ 目录中，并在生成后将其复制到翻译后的 Rust 仓库中。 我们保持这些脚本不变，仅将可执行文件路径从原始 C 二进制文件重定向到翻译后的 Rust 二进制文件。 这种设置使我们能够使用原始项目的测试来评估语义保持性，同时避免任何由大语言模型驱动的对评估脚本的重写。",
+   "sents": [
+    {
+     "en": "In all LLM-based experiments, we use the gpt-5.4 API model with max_tokens set to 8192.",
+     "zh": "在所有基于大语言模型的实验中，我们使用 gpt-5.4 API 模型，并将 max_tokens 设置为 8192。"
+    },
+    {
+     "en": "For evaluation consistency, we place all test scripts under test/ at the root of each C project and copy them into the translated Rust repository after generation.",
+     "zh": "为保证评估的一致性，我们将所有测试脚本置于每个 C 项目根目录下的 test/ 目录中，并在生成后将其复制到翻译后的 Rust 仓库中。"
+    },
+    {
+     "en": "We keep these scripts unchanged and only redirect the executable path from the original C binary to the translated Rust binary.",
+     "zh": "我们保持这些脚本不变，仅将可执行文件路径从原始 C 二进制文件重定向到翻译后的 Rust 二进制文件。"
+    },
+    {
+     "en": "This setup lets us evaluate semantic preservation with the original project tests while avoiding any LLM-driven rewriting of the evaluation scripts.",
+     "zh": "这种设置使我们能够使用原始项目的测试来评估语义保持性，同时避免任何由大语言模型驱动的对评估脚本的重写。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate SpeC2Rust on eight C projects and compare it against representative C-to-Rust translation baselines.",
+   "zh": "我们在八个 C 项目上评估 SpeC2Rust，并将其与代表性的 C 到 Rust 翻译基线进行比较。",
+   "sents": null
+  },
+  {
+   "en": "This section focuses on the following research questions:",
+   "zh": "本节聚焦于以下研究问题：",
+   "sents": null
+  },
+  {
+   "en": "RQ1: How effective is SpeC2Rust at improving translation safety compared with representative C-to-Rust translation baselines?",
+   "zh": "RQ1：与代表性的 C 到 Rust 翻译基线方法相比，SpeC2Rust 在提升翻译安全性方面的效果如何？",
+   "sents": null
+  },
+  {
+   "en": "RQ2: To what extent can SpeC2Rust preserve repository-level semantic equivalence with the original C projects?",
+   "zh": "RQ2：SpeC2Rust 能在多大程度上保持仓库级别与原始 C 项目的语义等价性？",
+   "sents": null
+  },
+  {
+   "en": "RQ3: How cost-efficient is SpeC2Rust compared with prior repository-level C-to-Rust translation approaches?",
+   "zh": "RQ3：与现有的仓库级 C 到 Rust 翻译方法相比，SpeC2Rust 的成本效益如何？",
+   "sents": null
+  },
+  {
+   "en": "RQ4: What is the contribution of the major components of SpeC2Rust to the final translation performance?",
+   "zh": "RQ4：SpeC2Rust 的主要组件对最终翻译性能的贡献是什么？",
+   "sents": null
+  },
+  {
+   "en": "Table II reports the safety results of SpeC2Rust and representative C-to-Rust translation baselines. Across the eight evaluated repositories, SpeC2Rust produces 0 raw-pointer declarations, 0 raw-pointer dereferences, and 0%/0 unsafe code on every project; the aggregate row further shows a 100.0% reduction in all three safety metrics relative to C2Rust .",
+   "zh": "表 II 报告了 SpeC2Rust 以及代表性 C 到 Rust 翻译基线的安全性结果。 在八个被评估的仓库中，SpeC2Rust 在每个项目上产生 0 个裸指针声明、0 次裸指针解引用以及 0%/0 的不安全代码；汇总行进一步显示，相对于 C2Rust，这三项安全指标均降低了 100.0%。",
+   "sents": [
+    {
+     "en": "Table II reports the safety results of SpeC2Rust and representative C-to-Rust translation baselines.",
+     "zh": "表 II 报告了 SpeC2Rust 以及代表性 C 到 Rust 翻译基线的安全性结果。"
+    },
+    {
+     "en": "Across the eight evaluated repositories, SpeC2Rust produces 0 raw-pointer declarations, 0 raw-pointer dereferences, and 0%/0 unsafe code on every project; the aggregate row further shows a 100.0% reduction in all three safety metrics relative to C2Rust .",
+     "zh": "在八个被评估的仓库中，SpeC2Rust 在每个项目上产生 0 个裸指针声明、0 次裸指针解引用以及 0%/0 的不安全代码；汇总行进一步显示，相对于 C2Rust，这三项安全指标均降低了 100.0%。"
+    }
+   ]
+  },
+  {
+   "en": "Raw-pointer elimination. Across all eight projects, SpeC2Rust produces zero raw-pointer declarations and zero raw-pointer dereferences. In Table II , C2Rust retains between 201 and 6,168 raw-pointer declarations and between 23 and 3,315 raw-pointer dereferences per project, while C2SaferRust still leaves between 91 and 4,994 declarations and between 5 and 2,590 dereferences. On the five projects where SmartC2Rust reports safety outputs, it also reduces raw-pointer declarations and dereferences to zero, but it does not report completed results for cat , shc , or cflow . These results indicate that directly preserving C-oriented structure tends to carry pointer-based interfaces and shared-state patterns into the Rust output, whereas SpeC2Rust systematically removes them at repository scale.",
+   "zh": "原生指针消除。 在全部八个项目中，SpeC2Rust 产生零个原生指针声明和零个原生指针解引用。 在表 II 中，C2Rust 每个项目仍保留 201 到 6,168 个原生指针声明以及 23 到 3,315 个原生指针解引用，而 C2SaferRust 仍留下 91 到 4,994 个声明以及 5 到 2,590 个解引用。 在 SmartC2Rust 报告了安全性输出的五个项目中，它也将原生指针声明和解引用降为零，但它没有报告 cat、shc 或 cflow 的完整结果。 这些结果表明，直接保留面向 C 的结构往往会把基于指针的接口和共享状态模式带入 Rust 输出中，而 SpeC2Rust 则在仓库规模上系统地消除它们。",
+   "sents": [
+    {
+     "en": "Raw-pointer elimination.",
+     "zh": "原生指针消除。"
+    },
+    {
+     "en": "Across all eight projects, SpeC2Rust produces zero raw-pointer declarations and zero raw-pointer dereferences.",
+     "zh": "在全部八个项目中，SpeC2Rust 产生零个原生指针声明和零个原生指针解引用。"
+    },
+    {
+     "en": "In Table II , C2Rust retains between 201 and 6,168 raw-pointer declarations and between 23 and 3,315 raw-pointer dereferences per project, while C2SaferRust still leaves between 91 and 4,994 declarations and between 5 and 2,590 dereferences.",
+     "zh": "在表 II 中，C2Rust 每个项目仍保留 201 到 6,168 个原生指针声明以及 23 到 3,315 个原生指针解引用，而 C2SaferRust 仍留下 91 到 4,994 个声明以及 5 到 2,590 个解引用。"
+    },
+    {
+     "en": "On the five projects where SmartC2Rust reports safety outputs, it also reduces raw-pointer declarations and dereferences to zero, but it does not report completed results for cat , shc , or cflow .",
+     "zh": "在 SmartC2Rust 报告了安全性输出的五个项目中，它也将原生指针声明和解引用降为零，但它没有报告 cat、shc 或 cflow 的完整结果。"
+    },
+    {
+     "en": "These results indicate that directly preserving C-oriented structure tends to carry pointer-based interfaces and shared-state patterns into the Rust output, whereas SpeC2Rust systematically removes them at repository scale.",
+     "zh": "这些结果表明，直接保留面向 C 的结构往往会把基于指针的接口和共享状态模式带入 Rust 输出中，而 SpeC2Rust 则在仓库规模上系统地消除它们。"
+    }
+   ]
+  },
+  {
+   "en": "Unsafe-code removal. SpeC2Rust achieves 0%/0 unsafe code on all eight projects. In contrast, C2Rust ranges from 51.29%/2,940 on shc to 91.69%/2,481 on sds , and C2SaferRust still ranges from 9.33%/212 on sds to 89.78%/665 on c4 . For SmartC2Rust , four projects finish at 0%/0 , while yank still retains 0.04%/1 . The aggregate row further shows that, relative to C2Rust , SpeC2Rust reduces declarations, dereferences, and unsafe lines by 100.0% . This result shows that specification-driven repository reconstruction is more effective than skeleton-preserving translation at removing residual unsafe code.",
+   "zh": "不安全代码移除。 SpeC2Rust 在全部八个项目上均达到 0%/0 不安全代码。 相比之下，C2Rust 在 shc 上为 51.29%/2,940，在 sds 上为 91.69%/2,481，而 C2SaferRust 在 sds 上仍为 9.33%/212，在 c4 上为 89.78%/665。 对于 SmartC2Rust，四个项目最终达到 0%/0，而 yank 仍保留 0.04%/1。 汇总行进一步显示，相对于 C2Rust，SpeC2Rust 将声明、解引用和不安全行减少了 100.0%。 这一结果表明，规范驱动的仓库重建比保留骨架的翻译在移除残留不安全代码方面更为有效。",
+   "sents": [
+    {
+     "en": "Unsafe-code removal.",
+     "zh": "不安全代码移除。"
+    },
+    {
+     "en": "SpeC2Rust achieves 0%/0 unsafe code on all eight projects.",
+     "zh": "SpeC2Rust 在全部八个项目上均达到 0%/0 不安全代码。"
+    },
+    {
+     "en": "In contrast, C2Rust ranges from 51.29%/2,940 on shc to 91.69%/2,481 on sds , and C2SaferRust still ranges from 9.33%/212 on sds to 89.78%/665 on c4 .",
+     "zh": "相比之下，C2Rust 在 shc 上为 51.29%/2,940，在 sds 上为 91.69%/2,481，而 C2SaferRust 在 sds 上仍为 9.33%/212，在 c4 上为 89.78%/665。"
+    },
+    {
+     "en": "For SmartC2Rust , four projects finish at 0%/0 , while yank still retains 0.04%/1 .",
+     "zh": "对于 SmartC2Rust，四个项目最终达到 0%/0，而 yank 仍保留 0.04%/1。"
+    },
+    {
+     "en": "The aggregate row further shows that, relative to C2Rust , SpeC2Rust reduces declarations, dereferences, and unsafe lines by 100.0% .",
+     "zh": "汇总行进一步显示，相对于 C2Rust，SpeC2Rust 将声明、解引用和不安全行减少了 100.0%。"
+    },
+    {
+     "en": "This result shows that specification-driven repository reconstruction is more effective than skeleton-preserving translation at removing residual unsafe code.",
+     "zh": "这一结果表明，规范驱动的仓库重建比保留骨架的翻译在移除残留不安全代码方面更为有效。"
+    }
+   ]
+  },
+  {
+   "en": "Answer to RQ1: Compared with C2Rust , SpeC2Rust reduces raw-pointer declarations, raw-pointer dereferences, and unsafe lines of code by 100.0% in the aggregate, while maintaining full translation coverage across the evaluation dataset.",
+   "zh": "RQ1 的回答：与 C2Rust 相比，SpeC2Rust 在整个评估数据集上保持完整翻译覆盖率的同时，将裸指针声明、裸指针解引用和不安全代码行在总体上减少了 100.0%。",
+   "sents": null
+  },
+  {
+   "en": "Table III summarizes the semantic-equivalence results of SpeC2Rust . Across all eight projects in the evaluation dataset, the translated Rust projects compile successfully and pass the original end-to-end test scripts. In contrast, SmartC2Rust fails to compile on four projects in the current result sheet, and EvoC2Rust does not produce a successful translation for any project in our dataset. C2SaferRust compiles on all projects, because each rewritten function is checked by compilation and testing before replacing its original unsafe counterpart; when the rewritten version fails, the pipeline falls back to the corresponding C2Rust output to preserve buildability. From the perspective of completed repository-level translations, SpeC2Rust is also the only method in the current evaluation that simultaneously provides full eight-project coverage and zero-unsafe outputs. SmartC2Rust reaches 0%/0 unsafe code on four projects and 0.04%/1 on yank , but it does not report completed safety results for cat , shc , or cflow . EvoC2Rust does not produce a compilable translation on any of the eight projects. This coverage difference is important because safety improvements are only meaningful when they are achieved on completed repository translations.",
+   "zh": "表 III 总结了 SpeC2Rust 的语义等价性结果。 在评估数据集中的全部八个项目中，翻译后的 Rust 项目均能成功编译，并通过原始的端到端测试脚本。 相比之下，SmartC2Rust 在当前结果表中无法在四个项目上编译，而 EvoC2Rust 未对我们数据集中的任何项目产生成功的翻译。 C2SaferRust 能够在所有项目上编译，这是因为每个重写函数在替换其原始的不安全对应函数之前都会经过编译和测试检查；当重写版本失败时，流水线会回退到相应的 C2Rust 输出以保持可构建性。 从完成的仓库级翻译的角度来看，SpeC2Rust 也是当前评估中唯一同时提供全部八个项目覆盖和零不安全输出的方法。 SmartC2Rust 在四个项目上达到 0%/0 的不安全代码，在 yank 上为 0.04%/1，但它未报告 cat、shc 或 cflow 的完整安全性结果。 EvoC2Rust 未在八个项目中的任何一个上产生可编译的翻译。 这种覆盖差异非常重要，因为只有当安全性改进是在完成的仓库翻译上实现时，它们才具有意义。",
+   "sents": [
+    {
+     "en": "Table III summarizes the semantic-equivalence results of SpeC2Rust .",
+     "zh": "表 III 总结了 SpeC2Rust 的语义等价性结果。"
+    },
+    {
+     "en": "Across all eight projects in the evaluation dataset, the translated Rust projects compile successfully and pass the original end-to-end test scripts.",
+     "zh": "在评估数据集中的全部八个项目中，翻译后的 Rust 项目均能成功编译，并通过原始的端到端测试脚本。"
+    },
+    {
+     "en": "In contrast, SmartC2Rust fails to compile on four projects in the current result sheet, and EvoC2Rust does not produce a successful translation for any project in our dataset.",
+     "zh": "相比之下，SmartC2Rust 在当前结果表中无法在四个项目上编译，而 EvoC2Rust 未对我们数据集中的任何项目产生成功的翻译。"
+    },
+    {
+     "en": "C2SaferRust compiles on all projects, because each rewritten function is checked by compilation and testing before replacing its original unsafe counterpart; when the rewritten version fails, the pipeline falls back to the corresponding C2Rust output to preserve buildability.",
+     "zh": "C2SaferRust 能够在所有项目上编译，这是因为每个重写函数在替换其原始的不安全对应函数之前都会经过编译和测试检查；当重写版本失败时，流水线会回退到相应的 C2Rust 输出以保持可构建性。"
+    },
+    {
+     "en": "From the perspective of completed repository-level translations, SpeC2Rust is also the only method in the current evaluation that simultaneously provides full eight-project coverage and zero-unsafe outputs.",
+     "zh": "从完成的仓库级翻译的角度来看，SpeC2Rust 也是当前评估中唯一同时提供全部八个项目覆盖和零不安全输出的方法。"
+    },
+    {
+     "en": "SmartC2Rust reaches 0%/0 unsafe code on four projects and 0.04%/1 on yank , but it does not report completed safety results for cat , shc , or cflow .",
+     "zh": "SmartC2Rust 在四个项目上达到 0%/0 的不安全代码，在 yank 上为 0.04%/1，但它未报告 cat、shc 或 cflow 的完整安全性结果。"
+    },
+    {
+     "en": "EvoC2Rust does not produce a compilable translation on any of the eight projects.",
+     "zh": "EvoC2Rust 未在八个项目中的任何一个上产生可编译的翻译。"
+    },
+    {
+     "en": "This coverage difference is important because safety improvements are only meaningful when they are achieved on completed repository translations.",
+     "zh": "这种覆盖差异非常重要，因为只有当安全性改进是在完成的仓库翻译上实现时，它们才具有意义。"
+    }
+   ]
+  },
+  {
+   "en": "The repair effort varies substantially with project scale. The smallest completed case, c4 , requires only four repair iterations, whereas cflow requires 65 iterations. cat is the second most demanding case with 22 iterations. This trend is consistent with the larger code volume and richer cross-file dependencies of these repositories, which create more opportunities for build-level mismatches and test-observable semantic deviations during translation.",
+   "zh": "修复工作量随项目规模的变化非常大。 最小的已完成用例 c4 只需要四次修复迭代，而 cflow 需要 65 次迭代。cat 是第二耗时的用例，需要 22 次迭代。 这一趋势与这些仓库更大的代码量和更丰富的跨文件依赖相一致，这些因素在翻译过程中为构建层面的不匹配和测试可观察到的语义偏差创造了更多机会。",
+   "sents": [
+    {
+     "en": "The repair effort varies substantially with project scale.",
+     "zh": "修复工作量随项目规模的变化非常大。"
+    },
+    {
+     "en": "The smallest completed case, c4 , requires only four repair iterations, whereas cflow requires 65 iterations. cat is the second most demanding case with 22 iterations.",
+     "zh": "最小的已完成用例 c4 只需要四次修复迭代，而 cflow 需要 65 次迭代。cat 是第二耗时的用例，需要 22 次迭代。"
+    },
+    {
+     "en": "This trend is consistent with the larger code volume and richer cross-file dependencies of these repositories, which create more opportunities for build-level mismatches and test-observable semantic deviations during translation.",
+     "zh": "这一趋势与这些仓库更大的代码量和更丰富的跨文件依赖相一致，这些因素在翻译过程中为构建层面的不匹配和测试可观察到的语义偏差创造了更多机会。"
+    }
+   ]
+  },
+  {
+   "en": "The final translated code also remains analyzable by standard Rust tooling. Most projects finish with zero cargo clippy errors, while which and cat each retain a single clippy error. The remaining warnings are mainly associated with code paths, helper functions, or interface fragments that are weakly exercised by the available end-to-end tests. Nevertheless, all eight translated projects pass the original end-to-end tests, which is the primary criterion for semantic equivalence in our evaluation.",
+   "zh": "最终翻译后的代码仍然可以被标准 Rust 工具链分析。 大多数项目最终没有任何 cargo clippy 错误，而 which 和 cat 各自保留一个 clippy 错误。 剩余的警告主要与代码路径、辅助函数或接口片段相关，这些部分被现有的端到端测试弱覆盖。 尽管如此，全部八个翻译后的项目都通过了原始的端到端测试，这是我们评估中语义等价的主要标准。",
+   "sents": [
+    {
+     "en": "The final translated code also remains analyzable by standard Rust tooling.",
+     "zh": "最终翻译后的代码仍然可以被标准 Rust 工具链分析。"
+    },
+    {
+     "en": "Most projects finish with zero cargo clippy errors, while which and cat each retain a single clippy error.",
+     "zh": "大多数项目最终没有任何 cargo clippy 错误，而 which 和 cat 各自保留一个 clippy 错误。"
+    },
+    {
+     "en": "The remaining warnings are mainly associated with code paths, helper functions, or interface fragments that are weakly exercised by the available end-to-end tests.",
+     "zh": "剩余的警告主要与代码路径、辅助函数或接口片段相关，这些部分被现有的端到端测试弱覆盖。"
+    },
+    {
+     "en": "Nevertheless, all eight translated projects pass the original end-to-end tests, which is the primary criterion for semantic equivalence in our evaluation.",
+     "zh": "尽管如此，全部八个翻译后的项目都通过了原始的端到端测试，这是我们评估中语义等价的主要标准。"
+    }
+   ]
+  },
+  {
+   "en": "Answer to RQ2: SpeC2Rust achieves complete end-to-end semantic equivalence on all eight projects in the current dataset, while remaining executable and largely well-formed under the Rust toolchain.",
+   "zh": "回答 RQ2：SpeC2Rust 在当前数据集的全部八个项目上实现了完整的端到端语义等价，同时在 Rust 工具链下保持可执行且大部分格式良好。",
+   "sents": null
+  },
+  {
+   "en": "We evaluate the overhead of SpeC2Rust from two aspects: (1) performance overhead, including latency, chat count, and token usage, and (2) monetary cost in US dollars. Table IV reports the results for each project. Since SmartC2Rust does not complete cat , shc , or cflow in our evaluation, we use the five projects completed by both tools, i.e., c4 , yank , sds , which , and pwd , for direct comparison. The full eight-project result of SpeC2Rust is also reported to show its total overhead on the complete benchmark.",
+   "zh": "我们从两个方面评估 SpeC2Rust 的开销：（1）性能开销，包括延迟、对话次数和令牌用量；（2）以美元计的货币成本。 表 IV 报告了每个项目的结果。 由于 SmartC2Rust 在我们的评估中未能完成 cat、shc 和 cflow，我们使用两种工具都能完成的五个项目，即 c4、yank、sds、which 和 pwd，进行直接比较。 同时也报告了 SpeC2Rust 在全部八个项目上的完整结果，以展示其在完整基准测试上的总体开销。",
+   "sents": [
+    {
+     "en": "We evaluate the overhead of SpeC2Rust from two aspects: (1) performance overhead, including latency, chat count, and token usage, and (2) monetary cost in US dollars.",
+     "zh": "我们从两个方面评估 SpeC2Rust 的开销：（1）性能开销，包括延迟、对话次数和令牌用量；（2）以美元计的货币成本。"
+    },
+    {
+     "en": "Table IV reports the results for each project.",
+     "zh": "表 IV 报告了每个项目的结果。"
+    },
+    {
+     "en": "Since SmartC2Rust does not complete cat , shc , or cflow in our evaluation, we use the five projects completed by both tools, i.e., c4 , yank , sds , which , and pwd , for direct comparison.",
+     "zh": "由于 SmartC2Rust 在我们的评估中未能完成 cat、shc 和 cflow，我们使用两种工具都能完成的五个项目，即 c4、yank、sds、which 和 pwd，进行直接比较。"
+    },
+    {
+     "en": "The full eight-project result of SpeC2Rust is also reported to show its total overhead on the complete benchmark.",
+     "zh": "同时也报告了 SpeC2Rust 在全部八个项目上的完整结果，以展示其在完整基准测试上的总体开销。"
+    }
+   ]
+  },
+  {
+   "en": "Performance. On the five common projects, SpeC2Rust requires 254 chats, 1,797.89 K input tokens, 317.28 K output tokens, and 5,908 s in total. In comparison, SmartC2Rust requires 269 chats, 11,723.39 K input tokens, 402.23 K output tokens, and 26,038 s. Thus, SpeC2Rust reduces latency by 77.3%, input-token usage by 84.7%, and output-token usage by 21.1%. The chat count decreases by 5.6%. The reduction is mainly reflected in input tokens and latency, rather than in the number of interactions.",
+   "zh": "性能。 在五个常见项目上，SpeC2Rust 总共需要 254 次对话、1,797.89 K 输入 token、317.28 K 输出 token 以及 5,908 秒。 相比之下，SmartC2Rust 需要 269 次对话、11,723.39 K 输入 token、402.23 K 输出 token 以及 26,038 秒。 因此，SpeC2Rust 将延迟降低了 77.3%，输入 token 用量降低了 84.7%，输出 token 用量降低了 21.1%。 对话次数减少了 5.6%。 这种降低主要体现在输入 token 和延迟上，而不是交互次数上。",
+   "sents": [
+    {
+     "en": "Performance.",
+     "zh": "性能。"
+    },
+    {
+     "en": "On the five common projects, SpeC2Rust requires 254 chats, 1,797.89 K input tokens, 317.28 K output tokens, and 5,908 s in total.",
+     "zh": "在五个常见项目上，SpeC2Rust 总共需要 254 次对话、1,797.89 K 输入 token、317.28 K 输出 token 以及 5,908 秒。"
+    },
+    {
+     "en": "In comparison, SmartC2Rust requires 269 chats, 11,723.39 K input tokens, 402.23 K output tokens, and 26,038 s.",
+     "zh": "相比之下，SmartC2Rust 需要 269 次对话、11,723.39 K 输入 token、402.23 K 输出 token 以及 26,038 秒。"
+    },
+    {
+     "en": "Thus, SpeC2Rust reduces latency by 77.3%, input-token usage by 84.7%, and output-token usage by 21.1%.",
+     "zh": "因此，SpeC2Rust 将延迟降低了 77.3%，输入 token 用量降低了 84.7%，输出 token 用量降低了 21.1%。"
+    },
+    {
+     "en": "The chat count decreases by 5.6%.",
+     "zh": "对话次数减少了 5.6%。"
+    },
+    {
+     "en": "The reduction is mainly reflected in input tokens and latency, rather than in the number of interactions.",
+     "zh": "这种降低主要体现在输入 token 和延迟上，而不是交互次数上。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 6 further shows the input-token usage during repair on c4 . Both tools require six repair rounds on this trace. However, after the initial round, SpeC2Rust keeps the per-round input size lower than SmartC2Rust . The cumulative input-token usage is 168.58 K for SpeC2Rust , compared with 308.79 K for SmartC2Rust , a 45.4% reduction. This is because SpeC2Rust constructs each repair prompt from the repair protocol, the relevant specification context, and the observed failure evidence. It does not carry forward a growing prompt state across repair rounds.",
+   "zh": "图 6 进一步展示了在 c4 上修复过程中的输入 token 使用情况。 在该轨迹上，两种工具均需要六轮修复。 然而，在初始轮次之后，SpeC2Rust 使每轮输入规模保持在低于 SmartC2Rust 的水平。 SpeC2Rust 的累计输入 token 使用量为 168.58 K，而 SmartC2Rust 为 308.79 K，减少了 45.4%。 这是因为 SpeC2Rust 从修复协议、相关规格上下文以及观察到的失败证据来构建每个修复提示。 它不会在修复轮次之间携带不断增长的提示状态。",
+   "sents": [
+    {
+     "en": "Figure 6 further shows the input-token usage during repair on c4 .",
+     "zh": "图 6 进一步展示了在 c4 上修复过程中的输入 token 使用情况。"
+    },
+    {
+     "en": "Both tools require six repair rounds on this trace.",
+     "zh": "在该轨迹上，两种工具均需要六轮修复。"
+    },
+    {
+     "en": "However, after the initial round, SpeC2Rust keeps the per-round input size lower than SmartC2Rust .",
+     "zh": "然而，在初始轮次之后，SpeC2Rust 使每轮输入规模保持在低于 SmartC2Rust 的水平。"
+    },
+    {
+     "en": "The cumulative input-token usage is 168.58 K for SpeC2Rust , compared with 308.79 K for SmartC2Rust , a 45.4% reduction.",
+     "zh": "SpeC2Rust 的累计输入 token 使用量为 168.58 K，而 SmartC2Rust 为 308.79 K，减少了 45.4%。"
+    },
+    {
+     "en": "This is because SpeC2Rust constructs each repair prompt from the repair protocol, the relevant specification context, and the observed failure evidence.",
+     "zh": "这是因为 SpeC2Rust 从修复协议、相关规格上下文以及观察到的失败证据来构建每个修复提示。"
+    },
+    {
+     "en": "It does not carry forward a growing prompt state across repair rounds.",
+     "zh": "它不会在修复轮次之间携带不断增长的提示状态。"
+    }
+   ]
+  },
+  {
+   "en": "Cost. On the five common programs, SpeC2Rust costs $13.09 in total, while SmartC2Rust costs $38.61. This corresponds to a 66.1% reduction. Since the pricing of LLM calls is mainly determined by input and output tokens, the cost reduction is consistent with the token reduction above. The difference is especially large for input tokens, because SmartC2Rust needs to repeatedly provide large file-level contexts during interactive repair, whereas SpeC2Rust uses specification-guided repair contexts.",
+   "zh": "成本。 在五个常见程序上，SpeC2Rust 总共花费 13.09 美元，而 SmartC2Rust 花费 38.61 美元。 这相当于降低了 66.1%。 由于 LLM 调用的定价主要由输入和输出 token 决定，因此成本的降低与上述 token 的减少是一致的。 这种差异在输入 token 上尤为明显，因为 SmartC2Rust 在交互式修复过程中需要反复提供大型的文件级上下文，而 SpeC2Rust 使用由规格引导的修复上下文。",
+   "sents": [
+    {
+     "en": "Cost.",
+     "zh": "成本。"
+    },
+    {
+     "en": "On the five common programs, SpeC2Rust costs $13.09 in total, while SmartC2Rust costs $38.61.",
+     "zh": "在五个常见程序上，SpeC2Rust 总共花费 13.09 美元，而 SmartC2Rust 花费 38.61 美元。"
+    },
+    {
+     "en": "This corresponds to a 66.1% reduction.",
+     "zh": "这相当于降低了 66.1%。"
+    },
+    {
+     "en": "Since the pricing of LLM calls is mainly determined by input and output tokens, the cost reduction is consistent with the token reduction above.",
+     "zh": "由于 LLM 调用的定价主要由输入和输出 token 决定，因此成本的降低与上述 token 的减少是一致的。"
+    },
+    {
+     "en": "The difference is especially large for input tokens, because SmartC2Rust needs to repeatedly provide large file-level contexts during interactive repair, whereas SpeC2Rust uses specification-guided repair contexts.",
+     "zh": "这种差异在输入 token 上尤为明显，因为 SmartC2Rust 在交互式修复过程中需要反复提供大型的文件级上下文，而 SpeC2Rust 使用由规格引导的修复上下文。"
+    }
+   ]
+  },
+  {
+   "en": "Across all eight programs, SpeC2Rust completes every translation. Its total cost is $63.00, with 22,262 s of latency, 1,063 chats, 8,793.34 K input tokens, and 1,341.29,K output tokens. In contrast, SmartC2Rust produces completed cost traces for five programs: c4 , yank , sds , which , and pwd . It does not complete cat , shc , or cflow in our evaluation. For SpeC2Rust , the largest costs occur on cflow ($36.50; 10,626 s) and cat ($11.32; 4,939 s), which also have larger translation and repair workloads.",
+   "zh": "在全部八个程序上，SpeC2Rust 都完成了每一次翻译。 其总成本为 63.00 美元，延迟为 22,262 秒，聊天次数为 1,063 次，输入 token 数为 8,793.34 K，输出 token 数为 1,341.29 K。 相比之下，SmartC2Rust 仅对五个程序生成了完整的成本轨迹：c4、yank、sds、which 和 pwd。 在我们的评估中，它未能完成 cat、shc 或 cflow。 对于 SpeC2Rust，最大的开销出现在 cflow（36.50 美元；10,626 秒）和 cat（11.32 美元；4,939 秒）上，这两个程序的翻译和修复工作量也更大。",
+   "sents": [
+    {
+     "en": "Across all eight programs, SpeC2Rust completes every translation.",
+     "zh": "在全部八个程序上，SpeC2Rust 都完成了每一次翻译。"
+    },
+    {
+     "en": "Its total cost is $63.00, with 22,262 s of latency, 1,063 chats, 8,793.34 K input tokens, and 1,341.29,K output tokens.",
+     "zh": "其总成本为 63.00 美元，延迟为 22,262 秒，聊天次数为 1,063 次，输入 token 数为 8,793.34 K，输出 token 数为 1,341.29 K。"
+    },
+    {
+     "en": "In contrast, SmartC2Rust produces completed cost traces for five programs: c4 , yank , sds , which , and pwd .",
+     "zh": "相比之下，SmartC2Rust 仅对五个程序生成了完整的成本轨迹：c4、yank、sds、which 和 pwd。"
+    },
+    {
+     "en": "It does not complete cat , shc , or cflow in our evaluation.",
+     "zh": "在我们的评估中，它未能完成 cat、shc 或 cflow。"
+    },
+    {
+     "en": "For SpeC2Rust , the largest costs occur on cflow ($36.50; 10,626 s) and cat ($11.32; 4,939 s), which also have larger translation and repair workloads.",
+     "zh": "对于 SpeC2Rust，最大的开销出现在 cflow（36.50 美元；10,626 秒）和 cat（11.32 美元；4,939 秒）上，这两个程序的翻译和修复工作量也更大。"
+    }
+   ]
+  },
+  {
+   "en": "Overall, SpeC2Rust reduces cost, latency, and token usage on the programs where direct comparison is possible. It also provides completed cost traces for all eight evaluated programs.",
+   "zh": "总体而言，在可以直接对比的程序上，SpeC2Rust 降低了成本、延迟和 token 用量。 它还为全部八个受评估程序提供了完整的成本轨迹。",
+   "sents": [
+    {
+     "en": "Overall, SpeC2Rust reduces cost, latency, and token usage on the programs where direct comparison is possible.",
+     "zh": "总体而言，在可以直接对比的程序上，SpeC2Rust 降低了成本、延迟和 token 用量。"
+    },
+    {
+     "en": "It also provides completed cost traces for all eight evaluated programs.",
+     "zh": "它还为全部八个受评估程序提供了完整的成本轨迹。"
+    }
+   ]
+  },
+  {
+   "en": "Answer to RQ3: On the five projects completed by both tools, SpeC2Rust reduces total cost by 66.1%. It also completes all eight evaluated projects, whereas SmartC2Rust completes five.",
+   "zh": "对RQ3的回答：在两个工具均完成的五个项目中，SpeC2Rust 将总成本降低了 66.1%。 它还完成了全部八个评估项目，而 SmartC2Rust 仅完成五个。",
+   "sents": [
+    {
+     "en": "Answer to RQ3: On the five projects completed by both tools, SpeC2Rust reduces total cost by 66.1%.",
+     "zh": "对RQ3的回答：在两个工具均完成的五个项目中，SpeC2Rust 将总成本降低了 66.1%。"
+    },
+    {
+     "en": "It also completes all eight evaluated projects, whereas SmartC2Rust completes five.",
+     "zh": "它还完成了全部八个评估项目，而 SmartC2Rust 仅完成五个。"
+    }
+   ]
+  },
+  {
+   "en": "We conducted an ablation study to understand how the major components of SpeC2Rust contribute to the final translation performance. We evaluate all variants on the eight-project dataset. Our evaluation is based on the following two metrics: (i) compile rate, i.e., the fraction of projects whose translated Rust implementations compile successfully, and (ii) test pass rate, i.e., the average percentage of original end-to-end tests passed by the translated Rust implementations. Table V shows the results. The full system reaches 100.0% on both metrics.",
+   "zh": "我们进行了一项消融研究，以了解 SpeC2Rust 的主要组件如何影响最终的翻译性能。 我们在八个项目的数据集上评估所有变体。 我们的评估基于以下两个指标：（i）编译率，即翻译后的 Rust 实现能够成功编译的项目比例；（ii）测试通过率，即翻译后的 Rust 实现通过原始端到端测试的平均百分比。 表 V 展示了结果。 完整系统在两个指标上均达到 100.0%。",
+   "sents": [
+    {
+     "en": "We conducted an ablation study to understand how the major components of SpeC2Rust contribute to the final translation performance.",
+     "zh": "我们进行了一项消融研究，以了解 SpeC2Rust 的主要组件如何影响最终的翻译性能。"
+    },
+    {
+     "en": "We evaluate all variants on the eight-project dataset.",
+     "zh": "我们在八个项目的数据集上评估所有变体。"
+    },
+    {
+     "en": "Our evaluation is based on the following two metrics: (i) compile rate, i.e., the fraction of projects whose translated Rust implementations compile successfully, and (ii) test pass rate, i.e., the average percentage of original end-to-end tests passed by the translated Rust implementations.",
+     "zh": "我们的评估基于以下两个指标：（i）编译率，即翻译后的 Rust 实现能够成功编译的项目比例；（ii）测试通过率，即翻译后的 Rust 实现通过原始端到端测试的平均百分比。"
+    },
+    {
+     "en": "Table V shows the results.",
+     "zh": "表 V 展示了结果。"
+    },
+    {
+     "en": "The full system reaches 100.0% on both metrics.",
+     "zh": "完整系统在两个指标上均达到 100.0%。"
+    }
+   ]
+  },
+  {
+   "en": "Layered-Feedback Repair. In this study, we omitted RustRepairAgent from SpeC2Rust . Table V shows that the compile rate drops from 100.0% to 25.0%. The test result is N/A because the result sheet does not report a completed end-to-end test outcome for this variant. Without this stage, the system relies on the initial Rust translation and cannot iteratively incorporate compiler diagnostics. As a result, repository-level errors that require cross-file repair or build-level adjustment are difficult to resolve within the translation pipeline.",
+   "zh": "分层反馈修复。 在本研究中，我们在 SpeC2Rust 中省略了 RustRepairAgent（智能体）。 表 V 显示编译率从 100.0% 下降到 25.0%。 测试结果为 N/A，因为结果表未报告该变体完成的端到端测试结果。 没有这一阶段，系统只能依赖初始的 Rust 翻译，无法迭代地纳入编译器诊断信息。 因此，需要跨文件修复或构建层面调整的仓库级错误很难在翻译流水线内得到解决。",
+   "sents": [
+    {
+     "en": "Layered-Feedback Repair.",
+     "zh": "分层反馈修复。"
+    },
+    {
+     "en": "In this study, we omitted RustRepairAgent from SpeC2Rust .",
+     "zh": "在本研究中，我们在 SpeC2Rust 中省略了 RustRepairAgent（智能体）。"
+    },
+    {
+     "en": "Table V shows that the compile rate drops from 100.0% to 25.0%.",
+     "zh": "表 V 显示编译率从 100.0% 下降到 25.0%。"
+    },
+    {
+     "en": "The test result is N/A because the result sheet does not report a completed end-to-end test outcome for this variant.",
+     "zh": "测试结果为 N/A，因为结果表未报告该变体完成的端到端测试结果。"
+    },
+    {
+     "en": "Without this stage, the system relies on the initial Rust translation and cannot iteratively incorporate compiler diagnostics.",
+     "zh": "没有这一阶段，系统只能依赖初始的 Rust 翻译，无法迭代地纳入编译器诊断信息。"
+    },
+    {
+     "en": "As a result, repository-level errors that require cross-file repair or build-level adjustment are difficult to resolve within the translation pipeline.",
+     "zh": "因此，需要跨文件修复或构建层面调整的仓库级错误很难在翻译流水线内得到解决。"
+    }
+   ]
+  },
+  {
+   "en": "Project-Intent Structuring. In this study, we omitted the SpecGen Agent . Table V shows that the ablated system still compiles 87.5% of the projects, but the test pass rate drops to 25.0%. This gap indicates that Stage 1 affects semantic correctness more than syntactic validity. In other words, the ablated system can still produce Rust projects that compile in most cases, but the compiled code is less likely to satisfy the original end-to-end tests. Without the specification documents generated by Stage 1, the test agent has less repository-level context during repair and cannot reliably use the intended architecture to complete missing or incorrect functionality.",
+   "zh": "项目意图结构化。 在本研究中，我们省略了 SpecGen 智能体。 表 V 显示，消融后的系统仍能编译 87.5% 的项目，但测试通过率下降至 25.0%。 这一差距表明，阶段 1 对语义正确性的影响大于对语法有效性的影响。 换言之，消融后的系统在大多数情况下仍能生成可编译的 Rust 项目，但编译后的代码更难满足原始的端到端测试。 缺少阶段 1 生成的规格文档后，测试智能体在修复过程中的仓库级上下文更少，无法可靠地利用预期架构来补全缺失或不正确的功能。",
+   "sents": [
+    {
+     "en": "Project-Intent Structuring.",
+     "zh": "项目意图结构化。"
+    },
+    {
+     "en": "In this study, we omitted the SpecGen Agent .",
+     "zh": "在本研究中，我们省略了 SpecGen 智能体。"
+    },
+    {
+     "en": "Table V shows that the ablated system still compiles 87.5% of the projects, but the test pass rate drops to 25.0%.",
+     "zh": "表 V 显示，消融后的系统仍能编译 87.5% 的项目，但测试通过率下降至 25.0%。"
+    },
+    {
+     "en": "This gap indicates that Stage 1 affects semantic correctness more than syntactic validity.",
+     "zh": "这一差距表明，阶段 1 对语义正确性的影响大于对语法有效性的影响。"
+    },
+    {
+     "en": "In other words, the ablated system can still produce Rust projects that compile in most cases, but the compiled code is less likely to satisfy the original end-to-end tests.",
+     "zh": "换言之，消融后的系统在大多数情况下仍能生成可编译的 Rust 项目，但编译后的代码更难满足原始的端到端测试。"
+    },
+    {
+     "en": "Without the specification documents generated by Stage 1, the test agent has less repository-level context during repair and cannot reliably use the intended architecture to complete missing or incorrect functionality.",
+     "zh": "缺少阶段 1 生成的规格文档后，测试智能体在修复过程中的仓库级上下文更少，无法可靠地利用预期架构来补全缺失或不正确的功能。"
+    }
+   ]
+  },
+  {
+   "en": "Hierarchical Decomposition. In this study, we removed hierarchical decomposition from the translation process. Table V shows that the compile rate decreases to 62.5%, and the test pass rate decreases to 12.3%. Compared with the SpecGen Agent ablation, this variant affects both compilation and test behavior more heavily. This result suggests that hierarchical decomposition is important for organizing project context before specification generation and code synthesis. Without it, related files and functions are not to be grouped into coherent translation units, which makes the generated specifications and repair prompts less stable.",
+   "zh": "层次化分解。 在本研究中，我们从翻译流程中移除了层次化分解。 表V显示，编译率下降到62.5%，测试通过率下降到12.3%。 与SpecGen智能体的消融实验相比，该变体对编译行为和测试行为的影响都更为严重。 这一结果表明，层次化分解对于在规约生成和代码合成之前组织项目上下文非常重要。 缺少它时，相关文件和函数无法被归组为连贯的翻译单元，这使得生成的规约和修复提示不够稳定。",
+   "sents": [
+    {
+     "en": "Hierarchical Decomposition.",
+     "zh": "层次化分解。"
+    },
+    {
+     "en": "In this study, we removed hierarchical decomposition from the translation process.",
+     "zh": "在本研究中，我们从翻译流程中移除了层次化分解。"
+    },
+    {
+     "en": "Table V shows that the compile rate decreases to 62.5%, and the test pass rate decreases to 12.3%.",
+     "zh": "表V显示，编译率下降到62.5%，测试通过率下降到12.3%。"
+    },
+    {
+     "en": "Compared with the SpecGen Agent ablation, this variant affects both compilation and test behavior more heavily.",
+     "zh": "与SpecGen智能体的消融实验相比，该变体对编译行为和测试行为的影响都更为严重。"
+    },
+    {
+     "en": "This result suggests that hierarchical decomposition is important for organizing project context before specification generation and code synthesis.",
+     "zh": "这一结果表明，层次化分解对于在规约生成和代码合成之前组织项目上下文非常重要。"
+    },
+    {
+     "en": "Without it, related files and functions are not to be grouped into coherent translation units, which makes the generated specifications and repair prompts less stable.",
+     "zh": "缺少它时，相关文件和函数无法被归组为连贯的翻译单元，这使得生成的规约和修复提示不够稳定。"
+    }
+   ]
+  },
+  {
+   "en": "Other LLMs beyond GPT. We also ran the full SpeC2Rust pipeline with deepseek-v4-flash . It successfully translated all eight projects and passed all tests, while incurring lower overall cost than our default setting. For this model, we set max_tokens to 32K, because deepseek-v4-flash often emits long reasoning traces and these traces are counted within the output budget. This suggests that the effectiveness of SpeC2Rust is not limited to a single underlying model, although model-specific output-length characteristics should be accounted for when configuring generation budgets.",
+   "zh": "除 GPT 之外的其他大语言模型。 我们还使用 deepseek-v4-flash 运行了完整的 SpeC2Rust 流水线。 它成功翻译了全部八个项目并通过了所有测试，同时产生的总体成本低于我们的默认设置。 对于该模型，我们将 max_tokens 设置为 32K，因为 deepseek-v4-flash 常常会输出较长的推理轨迹，而这些轨迹会计入输出预算。 这表明 SpeC2Rust 的有效性并不局限于单一底层模型，不过在配置生成预算时应考虑到特定模型的输出长度特性。",
+   "sents": [
+    {
+     "en": "Other LLMs beyond GPT.",
+     "zh": "除 GPT 之外的其他大语言模型。"
+    },
+    {
+     "en": "We also ran the full SpeC2Rust pipeline with deepseek-v4-flash .",
+     "zh": "我们还使用 deepseek-v4-flash 运行了完整的 SpeC2Rust 流水线。"
+    },
+    {
+     "en": "It successfully translated all eight projects and passed all tests, while incurring lower overall cost than our default setting.",
+     "zh": "它成功翻译了全部八个项目并通过了所有测试，同时产生的总体成本低于我们的默认设置。"
+    },
+    {
+     "en": "For this model, we set max_tokens to 32K, because deepseek-v4-flash often emits long reasoning traces and these traces are counted within the output budget.",
+     "zh": "对于该模型，我们将 max_tokens 设置为 32K，因为 deepseek-v4-flash 常常会输出较长的推理轨迹，而这些轨迹会计入输出预算。"
+    },
+    {
+     "en": "This suggests that the effectiveness of SpeC2Rust is not limited to a single underlying model, although model-specific output-length characteristics should be accounted for when configuring generation budgets.",
+     "zh": "这表明 SpeC2Rust 的有效性并不局限于单一底层模型，不过在配置生成预算时应考虑到特定模型的输出长度特性。"
+    }
+   ]
+  },
+  {
+   "en": "Answer to RQ4: Removing any component reduces either compile rate or test pass rate. The largest compilation drop occurs without RustRepairAgent, while the largest semantic drop appears when project structuring or decomposition is removed.",
+   "zh": "RQ4 的答案：移除任何组件都会导致编译率或测试通过率下降。 最大的编译率下降出现在没有 RustRepairAgent 的情况下，而最大的语义下降则出现在移除项目结构化或分解模块时。",
+   "sents": [
+    {
+     "en": "Answer to RQ4: Removing any component reduces either compile rate or test pass rate.",
+     "zh": "RQ4 的答案：移除任何组件都会导致编译率或测试通过率下降。"
+    },
+    {
+     "en": "The largest compilation drop occurs without RustRepairAgent, while the largest semantic drop appears when project structuring or decomposition is removed.",
+     "zh": "最大的编译率下降出现在没有 RustRepairAgent 的情况下，而最大的语义下降则出现在移除项目结构化或分解模块时。"
+    }
+   ]
+  },
+  {
+   "en": "We use pwd as a case study to illustrate how SpeC2Rust addresses the C Project Intent challenge through specification-driven generation. In the original C implementation, the function robust_getcwd walks up the directory tree toward the root and compares device and inode numbers at each level to reconstruct the absolute path. This fallback logic is important when the system getcwd fails, for example because of PATH_MAX limits or restricted permissions on parent directories. Figure 7 compares the robust_getcwd translations produced by SmartC2Rust and SpeC2Rust from the same C source.",
+   "zh": "我们以 pwd 为案例研究，说明 SpeC2Rust 如何通过基于规范的生成来应对 C 项目意图挑战。 在原始 C 实现中，函数 robust_getcwd 沿目录树向上遍历至根目录，并在每一层比较设备号和 inode 号，以重建绝对路径。 当系统 getcwd 失败时，例如由于 PATH_MAX 限制或父目录权限受限，这一回退逻辑非常重要。 图 7 比较了 SmartC2Rust 和 SpeC2Rust 从同一 C 源码生成的 robust_getcwd 翻译结果。",
+   "sents": [
+    {
+     "en": "We use pwd as a case study to illustrate how SpeC2Rust addresses the C Project Intent challenge through specification-driven generation.",
+     "zh": "我们以 pwd 为案例研究，说明 SpeC2Rust 如何通过基于规范的生成来应对 C 项目意图挑战。"
+    },
+    {
+     "en": "In the original C implementation, the function robust_getcwd walks up the directory tree toward the root and compares device and inode numbers at each level to reconstruct the absolute path.",
+     "zh": "在原始 C 实现中，函数 robust_getcwd 沿目录树向上遍历至根目录，并在每一层比较设备号和 inode 号，以重建绝对路径。"
+    },
+    {
+     "en": "This fallback logic is important when the system getcwd fails, for example because of PATH_MAX limits or restricted permissions on parent directories.",
+     "zh": "当系统 getcwd 失败时，例如由于 PATH_MAX 限制或父目录权限受限，这一回退逻辑非常重要。"
+    },
+    {
+     "en": "Figure 7 compares the robust_getcwd translations produced by SmartC2Rust and SpeC2Rust from the same C source.",
+     "zh": "图 7 比较了 SmartC2Rust 和 SpeC2Rust 从同一 C 源码生成的 robust_getcwd 翻译结果。"
+    }
+   ]
+  },
+  {
+   "en": "As shown in Figure 7 (a), SmartC2Rust replaces the original directory-walking algorithm with a simple env::current_dir() call followed by path normalization. The translated code omits find_dir_entry , inode comparison, and the upward traversal logic. As a result, it passes through a simpler implementation rather than preserving the original algorithmic design. This reflects a broader limitation of feedback-driven repair: the LLM is encouraged to satisfy the available test suite, but not necessarily to retain the intent of the original C implementation.",
+   "zh": "如图 7 (a) 所示，SmartC2Rust 用一个简单的 env::current_dir() 调用加路径规范化，替换了原来的目录遍历算法。 翻译后的代码省略了 find_dir_entry、inode 比较以及向上遍历的逻辑。 因此，它通过的是一个更简单的实现，而不是保留原有的算法设计。 这反映了反馈驱动修复的一个更广泛的局限：大模型被鼓励去满足现有的测试套件，但不一定保留原始 C 实现的意图。",
+   "sents": [
+    {
+     "en": "As shown in Figure 7 (a), SmartC2Rust replaces the original directory-walking algorithm with a simple env::current_dir() call followed by path normalization.",
+     "zh": "如图 7 (a) 所示，SmartC2Rust 用一个简单的 env::current_dir() 调用加路径规范化，替换了原来的目录遍历算法。"
+    },
+    {
+     "en": "The translated code omits find_dir_entry , inode comparison, and the upward traversal logic.",
+     "zh": "翻译后的代码省略了 find_dir_entry、inode 比较以及向上遍历的逻辑。"
+    },
+    {
+     "en": "As a result, it passes through a simpler implementation rather than preserving the original algorithmic design.",
+     "zh": "因此，它通过的是一个更简单的实现，而不是保留原有的算法设计。"
+    },
+    {
+     "en": "This reflects a broader limitation of feedback-driven repair: the LLM is encouraged to satisfy the available test suite, but not necessarily to retain the intent of the original C implementation.",
+     "zh": "这反映了反馈驱动修复的一个更广泛的局限：大模型被鼓励去满足现有的测试套件，但不一定保留原始 C 实现的意图。"
+    }
+   ]
+  },
+  {
+   "en": "In contrast, Figure 7 (b) shows that SpeC2Rust reconstructs the full directory-walking algorithm. The translation preserves the while -loop that climbs toward the root, uses find_dir_entry to resolve each directory entry by device and inode comparison, and calls file_name_prepend to assemble the path incrementally. It also preserves the original modular organization: the main logic remains in pwd.rs , inode comparison is isolated in same_inode.rs , and xgetcwd is placed in a separate module.",
+   "zh": "相比之下，图 7 (b) 表明 SpeC2Rust 重建了完整的目录遍历算法。 翻译保留了向根目录逐级上溯的 while 循环，使用 find_dir_entry 通过设备和 inode 比较来解析每个目录项，并调用 file_name_prepend 逐步组装路径。 它还保留了原有的模块化组织结构：主逻辑仍位于 pwd.rs 中，inode 比较被隔离在 same_inode.rs 中，而 xgetcwd 则被放在一个单独的模块中。",
+   "sents": [
+    {
+     "en": "In contrast, Figure 7 (b) shows that SpeC2Rust reconstructs the full directory-walking algorithm.",
+     "zh": "相比之下，图 7 (b) 表明 SpeC2Rust 重建了完整的目录遍历算法。"
+    },
+    {
+     "en": "The translation preserves the while -loop that climbs toward the root, uses find_dir_entry to resolve each directory entry by device and inode comparison, and calls file_name_prepend to assemble the path incrementally.",
+     "zh": "翻译保留了向根目录逐级上溯的 while 循环，使用 find_dir_entry 通过设备和 inode 比较来解析每个目录项，并调用 file_name_prepend 逐步组装路径。"
+    },
+    {
+     "en": "It also preserves the original modular organization: the main logic remains in pwd.rs , inode comparison is isolated in same_inode.rs , and xgetcwd is placed in a separate module.",
+     "zh": "它还保留了原有的模块化组织结构：主逻辑仍位于 pwd.rs 中，inode 比较被隔离在 same_inode.rs 中，而 xgetcwd 则被放在一个单独的模块中。"
+    }
+   ]
+  },
+  {
+   "en": "This example highlights the role of SpeC2Rust ’s Project-Intent Structuring . By explicitly recovering the intended behavior of robust_getcwd —directory ascent plus inode-based name resolution—the system provides generation with stable, reusable specifications rather than relying on tests alone. During Spec-Guided Generation , these specifications guide the LLM toward reconstructing the original algorithmic structure.",
+   "zh": "本示例凸显了 SpeC2Rust 的项目意图结构化的作用。 通过显式地恢复 robust_getcwd 的预期行为——目录向上遍历加上基于 inode 的名称解析——该系统为生成提供了稳定、可复用的规范，而不是仅仅依赖测试。 在规范引导生成过程中，这些规范引导大语言模型重构原始的算法结构。",
+   "sents": [
+    {
+     "en": "This example highlights the role of SpeC2Rust ’s Project-Intent Structuring .",
+     "zh": "本示例凸显了 SpeC2Rust 的项目意图结构化的作用。"
+    },
+    {
+     "en": "By explicitly recovering the intended behavior of robust_getcwd —directory ascent plus inode-based name resolution—the system provides generation with stable, reusable specifications rather than relying on tests alone.",
+     "zh": "通过显式地恢复 robust_getcwd 的预期行为——目录向上遍历加上基于 inode 的名称解析——该系统为生成提供了稳定、可复用的规范，而不是仅仅依赖测试。"
+    },
+    {
+     "en": "During Spec-Guided Generation , these specifications guide the LLM toward reconstructing the original algorithmic structure.",
+     "zh": "在规范引导生成过程中，这些规范引导大语言模型重构原始的算法结构。"
+    }
+   ]
+  },
+  {
+   "en": "The Hierarchical Module Split further strengthens this process by assigning supporting utilities such as same_inode and xgetcwd to separate modules. This allows each module to be generated with focused specification context, reducing interference from unrelated source fragments. Consequently, SpeC2Rust is able to avoid a common failure mode of baseline tools: producing implementations that pass tests but diverge from the original project intent.",
+   "zh": "层次化模块拆分进一步强化了这一流程，它将 same_inode 和 xgetcwd 等辅助工具分配到独立的模块中。 这使得每个模块都能在聚焦的规格上下文中生成，减少了无关源代码片段的干扰。 因此，SpeC2Rust 能够避免基线工具的一个常见失败模式：生成能通过测试但偏离原项目意图的实现。",
+   "sents": [
+    {
+     "en": "The Hierarchical Module Split further strengthens this process by assigning supporting utilities such as same_inode and xgetcwd to separate modules.",
+     "zh": "层次化模块拆分进一步强化了这一流程，它将 same_inode 和 xgetcwd 等辅助工具分配到独立的模块中。"
+    },
+    {
+     "en": "This allows each module to be generated with focused specification context, reducing interference from unrelated source fragments.",
+     "zh": "这使得每个模块都能在聚焦的规格上下文中生成，减少了无关源代码片段的干扰。"
+    },
+    {
+     "en": "Consequently, SpeC2Rust is able to avoid a common failure mode of baseline tools: producing implementations that pass tests but diverge from the original project intent.",
+     "zh": "因此，SpeC2Rust 能够避免基线工具的一个常见失败模式：生成能通过测试但偏离原项目意图的实现。"
+    }
+   ]
+  },
+  {
+   "en": "(a) SmartC2Rust : algorithm replaced by env::current_dir() wrapper.",
+   "zh": "(a) SmartC2Rust：算法被替换为 env::current_dir() 包装器。",
+   "sents": null
+  },
+  {
+   "en": "(b) SpeC2Rust : full algorithm preserved with modular decomposition.",
+   "zh": "(b) SpeC2Rust：保留完整算法并进行模块化分解。",
+   "sents": null
+  },
+  {
+   "en": "We identify three main threats to the validity of our study.",
+   "zh": "我们识别出本研究有效性的三个主要威胁。",
+   "sents": null
+  },
+  {
+   "en": "Internal Validity. A primary threat is the non-deterministic nature of LLM-based translation and repair. Different runs may produce different Rust implementations, repair trajectories, and token costs. To reduce this threat, we run each project multiple times and report averaged results. Another threat concerns the quality of project knowledge produced in Stage 1. SpeC2Rust relies on Stage 1 to recover module boundaries, interface relations, and behavioral constraints from the input C repository [ 28 , 29 ] . Errors in this stage can propagate to later generation and repair steps. For example, missing behavioral constraints or incorrect decomposition of tightly coupled functions and data structures may lead to incomplete repair context. The ablation results in RQ4 show that both SpecGen and hierarchical decomposition affect end-to-end correctness [ 30 ] .",
+   "zh": "内部有效性。 一个主要威胁是基于大语言模型的翻译与修复的非确定性本质。 不同的运行可能产生不同的 Rust 实现、修复轨迹和令牌开销。 为降低这一威胁，我们对每个项目运行多次并报告平均结果。 另一个威胁涉及第一阶段产生的项目知识的质量。 SpeC2Rust 依赖第一阶段从输入的 C 代码库中恢复模块边界、接口关系和行为约束 [ 28 , 29 ] 。 该阶段中的错误可能传播到后续的生成与修复步骤。 例如，缺失行为约束或对紧密耦合的函数与数据结构的不当分解，可能导致修复上下文不完整。 RQ4 中的消融实验结果表明，SpecGen 与层次化分解都会影响端到端的正确性 [ 30 ] 。",
+   "sents": [
+    {
+     "en": "Internal Validity.",
+     "zh": "内部有效性。"
+    },
+    {
+     "en": "A primary threat is the non-deterministic nature of LLM-based translation and repair.",
+     "zh": "一个主要威胁是基于大语言模型的翻译与修复的非确定性本质。"
+    },
+    {
+     "en": "Different runs may produce different Rust implementations, repair trajectories, and token costs.",
+     "zh": "不同的运行可能产生不同的 Rust 实现、修复轨迹和令牌开销。"
+    },
+    {
+     "en": "To reduce this threat, we run each project multiple times and report averaged results.",
+     "zh": "为降低这一威胁，我们对每个项目运行多次并报告平均结果。"
+    },
+    {
+     "en": "Another threat concerns the quality of project knowledge produced in Stage 1.",
+     "zh": "另一个威胁涉及第一阶段产生的项目知识的质量。"
+    },
+    {
+     "en": "SpeC2Rust relies on Stage 1 to recover module boundaries, interface relations, and behavioral constraints from the input C repository [ 28 , 29 ] .",
+     "zh": "SpeC2Rust 依赖第一阶段从输入的 C 代码库中恢复模块边界、接口关系和行为约束 [ 28 , 29 ] 。"
+    },
+    {
+     "en": "Errors in this stage can propagate to later generation and repair steps.",
+     "zh": "该阶段中的错误可能传播到后续的生成与修复步骤。"
+    },
+    {
+     "en": "For example, missing behavioral constraints or incorrect decomposition of tightly coupled functions and data structures may lead to incomplete repair context.",
+     "zh": "例如，缺失行为约束或对紧密耦合的函数与数据结构的不当分解，可能导致修复上下文不完整。"
+    },
+    {
+     "en": "The ablation results in RQ4 show that both SpecGen and hierarchical decomposition affect end-to-end correctness [ 30 ] .",
+     "zh": "RQ4 中的消融实验结果表明，SpecGen 与层次化分解都会影响端到端的正确性 [ 30 ] 。"
+    }
+   ]
+  },
+  {
+   "en": "External Validity. Our evaluation covers eight repository-level CLI C projects, but does not include library projects. This scope may limit the generality of our findings to other types of C systems and build configurations. Another possible threat is benchmark contamination. Some evaluated projects may have appeared in the model’s pretraining data. However, our task requires repository-level reconstruction, cross-file consistency, compilation repair, and test-based validation, which reduces but does not eliminate this concern.",
+   "zh": "外部效度。 我们的评估涵盖八个仓库级 CLI C 项目，但不包括库项目。 这一范围可能限制我们的研究结论对其他类型的 C 系统和构建配置的普适性。 另一个可能的威胁是基准污染。 一些被评估的项目可能曾出现在模型的预训练数据中。 然而，我们的任务需要仓库级重建、跨文件一致性、编译修复以及基于测试的验证，这可以减少但不能完全消除这一顾虑。",
+   "sents": [
+    {
+     "en": "External Validity.",
+     "zh": "外部效度。"
+    },
+    {
+     "en": "Our evaluation covers eight repository-level CLI C projects, but does not include library projects.",
+     "zh": "我们的评估涵盖八个仓库级 CLI C 项目，但不包括库项目。"
+    },
+    {
+     "en": "This scope may limit the generality of our findings to other types of C systems and build configurations.",
+     "zh": "这一范围可能限制我们的研究结论对其他类型的 C 系统和构建配置的普适性。"
+    },
+    {
+     "en": "Another possible threat is benchmark contamination.",
+     "zh": "另一个可能的威胁是基准污染。"
+    },
+    {
+     "en": "Some evaluated projects may have appeared in the model’s pretraining data.",
+     "zh": "一些被评估的项目可能曾出现在模型的预训练数据中。"
+    },
+    {
+     "en": "However, our task requires repository-level reconstruction, cross-file consistency, compilation repair, and test-based validation, which reduces but does not eliminate this concern.",
+     "zh": "然而，我们的任务需要仓库级重建、跨文件一致性、编译修复以及基于测试的验证，这可以减少但不能完全消除这一顾虑。"
+    }
+   ]
+  },
+  {
+   "en": "Construct Validity. We use the original end-to-end test scripts as the main validation criterion. However, passing the original end-to-end tests does not prove full behavioral equivalence, because untested paths may still be incorrect [ 31 , 32 , 33 ] . Remaining clippy warnings may also reflect weakly exercised helper code, fallback paths, or interface fragments. Future work could combine the current repair loop with fuzzing, differential testing, or specification-level assertions [ 34 , 35 , 33 , 36 ] . For cost, we report token usage and monetary cost under the model pricing used in our experiments. These numbers may change with provider pricing or model updates.",
+   "zh": "构念效度。 我们以原始端到端测试脚本作为主要验证标准。 然而，通过原始端到端测试并不能证明完全的行为等价，因为未经测试的路径仍可能存在错误 [ 31 , 32 , 33 ] 。 剩余的 clippy 警告也可能反映出执行较少的辅助代码、回退路径或接口片段。 未来的工作可以将当前的修复循环与模糊测试、差分测试或规范级断言相结合 [ 34 , 35 , 33 , 36 ] 。 在成本方面，我们报告了在实验所使用的模型定价下的 token 用量和货币成本。 这些数字可能随着提供商定价或模型更新而变化。",
+   "sents": [
+    {
+     "en": "Construct Validity.",
+     "zh": "构念效度。"
+    },
+    {
+     "en": "We use the original end-to-end test scripts as the main validation criterion.",
+     "zh": "我们以原始端到端测试脚本作为主要验证标准。"
+    },
+    {
+     "en": "However, passing the original end-to-end tests does not prove full behavioral equivalence, because untested paths may still be incorrect [ 31 , 32 , 33 ] .",
+     "zh": "然而，通过原始端到端测试并不能证明完全的行为等价，因为未经测试的路径仍可能存在错误 [ 31 , 32 , 33 ] 。"
+    },
+    {
+     "en": "Remaining clippy warnings may also reflect weakly exercised helper code, fallback paths, or interface fragments.",
+     "zh": "剩余的 clippy 警告也可能反映出执行较少的辅助代码、回退路径或接口片段。"
+    },
+    {
+     "en": "Future work could combine the current repair loop with fuzzing, differential testing, or specification-level assertions [ 34 , 35 , 33 , 36 ] .",
+     "zh": "未来的工作可以将当前的修复循环与模糊测试、差分测试或规范级断言相结合 [ 34 , 35 , 33 , 36 ] 。"
+    },
+    {
+     "en": "For cost, we report token usage and monetary cost under the model pricing used in our experiments.",
+     "zh": "在成本方面，我们报告了在实验所使用的模型定价下的 token 用量和货币成本。"
+    },
+    {
+     "en": "These numbers may change with provider pricing or model updates.",
+     "zh": "这些数字可能随着提供商定价或模型更新而变化。"
+    }
+   ]
+  },
+  {
+   "en": "Related work most relevant to SpeC2Rust falls into three lines: rule-based and safety-oriented C-to-Rust translation, program-analysis-guided and LLM-based translation, and feedback-driven repair or agent-based code generation.",
+   "zh": "与 SpeC2Rust 最相关的工作可分为三类：基于规则和面向安全性的 C 到 Rust 翻译、程序分析引导和基于 LLM 的翻译，以及反馈驱动的修复或基于智能体的代码生成。",
+   "sents": null
+  },
+  {
+   "en": "Rule-based and safety-oriented C-to-Rust translation. Waters [ 37 ] provided an early abstraction-oriented view of program migration. In C-to-Rust translation, C2Rust [ 3 ] is the canonical rule-based approach: it largely preserves the original C decomposition and offers a practical migration starting point. However, Emre et al. [ 4 ] show that preserving semantic equivalence while removing raw pointers and unsafe code remains difficult. Later work pushes safety refinement further, including GenC2Rust [ 38 ] , C2SaferRust [ 8 ] , and PR2 [ 39 ] . These methods improve safety over direct transpilation, but they still mainly refine C-oriented skeletons rather than reconstructing the repository around explicit Rust-side specifications and module intent.",
+   "zh": "基于规则且面向安全性的 C 到 Rust 翻译。 Waters [ 37 ] 提供了早期面向抽象的程序迁移视角。 在 C 到 Rust 翻译中，C2Rust [ 3 ] 是典型的基于规则的方法：它在很大程度上保留了原始的 C 分解结构，并提供了实用的迁移起点。然而，Emre 等人 [ 4 ] 表明，在移除裸指针和不安全代码的同时保持语义等价仍然十分困难。 后续工作进一步推进了安全性精化，包括 GenC2Rust [ 38 ] 、C2SaferRust [ 8 ] 和 PR2 [ 39 ] 。 这些方法相较于直接转译提升了安全性，但它们仍然主要是对面向 C 的骨架进行精化，而非围绕显式的 Rust 侧规范和模块意图来重构代码仓库。",
+   "sents": [
+    {
+     "en": "Rule-based and safety-oriented C-to-Rust translation.",
+     "zh": "基于规则且面向安全性的 C 到 Rust 翻译。"
+    },
+    {
+     "en": "Waters [ 37 ] provided an early abstraction-oriented view of program migration.",
+     "zh": "Waters [ 37 ] 提供了早期面向抽象的程序迁移视角。"
+    },
+    {
+     "en": "In C-to-Rust translation, C2Rust [ 3 ] is the canonical rule-based approach: it largely preserves the original C decomposition and offers a practical migration starting point. However, Emre et al.",
+     "zh": "在 C 到 Rust 翻译中，C2Rust [ 3 ] 是典型的基于规则的方法：它在很大程度上保留了原始的 C 分解结构，并提供了实用的迁移起点。然而，Emre 等人"
+    },
+    {
+     "en": "[ 4 ] show that preserving semantic equivalence while removing raw pointers and unsafe code remains difficult.",
+     "zh": "[ 4 ] 表明，在移除裸指针和不安全代码的同时保持语义等价仍然十分困难。"
+    },
+    {
+     "en": "Later work pushes safety refinement further, including GenC2Rust [ 38 ] , C2SaferRust [ 8 ] , and PR2 [ 39 ] .",
+     "zh": "后续工作进一步推进了安全性精化，包括 GenC2Rust [ 38 ] 、C2SaferRust [ 8 ] 和 PR2 [ 39 ] 。"
+    },
+    {
+     "en": "These methods improve safety over direct transpilation, but they still mainly refine C-oriented skeletons rather than reconstructing the repository around explicit Rust-side specifications and module intent.",
+     "zh": "这些方法相较于直接转译提升了安全性，但它们仍然主要是对面向 C 的骨架进行精化，而非围绕显式的 Rust 侧规范和模块意图来重构代码仓库。"
+    }
+   ]
+  },
+  {
+   "en": "Program-analysis-guided and LLM-based C-to-Rust translation. Recent work increasingly combines static analysis, prompt engineering, and LLM generation for C-to-Rust translation. Eniser et al. [ 5 ] and Pan et al. [ 40 ] highlight common weaknesses of LLM-based Rust translation, including compilation failures, inconsistency, and translation-induced bugs. Other approaches add stronger structural guidance, including VERT [ 41 ] , a static-analysis-driven pipeline [ 42 ] , C2RustXW [ 27 ] , RustMap [ 43 ] , SpecTra [ 44 ] , and scalable whole-project translation with LLMs [ 10 ] . In the C-to-Rust setting, EvoC2Rust [ 26 ] shows that skeleton-guided generation can improve structural consistency over direct prompting. However, most existing approaches still use structure, analysis facts, or specifications mainly as prompt-time context rather than externalizing repository-level knowledge into persistent artifacts that can be reused across generation and repair.",
+   "zh": "程序分析引导与基于大语言模型的 C 到 Rust 翻译。 近期工作越来越多地将静态分析、提示词工程与大语言模型生成相结合，用于 C 到 Rust 的翻译。Eniser 等人 [ 5 ] 与 Pan 等人 [ 40 ] 指出了基于大语言模型的 Rust 翻译的常见弱点，包括编译失败、不一致性以及由翻译引入的缺陷。 其他方法引入了更强的结构化引导，包括 VERT [ 41 ] 、一个静态分析驱动的流水线 [ 42 ] 、C2RustXW [ 27 ] 、RustMap [ 43 ] 、SpecTra [ 44 ] ，以及基于大语言模型的可扩展整项目翻译 [ 10 ] 。 在 C 到 Rust 的场景中，EvoC2Rust [ 26 ] 表明，骨架引导的生成相较于直接提示可以提升结构一致性。 然而，大多数现有方法仍主要将结构、分析事实或规约用作提示阶段的上下文，而不是将仓库级知识外化为可在生成与修复过程中复用的持久化产物。",
+   "sents": [
+    {
+     "en": "Program-analysis-guided and LLM-based C-to-Rust translation.",
+     "zh": "程序分析引导与基于大语言模型的 C 到 Rust 翻译。"
+    },
+    {
+     "en": "Recent work increasingly combines static analysis, prompt engineering, and LLM generation for C-to-Rust translation. Eniser et al. [ 5 ] and Pan et al.",
+     "zh": "近期工作越来越多地将静态分析、提示词工程与大语言模型生成相结合，用于 C 到 Rust 的翻译。Eniser 等人 [ 5 ] 与 Pan 等人"
+    },
+    {
+     "en": "[ 40 ] highlight common weaknesses of LLM-based Rust translation, including compilation failures, inconsistency, and translation-induced bugs.",
+     "zh": "[ 40 ] 指出了基于大语言模型的 Rust 翻译的常见弱点，包括编译失败、不一致性以及由翻译引入的缺陷。"
+    },
+    {
+     "en": "Other approaches add stronger structural guidance, including VERT [ 41 ] , a static-analysis-driven pipeline [ 42 ] , C2RustXW [ 27 ] , RustMap [ 43 ] , SpecTra [ 44 ] , and scalable whole-project translation with LLMs [ 10 ] .",
+     "zh": "其他方法引入了更强的结构化引导，包括 VERT [ 41 ] 、一个静态分析驱动的流水线 [ 42 ] 、C2RustXW [ 27 ] 、RustMap [ 43 ] 、SpecTra [ 44 ] ，以及基于大语言模型的可扩展整项目翻译 [ 10 ] 。"
+    },
+    {
+     "en": "In the C-to-Rust setting, EvoC2Rust [ 26 ] shows that skeleton-guided generation can improve structural consistency over direct prompting.",
+     "zh": "在 C 到 Rust 的场景中，EvoC2Rust [ 26 ] 表明，骨架引导的生成相较于直接提示可以提升结构一致性。"
+    },
+    {
+     "en": "However, most existing approaches still use structure, analysis facts, or specifications mainly as prompt-time context rather than externalizing repository-level knowledge into persistent artifacts that can be reused across generation and repair.",
+     "zh": "然而，大多数现有方法仍主要将结构、分析事实或规约用作提示阶段的上下文，而不是将仓库级知识外化为可在生成与修复过程中复用的持久化产物。"
+    }
+   ]
+  },
+  {
+   "en": "Feedback-driven repair and agent-based translation. Another related line studies iterative correction with compiler diagnostics, test feedback, and agent-style tool use. This includes Rust compilation repair [ 45 ] , broader LLM-based automated program repair [ 7 ] , and agentic repair or translation frameworks such as RepairAgent [ 46 ] , LLM-powered translation agents [ 47 ] , and TRANSAGENT [ 48 ] . SmartC2Rust [ 9 ] brings this paradigm directly into repository-level C-to-Rust translation by iteratively repairing generated Rust code using compilation and semantic feedback. However, its heavy reliance on repair can allow hallucinated pseudo-implementations that pass tests superficially.",
+   "zh": "反馈驱动的修复与基于智能体的翻译。 另一条相关工作路线研究借助编译器诊断信息、测试反馈和智能体式工具使用进行迭代式纠正。 这包括 Rust 编译修复 [ 45 ]、更广泛的基于 LLM 的自动程序修复 [ 7 ]，以及智能体式修复或翻译框架，例如 RepairAgent [ 46 ]、由 LLM 驱动的翻译智能体 [ 47 ] 和 TRANSAGENT [ 48 ]。 SmartC2Rust [ 9 ] 将这一范式直接引入仓库级 C 到 Rust 的翻译，通过利用编译和语义反馈迭代地修复生成的 Rust 代码。 然而，它对修复的严重依赖可能使通过表面测试的幻觉伪实现得以蒙混过关。",
+   "sents": [
+    {
+     "en": "Feedback-driven repair and agent-based translation.",
+     "zh": "反馈驱动的修复与基于智能体的翻译。"
+    },
+    {
+     "en": "Another related line studies iterative correction with compiler diagnostics, test feedback, and agent-style tool use.",
+     "zh": "另一条相关工作路线研究借助编译器诊断信息、测试反馈和智能体式工具使用进行迭代式纠正。"
+    },
+    {
+     "en": "This includes Rust compilation repair [ 45 ] , broader LLM-based automated program repair [ 7 ] , and agentic repair or translation frameworks such as RepairAgent [ 46 ] , LLM-powered translation agents [ 47 ] , and TRANSAGENT [ 48 ] .",
+     "zh": "这包括 Rust 编译修复 [ 45 ]、更广泛的基于 LLM 的自动程序修复 [ 7 ]，以及智能体式修复或翻译框架，例如 RepairAgent [ 46 ]、由 LLM 驱动的翻译智能体 [ 47 ] 和 TRANSAGENT [ 48 ]。"
+    },
+    {
+     "en": "SmartC2Rust [ 9 ] brings this paradigm directly into repository-level C-to-Rust translation by iteratively repairing generated Rust code using compilation and semantic feedback.",
+     "zh": "SmartC2Rust [ 9 ] 将这一范式直接引入仓库级 C 到 Rust 的翻译，通过利用编译和语义反馈迭代地修复生成的 Rust 代码。"
+    },
+    {
+     "en": "However, its heavy reliance on repair can allow hallucinated pseudo-implementations that pass tests superficially.",
+     "zh": "然而，它对修复的严重依赖可能使通过表面测试的幻觉伪实现得以蒙混过关。"
+    }
+   ]
+  },
+  {
+   "en": "This paper presented SpeC2Rust , a specification-driven pipeline for repository-level C-to-Rust translation. The core idea of SpeC2Rust is to externalize repository-level knowledge before Rust generation, preserve it as reusable specification artifacts, and selectively reinject it during generation and repair through Project-Intent Structuring , Spec-Guided Generation , and Layered-Feedback Repair . We evaluated SpeC2Rust on eight repository-level open-source C projects, and the results show that it compiles successfully and passes the original end-to-end test scripts on all eight projects, while eliminating raw-pointer declarations, raw-pointer dereferences, and unsafe lines of code in the final translated Rust repositories. On the five projects where direct comparison with SmartC2Rust is possible, SpeC2Rust reduces monetary cost by 66.1%, end-to-end latency by 77.3%, and input-token usage by 84.7%. Future work could extend this direction to broader classes of C systems, including library projects, and combine specification-guided translation with stronger validation techniques such as fuzzing and differential testing.",
+   "zh": "本文提出了 SpeC2Rust，一种规格说明驱动的仓库级 C 到 Rust 翻译流水线。 SpeC2Rust 的核心思想是，在生成 Rust 代码之前将仓库级知识外部化，将其保存为可复用的规格说明工件，并通过项目意图结构化、规格引导生成和分层反馈修复，在生成与修复过程中选择性地将其重新注入。 我们在八个仓库级开源 C 项目上评估了 SpeC2Rust，结果表明，它在全部八个项目上都能成功编译并通过原始的端到端测试脚本，同时在最终翻译得到的 Rust 仓库中消除了裸指针声明、裸指针解引用以及不安全的代码行。 在五个可与 SmartC2Rust 直接比较的项目上，SpeC2Rust 将货币成本降低了 66.1%，端到端延迟降低了 77.3%，输入 token 用量降低了 84.7%。 未来的工作可以将这一方向扩展到更广泛的 C 系统类别（包括库项目），并将规格说明引导的翻译与模糊测试和差分测试等更强的验证技术相结合。",
+   "sents": [
+    {
+     "en": "This paper presented SpeC2Rust , a specification-driven pipeline for repository-level C-to-Rust translation.",
+     "zh": "本文提出了 SpeC2Rust，一种规格说明驱动的仓库级 C 到 Rust 翻译流水线。"
+    },
+    {
+     "en": "The core idea of SpeC2Rust is to externalize repository-level knowledge before Rust generation, preserve it as reusable specification artifacts, and selectively reinject it during generation and repair through Project-Intent Structuring , Spec-Guided Generation , and Layered-Feedback Repair .",
+     "zh": "SpeC2Rust 的核心思想是，在生成 Rust 代码之前将仓库级知识外部化，将其保存为可复用的规格说明工件，并通过项目意图结构化、规格引导生成和分层反馈修复，在生成与修复过程中选择性地将其重新注入。"
+    },
+    {
+     "en": "We evaluated SpeC2Rust on eight repository-level open-source C projects, and the results show that it compiles successfully and passes the original end-to-end test scripts on all eight projects, while eliminating raw-pointer declarations, raw-pointer dereferences, and unsafe lines of code in the final translated Rust repositories.",
+     "zh": "我们在八个仓库级开源 C 项目上评估了 SpeC2Rust，结果表明，它在全部八个项目上都能成功编译并通过原始的端到端测试脚本，同时在最终翻译得到的 Rust 仓库中消除了裸指针声明、裸指针解引用以及不安全的代码行。"
+    },
+    {
+     "en": "On the five projects where direct comparison with SmartC2Rust is possible, SpeC2Rust reduces monetary cost by 66.1%, end-to-end latency by 77.3%, and input-token usage by 84.7%.",
+     "zh": "在五个可与 SmartC2Rust 直接比较的项目上，SpeC2Rust 将货币成本降低了 66.1%，端到端延迟降低了 77.3%，输入 token 用量降低了 84.7%。"
+    },
+    {
+     "en": "Future work could extend this direction to broader classes of C systems, including library projects, and combine specification-guided translation with stronger validation techniques such as fuzzing and differential testing.",
+     "zh": "未来的工作可以将这一方向扩展到更广泛的 C 系统类别（包括库项目），并将规格说明引导的翻译与模糊测试和差分测试等更强的验证技术相结合。"
+    }
+   ]
+  }
+ ]
+}
