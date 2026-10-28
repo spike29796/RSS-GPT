@@ -20,7 +20,10 @@ const summary = computed(() => {
     .replace(/<br\s*\/?>/gi, ' ')
     .trim()
 })
-const long = computed(() => summary.value.length > 90)
+// 2026-10-29：大卫的要求是「摘要 200~300 字」——那就整段显示，
+// 不做 3 行截断 + 展开（截断后只剩四十来字，等于没给摘要）。
+// 只有极端超长（>600 字）才折，防止个别条目把卡撑爆。
+const long = computed(() => summary.value.length > 600)
 
 const dateText = computed(() => {
   const raw = props.item.published || props.item.updated
@@ -49,7 +52,7 @@ const channel = computed(() => props.item.author || props.item.uploader || '')
     </span>
     <span class="yt-body">
       <span class="yt-title">{{ item.title }}</span>
-      <span v-if="summary" class="yt-summary" :class="{ open: expanded }">{{ summary }}</span>
+      <span v-if="summary" class="yt-summary" :class="{ open: expanded || !long }">{{ summary }}</span>
       <button
         v-if="long"
         type="button"
@@ -139,10 +142,7 @@ const channel = computed(() => props.item.author || props.item.uploader || '')
   font-size: 12px;
   line-height: 1.55;
   word-break: break-all;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  white-space: pre-wrap;
 }
 .yt-summary.open {
   -webkit-line-clamp: unset;

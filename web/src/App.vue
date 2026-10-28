@@ -696,7 +696,7 @@ function clearMarks() {
       <h2 class="section-title">YouTube · 精选视频 <span class="count">{{ ytList.length }}</span></h2>
       <p v-if="ytLoading" class="hint">加载中…</p>
       <p v-else-if="!ytList.length" class="hint">还没有数据 —— 源是 2026-10-28 加的，等下一轮管线跑完</p>
-      <div class="bili-grid">
+      <div class="yt-grid">
         <YtCard v-for="v in ytList" :key="v.link" :item="v" @play="openYt" />
       </div>
     </template>
@@ -946,6 +946,14 @@ body {
 }
 
 /* T-035 B站详情页网格 */
+/* 2026-10-29：YouTube 卡要装 200~300 字摘要，300px 一栏塞不下（十几行）。
+   版式仍照 B 站卡，只把这一区的栏宽放宽到 560px（1280 屏两列）。 */
+.yt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(560px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
 .bili-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
