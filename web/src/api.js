@@ -122,3 +122,35 @@ export async function fetchBiliVideos() {
     })
   return entries
 }
+
+
+// ===== 2026-10-29：YouTube 视频源 =====
+// 30 个频道各一个 jsonl（main.py 按 config.ini 的 yt-* 段产出）。
+// 不进 SOURCES —— 它们跟 B 站一样属于「视频」，不是资讯源。
+// 懒加载：只有点进 YouTube 区块才拉，不在首屏拼 30 个请求。
+// 缺源是常态（新源在管线跑出数据前必然 404），只 console.warn，不报错。
+export const YT_SOURCES = [
+  'yt-comfyui', 'yt-pixaroma', 'yt-nerdy-rodent', 'yt-ai-ninja', 'yt-cg-pixel', 'yt-comfyui-workflow-blog', 'yt-comfyui-studio', 'yt-the-3-minute-node', 'yt-ai-search', 'yt-krea', 'yt-ltx-io', 'yt-mickmumpitz', 'yt-ambernova-studio', 'yt-winbush', 'yt-fututek', 'yt-bycloud', 'yt-two-minute-papers', 'yt-bijan-bowen', 'yt-ai-papers-academy', 'yt-alibaba-cloud', 'yt-hugging-face', 'yt-claude', 'yt-fahd-mirza', 'yt-digital-spaceport', 'yt-locally', 'yt-red-hat', 'yt-ai-engineer', 'yt-tech-with-tim', 'yt-matt-pocock', 'yt-ibm-technology',
+]
+
+export async function fetchYoutubeEntries() {
+  const results = await Promise.allSettled(
+    YT_SOURCES.map(async (name) => {
+      const resp = await fetch(`${import.meta.env.BASE_URL}${name}.jsonl`)
+      if (!resp.ok) throw new Error(`${name}: HTTP ${resp.status}`)
+      const text = await resp.text()
+      const out = []
+      text.split('\n').filter((l) => l.trim()).forEach((line, i) => {
+        try { out.push(JSON.parse(line)) } catch (e) { console.warn(`${name}: line ${i + 1} skipped`) }
+      })
+      return out
+    }),
+  )
+  const entries = []
+  const missing = []
+  results.forEach((r, i) => {
+    if (r.status === 'fulfilled') entries.push(...r.value)
+    else missing.push(YT_SOURCES[i])
+  })
+  return { entries, missing }
+}

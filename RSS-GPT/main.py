@@ -610,8 +610,11 @@ def _openai_client():
     return OpenAI(**kw)
 
 
-def gpt_summary(query,model,language,categories,default_category,log_file=None):
+def gpt_summary(query,model,language,categories,default_category,log_file=None,summary_len=None):
     category_list = '、'.join(categories)
+    # 2026-10-29: 摘要字数按源配置（视频源要 200~300 字），不给就用全局值。
+    _sl = int(summary_len or summary_length)
+    _len_req = ('不超过%s字' % _sl) + ('，必须是一句话' if _sl < 120 else '，分 2 到 4 句来写')
     # Input cap: a one-sentence guide needs the lead, not the full article.
     # Multi-k-token articles multiply cost AND latency on a slow relay.
     if len(query) > 2000:
@@ -622,9 +625,9 @@ def gpt_summary(query,model,language,categories,default_category,log_file=None):
     # in an assistant message, which many models treat as content to continue
     # rather than an instruction, hurting format compliance).
     if language == "zh":
-        instruction = f"请用中文为这篇文章写一句话导读并翻译标题，严格按照以下格式输出：第一行只输出一个分类，必须从以下分类中选择一个：{category_list}，除此之外第一行不要输出任何其他内容；第二行用中文写一句话导读，不超过{summary_length}字，必须是一句话，不要分点、不要编号，并按照以下格式输出'<br><br>总结:'，<br>是HTML的换行符，输出时必须保留2个，并且必须在'总结:'二字之前；第三行只输出【输入内容第一行】的中文翻译——输入第一行就是文章标题，不要把正文或描述里的句子当成标题翻译；若标题本身是英文专有名词（如产品名），可音译或保留原文，但禁止直接抄写正文句子；若【输入内容第一行】已是中文（翻译前置工序已翻好），则原样输出该行，不要改写；除此之外第三行不要输出任何其他内容"
+        instruction = f"请用中文为这篇文章写一句话导读并翻译标题，严格按照以下格式输出：第一行只输出一个分类，必须从以下分类中选择一个：{category_list}，除此之外第一行不要输出任何其他内容；第二行用中文写导读，{_len_req}，不要分点、不要编号，并按照以下格式输出'<br><br>总结:'，<br>是HTML的换行符，输出时必须保留2个，并且必须在'总结:'二字之前；第三行只输出【输入内容第一行】的中文翻译——输入第一行就是文章标题，不要把正文或描述里的句子当成标题翻译；若标题本身是英文专有名词（如产品名），可音译或保留原文，但禁止直接抄写正文句子；若【输入内容第一行】已是中文（翻译前置工序已翻好），则原样输出该行，不要改写；除此之外第三行不要输出任何其他内容"
     else:
-        instruction = f"Write a one-sentence guide for this article in {language} language and translate the title into {language}, strictly follow this format: the first line must contain exactly one category chosen from: {category_list}, and nothing else; the second line must be a single sentence of no more than {summary_length} words in {language}, no bullet points, no numbering, output in the following format '<br><br>Summary:' , <br> is the line break of HTML, 2 must be retained when output, and must be before the word 'Summary:'; the third line must contain only the translation of the FIRST LINE of the input (that first line is the article title) into {language} — do not translate sentences from the body as if they were the title; if the title is a proper noun (e.g. a product name), you may transliterate it or keep it as-is, but never copy a body sentence; and nothing else on that line"
+        instruction = f"Write a one-sentence guide for this article in {language} language and translate the title into {language}, strictly follow this format: the first line must contain exactly one category chosen from: {category_list}, and nothing else; the second line must be a single passage of no more than {_sl} words in {language}, no bullet points, no numbering, output in the following format '<br><br>Summary:' , <br> is the line break of HTML, 2 must be retained when output, and must be before the word 'Summary:'; the third line must contain only the translation of the FIRST LINE of the input (that first line is the article title) into {language} — do not translate sentences from the body as if they were the title; if the title is a proper noun (e.g. a product name), you may transliterate it or keep it as-is, but never copy a body sentence; and nothing else on that line"
     messages = [
         {"role": "system", "content": instruction},
         {"role": "user", "content": query},
@@ -703,7 +706,7 @@ def _fill_from_batch(entry, text, categories, default_category):
 
 
 def flush_summary_batch(pending, model, language, categories, default_category,
-                        retry_queue, retry_marked, log_file=None):
+                        retry_queue, retry_marked, log_file=None, summary_len=None):
     """一包条目一次调用总结完，逐条填回 entry；缺项的原地回退逐条。
 
     pending: [(entry, query, token_length)]
@@ -719,7 +722,7 @@ def flush_summary_batch(pending, model, language, categories, default_category,
             results = summary_batch.summarize_batch(
                 [{'id': i + 1, 'query': q} for i, (_e, q, _t) in enumerate(pending)],
                 model=model, categories=categories, default_category=default_category,
-                language=language, summary_length=summary_length, log_file=log_file,
+                language=language, summary_length=(summary_len or summary_length), log_file=log_file,
                 stats=_bstats)
         except Exception:
             results = None
@@ -746,7 +749,8 @@ def flush_summary_batch(pending, model, language, categories, default_category,
             try:
                 entry.gpt_category, entry.summary, entry.title_zh = gpt_summary(
                     query, model=model, language=language, categories=categories,
-                    default_category=default_category, log_file=log_file)
+                    default_category=default_category, log_file=log_file,
+                    summary_len=summary_len)
             except Exception as e:
                 entry.summary = None
                 mark_retry(retry_queue, entry.link, 'api_error')
@@ -771,6 +775,8 @@ def output(sec, language):
         Exception: filter_apply, type, rule must be set together in config.ini
     """
     log_file = os.path.join(BASE, get_cfg(sec, 'name') + '.log')
+    # 2026-10-29: 本源的摘要字数（缺省回落到 [cfg] summary_length）。
+    _src_len = int(get_cfg(sec, 'summary_length') or summary_length)
     out_dir = os.path.join(BASE, get_cfg(sec, 'name'))
     # read rss_url as a list separated by comma
     rss_urls = get_cfg(sec, 'url')
@@ -943,7 +949,7 @@ def output(sec, language):
                 _pending.append((entry, f"{entry.title}\n{cleaned_article}", len(cleaned_article)))
                 _tofinish.append((entry, True))
                 if len(_pending) >= _BATCH_SIZE:
-                    flush_summary_batch(_pending, model=_batch_model, language=language,
+                    flush_summary_batch(_pending, model=_batch_model, language=language, summary_len=_src_len,
                                         categories=categories, default_category=default_category,
                                         retry_queue=retry_queue, retry_marked=retry_marked,
                                         log_file=log_file)
@@ -955,7 +961,7 @@ def output(sec, language):
 
         # 尾包：不满一包的也要发出去。
         if _pending:
-            flush_summary_batch(_pending, model=_batch_model, language=language,
+            flush_summary_batch(_pending, model=_batch_model, language=language, summary_len=_src_len,
                                 categories=categories, default_category=default_category,
                                 retry_queue=retry_queue, retry_marked=retry_marked,
                                 log_file=log_file)
@@ -1021,6 +1027,14 @@ def output(sec, language):
                 from calendar import timegm
                 from email.utils import formatdate
                 published = formatdate(timegm(st), usegmt=True)
+        # 2026-10-29: 视频源（YouTube 等）带 media:thumbnail，存下来给卡片当封面用。
+        cover = None
+        try:
+            _mt = getattr(entry, 'media_thumbnail', None)
+            if _mt:
+                cover = _mt[0].get('url')
+        except Exception:
+            cover = None
         append_records.append({
             "link": entry.link,
             "title": entry.title,
@@ -1030,6 +1044,8 @@ def output(sec, language):
             "category": getattr(entry, 'gpt_category', None) or default_category,
             "summary": summary,
             "content": content,
+            "cover": cover,
+            "author": getattr(entry, 'author', None),
         })
 
     # New entries first, then history; truncate AFTER the merge (conveyor-belt
@@ -1148,7 +1164,7 @@ def output(sec, language):
                         [{'id': i + 1, 'query': q} for i, q in enumerate(queries)],
                         model=custom_model or "gpt-4o-mini", categories=categories,
                         default_category=default_category, language=language,
-                        summary_length=summary_length, log_file=log_file) or {}
+                        summary_length=_src_len, log_file=log_file) or {}
                 except Exception:
                     results = {}
             if not isinstance(results, dict):
@@ -1165,7 +1181,7 @@ def output(sec, language):
                 if summary is None:
                     # 缺项或整包失败：原地回退逐条，行为与改造前一致。
                     try:
-                        category, summary, title_zh = gpt_summary(queries[idx], model=custom_model or "gpt-4o-mini", language=language, categories=categories, default_category=default_category, log_file=log_file)
+                        category, summary, title_zh = gpt_summary(queries[idx], model=custom_model or "gpt-4o-mini", language=language, categories=categories, default_category=default_category, log_file=log_file, summary_len=_src_len)
                     except Exception as e:
                         mark_retry(retry_queue, record['link'], 'api_error')
                         with open(log_file, 'a', encoding='utf-8') as f:

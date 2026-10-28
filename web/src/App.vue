@@ -1,7 +1,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import Fuse from 'fuse.js'
-import { SOURCES, fetchAllEntries, fetchRecommended, fetchBiliVideos } from './api.js'
+import { SOURCES, fetchAllEntries, fetchRecommended, fetchBiliVideos, fetchYoutubeEntries } from './api.js'
 import { parseDate, formatDate, isToday } from './format.js'
 import { ui, toggleTheme, toggleZh } from './store.js'
 import { TAG_ZH, tagLabel } from './i18n.js'
@@ -9,6 +9,8 @@ import EntryCard from './components/EntryCard.vue'
 import BiliCarousel from './components/BiliCarousel.vue'
 import SourceCard from './components/SourceCard.vue'
 import BiliDetailItem from './components/BiliDetailItem.vue'
+import YtCard from './components/YtCard.vue'
+import { youtubeId } from './youtubeId.js'
 import PlayerOverlay from './components/PlayerOverlay.vue'
 import ReaderView from './components/ReaderView.vue'
 import { paperId } from './paperId.js'
@@ -37,6 +39,29 @@ const readerEntry = ref(null)
 const readerReturnY = ref(null)
 // T-026：B站轮播数据。fetch 失败或为空 → 轮播模块整体不渲染（不留空壳）。
 const bili = ref([])
+// 2026-10-29：YouTube 视频（30 个频道 jsonl，点进区块才拉）。
+const yt = ref([])
+const ytLoading = ref(false)
+const ytLoaded = ref(false)
+const ytList = computed(() =>
+  [...yt.value].sort((a, b) => (parseDate(b.published) || 0) - (parseDate(a.published) || 0)),
+)
+async function openYoutube() {
+  view.value = 'youtube'
+  toTop()
+  if (ytLoaded.value || ytLoading.value) return
+  ytLoading.value = true
+  try {
+    const { entries: list, missing } = await fetchYoutubeEntries()
+    yt.value = list
+    ytLoaded.value = true
+    if (missing.length) console.warn(`YouTube 缺 ${missing.length} 个源：${missing.join(', ')}`)
+  } catch (e) {
+    console.warn(`YouTube 加载失败：${e.message}`)
+  } finally {
+    ytLoading.value = false
+  }
+}
 // T-043：两个区 —— 'rec' = 打分器推荐（≥2 分），'all' = 抓到什么看什么
 const zone = ref('rec')
 const rec = ref([])
@@ -187,11 +212,25 @@ function openBili() {
 // T-037：B站视频就地播放——playerBvid 非空时挂官方 iframe 遮罩。
 // 契约 B2/C2 emit('play', item) 传条目对象，此处抽 item.bvid 字符串给遮罩（白名单校验入口）
 const playerBvid = ref(null)
+// 2026-10-29：YouTube 走同一个遮罩，独立 ref 保证两路互斥。
+const playerYtId = ref(null)
 function openPlayer(item) {
+  playerYtId.value = null
   playerBvid.value = item.bvid
+}
+function openYt(item) {
+  const id = youtubeId(item.link)
+  if (!id) {
+    const url = safeLink(item.link)
+    if (url) window.open(url, '_blank', 'noopener')
+    return
+  }
+  playerBvid.value = null
+  playerYtId.value = id
 }
 function closePlayer() {
   playerBvid.value = null
+  playerYtId.value = null
 }
 
 function goHome() {
@@ -574,6 +613,14 @@ function clearMarks() {
             </span>
             <span class="chevron">›</span>
           </button>
+          <button class="bili-source-card" @click="openYoutube">
+            <span class="league-letter" style="background: #ff0000">Y</span>
+            <span class="league-body">
+              <span class="league-name">YouTube</span>
+              <span class="league-total">{{ ytLoaded ? yt.length + ' 条' : '进入' }}</span>
+            </span>
+            <span class="chevron">›</span>
+          </button>
         </div>
       </section>
 
@@ -643,6 +690,17 @@ function clearMarks() {
       </div>
     </template>
 
+    <!-- YouTube 视频：卡片版式照 B 站卡（封面 + 标题 + 可展开摘要 + 频道名） -->
+    <template v-if="view === 'youtube'">
+      <button class="home-btn" @click="goHome">‹ 首页</button>
+      <h2 class="section-title">YouTube · 精选视频 <span class="count">{{ ytList.length }}</span></h2>
+      <p v-if="ytLoading" class="hint">加载中…</p>
+      <p v-else-if="!ytList.length" class="hint">还没有数据 —— 源是 2026-10-28 加的，等下一轮管线跑完</p>
+      <div class="bili-grid">
+        <YtCard v-for="v in ytList" :key="v.link" :item="v" @play="openYt" />
+      </div>
+    </template>
+
     <!-- 双语阅读页：点条目卡进来，点段落展开中文译文 -->
     <template v-if="view === 'read'">
       <ReaderView :id="readerId" :entry="readerSnapshot" @back="closeReader" />
@@ -650,6 +708,7 @@ function clearMarks() {
 
     <!-- T-037：B站视频就地播放遮罩（fixed，不受布局影响） -->
     <PlayerOverlay v-if="playerBvid" :bvid="playerBvid" @close="closePlayer" />
+    <PlayerOverlay v-else-if="playerYtId" :youtube-id="playerYtId" @close="closePlayer" />
     </div>
     <!-- ↑↑↑ 旧 UI 停用区结束 ↑↑↑ -->
 

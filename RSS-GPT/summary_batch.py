@@ -19,12 +19,12 @@ _HEAD = (
     '每篇有 id、title、article 三个字段。\n'
     '你必须返回一个 JSON 数组，长度必须等于 N，每一项的 id 与输入一一对应。\n'
     '每一项的格式固定为：\n'
-    '{"id": <输入的id>, "category": "<分类>", "summary": "<br><br>总结:<一句话>", "title_zh": "<标题的中文>"}\n'
+    '{"id": <输入的id>, "category": "<分类>", "summary": "<br><br>总结:<中文导读>", "title_zh": "<标题的中文>"}\n'
     '\n'
     '严格要求：\n'
     '1. 只输出 JSON 数组本身。不要任何解释文字，不要前后缀，不要 markdown 代码块标记（不要 ```json）。\n'
     '2. category 必须从以下分类中选择且只选一个：{cats}\n'
-    '3. summary 必须是一句话，不超过 {n} 字，不要分点、不要编号；'
+    '3. summary {style}，不要分点、不要编号；'
     '必须以 <br><br>总结: 开头，<br> 是 HTML 换行符，必须保留两个。\n'
     '4. title_zh 是文章标题（title 字段）的中文翻译。若标题已经是中文，原样输出；'
     '若标题是英文专有名词（如产品名），可音译或保留原文；禁止抄正文里的句子。\n'
@@ -116,13 +116,18 @@ def summarize_batch(items, model, categories, default_category, language='zh',
         article = (lines[1] if len(lines) > 1 else lines[0]).strip()
         payload.append({'id': it['id'], 'title': title, 'article': article[:1500]})
 
+    _n = int(summary_length)
+    if _n >= 120:
+        _style = '写 %d 到 %d 字，分 2 到 4 句' % (min(200, _n), max(300, _n))
+    else:
+        _style = '必须是一句话，不超过 %d 字' % _n
     sys_prompt = (_HEAD.replace('{cats}', '、'.join(categories))
-                       .replace('{n}', str(summary_length)))
+                       .replace('{style}', _style))
     messages = [
         {'role': 'system', 'content': sys_prompt},
         {'role': 'user', 'content': json.dumps(payload, ensure_ascii=False)},
     ]
-    max_tokens = int(os.environ.get('SUMMARY_BATCH_MAX_TOKENS', '4096'))
+    max_tokens = int(os.environ.get('SUMMARY_BATCH_MAX_TOKENS', '8192'))
 
     # 3) 一次请求拿回整包。
     try:
