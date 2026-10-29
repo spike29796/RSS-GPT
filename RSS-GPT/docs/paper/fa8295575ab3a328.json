@@ -1,0 +1,1439 @@
+{
+ "id": "fa8295575ab3a328",
+ "source": "arxiv-agent",
+ "link": "https://arxiv.org/abs/2610.37276v1",
+ "title": "Where Should the Evaluation Budget Go in LLM-Driven Agent Scaffold Evolution?",
+ "title_zh": "LLM 驱动的智能体脚手架演化中，评估预算应投向何处？",
+ "published": "2026-10-27T14:06:26Z",
+ "translated_at": "2026-10-29T21:44:43Z",
+ "paragraphs": [
+  {
+   "en": "Large language model (LLM)-driven agent scaffold evolution improves agent workflows through iterative candidate generation and evaluation. Evaluation both guides subsequent search and determines the final scaffold, but evaluating every candidate on the full task set incurs substantial execution costs. We investigate how evaluation budgets can be allocated across these two roles. Our experiments show that sparse feedback can sustain productive evolution, while additional targeted evaluation improves final selection. Replay analyses further show that shared informative items and a common scoring reference support comparisons among closely matched candidates. Motivated by these findings, we propose EvalAlloc , an evaluation allocation framework that combines sparse search-time feedback with targeted final confirmation. A short fully evaluated warm-up establishes a shared informative core and calibrates a response model whose item parameters remain fixed during search. After search, EvalAlloc refits the model and applies paired successive halving, reusing accumulated observations and executing only missing evaluations. Across four benchmarks and two evolution frameworks, EvalAlloc achieves higher mean performance than full evaluation in most settings while using approximately half as many evaluation cells.",
+   "zh": "由大语言模型（LLM）驱动的智能体脚手架演化，通过迭代的候选生成与评估来改进智能体工作流。 评估既指导后续搜索，也决定最终脚手架，但在完整任务集上评估每个候选会产生大量执行成本。 我们研究如何在这两个角色之间分配评估预算。 我们的实验表明，稀疏反馈能够维持有效的演化，而额外的针对性评估则能改善最终选择。 回放分析进一步表明，共享的信息性条目和统一的评分基准有助于在高度接近的候选之间进行比较。 基于这些发现，我们提出 EvalAlloc，一个将稀疏的搜索时反馈与针对性的最终确认相结合的评估分配框架。 一个简短的完全评估预热阶段建立了共享的信息性核心，并校准一个响应模型，其条目参数在搜索期间保持固定。 搜索结束后，EvalAlloc 重新拟合该模型并应用配对的逐次减半方法，复用已积累的观测结果，仅执行缺失的评估。 在四个基准和两个演化框架上，EvalAlloc 在大多数设置下以约一半的评估单元数量取得了高于完全评估的平均性能。",
+   "sents": [
+    {
+     "en": "Large language model (LLM)-driven agent scaffold evolution improves agent workflows through iterative candidate generation and evaluation.",
+     "zh": "由大语言模型（LLM）驱动的智能体脚手架演化，通过迭代的候选生成与评估来改进智能体工作流。"
+    },
+    {
+     "en": "Evaluation both guides subsequent search and determines the final scaffold, but evaluating every candidate on the full task set incurs substantial execution costs.",
+     "zh": "评估既指导后续搜索，也决定最终脚手架，但在完整任务集上评估每个候选会产生大量执行成本。"
+    },
+    {
+     "en": "We investigate how evaluation budgets can be allocated across these two roles.",
+     "zh": "我们研究如何在这两个角色之间分配评估预算。"
+    },
+    {
+     "en": "Our experiments show that sparse feedback can sustain productive evolution, while additional targeted evaluation improves final selection.",
+     "zh": "我们的实验表明，稀疏反馈能够维持有效的演化，而额外的针对性评估则能改善最终选择。"
+    },
+    {
+     "en": "Replay analyses further show that shared informative items and a common scoring reference support comparisons among closely matched candidates.",
+     "zh": "回放分析进一步表明，共享的信息性条目和统一的评分基准有助于在高度接近的候选之间进行比较。"
+    },
+    {
+     "en": "Motivated by these findings, we propose EvalAlloc , an evaluation allocation framework that combines sparse search-time feedback with targeted final confirmation.",
+     "zh": "基于这些发现，我们提出 EvalAlloc，一个将稀疏的搜索时反馈与针对性的最终确认相结合的评估分配框架。"
+    },
+    {
+     "en": "A short fully evaluated warm-up establishes a shared informative core and calibrates a response model whose item parameters remain fixed during search.",
+     "zh": "一个简短的完全评估预热阶段建立了共享的信息性核心，并校准一个响应模型，其条目参数在搜索期间保持固定。"
+    },
+    {
+     "en": "After search, EvalAlloc refits the model and applies paired successive halving, reusing accumulated observations and executing only missing evaluations.",
+     "zh": "搜索结束后，EvalAlloc 重新拟合该模型并应用配对的逐次减半方法，复用已积累的观测结果，仅执行缺失的评估。"
+    },
+    {
+     "en": "Across four benchmarks and two evolution frameworks, EvalAlloc achieves higher mean performance than full evaluation in most settings while using approximately half as many evaluation cells.",
+     "zh": "在四个基准和两个演化框架上，EvalAlloc 在大多数设置下以约一半的评估单元数量取得了高于完全评估的平均性能。"
+    }
+   ]
+  },
+  {
+   "en": "A scaffold for a large language model (LLM) agent is an executable program that defines how an agent coordinates LLM calls, maintains intermediate state, and interacts with tools and external information sources ( Yao et al., 2023 ; Hu et al., 2025 ; Qin et al., 2024 ) . For Web-facing agents, scaffolds govern how agents acquire and use information through Web searches, document retrieval, and interactions with online services ( Nakano et al., 2021 ; Zhou et al., 2024 ) . While these scaffolds have traditionally been designed and refined manually, recent advances have enabled their automated optimization ( Hu et al., 2025 ; Zhang et al., 2025 ; Agrawal et al., 2026 ) . For example, ShinkaEvolve ( Lange et al., 2026 ) iteratively proposes scaffold modifications and uses evaluation feedback to guide subsequent evolution.",
+   "zh": "大语言模型（LLM）智能体的脚手架是一种可执行程序，它定义了智能体如何协调 LLM 调用、维护中间状态，以及与工具和外部信息源交互（Yao et al., 2023；Hu et al., 2025；Qin et al., 2024）。 对于面向 Web 的智能体而言，脚手架决定了智能体如何通过 Web 搜索、文档检索以及与在线服务的交互来获取和使用信息（Nakano et al., 2021；Zhou et al., 2024）。 虽然这些脚手架传统上是由人工设计和改进的，但近期的进展已经使它们的自动化优化成为可能（Hu et al., 2025；Zhang et al., 2025；Agrawal et al., 2026）。 例如，ShinkaEvolve（Lange et al., 2026）迭代式地提出脚手架修改方案，并利用评估反馈来指导后续的进化。",
+   "sents": [
+    {
+     "en": "A scaffold for a large language model (LLM) agent is an executable program that defines how an agent coordinates LLM calls, maintains intermediate state, and interacts with tools and external information sources ( Yao et al., 2023 ; Hu et al., 2025 ; Qin et al., 2024 ) .",
+     "zh": "大语言模型（LLM）智能体的脚手架是一种可执行程序，它定义了智能体如何协调 LLM 调用、维护中间状态，以及与工具和外部信息源交互（Yao et al., 2023；Hu et al., 2025；Qin et al., 2024）。"
+    },
+    {
+     "en": "For Web-facing agents, scaffolds govern how agents acquire and use information through Web searches, document retrieval, and interactions with online services ( Nakano et al., 2021 ; Zhou et al., 2024 ) .",
+     "zh": "对于面向 Web 的智能体而言，脚手架决定了智能体如何通过 Web 搜索、文档检索以及与在线服务的交互来获取和使用信息（Nakano et al., 2021；Zhou et al., 2024）。"
+    },
+    {
+     "en": "While these scaffolds have traditionally been designed and refined manually, recent advances have enabled their automated optimization ( Hu et al., 2025 ; Zhang et al., 2025 ; Agrawal et al., 2026 ) .",
+     "zh": "虽然这些脚手架传统上是由人工设计和改进的，但近期的进展已经使它们的自动化优化成为可能（Hu et al., 2025；Zhang et al., 2025；Agrawal et al., 2026）。"
+    },
+    {
+     "en": "For example, ShinkaEvolve ( Lange et al., 2026 ) iteratively proposes scaffold modifications and uses evaluation feedback to guide subsequent evolution.",
+     "zh": "例如，ShinkaEvolve（Lange et al., 2026）迭代式地提出脚手架修改方案，并利用评估反馈来指导后续的进化。"
+    }
+   ]
+  },
+  {
+   "en": "However, evaluating candidate scaffolds can incur substantial execution costs. A single task instance may involve multiple LLM calls, retrieval steps, and tool interactions ( Mialon et al., 2024 ; Yao et al., 2025 ) , making full evaluation across many candidates expensive. Although parallel evaluation and asynchronous program generation can overlap computation ( Romera-Paredes et al., 2024 ) , feedback-dependent search decisions still require evaluation results. Existing approaches reduce evaluation costs through sparse score estimation and evaluation cascades ( Fisch et al., 2026 ; Gideoni et al., 2026 ) , treating evaluation primarily as a fitness-estimation problem. In scaffold evolution, however, evaluation supports two distinct decisions: it provides fitness feedback that shapes archive updates and subsequent proposals ( Zhang et al., 2026a ) , and it determines which scaffold is ultimately returned. These decisions impose different requirements: search benefits from inexpensive yet comparable feedback, whereas final selection requires reliable discrimination among competitive candidates. This raises a central question: How should a limited evaluation budget be allocated across these two decisions to improve the quality of the ultimately selected scaffold?",
+   "zh": "然而，评估候选脚手架可能带来高昂的执行成本。 单个任务实例可能涉及多次大语言模型调用、检索步骤和工具交互（Mialon et al., 2024; Yao et al., 2025），这使得在众多候选中进行全面评估的代价十分高昂。 尽管并行评估和异步程序生成可以重叠计算（Romera-Paredes et al., 2024），但依赖反馈的搜索决策仍然需要评估结果。 现有方法通过稀疏评分估计和评估级联来降低评估成本（Fisch et al., 2026; Gideoni et al., 2026），主要将评估视为一个适应度估计问题。 然而，在脚手架演化中，评估服务于两种不同的决策：它提供塑造档案更新和后续提议的适应度反馈（Zhang et al., 2026a），并且决定最终返回哪个脚手架。 这两种决策有不同的要求：搜索受益于廉价但可比较的反馈，而最终选择则需要在竞争性候选之间进行可靠的区分。 这引出了一个核心问题：应如何在这两种决策之间分配有限的评估预算，以提升最终被选中的脚手架的质量？",
+   "sents": [
+    {
+     "en": "However, evaluating candidate scaffolds can incur substantial execution costs.",
+     "zh": "然而，评估候选脚手架可能带来高昂的执行成本。"
+    },
+    {
+     "en": "A single task instance may involve multiple LLM calls, retrieval steps, and tool interactions ( Mialon et al., 2024 ; Yao et al., 2025 ) , making full evaluation across many candidates expensive.",
+     "zh": "单个任务实例可能涉及多次大语言模型调用、检索步骤和工具交互（Mialon et al., 2024; Yao et al., 2025），这使得在众多候选中进行全面评估的代价十分高昂。"
+    },
+    {
+     "en": "Although parallel evaluation and asynchronous program generation can overlap computation ( Romera-Paredes et al., 2024 ) , feedback-dependent search decisions still require evaluation results.",
+     "zh": "尽管并行评估和异步程序生成可以重叠计算（Romera-Paredes et al., 2024），但依赖反馈的搜索决策仍然需要评估结果。"
+    },
+    {
+     "en": "Existing approaches reduce evaluation costs through sparse score estimation and evaluation cascades ( Fisch et al., 2026 ; Gideoni et al., 2026 ) , treating evaluation primarily as a fitness-estimation problem.",
+     "zh": "现有方法通过稀疏评分估计和评估级联来降低评估成本（Fisch et al., 2026; Gideoni et al., 2026），主要将评估视为一个适应度估计问题。"
+    },
+    {
+     "en": "In scaffold evolution, however, evaluation supports two distinct decisions: it provides fitness feedback that shapes archive updates and subsequent proposals ( Zhang et al., 2026a ) , and it determines which scaffold is ultimately returned.",
+     "zh": "然而，在脚手架演化中，评估服务于两种不同的决策：它提供塑造档案更新和后续提议的适应度反馈（Zhang et al., 2026a），并且决定最终返回哪个脚手架。"
+    },
+    {
+     "en": "These decisions impose different requirements: search benefits from inexpensive yet comparable feedback, whereas final selection requires reliable discrimination among competitive candidates.",
+     "zh": "这两种决策有不同的要求：搜索受益于廉价但可比较的反馈，而最终选择则需要在竞争性候选之间进行可靠的区分。"
+    },
+    {
+     "en": "This raises a central question: How should a limited evaluation budget be allocated across these two decisions to improve the quality of the ultimately selected scaffold?",
+     "zh": "这引出了一个核心问题：应如何在这两种决策之间分配有限的评估预算，以提升最终被选中的脚手架的质量？"
+    }
+   ]
+  },
+  {
+   "en": "To answer this question, we investigate how evaluation allocation affects evolutionary search and final scaffold selection. Our investigation yields three findings. First, sparse evaluation feedback can sustain productive evolution, whereas removing feedback substantially degrades search quality. Second, shared informative items improve comparisons between closely matched candidates, while maintaining a common scoring reference helps preserve comparability across evolutionary iterations. Third, search improvements are concentrated in early iterations, whereas final selection remains sensitive to uncertainty among top candidates. These findings suggest that evaluation should provide inexpensive yet comparable feedback during search, while reserving additional observations for final selection.",
+   "zh": "为了回答这个问题，我们研究了评估分配如何影响进化搜索和最终的脚手架选择。 我们的研究得出了三个发现。 首先，稀疏的评估反馈能够维持有效的进化，而完全移除反馈则会显著降低搜索质量。 其次，共享的有信息量的条目可以改善 closely matched 候选者之间的比较，同时维持一个共同的评分参照有助于在进化迭代中保持可比性。 第三，搜索改进集中在早期迭代中，而最终选择对头部候选者之间的不确定性仍然敏感。 这些发现表明，评估应在搜索过程中提供廉价且具有可比性的反馈，同时将额外的观测保留给最终选择。",
+   "sents": [
+    {
+     "en": "To answer this question, we investigate how evaluation allocation affects evolutionary search and final scaffold selection.",
+     "zh": "为了回答这个问题，我们研究了评估分配如何影响进化搜索和最终的脚手架选择。"
+    },
+    {
+     "en": "Our investigation yields three findings.",
+     "zh": "我们的研究得出了三个发现。"
+    },
+    {
+     "en": "First, sparse evaluation feedback can sustain productive evolution, whereas removing feedback substantially degrades search quality.",
+     "zh": "首先，稀疏的评估反馈能够维持有效的进化，而完全移除反馈则会显著降低搜索质量。"
+    },
+    {
+     "en": "Second, shared informative items improve comparisons between closely matched candidates, while maintaining a common scoring reference helps preserve comparability across evolutionary iterations.",
+     "zh": "其次，共享的有信息量的条目可以改善 closely matched 候选者之间的比较，同时维持一个共同的评分参照有助于在进化迭代中保持可比性。"
+    },
+    {
+     "en": "Third, search improvements are concentrated in early iterations, whereas final selection remains sensitive to uncertainty among top candidates.",
+     "zh": "第三，搜索改进集中在早期迭代中，而最终选择对头部候选者之间的不确定性仍然敏感。"
+    },
+    {
+     "en": "These findings suggest that evaluation should provide inexpensive yet comparable feedback during search, while reserving additional observations for final selection.",
+     "zh": "这些发现表明，评估应在搜索过程中提供廉价且具有可比性的反馈，同时将额外的观测保留给最终选择。"
+    }
+   ]
+  },
+  {
+   "en": "Motivated by these findings, we propose EvalAlloc , an evaluation allocation framework that separates sparse search-time feedback from targeted final selection. During search, a short fully evaluated warm-up identifies a shared informative core and calibrates a response model. Subsequent candidates are evaluated on sparse item sets centered on this core, while the model’s item parameters remain fixed to maintain a common scoring reference for archive updates and parent selection. After search, EvalAlloc applies warm-started paired successive halving (SH), reusing accumulated observations and performing only missing evaluations. A refitted response model further supports comparisons during later selection rounds. We evaluate EvalAlloc on four benchmarks and two evolution frameworks, with three independent runs per setting. Compared with full evaluation, EvalAlloc uses approximately half as many evaluation cells while achieving competitive or higher mean performance across the evaluated settings. Ablation studies further show that informative item allocation and final selection are the main contributors to its effectiveness. These results demonstrate the benefits of separating sparse search-time feedback from targeted final evaluation.",
+   "zh": "受这些发现的启发，我们提出 EvalAlloc，一个将稀疏的搜索期反馈与有针对性的最终选择分离的评估分配框架。 在搜索阶段，一个简短的完全评估预热阶段识别出一个共享的且信息量大的核心，并校准一个响应模型。 后续候选解在以该核心为中心的稀疏题目集合上进行评估，同时模型的题目参数保持固定，以便为档案更新和父代选择维持一个统一的评分参照。 搜索结束后，EvalAlloc 应用热启动的配对逐次减半（SH），复用已积累的观测并仅执行缺失的评估。 重新拟合的响应模型进一步支持后续选择轮次中的比较。 我们在四个基准测试和两个进化框架上评估 EvalAlloc，每个设置进行三次独立运行。 与完全评估相比，EvalAlloc 使用约一半的评估单元，同时在所评估的各个设置中取得相当或更高的平均性能。 消融实验进一步表明，信息量大的题目分配和最终选择是其有效性的主要贡献因素。 这些结果证明了将稀疏的搜索期反馈与有针对性的最终评估分离的好处。",
+   "sents": [
+    {
+     "en": "Motivated by these findings, we propose EvalAlloc , an evaluation allocation framework that separates sparse search-time feedback from targeted final selection.",
+     "zh": "受这些发现的启发，我们提出 EvalAlloc，一个将稀疏的搜索期反馈与有针对性的最终选择分离的评估分配框架。"
+    },
+    {
+     "en": "During search, a short fully evaluated warm-up identifies a shared informative core and calibrates a response model.",
+     "zh": "在搜索阶段，一个简短的完全评估预热阶段识别出一个共享的且信息量大的核心，并校准一个响应模型。"
+    },
+    {
+     "en": "Subsequent candidates are evaluated on sparse item sets centered on this core, while the model’s item parameters remain fixed to maintain a common scoring reference for archive updates and parent selection.",
+     "zh": "后续候选解在以该核心为中心的稀疏题目集合上进行评估，同时模型的题目参数保持固定，以便为档案更新和父代选择维持一个统一的评分参照。"
+    },
+    {
+     "en": "After search, EvalAlloc applies warm-started paired successive halving (SH), reusing accumulated observations and performing only missing evaluations.",
+     "zh": "搜索结束后，EvalAlloc 应用热启动的配对逐次减半（SH），复用已积累的观测并仅执行缺失的评估。"
+    },
+    {
+     "en": "A refitted response model further supports comparisons during later selection rounds.",
+     "zh": "重新拟合的响应模型进一步支持后续选择轮次中的比较。"
+    },
+    {
+     "en": "We evaluate EvalAlloc on four benchmarks and two evolution frameworks, with three independent runs per setting.",
+     "zh": "我们在四个基准测试和两个进化框架上评估 EvalAlloc，每个设置进行三次独立运行。"
+    },
+    {
+     "en": "Compared with full evaluation, EvalAlloc uses approximately half as many evaluation cells while achieving competitive or higher mean performance across the evaluated settings.",
+     "zh": "与完全评估相比，EvalAlloc 使用约一半的评估单元，同时在所评估的各个设置中取得相当或更高的平均性能。"
+    },
+    {
+     "en": "Ablation studies further show that informative item allocation and final selection are the main contributors to its effectiveness.",
+     "zh": "消融实验进一步表明，信息量大的题目分配和最终选择是其有效性的主要贡献因素。"
+    },
+    {
+     "en": "These results demonstrate the benefits of separating sparse search-time feedback from targeted final evaluation.",
+     "zh": "这些结果证明了将稀疏的搜索期反馈与有针对性的最终评估分离的好处。"
+    }
+   ]
+  },
+  {
+   "en": "Our main contributions are summarized as follows:",
+   "zh": "我们的主要贡献总结如下：",
+   "sents": null
+  },
+  {
+   "en": "We investigate evaluation allocation as a decision-dependent problem in LLM-driven scaffold evolution, demonstrating that search-time feedback and final scaffold selection impose distinct requirements on evaluation resources.",
+   "zh": "我们将在由大语言模型驱动的脚手架演化中，将评估资源分配研究为一个依赖于决策的问题，证明搜索时反馈与最终脚手架选择对评估资源提出了不同的要求。",
+   "sents": null
+  },
+  {
+   "en": "We propose EvalAlloc , an evaluation allocation framework that combines a shared informative core, a fixed search-time response model, and warm-started paired successive halving to allocate evaluation effort across evolutionary search and final selection.",
+   "zh": "我们提出了 EvalAlloc，一个评估分配框架，它结合了共享信息核心、固定的搜索时响应模型以及热启动的成对逐次减半方法，以在进化搜索和最终选择之间分配评估资源。",
+   "sents": null
+  },
+  {
+   "en": "We evaluate EvalAlloc across four benchmarks and two evolution frameworks, complemented by controlled replay analyses, demonstrating competitive final performance with substantially fewer evaluation cells.",
+   "zh": "我们在四个基准测试和两个演化框架上评估了 EvalAlloc，并辅以受控回放分析，结果表明其能以大幅更少的评估单元取得具有竞争力的最终性能。",
+   "sents": null
+  },
+  {
+   "en": "LLM-Driven Agent and Program Evolution. Recent work has explored the automated design and optimization of agent scaffolds and executable workflows using LLMs ( Novikov et al., 2025 ) . ADAS ( Hu et al., 2025 ) uses a meta-agent to generate agent programs based on previous discoveries, while AFlow ( Zhang et al., 2025 ) employs Monte Carlo Tree Search to optimize code-represented workflows. Other approaches, including ShinkaEvolve ( Lange et al., 2026 ) and AdaEvolve ( Cemri et al., 2026 ) , iteratively generate, evaluate, and refine programs using evaluation feedback to guide subsequent search. These approaches primarily focus on improving candidate generation and evolutionary optimization. Our work instead examines the evaluation process underlying this feedback-driven search, studying how limited evaluation resources can support both evolutionary decisions and final scaffold selection.",
+   "zh": "LLM 驱动的智能体与程序演化。 近期工作探索了利用 LLM 对智能体脚手架和可执行工作流进行自动化设计与优化（Novikov 等，2025）。 ADAS（Hu 等，2025）使用一个元智能体基于先前的发现生成智能体程序，而 AFlow（Zhang 等，2025）采用蒙特卡洛树搜索来优化以代码表示的工作流。 其他方法，包括 ShinkaEvolve（Lange 等，2026）和 AdaEvolve（Cemri 等，2026），利用评估反馈来指导后续搜索，迭代地生成、评估和改进程序。 这些方法主要聚焦于改进候选生成和演化优化。 我们的工作则考察这种反馈驱动搜索背后的评估过程，研究有限的评估资源如何能同时支持演化决策和最终脚手架选择。",
+   "sents": [
+    {
+     "en": "LLM-Driven Agent and Program Evolution.",
+     "zh": "LLM 驱动的智能体与程序演化。"
+    },
+    {
+     "en": "Recent work has explored the automated design and optimization of agent scaffolds and executable workflows using LLMs ( Novikov et al., 2025 ) .",
+     "zh": "近期工作探索了利用 LLM 对智能体脚手架和可执行工作流进行自动化设计与优化（Novikov 等，2025）。"
+    },
+    {
+     "en": "ADAS ( Hu et al., 2025 ) uses a meta-agent to generate agent programs based on previous discoveries, while AFlow ( Zhang et al., 2025 ) employs Monte Carlo Tree Search to optimize code-represented workflows.",
+     "zh": "ADAS（Hu 等，2025）使用一个元智能体基于先前的发现生成智能体程序，而 AFlow（Zhang 等，2025）采用蒙特卡洛树搜索来优化以代码表示的工作流。"
+    },
+    {
+     "en": "Other approaches, including ShinkaEvolve ( Lange et al., 2026 ) and AdaEvolve ( Cemri et al., 2026 ) , iteratively generate, evaluate, and refine programs using evaluation feedback to guide subsequent search.",
+     "zh": "其他方法，包括 ShinkaEvolve（Lange 等，2026）和 AdaEvolve（Cemri 等，2026），利用评估反馈来指导后续搜索，迭代地生成、评估和改进程序。"
+    },
+    {
+     "en": "These approaches primarily focus on improving candidate generation and evolutionary optimization.",
+     "zh": "这些方法主要聚焦于改进候选生成和演化优化。"
+    },
+    {
+     "en": "Our work instead examines the evaluation process underlying this feedback-driven search, studying how limited evaluation resources can support both evolutionary decisions and final scaffold selection.",
+     "zh": "我们的工作则考察这种反馈驱动搜索背后的评估过程，研究有限的评估资源如何能同时支持演化决策和最终脚手架选择。"
+    }
+   ]
+  },
+  {
+   "en": "Efficient LLM Evaluation. Reducing the cost of evaluating LLMs has received growing attention. Methods such as tinyBenchmarks ( Polo et al., 2024 ) use carefully selected examples and statistical estimation to approximate full-benchmark performance, while SparseEval ( Zhang et al., 2026b ) optimizes representative items for efficient score estimation and ranking. CollabEval ( Fisch et al., 2026 ) exploits shared information across evaluations through matrix completion to improve statistical efficiency. Growing Pains ( Habba et al., 2026 ) uses fixed item-response calibration and anchor items to maintain score comparability across evaluation periods. These studies demonstrate the effectiveness of sparse observations and response modeling. However, in scaffold evolution, evaluation estimates also influence archive updates and subsequent candidate generation. Therefore, we examine not only estimation accuracy, but also how shared informative observations and stable scoring references support reliable evolutionary decisions.",
+   "zh": "高效的LLM评估。 降低LLM评估成本已受到越来越多的关注。 tinyBenchmarks（Polo et al., 2024）等方法使用精心挑选的样例和统计估计来近似完整基准的性能，而SparseEval（Zhang et al., 2026b）则优化代表性题目以实现高效的分数估计与排名。 CollabEval（Fisch et al., 2026）通过矩阵补全利用跨评估的共享信息，以提高统计效率。 Growing Pains（Habba et al., 2026）使用固定的题目-作答校准和锚定题目，以保持跨评估周期的分数可比性。 这些研究证明了稀疏观测与作答建模的有效性。 然而，在脚手架演化中，评估估计还会影响存档更新和后续候选生成。 因此，我们不仅考察估计精度，还考察共享的有信息观测和稳定的评分参照如何支持可靠的演化决策。",
+   "sents": [
+    {
+     "en": "Efficient LLM Evaluation.",
+     "zh": "高效的LLM评估。"
+    },
+    {
+     "en": "Reducing the cost of evaluating LLMs has received growing attention.",
+     "zh": "降低LLM评估成本已受到越来越多的关注。"
+    },
+    {
+     "en": "Methods such as tinyBenchmarks ( Polo et al., 2024 ) use carefully selected examples and statistical estimation to approximate full-benchmark performance, while SparseEval ( Zhang et al., 2026b ) optimizes representative items for efficient score estimation and ranking.",
+     "zh": "tinyBenchmarks（Polo et al., 2024）等方法使用精心挑选的样例和统计估计来近似完整基准的性能，而SparseEval（Zhang et al., 2026b）则优化代表性题目以实现高效的分数估计与排名。"
+    },
+    {
+     "en": "CollabEval ( Fisch et al., 2026 ) exploits shared information across evaluations through matrix completion to improve statistical efficiency.",
+     "zh": "CollabEval（Fisch et al., 2026）通过矩阵补全利用跨评估的共享信息，以提高统计效率。"
+    },
+    {
+     "en": "Growing Pains ( Habba et al., 2026 ) uses fixed item-response calibration and anchor items to maintain score comparability across evaluation periods.",
+     "zh": "Growing Pains（Habba et al., 2026）使用固定的题目-作答校准和锚定题目，以保持跨评估周期的分数可比性。"
+    },
+    {
+     "en": "These studies demonstrate the effectiveness of sparse observations and response modeling.",
+     "zh": "这些研究证明了稀疏观测与作答建模的有效性。"
+    },
+    {
+     "en": "However, in scaffold evolution, evaluation estimates also influence archive updates and subsequent candidate generation.",
+     "zh": "然而，在脚手架演化中，评估估计还会影响存档更新和后续候选生成。"
+    },
+    {
+     "en": "Therefore, we examine not only estimation accuracy, but also how shared informative observations and stable scoring references support reliable evolutionary decisions.",
+     "zh": "因此，我们不仅考察估计精度，还考察共享的有信息观测和稳定的评分参照如何支持可靠的演化决策。"
+    }
+   ]
+  },
+  {
+   "en": "Evaluation Allocation and Candidate Selection. Evaluation allocation is closely related to sequential resource allocation and best-arm identification. Successive halving ( Jamieson and Talwalkar, 2016 ) and Hyperband ( Li et al., 2018 ) progressively concentrate evaluation resources on promising candidates, while racing-based methods such as irace ( López-Ibáñez et al., 2016 ) eliminate weaker configurations through sequential comparisons. Common random numbers ( Glasserman and Yao, 1992 ) provide a classical motivation for evaluating alternatives under shared conditions to reduce the variance of pairwise comparisons. Recent analyses of code evolution ( Gideoni et al., 2026 ) also highlight the importance of reliable candidate evaluation and selection. Building on these ideas, our work studies evaluation allocation across two distinct stages: providing inexpensive yet comparable feedback during evolution and reusing accumulated observations for reliable final scaffold selection.",
+   "zh": "评估分配与候选选择。 评估分配与序贯资源分配以及最优臂识别密切相关。 连续减半（Successive halving）（Jamieson and Talwalkar, 2016）和 Hyperband（Li et al., 2018）逐步将评估资源集中于有前景的候选，而基于竞赛的方法（如 irace（López-Ibáñez et al., 2016））则通过序贯比较淘汰较弱的配置。 公共随机数（Glasserman and Yao, 1992）为在共享条件下评估各备选项以降低成对比较的方差提供了经典动机。 近期关于代码演化的分析（Gideoni et al., 2026）也强调了可靠的候选评估与选择的重要性。 在这些思想的基础上，我们的工作研究跨两个不同阶段的评估分配：在演化过程中提供廉价但可比较的反馈，并复用积累的观测以实现可靠的最终脚手架选择。",
+   "sents": [
+    {
+     "en": "Evaluation Allocation and Candidate Selection.",
+     "zh": "评估分配与候选选择。"
+    },
+    {
+     "en": "Evaluation allocation is closely related to sequential resource allocation and best-arm identification.",
+     "zh": "评估分配与序贯资源分配以及最优臂识别密切相关。"
+    },
+    {
+     "en": "Successive halving ( Jamieson and Talwalkar, 2016 ) and Hyperband ( Li et al., 2018 ) progressively concentrate evaluation resources on promising candidates, while racing-based methods such as irace ( López-Ibáñez et al., 2016 ) eliminate weaker configurations through sequential comparisons.",
+     "zh": "连续减半（Successive halving）（Jamieson and Talwalkar, 2016）和 Hyperband（Li et al., 2018）逐步将评估资源集中于有前景的候选，而基于竞赛的方法（如 irace（López-Ibáñez et al., 2016））则通过序贯比较淘汰较弱的配置。"
+    },
+    {
+     "en": "Common random numbers ( Glasserman and Yao, 1992 ) provide a classical motivation for evaluating alternatives under shared conditions to reduce the variance of pairwise comparisons.",
+     "zh": "公共随机数（Glasserman and Yao, 1992）为在共享条件下评估各备选项以降低成对比较的方差提供了经典动机。"
+    },
+    {
+     "en": "Recent analyses of code evolution ( Gideoni et al., 2026 ) also highlight the importance of reliable candidate evaluation and selection.",
+     "zh": "近期关于代码演化的分析（Gideoni et al., 2026）也强调了可靠的候选评估与选择的重要性。"
+    },
+    {
+     "en": "Building on these ideas, our work studies evaluation allocation across two distinct stages: providing inexpensive yet comparable feedback during evolution and reusing accumulated observations for reliable final scaffold selection.",
+     "zh": "在这些思想的基础上，我们的工作研究跨两个不同阶段的评估分配：在演化过程中提供廉价但可比较的反馈，并复用积累的观测以实现可靠的最终脚手架选择。"
+    }
+   ]
+  },
+  {
+   "en": "Agent Scaffold Evaluation. Let c c denote an executable agent scaffold and 𝒟 s = { x i } i = 1 N \\mathcal{D}_{\\mathrm{s}}=\\{x_{i}\\}_{i=1}^{N} a set of evaluation tasks. Executing c c on x i x_{i} produces a score Y c ​ i ( r ) ∈ [ 0 , 1 ] Y_{ci}^{(r)}\\in[0,1] , where r r indexes repeated executions. Each scaffold–item execution constitutes an evaluation cell . The expected fitness of a scaffold is F ⁡ ( c ) = 1 N ​ ∑ i = 1 N 𝔼 ⁡ [ Y c ​ i ( r ) ] F(c)=\\frac{1}{N}\\sum_{i=1}^{N}\\mathbb{E}[Y_{ci}^{(r)}] . Evaluating each item once yields the full-set reference score F ref ​ ( c ) = 1 N ​ ∑ i = 1 N Y c ​ i ( 1 ) F_{\\mathrm{ref}}(c)=\\frac{1}{N}\\sum_{i=1}^{N}Y_{ci}^{(1)} .",
+   "zh": "智能体脚手架评估。 设 c c 表示一个可执行的智能体脚手架，𝒟 s = { x i } i = 1 N \\mathcal{D}_{\\mathrm{s}}=\\{x_{i}\\}_{i=1}^{N} 表示一组评估任务。 在 x i x_{i} 上执行 c c 得到一个分数 Y c ​ i ( r ) ∈ [ 0 , 1 ] Y_{ci}^{(r)}\\in[0,1]，其中 r r 索引重复执行。 每次脚手架–条目的执行构成一个评估单元格。 脚手架的期望适应度为 F ⁡ ( c ) = 1 N ​ ∑ i = 1 N 𝔼 ⁡ [ Y c ​ i ( r ) ] F(c)=\\frac{1}{N}\\sum_{i=1}^{N}\\mathbb{E}[Y_{ci}^{(r)}]。 对每个条目评估一次即得到全集参考分数 F ref ​ ( c ) = 1 N ​ ∑ i = 1 N Y c ​ i ( 1 ) F_{\\mathrm{ref}}(c)=\\frac{1}{N}\\sum_{i=1}^{N}Y_{ci}^{(1)}。",
+   "sents": [
+    {
+     "en": "Agent Scaffold Evaluation.",
+     "zh": "智能体脚手架评估。"
+    },
+    {
+     "en": "Let c c denote an executable agent scaffold and 𝒟 s = { x i } i = 1 N \\mathcal{D}_{\\mathrm{s}}=\\{x_{i}\\}_{i=1}^{N} a set of evaluation tasks.",
+     "zh": "设 c c 表示一个可执行的智能体脚手架，𝒟 s = { x i } i = 1 N \\mathcal{D}_{\\mathrm{s}}=\\{x_{i}\\}_{i=1}^{N} 表示一组评估任务。"
+    },
+    {
+     "en": "Executing c c on x i x_{i} produces a score Y c ​ i ( r ) ∈ [ 0 , 1 ] Y_{ci}^{(r)}\\in[0,1] , where r r indexes repeated executions.",
+     "zh": "在 x i x_{i} 上执行 c c 得到一个分数 Y c ​ i ( r ) ∈ [ 0 , 1 ] Y_{ci}^{(r)}\\in[0,1]，其中 r r 索引重复执行。"
+    },
+    {
+     "en": "Each scaffold–item execution constitutes an evaluation cell .",
+     "zh": "每次脚手架–条目的执行构成一个评估单元格。"
+    },
+    {
+     "en": "The expected fitness of a scaffold is F ⁡ ( c ) = 1 N ​ ∑ i = 1 N 𝔼 ⁡ [ Y c ​ i ( r ) ] F(c)=\\frac{1}{N}\\sum_{i=1}^{N}\\mathbb{E}[Y_{ci}^{(r)}] .",
+     "zh": "脚手架的期望适应度为 F ⁡ ( c ) = 1 N ​ ∑ i = 1 N 𝔼 ⁡ [ Y c ​ i ( r ) ] F(c)=\\frac{1}{N}\\sum_{i=1}^{N}\\mathbb{E}[Y_{ci}^{(r)}]。"
+    },
+    {
+     "en": "Evaluating each item once yields the full-set reference score F ref ​ ( c ) = 1 N ​ ∑ i = 1 N Y c ​ i ( 1 ) F_{\\mathrm{ref}}(c)=\\frac{1}{N}\\sum_{i=1}^{N}Y_{ci}^{(1)} .",
+     "zh": "对每个条目评估一次即得到全集参考分数 F ref ​ ( c ) = 1 N ​ ∑ i = 1 N Y c ​ i ( 1 ) F_{\\mathrm{ref}}(c)=\\frac{1}{N}\\sum_{i=1}^{N}Y_{ci}^{(1)}。"
+    }
+   ]
+  },
+  {
+   "en": "LLM-Driven Agent Scaffold Evolution. At iteration t t , an evolution framework proposes a candidate scaffold c t c_{t} based on its current archive 𝒜 t \\mathcal{A}_{t} . An evaluator selects an item subset S t ⊆ { 1 , … , N } S_{t}\\subseteq\\{1,\\ldots,N\\} and returns an estimated fitness F ^ t ​ ( c t ) \\widehat{F}_{t}(c_{t}) using the available observations. This feedback informs archive updates and subsequent candidate generation. Evaluation allocation therefore influences the search trajectory and the resulting candidate pool. After search, a final selector returns a scaffold c pick c_{\\mathrm{pick}} from the generated candidates, potentially collecting additional observations. We distinguish two evaluation stages: search-time evaluation , which provides fitness feedback for continued evolution, and final selection , which identifies the scaffold to return. Observations collected during search can be reused during final selection.",
+   "zh": "由大语言模型驱动的智能体脚手架演化。 在第 t 轮迭代中，演化框架基于其当前档案 𝒜_t \\mathcal{A}_{t} 提出候选脚手架 c_t c_{t}。 评估器选择一个条目子集 S_t ⊆ {1,…,N} S_{t}\\subseteq\\{1,\\ldots,N\\}，并利用可用的观测返回估计适应度 F̂_t(c_t) \\widehat{F}_{t}(c_{t})。 这一反馈用于指导档案更新和后续的候选生成。 因此，评估分配会影响搜索轨迹以及最终得到的候选池。 搜索结束后，最终选择器从生成的候选中返回一个脚手架 c_pick c_{\\mathrm{pick}}，并可能收集额外的观测。 我们区分两个评估阶段：搜索时评估，为持续演化提供适应度反馈；以及最终选择，用于确定要返回的脚手架。 搜索期间收集的观测可在最终选择阶段复用。",
+   "sents": [
+    {
+     "en": "LLM-Driven Agent Scaffold Evolution.",
+     "zh": "由大语言模型驱动的智能体脚手架演化。"
+    },
+    {
+     "en": "At iteration t t , an evolution framework proposes a candidate scaffold c t c_{t} based on its current archive 𝒜 t \\mathcal{A}_{t} .",
+     "zh": "在第 t 轮迭代中，演化框架基于其当前档案 𝒜_t \\mathcal{A}_{t} 提出候选脚手架 c_t c_{t}。"
+    },
+    {
+     "en": "An evaluator selects an item subset S t ⊆ { 1 , … , N } S_{t}\\subseteq\\{1,\\ldots,N\\} and returns an estimated fitness F ^ t ​ ( c t ) \\widehat{F}_{t}(c_{t}) using the available observations.",
+     "zh": "评估器选择一个条目子集 S_t ⊆ {1,…,N} S_{t}\\subseteq\\{1,\\ldots,N\\}，并利用可用的观测返回估计适应度 F̂_t(c_t) \\widehat{F}_{t}(c_{t})。"
+    },
+    {
+     "en": "This feedback informs archive updates and subsequent candidate generation.",
+     "zh": "这一反馈用于指导档案更新和后续的候选生成。"
+    },
+    {
+     "en": "Evaluation allocation therefore influences the search trajectory and the resulting candidate pool.",
+     "zh": "因此，评估分配会影响搜索轨迹以及最终得到的候选池。"
+    },
+    {
+     "en": "After search, a final selector returns a scaffold c pick c_{\\mathrm{pick}} from the generated candidates, potentially collecting additional observations.",
+     "zh": "搜索结束后，最终选择器从生成的候选中返回一个脚手架 c_pick c_{\\mathrm{pick}}，并可能收集额外的观测。"
+    },
+    {
+     "en": "We distinguish two evaluation stages: search-time evaluation , which provides fitness feedback for continued evolution, and final selection , which identifies the scaffold to return.",
+     "zh": "我们区分两个评估阶段：搜索时评估，为持续演化提供适应度反馈；以及最终选择，用于确定要返回的脚手架。"
+    },
+    {
+     "en": "Observations collected during search can be reused during final selection.",
+     "zh": "搜索期间收集的观测可在最终选择阶段复用。"
+    }
+   ]
+  },
+  {
+   "en": "Cost–Performance Objective. Let π \\pi denote an evaluation allocation policy governing observations collected during both stages and the final scaffold selection. The total cost C eval π C_{\\mathrm{eval}}^{\\pi} counts executed evaluation cells during search and final selection. Given an evaluation budget B B , our objective is",
+   "zh": "成本–性能目标。 设 π \\pi 为一个评估分配策略，用于控制两个阶段中所收集的观测以及最终的脚手架选择。 总成本 C eval π C_{\\mathrm{eval}}^{\\pi} 统计在搜索与最终选择过程中执行的评估单元。 给定评估预算 B B，我们的目标是",
+   "sents": [
+    {
+     "en": "Cost–Performance Objective.",
+     "zh": "成本–性能目标。"
+    },
+    {
+     "en": "Let π \\pi denote an evaluation allocation policy governing observations collected during both stages and the final scaffold selection.",
+     "zh": "设 π \\pi 为一个评估分配策略，用于控制两个阶段中所收集的观测以及最终的脚手架选择。"
+    },
+    {
+     "en": "The total cost C eval π C_{\\mathrm{eval}}^{\\pi} counts executed evaluation cells during search and final selection.",
+     "zh": "总成本 C eval π C_{\\mathrm{eval}}^{\\pi} 统计在搜索与最终选择过程中执行的评估单元。"
+    },
+    {
+     "en": "Given an evaluation budget B B , our objective is",
+     "zh": "给定评估预算 B B，我们的目标是"
+    }
+   ]
+  },
+  {
+   "en": "where c pick π c_{\\mathrm{pick}}^{\\pi} is the scaffold returned under policy π \\pi , and the expectation accounts for randomness in candidate generation, evaluation, and allocation.",
+   "zh": "其中 c_{\\mathrm{pick}}^{\\pi} 是在策略 π 下返回的骨架，期望值则考虑了候选生成、评估与分配过程中的随机性。",
+   "sents": null
+  },
+  {
+   "en": "We study four benchmarks: HotpotQA ( Yang et al., 2018 ) , HoVer ( Jiang et al., 2020 ) , DROP ( Dua et al., 2019 ) , and IFBench ( Pyatkin et al., 2026 ) . Each benchmark is divided into SEARCH (300 items), DEV (150 items), and TEST (300 items, except 294 for IFBench), as shown in Table 1 . SEARCH is used for evolution and final selection, DEV for auxiliary audits, and TEST exclusively for evaluating the selected scaffolds. We use two evolution frameworks: ShinkaEvolve ( Lange et al., 2026 ) and AdaEvolve ( Cemri et al., 2026 ) , the latter implemented using SkyDiscover ( Liu et al., 2026 ) . Each run makes 80 proposals from the same initial program, with three seeds per setting. We use Qwen3.5-9B ( Qwen Team, 2026 ) as the executor, with temperature zero, thinking disabled, and at most 16,384 output tokens, and DeepSeek-V4-Flash-0731 ( Xu et al., 2026 ) as the proposer. Both models are served locally with vLLM ( Kwon et al., 2023 ) on a single node with eight NVIDIA H20 GPUs.",
+   "zh": "我们研究四个基准：HotpotQA（Yang et al., 2018）、HoVer（Jiang et al., 2020）、DROP（Dua et al., 2019）以及 IFBench（Pyatkin et al., 2026）。 每个基准被划分为 SEARCH（300 条）、DEV（150 条）和 TEST（300 条，IFBench 除外，为 294 条），如表 1 所示。 SEARCH 用于进化和最终选择，DEV 用于辅助审计，TEST 则专门用于评估所选的脚手架。 我们使用两个进化框架：ShinkaEvolve（Lange et al., 2026）和 AdaEvolve（Cemri et al., 2026），后者通过 SkyDiscover（Liu et al., 2026）实现。 每次运行从同一个初始程序出发提出 80 个候选方案，每个设置使用三个随机种子。 我们使用 Qwen3.5-9B（Qwen Team, 2026）作为执行器，温度设为零，禁用思考，最多输出 16,384 个词元；并使用 DeepSeek-V4-Flash-0731（Xu et al., 2026）作为提议者。 两个模型均通过 vLLM（Kwon et al., 2023）在配备八块 NVIDIA H20 GPU 的单节点上本地部署。",
+   "sents": [
+    {
+     "en": "We study four benchmarks: HotpotQA ( Yang et al., 2018 ) , HoVer ( Jiang et al., 2020 ) , DROP ( Dua et al., 2019 ) , and IFBench ( Pyatkin et al., 2026 ) .",
+     "zh": "我们研究四个基准：HotpotQA（Yang et al., 2018）、HoVer（Jiang et al., 2020）、DROP（Dua et al., 2019）以及 IFBench（Pyatkin et al., 2026）。"
+    },
+    {
+     "en": "Each benchmark is divided into SEARCH (300 items), DEV (150 items), and TEST (300 items, except 294 for IFBench), as shown in Table 1 .",
+     "zh": "每个基准被划分为 SEARCH（300 条）、DEV（150 条）和 TEST（300 条，IFBench 除外，为 294 条），如表 1 所示。"
+    },
+    {
+     "en": "SEARCH is used for evolution and final selection, DEV for auxiliary audits, and TEST exclusively for evaluating the selected scaffolds.",
+     "zh": "SEARCH 用于进化和最终选择，DEV 用于辅助审计，TEST 则专门用于评估所选的脚手架。"
+    },
+    {
+     "en": "We use two evolution frameworks: ShinkaEvolve ( Lange et al., 2026 ) and AdaEvolve ( Cemri et al., 2026 ) , the latter implemented using SkyDiscover ( Liu et al., 2026 ) .",
+     "zh": "我们使用两个进化框架：ShinkaEvolve（Lange et al., 2026）和 AdaEvolve（Cemri et al., 2026），后者通过 SkyDiscover（Liu et al., 2026）实现。"
+    },
+    {
+     "en": "Each run makes 80 proposals from the same initial program, with three seeds per setting.",
+     "zh": "每次运行从同一个初始程序出发提出 80 个候选方案，每个设置使用三个随机种子。"
+    },
+    {
+     "en": "We use Qwen3.5-9B ( Qwen Team, 2026 ) as the executor, with temperature zero, thinking disabled, and at most 16,384 output tokens, and DeepSeek-V4-Flash-0731 ( Xu et al., 2026 ) as the proposer.",
+     "zh": "我们使用 Qwen3.5-9B（Qwen Team, 2026）作为执行器，温度设为零，禁用思考，最多输出 16,384 个词元；并使用 DeepSeek-V4-Flash-0731（Xu et al., 2026）作为提议者。"
+    },
+    {
+     "en": "Both models are served locally with vLLM ( Kwon et al., 2023 ) on a single node with eight NVIDIA H20 GPUs.",
+     "zh": "两个模型均通过 vLLM（Kwon et al., 2023）在配备八块 NVIDIA H20 GPU 的单节点上本地部署。"
+    }
+   ]
+  },
+  {
+   "en": "Most analyses in this section replay evaluators on the 24 Full runs (four benchmarks, two frameworks, three seeds), in which every candidate is evaluated on all SEARCH items, so the full-SEARCH mean of each candidate is known. A replay keeps the candidate sequence fixed and varies only which cells the evaluator observes. We measure two search-time quantities. Close-pair agreement is the share of candidate pairs whose full-SEARCH means differ by at most .03 that the evaluator orders correctly; these are the comparisons that archive updates face. Archive regret is, averaged over the run, the gap between the mean full-SEARCH score of the ten best candidates generated so far and that of the ten candidates the evaluator ranks highest.",
+   "zh": "本节中的大多数分析是在24次Full运行（四个基准、两个框架、三个种子）上重放评估器，其中每个候选方案都在所有SEARCH条目上被评估，因此每个候选方案的完整SEARCH均值是已知的。 重放保持候选序列不变，仅改变评估器观察到哪些单元格。 我们测量两个搜索时的量。 近邻对一致率是指完整SEARCH均值之差不超过.03的候选对中，评估器排序正确的比例；这些正是归档更新所面对的比较。 归档遗憾是指，在整个运行中取平均后，迄今为止生成的十个最佳候选方案的完整SEARCH均值得分，与评估器排名最高的十个候选方案得分之间的差距。",
+   "sents": [
+    {
+     "en": "Most analyses in this section replay evaluators on the 24 Full runs (four benchmarks, two frameworks, three seeds), in which every candidate is evaluated on all SEARCH items, so the full-SEARCH mean of each candidate is known.",
+     "zh": "本节中的大多数分析是在24次Full运行（四个基准、两个框架、三个种子）上重放评估器，其中每个候选方案都在所有SEARCH条目上被评估，因此每个候选方案的完整SEARCH均值是已知的。"
+    },
+    {
+     "en": "A replay keeps the candidate sequence fixed and varies only which cells the evaluator observes.",
+     "zh": "重放保持候选序列不变，仅改变评估器观察到哪些单元格。"
+    },
+    {
+     "en": "We measure two search-time quantities.",
+     "zh": "我们测量两个搜索时的量。"
+    },
+    {
+     "en": "Close-pair agreement is the share of candidate pairs whose full-SEARCH means differ by at most .03 that the evaluator orders correctly; these are the comparisons that archive updates face.",
+     "zh": "近邻对一致率是指完整SEARCH均值之差不超过.03的候选对中，评估器排序正确的比例；这些正是归档更新所面对的比较。"
+    },
+    {
+     "en": "Archive regret is, averaged over the run, the gap between the mean full-SEARCH score of the ten best candidates generated so far and that of the ten candidates the evaluator ranks highest.",
+     "zh": "归档遗憾是指，在整个运行中取平均后，迄今为止生成的十个最佳候选方案的完整SEARCH均值得分，与评估器排名最高的十个候选方案得分之间的差距。"
+    }
+   ]
+  },
+  {
+   "en": "Evaluation feedback plays an important role in guiding evolutionary search. Figure 1 compares the evolution trajectories under three evaluation strategies on DROP and HotpotQA, using a shared audit set. Without evaluation feedback, candidate quality remains relatively low and shows limited improvement. In contrast, random partial evaluation maintains candidate quality close to Full, suggesting that effective evolution does not require evaluating every candidate on the entire SEARCH set.",
+   "zh": "评估反馈在指导进化搜索中起着重要作用。 图1比较了在DROP和HotpotQA上使用共享审计集时三种评估策略下的进化轨迹。 在没有评估反馈的情况下，候选质量保持相对较低且改进有限。 相比之下，随机部分评估使候选质量保持在接近完全评估的水平，这表明有效的进化并不需要在整个SEARCH集上评估每个候选。",
+   "sents": [
+    {
+     "en": "Evaluation feedback plays an important role in guiding evolutionary search.",
+     "zh": "评估反馈在指导进化搜索中起着重要作用。"
+    },
+    {
+     "en": "Figure 1 compares the evolution trajectories under three evaluation strategies on DROP and HotpotQA, using a shared audit set.",
+     "zh": "图1比较了在DROP和HotpotQA上使用共享审计集时三种评估策略下的进化轨迹。"
+    },
+    {
+     "en": "Without evaluation feedback, candidate quality remains relatively low and shows limited improvement.",
+     "zh": "在没有评估反馈的情况下，候选质量保持相对较低且改进有限。"
+    },
+    {
+     "en": "In contrast, random partial evaluation maintains candidate quality close to Full, suggesting that effective evolution does not require evaluating every candidate on the entire SEARCH set.",
+     "zh": "相比之下，随机部分评估使候选质量保持在接近完全评估的水平，这表明有效的进化并不需要在整个SEARCH集上评估每个候选。"
+    }
+   ]
+  },
+  {
+   "en": "Search improvements are also concentrated in early iterations. Although this does not establish the optimal temporal allocation, it motivates investing in early calibration and using sparse feedback for subsequent candidates.",
+   "zh": "搜索的改进同样集中在早期迭代阶段。 虽然这并不能确定最佳的时间分配方式，但它表明应当在早期投入校准，并对后续候选方案使用稀疏的反馈。",
+   "sents": [
+    {
+     "en": "Search improvements are also concentrated in early iterations.",
+     "zh": "搜索的改进同样集中在早期迭代阶段。"
+    },
+    {
+     "en": "Although this does not establish the optimal temporal allocation, it motivates investing in early calibration and using sparse feedback for subsequent candidates.",
+     "zh": "虽然这并不能确定最佳的时间分配方式，但它表明应当在早期投入校准，并对后续候选方案使用稀疏的反馈。"
+    }
+   ]
+  },
+  {
+   "en": "We conduct offline replays on 24 Full evolution trajectories (four benchmarks, two frameworks, and three seeds), with three replays per trajectory. Each replay fixes the generated candidate sequence and varies only the evaluation cells observed by the evaluator. The first W = 10 W=10 candidates are fully evaluated, while subsequent candidates are evaluated on 60 of the 300 SEARCH items. All policies use the same evaluation budget, with full-SEARCH scores serving as the reference.",
+   "zh": "我们在 24 条完整演化轨迹（四个基准、两个框架、三个随机种子）上进行离线重放，每条轨迹重放三次。 每次重放固定已生成的候选序列，仅改变评估器所观察到的评估单元。 前 W = 10 W=10 个候选被完整评估，而后续候选仅在 300 个 SEARCH 项中的 60 个上进行评估。 所有策略使用相同的评估预算，并以完整 SEARCH 得分作为参考。",
+   "sents": [
+    {
+     "en": "We conduct offline replays on 24 Full evolution trajectories (four benchmarks, two frameworks, and three seeds), with three replays per trajectory.",
+     "zh": "我们在 24 条完整演化轨迹（四个基准、两个框架、三个随机种子）上进行离线重放，每条轨迹重放三次。"
+    },
+    {
+     "en": "Each replay fixes the generated candidate sequence and varies only the evaluation cells observed by the evaluator.",
+     "zh": "每次重放固定已生成的候选序列，仅改变评估器所观察到的评估单元。"
+    },
+    {
+     "en": "The first W = 10 W=10 candidates are fully evaluated, while subsequent candidates are evaluated on 60 of the 300 SEARCH items.",
+     "zh": "前 W = 10 W=10 个候选被完整评估，而后续候选仅在 300 个 SEARCH 项中的 60 个上进行评估。"
+    },
+    {
+     "en": "All policies use the same evaluation budget, with full-SEARCH scores serving as the reference.",
+     "zh": "所有策略使用相同的评估预算，并以完整 SEARCH 得分作为参考。"
+    }
+   ]
+  },
+  {
+   "en": "We assess three metrics: Spearman correlation with full-SEARCH scores, close-pair agreement for candidates whose reference scores differ by at most .03, and archive regret, defined as the average fitness gap between the true and estimated top-10 archives. These metrics capture both score estimation quality and the evolutionary decisions supported by limited feedback.",
+   "zh": "我们评估三项指标：与完整 SEARCH 得分的 Spearman 相关系数、参考得分差异不超过 .03 的候选对的接近对一致性，以及档案遗憾值（archive regret），其定义为真实前 10 档案与估计前 10 档案之间的平均适应度差距。 这些指标同时刻画了得分估计质量以及在有限反馈支持下所做的演化决策。",
+   "sents": [
+    {
+     "en": "We assess three metrics: Spearman correlation with full-SEARCH scores, close-pair agreement for candidates whose reference scores differ by at most .03, and archive regret, defined as the average fitness gap between the true and estimated top-10 archives.",
+     "zh": "我们评估三项指标：与完整 SEARCH 得分的 Spearman 相关系数、参考得分差异不超过 .03 的候选对的接近对一致性，以及档案遗憾值（archive regret），其定义为真实前 10 档案与估计前 10 档案之间的平均适应度差距。"
+    },
+    {
+     "en": "These metrics capture both score estimation quality and the evolutionary decisions supported by limited feedback.",
+     "zh": "这些指标同时刻画了得分估计质量以及在有限反馈支持下所做的演化决策。"
+    }
+   ]
+  },
+  {
+   "en": "Informativeness and sharing. Table 2 shows that shared informative items yield more reliable close-candidate comparisons than random or unshared items. For the unshared informative policy, each candidate samples 60 items from the 120 most informative ones, rather than using a common item set. Despite drawing from informative items, this policy produces lower close-pair agreement and higher archive regret.",
+   "zh": "信息量与共享性。 表2表明，共享的信息性条目比随机条目或非共享条目能带来更可靠的近似候选比较。 对于非共享信息性策略，每个候选从信息量最高的120个条目中抽取60个条目，而不是使用共同的条目集合。 尽管该策略从信息性条目中抽取，但其产生的近似对一致性更低，且存档后悔值更高。",
+   "sents": [
+    {
+     "en": "Informativeness and sharing.",
+     "zh": "信息量与共享性。"
+    },
+    {
+     "en": "Table 2 shows that shared informative items yield more reliable close-candidate comparisons than random or unshared items.",
+     "zh": "表2表明，共享的信息性条目比随机条目或非共享条目能带来更可靠的近似候选比较。"
+    },
+    {
+     "en": "For the unshared informative policy, each candidate samples 60 items from the 120 most informative ones, rather than using a common item set.",
+     "zh": "对于非共享信息性策略，每个候选从信息量最高的120个条目中抽取60个条目，而不是使用共同的条目集合。"
+    },
+    {
+     "en": "Despite drawing from informative items, this policy produces lower close-pair agreement and higher archive regret.",
+     "zh": "尽管该策略从信息性条目中抽取，但其产生的近似对一致性更低，且存档后悔值更高。"
+    }
+   ]
+  },
+  {
+   "en": "Pairing provides an explanation for the benefit of sharing. For k k items drawn independently from the task distribution, the variance of the score difference between two candidates evaluated on shared items is Var ⁡ ( Δ ^ c ​ c ′ ) = σ c 2 + σ c ′ 2 − 2 ​ σ c ​ c ′ k , \\operatorname{Var}(\\widehat{\\Delta}_{cc^{\\prime}})=\\frac{\\sigma_{c}^{2}+\\sigma_{c^{\\prime}}^{2}-2\\sigma_{cc^{\\prime}}}{k}, where σ c ​ c ′ \\sigma_{cc^{\\prime}} denotes their response covariance. With independently sampled item sets, the covariance term vanishes. Because evolved candidates often exhibit correlated responses, shared items can reduce the variance of pairwise comparisons.",
+   "zh": "配对为共享的好处提供了一种解释。 对于从任务分布中独立抽取的 k 个条目，在共享条目上评估的两个候选之间的分数差的方差为 Var ⁡ ( Δ ^ c ​ c ′ ) = σ c 2 + σ c ′ 2 − 2 ​ σ c ​ c ′ k , \\operatorname{Var}(\\widehat{\\Delta}_{cc^{\\prime}})=\\frac{\\sigma_{c}^{2}+\\sigma_{c^{\\prime}}^{2}-2\\sigma_{cc^{\\prime}}}{k},，其中 σ c ​ c ′ \\sigma_{cc^{\\prime}} 表示它们的响应协方差。 在独立采样的条目集下，协方差项会消失。 由于进化出的候选往往表现出相关的响应，共享条目可以降低成对比较的方差。",
+   "sents": [
+    {
+     "en": "Pairing provides an explanation for the benefit of sharing.",
+     "zh": "配对为共享的好处提供了一种解释。"
+    },
+    {
+     "en": "For k k items drawn independently from the task distribution, the variance of the score difference between two candidates evaluated on shared items is Var ⁡ ( Δ ^ c ​ c ′ ) = σ c 2 + σ c ′ 2 − 2 ​ σ c ​ c ′ k , \\operatorname{Var}(\\widehat{\\Delta}_{cc^{\\prime}})=\\frac{\\sigma_{c}^{2}+\\sigma_{c^{\\prime}}^{2}-2\\sigma_{cc^{\\prime}}}{k}, where σ c ​ c ′ \\sigma_{cc^{\\prime}} denotes their response covariance.",
+     "zh": "对于从任务分布中独立抽取的 k 个条目，在共享条目上评估的两个候选之间的分数差的方差为 Var ⁡ ( Δ ^ c ​ c ′ ) = σ c 2 + σ c ′ 2 − 2 ​ σ c ​ c ′ k , \\operatorname{Var}(\\widehat{\\Delta}_{cc^{\\prime}})=\\frac{\\sigma_{c}^{2}+\\sigma_{c^{\\prime}}^{2}-2\\sigma_{cc^{\\prime}}}{k},，其中 σ c ​ c ′ \\sigma_{cc^{\\prime}} 表示它们的响应协方差。"
+    },
+    {
+     "en": "With independently sampled item sets, the covariance term vanishes.",
+     "zh": "在独立采样的条目集下，协方差项会消失。"
+    },
+    {
+     "en": "Because evolved candidates often exhibit correlated responses, shared items can reduce the variance of pairwise comparisons.",
+     "zh": "由于进化出的候选往往表现出相关的响应，共享条目可以降低成对比较的方差。"
+    }
+   ]
+  },
+  {
+   "en": "Score comparability. Accurate individual rankings do not necessarily translate into reliable archive decisions. Although raw means achieve similar Spearman correlation to model-completed scores, they produce substantially higher archive regret. This is because sparse candidates are evaluated on informative items, whereas warm-up candidates are evaluated on the full SEARCH set. The fixed response model places both on a common full-SEARCH scale, avoiding inconsistent archive comparisons and repeated rescoring during evolution.",
+   "zh": "分数可比性。 准确的个体排名不一定能转化为可靠的归档决策。 尽管原始均值与模型补全分数取得了相近的 Spearman 相关系数，但它们产生了显著更高的归档遗憾。 这是因为稀疏候选是在有信息量的项目上进行评估的，而预热候选是在完整的 SEARCH 集合上进行评估的。 固定响应模型将两者置于共同的完整 SEARCH 量级上，避免了归档比较中的不一致以及演化过程中重复的重新评分。",
+   "sents": [
+    {
+     "en": "Score comparability.",
+     "zh": "分数可比性。"
+    },
+    {
+     "en": "Accurate individual rankings do not necessarily translate into reliable archive decisions.",
+     "zh": "准确的个体排名不一定能转化为可靠的归档决策。"
+    },
+    {
+     "en": "Although raw means achieve similar Spearman correlation to model-completed scores, they produce substantially higher archive regret.",
+     "zh": "尽管原始均值与模型补全分数取得了相近的 Spearman 相关系数，但它们产生了显著更高的归档遗憾。"
+    },
+    {
+     "en": "This is because sparse candidates are evaluated on informative items, whereas warm-up candidates are evaluated on the full SEARCH set.",
+     "zh": "这是因为稀疏候选是在有信息量的项目上进行评估的，而预热候选是在完整的 SEARCH 集合上进行评估的。"
+    },
+    {
+     "en": "The fixed response model places both on a common full-SEARCH scale, avoiding inconsistent archive comparisons and repeated rescoring during evolution.",
+     "zh": "固定响应模型将两者置于共同的完整 SEARCH 量级上，避免了归档比较中的不一致以及演化过程中重复的重新评分。"
+    }
+   ]
+  },
+  {
+   "en": "Item policy Estimator Spearman Close-pair agreement Archive regret Shared informative Model .862 .732 .0043 Shared informative Raw .865 .698 .0102 Unshared informative Model .795 .674 .0056 Shared random Model .750 .649 .0071 Independent random Model .717 .626 .0078",
+   "zh": "条目策略 估计量 Spearman 近邻对一致性 档案遗憾 共享信息 模型 .862 .732 .0043 共享信息 原始 .865 .698 .0102 非共享信息 模型 .795 .674 .0056 共享随机 模型 .750 .649 .0071 独立随机 模型 .717 .626 .0078",
+   "sents": null
+  },
+  {
+   "en": "Final scaffold selection requires more reliable comparisons than those needed to guide evolutionary search. Figure 2 compares the native selection rule with successive halving (SH) on the same candidate pools under different search-time evaluation strategies. SH substantially improves final performance when search feedback is absent, recovering strong candidates that the native selection rule may overlook. With random partial evaluation, the gains are smaller and less consistent, while full evaluation leaves little room for further improvement. These results highlight the importance of final confirmation when search-time evaluation is limited.",
+   "zh": "最终脚手架选择所需的可靠性比较高于引导演化搜索所需的比较。 图 2 在不同的搜索期评估策略下，将原生选择规则与逐次减半（SH）在相同候选池上进行了比较。 当缺乏搜索反馈时，SH 显著提升了最终性能，找回了原生选择规则可能遗漏的强候选。 在随机部分评估下，收益更小且更不稳定，而完整评估几乎没有留下进一步提升的空间。 这些结果凸显了当搜索期评估受限时进行最终确认的重要性。",
+   "sents": [
+    {
+     "en": "Final scaffold selection requires more reliable comparisons than those needed to guide evolutionary search.",
+     "zh": "最终脚手架选择所需的可靠性比较高于引导演化搜索所需的比较。"
+    },
+    {
+     "en": "Figure 2 compares the native selection rule with successive halving (SH) on the same candidate pools under different search-time evaluation strategies.",
+     "zh": "图 2 在不同的搜索期评估策略下，将原生选择规则与逐次减半（SH）在相同候选池上进行了比较。"
+    },
+    {
+     "en": "SH substantially improves final performance when search feedback is absent, recovering strong candidates that the native selection rule may overlook.",
+     "zh": "当缺乏搜索反馈时，SH 显著提升了最终性能，找回了原生选择规则可能遗漏的强候选。"
+    },
+    {
+     "en": "With random partial evaluation, the gains are smaller and less consistent, while full evaluation leaves little room for further improvement.",
+     "zh": "在随机部分评估下，收益更小且更不稳定，而完整评估几乎没有留下进一步提升的空间。"
+    },
+    {
+     "en": "These results highlight the importance of final confirmation when search-time evaluation is limited.",
+     "zh": "这些结果凸显了当搜索期评估受限时进行最终确认的重要性。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 3 illustrates EvalAlloc , an evaluation allocation framework that distributes evaluation effort across three stages: Core Calibration , Shared-Core Evolution , and Warm-Started Selection . EvalAlloc decouples the two roles of evaluation: search-time feedback only needs to be cheap and comparable enough to guide evolution, whereas the final choice needs precise comparisons among the strongest candidates. It therefore splits one evaluation budget into a sparse search stage and a separate selection stage that reuses every observation collected during search. The key idea is to invest a small evaluation budget upfront to establish a reusable reference, use shared informative items to provide comparable feedback throughout evolution, and concentrate additional evaluations on final scaffold selection. EvalAlloc operates as a drop-in evaluator, leaving the native framework’s proposal, archive, and parent-selection policies unchanged.",
+   "zh": "图3展示了EvalAlloc，一个将评估工作分配到三个阶段的评估分配框架：核心校准（Core Calibration）、共享核心演化（Shared-Core Evolution）和热启动选择（Warm-Started Selection）。 EvalAlloc将评估的两种角色解耦：搜索时的反馈只需足够廉价且具有可比性，以引导演化；而最终选择则需要在最强的候选者之间进行精确比较。 因此，它将一份评估预算拆分为一个稀疏的搜索阶段和一个独立的选择阶段，后者会复用搜索期间收集到的所有观测结果。 其核心思想是：预先投入少量评估预算来建立一个可复用的参照，利用共享的高信息量条目在整个演化过程中提供可比较的反馈，并将额外的评估集中在最终的智能体框架（scaffold）选择上。 EvalAlloc以即插即用的评估器方式运行，不改变原生框架的提案、存档和父代选择策略。",
+   "sents": [
+    {
+     "en": "Figure 3 illustrates EvalAlloc , an evaluation allocation framework that distributes evaluation effort across three stages: Core Calibration , Shared-Core Evolution , and Warm-Started Selection .",
+     "zh": "图3展示了EvalAlloc，一个将评估工作分配到三个阶段的评估分配框架：核心校准（Core Calibration）、共享核心演化（Shared-Core Evolution）和热启动选择（Warm-Started Selection）。"
+    },
+    {
+     "en": "EvalAlloc decouples the two roles of evaluation: search-time feedback only needs to be cheap and comparable enough to guide evolution, whereas the final choice needs precise comparisons among the strongest candidates.",
+     "zh": "EvalAlloc将评估的两种角色解耦：搜索时的反馈只需足够廉价且具有可比性，以引导演化；而最终选择则需要在最强的候选者之间进行精确比较。"
+    },
+    {
+     "en": "It therefore splits one evaluation budget into a sparse search stage and a separate selection stage that reuses every observation collected during search.",
+     "zh": "因此，它将一份评估预算拆分为一个稀疏的搜索阶段和一个独立的选择阶段，后者会复用搜索期间收集到的所有观测结果。"
+    },
+    {
+     "en": "The key idea is to invest a small evaluation budget upfront to establish a reusable reference, use shared informative items to provide comparable feedback throughout evolution, and concentrate additional evaluations on final scaffold selection.",
+     "zh": "其核心思想是：预先投入少量评估预算来建立一个可复用的参照，利用共享的高信息量条目在整个演化过程中提供可比较的反馈，并将额外的评估集中在最终的智能体框架（scaffold）选择上。"
+    },
+    {
+     "en": "EvalAlloc operates as a drop-in evaluator, leaving the native framework’s proposal, archive, and parent-selection policies unchanged.",
+     "zh": "EvalAlloc以即插即用的评估器方式运行，不改变原生框架的提案、存档和父代选择策略。"
+    }
+   ]
+  },
+  {
+   "en": "EvalAlloc begins by fully evaluating the first W W valid candidates on all N N SEARCH items. This upfront investment serves two purposes: identifying informative items for subsequent evaluation and calibrating a response model for estimating full-set fitness from sparse observations. The warm-up candidates receive their directly observed full-set scores, while their item-level outcomes form a dense response matrix for calibration.",
+   "zh": "EvalAlloc 首先在全部 N 个 SEARCH 条目上完整评估前 W 个有效候选。 这一前期投入有两个目的：识别对后续评估有信息量的条目，以及校准一个响应模型，用于从稀疏观测中估计全集适应度。 预热候选获得其直接观测到的全集分数，同时它们的条目级结果构成一个用于校准的稠密响应矩阵。",
+   "sents": [
+    {
+     "en": "EvalAlloc begins by fully evaluating the first W W valid candidates on all N N SEARCH items.",
+     "zh": "EvalAlloc 首先在全部 N 个 SEARCH 条目上完整评估前 W 个有效候选。"
+    },
+    {
+     "en": "This upfront investment serves two purposes: identifying informative items for subsequent evaluation and calibrating a response model for estimating full-set fitness from sparse observations.",
+     "zh": "这一前期投入有两个目的：识别对后续评估有信息量的条目，以及校准一个响应模型，用于从稀疏观测中估计全集适应度。"
+    },
+    {
+     "en": "The warm-up candidates receive their directly observed full-set scores, while their item-level outcomes form a dense response matrix for calibration.",
+     "zh": "预热候选获得其直接观测到的全集分数，同时它们的条目级结果构成一个用于校准的稠密响应矩阵。"
+    }
+   ]
+  },
+  {
+   "en": "Identifying informative items. We estimate item informativeness from accumulated evaluation outcomes. Let a i a_{i} denote the number of full-credit outcomes and n i n_{i} the number of observed outcomes for item i i . Using a Beta posterior for its full-credit probability,",
+   "zh": "识别信息量大的题目。 我们从累积的评估结果中估计题目的信息量。 设 a_{i} 表示题目 i 获得满分的次数，n_{i} 表示题目 i 被观测到的总次数。 使用 Beta 后验来刻画其满分概率，",
+   "sents": [
+    {
+     "en": "Identifying informative items.",
+     "zh": "识别信息量大的题目。"
+    },
+    {
+     "en": "We estimate item informativeness from accumulated evaluation outcomes.",
+     "zh": "我们从累积的评估结果中估计题目的信息量。"
+    },
+    {
+     "en": "Let a i a_{i} denote the number of full-credit outcomes and n i n_{i} the number of observed outcomes for item i i .",
+     "zh": "设 a_{i} 表示题目 i 获得满分的次数，n_{i} 表示题目 i 被观测到的总次数。"
+    },
+    {
+     "en": "Using a Beta posterior for its full-credit probability,",
+     "zh": "使用 Beta 后验来刻画其满分概率，"
+    }
+   ]
+  },
+  {
+   "en": "we define a conservative informativeness estimate:",
+   "zh": "我们定义一个保守的信息量估计：",
+   "sents": null
+  },
+  {
+   "en": "The variance term favors items whose outcomes vary across candidates, while the uncertainty penalty discourages selecting items with insufficient evidence. Fractional outcomes below full credit count as failures for these acquisition statistics. The posterior moments are available in closed form.",
+   "zh": "方差项倾向于选择结果在不同候选之间有差异的条目，而不确定性惩罚则阻碍选择证据不足的条目。 低于满分的部分结果在这些采集统计量中被计为失败。 后验矩具有闭式解。",
+   "sents": [
+    {
+     "en": "The variance term favors items whose outcomes vary across candidates, while the uncertainty penalty discourages selecting items with insufficient evidence.",
+     "zh": "方差项倾向于选择结果在不同候选之间有差异的条目，而不确定性惩罚则阻碍选择证据不足的条目。"
+    },
+    {
+     "en": "Fractional outcomes below full credit count as failures for these acquisition statistics.",
+     "zh": "低于满分的部分结果在这些采集统计量中被计为失败。"
+    },
+    {
+     "en": "The posterior moments are available in closed form.",
+     "zh": "后验矩具有闭式解。"
+    }
+   ]
+  },
+  {
+   "en": "Response model. We fit a low-rank logistic response model following a multidimensional item response theory (MIRT) formulation:",
+   "zh": "响应模型。 我们按照多维项目反应理论（MIRT）的框架拟合一个低秩逻辑istic响应模型：",
+   "sents": [
+    {
+     "en": "Response model.",
+     "zh": "响应模型。"
+    },
+    {
+     "en": "We fit a low-rank logistic response model following a multidimensional item response theory (MIRT) formulation:",
+     "zh": "我们按照多维项目反应理论（MIRT）的框架拟合一个低秩逻辑istic响应模型："
+    }
+   ]
+  },
+  {
+   "en": "where μ \\mu is a global intercept, ( η i , u i ) (\\eta_{i},u_{i}) represent item-specific parameters, and ( b c , v c ) (b_{c},v_{c}) capture candidate-specific response characteristics. The model is fitted on the fully evaluated warm-up candidates by minimizing regularized fractional cross-entropy. Their fitted candidate parameters also define a Gaussian prior for subsequent candidates.",
+   "zh": "其中 μ \\mu 是全局截距，( η i , u i ) (\\eta_{i},u_{i}) 表示项目特定参数，( b c , v c ) (b_{c},v_{c}) 刻画候选特定的响应特征。 该模型通过最小化带正则化的分式交叉熵，在所有已被评估的预热候选上进行拟合。 它们拟合得到的候选参数还为后续候选定义了一个高斯先验。",
+   "sents": [
+    {
+     "en": "where μ \\mu is a global intercept, ( η i , u i ) (\\eta_{i},u_{i}) represent item-specific parameters, and ( b c , v c ) (b_{c},v_{c}) capture candidate-specific response characteristics.",
+     "zh": "其中 μ \\mu 是全局截距，( η i , u i ) (\\eta_{i},u_{i}) 表示项目特定参数，( b c , v c ) (b_{c},v_{c}) 刻画候选特定的响应特征。"
+    },
+    {
+     "en": "The model is fitted on the fully evaluated warm-up candidates by minimizing regularized fractional cross-entropy.",
+     "zh": "该模型通过最小化带正则化的分式交叉熵，在所有已被评估的预热候选上进行拟合。"
+    },
+    {
+     "en": "Their fitted candidate parameters also define a Gaussian prior for subsequent candidates.",
+     "zh": "它们拟合得到的候选参数还为后续候选定义了一个高斯先验。"
+    }
+   ]
+  },
+  {
+   "en": "During evolution, the global intercept, item parameters, and candidate prior remain fixed. For each new candidate, only ( b c , v c ) (b_{c},v_{c}) are inferred from its sparse observations by MAP estimation under this prior. This maintains a common scoring reference across candidates without repeatedly refitting the model or rescoring archived candidates.",
+   "zh": "在演化过程中，全局截距、题目参数和候选先验保持固定。 对于每个新候选，仅 ( b c , v c ) (b_{c},v_{c}) 由 MAP 估计在该先验下根据其稀疏观测进行推断。 这在所有候选之间维持了统一的评分基准，而无需反复重新拟合模型或对已归档的候选重新打分。",
+   "sents": [
+    {
+     "en": "During evolution, the global intercept, item parameters, and candidate prior remain fixed.",
+     "zh": "在演化过程中，全局截距、题目参数和候选先验保持固定。"
+    },
+    {
+     "en": "For each new candidate, only ( b c , v c ) (b_{c},v_{c}) are inferred from its sparse observations by MAP estimation under this prior.",
+     "zh": "对于每个新候选，仅 ( b c , v c ) (b_{c},v_{c}) 由 MAP 估计在该先验下根据其稀疏观测进行推断。"
+    },
+    {
+     "en": "This maintains a common scoring reference across candidates without repeatedly refitting the model or rescoring archived candidates.",
+     "zh": "这在所有候选之间维持了统一的评分基准，而无需反复重新拟合模型或对已归档的候选重新打分。"
+    }
+   ]
+  },
+  {
+   "en": "After calibration, each new candidate is evaluated on a small subset of k k SEARCH items ( k = 60 k=60 , i.e., 20% of N = 300 N=300 ). Rather than independently selecting items for each candidate, EvalAlloc combines a fixed informative core with a small adaptive component.",
+   "zh": "校准后，每个新候选智能体在 k k SEARCH 个条目的小子集上进行评估（ k = 60 k=60 ，即 N = 300 N=300 的 20%）。 EvalAlloc 不是为每个候选智能体独立选择条目，而是将固定的信息性核心与小的自适应组件相结合。",
+   "sents": [
+    {
+     "en": "After calibration, each new candidate is evaluated on a small subset of k k SEARCH items ( k = 60 k=60 , i.e., 20% of N = 300 N=300 ).",
+     "zh": "校准后，每个新候选智能体在 k k SEARCH 个条目的小子集上进行评估（ k = 60 k=60 ，即 N = 300 N=300 的 20%）。"
+    },
+    {
+     "en": "Rather than independently selecting items for each candidate, EvalAlloc combines a fixed informative core with a small adaptive component.",
+     "zh": "EvalAlloc 不是为每个候选智能体独立选择条目，而是将固定的信息性核心与小的自适应组件相结合。"
+    }
+   ]
+  },
+  {
+   "en": "Shared informative core. Using the warm-up informativeness estimates, we select the top k 0 k_{0} items to form a fixed core S 0 S_{0} . Every subsequent candidate is evaluated on this same core, creating a common basis for cross-candidate comparisons. This design follows the intuition of common random numbers (CRN): exposing candidates to shared evaluation conditions helps reduce variation arising from differences in the evaluated item sets.",
+   "zh": "共享的信息核心。 利用预热阶段的信息量估计，我们选出排名前 k 0 k_{0} 的物品组成固定的核心 S 0 S_{0} 。 此后的每个候选都在这同一个核心上进行评估，从而为候选间的横向比较建立了共同基准。 这一设计遵循共同随机数（CRN）的直觉：让候选暴露于共享的评估条件，有助于减少因被评估物品集合不同而产生的变异。",
+   "sents": [
+    {
+     "en": "Shared informative core.",
+     "zh": "共享的信息核心。"
+    },
+    {
+     "en": "Using the warm-up informativeness estimates, we select the top k 0 k_{0} items to form a fixed core S 0 S_{0} .",
+     "zh": "利用预热阶段的信息量估计，我们选出排名前 k 0 k_{0} 的物品组成固定的核心 S 0 S_{0} 。"
+    },
+    {
+     "en": "Every subsequent candidate is evaluated on this same core, creating a common basis for cross-candidate comparisons.",
+     "zh": "此后的每个候选都在这同一个核心上进行评估，从而为候选间的横向比较建立了共同基准。"
+    },
+    {
+     "en": "This design follows the intuition of common random numbers (CRN): exposing candidates to shared evaluation conditions helps reduce variation arising from differences in the evaluated item sets.",
+     "zh": "这一设计遵循共同随机数（CRN）的直觉：让候选暴露于共享的评估条件，有助于减少因被评估物品集合不同而产生的变异。"
+    }
+   ]
+  },
+  {
+   "en": "To retain limited adaptability, the remaining k − k 0 k-k_{0} items are candidate-specific. For each candidate c c , we sample a set A c A_{c} from outside the core, using Gumbel-top- k k sampling with logits I i / τ I_{i}/\\tau computed from the current informativeness scores. With a small temperature, this amounts to taking the currently most informative items with random tie-breaking. The resulting evaluation set is",
+   "zh": "为了保留有限的自适应性，剩余的 k − k 0 k-k_{0} 个条目是针对候选者的特定条目。 对于每个候选者 c c，我们从核心之外采样一个集合 A c A_{c}，使用 Gumbel-top- k k 采样，其 logits I i / τ I_{i}/\\tau 由当前的信息量得分计算得出。 在较小的温度下，这相当于选取当前信息量最大的条目，并以随机方式打破平局。 由此得到的评估集为",
+   "sents": [
+    {
+     "en": "To retain limited adaptability, the remaining k − k 0 k-k_{0} items are candidate-specific.",
+     "zh": "为了保留有限的自适应性，剩余的 k − k 0 k-k_{0} 个条目是针对候选者的特定条目。"
+    },
+    {
+     "en": "For each candidate c c , we sample a set A c A_{c} from outside the core, using Gumbel-top- k k sampling with logits I i / τ I_{i}/\\tau computed from the current informativeness scores.",
+     "zh": "对于每个候选者 c c，我们从核心之外采样一个集合 A c A_{c}，使用 Gumbel-top- k k 采样，其 logits I i / τ I_{i}/\\tau 由当前的信息量得分计算得出。"
+    },
+    {
+     "en": "With a small temperature, this amounts to taking the currently most informative items with random tie-breaking.",
+     "zh": "在较小的温度下，这相当于选取当前信息量最大的条目，并以随机方式打破平局。"
+    },
+    {
+     "en": "The resulting evaluation set is",
+     "zh": "由此得到的评估集为"
+    }
+   ]
+  },
+  {
+   "en": "The shared core remains unchanged, whereas the acquisition statistics are updated after each candidate using newly observed outcomes. This allows the adaptive component to respond to changes in the evolving candidate population without sacrificing the common comparison basis.",
+   "zh": "共享核心保持不变，而采集统计则在每个候选之后使用新观察到的结果进行更新。 这使得自适应组件能够响应不断演化的候选群体中的变化，同时不牺牲共同的比较基准。",
+   "sents": [
+    {
+     "en": "The shared core remains unchanged, whereas the acquisition statistics are updated after each candidate using newly observed outcomes.",
+     "zh": "共享核心保持不变，而采集统计则在每个候选之后使用新观察到的结果进行更新。"
+    },
+    {
+     "en": "This allows the adaptive component to respond to changes in the evolving candidate population without sacrificing the common comparison basis.",
+     "zh": "这使得自适应组件能够响应不断演化的候选群体中的变化，同时不牺牲共同的比较基准。"
+    }
+   ]
+  },
+  {
+   "en": "Concretely, for two candidates scored on the same k 0 k_{0} items, the variance of their score difference is Var ⁡ ( Y ¯ a − Y ¯ b ) = ( σ a 2 + σ b 2 − 2 ​ Cov ⁡ ( Y a , Y b ) ) / k 0 \\operatorname{Var}(\\bar{Y}_{a}-\\bar{Y}_{b})=\\big(\\sigma_{a}^{2}+\\sigma_{b}^{2}-2\\operatorname{Cov}(Y_{a},Y_{b})\\big)/k_{0} , whereas independently drawn item sets remove the covariance term. Because evolved scaffolds are strongly correlated—competitive candidates agree on most items—a shared core makes pairwise comparisons less noisy at the same budget.",
+   "zh": "具体而言，对于在相同的 k 0 k_{0} 个条目上评分的两个候选，其分数差的方差为 Var ⁡ ( Y ¯ a − Y ¯ b ) = ( σ a 2 + σ b 2 − 2 ​ Cov ⁡ ( Y a , Y b ) ) / k 0 \\operatorname{Var}(\\bar{Y}_{a}-\\bar{Y}_{b})=\\big(\\sigma_{a}^{2}+\\sigma_{b}^{2}-2\\operatorname{Cov}(Y_{a},Y_{b})\\big)/k_{0} ，而独立抽取的条目集合则会消除协方差项。 由于演化出的框架高度相关——有竞争力的候选在大多数条目上意见一致——共享核心使得两两比较在相同预算下噪声更小。",
+   "sents": [
+    {
+     "en": "Concretely, for two candidates scored on the same k 0 k_{0} items, the variance of their score difference is Var ⁡ ( Y ¯ a − Y ¯ b ) = ( σ a 2 + σ b 2 − 2 ​ Cov ⁡ ( Y a , Y b ) ) / k 0 \\operatorname{Var}(\\bar{Y}_{a}-\\bar{Y}_{b})=\\big(\\sigma_{a}^{2}+\\sigma_{b}^{2}-2\\operatorname{Cov}(Y_{a},Y_{b})\\big)/k_{0} , whereas independently drawn item sets remove the covariance term.",
+     "zh": "具体而言，对于在相同的 k 0 k_{0} 个条目上评分的两个候选，其分数差的方差为 Var ⁡ ( Y ¯ a − Y ¯ b ) = ( σ a 2 + σ b 2 − 2 ​ Cov ⁡ ( Y a , Y b ) ) / k 0 \\operatorname{Var}(\\bar{Y}_{a}-\\bar{Y}_{b})=\\big(\\sigma_{a}^{2}+\\sigma_{b}^{2}-2\\operatorname{Cov}(Y_{a},Y_{b})\\big)/k_{0} ，而独立抽取的条目集合则会消除协方差项。"
+    },
+    {
+     "en": "Because evolved scaffolds are strongly correlated—competitive candidates agree on most items—a shared core makes pairwise comparisons less noisy at the same budget.",
+     "zh": "由于演化出的框架高度相关——有竞争力的候选在大多数条目上意见一致——共享核心使得两两比较在相同预算下噪声更小。"
+    }
+   ]
+  },
+  {
+   "en": "Comparable fitness feedback. After evaluating candidate c c on S c S_{c} , we infer its candidate-specific response parameters under the fixed warm-up model. The fitted model then predicts responses on unobserved items, producing a completed estimate of full-set fitness:",
+   "zh": "可比较的适应度反馈。 在候选 c c 于 S c S_{c} 上完成评估后，我们在固定的预热模型下推断其候选特定的响应参数。 拟合后的模型随后预测未观测项上的响应，从而产生对全集适应度的完整估计：",
+   "sents": [
+    {
+     "en": "Comparable fitness feedback.",
+     "zh": "可比较的适应度反馈。"
+    },
+    {
+     "en": "After evaluating candidate c c on S c S_{c} , we infer its candidate-specific response parameters under the fixed warm-up model.",
+     "zh": "在候选 c c 于 S c S_{c} 上完成评估后，我们在固定的预热模型下推断其候选特定的响应参数。"
+    },
+    {
+     "en": "The fitted model then predicts responses on unobserved items, producing a completed estimate of full-set fitness:",
+     "zh": "拟合后的模型随后预测未观测项上的响应，从而产生对全集适应度的完整估计："
+    }
+   ]
+  },
+  {
+   "en": "Here, Y c ​ i Y_{ci} denotes the observed outcome and q c ​ i q_{ci} the model prediction using the inferred parameters of candidate c c .",
+   "zh": "这里，Y_{ci} 表示观测结果，q_{ci} 表示使用候选 c 的推断参数得到的模型预测。",
+   "sents": null
+  },
+  {
+   "en": "Combining observed and predicted outcomes places sparse evaluations on the full-SEARCH fitness scale expected by the native evolution framework, which also contains the fully evaluated warm-up candidates. Keeping the response model fixed also avoids retrospectively changing the scoring reference for archived candidates. The resulting fitness estimates are returned directly to the framework for its existing archive updates and subsequent proposals. All observed outcomes are cached for reuse during final selection.",
+   "zh": "将观测到的结果与预测的结果相结合，可以把稀疏的评估结果置于原生进化框架所期望的完整 SEARCH 适应度标度上，该框架同时也包含已被完整评估的预热候选智能体。 保持响应模型固定还可以避免追溯性地更改已归档候选智能体的评分基准。 所得到的适应度估计值被直接返回给框架，用于其现有的归档更新和后续的提案。 所有观测到的结果都会被缓存起来，以便在最终选择时复用。",
+   "sents": [
+    {
+     "en": "Combining observed and predicted outcomes places sparse evaluations on the full-SEARCH fitness scale expected by the native evolution framework, which also contains the fully evaluated warm-up candidates.",
+     "zh": "将观测到的结果与预测的结果相结合，可以把稀疏的评估结果置于原生进化框架所期望的完整 SEARCH 适应度标度上，该框架同时也包含已被完整评估的预热候选智能体。"
+    },
+    {
+     "en": "Keeping the response model fixed also avoids retrospectively changing the scoring reference for archived candidates.",
+     "zh": "保持响应模型固定还可以避免追溯性地更改已归档候选智能体的评分基准。"
+    },
+    {
+     "en": "The resulting fitness estimates are returned directly to the framework for its existing archive updates and subsequent proposals.",
+     "zh": "所得到的适应度估计值被直接返回给框架，用于其现有的归档更新和后续的提案。"
+    },
+    {
+     "en": "All observed outcomes are cached for reuse during final selection.",
+     "zh": "所有观测到的结果都会被缓存起来，以便在最终选择时复用。"
+    }
+   ]
+  },
+  {
+   "en": "Search-time evaluation aims to provide inexpensive feedback for continued evolution, whereas final selection requires distinguishing the strongest candidates. After search, EvalAlloc therefore runs successive halving (SH) over all valid candidates, using additional observed outcomes rather than relying on search-time fitness estimates. Candidates with identical code (the same abstract syntax tree after removing docstrings) are merged first.",
+   "zh": "搜索期评估旨在以较低成本提供反馈以支持持续进化，而最终选择则需要区分出最强的候选者。 因此在搜索结束后，EvalAlloc 会在所有有效候选者上运行逐次减半（SH），利用额外观测到的结果，而不是依赖搜索期的适应度估计。 代码完全相同（去除文档字符串后抽象语法树相同）的候选者会先被合并。",
+   "sents": [
+    {
+     "en": "Search-time evaluation aims to provide inexpensive feedback for continued evolution, whereas final selection requires distinguishing the strongest candidates.",
+     "zh": "搜索期评估旨在以较低成本提供反馈以支持持续进化，而最终选择则需要区分出最强的候选者。"
+    },
+    {
+     "en": "After search, EvalAlloc therefore runs successive halving (SH) over all valid candidates, using additional observed outcomes rather than relying on search-time fitness estimates.",
+     "zh": "因此在搜索结束后，EvalAlloc 会在所有有效候选者上运行逐次减半（SH），利用额外观测到的结果，而不是依赖搜索期的适应度估计。"
+    },
+    {
+     "en": "Candidates with identical code (the same abstract syntax tree after removing docstrings) are merged first.",
+     "zh": "代码完全相同（去除文档字符串后抽象语法树相同）的候选者会先被合并。"
+    }
+   ]
+  },
+  {
+   "en": "We construct a shared random permutation of the SEARCH items and define increasingly large cumulative prefixes P 1 ⊂ P 2 ⊂ ⋯ ⊂ P R P_{1}\\subset P_{2}\\subset\\cdots\\subset P_{R} with P R = 𝒟 s P_{R}=\\mathcal{D}_{\\mathrm{s}} .",
+   "zh": "我们构造 SEARCH 条目的一个共享随机排列，并定义规模递增的累积前缀 P 1 ⊂ P 2 ⊂ ⋯ ⊂ P R P_{1}\\subset P_{2}\\subset\\cdots\\subset P_{R}，其中 P R = 𝒟 s P_{R}=\\mathcal{D}_{\\mathrm{s}}。",
+   "sents": null
+  },
+  {
+   "en": "In each round, surviving candidates are evaluated on the current prefix, and the top candidates are retained according to their round scores. The evaluation budget thus becomes increasingly concentrated on competitive candidates.",
+   "zh": "在每一轮中，存活的候选会在当前前缀上进行评估，并根据其轮次得分保留排名靠前的候选。 因此，评估预算会越来越集中于具有竞争力的候选。",
+   "sents": [
+    {
+     "en": "In each round, surviving candidates are evaluated on the current prefix, and the top candidates are retained according to their round scores.",
+     "zh": "在每一轮中，存活的候选会在当前前缀上进行评估，并根据其轮次得分保留排名靠前的候选。"
+    },
+    {
+     "en": "The evaluation budget thus becomes increasingly concentrated on competitive candidates.",
+     "zh": "因此，评估预算会越来越集中于具有竞争力的候选。"
+    }
+   ]
+  },
+  {
+   "en": "Warm-starting from search observations. Rather than discarding evaluations collected during evolution, we reuse all available outcomes. Let O c O_{c} denote the items already observed for candidate c c during search, and let U c r = O c ∪ P r U_{c}^{r}=O_{c}\\cup P_{r} . Only the missing observations in U c r U_{c}^{r} are executed; cached outcomes are reused without additional cost. In the first round, the score is the observed mean over this union:",
+   "zh": "从搜索观察结果进行热启动。 我们并不丢弃进化过程中收集的评估结果，而是复用所有可用的结果。 设 O c O_{c} 表示候选 c c 在搜索期间已被观察的项目，并令 U c r = O c ∪ P r U_{c}^{r}=O_{c}\\cup P_{r} 。 仅执行 U c r U_{c}^{r} 中缺失的观察；已缓存的结果无需额外开销即可复用。 在第一轮中，分数是该并集上的观察均值：",
+   "sents": [
+    {
+     "en": "Warm-starting from search observations.",
+     "zh": "从搜索观察结果进行热启动。"
+    },
+    {
+     "en": "Rather than discarding evaluations collected during evolution, we reuse all available outcomes.",
+     "zh": "我们并不丢弃进化过程中收集的评估结果，而是复用所有可用的结果。"
+    },
+    {
+     "en": "Let O c O_{c} denote the items already observed for candidate c c during search, and let U c r = O c ∪ P r U_{c}^{r}=O_{c}\\cup P_{r} .",
+     "zh": "设 O c O_{c} 表示候选 c c 在搜索期间已被观察的项目，并令 U c r = O c ∪ P r U_{c}^{r}=O_{c}\\cup P_{r} 。"
+    },
+    {
+     "en": "Only the missing observations in U c r U_{c}^{r} are executed; cached outcomes are reused without additional cost.",
+     "zh": "仅执行 U c r U_{c}^{r} 中缺失的观察；已缓存的结果无需额外开销即可复用。"
+    },
+    {
+     "en": "In the first round, the score is the observed mean over this union:",
+     "zh": "在第一轮中，分数是该并集上的观察均值："
+    }
+   ]
+  },
+  {
+   "en": "Regression-adjusted scores. Because O c O_{c} contains informative and partly candidate-specific items, union means of different candidates are computed on item sets of different difficulty. From the second round on, EvalAlloc corrects this with a regression (difference) estimator ( Cochran and Cochran, 1977 ; Angelopoulos et al., 2026 ) :",
+   "zh": "经回归调整后的分数。 由于 O c O_{c} 包含信息丰富且部分与候选者相关的条目，不同候选者的并集均值是在难度不同的条目集合上计算的。 从第二轮开始，EvalAlloc 通过回归（差值）估计量（Cochran and Cochran, 1977；Angelopoulos et al., 2026）对此进行校正：",
+   "sents": [
+    {
+     "en": "Regression-adjusted scores.",
+     "zh": "经回归调整后的分数。"
+    },
+    {
+     "en": "Because O c O_{c} contains informative and partly candidate-specific items, union means of different candidates are computed on item sets of different difficulty.",
+     "zh": "由于 O c O_{c} 包含信息丰富且部分与候选者相关的条目，不同候选者的并集均值是在难度不同的条目集合上计算的。"
+    },
+    {
+     "en": "From the second round on, EvalAlloc corrects this with a regression (difference) estimator ( Cochran and Cochran, 1977 ; Angelopoulos et al., 2026 ) :",
+     "zh": "从第二轮开始，EvalAlloc 通过回归（差值）估计量（Cochran and Cochran, 1977；Angelopoulos et al., 2026）对此进行校正："
+    }
+   ]
+  },
+  {
+   "en": "where q ~ c ​ i \\tilde{q}_{ci} is the prediction of a refitted response model. The second term adds the predicted difference between the full SEARCH set and the observed items, so λ r = 0 \\lambda_{r}=0 recovers the union mean and λ r = 1 \\lambda_{r}=1 the classical difference estimator. We estimate λ r \\lambda_{r} from the data as the pooled within-candidate regression slope of observed outcomes on predictions over the surviving candidates 𝒞 r \\mathcal{C}_{r} ,",
+   "zh": "其中 q ~ c i \\tilde{q}_{ci} 是重新拟合的响应模型的预测值。 第二项加入了完整 SEARCH 集合与观测项之间的预测差异，因此 λ r = 0 \\lambda_{r}=0 时恢复并集均值，λ r = 1 \\lambda_{r}=1 时则为经典的差分估计量。 我们从数据中估计 λ r \\lambda_{r} ，将其作为在存活候选 𝒞 r \\mathcal{C}_{r} 上观测结果对预测值的合并候选内回归斜率，",
+   "sents": [
+    {
+     "en": "where q ~ c ​ i \\tilde{q}_{ci} is the prediction of a refitted response model.",
+     "zh": "其中 q ~ c i \\tilde{q}_{ci} 是重新拟合的响应模型的预测值。"
+    },
+    {
+     "en": "The second term adds the predicted difference between the full SEARCH set and the observed items, so λ r = 0 \\lambda_{r}=0 recovers the union mean and λ r = 1 \\lambda_{r}=1 the classical difference estimator.",
+     "zh": "第二项加入了完整 SEARCH 集合与观测项之间的预测差异，因此 λ r = 0 \\lambda_{r}=0 时恢复并集均值，λ r = 1 \\lambda_{r}=1 时则为经典的差分估计量。"
+    },
+    {
+     "en": "We estimate λ r \\lambda_{r} from the data as the pooled within-candidate regression slope of observed outcomes on predictions over the surviving candidates 𝒞 r \\mathcal{C}_{r} ,",
+     "zh": "我们从数据中估计 λ r \\lambda_{r} ，将其作为在存活候选 𝒞 r \\mathcal{C}_{r} 上观测结果对预测值的合并候选内回归斜率，"
+    }
+   ]
+  },
+  {
+   "en": "with means taken over U c r U_{c}^{r} and the result clipped to [ 0 , 1.5 ] [0,1.5] . This slope approximates the variance-minimizing coefficient of the difference estimator and automatically shrinks the correction when predictions track the observed outcomes poorly.",
+   "zh": "对 U c r U_{c}^{r} 取均值并将结果截断到 [ 0 , 1.5 ] [0,1.5]。 该斜率近似差分估计量中方差最小化系数，并在预测与观测结果拟合较差时自动缩小校正幅度。",
+   "sents": [
+    {
+     "en": "with means taken over U c r U_{c}^{r} and the result clipped to [ 0 , 1.5 ] [0,1.5] .",
+     "zh": "对 U c r U_{c}^{r} 取均值并将结果截断到 [ 0 , 1.5 ] [0,1.5]。"
+    },
+    {
+     "en": "This slope approximates the variance-minimizing coefficient of the difference estimator and automatically shrinks the correction when predictions track the observed outcomes poorly.",
+     "zh": "该斜率近似差分估计量中方差最小化系数，并在预测与观测结果拟合较差时自动缩小校正幅度。"
+    }
+   ]
+  },
+  {
+   "en": "Cross-fitted refit. After the first round, we refit the response model on all search-time and round-1 observations. To avoid fitting the item parameters that correct a candidate on that candidate’s own observations, we use two-fold cross-fitting ( Chernozhukov et al., 2018 ) : the sparse (non-warm-up) candidates are randomly split into two folds, and each fold is scored by a model fitted on the warm-up candidates and the other fold. Warm-up candidates are fully observed, so their correction term is zero. Likewise, once the last round observes all N N items, U c R = 𝒟 s U_{c}^{R}=\\mathcal{D}_{\\mathrm{s}} and Eq. ( 8 ) reduces to the observed full-SEARCH mean, so the final pick is always decided by observed outcomes.",
+   "zh": "交叉拟合重训练。 在第一轮之后，我们在所有搜索时观测和第一轮观测上重新训练响应模型。 为避免在某个候选自身的观测上拟合纠正该候选的条目参数，我们采用两折交叉拟合（Chernozhukov et al., 2018）：将稀疏（非预热）候选随机分为两折，每一折的评分由在预热候选和另一折上训练的模型给出。 预热候选被完全观测，因此其纠正项为零。 同样，一旦最后一轮观测到全部 N 个条目，U_c^R = 𝒟_s，并且公式 (8) 退化为观测到的完整 SEARCH 均值，因此最终选择总是由观测结果决定。",
+   "sents": [
+    {
+     "en": "Cross-fitted refit.",
+     "zh": "交叉拟合重训练。"
+    },
+    {
+     "en": "After the first round, we refit the response model on all search-time and round-1 observations.",
+     "zh": "在第一轮之后，我们在所有搜索时观测和第一轮观测上重新训练响应模型。"
+    },
+    {
+     "en": "To avoid fitting the item parameters that correct a candidate on that candidate’s own observations, we use two-fold cross-fitting ( Chernozhukov et al., 2018 ) : the sparse (non-warm-up) candidates are randomly split into two folds, and each fold is scored by a model fitted on the warm-up candidates and the other fold.",
+     "zh": "为避免在某个候选自身的观测上拟合纠正该候选的条目参数，我们采用两折交叉拟合（Chernozhukov et al., 2018）：将稀疏（非预热）候选随机分为两折，每一折的评分由在预热候选和另一折上训练的模型给出。"
+    },
+    {
+     "en": "Warm-up candidates are fully observed, so their correction term is zero.",
+     "zh": "预热候选被完全观测，因此其纠正项为零。"
+    },
+    {
+     "en": "Likewise, once the last round observes all N N items, U c R = 𝒟 s U_{c}^{R}=\\mathcal{D}_{\\mathrm{s}} and Eq.",
+     "zh": "同样，一旦最后一轮观测到全部 N 个条目，U_c^R = 𝒟_s，并且公式"
+    },
+    {
+     "en": "( 8 ) reduces to the observed full-SEARCH mean, so the final pick is always decided by observed outcomes.",
+     "zh": "(8) 退化为观测到的完整 SEARCH 均值，因此最终选择总是由观测结果决定。"
+    }
+   ]
+  },
+  {
+   "en": "Evaluation cost. For M M valid candidates, the total evaluator cost in executed cells is",
+   "zh": "评估成本。 对于 M 个有效候选，已执行单元中的评估器总成本为",
+   "sents": [
+    {
+     "en": "Evaluation cost.",
+     "zh": "评估成本。"
+    },
+    {
+     "en": "For M M valid candidates, the total evaluator cost in executed cells is",
+     "zh": "对于 M 个有效候选，已执行单元中的评估器总成本为"
+    }
+   ]
+  },
+  {
+   "en": "where the first two terms account for calibration and sparse search, and C SH , new C_{\\mathrm{SH,new}} counts only additional executions required by successive halving. With 80 valid proposals, the search stage costs ( W ​ N + 70 ​ k ) / ( 80 ​ N ) = 30 % (WN+70k)/(80N)=30\\% of full evaluation. Thus, EvalAlloc reuses evaluation effort across stages: dense observations establish the scoring reference, shared sparse observations guide evolution, and cached evaluations reduce the incremental cost of final confirmation.",
+   "zh": "其中前两项对应校准与稀疏搜索，而 C SH , new C_{\\mathrm{SH,new}} 仅统计逐次减半所需的额外执行。 在 80 个有效提议的情况下，搜索阶段的成本为 ( W N + 70 k ) / ( 80 N ) = 30 % (WN+70k)/(80N)=30\\% 全量评估。 因此，EvalAlloc 在各阶段之间复用评估工作：密集观测建立评分基准，共享的稀疏观测指导演化，而缓存的评估结果降低了最终确认的增量成本。",
+   "sents": [
+    {
+     "en": "where the first two terms account for calibration and sparse search, and C SH , new C_{\\mathrm{SH,new}} counts only additional executions required by successive halving.",
+     "zh": "其中前两项对应校准与稀疏搜索，而 C SH , new C_{\\mathrm{SH,new}} 仅统计逐次减半所需的额外执行。"
+    },
+    {
+     "en": "With 80 valid proposals, the search stage costs ( W ​ N + 70 ​ k ) / ( 80 ​ N ) = 30 % (WN+70k)/(80N)=30\\% of full evaluation.",
+     "zh": "在 80 个有效提议的情况下，搜索阶段的成本为 ( W N + 70 k ) / ( 80 N ) = 30 % (WN+70k)/(80N)=30\\% 全量评估。"
+    },
+    {
+     "en": "Thus, EvalAlloc reuses evaluation effort across stages: dense observations establish the scoring reference, shared sparse observations guide evolution, and cached evaluations reduce the incremental cost of final confirmation.",
+     "zh": "因此，EvalAlloc 在各阶段之间复用评估工作：密集观测建立评分基准，共享的稀疏观测指导演化，而缓存的评估结果降低了最终确认的增量成本。"
+    }
+   ]
+  },
+  {
+   "en": "Variant DROP HotpotQA HoVer IFBench Avg. Δ \\Delta Cost EvalAlloc 0.8907 ± 0.0164 0.8907_{\\pm 0.0164} 0.7411 ± 0.0234 \\mathbf{0.7411}_{\\pm 0.0234} 0.7278 ± 0.0847 \\mathbf{0.7278}_{\\pm 0.0847} 0.4739 ± 0.0246 0.4739_{\\pm 0.0246} 0.7084 \\mathbf{0.7084} – 43.8% w/o selection 0.8755 ± 0.0157 0.8755_{\\pm 0.0157} 0.7278 ± 0.0139 0.7278_{\\pm 0.0139} 0.6922 ± 0.0683 0.6922_{\\pm 0.0683} 0.4688 ± 0.0363 0.4688_{\\pm 0.0363} 0.6911 0.6911 − 0.0173 -0.0173 27.4% w/o response model 0.8946 ± 0.0113 \\mathbf{0.8946}_{\\pm 0.0113} 0.7222 ± 0.0139 0.7222_{\\pm 0.0139} 0.6800 ± 0.0361 0.6800_{\\pm 0.0361} 0.4892 ± 0.0513 \\mathbf{0.4892}_{\\pm 0.0513} 0.6965 0.6965 − 0.0119 -0.0119 44.2% w/o informative items 0.8866 ± 0.0028 0.8866_{\\pm 0.0028} 0.6967 ± 0.0260 0.6967_{\\pm 0.0260} 0.6689 ± 0.0369 0.6689_{\\pm 0.0369} 0.4649 ± 0.0326 0.4649_{\\pm 0.0326} 0.6793 0.6793 − 0.0291 -0.0291 43.4%",
+   "zh": "变体 DROP HotpotQA HoVer IFBench 平均值 Δ \\Delta 成本 EvalAlloc 0.8907 ± 0.0164 0.8907_{\\pm 0.0164} 0.7411 ± 0.0234 \\mathbf{0.7411}_{\\pm 0.0234} 0.7278 ± 0.0847 \\mathbf{0.7278}_{\\pm 0.0847} 0.4739 ± 0.0246 0.4739_{\\pm 0.0246} 0.7084 \\mathbf{0.7084} – 43.8% 无选择（w/o selection） 0.8755 ± 0.0157 0.8755_{\\pm 0.0157} 0.7278 ± 0.0139 0.7278_{\\pm 0.0139} 0.6922 ± 0.0683 0.6922_{\\pm 0.0683} 0.4688 ± 0.0363 0.4688_{\\pm 0.0363} 0.6911 0.6911 − 0.0173 -0.0173 27.4% 无响应模型（w/o response model） 0.8946 ± 0.0113 \\mathbf{0.8946}_{\\pm 0.0113} 0.7222 ± 0.0139 0.7222_{\\pm 0.0139} 0.6800 ± 0.0361 0.6800_{\\pm 0.0361} 0.4892 ± 0.0513 \\mathbf{0.4892}_{\\pm 0.0513} 0.6965 0.6965 − 0.0119 -0.0119 44.2% 无信息项（w/o informative items） 0.8866 ± 0.0028 0.8866_{\\pm 0.0028} 0.6967 ± 0.0260 0.6967_{\\pm 0.0260} 0.6689 ± 0.0369 0.6689_{\\pm 0.0369} 0.4649 ± 0.0326 0.4649_{\\pm 0.0326} 0.6793 0.6793 − 0.0291 -0.0291 43.4%",
+   "sents": null
+  },
+  {
+   "en": "Baselines. We compare EvalAlloc against five evaluation strategies with different budget allocations. Skip Eval performs no evaluation during either search or final selection, and select the last valid evolved program. Successive Halving (SH) ( Jamieson and Talwalkar, 2016 ) provides no evaluation feedback during search and applies successive halving to the generated candidate pool for final selection. Random evaluates each candidate on a randomly sampled 50% subset of SEARCH items. Cascade ( Novikov et al., 2025 ; Agrawal et al., 2026 ) first evaluates candidates on 20% of SEARCH items and promotes candidates meeting a top-25% threshold to full evaluation, while allocating no additional evaluations to the remaining candidates. Full evaluates every candidate on all SEARCH items.",
+   "zh": "基线方法。 我们将 EvalAlloc 与五种采用不同预算分配方式的评估策略进行比较。 Skip Eval 在搜索和最终选择阶段均不进行任何评估，并选择最后一个有效的进化程序。 Successive Halving（SH）（Jamieson and Talwalkar, 2016）在搜索过程中不提供任何评估反馈，并对生成的候选池应用逐次减半方法进行最终选择。 Random 在随机抽取的 50% 的 SEARCH 项目子集上评估每个候选。 Cascade（Novikov et al., 2025；Agrawal et al., 2026）首先在 20% 的 SEARCH 项目上评估候选，将达到前 25% 阈值的候选提升至完整评估，而不为其余候选分配额外的评估。 Full 在所有 SEARCH 项目上评估每个候选。",
+   "sents": [
+    {
+     "en": "Baselines.",
+     "zh": "基线方法。"
+    },
+    {
+     "en": "We compare EvalAlloc against five evaluation strategies with different budget allocations.",
+     "zh": "我们将 EvalAlloc 与五种采用不同预算分配方式的评估策略进行比较。"
+    },
+    {
+     "en": "Skip Eval performs no evaluation during either search or final selection, and select the last valid evolved program.",
+     "zh": "Skip Eval 在搜索和最终选择阶段均不进行任何评估，并选择最后一个有效的进化程序。"
+    },
+    {
+     "en": "Successive Halving (SH) ( Jamieson and Talwalkar, 2016 ) provides no evaluation feedback during search and applies successive halving to the generated candidate pool for final selection.",
+     "zh": "Successive Halving（SH）（Jamieson and Talwalkar, 2016）在搜索过程中不提供任何评估反馈，并对生成的候选池应用逐次减半方法进行最终选择。"
+    },
+    {
+     "en": "Random evaluates each candidate on a randomly sampled 50% subset of SEARCH items.",
+     "zh": "Random 在随机抽取的 50% 的 SEARCH 项目子集上评估每个候选。"
+    },
+    {
+     "en": "Cascade ( Novikov et al., 2025 ; Agrawal et al., 2026 ) first evaluates candidates on 20% of SEARCH items and promotes candidates meeting a top-25% threshold to full evaluation, while allocating no additional evaluations to the remaining candidates.",
+     "zh": "Cascade（Novikov et al., 2025；Agrawal et al., 2026）首先在 20% 的 SEARCH 项目上评估候选，将达到前 25% 阈值的候选提升至完整评估，而不为其余候选分配额外的评估。"
+    },
+    {
+     "en": "Full evaluates every candidate on all SEARCH items.",
+     "zh": "Full 在所有 SEARCH 项目上评估每个候选。"
+    }
+   ]
+  },
+  {
+   "en": "Implementation Details. We use the same benchmarks, evolution frameworks, and model configurations as in Section 4.1. Unless otherwise specified, EvalAlloc allocates 30% of the full-evaluation budget to search, with the first W = 10 W=10 valid candidates fully evaluated and each subsequent candidate evaluated on k = 60 k=60 items (20% of SEARCH). The shared informative core contains k 0 = 54 k_{0}=54 items (90% of k k ), and the Gumbel sampling temperature is τ = 0.001 \\tau=0.001 . For final selection, we use R = 4 R=4 successive-halving rounds with cumulative item prefixes of 30, 60, 120, and 300, retaining 30, 15, 8, and 1 candidates, respectively. For the response model, we set the latent dimension to d = 2 d=2 , the regularization coefficient to ρ = 1 \\rho=1 , and the informativeness uncertainty penalty to z = 2 z=2 .",
+   "zh": "实现细节。 我们使用与第4.1节相同的基准、演化框架和模型配置。 除非另有说明，EvalAlloc 将完整评估预算的30%分配给搜索，其中前 W = 10 个有效候选者被完整评估，随后的每个候选者在 k = 60 个项目（SEARCH的20%）上进行评估。 共享的信息性核心包含 k 0 = 54 个项目（k的90%），Gumbel采样温度为 τ = 0.001。 在最终选择中，我们使用 R = 4 轮逐次减半，累积项目前缀分别为30、60、120和300，分别保留30、15、8和1个候选者。 对于响应模型，我们将潜在维度设为 d = 2，正则化系数设为 ρ = 1，信息性不确定性惩罚设为 z = 2。",
+   "sents": [
+    {
+     "en": "Implementation Details.",
+     "zh": "实现细节。"
+    },
+    {
+     "en": "We use the same benchmarks, evolution frameworks, and model configurations as in Section 4.1.",
+     "zh": "我们使用与第4.1节相同的基准、演化框架和模型配置。"
+    },
+    {
+     "en": "Unless otherwise specified, EvalAlloc allocates 30% of the full-evaluation budget to search, with the first W = 10 W=10 valid candidates fully evaluated and each subsequent candidate evaluated on k = 60 k=60 items (20% of SEARCH).",
+     "zh": "除非另有说明，EvalAlloc 将完整评估预算的30%分配给搜索，其中前 W = 10 个有效候选者被完整评估，随后的每个候选者在 k = 60 个项目（SEARCH的20%）上进行评估。"
+    },
+    {
+     "en": "The shared informative core contains k 0 = 54 k_{0}=54 items (90% of k k ), and the Gumbel sampling temperature is τ = 0.001 \\tau=0.001 .",
+     "zh": "共享的信息性核心包含 k 0 = 54 个项目（k的90%），Gumbel采样温度为 τ = 0.001。"
+    },
+    {
+     "en": "For final selection, we use R = 4 R=4 successive-halving rounds with cumulative item prefixes of 30, 60, 120, and 300, retaining 30, 15, 8, and 1 candidates, respectively.",
+     "zh": "在最终选择中，我们使用 R = 4 轮逐次减半，累积项目前缀分别为30、60、120和300，分别保留30、15、8和1个候选者。"
+    },
+    {
+     "en": "For the response model, we set the latent dimension to d = 2 d=2 , the regularization coefficient to ρ = 1 \\rho=1 , and the informativeness uncertainty penalty to z = 2 z=2 .",
+     "zh": "对于响应模型，我们将潜在维度设为 d = 2，正则化系数设为 ρ = 1，信息性不确定性惩罚设为 z = 2。"
+    }
+   ]
+  },
+  {
+   "en": "Table 3 compares the TEST performance and evaluation cost of different strategies. Across both evolution frameworks and all four benchmarks, EvalAlloc matches or slightly exceeds the mean TEST score of Full while using approximately half as many evaluation cells. It also outperforms Random and Cascade in cross-benchmark average performance at comparable or lower evaluation cost. These results demonstrate that allocating evaluations selectively can provide a better cost–performance tradeoff than uniformly evaluating candidates. The evaluation costs differ between the two frameworks partly due to their handling of invalid proposals. AdaEvolve retries program generation when a proposal is invalid, whereas ShinkaEvolve discards invalid proposals without replacement. Since invalid programs incur no evaluation cost, ShinkaEvolve evaluates fewer valid candidates, resulting in lower realized evaluation costs, particularly under Full evaluation.",
+   "zh": "表3比较了不同策略的TEST性能与评估成本。 在两个演化框架和全部四个基准上，EvalAlloc在仅使用约一半评估单元格的情况下，匹配或略微超过Full的平均TEST分数。 在相近或更低的评估成本下，它还在跨基准平均性能上优于Random和Cascade。 这些结果表明，有选择地分配评估能够比统一评估候选方案提供更好的成本—性能权衡。 两个框架之间的评估成本存在差异，部分原因在于它们对无效提案的处理方式不同。 当提案无效时，AdaEvolve会重试程序生成，而ShinkaEvolve则直接丢弃无效提案且不做替换。 由于无效程序不产生评估成本，ShinkaEvolve评估的有效候选方案更少，导致实际评估成本更低，在Full评估下尤为明显。",
+   "sents": [
+    {
+     "en": "Table 3 compares the TEST performance and evaluation cost of different strategies.",
+     "zh": "表3比较了不同策略的TEST性能与评估成本。"
+    },
+    {
+     "en": "Across both evolution frameworks and all four benchmarks, EvalAlloc matches or slightly exceeds the mean TEST score of Full while using approximately half as many evaluation cells.",
+     "zh": "在两个演化框架和全部四个基准上，EvalAlloc在仅使用约一半评估单元格的情况下，匹配或略微超过Full的平均TEST分数。"
+    },
+    {
+     "en": "It also outperforms Random and Cascade in cross-benchmark average performance at comparable or lower evaluation cost.",
+     "zh": "在相近或更低的评估成本下，它还在跨基准平均性能上优于Random和Cascade。"
+    },
+    {
+     "en": "These results demonstrate that allocating evaluations selectively can provide a better cost–performance tradeoff than uniformly evaluating candidates.",
+     "zh": "这些结果表明，有选择地分配评估能够比统一评估候选方案提供更好的成本—性能权衡。"
+    },
+    {
+     "en": "The evaluation costs differ between the two frameworks partly due to their handling of invalid proposals.",
+     "zh": "两个框架之间的评估成本存在差异，部分原因在于它们对无效提案的处理方式不同。"
+    },
+    {
+     "en": "AdaEvolve retries program generation when a proposal is invalid, whereas ShinkaEvolve discards invalid proposals without replacement.",
+     "zh": "当提案无效时，AdaEvolve会重试程序生成，而ShinkaEvolve则直接丢弃无效提案且不做替换。"
+    },
+    {
+     "en": "Since invalid programs incur no evaluation cost, ShinkaEvolve evaluates fewer valid candidates, resulting in lower realized evaluation costs, particularly under Full evaluation.",
+     "zh": "由于无效程序不产生评估成本，ShinkaEvolve评估的有效候选方案更少，导致实际评估成本更低，在Full评估下尤为明显。"
+    }
+   ]
+  },
+  {
+   "en": "The no-evaluation baselines further highlight the complementary roles of search feedback and final selection. Applying SH to candidates generated without evaluation feedback substantially improves final performance, but still falls short of EvalAlloc . This suggests that final selection can recover promising candidates even from unguided search, while informative feedback during evolution provides additional benefits. These findings support combining sparse search-time evaluation with targeted final confirmation.",
+   "zh": "无评估基线进一步凸显了搜索反馈与最终选择之间的互补作用。 将 SH 应用于在没有评估反馈的情况下生成的候选方案，能显著提升最终性能，但仍不及 EvalAlloc。 这表明最终选择即使在没有引导的搜索中也能找回有潜力的候选方案，而演化过程中的有效反馈则能带来额外收益。 这些发现支持将稀疏的搜索时评估与有针对性的最终确认相结合。",
+   "sents": [
+    {
+     "en": "The no-evaluation baselines further highlight the complementary roles of search feedback and final selection.",
+     "zh": "无评估基线进一步凸显了搜索反馈与最终选择之间的互补作用。"
+    },
+    {
+     "en": "Applying SH to candidates generated without evaluation feedback substantially improves final performance, but still falls short of EvalAlloc .",
+     "zh": "将 SH 应用于在没有评估反馈的情况下生成的候选方案，能显著提升最终性能，但仍不及 EvalAlloc。"
+    },
+    {
+     "en": "This suggests that final selection can recover promising candidates even from unguided search, while informative feedback during evolution provides additional benefits.",
+     "zh": "这表明最终选择即使在没有引导的搜索中也能找回有潜力的候选方案，而演化过程中的有效反馈则能带来额外收益。"
+    },
+    {
+     "en": "These findings support combining sparse search-time evaluation with targeted final confirmation.",
+     "zh": "这些发现支持将稀疏的搜索时评估与有针对性的最终确认相结合。"
+    }
+   ]
+  },
+  {
+   "en": "We ablate three components of EvalAlloc on ShinkaEvolve across all four benchmarks. W/o selection skips final confirmation and selects the candidate with the highest refitted response-model estimate from the same search runs. W/o response model uses raw observed means for search feedback and raw union means for final selection. W/o informative items replaces informative item selection with random sampling while preserving the shared core and evaluation budget. The latter two variants require new evolution runs because they change the search-time feedback.",
+   "zh": "我们在 ShinkaEvolve 上、跨全部四个基准测试对 EvalAlloc 的三个组件进行消融实验。 W/o selection 跳过最终确认，直接从相同的搜索运行中选择经重新拟合的响应模型估计值最高的候选。 W/o response model 在搜索反馈中使用原始观测均值，在最终选择中使用原始并集均值。 W/o informative items 在保留共享核心和评估预算的前提下，将信息性题目选择替换为随机采样。 后两个变体由于改变了搜索时的反馈，因此需要重新运行进化过程。",
+   "sents": [
+    {
+     "en": "We ablate three components of EvalAlloc on ShinkaEvolve across all four benchmarks.",
+     "zh": "我们在 ShinkaEvolve 上、跨全部四个基准测试对 EvalAlloc 的三个组件进行消融实验。"
+    },
+    {
+     "en": "W/o selection skips final confirmation and selects the candidate with the highest refitted response-model estimate from the same search runs.",
+     "zh": "W/o selection 跳过最终确认，直接从相同的搜索运行中选择经重新拟合的响应模型估计值最高的候选。"
+    },
+    {
+     "en": "W/o response model uses raw observed means for search feedback and raw union means for final selection.",
+     "zh": "W/o response model 在搜索反馈中使用原始观测均值，在最终选择中使用原始并集均值。"
+    },
+    {
+     "en": "W/o informative items replaces informative item selection with random sampling while preserving the shared core and evaluation budget.",
+     "zh": "W/o informative items 在保留共享核心和评估预算的前提下，将信息性题目选择替换为随机采样。"
+    },
+    {
+     "en": "The latter two variants require new evolution runs because they change the search-time feedback.",
+     "zh": "后两个变体由于改变了搜索时的反馈，因此需要重新运行进化过程。"
+    }
+   ]
+  },
+  {
+   "en": "Table 4 shows that removing final confirmation consistently reduces TEST performance, highlighting the importance of additional evaluation for selecting among competitive candidates. Replacing informative items with random ones produces the largest average degradation, suggesting that sharing evaluation items alone is insufficient without considering their informativeness. Removing the response model has a smaller and less consistent effect, as the shared core already provides substantial comparability among candidates. The response model therefore primarily serves to calibrate sparse feedback onto a common scoring scale. Overall, these results identify informative item selection and final confirmation as the main contributors to EvalAlloc .",
+   "zh": "表4表明，移除最终确认会持续降低TEST性能，凸显了在实力相近的候选模型中进行甄选时额外评估的重要性。 用随机条目替换信息性条目会带来最大的平均性能下降，这说明仅共享评估条目是不够的，还必须考虑其信息量。 移除响应模型的影响较小且不够稳定，因为共享核心已经为候选模型提供了充分的可比性。 因此，响应模型的主要作用是将稀疏反馈校准到统一的评分尺度上。 总体而言，这些结果表明信息性条目选择和最终确认是EvalAlloc的主要贡献因素。",
+   "sents": [
+    {
+     "en": "Table 4 shows that removing final confirmation consistently reduces TEST performance, highlighting the importance of additional evaluation for selecting among competitive candidates.",
+     "zh": "表4表明，移除最终确认会持续降低TEST性能，凸显了在实力相近的候选模型中进行甄选时额外评估的重要性。"
+    },
+    {
+     "en": "Replacing informative items with random ones produces the largest average degradation, suggesting that sharing evaluation items alone is insufficient without considering their informativeness.",
+     "zh": "用随机条目替换信息性条目会带来最大的平均性能下降，这说明仅共享评估条目是不够的，还必须考虑其信息量。"
+    },
+    {
+     "en": "Removing the response model has a smaller and less consistent effect, as the shared core already provides substantial comparability among candidates.",
+     "zh": "移除响应模型的影响较小且不够稳定，因为共享核心已经为候选模型提供了充分的可比性。"
+    },
+    {
+     "en": "The response model therefore primarily serves to calibrate sparse feedback onto a common scoring scale.",
+     "zh": "因此，响应模型的主要作用是将稀疏反馈校准到统一的评分尺度上。"
+    },
+    {
+     "en": "Overall, these results identify informative item selection and final confirmation as the main contributors to EvalAlloc .",
+     "zh": "总体而言，这些结果表明信息性条目选择和最终确认是EvalAlloc的主要贡献因素。"
+    }
+   ]
+  },
+  {
+   "en": "Budget Allocation in Warm-up Stage. Figure 4 examines the effect of warm-up length W W on DROP with ShinkaEvolve under a fixed search-stage budget. A longer warm-up provides more observations for calibration but leaves fewer evaluation items for subsequent candidates. The default W = 10 W=10 achieves the highest mean performance, although the differences are within seed-to-seed variation. All three configurations outperform Random at comparable evaluation cost. Offline replays further show that an excessively long warm-up reduces search-time ranking accuracy as later evaluations become too sparse. These results highlight the trade-off between upfront calibration and informative feedback during subsequent evolution.",
+   "zh": "预热阶段的预算分配。 图4考察了在固定搜索阶段预算下，预热长度 W 对使用 ShinkaEvolve 的 DROP 的影响。 更长的预热为校准提供了更多观测，但会减少后续候选可用的评估项。 默认的 W=10 取得了最高的平均性能，尽管差异在种子间波动范围之内。 在相近的评估成本下，三种配置均优于随机方法。 离线重放进一步表明，过长的预热会降低搜索阶段的排序准确性，因为后期评估变得过于稀疏。 这些结果凸显了前期校准与后续演化过程中信息性反馈之间的权衡。",
+   "sents": [
+    {
+     "en": "Budget Allocation in Warm-up Stage.",
+     "zh": "预热阶段的预算分配。"
+    },
+    {
+     "en": "Figure 4 examines the effect of warm-up length W W on DROP with ShinkaEvolve under a fixed search-stage budget.",
+     "zh": "图4考察了在固定搜索阶段预算下，预热长度 W 对使用 ShinkaEvolve 的 DROP 的影响。"
+    },
+    {
+     "en": "A longer warm-up provides more observations for calibration but leaves fewer evaluation items for subsequent candidates.",
+     "zh": "更长的预热为校准提供了更多观测，但会减少后续候选可用的评估项。"
+    },
+    {
+     "en": "The default W = 10 W=10 achieves the highest mean performance, although the differences are within seed-to-seed variation.",
+     "zh": "默认的 W=10 取得了最高的平均性能，尽管差异在种子间波动范围之内。"
+    },
+    {
+     "en": "All three configurations outperform Random at comparable evaluation cost.",
+     "zh": "在相近的评估成本下，三种配置均优于随机方法。"
+    },
+    {
+     "en": "Offline replays further show that an excessively long warm-up reduces search-time ranking accuracy as later evaluations become too sparse.",
+     "zh": "离线重放进一步表明，过长的预热会降低搜索阶段的排序准确性，因为后期评估变得过于稀疏。"
+    },
+    {
+     "en": "These results highlight the trade-off between upfront calibration and informative feedback during subsequent evolution.",
+     "zh": "这些结果凸显了前期校准与后续演化过程中信息性反馈之间的权衡。"
+    }
+   ]
+  },
+  {
+   "en": "Budget Allocation in Search Stage. Figure 5 examines the effect of search-time evaluation budget on DROP with ShinkaEvolve. We fix the warm-up at ten fully evaluated candidates and vary the target search budget from 20% to 40%. The default 30% allocation achieves the highest observed mean TEST performance, while the 20% configuration offers comparable performance at lower cost. Increasing the search-time budget does not consistently improve final performance in this setting, suggesting that sparse feedback can be sufficient to guide productive evolution.",
+   "zh": "搜索阶段的预算分配。 图5考察了使用ShinkaEvolve时搜索阶段评估预算对DROP的影响。 我们将预热固定为十个完整评估的候选解，并将目标搜索预算从20%变化到40%。 默认的30%分配实现了观察到的最高平均TEST性能，而20%的配置以更低的成本提供了相当的性能。 在该设置中，增加搜索阶段的预算并不能持续改善最终性能，这表明稀疏反馈可能足以指导富有成效的演化。",
+   "sents": [
+    {
+     "en": "Budget Allocation in Search Stage.",
+     "zh": "搜索阶段的预算分配。"
+    },
+    {
+     "en": "Figure 5 examines the effect of search-time evaluation budget on DROP with ShinkaEvolve.",
+     "zh": "图5考察了使用ShinkaEvolve时搜索阶段评估预算对DROP的影响。"
+    },
+    {
+     "en": "We fix the warm-up at ten fully evaluated candidates and vary the target search budget from 20% to 40%.",
+     "zh": "我们将预热固定为十个完整评估的候选解，并将目标搜索预算从20%变化到40%。"
+    },
+    {
+     "en": "The default 30% allocation achieves the highest observed mean TEST performance, while the 20% configuration offers comparable performance at lower cost.",
+     "zh": "默认的30%分配实现了观察到的最高平均TEST性能，而20%的配置以更低的成本提供了相当的性能。"
+    },
+    {
+     "en": "Increasing the search-time budget does not consistently improve final performance in this setting, suggesting that sparse feedback can be sufficient to guide productive evolution.",
+     "zh": "在该设置中，增加搜索阶段的预算并不能持续改善最终性能，这表明稀疏反馈可能足以指导富有成效的演化。"
+    }
+   ]
+  },
+  {
+   "en": "Budget Allocation in Selection Stage. Figure 6 examines the effect of final confirmation budget while reusing the same search runs. Compared with direct selection based on search-stage estimates, successive halving (SH) improves TEST performance across all four benchmarks. Applying SH to the top 30 candidates captures most of the improvement at lower cost, while considering all candidates provides a modest additional gain. These results highlight the value of targeted final confirmation and the trade-off between selection cost and final scaffold quality.",
+   "zh": "选择阶段的预算分配。 图6在复用相同搜索运行的情况下考察了最终确认预算的影响。 与基于搜索阶段估计的直接选择相比，逐次减半（SH）在全部四个基准上提升了TEST性能。 对排名前30的候选应用SH能以更低的成本获得大部分改进，而考虑所有候选则带来适度的额外收益。 这些结果突出了有针对性的最终确认的价值，以及选择成本与最终脚手架质量之间的权衡。",
+   "sents": [
+    {
+     "en": "Budget Allocation in Selection Stage.",
+     "zh": "选择阶段的预算分配。"
+    },
+    {
+     "en": "Figure 6 examines the effect of final confirmation budget while reusing the same search runs.",
+     "zh": "图6在复用相同搜索运行的情况下考察了最终确认预算的影响。"
+    },
+    {
+     "en": "Compared with direct selection based on search-stage estimates, successive halving (SH) improves TEST performance across all four benchmarks.",
+     "zh": "与基于搜索阶段估计的直接选择相比，逐次减半（SH）在全部四个基准上提升了TEST性能。"
+    },
+    {
+     "en": "Applying SH to the top 30 candidates captures most of the improvement at lower cost, while considering all candidates provides a modest additional gain.",
+     "zh": "对排名前30的候选应用SH能以更低的成本获得大部分改进，而考虑所有候选则带来适度的额外收益。"
+    },
+    {
+     "en": "These results highlight the value of targeted final confirmation and the trade-off between selection cost and final scaffold quality.",
+     "zh": "这些结果突出了有针对性的最终确认的价值，以及选择成本与最终脚手架质量之间的权衡。"
+    }
+   ]
+  },
+  {
+   "en": "Evaluation cost. Table 5 compares evaluation-cell and executor-token costs relative to Full. EvalAlloc reduces token consumption across all benchmark–framework settings, although token savings are not always proportional to cell savings. On ShinkaEvolve, it uses 52.13% of Full’s cells but 64.76% of its tokens, whereas its token share on AdaEvolve is 45.47%. The latter average is influenced by an unusually token-intensive HoVer Full run.",
+   "zh": "评估成本。 表 5 比较了相对 Full 的评估单元成本与执行器 token 成本。 EvalAlloc 在所有基准–框架设置下都降低了 token 消耗，尽管 token 节省并不总是与单元节省成比例。 在 ShinkaEvolve 上，它使用 Full 52.13% 的单元但 64.76% 的 token，而其在 AdaEvolve 上的 token 占比为 45.47%。 后者的平均值受到一次异常耗用大量 token 的 HoVer Full 运行的影响。",
+   "sents": [
+    {
+     "en": "Evaluation cost.",
+     "zh": "评估成本。"
+    },
+    {
+     "en": "Table 5 compares evaluation-cell and executor-token costs relative to Full.",
+     "zh": "表 5 比较了相对 Full 的评估单元成本与执行器 token 成本。"
+    },
+    {
+     "en": "EvalAlloc reduces token consumption across all benchmark–framework settings, although token savings are not always proportional to cell savings.",
+     "zh": "EvalAlloc 在所有基准–框架设置下都降低了 token 消耗，尽管 token 节省并不总是与单元节省成比例。"
+    },
+    {
+     "en": "On ShinkaEvolve, it uses 52.13% of Full’s cells but 64.76% of its tokens, whereas its token share on AdaEvolve is 45.47%.",
+     "zh": "在 ShinkaEvolve 上，它使用 Full 52.13% 的单元但 64.76% 的 token，而其在 AdaEvolve 上的 token 占比为 45.47%。"
+    },
+    {
+     "en": "The latter average is influenced by an unusually token-intensive HoVer Full run.",
+     "zh": "后者的平均值受到一次异常耗用大量 token 的 HoVer Full 运行的影响。"
+    }
+   ]
+  },
+  {
+   "en": "To examine this discrepancy without confounding differences in search trajectories, we analyze the fully evaluated candidate pools from the Full runs. Higher-scoring candidates tend to consume more tokens per item, with average within-run Spearman correlations of 0.25 and 0.36 for ShinkaEvolve and AdaEvolve, respectively. Likewise, the 60 items with the highest response variability consume 1.08 and 1.13 times the average tokens per item. These patterns suggest that concentrating evaluations on informative items and competitive candidates can favor more expensive execution cells. Thus, evaluation-cell counts measure the number of executions, while token counts additionally reflect heterogeneity in execution cost.",
+   "zh": "为了在不混淆搜索轨迹差异的情况下考察这一偏差，我们分析了 Full 运行中已被完整评估的候选池。 得分较高的候选体往往在每个项目上消耗更多 token，ShinkaEvolve 和 AdaEvolve 运行内的平均 Spearman 相关性分别为 0.25 和 0.36。 同样地，响应变异性最高的 60 个项目消耗的 token 为平均每项目 token 数的 1.08 倍和 1.13 倍。 这些模式表明，将评估集中在信息量大的项目和有竞争力的候选体上，可能偏向更昂贵的执行单元。 因此，执行单元计数衡量的是执行次数，而 token 计数则进一步反映了执行成本的异质性。",
+   "sents": [
+    {
+     "en": "To examine this discrepancy without confounding differences in search trajectories, we analyze the fully evaluated candidate pools from the Full runs.",
+     "zh": "为了在不混淆搜索轨迹差异的情况下考察这一偏差，我们分析了 Full 运行中已被完整评估的候选池。"
+    },
+    {
+     "en": "Higher-scoring candidates tend to consume more tokens per item, with average within-run Spearman correlations of 0.25 and 0.36 for ShinkaEvolve and AdaEvolve, respectively.",
+     "zh": "得分较高的候选体往往在每个项目上消耗更多 token，ShinkaEvolve 和 AdaEvolve 运行内的平均 Spearman 相关性分别为 0.25 和 0.36。"
+    },
+    {
+     "en": "Likewise, the 60 items with the highest response variability consume 1.08 and 1.13 times the average tokens per item.",
+     "zh": "同样地，响应变异性最高的 60 个项目消耗的 token 为平均每项目 token 数的 1.08 倍和 1.13 倍。"
+    },
+    {
+     "en": "These patterns suggest that concentrating evaluations on informative items and competitive candidates can favor more expensive execution cells.",
+     "zh": "这些模式表明，将评估集中在信息量大的项目和有竞争力的候选体上，可能偏向更昂贵的执行单元。"
+    },
+    {
+     "en": "Thus, evaluation-cell counts measure the number of executions, while token counts additionally reflect heterogeneity in execution cost.",
+     "zh": "因此，执行单元计数衡量的是执行次数，而 token 计数则进一步反映了执行成本的异质性。"
+    }
+   ]
+  },
+  {
+   "en": "Other Proposers and Executor. We further evaluate alternative model configurations on ShinkaEvolve in Figure 7 . We replace the proposer with gpt-oss-120b ( Agarwal et al., 2025 ) on IFBench, or the executor with Llama-3.1-8B-Instruct ( Grattafiori et al., 2024 ) on DROP. In both settings, EvalAlloc achieves competitive TEST performance with substantially fewer evaluation cells than Full. The relative performance of evaluation strategies varies across model configurations, suggesting that the benefits of evaluation allocation can depend on the underlying models.",
+   "zh": "其他提议者与执行器。 我们在图 7 中进一步评估了 ShinkaEvolve 上的其他模型配置。 我们在 IFBench 上将提议者替换为 gpt-oss-120b（Agarwal 等，2025），或在 DROP 上将执行器替换为 Llama-3.1-8B-Instruct（Grattafiori 等，2024）。 在这两种设置下，EvalAlloc 都以远少于 Full 的评估单元格数取得了有竞争力的测试性能。 评估策略的相对性能在不同模型配置之间有所差异，这表明评估分配的收益可能取决于底层模型。",
+   "sents": [
+    {
+     "en": "Other Proposers and Executor.",
+     "zh": "其他提议者与执行器。"
+    },
+    {
+     "en": "We further evaluate alternative model configurations on ShinkaEvolve in Figure 7 .",
+     "zh": "我们在图 7 中进一步评估了 ShinkaEvolve 上的其他模型配置。"
+    },
+    {
+     "en": "We replace the proposer with gpt-oss-120b ( Agarwal et al., 2025 ) on IFBench, or the executor with Llama-3.1-8B-Instruct ( Grattafiori et al., 2024 ) on DROP.",
+     "zh": "我们在 IFBench 上将提议者替换为 gpt-oss-120b（Agarwal 等，2025），或在 DROP 上将执行器替换为 Llama-3.1-8B-Instruct（Grattafiori 等，2024）。"
+    },
+    {
+     "en": "In both settings, EvalAlloc achieves competitive TEST performance with substantially fewer evaluation cells than Full.",
+     "zh": "在这两种设置下，EvalAlloc 都以远少于 Full 的评估单元格数取得了有竞争力的测试性能。"
+    },
+    {
+     "en": "The relative performance of evaluation strategies varies across model configurations, suggesting that the benefits of evaluation allocation can depend on the underlying models.",
+     "zh": "评估策略的相对性能在不同模型配置之间有所差异，这表明评估分配的收益可能取决于底层模型。"
+    }
+   ]
+  },
+  {
+   "en": "Evaluation influences both evolutionary search and final scaffold selection. Our investigation shows that sparse informative feedback can guide evolution, while shared evaluation items and a stable scoring reference support comparable decisions across candidates. Motivated by these findings, we propose EvalAlloc , which combines sparse search-time feedback with warm-started final confirmation. Across four benchmarks and two evolution frameworks, EvalAlloc achieves competitive performance while using approximately half as many evaluation cells as Full. These results highlight the importance of allocating evaluation effort according to its distinct roles in search and final selection.",
+   "zh": "评估同时影响进化搜索和最终脚手架选择。 我们的研究表明，稀疏的信息性反馈可以引导进化，而共享的评估项目和稳定的评分基准则能支持跨候选者的可比性决策。 受这些发现的启发，我们提出了 EvalAlloc，它将搜索阶段的稀疏反馈与预热启动的最终确认相结合。 在四个基准测试和两个进化框架上，EvalAlloc 以大约一半于 Full 的评估单元数量取得了有竞争力的性能。 这些结果凸显了根据评估在搜索和最终选择中的不同角色来分配评估资源的重要性。",
+   "sents": [
+    {
+     "en": "Evaluation influences both evolutionary search and final scaffold selection.",
+     "zh": "评估同时影响进化搜索和最终脚手架选择。"
+    },
+    {
+     "en": "Our investigation shows that sparse informative feedback can guide evolution, while shared evaluation items and a stable scoring reference support comparable decisions across candidates.",
+     "zh": "我们的研究表明，稀疏的信息性反馈可以引导进化，而共享的评估项目和稳定的评分基准则能支持跨候选者的可比性决策。"
+    },
+    {
+     "en": "Motivated by these findings, we propose EvalAlloc , which combines sparse search-time feedback with warm-started final confirmation.",
+     "zh": "受这些发现的启发，我们提出了 EvalAlloc，它将搜索阶段的稀疏反馈与预热启动的最终确认相结合。"
+    },
+    {
+     "en": "Across four benchmarks and two evolution frameworks, EvalAlloc achieves competitive performance while using approximately half as many evaluation cells as Full.",
+     "zh": "在四个基准测试和两个进化框架上，EvalAlloc 以大约一半于 Full 的评估单元数量取得了有竞争力的性能。"
+    },
+    {
+     "en": "These results highlight the importance of allocating evaluation effort according to its distinct roles in search and final selection.",
+     "zh": "这些结果凸显了根据评估在搜索和最终选择中的不同角色来分配评估资源的重要性。"
+    }
+   ]
+  }
+ ]
+}

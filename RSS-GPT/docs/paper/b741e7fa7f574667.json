@@ -1,0 +1,2051 @@
+{
+ "id": "b741e7fa7f574667",
+ "source": "arxiv-agent",
+ "link": "https://arxiv.org/abs/2610.37405v1",
+ "title": "Clearing the FoG: Training KG Agents to Retrieve the Evidence Behind Their Answers",
+ "title_zh": "拨开迷雾（FoG）：训练知识图谱智能体检索答案背后的证据",
+ "published": "2026-10-27T15:20:37Z",
+ "translated_at": "2026-10-29T21:28:31Z",
+ "paragraphs": [
+  {
+   "en": "Large language models (LLMs) can answer many factual questions correctly, but a correct answer is not necessarily a supported one. For an LLM agent, a knowledge graph (KG) plays two roles: as a source of answers, it supplies facts that the model lacks; as a source of evidence, it supplies the supporting triples that make an answer traceable and auditable. However, existing KG agents treat the KG only as a source of answers: their training data carries answers but not evidence, and their training rewards check the answer but not the retrieved evidence, so agents often answer correctly without retrieving the supporting triples. We propose FoG , a framework that trains KG agents to retrieve the evidence behind their answers. FoG consists of evidence-grounded synthesis, a KG interaction agent, and an evidence-coverage process reward (ECPR): the synthesis recursively hides explicit entities behind verifiable sub-questions, so that every question carries its supporting triples by construction; the agent records the triples returned by the KG; and ECPR credits each supporting triple to the turn that first retrieves it. Experiments on three KGQA benchmarks demonstrate that FoG enables 3B–4B open-source agents to outperform substantially larger baselines in answer accuracy and evidence coverage, with zero-shot cross-KG transfer.",
+   "zh": "大语言模型（LLMs）能够正确回答许多事实性问题，但正确的答案未必是有依据支撑的答案。 对于一个 LLM 智能体而言，知识图谱（KG）扮演两种角色：作为答案来源，它提供模型所缺失的事实；作为证据来源，它提供使答案可追溯、可审计的支持三元组。 然而，现有的 KG 智能体仅把 KG 当作答案来源：其训练数据包含答案但不包含证据，其训练奖励只检验答案而不检验检索到的证据，因此智能体常常在不检索支持三元组的情况下给出正确答案。 我们提出 FoG，一个训练 KG 智能体检索答案背后证据的框架。 FoG 由证据扎根式合成、KG 交互智能体和证据覆盖过程奖励（ECPR）组成：合成过程递归地将显式实体隐藏在可验证的子问题之后，使每个问题在构造上就自带其支持三元组；智能体记录 KG 返回的三元组；ECPR 将每条支持三元组记入首次检索到它的那个轮次。 在三个 KGQA 基准上的实验表明，FoG 使 3B–4B 的开源智能体在答案准确率和证据覆盖率上显著超越规模大得多的基线模型，并具备零样本的跨 KG 迁移能力。",
+   "sents": [
+    {
+     "en": "Large language models (LLMs) can answer many factual questions correctly, but a correct answer is not necessarily a supported one.",
+     "zh": "大语言模型（LLMs）能够正确回答许多事实性问题，但正确的答案未必是有依据支撑的答案。"
+    },
+    {
+     "en": "For an LLM agent, a knowledge graph (KG) plays two roles: as a source of answers, it supplies facts that the model lacks; as a source of evidence, it supplies the supporting triples that make an answer traceable and auditable.",
+     "zh": "对于一个 LLM 智能体而言，知识图谱（KG）扮演两种角色：作为答案来源，它提供模型所缺失的事实；作为证据来源，它提供使答案可追溯、可审计的支持三元组。"
+    },
+    {
+     "en": "However, existing KG agents treat the KG only as a source of answers: their training data carries answers but not evidence, and their training rewards check the answer but not the retrieved evidence, so agents often answer correctly without retrieving the supporting triples.",
+     "zh": "然而，现有的 KG 智能体仅把 KG 当作答案来源：其训练数据包含答案但不包含证据，其训练奖励只检验答案而不检验检索到的证据，因此智能体常常在不检索支持三元组的情况下给出正确答案。"
+    },
+    {
+     "en": "We propose FoG , a framework that trains KG agents to retrieve the evidence behind their answers.",
+     "zh": "我们提出 FoG，一个训练 KG 智能体检索答案背后证据的框架。"
+    },
+    {
+     "en": "FoG consists of evidence-grounded synthesis, a KG interaction agent, and an evidence-coverage process reward (ECPR): the synthesis recursively hides explicit entities behind verifiable sub-questions, so that every question carries its supporting triples by construction; the agent records the triples returned by the KG; and ECPR credits each supporting triple to the turn that first retrieves it.",
+     "zh": "FoG 由证据扎根式合成、KG 交互智能体和证据覆盖过程奖励（ECPR）组成：合成过程递归地将显式实体隐藏在可验证的子问题之后，使每个问题在构造上就自带其支持三元组；智能体记录 KG 返回的三元组；ECPR 将每条支持三元组记入首次检索到它的那个轮次。"
+    },
+    {
+     "en": "Experiments on three KGQA benchmarks demonstrate that FoG enables 3B–4B open-source agents to outperform substantially larger baselines in answer accuracy and evidence coverage, with zero-shot cross-KG transfer.",
+     "zh": "在三个 KGQA 基准上的实验表明，FoG 使 3B–4B 的开源智能体在答案准确率和证据覆盖率上显著超越规模大得多的基线模型，并具备零样本的跨 KG 迁移能力。"
+    }
+   ]
+  },
+  {
+   "en": "Large language models (LLMs) ( Team, 2025a ; GLM, 2025 ; Team, 2025b ; Touvron et al., 2023 ; OpenAI, 2023 ) increasingly answer factual questions from parametric knowledge, but remain difficult to trust on questions that require complex factual reasoning Mirzadeh et al. (2025) ; Hu et al. (2024) ; Jullien et al. (2025) ; Petroni et al. (2021) . A correct answer is not necessarily a supported one: the model may answer from memory or surface cues while exposing little about why the answer holds ( Huang et al., 2025 ; Alansari and Luqman, 2026 ; Nguyen et al., 2024 ) , which is problematic in high-stakes settings such as healthcare and law Cabello et al. (2024) , where users need evidence that they can check Sui et al. (2025) ; Agrawal et al. (2024) . Current LLM answers thus lie in a fog : the answer is visible, yet the evidence behind it remains hidden.",
+   "zh": "大型语言模型（LLM）（Team, 2025a；GLM, 2025；Team, 2025b；Touvron et al., 2023；OpenAI, 2023）越来越多地基于参数化知识回答事实性问题，但在需要复杂事实推理的问题上仍然难以令人信任 Mirzadeh et al. (2025)；Hu et al. (2024)；Jullien et al. (2025)；Petroni et al. (2021)。 正确的答案未必是有依据的答案：模型可能凭记忆或表面线索作答，而几乎不揭示答案为何成立（Huang et al., 2025；Alansari and Luqman, 2026；Nguyen et al., 2024），这在医疗和法律等高风险场景中是有问题的 Cabello et al. (2024)，在这些场景中，用户需要可以自行核验的证据 Sui et al. (2025)；Agrawal et al. (2024)。 因此，当前 LLM 的答案宛如笼罩在迷雾之中：答案是可见的，但其背后的证据依然被隐藏着。",
+   "sents": [
+    {
+     "en": "Large language models (LLMs) ( Team, 2025a ; GLM, 2025 ; Team, 2025b ; Touvron et al., 2023 ; OpenAI, 2023 ) increasingly answer factual questions from parametric knowledge, but remain difficult to trust on questions that require complex factual reasoning Mirzadeh et al. (2025) ; Hu et al. (2024) ; Jullien et al. (2025) ; Petroni et al. (2021) .",
+     "zh": "大型语言模型（LLM）（Team, 2025a；GLM, 2025；Team, 2025b；Touvron et al., 2023；OpenAI, 2023）越来越多地基于参数化知识回答事实性问题，但在需要复杂事实推理的问题上仍然难以令人信任 Mirzadeh et al. (2025)；Hu et al. (2024)；Jullien et al. (2025)；Petroni et al. (2021)。"
+    },
+    {
+     "en": "A correct answer is not necessarily a supported one: the model may answer from memory or surface cues while exposing little about why the answer holds ( Huang et al., 2025 ; Alansari and Luqman, 2026 ; Nguyen et al., 2024 ) , which is problematic in high-stakes settings such as healthcare and law Cabello et al.",
+     "zh": "正确的答案未必是有依据的答案：模型可能凭记忆或表面线索作答，而几乎不揭示答案为何成立（Huang et al., 2025；Alansari and Luqman, 2026；Nguyen et al., 2024），这在医疗和法律等高风险场景中是有问题的 Cabello et al."
+    },
+    {
+     "en": "(2024) , where users need evidence that they can check Sui et al. (2025) ; Agrawal et al. (2024) .",
+     "zh": "(2024)，在这些场景中，用户需要可以自行核验的证据 Sui et al. (2025)；Agrawal et al. (2024)。"
+    },
+    {
+     "en": "Current LLM answers thus lie in a fog : the answer is visible, yet the evidence behind it remains hidden.",
+     "zh": "因此，当前 LLM 的答案宛如笼罩在迷雾之中：答案是可见的，但其背后的证据依然被隐藏着。"
+    }
+   ]
+  },
+  {
+   "en": "Knowledge graphs (KGs) Pan et al. (2024) offer a natural way to clear this fog, since they store facts as verifiable triples. Existing KG-augmented methods follow two paradigms (Figure 2 ). Retrieval-based methods ( Luo et al., 2024 ; Li et al., 2025 ; Luo et al., 2025 ) retrieve triples, paths, or subgraphs and answer from them. Agent-based methods ( Sun et al., 2024 ; Chen et al., 2024 ; Lin et al., 2025 ; Jiang et al., 2025 ) interact with the KG through a multi-turn “think–act–observe” process, and recent work trains them with reinforcement learning (RL) ( Lin et al., 2025 ; Chen et al., 2025 ; Sun et al., 2025 ; Sun et al., 2026a ) .",
+   "zh": "知识图谱（KG）Pan et al. (2024) 提供了一种驱散这层迷雾的自然方式，因为它们以可验证的三元组形式存储事实。 现有的知识图谱增强方法遵循两种范式（图 2）。 基于检索的方法（Luo et al., 2024；Li et al., 2025；Luo et al., 2025）检索三元组、路径或子图，并据此回答问题。 基于智能体的方法（Sun et al., 2024；Chen et al., 2024；Lin et al., 2025；Jiang et al., 2025）通过多轮“思考–行动–观察”过程与知识图谱交互，且近期工作使用强化学习（RL）对其进行训练（Lin et al., 2025；Chen et al., 2025；Sun et al., 2025；Sun et al., 2026a）。",
+   "sents": [
+    {
+     "en": "Knowledge graphs (KGs) Pan et al.",
+     "zh": "知识图谱（KG）Pan et al."
+    },
+    {
+     "en": "(2024) offer a natural way to clear this fog, since they store facts as verifiable triples.",
+     "zh": "(2024) 提供了一种驱散这层迷雾的自然方式，因为它们以可验证的三元组形式存储事实。"
+    },
+    {
+     "en": "Existing KG-augmented methods follow two paradigms (Figure 2 ).",
+     "zh": "现有的知识图谱增强方法遵循两种范式（图 2）。"
+    },
+    {
+     "en": "Retrieval-based methods ( Luo et al., 2024 ; Li et al., 2025 ; Luo et al., 2025 ) retrieve triples, paths, or subgraphs and answer from them.",
+     "zh": "基于检索的方法（Luo et al., 2024；Li et al., 2025；Luo et al., 2025）检索三元组、路径或子图，并据此回答问题。"
+    },
+    {
+     "en": "Agent-based methods ( Sun et al., 2024 ; Chen et al., 2024 ; Lin et al., 2025 ; Jiang et al., 2025 ) interact with the KG through a multi-turn “think–act–observe” process, and recent work trains them with reinforcement learning (RL) ( Lin et al., 2025 ; Chen et al., 2025 ; Sun et al., 2025 ; Sun et al., 2026a ) .",
+     "zh": "基于智能体的方法（Sun et al., 2024；Chen et al., 2024；Lin et al., 2025；Jiang et al., 2025）通过多轮“思考–行动–观察”过程与知识图谱交互，且近期工作使用强化学习（RL）对其进行训练（Lin et al., 2025；Chen et al., 2025；Sun et al., 2025；Sun et al., 2026a）。"
+    }
+   ]
+  },
+  {
+   "en": "However, existing KG agents treat the KG only as a source of answers and overlook its role as a source of evidence . An LLM with no KG access can already answer many benchmark questions correctly, and even an RL-trained agent can answer correctly while retrieving only part of the supporting triples. We identify two causes. First, training data carries answers but not evidence : most KGQA datasets annotate answers and at most logical forms Talmor and Berant (2018) ; Yih et al. (2016) ; Gu et al. (2021) , and recovering the supporting triples afterwards requires enumerating and verifying paths for every question. Second, training rewards check the answer but not the evidence : most rewards score only the final answer or whether the KG returns it Lin et al. (2025) ; Song et al. (2026) ; Xu et al. (2026) ; Chen et al. (2025) ; Sun et al. (2025) , so a trajectory that reaches the answer through part of the evidence earns as much as one that retrieves all of it. The process rewards that go further depend on an LLM judge or on gold paths recovered for every question Wang and Yu (2026a) ; Yan et al. (2026) , both of which are costly. Both causes trace back to one bottleneck: evidence is expensive to recover once a question has been written .",
+   "zh": "然而，现有的 KG 智能体只把 KG 视为答案的来源，而忽视了它作为证据来源的作用。 无法访问 KG 的 LLM 已经能够正确回答许多基准问题，即使是经过 RL 训练的智能体也能在只检索到部分支持三元组的情况下回答正确。我们找出了两个原因。 第一，训练数据带有答案但没有证据：大多数 KGQA 数据集只标注答案，至多标注逻辑形式 Talmor and Berant (2018) ；Yih et al. (2016) ；Gu et al. (2021)，而事后恢复支持三元组需要对每个问题枚举并验证路径。 第二，训练奖励只检查答案而不检查证据：大多数奖励只对最终答案或 KG 是否返回该答案打分 Lin et al. (2025) ；Song et al. (2026) ；Xu et al. (2026) ；Chen et al. (2025) ；Sun et al. (2025)，因此一条通过部分证据得到答案的轨迹与一条检索到全部证据的轨迹获得同样多的奖励。 更进一步的过程奖励则依赖于 LLM 裁判或为每个问题恢复的黄金路径 Wang and Yu (2026a) ；Yan et al. (2026)，这两者代价都很高。 两个原因都指向同一个瓶颈：问题一旦被撰写完成，证据的恢复代价就很高。",
+   "sents": [
+    {
+     "en": "However, existing KG agents treat the KG only as a source of answers and overlook its role as a source of evidence .",
+     "zh": "然而，现有的 KG 智能体只把 KG 视为答案的来源，而忽视了它作为证据来源的作用。"
+    },
+    {
+     "en": "An LLM with no KG access can already answer many benchmark questions correctly, and even an RL-trained agent can answer correctly while retrieving only part of the supporting triples. We identify two causes.",
+     "zh": "无法访问 KG 的 LLM 已经能够正确回答许多基准问题，即使是经过 RL 训练的智能体也能在只检索到部分支持三元组的情况下回答正确。我们找出了两个原因。"
+    },
+    {
+     "en": "First, training data carries answers but not evidence : most KGQA datasets annotate answers and at most logical forms Talmor and Berant (2018) ; Yih et al. (2016) ; Gu et al.",
+     "zh": "第一，训练数据带有答案但没有证据：大多数 KGQA 数据集只标注答案，至多标注逻辑形式 Talmor and Berant (2018) ；Yih et al. (2016) ；Gu et al."
+    },
+    {
+     "en": "(2021) , and recovering the supporting triples afterwards requires enumerating and verifying paths for every question.",
+     "zh": "(2021)，而事后恢复支持三元组需要对每个问题枚举并验证路径。"
+    },
+    {
+     "en": "Second, training rewards check the answer but not the evidence : most rewards score only the final answer or whether the KG returns it Lin et al. (2025) ; Song et al. (2026) ; Xu et al. (2026) ; Chen et al. (2025) ; Sun et al.",
+     "zh": "第二，训练奖励只检查答案而不检查证据：大多数奖励只对最终答案或 KG 是否返回该答案打分 Lin et al. (2025) ；Song et al. (2026) ；Xu et al. (2026) ；Chen et al. (2025) ；Sun et al."
+    },
+    {
+     "en": "(2025) , so a trajectory that reaches the answer through part of the evidence earns as much as one that retrieves all of it.",
+     "zh": "(2025)，因此一条通过部分证据得到答案的轨迹与一条检索到全部证据的轨迹获得同样多的奖励。"
+    },
+    {
+     "en": "The process rewards that go further depend on an LLM judge or on gold paths recovered for every question Wang and Yu (2026a) ; Yan et al.",
+     "zh": "更进一步的过程奖励则依赖于 LLM 裁判或为每个问题恢复的黄金路径 Wang and Yu (2026a) ；Yan et al."
+    },
+    {
+     "en": "(2026) , both of which are costly.",
+     "zh": "(2026)，这两者代价都很高。"
+    },
+    {
+     "en": "Both causes trace back to one bottleneck: evidence is expensive to recover once a question has been written .",
+     "zh": "两个原因都指向同一个瓶颈：问题一旦被撰写完成，证据的恢复代价就很高。"
+    }
+   ]
+  },
+  {
+   "en": "To remove this bottleneck, we propose FoG (Figure 1 ), a framework that trains KG agents to retrieve the evidence behind their answers. Our key observation is that evidence is hard to recover after a question is written but can be embedded when the question is constructed and then rewarded during training. First, evidence-grounded synthesis recursively hides the explicit entities of a seed question behind verifiable sub-questions, so every question carries its supporting triples. Second, a KG interaction agent answers through multi-turn KG queries and records every triple that the KG returns. Lastly, during RL training, an evidence-coverage process reward (ECPR) gives a dense reward to each turn that first retrieves one of these supporting triples. Our contributions are as follows:",
+   "zh": "为了消除这一瓶颈，我们提出了 FoG（图 1），这是一个训练知识图谱智能体检索其答案背后证据的框架。 我们的关键观察是：证据在问题写成之后难以恢复，但可以在问题构造时被嵌入，并在训练过程中被奖励。 首先，证据接地的合成通过可验证的子问题递归地将种子问题的显式实体隐藏起来，使每个问题都携带其支持三元组。 其次，一个知识图谱交互智能体通过多轮知识图谱查询来回答问题，并记录知识图谱返回的每一条三元组。 最后，在强化学习训练中，证据覆盖过程奖励（ECPR）为每一轮首次检索到某条支持三元组的步骤给予密集奖励。 我们的贡献如下：",
+   "sents": [
+    {
+     "en": "To remove this bottleneck, we propose FoG (Figure 1 ), a framework that trains KG agents to retrieve the evidence behind their answers.",
+     "zh": "为了消除这一瓶颈，我们提出了 FoG（图 1），这是一个训练知识图谱智能体检索其答案背后证据的框架。"
+    },
+    {
+     "en": "Our key observation is that evidence is hard to recover after a question is written but can be embedded when the question is constructed and then rewarded during training.",
+     "zh": "我们的关键观察是：证据在问题写成之后难以恢复，但可以在问题构造时被嵌入，并在训练过程中被奖励。"
+    },
+    {
+     "en": "First, evidence-grounded synthesis recursively hides the explicit entities of a seed question behind verifiable sub-questions, so every question carries its supporting triples.",
+     "zh": "首先，证据接地的合成通过可验证的子问题递归地将种子问题的显式实体隐藏起来，使每个问题都携带其支持三元组。"
+    },
+    {
+     "en": "Second, a KG interaction agent answers through multi-turn KG queries and records every triple that the KG returns.",
+     "zh": "其次，一个知识图谱交互智能体通过多轮知识图谱查询来回答问题，并记录知识图谱返回的每一条三元组。"
+    },
+    {
+     "en": "Lastly, during RL training, an evidence-coverage process reward (ECPR) gives a dense reward to each turn that first retrieves one of these supporting triples.",
+     "zh": "最后，在强化学习训练中，证据覆盖过程奖励（ECPR）为每一轮首次检索到某条支持三元组的步骤给予密集奖励。"
+    },
+    {
+     "en": "Our contributions are as follows:",
+     "zh": "我们的贡献如下："
+    }
+   ]
+  },
+  {
+   "en": "We distinguish two roles of the KG and show that existing training data and rewards serve it only as a source of answers, not of evidence.",
+   "zh": "我们区分了知识图谱（KG）的两种角色，并表明现有的训练数据和奖励仅将其作为答案的来源，而非证据的来源。",
+   "sents": null
+  },
+  {
+   "en": "We propose FoG, which embeds supporting triples into synthetic questions and rewards their retrieval through ECPR, so the dense reward comes from data synthesis with no LLM judge or extra annotation.",
+   "zh": "我们提出 FoG，它将支持性三元组嵌入合成问题中，并通过 ECPR 对其检索进行奖励，因此密集奖励来自数据合成，无需 LLM 评判或额外标注。",
+   "sents": null
+  },
+  {
+   "en": "On three benchmarks, 3B–4B FoG agents outperform larger baselines in accuracy and evidence coverage, and transfer zero-shot across KGs.",
+   "zh": "在三个基准测试中，3B–4B 的 FoG 智能体在准确率和证据覆盖率上超越了更大的基线模型，并能在不同知识图谱之间实现零样本迁移。",
+   "sents": null
+  },
+  {
+   "en": "Unlike prompting strategies ( Wei et al., 2022 ; Wang et al., 2023 ; Yao et al., 2023a ; Jin et al., 2024 ) , KG-augmented methods ground reasoning in verifiable triples and follow two paradigms. Retrieval-based methods ( Luo et al., 2024 ; Li et al., 2025 ; Luo et al., 2025 ; Mavromatis and Karypis, 2025 ; He et al., 2024 ; Liu et al., 2026 ) condition the LLM on triples, paths, or subgraphs retrieved in a single step. Agent-based methods ( Sun et al., 2024 ; Chen et al., 2024 ; Lin et al., 2025 ; Jiang et al., 2025 ) explore the KG iteratively: ToG and PoG prompt a frozen LLM, whereas recent work trains the agent with RL ( Lin et al., 2025 ; Song et al., 2026 ; Chen et al., 2025 ; Sun et al., 2025 ; Wang and Yu, 2026b ; Sun et al., 2026a ) . However, these agents use the KG only as a source of answers and can answer correctly without retrieving the supporting triples. In this work, we train agents to use it as a source of evidence.",
+   "zh": "与提示策略（Wei et al., 2022；Wang et al., 2023；Yao et al., 2023a；Jin et al., 2024）不同，知识图谱增强方法将推理建立在可验证的三元组之上，并遵循两种范式。 基于检索的方法（Luo et al., 2024；Li et al., 2025；Luo et al., 2025；Mavromatis and Karypis, 2025；He et al., 2024；Liu et al., 2026）以单步检索得到的三元组、路径或子图为条件来约束大语言模型。 基于智能体的方法（Sun et al., 2024；Chen et al., 2024；Lin et al., 2025；Jiang et al., 2025）以迭代方式探索知识图谱：ToG 和 PoG 通过提示冻结的大语言模型进行探索，而近期工作则使用强化学习训练智能体（Lin et al., 2025；Song et al., 2026；Chen et al., 2025；Sun et al., 2025；Wang and Yu, 2026b；Sun et al., 2026a）。 然而，这些智能体仅将知识图谱作为答案的来源，即使不检索支持性三元组也能给出正确答案。 在本工作中，我们训练智能体将知识图谱作为证据的来源来使用。",
+   "sents": [
+    {
+     "en": "Unlike prompting strategies ( Wei et al., 2022 ; Wang et al., 2023 ; Yao et al., 2023a ; Jin et al., 2024 ) , KG-augmented methods ground reasoning in verifiable triples and follow two paradigms.",
+     "zh": "与提示策略（Wei et al., 2022；Wang et al., 2023；Yao et al., 2023a；Jin et al., 2024）不同，知识图谱增强方法将推理建立在可验证的三元组之上，并遵循两种范式。"
+    },
+    {
+     "en": "Retrieval-based methods ( Luo et al., 2024 ; Li et al., 2025 ; Luo et al., 2025 ; Mavromatis and Karypis, 2025 ; He et al., 2024 ; Liu et al., 2026 ) condition the LLM on triples, paths, or subgraphs retrieved in a single step.",
+     "zh": "基于检索的方法（Luo et al., 2024；Li et al., 2025；Luo et al., 2025；Mavromatis and Karypis, 2025；He et al., 2024；Liu et al., 2026）以单步检索得到的三元组、路径或子图为条件来约束大语言模型。"
+    },
+    {
+     "en": "Agent-based methods ( Sun et al., 2024 ; Chen et al., 2024 ; Lin et al., 2025 ; Jiang et al., 2025 ) explore the KG iteratively: ToG and PoG prompt a frozen LLM, whereas recent work trains the agent with RL ( Lin et al., 2025 ; Song et al., 2026 ; Chen et al., 2025 ; Sun et al., 2025 ; Wang and Yu, 2026b ; Sun et al., 2026a ) .",
+     "zh": "基于智能体的方法（Sun et al., 2024；Chen et al., 2024；Lin et al., 2025；Jiang et al., 2025）以迭代方式探索知识图谱：ToG 和 PoG 通过提示冻结的大语言模型进行探索，而近期工作则使用强化学习训练智能体（Lin et al., 2025；Song et al., 2026；Chen et al., 2025；Sun et al., 2025；Wang and Yu, 2026b；Sun et al., 2026a）。"
+    },
+    {
+     "en": "However, these agents use the KG only as a source of answers and can answer correctly without retrieving the supporting triples.",
+     "zh": "然而，这些智能体仅将知识图谱作为答案的来源，即使不检索支持性三元组也能给出正确答案。"
+    },
+    {
+     "en": "In this work, we train agents to use it as a source of evidence.",
+     "zh": "在本工作中，我们训练智能体将知识图谱作为证据的来源来使用。"
+    }
+   ]
+  },
+  {
+   "en": "Synthetic data frees KGQA from human annotation, since questions can be generated from the KG and verified by execution. It provides questions for agent training ( Xu et al., 2026 ) and for benchmarking and retriever training ( Zhang et al., 2025 ; Cattaneo et al., 2026 ) . However, these pipelines treat it as extra examples to train or evaluate on. In this work, we treat it as a source of supervision: every synthesized question carries the evidence that defines its reward.",
+   "zh": "合成数据使 KGQA 摆脱了人工标注，因为问题可以从知识图谱中生成，并通过执行来验证。 它为智能体训练（Xu et al., 2026）以及基准测试和检索器训练（Zhang et al., 2025；Cattaneo et al., 2026）提供了问题。 然而，这些流水线只是将其作为用于训练或评估的额外样本。 在本工作中，我们将其视为一种监督来源：每个合成问题都携带着定义其奖励的证据。",
+   "sents": [
+    {
+     "en": "Synthetic data frees KGQA from human annotation, since questions can be generated from the KG and verified by execution.",
+     "zh": "合成数据使 KGQA 摆脱了人工标注，因为问题可以从知识图谱中生成，并通过执行来验证。"
+    },
+    {
+     "en": "It provides questions for agent training ( Xu et al., 2026 ) and for benchmarking and retriever training ( Zhang et al., 2025 ; Cattaneo et al., 2026 ) .",
+     "zh": "它为智能体训练（Xu et al., 2026）以及基准测试和检索器训练（Zhang et al., 2025；Cattaneo et al., 2026）提供了问题。"
+    },
+    {
+     "en": "However, these pipelines treat it as extra examples to train or evaluate on.",
+     "zh": "然而，这些流水线只是将其作为用于训练或评估的额外样本。"
+    },
+    {
+     "en": "In this work, we treat it as a source of supervision: every synthesized question carries the evidence that defines its reward.",
+     "zh": "在本工作中，我们将其视为一种监督来源：每个合成问题都携带着定义其奖励的证据。"
+    }
+   ]
+  },
+  {
+   "en": "RL lets a KG agent learn its retrieval policy from interaction with the KG. Most work trains from outcome rewards on the final answer with rule-based terms for valid interaction ( Lin et al., 2025 ; Song et al., 2026 ; Chen et al., 2025 ; Sun et al., 2025 ; Wang and Yu, 2026b ; Sun et al., 2026a ; Sun and Kazakov, 2026 ) . Because outcome rewards are sparse, later work adds dense process rewards, obtained from an LLM judge ( Wang and Yu, 2026a ) or from gold paths and logical forms ( Yan et al., 2026 ; Han et al., 2026 ; Sun et al., 2026b ) . However, both sources are costly: a judge must score every rollout, and gold references must be annotated or recovered for every question. In this work, the process reward comes from data synthesis: every synthesized question already carries its supporting triples, which provide a dense reward at no extra cost.",
+   "zh": "强化学习使知识图谱智能体能够通过与知识图谱的交互来学习其检索策略。 大多数工作基于最终答案的结果奖励进行训练，并对有效交互使用基于规则的奖励项（Lin et al., 2025；Song et al., 2026；Chen et al., 2025；Sun et al., 2025；Wang and Yu, 2026b；Sun et al., 2026a；Sun and Kazakov, 2026）。 由于结果奖励是稀疏的，后续工作增加了密集的过程奖励，这些奖励来自 LLM 评判器（Wang and Yu, 2026a）或来自黄金路径与逻辑形式（Yan et al., 2026；Han et al., 2026；Sun et al., 2026b）。 然而，这两种来源的代价都很高：评判器必须为每次 rollout 打分，而黄金参考必须为每个问题进行标注或恢复。 在本工作中，过程奖励来自数据合成：每个合成的问题都已经携带其支持三元组，这些三元组以零额外成本提供了密集奖励。",
+   "sents": [
+    {
+     "en": "RL lets a KG agent learn its retrieval policy from interaction with the KG.",
+     "zh": "强化学习使知识图谱智能体能够通过与知识图谱的交互来学习其检索策略。"
+    },
+    {
+     "en": "Most work trains from outcome rewards on the final answer with rule-based terms for valid interaction ( Lin et al., 2025 ; Song et al., 2026 ; Chen et al., 2025 ; Sun et al., 2025 ; Wang and Yu, 2026b ; Sun et al., 2026a ; Sun and Kazakov, 2026 ) .",
+     "zh": "大多数工作基于最终答案的结果奖励进行训练，并对有效交互使用基于规则的奖励项（Lin et al., 2025；Song et al., 2026；Chen et al., 2025；Sun et al., 2025；Wang and Yu, 2026b；Sun et al., 2026a；Sun and Kazakov, 2026）。"
+    },
+    {
+     "en": "Because outcome rewards are sparse, later work adds dense process rewards, obtained from an LLM judge ( Wang and Yu, 2026a ) or from gold paths and logical forms ( Yan et al., 2026 ; Han et al., 2026 ; Sun et al., 2026b ) .",
+     "zh": "由于结果奖励是稀疏的，后续工作增加了密集的过程奖励，这些奖励来自 LLM 评判器（Wang and Yu, 2026a）或来自黄金路径与逻辑形式（Yan et al., 2026；Han et al., 2026；Sun et al., 2026b）。"
+    },
+    {
+     "en": "However, both sources are costly: a judge must score every rollout, and gold references must be annotated or recovered for every question.",
+     "zh": "然而，这两种来源的代价都很高：评判器必须为每次 rollout 打分，而黄金参考必须为每个问题进行标注或恢复。"
+    },
+    {
+     "en": "In this work, the process reward comes from data synthesis: every synthesized question already carries its supporting triples, which provide a dense reward at no extra cost.",
+     "zh": "在本工作中，过程奖励来自数据合成：每个合成的问题都已经携带其支持三元组，这些三元组以零额外成本提供了密集奖励。"
+    }
+   ]
+  },
+  {
+   "en": "In this section, we introduce FoG, as shown in Figure 3 , including evidence-grounded synthesis, a KG interaction agent, and ECPR.",
+   "zh": "在本节中，我们介绍 FoG，如图 3 所示，包括证据接地合成、KG 交互智能体和 ECPR。",
+   "sents": null
+  },
+  {
+   "en": "Definition 1 (KG question answering). A knowledge graph is 𝒢 = ( ℰ , ℛ , 𝒯 ) \\mathcal{G}=(\\mathcal{E},\\mathcal{R},\\mathcal{T}) with entities ℰ \\mathcal{E} , relations ℛ \\mathcal{R} , and triples 𝒯 ⊆ ℰ × ℛ × ℰ \\mathcal{T}\\subseteq\\mathcal{E}\\times\\mathcal{R}\\times\\mathcal{E} . A question q q has a logical form ℓ q \\ell_{q} and a gold answer y q ∗ ∈ SPARQL ⁡ ( ℓ q , 𝒯 ) y_{q}^{*}\\in\\operatorname{SPARQL}(\\ell_{q},\\mathcal{T}) , where SPARQL ⁡ ( ℓ , 𝒮 ) \\operatorname{SPARQL}(\\ell,\\mathcal{S}) is the result of executing ℓ \\ell over a triple set 𝒮 \\mathcal{S} . An agent answers q q through a trajectory τ = ( ( s 1 , a 1 ) , … , ( s T , a T ) ) \\tau=\\bigl((s_{1},a_{1}),\\ldots,(s_{T},a_{T})\\bigr) of states and actions and outputs a prediction y ^ \\hat{y} , where 𝒯 t ⊆ 𝒯 \\mathcal{T}_{t}\\subseteq\\mathcal{T} are the triples returned at step t t , 𝒯 ⁡ ( τ ) = ⋃ t 𝒯 t \\mathcal{T}(\\tau)=\\bigcup_{t}\\mathcal{T}_{t} all triples retrieved along τ \\tau , and ℰ ⁡ ( τ ) \\mathcal{E}(\\tau) all returned entities.",
+   "zh": "定义1（知识图谱问答）。 知识图谱为 𝒢 = ( ℰ , ℛ , 𝒯 ) \\mathcal{G}=(\\mathcal{E},\\mathcal{R},\\mathcal{T})，其中 ℰ \\mathcal{E} 为实体，ℛ \\mathcal{R} 为关系，𝒯 ⊆ ℰ × ℛ × ℰ \\mathcal{T}\\subseteq\\mathcal{E}\\times\\mathcal{R}\\times\\mathcal{E} 为三元组。 问题 q q 具有逻辑形式 ℓ q \\ell_{q} 和标准答案 y q ∗ ∈ SPARQL ⁡ ( ℓ q , 𝒯 ) y_{q}^{*}\\in\\operatorname{SPARQL}(\\ell_{q},\\mathcal{T})，其中 SPARQL ⁡ ( ℓ , 𝒮 ) \\operatorname{SPARQL}(\\ell,\\mathcal{S}) 表示在三元组集合 𝒮 \\mathcal{S} 上执行 ℓ \\ell 的结果。 智能体通过由状态和动作组成的轨迹 τ = ( ( s 1 , a 1 ) , … , ( s T , a T ) ) \\tau=\\bigl((s_{1},a_{1}),\\ldots,(s_{T},a_{T})\\bigr) 来回答 q q 并输出预测 ŷ \\hat{y}，其中 𝒯 t ⊆ 𝒯 \\mathcal{T}_{t}\\subseteq\\mathcal{T} 是在第 t t 步返回的三元组，𝒯 ⁡ ( τ ) = ⋃ t 𝒯 t \\mathcal{T}(\\tau)=\\bigcup_{t}\\mathcal{T}_{t} 是沿 τ \\tau 检索到的所有三元组，ℰ ⁡ ( τ ) \\mathcal{E}(\\tau) 是所有返回的实体。",
+   "sents": [
+    {
+     "en": "Definition 1 (KG question answering).",
+     "zh": "定义1（知识图谱问答）。"
+    },
+    {
+     "en": "A knowledge graph is 𝒢 = ( ℰ , ℛ , 𝒯 ) \\mathcal{G}=(\\mathcal{E},\\mathcal{R},\\mathcal{T}) with entities ℰ \\mathcal{E} , relations ℛ \\mathcal{R} , and triples 𝒯 ⊆ ℰ × ℛ × ℰ \\mathcal{T}\\subseteq\\mathcal{E}\\times\\mathcal{R}\\times\\mathcal{E} .",
+     "zh": "知识图谱为 𝒢 = ( ℰ , ℛ , 𝒯 ) \\mathcal{G}=(\\mathcal{E},\\mathcal{R},\\mathcal{T})，其中 ℰ \\mathcal{E} 为实体，ℛ \\mathcal{R} 为关系，𝒯 ⊆ ℰ × ℛ × ℰ \\mathcal{T}\\subseteq\\mathcal{E}\\times\\mathcal{R}\\times\\mathcal{E} 为三元组。"
+    },
+    {
+     "en": "A question q q has a logical form ℓ q \\ell_{q} and a gold answer y q ∗ ∈ SPARQL ⁡ ( ℓ q , 𝒯 ) y_{q}^{*}\\in\\operatorname{SPARQL}(\\ell_{q},\\mathcal{T}) , where SPARQL ⁡ ( ℓ , 𝒮 ) \\operatorname{SPARQL}(\\ell,\\mathcal{S}) is the result of executing ℓ \\ell over a triple set 𝒮 \\mathcal{S} .",
+     "zh": "问题 q q 具有逻辑形式 ℓ q \\ell_{q} 和标准答案 y q ∗ ∈ SPARQL ⁡ ( ℓ q , 𝒯 ) y_{q}^{*}\\in\\operatorname{SPARQL}(\\ell_{q},\\mathcal{T})，其中 SPARQL ⁡ ( ℓ , 𝒮 ) \\operatorname{SPARQL}(\\ell,\\mathcal{S}) 表示在三元组集合 𝒮 \\mathcal{S} 上执行 ℓ \\ell 的结果。"
+    },
+    {
+     "en": "An agent answers q q through a trajectory τ = ( ( s 1 , a 1 ) , … , ( s T , a T ) ) \\tau=\\bigl((s_{1},a_{1}),\\ldots,(s_{T},a_{T})\\bigr) of states and actions and outputs a prediction y ^ \\hat{y} , where 𝒯 t ⊆ 𝒯 \\mathcal{T}_{t}\\subseteq\\mathcal{T} are the triples returned at step t t , 𝒯 ⁡ ( τ ) = ⋃ t 𝒯 t \\mathcal{T}(\\tau)=\\bigcup_{t}\\mathcal{T}_{t} all triples retrieved along τ \\tau , and ℰ ⁡ ( τ ) \\mathcal{E}(\\tau) all returned entities.",
+     "zh": "智能体通过由状态和动作组成的轨迹 τ = ( ( s 1 , a 1 ) , … , ( s T , a T ) ) \\tau=\\bigl((s_{1},a_{1}),\\ldots,(s_{T},a_{T})\\bigr) 来回答 q q 并输出预测 ŷ \\hat{y}，其中 𝒯 t ⊆ 𝒯 \\mathcal{T}_{t}\\subseteq\\mathcal{T} 是在第 t t 步返回的三元组，𝒯 ⁡ ( τ ) = ⋃ t 𝒯 t \\mathcal{T}(\\tau)=\\bigcup_{t}\\mathcal{T}_{t} 是沿 τ \\tau 检索到的所有三元组，ℰ ⁡ ( τ ) \\mathcal{E}(\\tau) 是所有返回的实体。"
+    }
+   ]
+  },
+  {
+   "en": "Definition 2 (Supported answer). A triple set 𝒮 ⊆ 𝒯 \\mathcal{S}\\subseteq\\mathcal{T} supports the answer of q q if y q ∗ ∈ SPARQL ⁡ ( ℓ q , 𝒮 ) y_{q}^{*}\\in\\operatorname{SPARQL}(\\ell_{q},\\mathcal{S}) . The answer of τ \\tau is correct if y ^ \\hat{y} matches y q ∗ y_{q}^{*} , reached if y q ∗ ∈ ℰ ⁡ ( τ ) y_{q}^{*}\\in\\mathcal{E}(\\tau) , and supported if 𝒯 ⁡ ( τ ) \\mathcal{T}(\\tau) supports it. Unlike the first two levels, which use the KG as a source of answers, a supported answer uses it as a source of evidence. In FoG, each training question carries gold supporting triples 𝒮 q ∗ \\mathcal{S}^{*}_{q} that support its answer.",
+   "zh": "定义 2（被支持的答案）。 若 y q ∗ ∈ SPARQL ⁡ ( ℓ q , 𝒮 ) y_{q}^{*}\\in\\operatorname{SPARQL}(\\ell_{q},\\mathcal{S}) ，则三元组集合 𝒮 ⊆ 𝒯 \\mathcal{S}\\subseteq\\mathcal{T} 支持问题 q q 的答案。 若 y ^ \\hat{y} 与 y q ∗ y_{q}^{*} 匹配，则 τ \\tau 的答案是正确的；若 y q ∗ ∈ ℰ ⁡ ( τ ) y_{q}^{*}\\in\\mathcal{E}(\\tau) ，则该答案被到达；若 𝒯 ⁡ ( τ ) \\mathcal{T}(\\tau) 支持它，则该答案被支持。 与前两个层级将知识图谱用作答案来源不同，被支持的答案将知识图谱用作证据来源。 在 FoG 中，每个训练问题都带有支持其答案的金标准支撑三元组 𝒮 q ∗ \\mathcal{S}^{*}_{q} 。",
+   "sents": [
+    {
+     "en": "Definition 2 (Supported answer).",
+     "zh": "定义 2（被支持的答案）。"
+    },
+    {
+     "en": "A triple set 𝒮 ⊆ 𝒯 \\mathcal{S}\\subseteq\\mathcal{T} supports the answer of q q if y q ∗ ∈ SPARQL ⁡ ( ℓ q , 𝒮 ) y_{q}^{*}\\in\\operatorname{SPARQL}(\\ell_{q},\\mathcal{S}) .",
+     "zh": "若 y q ∗ ∈ SPARQL ⁡ ( ℓ q , 𝒮 ) y_{q}^{*}\\in\\operatorname{SPARQL}(\\ell_{q},\\mathcal{S}) ，则三元组集合 𝒮 ⊆ 𝒯 \\mathcal{S}\\subseteq\\mathcal{T} 支持问题 q q 的答案。"
+    },
+    {
+     "en": "The answer of τ \\tau is correct if y ^ \\hat{y} matches y q ∗ y_{q}^{*} , reached if y q ∗ ∈ ℰ ⁡ ( τ ) y_{q}^{*}\\in\\mathcal{E}(\\tau) , and supported if 𝒯 ⁡ ( τ ) \\mathcal{T}(\\tau) supports it.",
+     "zh": "若 y ^ \\hat{y} 与 y q ∗ y_{q}^{*} 匹配，则 τ \\tau 的答案是正确的；若 y q ∗ ∈ ℰ ⁡ ( τ ) y_{q}^{*}\\in\\mathcal{E}(\\tau) ，则该答案被到达；若 𝒯 ⁡ ( τ ) \\mathcal{T}(\\tau) 支持它，则该答案被支持。"
+    },
+    {
+     "en": "Unlike the first two levels, which use the KG as a source of answers, a supported answer uses it as a source of evidence.",
+     "zh": "与前两个层级将知识图谱用作答案来源不同，被支持的答案将知识图谱用作证据来源。"
+    },
+    {
+     "en": "In FoG, each training question carries gold supporting triples 𝒮 q ∗ \\mathcal{S}^{*}_{q} that support its answer.",
+     "zh": "在 FoG 中，每个训练问题都带有支持其答案的金标准支撑三元组 𝒮 q ∗ \\mathcal{S}^{*}_{q} 。"
+    }
+   ]
+  },
+  {
+   "en": "To obtain complex questions that carry their supporting evidence, we propose evidence-grounded synthesis that includes seed question construction, backward expansion, and quality control. All roles use the teacher Kimi-K2 ( Team, 2025a ) .",
+   "zh": "为了获得带有其支持证据的复杂问题，我们提出基于证据的合成方法，包括种子问题构建、反向扩展和质量控制。 所有角色均使用教师模型 Kimi-K2 ( Team, 2025a )。",
+   "sents": [
+    {
+     "en": "To obtain complex questions that carry their supporting evidence, we propose evidence-grounded synthesis that includes seed question construction, backward expansion, and quality control.",
+     "zh": "为了获得带有其支持证据的复杂问题，我们提出基于证据的合成方法，包括种子问题构建、反向扩展和质量控制。"
+    },
+    {
+     "en": "All roles use the teacher Kimi-K2 ( Team, 2025a ) .",
+     "zh": "所有角色均使用教师模型 Kimi-K2 ( Team, 2025a )。"
+    }
+   ]
+  },
+  {
+   "en": "We sample a size-bounded subgraph 𝒢 sub \\mathcal{G}_{\\text{sub}} from Wikidata around a seed entity v seed v_{\\text{seed}} of moderate degree. The teacher generates a 1-hop question whose answer is v seed v_{\\text{seed}} :",
+   "zh": "我们从 Wikidata 中以一个度数适中的种子实体 v seed v_{\\text{seed}} 为中心采样一个大小受限的子图 𝒢 sub \\mathcal{G}_{\\text{sub}}。 教师生成一个答案为 v seed v_{\\text{seed}} 的 1 跳问题：",
+   "sents": [
+    {
+     "en": "We sample a size-bounded subgraph 𝒢 sub \\mathcal{G}_{\\text{sub}} from Wikidata around a seed entity v seed v_{\\text{seed}} of moderate degree.",
+     "zh": "我们从 Wikidata 中以一个度数适中的种子实体 v seed v_{\\text{seed}} 为中心采样一个大小受限的子图 𝒢 sub \\mathcal{G}_{\\text{sub}}。"
+    },
+    {
+     "en": "The teacher generates a 1-hop question whose answer is v seed v_{\\text{seed}} :",
+     "zh": "教师生成一个答案为 v seed v_{\\text{seed}} 的 1 跳问题："
+    }
+   ]
+  },
+  {
+   "en": "where π gen \\pi_{\\text{gen}} is the teacher model, Q ( 1 ) Q^{(1)} the seed question, ℓ ( 1 ) \\ell^{(1)} its logical form, and 𝒮 ( 1 ) \\mathcal{S}^{(1)} its supporting triples. The seed is retained only if every triple in 𝒮 ( 1 ) \\mathcal{S}^{(1)} exists in 𝒢 sub \\mathcal{G}_{\\text{sub}} and ℓ ( 1 ) \\ell^{(1)} executes over the global KG with v seed v_{\\text{seed}} in its result set.",
+   "zh": "其中 π gen \\pi_{\\text{gen}} 是教师模型，Q ( 1 ) Q^{(1)} 是种子问题，ℓ ( 1 ) \\ell^{(1)} 是其逻辑形式，𝒮 ( 1 ) \\mathcal{S}^{(1)} 是其支持三元组。 只有当 𝒮 ( 1 ) \\mathcal{S}^{(1)} 中的每个三元组都存在于 𝒢 sub \\mathcal{G}_{\\text{sub}} 中，且 ℓ ( 1 ) \\ell^{(1)} 能在全局知识图谱上执行并使 v seed v_{\\text{seed}} 位于其结果集中时，该种子才会被保留。",
+   "sents": [
+    {
+     "en": "where π gen \\pi_{\\text{gen}} is the teacher model, Q ( 1 ) Q^{(1)} the seed question, ℓ ( 1 ) \\ell^{(1)} its logical form, and 𝒮 ( 1 ) \\mathcal{S}^{(1)} its supporting triples.",
+     "zh": "其中 π gen \\pi_{\\text{gen}} 是教师模型，Q ( 1 ) Q^{(1)} 是种子问题，ℓ ( 1 ) \\ell^{(1)} 是其逻辑形式，𝒮 ( 1 ) \\mathcal{S}^{(1)} 是其支持三元组。"
+    },
+    {
+     "en": "The seed is retained only if every triple in 𝒮 ( 1 ) \\mathcal{S}^{(1)} exists in 𝒢 sub \\mathcal{G}_{\\text{sub}} and ℓ ( 1 ) \\ell^{(1)} executes over the global KG with v seed v_{\\text{seed}} in its result set.",
+     "zh": "只有当 𝒮 ( 1 ) \\mathcal{S}^{(1)} 中的每个三元组都存在于 𝒢 sub \\mathcal{G}_{\\text{sub}} 中，且 ℓ ( 1 ) \\ell^{(1)} 能在全局知识图谱上执行并使 v seed v_{\\text{seed}} 位于其结果集中时，该种子才会被保留。"
+    }
+   ]
+  },
+  {
+   "en": "Given a verified question Q ( n ) Q^{(n)} with logical form ℓ ( n ) \\ell^{(n)} , answer y = v seed y=v_{\\text{seed}} , and supporting triples 𝒮 ( n ) \\mathcal{S}^{(n)} , we replace an explicit non-answer entity u u in Q ( n ) Q^{(n)} with a sub-question Q ~ \\tilde{Q} whose answer is exactly u u :",
+   "zh": "给定一个经过验证的问题 Q ( n ) Q^{(n)}（其逻辑形式为 ℓ ( n ) \\ell^{(n)}）、答案 y = v seed y=v_{\\text{seed}}，以及支持三元组 𝒮 ( n ) \\mathcal{S}^{(n)}，我们将 Q ( n ) Q^{(n)} 中的一个显式非答案实体 u u 替换为一个子问题 Q ~ \\tilde{Q}，该子问题的答案恰好为 u u：",
+   "sents": null
+  },
+  {
+   "en": "where 𝒮 ~ \\tilde{\\mathcal{S}} are the supporting triples of Q ~ \\tilde{Q} , drawn from the incoming neighborhood of u u , and ℓ ( n + 1 ) \\ell^{(n+1)} is the expanded logical form. Each expansion turns an explicit entity into a hidden intermediate variable, and the accumulated triples still support the answer. Thus N ∈ { 0 , 1 , 2 } N\\in\\{0,1,2\\} expansions yield 1- to 3-hop questions, where N = 0 N=0 keeps the seed. Expansion uses a ReAct agent ( Yao et al., 2023b ) that retrieves the neighborhood of u u , selects triples, writes Q ~ \\tilde{Q} , and verifies it; on failure, it reselects triples or the entity.",
+   "zh": "其中 𝒮 ~ \\tilde{\\mathcal{S}} 是 Q ~ \\tilde{Q} 的支持三元组，取自 u u 的入邻域，ℓ ( n + 1 ) \\ell^{(n+1)} 是扩展后的逻辑形式。 每次扩展都会将一个显式实体转化为隐藏的中间变量，而累积的三元组仍然支持答案。 因此，N ∈ { 0 , 1 , 2 } N\\in\\{0,1,2\\} 次扩展产生 1 跳到 3 跳的问题，其中 N = 0 N=0 保留种子问题。 扩展使用 ReAct 智能体（Yao et al., 2023b），该智能体检索 u u 的邻域、选择三元组、撰写 Q ~ \\tilde{Q} 并进行验证；若验证失败，则重新选择三元组或实体。",
+   "sents": [
+    {
+     "en": "where 𝒮 ~ \\tilde{\\mathcal{S}} are the supporting triples of Q ~ \\tilde{Q} , drawn from the incoming neighborhood of u u , and ℓ ( n + 1 ) \\ell^{(n+1)} is the expanded logical form.",
+     "zh": "其中 𝒮 ~ \\tilde{\\mathcal{S}} 是 Q ~ \\tilde{Q} 的支持三元组，取自 u u 的入邻域，ℓ ( n + 1 ) \\ell^{(n+1)} 是扩展后的逻辑形式。"
+    },
+    {
+     "en": "Each expansion turns an explicit entity into a hidden intermediate variable, and the accumulated triples still support the answer.",
+     "zh": "每次扩展都会将一个显式实体转化为隐藏的中间变量，而累积的三元组仍然支持答案。"
+    },
+    {
+     "en": "Thus N ∈ { 0 , 1 , 2 } N\\in\\{0,1,2\\} expansions yield 1- to 3-hop questions, where N = 0 N=0 keeps the seed.",
+     "zh": "因此，N ∈ { 0 , 1 , 2 } N\\in\\{0,1,2\\} 次扩展产生 1 跳到 3 跳的问题，其中 N = 0 N=0 保留种子问题。"
+    },
+    {
+     "en": "Expansion uses a ReAct agent ( Yao et al., 2023b ) that retrieves the neighborhood of u u , selects triples, writes Q ~ \\tilde{Q} , and verifies it; on failure, it reselects triples or the entity.",
+     "zh": "扩展使用 ReAct 智能体（Yao et al., 2023b），该智能体检索 u u 的邻域、选择三元组、撰写 Q ~ \\tilde{Q} 并进行验证；若验证失败，则重新选择三元组或实体。"
+    }
+   ]
+  },
+  {
+   "en": "Proposition 1. Backward expansion preserves the answer and yields triples that support it.",
+   "zh": "命题 1。 反向扩展保持答案不变，并产生支持该答案的三元组。",
+   "sents": [
+    {
+     "en": "Proposition 1.",
+     "zh": "命题 1。"
+    },
+    {
+     "en": "Backward expansion preserves the answer and yields triples that support it.",
+     "zh": "反向扩展保持答案不变，并产生支持该答案的三元组。"
+    }
+   ]
+  },
+  {
+   "en": "We provide experimental results in Section 4.4 and proofs in Appendix A.1 . ∎",
+   "zh": "我们在第 4.4 节中提供实验结果，在附录 A.1 中提供证明。∎",
+   "sents": null
+  },
+  {
+   "en": "Each synthesized question must further pass two symbolic checks, which keep the answer specific and every topic entity necessary. (a) Executability. Let 𝒴 ( n ) = SPARQL ⁡ ( ℓ ( n ) , 𝒯 ) \\mathcal{Y}^{(n)}=\\operatorname{SPARQL}(\\ell^{(n)},\\mathcal{T}) be the result set of the candidate question. We retain it only if the target answer is included and the result set is not overly broad, i.e., y ∈ 𝒴 ( n ) y\\in\\mathcal{Y}^{(n)} and | 𝒴 ( n ) | ≤ K ans |\\mathcal{Y}^{(n)}|\\leq K_{\\text{ans}} for a maximum answer-set size K ans K_{\\text{ans}} . (b) Non-redundancy. Let E q E_{q} be the topic entities of the question. We extract a shortest supporting path for each e ∈ E q e\\in E_{q} and discard the question if a proper subset yields an equally specific answer set:",
+   "zh": "每个合成的问题还必须通过两项符号化检查，以保证答案具体且每个主题实体都是必要的。(a) 可执行性。 设 𝒴 ( n ) = SPARQL ⁡ ( ℓ ( n ) , 𝒯 ) \\mathcal{Y}^{(n)}=\\operatorname{SPARQL}(\\ell^{(n)},\\mathcal{T}) 为候选问题的结果集。 只有当目标答案包含在结果集中且结果集不过于宽泛时，即 y ∈ 𝒴 ( n ) y\\in\\mathcal{Y}^{(n)} 且 | 𝒴 ( n ) | ≤ K ans |\\mathcal{Y}^{(n)}|\\leq K_{\\text{ans}}，其中 K ans K_{\\text{ans}} 为最大答案集大小，我们才保留该问题。(b) 非冗余性。 设 E q E_{q} 为问题的主题实体。 我们为每个 e ∈ E q e\\in E_{q} 提取一条最短支持路径，若某个真子集能产生同样具体的答案集，则丢弃该问题：",
+   "sents": [
+    {
+     "en": "Each synthesized question must further pass two symbolic checks, which keep the answer specific and every topic entity necessary. (a) Executability.",
+     "zh": "每个合成的问题还必须通过两项符号化检查，以保证答案具体且每个主题实体都是必要的。(a) 可执行性。"
+    },
+    {
+     "en": "Let 𝒴 ( n ) = SPARQL ⁡ ( ℓ ( n ) , 𝒯 ) \\mathcal{Y}^{(n)}=\\operatorname{SPARQL}(\\ell^{(n)},\\mathcal{T}) be the result set of the candidate question.",
+     "zh": "设 𝒴 ( n ) = SPARQL ⁡ ( ℓ ( n ) , 𝒯 ) \\mathcal{Y}^{(n)}=\\operatorname{SPARQL}(\\ell^{(n)},\\mathcal{T}) 为候选问题的结果集。"
+    },
+    {
+     "en": "We retain it only if the target answer is included and the result set is not overly broad, i.e., y ∈ 𝒴 ( n ) y\\in\\mathcal{Y}^{(n)} and | 𝒴 ( n ) | ≤ K ans |\\mathcal{Y}^{(n)}|\\leq K_{\\text{ans}} for a maximum answer-set size K ans K_{\\text{ans}} . (b) Non-redundancy.",
+     "zh": "只有当目标答案包含在结果集中且结果集不过于宽泛时，即 y ∈ 𝒴 ( n ) y\\in\\mathcal{Y}^{(n)} 且 | 𝒴 ( n ) | ≤ K ans |\\mathcal{Y}^{(n)}|\\leq K_{\\text{ans}}，其中 K ans K_{\\text{ans}} 为最大答案集大小，我们才保留该问题。(b) 非冗余性。"
+    },
+    {
+     "en": "Let E q E_{q} be the topic entities of the question.",
+     "zh": "设 E q E_{q} 为问题的主题实体。"
+    },
+    {
+     "en": "We extract a shortest supporting path for each e ∈ E q e\\in E_{q} and discard the question if a proper subset yields an equally specific answer set:",
+     "zh": "我们为每个 e ∈ E q e\\in E_{q} 提取一条最短支持路径，若某个真子集能产生同样具体的答案集，则丢弃该问题："
+    }
+   ]
+  },
+  {
+   "en": "where 𝒴 Z ( n ) \\mathcal{Y}^{(n)}_{Z} is the answer set of the query built only from the paths of Z Z (Appendix B ).",
+   "zh": "其中 𝒴 Z ( n ) \\mathcal{Y}^{(n)}_{Z} 是仅由 Z Z 的路径构建的查询的答案集（附录 B）。",
+   "sents": null
+  },
+  {
+   "en": "The triples accumulated for a final question q q are its gold supporting triples 𝒮 q ∗ \\mathcal{S}^{*}_{q} , and we report the distribution of query-graph types ( Dutt et al., 2023 ) in Appendix C.2 .",
+   "zh": "为最终问题 q q 累积的三元组是其黄金支持三元组 𝒮 q ∗ \\mathcal{S}^{*}_{q} ，我们在附录 C.2 中报告了查询图类型（Dutt et al., 2023）的分布。",
+   "sents": null
+  },
+  {
+   "en": "To make the evidence retrieved for an answer explicit, we develop a KG interaction agent that solves each question through a multi-turn think–act–observe loop with the action space",
+   "zh": "为了让为答案检索到的证据更加明确，我们开发了一个知识图谱（KG）交互智能体，它通过多轮「思考–行动–观察」循环来解答每个问题，其动作空间为",
+   "sents": null
+  },
+  {
+   "en": "where think performs internal reasoning, kg-query interacts with the KG, and answer emits the final prediction. The kg-query action is instantiated with seven atomic operations that probe the relations of an entity, expand to its neighboring entities, filter an entity set, and combine entity sets (Appendix D ). Every trajectory thus records the returned triples 𝒯 ⁡ ( τ ) \\mathcal{T}(\\tau) , the only evidence that FoG rewards and evaluates.",
+   "zh": "其中 think 负责内部推理，kg-query 与知识图谱交互，answer 输出最终预测。 kg-query 动作由七个原子操作实例化而成，这些操作可以探测某个实体的关系、扩展到其相邻实体、过滤实体集合以及合并实体集合（附录 D）。 因此每条轨迹都记录了返回的三元组 𝒯 ⁡ ( τ ) \\mathcal{T}(\\tau)，这是 FoG 用于奖励和评估的唯一证据。",
+   "sents": [
+    {
+     "en": "where think performs internal reasoning, kg-query interacts with the KG, and answer emits the final prediction.",
+     "zh": "其中 think 负责内部推理，kg-query 与知识图谱交互，answer 输出最终预测。"
+    },
+    {
+     "en": "The kg-query action is instantiated with seven atomic operations that probe the relations of an entity, expand to its neighboring entities, filter an entity set, and combine entity sets (Appendix D ).",
+     "zh": "kg-query 动作由七个原子操作实例化而成，这些操作可以探测某个实体的关系、扩展到其相邻实体、过滤实体集合以及合并实体集合（附录 D）。"
+    },
+    {
+     "en": "Every trajectory thus records the returned triples 𝒯 ⁡ ( τ ) \\mathcal{T}(\\tau) , the only evidence that FoG rewards and evaluates.",
+     "zh": "因此每条轨迹都记录了返回的三元组 𝒯 ⁡ ( τ ) \\mathcal{T}(\\tau)，这是 FoG 用于奖励和评估的唯一证据。"
+    }
+   ]
+  },
+  {
+   "en": "To train the agent to retrieve this evidence, we propose a training scheme with outcome and step-validity rewards, the evidence-coverage process reward, and turn-level policy optimization.",
+   "zh": "为了训练智能体检索这些证据，我们提出了一种包含结果奖励与步骤有效性奖励、证据覆盖过程奖励以及轮次级策略优化的训练方案。",
+   "sents": null
+  },
+  {
+   "en": "We define the outcome reward of a trajectory as",
+   "zh": "我们将一条轨迹的结果奖励定义为",
+   "sents": null
+  },
+  {
+   "en": "where the first term rewards a correct answer and the second a reached answer. Neither term checks whether the answer is supported: a shortcut trajectory, which outputs and even reaches the gold answer while leaving some of the supporting triples 𝒮 q ∗ \\mathcal{S}^{*}_{q} unretrieved, still earns the full outcome reward.",
+   "zh": "其中第一项奖励正确答案，第二项奖励已到达的答案。 这两项都不检查答案是否有依据：一条捷径轨迹即使输出了答案、甚至到达了金标答案，却仍留下部分支撑三元组 𝒮 q ∗ \\mathcal{S}^{*}_{q} 未被检索，也能获得完整的结局奖励。",
+   "sents": [
+    {
+     "en": "where the first term rewards a correct answer and the second a reached answer.",
+     "zh": "其中第一项奖励正确答案，第二项奖励已到达的答案。"
+    },
+    {
+     "en": "Neither term checks whether the answer is supported: a shortcut trajectory, which outputs and even reaches the gold answer while leaving some of the supporting triples 𝒮 q ∗ \\mathcal{S}^{*}_{q} unretrieved, still earns the full outcome reward.",
+     "zh": "这两项都不检查答案是否有依据：一条捷径轨迹即使输出了答案、甚至到达了金标答案，却仍留下部分支撑三元组 𝒮 q ∗ \\mathcal{S}^{*}_{q} 未被检索，也能获得完整的结局奖励。"
+    }
+   ]
+  },
+  {
+   "en": "To stabilize graph interaction, each turn also earns a step-validity reward r t step = λ step ​ v t r^{\\text{step}}_{t}=\\lambda_{\\text{step}}\\,v_{t} , where v t = 1 v_{t}=1 if action a t a_{t} follows the required format and executes successfully, and v t = 0 v_{t}=0 otherwise. The trajectory-level term is the average R step ​ ( τ ) = 1 T ​ ∑ t = 1 T r t step R_{\\text{step}}(\\tau)=\\frac{1}{T}\\sum_{t=1}^{T}r^{\\text{step}}_{t} .",
+   "zh": "为了稳定图交互，每一轮还会获得一个步骤有效性奖励 r t step = λ step v t r^{\\text{step}}_{t}=\\lambda_{\\text{step}}\\,v_{t}，其中当动作 a t a_{t} 符合要求的格式并成功执行时 v t = 1 v_{t}=1，否则 v t = 0 v_{t}=0。 轨迹级项为平均值 R step ( τ ) = 1 T ∑ t = 1 T r t step R_{\\text{step}}(\\tau)=\\frac{1}{T}\\sum_{t=1}^{T}r^{\\text{step}}_{t}。",
+   "sents": [
+    {
+     "en": "To stabilize graph interaction, each turn also earns a step-validity reward r t step = λ step ​ v t r^{\\text{step}}_{t}=\\lambda_{\\text{step}}\\,v_{t} , where v t = 1 v_{t}=1 if action a t a_{t} follows the required format and executes successfully, and v t = 0 v_{t}=0 otherwise.",
+     "zh": "为了稳定图交互，每一轮还会获得一个步骤有效性奖励 r t step = λ step v t r^{\\text{step}}_{t}=\\lambda_{\\text{step}}\\,v_{t}，其中当动作 a t a_{t} 符合要求的格式并成功执行时 v t = 1 v_{t}=1，否则 v t = 0 v_{t}=0。"
+    },
+    {
+     "en": "The trajectory-level term is the average R step ​ ( τ ) = 1 T ​ ∑ t = 1 T r t step R_{\\text{step}}(\\tau)=\\frac{1}{T}\\sum_{t=1}^{T}r^{\\text{step}}_{t} .",
+     "zh": "轨迹级项为平均值 R step ( τ ) = 1 T ∑ t = 1 T r t step R_{\\text{step}}(\\tau)=\\frac{1}{T}\\sum_{t=1}^{T}r^{\\text{step}}_{t}。"
+    }
+   ]
+  },
+  {
+   "en": "Unlike the terms above, which treat the KG only as a source of answers, the E vidence- C overage P rocess R eward (ECPR) scores the trajectory against the gold supporting triples 𝒮 q ∗ \\mathcal{S}^{*}_{q} provided by synthesis. We define the evidence coverage of a trajectory as",
+   "zh": "与上面仅将知识图谱（KG）视为答案来源的术语不同，证据覆盖过程奖励（Evidence-Coverage Process Reward，ECPR）根据合成提供的黄金支持三元组 𝒮 q ∗ \\mathcal{S}^{*}_{q} 来为轨迹打分。 我们将一条轨迹的证据覆盖定义为",
+   "sents": [
+    {
+     "en": "Unlike the terms above, which treat the KG only as a source of answers, the E vidence- C overage P rocess R eward (ECPR) scores the trajectory against the gold supporting triples 𝒮 q ∗ \\mathcal{S}^{*}_{q} provided by synthesis.",
+     "zh": "与上面仅将知识图谱（KG）视为答案来源的术语不同，证据覆盖过程奖励（Evidence-Coverage Process Reward，ECPR）根据合成提供的黄金支持三元组 𝒮 q ∗ \\mathcal{S}^{*}_{q} 来为轨迹打分。"
+    },
+    {
+     "en": "We define the evidence coverage of a trajectory as",
+     "zh": "我们将一条轨迹的证据覆盖定义为"
+    }
+   ]
+  },
+  {
+   "en": "where 𝒯 ⁡ ( τ ) \\mathcal{T}(\\tau) are all triples retrieved along τ \\tau , so a triple that the agent recalls from memory without retrieving it earns no reward. We call τ \\tau evidence-covered if Cov ⁡ ( τ , 𝒮 q ∗ ) = 1 \\operatorname{Cov}(\\tau,\\mathcal{S}^{*}_{q})=1 , and set R ecpr ​ ( τ ) = λ ecpr ⋅ Cov ⁡ ( τ , 𝒮 q ∗ ) R_{\\text{ecpr}}(\\tau)=\\lambda_{\\text{ecpr}}\\cdot\\operatorname{Cov}(\\tau,\\mathcal{S}^{*}_{q}) . For dense credit assignment, first-match attribution assigns each gold triple to the step that first retrieves it:",
+   "zh": "其中 𝒯 ⁡ ( τ ) \\mathcal{T}(\\tau) 是沿 τ \\tau 检索到的所有三元组，因此智能体从记忆中直接回想起而未经过检索的三元组不会获得奖励。 若 Cov ⁡ ( τ , 𝒮 q ∗ ) = 1 \\operatorname{Cov}(\\tau,\\mathcal{S}^{*}_{q})=1 ，我们称 τ \\tau 为证据覆盖的，并设 R ecpr ​ ( τ ) = λ ecpr ⋅ Cov ⁡ ( τ , 𝒮 q ∗ ) R_{\\text{ecpr}}(\\tau)=\\lambda_{\\text{ecpr}}\\cdot\\operatorname{Cov}(\\tau,\\mathcal{S}^{*}_{q}) 。 为了进行密集的信用分配，首次匹配归因将每个黄金三元组分配给首个检索到它的步骤：",
+   "sents": [
+    {
+     "en": "where 𝒯 ⁡ ( τ ) \\mathcal{T}(\\tau) are all triples retrieved along τ \\tau , so a triple that the agent recalls from memory without retrieving it earns no reward.",
+     "zh": "其中 𝒯 ⁡ ( τ ) \\mathcal{T}(\\tau) 是沿 τ \\tau 检索到的所有三元组，因此智能体从记忆中直接回想起而未经过检索的三元组不会获得奖励。"
+    },
+    {
+     "en": "We call τ \\tau evidence-covered if Cov ⁡ ( τ , 𝒮 q ∗ ) = 1 \\operatorname{Cov}(\\tau,\\mathcal{S}^{*}_{q})=1 , and set R ecpr ​ ( τ ) = λ ecpr ⋅ Cov ⁡ ( τ , 𝒮 q ∗ ) R_{\\text{ecpr}}(\\tau)=\\lambda_{\\text{ecpr}}\\cdot\\operatorname{Cov}(\\tau,\\mathcal{S}^{*}_{q}) .",
+     "zh": "若 Cov ⁡ ( τ , 𝒮 q ∗ ) = 1 \\operatorname{Cov}(\\tau,\\mathcal{S}^{*}_{q})=1 ，我们称 τ \\tau 为证据覆盖的，并设 R ecpr ​ ( τ ) = λ ecpr ⋅ Cov ⁡ ( τ , 𝒮 q ∗ ) R_{\\text{ecpr}}(\\tau)=\\lambda_{\\text{ecpr}}\\cdot\\operatorname{Cov}(\\tau,\\mathcal{S}^{*}_{q}) 。"
+    },
+    {
+     "en": "For dense credit assignment, first-match attribution assigns each gold triple to the step that first retrieves it:",
+     "zh": "为了进行密集的信用分配，首次匹配归因将每个黄金三元组分配给首个检索到它的步骤："
+    }
+   ]
+  },
+  {
+   "en": "where ∑ t r t ecpr = R ecpr ​ ( τ ) \\sum_{t}r^{\\text{ecpr}}_{t}=R_{\\text{ecpr}}(\\tau) , so repeated retrieval of the same triple earns no additional reward. The composite reward of a trajectory is R ⁡ ( τ ) = R out ​ ( τ ) + R step ​ ( τ ) + R ecpr ​ ( τ ) R(\\tau)=R_{\\text{out}}(\\tau)+R_{\\text{step}}(\\tau)+R_{\\text{ecpr}}(\\tau) . We set λ f1 = 0.7 \\lambda_{\\text{f1}}=0.7 , λ ret = 0.3 \\lambda_{\\text{ret}}=0.3 , λ step = 0.5 \\lambda_{\\text{step}}=0.5 , and λ ecpr = 1 \\lambda_{\\text{ecpr}}=1 .",
+   "zh": "其中 ∑ t r t ecpr = R ecpr ​ ( τ ) \\sum_{t}r^{\\text{ecpr}}_{t}=R_{\\text{ecpr}}(\\tau)，因此重复检索同一个三元组不会获得额外奖励。 一条轨迹的复合奖励为 R ⁡ ( τ ) = R out ​ ( τ ) + R step ​ ( τ ) + R ecpr ​ ( τ ) R(\\tau)=R_{\\text{out}}(\\tau)+R_{\\text{step}}(\\tau)+R_{\\text{ecpr}}(\\tau)。 我们设置 λ f1 = 0.7 \\lambda_{\\text{f1}}=0.7、λ ret = 0.3 \\lambda_{\\text{ret}}=0.3、λ step = 0.5 \\lambda_{\\text{step}}=0.5，以及 λ ecpr = 1 \\lambda_{\\text{ecpr}}=1。",
+   "sents": [
+    {
+     "en": "where ∑ t r t ecpr = R ecpr ​ ( τ ) \\sum_{t}r^{\\text{ecpr}}_{t}=R_{\\text{ecpr}}(\\tau) , so repeated retrieval of the same triple earns no additional reward.",
+     "zh": "其中 ∑ t r t ecpr = R ecpr ​ ( τ ) \\sum_{t}r^{\\text{ecpr}}_{t}=R_{\\text{ecpr}}(\\tau)，因此重复检索同一个三元组不会获得额外奖励。"
+    },
+    {
+     "en": "The composite reward of a trajectory is R ⁡ ( τ ) = R out ​ ( τ ) + R step ​ ( τ ) + R ecpr ​ ( τ ) R(\\tau)=R_{\\text{out}}(\\tau)+R_{\\text{step}}(\\tau)+R_{\\text{ecpr}}(\\tau) .",
+     "zh": "一条轨迹的复合奖励为 R ⁡ ( τ ) = R out ​ ( τ ) + R step ​ ( τ ) + R ecpr ​ ( τ ) R(\\tau)=R_{\\text{out}}(\\tau)+R_{\\text{step}}(\\tau)+R_{\\text{ecpr}}(\\tau)。"
+    },
+    {
+     "en": "We set λ f1 = 0.7 \\lambda_{\\text{f1}}=0.7 , λ ret = 0.3 \\lambda_{\\text{ret}}=0.3 , λ step = 0.5 \\lambda_{\\text{step}}=0.5 , and λ ecpr = 1 \\lambda_{\\text{ecpr}}=1 .",
+     "zh": "我们设置 λ f1 = 0.7 \\lambda_{\\text{f1}}=0.7、λ ret = 0.3 \\lambda_{\\text{ret}}=0.3、λ step = 0.5 \\lambda_{\\text{step}}=0.5，以及 λ ecpr = 1 \\lambda_{\\text{ecpr}}=1。"
+    }
+   ]
+  },
+  {
+   "en": "Proposition 2. ECPR is maximized only by supported answers and rewards each triple once.",
+   "zh": "命题2。 ECPR 仅由受支持的答案最大化，并对每个三元组只奖励一次。",
+   "sents": [
+    {
+     "en": "Proposition 2.",
+     "zh": "命题2。"
+    },
+    {
+     "en": "ECPR is maximized only by supported answers and rewards each triple once.",
+     "zh": "ECPR 仅由受支持的答案最大化，并对每个三元组只奖励一次。"
+    }
+   ]
+  },
+  {
+   "en": "We provide experimental results in Sections 4.3 and 4.6 and proofs in Appendix A.2 . ∎",
+   "zh": "我们在第4.3节和第4.6节中提供实验结果，并在附录 A.2 中提供证明。∎",
+   "sents": null
+  },
+  {
+   "en": "Following prior RL-trained KG agents ( Song et al., 2026 ; Chen et al., 2025 ; Sun et al., 2025 ) , the policy π θ \\pi_{\\theta} is first initialized by supervised fine-tuning (SFT) on demonstration trajectories that a teacher model produces for the synthesized and training questions, minimizing the negative log-likelihood of the teacher actions. We then optimize it with Group Relative Policy Optimization (GRPO) ( Shao et al., 2024 ) and, following KG-R1 ( Lin et al., 2025 ) , compute the advantage per turn. For each question q q , the policy samples N N trajectories { τ i } i = 1 N \\{\\tau_{i}\\}_{i=1}^{N} , and turn t t of τ i \\tau_{i} receives the return",
+   "zh": "遵循先前基于强化学习训练的知识图谱智能体（Song et al., 2026；Chen et al., 2025；Sun et al., 2025），策略 π θ \\pi_{\\theta} 首先通过监督微调（SFT）在教师模型为合成问题和训练问题所生成的演示轨迹上进行初始化，最小化教师动作的负对数似然。 随后，我们使用组相对策略优化（GRPO）（Shao et al., 2024）对其进行优化，并遵循 KG-R1（Lin et al., 2025），按轮次计算优势。 对于每个问题 q q，策略采样 N N 条轨迹 { τ i } i = 1 N \\{\\tau_{i}\\}_{i=1}^{N}，并且 τ i \\tau_{i} 的第 t t 轮获得回报",
+   "sents": [
+    {
+     "en": "Following prior RL-trained KG agents ( Song et al., 2026 ; Chen et al., 2025 ; Sun et al., 2025 ) , the policy π θ \\pi_{\\theta} is first initialized by supervised fine-tuning (SFT) on demonstration trajectories that a teacher model produces for the synthesized and training questions, minimizing the negative log-likelihood of the teacher actions.",
+     "zh": "遵循先前基于强化学习训练的知识图谱智能体（Song et al., 2026；Chen et al., 2025；Sun et al., 2025），策略 π θ \\pi_{\\theta} 首先通过监督微调（SFT）在教师模型为合成问题和训练问题所生成的演示轨迹上进行初始化，最小化教师动作的负对数似然。"
+    },
+    {
+     "en": "We then optimize it with Group Relative Policy Optimization (GRPO) ( Shao et al., 2024 ) and, following KG-R1 ( Lin et al., 2025 ) , compute the advantage per turn.",
+     "zh": "随后，我们使用组相对策略优化（GRPO）（Shao et al., 2024）对其进行优化，并遵循 KG-R1（Lin et al., 2025），按轮次计算优势。"
+    },
+    {
+     "en": "For each question q q , the policy samples N N trajectories { τ i } i = 1 N \\{\\tau_{i}\\}_{i=1}^{N} , and turn t t of τ i \\tau_{i} receives the return",
+     "zh": "对于每个问题 q q，策略采样 N N 条轨迹 { τ i } i = 1 N \\{\\tau_{i}\\}_{i=1}^{N}，并且 τ i \\tau_{i} 的第 t t 轮获得回报"
+    }
+   ]
+  },
+  {
+   "en": "i.e., the shared outcome reward plus the process rewards earned by this turn. The advantage A ^ i , t = ( G i , t − μ q ) / ( σ q + δ ) \\hat{A}_{i,t}=(G_{i,t}-\\mu_{q})/(\\sigma_{q}+\\delta) is normalized with the mean μ q \\mu_{q} and standard deviation σ q \\sigma_{q} of the returns over all turns of the N N trajectories. A turn that first retrieves gold evidence therefore receives a higher advantage than the other turns. The policy then maximizes the clipped GRPO objective with these advantages, regularized toward the SFT model (Appendix H ).",
+   "zh": "即共享的结果奖励加上本轮获得的过程奖励。 优势 A ^ i , t = ( G i , t − μ q ) / ( σ q + δ ) \\hat{A}_{i,t}=(G_{i,t}-\\mu_{q})/(\\sigma_{q}+\\delta) 使用这 N N 条轨迹所有回合回报的均值 μ q \\mu_{q} 和标准差 σ q \\sigma_{q} 进行归一化。 因此，首个检索到黄金证据的回合会比其他回合获得更高的优势。 策略随后最大化使用这些优势的裁剪 GRPO 目标，并向 SFT 模型正则化（附录 H ）。",
+   "sents": [
+    {
+     "en": "i.e., the shared outcome reward plus the process rewards earned by this turn.",
+     "zh": "即共享的结果奖励加上本轮获得的过程奖励。"
+    },
+    {
+     "en": "The advantage A ^ i , t = ( G i , t − μ q ) / ( σ q + δ ) \\hat{A}_{i,t}=(G_{i,t}-\\mu_{q})/(\\sigma_{q}+\\delta) is normalized with the mean μ q \\mu_{q} and standard deviation σ q \\sigma_{q} of the returns over all turns of the N N trajectories.",
+     "zh": "优势 A ^ i , t = ( G i , t − μ q ) / ( σ q + δ ) \\hat{A}_{i,t}=(G_{i,t}-\\mu_{q})/(\\sigma_{q}+\\delta) 使用这 N N 条轨迹所有回合回报的均值 μ q \\mu_{q} 和标准差 σ q \\sigma_{q} 进行归一化。"
+    },
+    {
+     "en": "A turn that first retrieves gold evidence therefore receives a higher advantage than the other turns.",
+     "zh": "因此，首个检索到黄金证据的回合会比其他回合获得更高的优势。"
+    },
+    {
+     "en": "The policy then maximizes the clipped GRPO objective with these advantages, regularized toward the SFT model (Appendix H ).",
+     "zh": "策略随后最大化使用这些优势的裁剪 GRPO 目标，并向 SFT 模型正则化（附录 H ）。"
+    }
+   ]
+  },
+  {
+   "en": "This section presents the experimental setup, main results, and analysis. We answer the following research questions (RQs): RQ1: Does FoG outperform other methods in answer accuracy? RQ2: Does each component of FoG work? RQ3: Does evidence-grounded synthesis provide valid evidence and better training data? RQ4: Does the KG interaction agent retrieve the evidence behind its answers? RQ5: How does the design of ECPR affect evidence coverage? RQ6: Does FoG transfer to a KG unseen during training?",
+   "zh": "本节介绍实验设置、主要结果与分析。 我们回答以下研究问题（RQ）：RQ1：FoG 在答案准确率上是否优于其他方法？ RQ2：FoG 的每个组件是否都有效？ RQ3：基于证据的合成是否能提供有效证据和更好的训练数据？ RQ4：KG 交互智能体是否能检索其答案背后的证据？ RQ5：ECPR 的设计如何影响证据覆盖率？ RQ6：FoG 能否迁移到训练中未见过的 KG？",
+   "sents": [
+    {
+     "en": "This section presents the experimental setup, main results, and analysis.",
+     "zh": "本节介绍实验设置、主要结果与分析。"
+    },
+    {
+     "en": "We answer the following research questions (RQs): RQ1: Does FoG outperform other methods in answer accuracy?",
+     "zh": "我们回答以下研究问题（RQ）：RQ1：FoG 在答案准确率上是否优于其他方法？"
+    },
+    {
+     "en": "RQ2: Does each component of FoG work?",
+     "zh": "RQ2：FoG 的每个组件是否都有效？"
+    },
+    {
+     "en": "RQ3: Does evidence-grounded synthesis provide valid evidence and better training data?",
+     "zh": "RQ3：基于证据的合成是否能提供有效证据和更好的训练数据？"
+    },
+    {
+     "en": "RQ4: Does the KG interaction agent retrieve the evidence behind its answers?",
+     "zh": "RQ4：KG 交互智能体是否能检索其答案背后的证据？"
+    },
+    {
+     "en": "RQ5: How does the design of ECPR affect evidence coverage?",
+     "zh": "RQ5：ECPR 的设计如何影响证据覆盖率？"
+    },
+    {
+     "en": "RQ6: Does FoG transfer to a KG unseen during training?",
+     "zh": "RQ6：FoG 能否迁移到训练中未见过的 KG？"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate on three Wikidata-based KGQA benchmarks, WikiWebQuestions ( Xu et al., 2023 ) , QALD10-en ( Usbeck et al., 2024 ) , and GTSQA ( Cattaneo et al., 2026 ) , and use WebQSP ( Yih et al., 2016 ) over Freebase for cross-KG transfer. The synthetic questions do not overlap with the test sets (Appendices C.4 and E ).",
+   "zh": "我们在三个基于 Wikidata 的 KGQA 基准上进行评估，分别是 WikiWebQuestions（Xu et al., 2023）、QALD10-en（Usbeck et al., 2024）和 GTSQA（Cattaneo et al., 2026），并使用基于 Freebase 的 WebQSP（Yih et al., 2016）进行跨知识图谱迁移。 合成问题与测试集不重叠（附录 C.4 和 E）。",
+   "sents": [
+    {
+     "en": "We evaluate on three Wikidata-based KGQA benchmarks, WikiWebQuestions ( Xu et al., 2023 ) , QALD10-en ( Usbeck et al., 2024 ) , and GTSQA ( Cattaneo et al., 2026 ) , and use WebQSP ( Yih et al., 2016 ) over Freebase for cross-KG transfer.",
+     "zh": "我们在三个基于 Wikidata 的 KGQA 基准上进行评估，分别是 WikiWebQuestions（Xu et al., 2023）、QALD10-en（Usbeck et al., 2024）和 GTSQA（Cattaneo et al., 2026），并使用基于 Freebase 的 WebQSP（Yih et al., 2016）进行跨知识图谱迁移。"
+    },
+    {
+     "en": "The synthetic questions do not overlap with the test sets (Appendices C.4 and E ).",
+     "zh": "合成问题与测试集不重叠（附录 C.4 和 E）。"
+    }
+   ]
+  },
+  {
+   "en": "We compare FoG against LLM reasoning (IO Prompt, CoT ( Wei et al., 2022 ) , Self-Consistency ( Wang et al., 2023 ) ), retrieval-based (RoG ( Luo et al., 2024 ) , SubGraphRAG ( Li et al., 2025 ) , GCR ( Luo et al., 2025 ) ), and agent-based (ToG ( Sun et al., 2024 ) , PoG ( Chen et al., 2024 ) , KG-R1 ( Lin et al., 2025 ) ) methods. Retrieval-based methods require dataset-specific fine-tuning and are omitted from QALD10-en, whose training split has only 387 examples (Appendix G ).",
+   "zh": "我们将 FoG 与 LLM 推理方法（IO Prompt、CoT（Wei et al., 2022）、Self-Consistency（Wang et al., 2023））、基于检索的方法（RoG（Luo et al., 2024）、SubGraphRAG（Li et al., 2025）、GCR（Luo et al., 2025））以及基于智能体的方法（ToG（Sun et al., 2024）、PoG（Chen et al., 2024）、KG-R1（Lin et al., 2025））进行比较。 基于检索的方法需要针对特定数据集进行微调，因此在 QALD10-en 上被省略，因为其训练集仅有 387 个样本（附录 G）。",
+   "sents": [
+    {
+     "en": "We compare FoG against LLM reasoning (IO Prompt, CoT ( Wei et al., 2022 ) , Self-Consistency ( Wang et al., 2023 ) ), retrieval-based (RoG ( Luo et al., 2024 ) , SubGraphRAG ( Li et al., 2025 ) , GCR ( Luo et al., 2025 ) ), and agent-based (ToG ( Sun et al., 2024 ) , PoG ( Chen et al., 2024 ) , KG-R1 ( Lin et al., 2025 ) ) methods.",
+     "zh": "我们将 FoG 与 LLM 推理方法（IO Prompt、CoT（Wei et al., 2022）、Self-Consistency（Wang et al., 2023））、基于检索的方法（RoG（Luo et al., 2024）、SubGraphRAG（Li et al., 2025）、GCR（Luo et al., 2025））以及基于智能体的方法（ToG（Sun et al., 2024）、PoG（Chen et al., 2024）、KG-R1（Lin et al., 2025））进行比较。"
+    },
+    {
+     "en": "Retrieval-based methods require dataset-specific fine-tuning and are omitted from QALD10-en, whose training split has only 387 examples (Appendix G ).",
+     "zh": "基于检索的方法需要针对特定数据集进行微调，因此在 QALD10-en 上被省略，因为其训练集仅有 387 个样本（附录 G）。"
+    }
+   ]
+  },
+  {
+   "en": "We report Hit@1 and token-level F1 for answer accuracy. For evidence coverage, we report Cov , the fraction of gold supporting triples retrieved along the trajectory, and RetQ , the fraction of questions whose gold answer is returned by a KG query. GTSQA provides gold supporting triples natively, and we construct them for WikiWebQuestions with an LLM verifier that agrees with human annotators on 93.0% of 200 audited paths (Appendices F.1 , F.2 , and F.3 ).",
+   "zh": "我们报告 Hit@1 和词元级 F1 作为答案准确率指标。 对于证据覆盖率，我们报告 Cov，即沿轨迹检索到的黄金支持三元组的比例，以及 RetQ，即黄金答案由知识图谱查询返回的问题的比例。 GTSQA 原生提供黄金支持三元组，而对于 WikiWebQuestions，我们使用一个 LLM 验证器来构建它们，该验证器在 200 条经审核的路径中有 93.0% 与人工标注者一致（附录 F.1、F.2 和 F.3）。",
+   "sents": [
+    {
+     "en": "We report Hit@1 and token-level F1 for answer accuracy.",
+     "zh": "我们报告 Hit@1 和词元级 F1 作为答案准确率指标。"
+    },
+    {
+     "en": "For evidence coverage, we report Cov , the fraction of gold supporting triples retrieved along the trajectory, and RetQ , the fraction of questions whose gold answer is returned by a KG query.",
+     "zh": "对于证据覆盖率，我们报告 Cov，即沿轨迹检索到的黄金支持三元组的比例，以及 RetQ，即黄金答案由知识图谱查询返回的问题的比例。"
+    },
+    {
+     "en": "GTSQA provides gold supporting triples natively, and we construct them for WikiWebQuestions with an LLM verifier that agrees with human annotators on 93.0% of 200 audited paths (Appendices F.1 , F.2 , and F.3 ).",
+     "zh": "GTSQA 原生提供黄金支持三元组，而对于 WikiWebQuestions，我们使用一个 LLM 验证器来构建它们，该验证器在 200 条经审核的路径中有 93.0% 与人工标注者一致（附录 F.1、F.2 和 F.3）。"
+    }
+   ]
+  },
+  {
+   "en": "We train FoG on Qwen2.5-3B-Instruct and Qwen3-4B-Instruct with LoRA-based SFT followed by GRPO, sampling N = 4 N{=}4 trajectories of at most 10 KG turns per question for 450 steps. All methods are evaluated with a single inference run per question (Appendix H ).",
+   "zh": "我们基于 Qwen2.5-3B-Instruct 和 Qwen3-4B-Instruct 训练 FoG，先进行基于 LoRA 的 SFT，再进行 GRPO，每个问题采样 N = 4 条轨迹，每条轨迹最多包含 10 个 KG 轮次，共训练 450 步。 所有方法均针对每个问题进行单次推理运行来评估（附录 H）。",
+   "sents": [
+    {
+     "en": "We train FoG on Qwen2.5-3B-Instruct and Qwen3-4B-Instruct with LoRA-based SFT followed by GRPO, sampling N = 4 N{=}4 trajectories of at most 10 KG turns per question for 450 steps.",
+     "zh": "我们基于 Qwen2.5-3B-Instruct 和 Qwen3-4B-Instruct 训练 FoG，先进行基于 LoRA 的 SFT，再进行 GRPO，每个问题采样 N = 4 条轨迹，每条轨迹最多包含 10 个 KG 轮次，共训练 450 步。"
+    },
+    {
+     "en": "All methods are evaluated with a single inference run per question (Appendix H ).",
+     "zh": "所有方法均针对每个问题进行单次推理运行来评估（附录 H）。"
+    }
+   ]
+  },
+  {
+   "en": "As shown in Table 1 , we compare FoG with all baselines in answer accuracy.",
+   "zh": "如表 1 所示，我们在答案准确率上将 FoG 与所有基线方法进行了比较。",
+   "sents": null
+  },
+  {
+   "en": "FoG achieves the best F1 and Hit@1 on all three benchmarks, exceeding the strongest baseline KG-R1 by up to +3.73 F1 and +3.92 Hit@1. As KG-R1 is also RL-trained on the same Qwen3-4B backbone, this indicates that training an agent to retrieve evidence also makes its answers more accurate.",
+   "zh": "FoG 在全部三个基准上取得了最佳 F1 和 Hit@1，相比最强基线 KG-R1 高出最多 +3.73 F1 和 +3.92 Hit@1。 由于 KG-R1 也是在同一个 Qwen3-4B 骨干模型上进行强化学习训练的，这表明训练一个智能体去检索证据也能使其答案更加准确。",
+   "sents": [
+    {
+     "en": "FoG achieves the best F1 and Hit@1 on all three benchmarks, exceeding the strongest baseline KG-R1 by up to +3.73 F1 and +3.92 Hit@1.",
+     "zh": "FoG 在全部三个基准上取得了最佳 F1 和 Hit@1，相比最强基线 KG-R1 高出最多 +3.73 F1 和 +3.92 Hit@1。"
+    },
+    {
+     "en": "As KG-R1 is also RL-trained on the same Qwen3-4B backbone, this indicates that training an agent to retrieve evidence also makes its answers more accurate.",
+     "zh": "由于 KG-R1 也是在同一个 Qwen3-4B 骨干模型上进行强化学习训练的，这表明训练一个智能体去检索证据也能使其答案更加准确。"
+    }
+   ]
+  },
+  {
+   "en": "FoG-3B still exceeds the 4B KG-R1 on all three benchmarks, and FoG-4B surpasses GPT-4o-mini agents by at least +7.58 F1 and 7B retrieval-based methods by at least +4.39 F1. This suggests that how an agent is trained to retrieve matters more than its backbone size.",
+   "zh": "FoG-3B 在所有三个基准上仍然超过 4B 的 KG-R1，而 FoG-4B 超过 GPT-4o-mini 智能体至少 +7.58 F1，并超过 7B 基于检索的方法至少 +4.39 F1。 这表明智能体被训练如何进行检索，比其骨干模型的大小更为重要。",
+   "sents": [
+    {
+     "en": "FoG-3B still exceeds the 4B KG-R1 on all three benchmarks, and FoG-4B surpasses GPT-4o-mini agents by at least +7.58 F1 and 7B retrieval-based methods by at least +4.39 F1.",
+     "zh": "FoG-3B 在所有三个基准上仍然超过 4B 的 KG-R1，而 FoG-4B 超过 GPT-4o-mini 智能体至少 +7.58 F1，并超过 7B 基于检索的方法至少 +4.39 F1。"
+    },
+    {
+     "en": "This suggests that how an agent is trained to retrieve matters more than its backbone size.",
+     "zh": "这表明智能体被训练如何进行检索，比其骨干模型的大小更为重要。"
+    }
+   ]
+  },
+  {
+   "en": "As shown in Table 2 , we ablate the training stages and reward terms on the two benchmarks with gold supporting triples, under the same backbone, SFT checkpoint, RL data, and rollout budget, so the variants differ only in the reward.",
+   "zh": "如表 2 所示，我们在两个使用黄金支持三元组的基准上，在相同的骨干模型、SFT 检查点、RL 数据和 rollout 预算下，对训练阶段和奖励项进行消融实验，因此各变体仅在奖励上有所不同。",
+   "sents": null
+  },
+  {
+   "en": "Full FoG improves over SFT only by +6.83 and +4.33 Hit@1, but RL without R ecpr R_{\\text{ecpr}} raises Cov by only +2.28 and +1.58. This is because the outcome reward is paid in full once the answer is reached, whatever evidence is retrieved.",
+   "zh": "完整的 FoG 相比 SFT 仅提升 +6.83 和 +4.33 的 Hit@1，而不带 R ecpr R_{\\text{ecpr}} 的强化学习仅使 Cov 提升 +2.28 和 +1.58。 这是因为无论检索到什么证据，一旦得出答案，结果奖励就会被全额支付。",
+   "sents": [
+    {
+     "en": "Full FoG improves over SFT only by +6.83 and +4.33 Hit@1, but RL without R ecpr R_{\\text{ecpr}} raises Cov by only +2.28 and +1.58.",
+     "zh": "完整的 FoG 相比 SFT 仅提升 +6.83 和 +4.33 的 Hit@1，而不带 R ecpr R_{\\text{ecpr}} 的强化学习仅使 Cov 提升 +2.28 和 +1.58。"
+    },
+    {
+     "en": "This is because the outcome reward is paid in full once the answer is reached, whatever evidence is retrieved.",
+     "zh": "这是因为无论检索到什么证据，一旦得出答案，结果奖励就会被全额支付。"
+    }
+   ]
+  },
+  {
+   "en": "Removing R ecpr R_{\\text{ecpr}} causes the largest drop among the reward terms, and Cov drops more (5.43 and 7.21) than Hit@1 (2.58 and 3.55). As both variants share the data and the SFT checkpoint, this confirms that the coverage gain comes from the reward itself.",
+   "zh": "移除 R_{\\text{ecpr}} 在各奖励项中造成最大的下降，且 Cov 的下降幅度（5.43 和 7.21）大于 Hit@1（2.58 和 3.55）。 由于两个变体共享相同的数据和 SFT 检查点，这证实了覆盖率的提升来自奖励本身。",
+   "sents": [
+    {
+     "en": "Removing R ecpr R_{\\text{ecpr}} causes the largest drop among the reward terms, and Cov drops more (5.43 and 7.21) than Hit@1 (2.58 and 3.55).",
+     "zh": "移除 R_{\\text{ecpr}} 在各奖励项中造成最大的下降，且 Cov 的下降幅度（5.43 和 7.21）大于 Hit@1（2.58 和 3.55）。"
+    },
+    {
+     "en": "As both variants share the data and the SFT checkpoint, this confirms that the coverage gain comes from the reward itself.",
+     "zh": "由于两个变体共享相同的数据和 SFT 检查点，这证实了覆盖率的提升来自奖励本身。"
+    }
+   ]
+  },
+  {
+   "en": "Removing R step R_{\\text{step}} lowers Hit@1 by 0.45 and 2.35 but Cov by only 1.09 and 1.43, indicating that step validity keeps the interaction executable but does not drive coverage.",
+   "zh": "移除步骤 R_{\\text{step}} 使 Hit@1 降低了 0.45 和 2.35，但 Cov 仅降低 1.09 和 1.43，这表明步骤有效性能够保持交互可执行，但并不能驱动覆盖率。",
+   "sents": null
+  },
+  {
+   "en": "An LLM-as-judge score of the reasoning process ( Wang and Yu, 2026a ) raises Cov by only 1.21 and 1.93 over no process supervision and stays 4.22 and 5.28 below ECPR. This suggests that judging how plausible the reasoning reads is a weaker signal than ECPR.",
+   "zh": "对推理过程使用 LLM 即裁判（LLM-as-judge）评分（Wang and Yu, 2026a）相比无过程监督仅将 Cov 提升 1.21 和 1.93，并且分别比 ECPR 低 4.22 和 5.28。 这表明评判推理读起来多么合理是一个弱于 ECPR 的信号。",
+   "sents": [
+    {
+     "en": "An LLM-as-judge score of the reasoning process ( Wang and Yu, 2026a ) raises Cov by only 1.21 and 1.93 over no process supervision and stays 4.22 and 5.28 below ECPR.",
+     "zh": "对推理过程使用 LLM 即裁判（LLM-as-judge）评分（Wang and Yu, 2026a）相比无过程监督仅将 Cov 提升 1.21 和 1.93，并且分别比 ECPR 低 4.22 和 5.28。"
+    },
+    {
+     "en": "This suggests that judging how plausible the reasoning reads is a weaker signal than ECPR.",
+     "zh": "这表明评判推理读起来多么合理是一个弱于 ECPR 的信号。"
+    }
+   ]
+  },
+  {
+   "en": "As shown in Table 3 and Figure 4 , we fix a budget of 6,588 SFT questions and vary the data source (Train-Only, Synth-Only, or a mix of both), and apply the same SFT data to three backbone scales.",
+   "zh": "如表 3 和图 4 所示，我们固定 6,588 条 SFT 问题的预算，改变数据来源（仅 Train、仅 Synth 或两者的混合），并将相同的 SFT 数据应用于三种骨干规模。",
+   "sents": null
+  },
+  {
+   "en": "The supporting triples of every retained question reproduce its answer under SPARQL execution, and the redundancy check misses a shortcut in only 1.5% of 200 audited questions. This confirms that the embedded triples are a valid reward target without annotation.",
+   "zh": "在SPARQL执行下，每个保留问题的支持三元组都能重现其答案，且在200个审计问题中，冗余检查仅有1.5%漏检了捷径。 这证实了所嵌入的三元组无需标注即可作为有效的奖励目标。",
+   "sents": [
+    {
+     "en": "The supporting triples of every retained question reproduce its answer under SPARQL execution, and the redundancy check misses a shortcut in only 1.5% of 200 audited questions.",
+     "zh": "在SPARQL执行下，每个保留问题的支持三元组都能重现其答案，且在200个审计问题中，冗余检查仅有1.5%漏检了捷径。"
+    },
+    {
+     "en": "This confirms that the embedded triples are a valid reward target without annotation.",
+     "zh": "这证实了所嵌入的三元组无需标注即可作为有效的奖励目标。"
+    }
+   ]
+  },
+  {
+   "en": "Synth-Only outperforms Train-Only by +3.66, +2.50, and +3.06 Hit@1 with no in-domain question, indicating that questions built by backward expansion transfer to human-written benchmarks. Mixed performs best, so the two sources are complementary (Appendix C.3 ).",
+   "zh": "在没有域内问题的情况下，Synth-Only 相比 Train-Only 在 Hit@1 上分别高出 +3.66、+2.50 和 +3.06，这表明通过反向扩展构建的问题能够迁移到人工撰写的基准测试中。 Mixed 表现最佳，说明这两种数据来源是互补的（附录 C.3）。",
+   "sents": [
+    {
+     "en": "Synth-Only outperforms Train-Only by +3.66, +2.50, and +3.06 Hit@1 with no in-domain question, indicating that questions built by backward expansion transfer to human-written benchmarks.",
+     "zh": "在没有域内问题的情况下，Synth-Only 相比 Train-Only 在 Hit@1 上分别高出 +3.66、+2.50 和 +3.06，这表明通过反向扩展构建的问题能够迁移到人工撰写的基准测试中。"
+    },
+    {
+     "en": "Mixed performs best, so the two sources are complementary (Appendix C.3 ).",
+     "zh": "Mixed 表现最佳，说明这两种数据来源是互补的（附录 C.3）。"
+    }
+   ]
+  },
+  {
+   "en": "Hit@1 improves steadily from 3B to 7B (+12.89, +7.52, and +7.36), indicating that the synthetic data is not backbone-specific.",
+   "zh": "Hit@1 从 3B 到 7B 稳步提升（+12.89、+7.52 和 +7.36），表明合成数据并非特定于骨干模型。",
+   "sents": null
+  },
+  {
+   "en": "As shown in Table 4 and Figure 5 , we examine how much evidence agent-based methods retrieve.",
+   "zh": "如表4和图5所示，我们检验了基于智能体的方法检索到多少证据。",
+   "sents": null
+  },
+  {
+   "en": "On GTSQA, PoG attains 39.33 Hit@1 but reaches the gold answer on only 35.70% of questions, so at least 9.2% of its correct answers never appear in any KG observation, and the RL-trained KG-R1 still leaves 45.95% of the supporting triples unretrieved. Neither prompting nor outcome rewards thus make an agent use the KG as a source of evidence.",
+   "zh": "在 GTSQA 上，PoG 取得 39.33 的 Hit@1，但仅在 35.70% 的问题上命中标准答案，因此其至少 9.2% 的正确答案从未出现在任何 KG 观测中，而经过 RL 训练的 KG-R1 仍有 45.95% 的支持三元组未被检索到。 由此可见，无论是提示方法还是基于结果奖励的方法，都无法使智能体将 KG 作为证据来源。",
+   "sents": [
+    {
+     "en": "On GTSQA, PoG attains 39.33 Hit@1 but reaches the gold answer on only 35.70% of questions, so at least 9.2% of its correct answers never appear in any KG observation, and the RL-trained KG-R1 still leaves 45.95% of the supporting triples unretrieved.",
+     "zh": "在 GTSQA 上，PoG 取得 39.33 的 Hit@1，但仅在 35.70% 的问题上命中标准答案，因此其至少 9.2% 的正确答案从未出现在任何 KG 观测中，而经过 RL 训练的 KG-R1 仍有 45.95% 的支持三元组未被检索到。"
+    },
+    {
+     "en": "Neither prompting nor outcome rewards thus make an agent use the KG as a source of evidence.",
+     "zh": "由此可见，无论是提示方法还是基于结果奖励的方法，都无法使智能体将 KG 作为证据来源。"
+    }
+   ]
+  },
+  {
+   "en": "FoG attains the highest Cov and RetQ on both benchmarks (+3.84 and +4.59 Cov over KG-R1) together with the highest Hit@1, indicating that evidence coverage does not come at the cost of answer accuracy (Appendix I ).",
+   "zh": "FoG 在两个基准上均取得了最高的 Cov 和 RetQ（Cov 比 KG-R1 分别高出 3.84 和 4.59），同时 Hit@1 也是最高的，这表明证据覆盖率的提升并没有以牺牲答案准确性为代价（附录 I）。",
+   "sents": null
+  },
+  {
+   "en": "FoG leads KG-R1 on all 10 groups and is the best method on 9. Its margin over KG-R1 grows from +1.4 Hit@1 on ( 1 ) (1) to +5.0 on ( 3 ) (3) and +6.0 on the more branched ( 3 ) ​ ( 1 ) (3)(1) , questions that depend on more supporting triples. This suggests that the more evidence an answer requires, the more the agent benefits from rewards for retrieving it, although the margin narrows to +2.0 on ( 4 ) (4) .",
+   "zh": "FoG 在全部 10 个分组上都领先 KG-R1，并且在其中 9 个分组上是最优方法。 它相对 KG-R1 的优势从 ( 1 ) (1) 上的 +1.4 Hit@1 增长到 ( 3 ) (3) 上的 +5.0，以及分支更多的 ( 3 ) ​ ( 1 ) (3)(1) 上的 +6.0，这些问题依赖更多的支持三元组。 这表明答案所需的证据越多，智能体从检索证据的奖励中获益越大，尽管该优势在 ( 4 ) (4) 上缩小至 +2.0。",
+   "sents": [
+    {
+     "en": "FoG leads KG-R1 on all 10 groups and is the best method on 9.",
+     "zh": "FoG 在全部 10 个分组上都领先 KG-R1，并且在其中 9 个分组上是最优方法。"
+    },
+    {
+     "en": "Its margin over KG-R1 grows from +1.4 Hit@1 on ( 1 ) (1) to +5.0 on ( 3 ) (3) and +6.0 on the more branched ( 3 ) ​ ( 1 ) (3)(1) , questions that depend on more supporting triples.",
+     "zh": "它相对 KG-R1 的优势从 ( 1 ) (1) 上的 +1.4 Hit@1 增长到 ( 3 ) (3) 上的 +5.0，以及分支更多的 ( 3 ) ​ ( 1 ) (3)(1) 上的 +6.0，这些问题依赖更多的支持三元组。"
+    },
+    {
+     "en": "This suggests that the more evidence an answer requires, the more the agent benefits from rewards for retrieving it, although the margin narrows to +2.0 on ( 4 ) (4) .",
+     "zh": "这表明答案所需的证据越多，智能体从检索证据的奖励中获益越大，尽管该优势在 ( 4 ) (4) 上缩小至 +2.0。"
+    }
+   ]
+  },
+  {
+   "en": "As shown in Table 5 and Figure 6 , we compare first-match with trajectory-level attribution, which credits coverage to the final turn, and every-match attribution, which rewards every retrieval.",
+   "zh": "如表5和图6所示，我们将首次匹配与轨迹级归因进行比较，后者将覆盖度归于最后一轮；同时与逐次匹配归因进行比较，后者对每一次检索都给予奖励。",
+   "sents": null
+  },
+  {
+   "en": "First-match achieves the best Hit@1 and Cov. Trajectory-level attribution loses 4.35 Cov, as turns that retrieve evidence earn the same return as the others. Every-match raises the duplicate-retrieval rate from 8.6% to 29.4% and falls below trajectory-level in Cov, as it rewards re-querying known evidence. This indicates that dense credit must pay each triple once, or it rewards redundant retrieval rather than coverage.",
+   "zh": "首次匹配在 Hit@1 和 Cov 上取得最佳结果。 轨迹级归因损失了 4.35 的 Cov，因为检索到证据的轮次与其他轮次获得相同的回报。 每次匹配将重复检索率从 8.6% 提高到 29.4%，并在 Cov 上低于轨迹级，因为它奖励对已知证据的重复查询。 这表明稠密信用必须对每个三元组只支付一次，否则它会奖励冗余检索而不是覆盖率。",
+   "sents": [
+    {
+     "en": "First-match achieves the best Hit@1 and Cov.",
+     "zh": "首次匹配在 Hit@1 和 Cov 上取得最佳结果。"
+    },
+    {
+     "en": "Trajectory-level attribution loses 4.35 Cov, as turns that retrieve evidence earn the same return as the others.",
+     "zh": "轨迹级归因损失了 4.35 的 Cov，因为检索到证据的轮次与其他轮次获得相同的回报。"
+    },
+    {
+     "en": "Every-match raises the duplicate-retrieval rate from 8.6% to 29.4% and falls below trajectory-level in Cov, as it rewards re-querying known evidence.",
+     "zh": "每次匹配将重复检索率从 8.6% 提高到 29.4%，并在 Cov 上低于轨迹级，因为它奖励对已知证据的重复查询。"
+    },
+    {
+     "en": "This indicates that dense credit must pay each triple once, or it rewards redundant retrieval rather than coverage.",
+     "zh": "这表明稠密信用必须对每个三元组只支付一次，否则它会奖励冗余检索而不是覆盖率。"
+    }
+   ]
+  },
+  {
+   "en": "Rewards rise during RL while KG turns and response length decline, indicating that the agent learns a precise retrieval policy that covers more evidence with fewer queries.",
+   "zh": "在强化学习过程中奖励上升，而 KG 轮次和回复长度下降，这表明智能体学到了一种精确的检索策略，能以更少的查询覆盖更多证据。",
+   "sents": null
+  },
+  {
+   "en": "As shown in Table 6 , we evaluate the frozen FoG zero-shot on WebQSP over a Freebase backend.",
+   "zh": "如表6所示，我们在Freebase后端上评估了冻结的FoG在WebQSP上的零样本表现。",
+   "sents": null
+  },
+  {
+   "en": "FoG reaches 77.2 Hit@1 on an unseen KG, close to the methods developed on Freebase (82.6–85.7), and RL with ECPR contributes +5.6 Hit@1 over SFT only. This suggests that ECPR teaches the habit of retrieving evidence before answering, not the relations of one schema.",
+   "zh": "FoG 在未见过的 KG 上达到 77.2 Hit@1，接近在 Freebase 上开发的方法（82.6–85.7），且带 ECPR 的强化学习相比仅 SFT 提升 +5.6 Hit@1。 这表明 ECPR 教会的是在回答前检索证据的习惯，而不是某一模式的特定关系。",
+   "sents": [
+    {
+     "en": "FoG reaches 77.2 Hit@1 on an unseen KG, close to the methods developed on Freebase (82.6–85.7), and RL with ECPR contributes +5.6 Hit@1 over SFT only.",
+     "zh": "FoG 在未见过的 KG 上达到 77.2 Hit@1，接近在 Freebase 上开发的方法（82.6–85.7），且带 ECPR 的强化学习相比仅 SFT 提升 +5.6 Hit@1。"
+    },
+    {
+     "en": "This suggests that ECPR teaches the habit of retrieving evidence before answering, not the relations of one schema.",
+     "zh": "这表明 ECPR 教会的是在回答前检索证据的习惯，而不是某一模式的特定关系。"
+    }
+   ]
+  },
+  {
+   "en": "In this work, we present FoG, a framework that trains KG agents to retrieve the evidence behind their answers. By introducing evidence-grounded synthesis, a KG interaction agent, and an evidence-coverage process reward, FoG uses the KG as a source of evidence rather than only as a source of answers. Experiments on three KGQA benchmarks demonstrate consistent improvements in answer accuracy, evidence coverage, and cross-KG transfer.",
+   "zh": "在本工作中，我们提出了 FoG，一个训练知识图谱智能体检索其答案背后证据的框架。 通过引入证据锚定的合成方法、一个知识图谱交互智能体以及一种证据覆盖的过程奖励，FoG 将知识图谱用作证据来源，而不仅仅是答案来源。 在三个 KGQA 基准上的实验表明，答案准确率、证据覆盖率和跨知识图谱迁移能力均获得了一致的提升。",
+   "sents": [
+    {
+     "en": "In this work, we present FoG, a framework that trains KG agents to retrieve the evidence behind their answers.",
+     "zh": "在本工作中，我们提出了 FoG，一个训练知识图谱智能体检索其答案背后证据的框架。"
+    },
+    {
+     "en": "By introducing evidence-grounded synthesis, a KG interaction agent, and an evidence-coverage process reward, FoG uses the KG as a source of evidence rather than only as a source of answers.",
+     "zh": "通过引入证据锚定的合成方法、一个知识图谱交互智能体以及一种证据覆盖的过程奖励，FoG 将知识图谱用作证据来源，而不仅仅是答案来源。"
+    },
+    {
+     "en": "Experiments on three KGQA benchmarks demonstrate consistent improvements in answer accuracy, evidence coverage, and cross-KG transfer.",
+     "zh": "在三个 KGQA 基准上的实验表明，答案准确率、证据覆盖率和跨知识图谱迁移能力均获得了一致的提升。"
+    }
+   ]
+  },
+  {
+   "en": "FoG uses Wikidata triples as verifiable references for evidence-covered supervision, but real-world knowledge graphs may be incomplete, outdated, or noisy. When the required evidence is absent or incorrect in the graph, the agent may still fail despite following the intended evidence path. A natural extension is to equip the agent with a mechanism for detecting insufficient on-graph evidence and invoking external retrieval when needed.",
+   "zh": "FoG 使用 Wikidata 三元组作为可验证的参考，用于有证据覆盖的监督，但现实世界的知识图谱可能不完整、过时或含有噪声。 当所需的证据在图谱中缺失或不正确时，智能体即使遵循了预期的证据路径，仍可能失败。 一个自然的扩展方向是为智能体配备一种机制，用于检测图上证据不足并在需要时调用外部检索。",
+   "sents": [
+    {
+     "en": "FoG uses Wikidata triples as verifiable references for evidence-covered supervision, but real-world knowledge graphs may be incomplete, outdated, or noisy.",
+     "zh": "FoG 使用 Wikidata 三元组作为可验证的参考，用于有证据覆盖的监督，但现实世界的知识图谱可能不完整、过时或含有噪声。"
+    },
+    {
+     "en": "When the required evidence is absent or incorrect in the graph, the agent may still fail despite following the intended evidence path.",
+     "zh": "当所需的证据在图谱中缺失或不正确时，智能体即使遵循了预期的证据路径，仍可能失败。"
+    },
+    {
+     "en": "A natural extension is to equip the agent with a mechanism for detecting insufficient on-graph evidence and invoking external retrieval when needed.",
+     "zh": "一个自然的扩展方向是为智能体配备一种机制，用于检测图上证据不足并在需要时调用外部检索。"
+    }
+   ]
+  },
+  {
+   "en": "Like other KG agents distilled from teacher trajectories ( Chen et al., 2025 ; Sun et al., 2026a ) , FoG currently relies on an external teacher LLM (Kimi-K2) for question synthesis and trajectory distillation. Although symbolic checks filter invalid questions and evidence paths, the synthesis process still depends on the generation quality of external teachers. One promising direction is to replace teacher-driven synthesis with self-play, where agents generate, explore, and verify candidate questions through graph execution and symbolic filtering.",
+   "zh": "与其他从教师轨迹蒸馏而来的KG智能体（Chen et al., 2025；Sun et al., 2026a）类似，FoG 目前仍依赖外部教师 LLM（Kimi-K2）进行问题合成与轨迹蒸馏。 尽管符号检查可以过滤无效的问题和证据路径，但合成过程仍然依赖外部教师的生成质量。 一个有前景的方向是用自博弈取代教师驱动的合成，即让智能体通过图执行和符号过滤来生成、探索并验证候选问题。",
+   "sents": [
+    {
+     "en": "Like other KG agents distilled from teacher trajectories ( Chen et al., 2025 ; Sun et al., 2026a ) , FoG currently relies on an external teacher LLM (Kimi-K2) for question synthesis and trajectory distillation.",
+     "zh": "与其他从教师轨迹蒸馏而来的KG智能体（Chen et al., 2025；Sun et al., 2026a）类似，FoG 目前仍依赖外部教师 LLM（Kimi-K2）进行问题合成与轨迹蒸馏。"
+    },
+    {
+     "en": "Although symbolic checks filter invalid questions and evidence paths, the synthesis process still depends on the generation quality of external teachers.",
+     "zh": "尽管符号检查可以过滤无效的问题和证据路径，但合成过程仍然依赖外部教师的生成质量。"
+    },
+    {
+     "en": "One promising direction is to replace teacher-driven synthesis with self-play, where agents generate, explore, and verify candidate questions through graph execution and symbolic filtering.",
+     "zh": "一个有前景的方向是用自博弈取代教师驱动的合成，即让智能体通过图执行和符号过滤来生成、探索并验证候选问题。"
+    }
+   ]
+  },
+  {
+   "en": "FoG caps graph interactions at 10 turns, which is sufficient for the 1–4-hop questions studied in our benchmarks. More open-ended KG reasoning may require longer evidence chains and broader graph exploration. Extending FoG to such settings requires balancing search depth against error accumulation, noisy observations, and sparser rewards.",
+   "zh": "FoG 将图交互限制在 10 轮，这对于我们基准中研究的 1–4 跳问题已经足够。 更开放的知识图谱推理可能需要更长的证据链和更广的图探索。 将 FoG 扩展到此类场景需要在搜索深度与错误累积、噪声观测以及更稀疏的奖励之间进行权衡。",
+   "sents": [
+    {
+     "en": "FoG caps graph interactions at 10 turns, which is sufficient for the 1–4-hop questions studied in our benchmarks.",
+     "zh": "FoG 将图交互限制在 10 轮，这对于我们基准中研究的 1–4 跳问题已经足够。"
+    },
+    {
+     "en": "More open-ended KG reasoning may require longer evidence chains and broader graph exploration.",
+     "zh": "更开放的知识图谱推理可能需要更长的证据链和更广的图探索。"
+    },
+    {
+     "en": "Extending FoG to such settings requires balancing search depth against error accumulation, noisy observations, and sparser rewards.",
+     "zh": "将 FoG 扩展到此类场景需要在搜索深度与错误累积、噪声观测以及更稀疏的奖励之间进行权衡。"
+    }
+   ]
+  },
+  {
+   "en": "All experiments use publicly available KGQA datasets derived from Wikidata (CC0), QALD10-en (MIT License), and WikiWebQuestions, GTSQA, and WebQSP (publicly available for research). Backbone models Qwen2.5 and Qwen3 are released under Apache 2.0; GPT-4o-mini, DeepSeek-V3, and the teacher Kimi-K2 are accessed via official APIs under their terms of service. Our use of all existing artifacts is consistent with their intended research purposes. The datasets contain only public encyclopedic facts from structured KG triples, with no private or user-generated data. The only human involvement is the audit of constructed evidence paths (Appendix F.3 ), in which three graduate annotators judged whether a KG path supports its question. The annotators took part voluntarily, the task exposed them to no sensitive content, and no personal data was collected. This work involves no crowdsourcing and no user study. FoG is intended to make the answers of KG agents traceable to retrieved evidence. Since the KG may be outdated or incorrect, this evidence supports human verification rather than replaces it. We foresee no dual-use concerns.",
+   "zh": "所有实验均使用公开可用的 KGQA 数据集，这些数据集源自 Wikidata (CC0)、QALD10-en (MIT 许可证)，以及 WikiWebQuestions、GTSQA 和 WebQSP（公开可用于研究）。 骨干模型 Qwen2.5 和 Qwen3 以 Apache 2.0 许可证发布；GPT-4o-mini、DeepSeek-V3 以及教师模型 Kimi-K2 通过官方 API 并依据其服务条款进行访问。 我们对所有现有工件的使用均符合其预期的科研用途。 这些数据集仅包含来自结构化 KG 三元组的公开百科事实，不含任何私人数据或用户生成数据。 唯一涉及人工的环节是对所构建证据路径的审核（附录 F.3），其中三名研究生标注者判断某条 KG 路径是否支持其对应的问题。 标注者均为自愿参与，该任务不涉及任何敏感内容，且未收集任何个人数据。 本工作不涉及众包，也不涉及用户研究。 FoG 旨在使智能体的答案可追溯至检索到的证据。 由于 KG 可能过时或不正确，这些证据旨在支持而非取代人工验证。 我们预计本工作不存在两用（dual-use）方面的隐忧。",
+   "sents": [
+    {
+     "en": "All experiments use publicly available KGQA datasets derived from Wikidata (CC0), QALD10-en (MIT License), and WikiWebQuestions, GTSQA, and WebQSP (publicly available for research).",
+     "zh": "所有实验均使用公开可用的 KGQA 数据集，这些数据集源自 Wikidata (CC0)、QALD10-en (MIT 许可证)，以及 WikiWebQuestions、GTSQA 和 WebQSP（公开可用于研究）。"
+    },
+    {
+     "en": "Backbone models Qwen2.5 and Qwen3 are released under Apache 2.0; GPT-4o-mini, DeepSeek-V3, and the teacher Kimi-K2 are accessed via official APIs under their terms of service.",
+     "zh": "骨干模型 Qwen2.5 和 Qwen3 以 Apache 2.0 许可证发布；GPT-4o-mini、DeepSeek-V3 以及教师模型 Kimi-K2 通过官方 API 并依据其服务条款进行访问。"
+    },
+    {
+     "en": "Our use of all existing artifacts is consistent with their intended research purposes.",
+     "zh": "我们对所有现有工件的使用均符合其预期的科研用途。"
+    },
+    {
+     "en": "The datasets contain only public encyclopedic facts from structured KG triples, with no private or user-generated data.",
+     "zh": "这些数据集仅包含来自结构化 KG 三元组的公开百科事实，不含任何私人数据或用户生成数据。"
+    },
+    {
+     "en": "The only human involvement is the audit of constructed evidence paths (Appendix F.3 ), in which three graduate annotators judged whether a KG path supports its question.",
+     "zh": "唯一涉及人工的环节是对所构建证据路径的审核（附录 F.3），其中三名研究生标注者判断某条 KG 路径是否支持其对应的问题。"
+    },
+    {
+     "en": "The annotators took part voluntarily, the task exposed them to no sensitive content, and no personal data was collected.",
+     "zh": "标注者均为自愿参与，该任务不涉及任何敏感内容，且未收集任何个人数据。"
+    },
+    {
+     "en": "This work involves no crowdsourcing and no user study.",
+     "zh": "本工作不涉及众包，也不涉及用户研究。"
+    },
+    {
+     "en": "FoG is intended to make the answers of KG agents traceable to retrieved evidence.",
+     "zh": "FoG 旨在使智能体的答案可追溯至检索到的证据。"
+    },
+    {
+     "en": "Since the KG may be outdated or incorrect, this evidence supports human verification rather than replaces it.",
+     "zh": "由于 KG 可能过时或不正确，这些证据旨在支持而非取代人工验证。"
+    },
+    {
+     "en": "We foresee no dual-use concerns.",
+     "zh": "我们预计本工作不存在两用（dual-use）方面的隐忧。"
+    }
+   ]
+  },
+  {
+   "en": "Throughout the proofs, a logical form ℓ \\ell is a conjunctive query: a set of triple patterns over entities and variables with one answer variable, optionally with filters on bound values. For a triple set 𝒮 \\mathcal{S} , SPARQL ⁡ ( ℓ , 𝒮 ) \\operatorname{SPARQL}(\\ell,\\mathcal{S}) is the set of values of the answer variable over all assignments that map every pattern of ℓ \\ell to a triple in 𝒮 \\mathcal{S} and satisfy the filters. Such queries are monotone: 𝒮 ⊆ 𝒮 ′ \\mathcal{S}\\subseteq\\mathcal{S}^{\\prime} implies SPARQL ⁡ ( ℓ , 𝒮 ) ⊆ SPARQL ⁡ ( ℓ , 𝒮 ′ ) \\operatorname{SPARQL}(\\ell,\\mathcal{S})\\subseteq\\operatorname{SPARQL}(\\ell,\\mathcal{S}^{\\prime}) . Following Definition 2, 𝒮 \\mathcal{S} supports ( ℓ , y ) (\\ell,y) if y ∈ SPARQL ⁡ ( ℓ , 𝒮 ) y\\in\\operatorname{SPARQL}(\\ell,\\mathcal{S}) , and a trajectory τ \\tau is evidence-covered if Cov ⁡ ( τ , 𝒮 q ∗ ) = 1 \\operatorname{Cov}(\\tau,\\mathcal{S}^{*}_{q})=1 , as defined in Equation 6 .",
+   "zh": "在整个证明过程中，逻辑形式 ℓ \\ell 是一个合取查询：即由实体和变量构成的、带有一个答案变量的三元组模式集合，并可选地对已绑定的值施加过滤条件。 对于三元组集合 𝒮 \\mathcal{S} ， SPARQL ⁡ ( ℓ , 𝒮 ) \\operatorname{SPARQL}(\\ell,\\mathcal{S}) 表示在所有将 ℓ \\ell 的每个模式映射到 𝒮 \\mathcal{S} 中某个三元组且满足过滤条件的赋值下，答案变量取值的集合。 此类查询是单调的： 𝒮 ⊆ 𝒮 ′ \\mathcal{S}\\subseteq\\mathcal{S}^{\\prime} 蕴含 SPARQL ⁡ ( ℓ , 𝒮 ) ⊆ SPARQL ⁡ ( ℓ , 𝒮 ′ ) \\operatorname{SPARQL}(\\ell,\\mathcal{S})\\subseteq\\operatorname{SPARQL}(\\ell,\\mathcal{S}^{\\prime}) 。 依据定义 2， 𝒮 \\mathcal{S} 支持 ( ℓ , y ) (\\ell,y) 当且仅当 y ∈ SPARQL ⁡ ( ℓ , 𝒮 ) y\\in\\operatorname{SPARQL}(\\ell,\\mathcal{S}) ，并且轨迹 τ \\tau 是证据覆盖的当 Cov ⁡ ( τ , 𝒮 q ∗ ) = 1 \\operatorname{Cov}(\\tau,\\mathcal{S}^{*}_{q})=1 ，如公式 6 所定义。",
+   "sents": [
+    {
+     "en": "Throughout the proofs, a logical form ℓ \\ell is a conjunctive query: a set of triple patterns over entities and variables with one answer variable, optionally with filters on bound values.",
+     "zh": "在整个证明过程中，逻辑形式 ℓ \\ell 是一个合取查询：即由实体和变量构成的、带有一个答案变量的三元组模式集合，并可选地对已绑定的值施加过滤条件。"
+    },
+    {
+     "en": "For a triple set 𝒮 \\mathcal{S} , SPARQL ⁡ ( ℓ , 𝒮 ) \\operatorname{SPARQL}(\\ell,\\mathcal{S}) is the set of values of the answer variable over all assignments that map every pattern of ℓ \\ell to a triple in 𝒮 \\mathcal{S} and satisfy the filters.",
+     "zh": "对于三元组集合 𝒮 \\mathcal{S} ， SPARQL ⁡ ( ℓ , 𝒮 ) \\operatorname{SPARQL}(\\ell,\\mathcal{S}) 表示在所有将 ℓ \\ell 的每个模式映射到 𝒮 \\mathcal{S} 中某个三元组且满足过滤条件的赋值下，答案变量取值的集合。"
+    },
+    {
+     "en": "Such queries are monotone: 𝒮 ⊆ 𝒮 ′ \\mathcal{S}\\subseteq\\mathcal{S}^{\\prime} implies SPARQL ⁡ ( ℓ , 𝒮 ) ⊆ SPARQL ⁡ ( ℓ , 𝒮 ′ ) \\operatorname{SPARQL}(\\ell,\\mathcal{S})\\subseteq\\operatorname{SPARQL}(\\ell,\\mathcal{S}^{\\prime}) .",
+     "zh": "此类查询是单调的： 𝒮 ⊆ 𝒮 ′ \\mathcal{S}\\subseteq\\mathcal{S}^{\\prime} 蕴含 SPARQL ⁡ ( ℓ , 𝒮 ) ⊆ SPARQL ⁡ ( ℓ , 𝒮 ′ ) \\operatorname{SPARQL}(\\ell,\\mathcal{S})\\subseteq\\operatorname{SPARQL}(\\ell,\\mathcal{S}^{\\prime}) 。"
+    },
+    {
+     "en": "Following Definition 2, 𝒮 \\mathcal{S} supports ( ℓ , y ) (\\ell,y) if y ∈ SPARQL ⁡ ( ℓ , 𝒮 ) y\\in\\operatorname{SPARQL}(\\ell,\\mathcal{S}) , and a trajectory τ \\tau is evidence-covered if Cov ⁡ ( τ , 𝒮 q ∗ ) = 1 \\operatorname{Cov}(\\tau,\\mathcal{S}^{*}_{q})=1 , as defined in Equation 6 .",
+     "zh": "依据定义 2， 𝒮 \\mathcal{S} 支持 ( ℓ , y ) (\\ell,y) 当且仅当 y ∈ SPARQL ⁡ ( ℓ , 𝒮 ) y\\in\\operatorname{SPARQL}(\\ell,\\mathcal{S}) ，并且轨迹 τ \\tau 是证据覆盖的当 Cov ⁡ ( τ , 𝒮 q ∗ ) = 1 \\operatorname{Cov}(\\tau,\\mathcal{S}^{*}_{q})=1 ，如公式 6 所定义。"
+    }
+   ]
+  },
+  {
+   "en": "We show by induction that, for every n ≥ 1 n\\geq 1 , the triple set 𝒮 ( n ) ⊆ 𝒯 \\mathcal{S}^{(n)}\\subseteq\\mathcal{T} supports ( ℓ ( n ) , y ) (\\ell^{(n)},y) .",
+   "zh": "我们通过归纳法证明，对于每个 n ≥ 1 n\\geq 1，三元组集合 𝒮 ( n ) ⊆ 𝒯 \\mathcal{S}^{(n)}\\subseteq\\mathcal{T} 支持 ( ℓ ( n ) , y ) (\\ell^{(n)},y)。",
+   "sents": null
+  },
+  {
+   "en": "Base case. A seed is retained only if its supporting triples exist in the KG and instantiate ℓ ( 1 ) \\ell^{(1)} with the answer variable bound to y y . Hence 𝒮 ( 1 ) \\mathcal{S}^{(1)} supports ( ℓ ( 1 ) , y ) (\\ell^{(1)},y) under some assignment μ \\mu .",
+   "zh": "基础情形。 仅当种子所依赖的三元组存在于知识图谱中，并且这些三元组以答案变量绑定到 y y 的方式实例化 ℓ ( 1 ) \\ell^{(1)} 时，该种子才会被保留。 因此， 𝒮 ( 1 ) \\mathcal{S}^{(1)} 在某个赋值 μ \\mu 下支持 ( ℓ ( 1 ) , y ) (\\ell^{(1)},y) 。",
+   "sents": [
+    {
+     "en": "Base case.",
+     "zh": "基础情形。"
+    },
+    {
+     "en": "A seed is retained only if its supporting triples exist in the KG and instantiate ℓ ( 1 ) \\ell^{(1)} with the answer variable bound to y y .",
+     "zh": "仅当种子所依赖的三元组存在于知识图谱中，并且这些三元组以答案变量绑定到 y y 的方式实例化 ℓ ( 1 ) \\ell^{(1)} 时，该种子才会被保留。"
+    },
+    {
+     "en": "Hence 𝒮 ( 1 ) \\mathcal{S}^{(1)} supports ( ℓ ( 1 ) , y ) (\\ell^{(1)},y) under some assignment μ \\mu .",
+     "zh": "因此， 𝒮 ( 1 ) \\mathcal{S}^{(1)} 在某个赋值 μ \\mu 下支持 ( ℓ ( 1 ) , y ) (\\ell^{(1)},y) 。"
+    }
+   ]
+  },
+  {
+   "en": "Inductive step. Assume that 𝒮 ( n ) \\mathcal{S}^{(n)} supports ( ℓ ( n ) , y ) (\\ell^{(n)},y) under an assignment μ \\mu . An expansion selects an entity u u in ℓ ( n ) \\ell^{(n)} and a verified sub-question with logical form ℓ ~ \\tilde{\\ell} , answer variable x x , and triples 𝒮 ~ ⊆ 𝒯 \\tilde{\\mathcal{S}}\\subseteq\\mathcal{T} that support ( ℓ ~ , u ) (\\tilde{\\ell},u) under an assignment μ ~ \\tilde{\\mu} with μ ~ ​ ( x ) = u \\tilde{\\mu}(x)=u . With variables renamed apart, the expanded logical form is",
+   "zh": "归纳步骤。 假设 𝒮 ( n ) \\mathcal{S}^{(n)} 在赋值 μ \\mu 下支持 ( ℓ ( n ) , y ) (\\ell^{(n)},y)。 一次扩展选取 ℓ ( n ) \\ell^{(n)} 中的一个实体 u u，以及一个经验证的子问题，其逻辑形式为 ℓ ~ \\tilde{\\ell}，答案变量为 x x，三元组为 𝒮 ~ ⊆ 𝒯 \\tilde{\\mathcal{S}}\\subseteq\\mathcal{T}，这些三元组在满足 μ ~ ​ ( x ) = u \\tilde{\\mu}(x)=u 的赋值 μ ~ \\tilde{\\mu} 下支持 ( ℓ ~ , u ) (\\tilde{\\ell},u)。 在变量重命名分离后，扩展后的逻辑形式为",
+   "sents": [
+    {
+     "en": "Inductive step.",
+     "zh": "归纳步骤。"
+    },
+    {
+     "en": "Assume that 𝒮 ( n ) \\mathcal{S}^{(n)} supports ( ℓ ( n ) , y ) (\\ell^{(n)},y) under an assignment μ \\mu .",
+     "zh": "假设 𝒮 ( n ) \\mathcal{S}^{(n)} 在赋值 μ \\mu 下支持 ( ℓ ( n ) , y ) (\\ell^{(n)},y)。"
+    },
+    {
+     "en": "An expansion selects an entity u u in ℓ ( n ) \\ell^{(n)} and a verified sub-question with logical form ℓ ~ \\tilde{\\ell} , answer variable x x , and triples 𝒮 ~ ⊆ 𝒯 \\tilde{\\mathcal{S}}\\subseteq\\mathcal{T} that support ( ℓ ~ , u ) (\\tilde{\\ell},u) under an assignment μ ~ \\tilde{\\mu} with μ ~ ​ ( x ) = u \\tilde{\\mu}(x)=u .",
+     "zh": "一次扩展选取 ℓ ( n ) \\ell^{(n)} 中的一个实体 u u，以及一个经验证的子问题，其逻辑形式为 ℓ ~ \\tilde{\\ell}，答案变量为 x x，三元组为 𝒮 ~ ⊆ 𝒯 \\tilde{\\mathcal{S}}\\subseteq\\mathcal{T}，这些三元组在满足 μ ~ ​ ( x ) = u \\tilde{\\mu}(x)=u 的赋值 μ ~ \\tilde{\\mu} 下支持 ( ℓ ~ , u ) (\\tilde{\\ell},u)。"
+    },
+    {
+     "en": "With variables renamed apart, the expanded logical form is",
+     "zh": "在变量重命名分离后，扩展后的逻辑形式为"
+    }
+   ]
+  },
+  {
+   "en": "where [ u ↦ x ] [u\\mapsto x] replaces every occurrence of u u with the variable x x . Consider the assignment μ ∪ μ ~ \\mu\\cup\\tilde{\\mu} . Every pattern of ℓ ~ \\tilde{\\ell} is mapped into 𝒮 ~ \\tilde{\\mathcal{S}} , and every pattern of ℓ ( n ) [ u ↦ x ] \\ell^{(n)}[u\\mapsto x] is mapped to the same triple of 𝒮 ( n ) \\mathcal{S}^{(n)} as under μ \\mu , since μ ~ ​ ( x ) = u \\tilde{\\mu}(x)=u . The answer variable is still bound to y y , which gives",
+   "zh": "其中 [u ↦ x] 将 u 的每一次出现都替换为变量 x。 考虑赋值 μ ∪ μ̃。 ℓ̃ 的每个模式都被映射到 𝒮̃ 中，而 ℓ^(n)[u ↦ x] 的每个模式都被映射到 𝒮^(n) 中与在 μ 下相同的三元组，因为 μ̃(x)=u。 答案变量仍然绑定到 y，这就得到",
+   "sents": [
+    {
+     "en": "where [ u ↦ x ] [u\\mapsto x] replaces every occurrence of u u with the variable x x .",
+     "zh": "其中 [u ↦ x] 将 u 的每一次出现都替换为变量 x。"
+    },
+    {
+     "en": "Consider the assignment μ ∪ μ ~ \\mu\\cup\\tilde{\\mu} .",
+     "zh": "考虑赋值 μ ∪ μ̃。"
+    },
+    {
+     "en": "Every pattern of ℓ ~ \\tilde{\\ell} is mapped into 𝒮 ~ \\tilde{\\mathcal{S}} , and every pattern of ℓ ( n ) [ u ↦ x ] \\ell^{(n)}[u\\mapsto x] is mapped to the same triple of 𝒮 ( n ) \\mathcal{S}^{(n)} as under μ \\mu , since μ ~ ​ ( x ) = u \\tilde{\\mu}(x)=u .",
+     "zh": "ℓ̃ 的每个模式都被映射到 𝒮̃ 中，而 ℓ^(n)[u ↦ x] 的每个模式都被映射到 𝒮^(n) 中与在 μ 下相同的三元组，因为 μ̃(x)=u。"
+    },
+    {
+     "en": "The answer variable is still bound to y y , which gives",
+     "zh": "答案变量仍然绑定到 y，这就得到"
+    }
+   ]
+  },
+  {
+   "en": "where 𝒮 ( n + 1 ) = 𝒮 ( n ) ∪ 𝒮 ~ \\mathcal{S}^{(n+1)}=\\mathcal{S}^{(n)}\\cup\\tilde{\\mathcal{S}} , so 𝒮 ( n + 1 ) \\mathcal{S}^{(n+1)} supports ( ℓ ( n + 1 ) , y ) (\\ell^{(n+1)},y) . Since 𝒮 ( n + 1 ) ⊆ 𝒯 \\mathcal{S}^{(n+1)}\\subseteq\\mathcal{T} , monotonicity also gives y ∈ SPARQL ⁡ ( ℓ ( n + 1 ) , 𝒯 ) y\\in\\operatorname{SPARQL}(\\ell^{(n+1)},\\mathcal{T}) , so the answer is preserved over the full KG. Each expansion replaces one entity with a variable, so N N expansions hide N N intermediate entities.",
+   "zh": "其中 𝒮 ( n + 1 ) = 𝒮 ( n ) ∪ 𝒮 ~ \\mathcal{S}^{(n+1)}=\\mathcal{S}^{(n)}\\cup\\tilde{\\mathcal{S}}，因此 𝒮 ( n + 1 ) \\mathcal{S}^{(n+1)} 支持 ( ℓ ( n + 1 ) , y ) (\\ell^{(n+1)},y)。 由于 𝒮 ( n + 1 ) ⊆ 𝒯 \\mathcal{S}^{(n+1)}\\subseteq\\mathcal{T}，单调性也给出 y ∈ SPARQL ⁡ ( ℓ ( n + 1 ) , 𝒯 ) y\\in\\operatorname{SPARQL}(\\ell^{(n+1)},\\mathcal{T})，因此该答案在整个知识图谱上得以保留。 每次扩展都会将一个实体替换为变量，因此 N N 次扩展可以隐藏 N N 个中间实体。",
+   "sents": [
+    {
+     "en": "where 𝒮 ( n + 1 ) = 𝒮 ( n ) ∪ 𝒮 ~ \\mathcal{S}^{(n+1)}=\\mathcal{S}^{(n)}\\cup\\tilde{\\mathcal{S}} , so 𝒮 ( n + 1 ) \\mathcal{S}^{(n+1)} supports ( ℓ ( n + 1 ) , y ) (\\ell^{(n+1)},y) .",
+     "zh": "其中 𝒮 ( n + 1 ) = 𝒮 ( n ) ∪ 𝒮 ~ \\mathcal{S}^{(n+1)}=\\mathcal{S}^{(n)}\\cup\\tilde{\\mathcal{S}}，因此 𝒮 ( n + 1 ) \\mathcal{S}^{(n+1)} 支持 ( ℓ ( n + 1 ) , y ) (\\ell^{(n+1)},y)。"
+    },
+    {
+     "en": "Since 𝒮 ( n + 1 ) ⊆ 𝒯 \\mathcal{S}^{(n+1)}\\subseteq\\mathcal{T} , monotonicity also gives y ∈ SPARQL ⁡ ( ℓ ( n + 1 ) , 𝒯 ) y\\in\\operatorname{SPARQL}(\\ell^{(n+1)},\\mathcal{T}) , so the answer is preserved over the full KG.",
+     "zh": "由于 𝒮 ( n + 1 ) ⊆ 𝒯 \\mathcal{S}^{(n+1)}\\subseteq\\mathcal{T}，单调性也给出 y ∈ SPARQL ⁡ ( ℓ ( n + 1 ) , 𝒯 ) y\\in\\operatorname{SPARQL}(\\ell^{(n+1)},\\mathcal{T})，因此该答案在整个知识图谱上得以保留。"
+    },
+    {
+     "en": "Each expansion replaces one entity with a variable, so N N expansions hide N N intermediate entities.",
+     "zh": "每次扩展都会将一个实体替换为变量，因此 N N 次扩展可以隐藏 N N 个中间实体。"
+    }
+   ]
+  },
+  {
+   "en": "The proof guarantees that the accumulated triples are sufficient for the answer, not that they are the only triples that support it. In the special case where the sub-question has answers other than u u , the result set of ℓ ( n + 1 ) \\ell^{(n+1)} may grow, but the executability check bounds it by K ans K_{\\text{ans}} .",
+   "zh": "该证明保证累积的三元组足以得出答案，但并不保证它们是支持该答案的唯一三元组。 在子问题存在 u u 以外答案的特殊情况下，ℓ ( n + 1 ) \\ell^{(n+1)} 的结果集可能会增长，但可执行性检查将其限制在 K ans K_{\\text{ans}} 以内。",
+   "sents": [
+    {
+     "en": "The proof guarantees that the accumulated triples are sufficient for the answer, not that they are the only triples that support it.",
+     "zh": "该证明保证累积的三元组足以得出答案，但并不保证它们是支持该答案的唯一三元组。"
+    },
+    {
+     "en": "In the special case where the sub-question has answers other than u u , the result set of ℓ ( n + 1 ) \\ell^{(n+1)} may grow, but the executability check bounds it by K ans K_{\\text{ans}} .",
+     "zh": "在子问题存在 u u 以外答案的特殊情况下，ℓ ( n + 1 ) \\ell^{(n+1)} 的结果集可能会增长，但可执行性检查将其限制在 K ans K_{\\text{ans}} 以内。"
+    }
+   ]
+  },
+  {
+   "en": "In conclusion, every expansion keeps y y in the result set over the full KG, and the accumulated triples alone support the expanded logical form. Therefore, backward expansion preserves the answer and yields triples that support it. ∎",
+   "zh": "总之，每次扩展都使 y y 保留在完整知识图谱（KG）上的结果集中，且仅凭累积的三元组即可支持扩展后的逻辑形式。 因此，反向扩展在保留答案的同时产生了支持该答案的三元组。∎",
+   "sents": [
+    {
+     "en": "In conclusion, every expansion keeps y y in the result set over the full KG, and the accumulated triples alone support the expanded logical form.",
+     "zh": "总之，每次扩展都使 y y 保留在完整知识图谱（KG）上的结果集中，且仅凭累积的三元组即可支持扩展后的逻辑形式。"
+    },
+    {
+     "en": "Therefore, backward expansion preserves the answer and yields triples that support it. ∎",
+     "zh": "因此，反向扩展在保留答案的同时产生了支持该答案的三元组。∎"
+    }
+   ]
+  },
+  {
+   "en": "Let R = R out + R step + R ecpr R=R_{\\text{out}}+R_{\\text{step}}+R_{\\text{ecpr}} be the composite reward with λ ecpr > 0 \\lambda_{\\text{ecpr}}>0 , and let 𝒮 q ∗ \\mathcal{S}^{*}_{q} be the supporting triples of a question q q , which support ( ℓ q , y q ∗ ) (\\ell_{q},y_{q}^{*}) by Proposition 1.",
+   "zh": "设 R = R out + R step + R ecpr R=R_{\\text{out}}+R_{\\text{step}}+R_{\\text{ecpr}} 为复合奖励，其中 λ ecpr > 0 \\lambda_{\\text{ecpr}}>0 ，并设 𝒮 q ∗ \\mathcal{S}^{*}_{q} 为问题 q q 的支持三元组，根据命题 1，这些三元组支持 ( ℓ q , y q ∗ ) (\\ell_{q},y_{q}^{*}) 。",
+   "sents": null
+  },
+  {
+   "en": "Supported maximizers. Since F1 ≤ 1 \\operatorname{F1}\\leq 1 , R step ≤ λ step R_{\\text{step}}\\leq\\lambda_{\\text{step}} , and Cov ≤ 1 \\operatorname{Cov}\\leq 1 , the composite reward is bounded as",
+   "zh": "支持的最大化器。 由于 F1 ≤ 1 \\operatorname{F1}\\leq 1 、R step ≤ λ step R_{\\text{step}}\\leq\\lambda_{\\text{step}} ，且 Cov ≤ 1 \\operatorname{Cov}\\leq 1 ，复合奖励的界为",
+   "sents": [
+    {
+     "en": "Supported maximizers.",
+     "zh": "支持的最大化器。"
+    },
+    {
+     "en": "Since F1 ≤ 1 \\operatorname{F1}\\leq 1 , R step ≤ λ step R_{\\text{step}}\\leq\\lambda_{\\text{step}} , and Cov ≤ 1 \\operatorname{Cov}\\leq 1 , the composite reward is bounded as",
+     "zh": "由于 F1 ≤ 1 \\operatorname{F1}\\leq 1 、R step ≤ λ step R_{\\text{step}}\\leq\\lambda_{\\text{step}} ，且 Cov ≤ 1 \\operatorname{Cov}\\leq 1 ，复合奖励的界为"
+    }
+   ]
+  },
+  {
+   "en": "where equality holds if and only if every term attains its maximum, in particular only if Cov ⁡ ( τ , 𝒮 q ∗ ) = 1 \\operatorname{Cov}(\\tau,\\mathcal{S}^{*}_{q})=1 . Assume that an evidence-covered trajectory with a correct answer and only valid actions is feasible within the turn limit. The bound is then attained, so every trajectory τ \\tau that maximizes R R satisfies 𝒮 q ∗ ⊆ 𝒯 ⁡ ( τ ) \\mathcal{S}^{*}_{q}\\subseteq\\mathcal{T}(\\tau) , and monotonicity gives",
+   "zh": "其中当且仅当每一项都取得其最大值时等号成立，特别地，仅当 Cov ⁡ ( τ , 𝒮 q ∗ ) = 1 \\operatorname{Cov}(\\tau,\\mathcal{S}^{*}_{q})=1 时成立。 假设在轮次限制内，存在一条带有正确答案且只含有效动作的证据覆盖轨迹是可行的。 此时该上界即可达到，因此每一条最大化 R R 的轨迹 τ \\tau 都满足 𝒮 q ∗ ⊆ 𝒯 ⁡ ( τ ) \\mathcal{S}^{*}_{q}\\subseteq\\mathcal{T}(\\tau) ，且由单调性可得",
+   "sents": [
+    {
+     "en": "where equality holds if and only if every term attains its maximum, in particular only if Cov ⁡ ( τ , 𝒮 q ∗ ) = 1 \\operatorname{Cov}(\\tau,\\mathcal{S}^{*}_{q})=1 .",
+     "zh": "其中当且仅当每一项都取得其最大值时等号成立，特别地，仅当 Cov ⁡ ( τ , 𝒮 q ∗ ) = 1 \\operatorname{Cov}(\\tau,\\mathcal{S}^{*}_{q})=1 时成立。"
+    },
+    {
+     "en": "Assume that an evidence-covered trajectory with a correct answer and only valid actions is feasible within the turn limit.",
+     "zh": "假设在轮次限制内，存在一条带有正确答案且只含有效动作的证据覆盖轨迹是可行的。"
+    },
+    {
+     "en": "The bound is then attained, so every trajectory τ \\tau that maximizes R R satisfies 𝒮 q ∗ ⊆ 𝒯 ⁡ ( τ ) \\mathcal{S}^{*}_{q}\\subseteq\\mathcal{T}(\\tau) , and monotonicity gives",
+     "zh": "此时该上界即可达到，因此每一条最大化 R R 的轨迹 τ \\tau 都满足 𝒮 q ∗ ⊆ 𝒯 ⁡ ( τ ) \\mathcal{S}^{*}_{q}\\subseteq\\mathcal{T}(\\tau) ，且由单调性可得"
+    }
+   ]
+  },
+  {
+   "en": "which means that the answer of τ \\tau is supported.",
+   "zh": "这意味着 τ \\tau 的答案是受支持的。",
+   "sents": null
+  },
+  {
+   "en": "For outcome rewards alone, R out R_{\\text{out}} in Equation 5 depends on τ \\tau only through the prediction y ^ \\hat{y} and the returned entities ℰ ⁡ ( τ ) \\mathcal{E}(\\tau) . A shortcut trajectory τ s \\tau_{s} that predicts and reaches y q ∗ y_{q}^{*} with Cov ⁡ ( τ s , 𝒮 q ∗ ) < 1 \\operatorname{Cov}(\\tau_{s},\\mathcal{S}^{*}_{q})<1 therefore attains the maximum λ f1 + λ ret \\lambda_{\\text{f1}}+\\lambda_{\\text{ret}} of R out R_{\\text{out}} . Under the composite reward, it loses at least λ ecpr ​ ( 1 − Cov ⁡ ( τ s , 𝒮 q ∗ ) ) > 0 \\lambda_{\\text{ecpr}}\\bigl(1-\\operatorname{Cov}(\\tau_{s},\\mathcal{S}^{*}_{q})\\bigr)>0 against the bound and is no longer optimal.",
+   "zh": "仅就结果奖励而言，公式5中的 R out R_{\\text{out}} 仅通过预测 ŷ \\hat{y} 和返回的实体 ℰ(τ) \\mathcal{E}(\\tau) 依赖于 τ \\tau。 一条预测并到达 y q ∗ y_{q}^{*} 且 Cov ⁡ ( τ s , 𝒮 q ∗ ) < 1 \\operatorname{Cov}(\\tau_{s},\\mathcal{S}^{*}_{q})<1 的捷径轨迹 τ s \\tau_{s} 因此获得 R out R_{\\text{out}} 的最大值 λ f1 + λ ret \\lambda_{\\text{f1}}+\\lambda_{\\text{ret}}。 在复合奖励下，相对于该上界它至少损失 λ ecpr ​ ( 1 − Cov ⁡ ( τ s , 𝒮 q ∗ ) ) > 0 \\lambda_{\\text{ecpr}}\\bigl(1-\\operatorname{Cov}(\\tau_{s},\\mathcal{S}^{*}_{q})\\bigr)>0，因而不再是最优的。",
+   "sents": [
+    {
+     "en": "For outcome rewards alone, R out R_{\\text{out}} in Equation 5 depends on τ \\tau only through the prediction y ^ \\hat{y} and the returned entities ℰ ⁡ ( τ ) \\mathcal{E}(\\tau) .",
+     "zh": "仅就结果奖励而言，公式5中的 R out R_{\\text{out}} 仅通过预测 ŷ \\hat{y} 和返回的实体 ℰ(τ) \\mathcal{E}(\\tau) 依赖于 τ \\tau。"
+    },
+    {
+     "en": "A shortcut trajectory τ s \\tau_{s} that predicts and reaches y q ∗ y_{q}^{*} with Cov ⁡ ( τ s , 𝒮 q ∗ ) < 1 \\operatorname{Cov}(\\tau_{s},\\mathcal{S}^{*}_{q})<1 therefore attains the maximum λ f1 + λ ret \\lambda_{\\text{f1}}+\\lambda_{\\text{ret}} of R out R_{\\text{out}} .",
+     "zh": "一条预测并到达 y q ∗ y_{q}^{*} 且 Cov ⁡ ( τ s , 𝒮 q ∗ ) < 1 \\operatorname{Cov}(\\tau_{s},\\mathcal{S}^{*}_{q})<1 的捷径轨迹 τ s \\tau_{s} 因此获得 R out R_{\\text{out}} 的最大值 λ f1 + λ ret \\lambda_{\\text{f1}}+\\lambda_{\\text{ret}}。"
+    },
+    {
+     "en": "Under the composite reward, it loses at least λ ecpr ​ ( 1 − Cov ⁡ ( τ s , 𝒮 q ∗ ) ) > 0 \\lambda_{\\text{ecpr}}\\bigl(1-\\operatorname{Cov}(\\tau_{s},\\mathcal{S}^{*}_{q})\\bigr)>0 against the bound and is no longer optimal.",
+     "zh": "在复合奖励下，相对于该上界它至少损失 λ ecpr ​ ( 1 − Cov ⁡ ( τ s , 𝒮 q ∗ ) ) > 0 \\lambda_{\\text{ecpr}}\\bigl(1-\\operatorname{Cov}(\\tau_{s},\\mathcal{S}^{*}_{q})\\bigr)>0，因而不再是最优的。"
+    }
+   ]
+  },
+  {
+   "en": "One reward per triple. Let U t = ( ⋃ i ≤ t 𝒯 i ) ∩ 𝒮 q ∗ U_{t}=\\bigl(\\bigcup_{i\\leq t}\\mathcal{T}_{i}\\bigr)\\cap\\mathcal{S}^{*}_{q} be the gold triples retrieved up to step t t , with U 0 = ∅ U_{0}=\\emptyset . The step reward of ECPR is then",
+   "zh": "每个三元组一个奖励。 设 U t = ( ⋃ i ≤ t 𝒯 i ) ∩ 𝒮 q ∗ U_{t}=\\bigl(\\bigcup_{i\\leq t}\\mathcal{T}_{i}\\bigr)\\cap\\mathcal{S}^{*}_{q} 为到步骤 t t 为止检索到的黄金三元组，其中 U 0 = ∅ U_{0}=\\emptyset 。 于是 ECPR 的步骤奖励为",
+   "sents": [
+    {
+     "en": "One reward per triple.",
+     "zh": "每个三元组一个奖励。"
+    },
+    {
+     "en": "Let U t = ( ⋃ i ≤ t 𝒯 i ) ∩ 𝒮 q ∗ U_{t}=\\bigl(\\bigcup_{i\\leq t}\\mathcal{T}_{i}\\bigr)\\cap\\mathcal{S}^{*}_{q} be the gold triples retrieved up to step t t , with U 0 = ∅ U_{0}=\\emptyset .",
+     "zh": "设 U t = ( ⋃ i ≤ t 𝒯 i ) ∩ 𝒮 q ∗ U_{t}=\\bigl(\\bigcup_{i\\leq t}\\mathcal{T}_{i}\\bigr)\\cap\\mathcal{S}^{*}_{q} 为到步骤 t t 为止检索到的黄金三元组，其中 U 0 = ∅ U_{0}=\\emptyset 。"
+    },
+    {
+     "en": "The step reward of ECPR is then",
+     "zh": "于是 ECPR 的步骤奖励为"
+    }
+   ]
+  },
+  {
+   "en": "where U t − 1 ⊆ U t U_{t-1}\\subseteq U_{t} , so r t ecpr ≥ 0 r^{\\text{ecpr}}_{t}\\geq 0 and the sum over steps telescopes to λ ecpr ​ | U T | / | 𝒮 q ∗ | = R ecpr ​ ( τ ) \\lambda_{\\text{ecpr}}|U_{T}|/|\\mathcal{S}^{*}_{q}|=R_{\\text{ecpr}}(\\tau) . If step t t returns only triples that were already retrieved, then U t = U t − 1 U_{t}=U_{t-1} and r t ecpr = 0 r^{\\text{ecpr}}_{t}=0 . In contrast, every-match attribution pays λ ecpr ​ | 𝒯 t ∩ 𝒮 q ∗ | / | 𝒮 q ∗ | \\lambda_{\\text{ecpr}}|\\mathcal{T}_{t}\\cap\\mathcal{S}^{*}_{q}|/|\\mathcal{S}^{*}_{q}| at each step. Repeating a query that returns m ≥ 1 m\\geq 1 gold triples for T T steps thus earns λ ecpr ​ T ​ m / | 𝒮 q ∗ | \\lambda_{\\text{ecpr}}\\,Tm/|\\mathcal{S}^{*}_{q}| , which grows with T T while the coverage stays at m / | 𝒮 q ∗ | m/|\\mathcal{S}^{*}_{q}| .",
+   "zh": "其中 U t − 1 ⊆ U t U_{t-1}\\subseteq U_{t}，因此 r t ecpr ≥ 0 r^{\\text{ecpr}}_{t}\\geq 0，且对各步求和可裂项相消为 λ ecpr ​ | U T | / | 𝒮 q ∗ | = R ecpr ​ ( τ ) \\lambda_{\\text{ecpr}}|U_{T}|/|\\mathcal{S}^{*}_{q}|=R_{\\text{ecpr}}(\\tau)。 若第 t t 步只返回已被检索过的三元组，则 U t = U t − 1 U_{t}=U_{t-1} 且 r t ecpr = 0 r^{\\text{ecpr}}_{t}=0。 相比之下，全匹配归因在每一步都支付 λ ecpr ​ | 𝒯 t ∩ 𝒮 q ∗ | / | 𝒮 q ∗ | \\lambda_{\\text{ecpr}}|\\mathcal{T}_{t}\\cap\\mathcal{S}^{*}_{q}|/|\\mathcal{S}^{*}_{q}|。 因此，一个返回 m ≥ 1 m\\geq 1 个黄金三元组的查询若重复 T T 步，将获得 λ ecpr ​ T ​ m / | 𝒮 q ∗ | \\lambda_{\\text{ecpr}}\\,Tm/|\\mathcal{S}^{*}_{q}|，该奖励随 T T 增长，而覆盖率始终停留在 m / | 𝒮 q ∗ | m/|\\mathcal{S}^{*}_{q}|。",
+   "sents": [
+    {
+     "en": "where U t − 1 ⊆ U t U_{t-1}\\subseteq U_{t} , so r t ecpr ≥ 0 r^{\\text{ecpr}}_{t}\\geq 0 and the sum over steps telescopes to λ ecpr ​ | U T | / | 𝒮 q ∗ | = R ecpr ​ ( τ ) \\lambda_{\\text{ecpr}}|U_{T}|/|\\mathcal{S}^{*}_{q}|=R_{\\text{ecpr}}(\\tau) .",
+     "zh": "其中 U t − 1 ⊆ U t U_{t-1}\\subseteq U_{t}，因此 r t ecpr ≥ 0 r^{\\text{ecpr}}_{t}\\geq 0，且对各步求和可裂项相消为 λ ecpr ​ | U T | / | 𝒮 q ∗ | = R ecpr ​ ( τ ) \\lambda_{\\text{ecpr}}|U_{T}|/|\\mathcal{S}^{*}_{q}|=R_{\\text{ecpr}}(\\tau)。"
+    },
+    {
+     "en": "If step t t returns only triples that were already retrieved, then U t = U t − 1 U_{t}=U_{t-1} and r t ecpr = 0 r^{\\text{ecpr}}_{t}=0 .",
+     "zh": "若第 t t 步只返回已被检索过的三元组，则 U t = U t − 1 U_{t}=U_{t-1} 且 r t ecpr = 0 r^{\\text{ecpr}}_{t}=0。"
+    },
+    {
+     "en": "In contrast, every-match attribution pays λ ecpr ​ | 𝒯 t ∩ 𝒮 q ∗ | / | 𝒮 q ∗ | \\lambda_{\\text{ecpr}}|\\mathcal{T}_{t}\\cap\\mathcal{S}^{*}_{q}|/|\\mathcal{S}^{*}_{q}| at each step.",
+     "zh": "相比之下，全匹配归因在每一步都支付 λ ecpr ​ | 𝒯 t ∩ 𝒮 q ∗ | / | 𝒮 q ∗ | \\lambda_{\\text{ecpr}}|\\mathcal{T}_{t}\\cap\\mathcal{S}^{*}_{q}|/|\\mathcal{S}^{*}_{q}|。"
+    },
+    {
+     "en": "Repeating a query that returns m ≥ 1 m\\geq 1 gold triples for T T steps thus earns λ ecpr ​ T ​ m / | 𝒮 q ∗ | \\lambda_{\\text{ecpr}}\\,Tm/|\\mathcal{S}^{*}_{q}| , which grows with T T while the coverage stays at m / | 𝒮 q ∗ | m/|\\mathcal{S}^{*}_{q}| .",
+     "zh": "因此，一个返回 m ≥ 1 m\\geq 1 个黄金三元组的查询若重复 T T 步，将获得 λ ecpr ​ T ​ m / | 𝒮 q ∗ | \\lambda_{\\text{ecpr}}\\,Tm/|\\mathcal{S}^{*}_{q}|，该奖励随 T T 增长，而覆盖率始终停留在 m / | 𝒮 q ∗ | m/|\\mathcal{S}^{*}_{q}|。"
+    }
+   ]
+  },
+  {
+   "en": "The statement concerns the maximizers of the trajectory-level reward and does not guarantee that policy optimization reaches them. Covering 𝒮 q ∗ \\mathcal{S}^{*}_{q} is sufficient but not necessary for a supported answer, since a question may admit other supporting sets. In the special case where no shortcut trajectory exists for the question, the maximizers of R out R_{\\text{out}} are already evidence-covered, so the two rewards share the same maximizers.",
+   "zh": "该论述针对的是轨迹级奖励的最大化点，并不保证策略优化一定能达到这些点。 覆盖 𝒮 q ∗ \\mathcal{S}^{*}_{q} 是得到有依据答案的充分条件但非必要条件，因为一个问题可能存在其他支持集合。 在该问题不存在捷径轨迹的特殊情况下，R out R_{\\text{out}} 的最大化点已经被证据覆盖，因此这两个奖励具有相同的最大化点。",
+   "sents": [
+    {
+     "en": "The statement concerns the maximizers of the trajectory-level reward and does not guarantee that policy optimization reaches them.",
+     "zh": "该论述针对的是轨迹级奖励的最大化点，并不保证策略优化一定能达到这些点。"
+    },
+    {
+     "en": "Covering 𝒮 q ∗ \\mathcal{S}^{*}_{q} is sufficient but not necessary for a supported answer, since a question may admit other supporting sets.",
+     "zh": "覆盖 𝒮 q ∗ \\mathcal{S}^{*}_{q} 是得到有依据答案的充分条件但非必要条件，因为一个问题可能存在其他支持集合。"
+    },
+    {
+     "en": "In the special case where no shortcut trajectory exists for the question, the maximizers of R out R_{\\text{out}} are already evidence-covered, so the two rewards share the same maximizers.",
+     "zh": "在该问题不存在捷径轨迹的特殊情况下，R out R_{\\text{out}} 的最大化点已经被证据覆盖，因此这两个奖励具有相同的最大化点。"
+    }
+   ]
+  },
+  {
+   "en": "In conclusion, the composite reward attains its maximum only when the retrieved triples support the answer, and first-match attribution never pays a triple twice. Therefore, ECPR is maximized only by supported answers and rewards each triple once. ∎",
+   "zh": "总之，复合奖励只有在检索到的三元组支持答案时才达到最大值，且首次匹配归因绝不会对同一个三元组重复计酬。 因此，只有受支持的答案才能使 ECPR 最大化，并且每个三元组只被奖励一次。∎",
+   "sents": [
+    {
+     "en": "In conclusion, the composite reward attains its maximum only when the retrieved triples support the answer, and first-match attribution never pays a triple twice.",
+     "zh": "总之，复合奖励只有在检索到的三元组支持答案时才达到最大值，且首次匹配归因绝不会对同一个三元组重复计酬。"
+    },
+    {
+     "en": "Therefore, ECPR is maximized only by supported answers and rewards each triple once. ∎",
+     "zh": "因此，只有受支持的答案才能使 ECPR 最大化，并且每个三元组只被奖励一次。∎"
+    }
+   ]
+  },
+  {
+   "en": "Redundancy Check. To provide a clear overview of the non-redundancy check in Section 3.1 , we present its procedure in the form of pseudocode. As shown in Algorithm 1 , we first build a support graph from the supporting triples and extract the shortest path from each topic entity to the answer node. We then enumerate proper subsets of topic entities in increasing size and execute one SPARQL query per subset. If any subset yields an answer set no larger than that of the full query, the question admits a shortcut and is discarded.",
+   "zh": "冗余检查。 为了清晰概览3.1节中的非冗余检查，我们以伪代码的形式给出其流程。 如算法1所示，我们首先根据支持三元组构建支持图，并提取从每个主题实体到答案节点的最短路径。 然后，我们按规模递增的顺序枚举主题实体的真子集，并对每个子集执行一次SPARQL查询。 如果任何子集得到的答案集不大于完整查询的答案集，则该问题存在捷径，将被丢弃。",
+   "sents": [
+    {
+     "en": "Redundancy Check.",
+     "zh": "冗余检查。"
+    },
+    {
+     "en": "To provide a clear overview of the non-redundancy check in Section 3.1 , we present its procedure in the form of pseudocode.",
+     "zh": "为了清晰概览3.1节中的非冗余检查，我们以伪代码的形式给出其流程。"
+    },
+    {
+     "en": "As shown in Algorithm 1 , we first build a support graph from the supporting triples and extract the shortest path from each topic entity to the answer node.",
+     "zh": "如算法1所示，我们首先根据支持三元组构建支持图，并提取从每个主题实体到答案节点的最短路径。"
+    },
+    {
+     "en": "We then enumerate proper subsets of topic entities in increasing size and execute one SPARQL query per subset.",
+     "zh": "然后，我们按规模递增的顺序枚举主题实体的真子集，并对每个子集执行一次SPARQL查询。"
+    },
+    {
+     "en": "If any subset yields an answer set no larger than that of the full query, the question admits a shortcut and is discarded.",
+     "zh": "如果任何子集得到的答案集不大于完整查询的答案集，则该问题存在捷径，将被丢弃。"
+    }
+   ]
+  },
+  {
+   "en": "Complexity Analysis. Given a question with | E q | |E_{q}| topic entities and | 𝒮 ( n ) | |\\mathcal{S}^{(n)}| supporting triples, extracting the shortest paths by BFS takes 𝒪 ⁡ ( | E q | ⋅ | 𝒮 ( n ) | ) \\mathcal{O}(|E_{q}|\\cdot|\\mathcal{S}^{(n)}|) time. The subset enumeration issues at most 2 | E q | − 2 2^{|E_{q}|}-2 SPARQL queries and stops at the first redundant subset. Using only the shortest path per topic entity is an approximation, which we audit on 200 candidate questions against an exhaustive enumeration of all path combinations under the same hop limit. The shortest-path check misses a shortcut in 1.5% of the candidates, while issuing 5.1 rather than 48.6 SPARQL queries per question.",
+   "zh": "复杂度分析。 给定一个包含 |E_q| 个主题实体和 |𝒮^(n)| 条支持三元组的问题，通过广度优先搜索（BFS）提取最短路径需要 𝒪(|E_q|·|𝒮^(n)|) 的时间。 子集枚举最多会发出 2^{|E_q|}−2 个 SPARQL 查询，并在遇到第一个冗余子集时停止。 对每个主题实体仅使用最短路径是一种近似方法，我们在 200 个候选问题上，对照相同跳数限制下所有路径组合的穷举枚举，对该方法进行了审查。 最短路径检查在 1.5% 的候选问题中遗漏了一条捷径，同时每个问题发出的 SPARQL 查询数为 5.1 次而非 48.6 次。",
+   "sents": [
+    {
+     "en": "Complexity Analysis.",
+     "zh": "复杂度分析。"
+    },
+    {
+     "en": "Given a question with | E q | |E_{q}| topic entities and | 𝒮 ( n ) | |\\mathcal{S}^{(n)}| supporting triples, extracting the shortest paths by BFS takes 𝒪 ⁡ ( | E q | ⋅ | 𝒮 ( n ) | ) \\mathcal{O}(|E_{q}|\\cdot|\\mathcal{S}^{(n)}|) time.",
+     "zh": "给定一个包含 |E_q| 个主题实体和 |𝒮^(n)| 条支持三元组的问题，通过广度优先搜索（BFS）提取最短路径需要 𝒪(|E_q|·|𝒮^(n)|) 的时间。"
+    },
+    {
+     "en": "The subset enumeration issues at most 2 | E q | − 2 2^{|E_{q}|}-2 SPARQL queries and stops at the first redundant subset.",
+     "zh": "子集枚举最多会发出 2^{|E_q|}−2 个 SPARQL 查询，并在遇到第一个冗余子集时停止。"
+    },
+    {
+     "en": "Using only the shortest path per topic entity is an approximation, which we audit on 200 candidate questions against an exhaustive enumeration of all path combinations under the same hop limit.",
+     "zh": "对每个主题实体仅使用最短路径是一种近似方法，我们在 200 个候选问题上，对照相同跳数限制下所有路径组合的穷举枚举，对该方法进行了审查。"
+    },
+    {
+     "en": "The shortest-path check misses a shortcut in 1.5% of the candidates, while issuing 5.1 rather than 48.6 SPARQL queries per question.",
+     "zh": "最短路径检查在 1.5% 的候选问题中遗漏了一条捷径，同时每个问题发出的 SPARQL 查询数为 5.1 次而非 48.6 次。"
+    }
+   ]
+  },
+  {
+   "en": "In summary, the redundancy check is dominated by SPARQL execution, and the shortest-path approximation reduces the number of queries by 9.5 × \\times while missing few shortcuts.",
+   "zh": "总之，冗余检查主要由 SPARQL 执行所主导，而最短路径近似方法在几乎不遗漏捷径的情况下，将查询数量减少了 9.5 × \\times 倍。",
+   "sents": null
+  },
+  {
+   "en": "As shown in Figure 7 , the synthetic questions used for FoG training span seven named Wikidata domains. Entertainment is the largest (39.7%), reflecting the density of film, television, and music entities in Wikidata, followed by history (12.6%), society (11.4%), geography (9.6%), transportation (6.6%), sports (6.5%), and politics (5.7%); the remaining 7.9% fall into other domains.",
+   "zh": "如图7所示，用于FoG训练的合成问题覆盖了七个具名的Wikidata领域。 娱乐类占比最大（39.7%），反映了Wikidata中电影、电视和音乐实体的密集程度，其次是历史（12.6%）、社会（11.4%）、地理（9.6%）、交通（6.6%）、体育（6.5%）和政治（5.7%）；其余7.9%属于其他领域。",
+   "sents": [
+    {
+     "en": "As shown in Figure 7 , the synthetic questions used for FoG training span seven named Wikidata domains.",
+     "zh": "如图7所示，用于FoG训练的合成问题覆盖了七个具名的Wikidata领域。"
+    },
+    {
+     "en": "Entertainment is the largest (39.7%), reflecting the density of film, television, and music entities in Wikidata, followed by history (12.6%), society (11.4%), geography (9.6%), transportation (6.6%), sports (6.5%), and politics (5.7%); the remaining 7.9% fall into other domains.",
+     "zh": "娱乐类占比最大（39.7%），反映了Wikidata中电影、电视和音乐实体的密集程度，其次是历史（12.6%）、社会（11.4%）、地理（9.6%）、交通（6.6%）、体育（6.5%）和政治（5.7%）；其余7.9%属于其他领域。"
+    }
+   ]
+  },
+  {
+   "en": "To construct questions with diverse reasoning structures, we label each synthetic question with the isomorphism type of its query graph. As shown in Table 7 , the 6,588 questions that pass all checks span nine chain and tree structures from 1 to 3 hops. All verified seeds enter backward expansion, and the 1-hop questions are seeds retained at depth one. Overall, 35.1%, 40.0%, and 24.9% of the questions have 1, 2, and 3 hops. The most frequent types are the three-branch star (1)(1)(1) (18.38%) and the 3-hop chain (3) (16.48%), and 67.6% of the questions have a multi-branch query graph rather than a single chain.",
+   "zh": "为了构建具有多样推理结构的问题，我们为每个合成问题标注其查询图的同构类型。 如表 7 所示，通过所有检查的 6,588 个问题涵盖了 1 到 3 跳的九种链式和树状结构。 所有经过验证的种子都会进入反向扩展，1 跳问题即是在深度一处保留的种子。 总体而言，分别有 35.1%、40.0% 和 24.9% 的问题具有 1、2、3 跳。 最常见的类型是三分支星形 (1)(1)(1)（18.38%）和 3 跳链 (3)（16.48%），并且 67.6% 的问题具有多分支查询图而非单一链。",
+   "sents": [
+    {
+     "en": "To construct questions with diverse reasoning structures, we label each synthetic question with the isomorphism type of its query graph.",
+     "zh": "为了构建具有多样推理结构的问题，我们为每个合成问题标注其查询图的同构类型。"
+    },
+    {
+     "en": "As shown in Table 7 , the 6,588 questions that pass all checks span nine chain and tree structures from 1 to 3 hops.",
+     "zh": "如表 7 所示，通过所有检查的 6,588 个问题涵盖了 1 到 3 跳的九种链式和树状结构。"
+    },
+    {
+     "en": "All verified seeds enter backward expansion, and the 1-hop questions are seeds retained at depth one.",
+     "zh": "所有经过验证的种子都会进入反向扩展，1 跳问题即是在深度一处保留的种子。"
+    },
+    {
+     "en": "Overall, 35.1%, 40.0%, and 24.9% of the questions have 1, 2, and 3 hops.",
+     "zh": "总体而言，分别有 35.1%、40.0% 和 24.9% 的问题具有 1、2、3 跳。"
+    },
+    {
+     "en": "The most frequent types are the three-branch star (1)(1)(1) (18.38%) and the 3-hop chain (3) (16.48%), and 67.6% of the questions have a multi-branch query graph rather than a single chain.",
+     "zh": "最常见的类型是三分支星形 (1)(1)(1)（18.38%）和 3 跳链 (3)（16.48%），并且 67.6% 的问题具有多分支查询图而非单一链。"
+    }
+   ]
+  },
+  {
+   "en": "As shown in Table 8 , we report the candidates retained, the rejection rate, and the teacher calls at each synthesis stage, all of which use the same teacher model, Kimi-K2 ( Team, 2025a ) . Of 20,000 sampled seed entities, 14,400 yield a verified seed question, 8,784 candidates remain after backward expansion, and 6,588 questions pass all filters, an end-to-end rejection rate of 67.1%. The pipeline uses 115,184 teacher calls, about 17.5 per retained question, and backward expansion accounts for three quarters of them.",
+   "zh": "如表 8 所示，我们报告了每个合成阶段保留的候选数量、拒绝率和教师模型调用次数，所有阶段均使用同一个教师模型 Kimi-K2 ( Team, 2025a )。 在抽取的 20,000 个种子实体中，14,400 个生成了经过验证的种子问题，8,784 个候选在反向扩展后保留下来，6,588 个问题通过了所有过滤器，端到端拒绝率为 67.1%。 该流程共使用 115,184 次教师模型调用，平均每个保留问题约 17.5 次，其中反向扩展占了四分之三。",
+   "sents": [
+    {
+     "en": "As shown in Table 8 , we report the candidates retained, the rejection rate, and the teacher calls at each synthesis stage, all of which use the same teacher model, Kimi-K2 ( Team, 2025a ) .",
+     "zh": "如表 8 所示，我们报告了每个合成阶段保留的候选数量、拒绝率和教师模型调用次数，所有阶段均使用同一个教师模型 Kimi-K2 ( Team, 2025a )。"
+    },
+    {
+     "en": "Of 20,000 sampled seed entities, 14,400 yield a verified seed question, 8,784 candidates remain after backward expansion, and 6,588 questions pass all filters, an end-to-end rejection rate of 67.1%.",
+     "zh": "在抽取的 20,000 个种子实体中，14,400 个生成了经过验证的种子问题，8,784 个候选在反向扩展后保留下来，6,588 个问题通过了所有过滤器，端到端拒绝率为 67.1%。"
+    },
+    {
+     "en": "The pipeline uses 115,184 teacher calls, about 17.5 per retained question, and backward expansion accounts for three quarters of them.",
+     "zh": "该流程共使用 115,184 次教师模型调用，平均每个保留问题约 17.5 次，其中反向扩展占了四分之三。"
+    }
+   ]
+  },
+  {
+   "en": "To ensure that the synthetic questions do not overlap with the test sets, we encode each question with BGE-M3 and compute the cosine similarity between every test question and its most similar synthetic question. The similarity stays below 0.85 for all test questions. On QALD10-en and WikiWebQuestions, no test question exceeds 0.75, and on GTSQA only 6 questions (0.37%) fall in the 0.80–0.85 range.",
+   "zh": "为确保合成问题与测试集不重叠，我们使用 BGE-M3 对每个问题进行编码，并计算每个测试问题与其最相似合成问题之间的余弦相似度。 所有测试问题的相似度均保持在 0.85 以下。 在 QALD10-en 和 WikiWebQuestions 上，没有测试问题超过 0.75；在 GTSQA 上，仅有 6 个问题（0.37%）落在 0.80–0.85 区间内。",
+   "sents": [
+    {
+     "en": "To ensure that the synthetic questions do not overlap with the test sets, we encode each question with BGE-M3 and compute the cosine similarity between every test question and its most similar synthetic question.",
+     "zh": "为确保合成问题与测试集不重叠，我们使用 BGE-M3 对每个问题进行编码，并计算每个测试问题与其最相似合成问题之间的余弦相似度。"
+    },
+    {
+     "en": "The similarity stays below 0.85 for all test questions.",
+     "zh": "所有测试问题的相似度均保持在 0.85 以下。"
+    },
+    {
+     "en": "On QALD10-en and WikiWebQuestions, no test question exceeds 0.75, and on GTSQA only 6 questions (0.37%) fall in the 0.80–0.85 range.",
+     "zh": "在 QALD10-en 和 WikiWebQuestions 上，没有测试问题超过 0.75；在 GTSQA 上，仅有 6 个问题（0.37%）落在 0.80–0.85 区间内。"
+    }
+   ]
+  },
+  {
+   "en": "As shown in Table 9 , the kg-query action in Section 3.2 is instantiated with seven operations in four categories: relation search, neighborhood expansion, constraint filtering, and set combination. The table lists the name, description, input parameters, and output of every operation.",
+   "zh": "如表 9 所示，3.2 节中的 kg-query 动作被实例化为四个类别的七种操作：关系搜索、邻域扩展、约束过滤和集合组合。 该表列出了每种操作的名称、描述、输入参数和输出。",
+   "sents": [
+    {
+     "en": "As shown in Table 9 , the kg-query action in Section 3.2 is instantiated with seven operations in four categories: relation search, neighborhood expansion, constraint filtering, and set combination.",
+     "zh": "如表 9 所示，3.2 节中的 kg-query 动作被实例化为四个类别的七种操作：关系搜索、邻域扩展、约束过滤和集合组合。"
+    },
+    {
+     "en": "The table lists the name, description, input parameters, and output of every operation.",
+     "zh": "该表列出了每种操作的名称、描述、输入参数和输出。"
+    }
+   ]
+  },
+  {
+   "en": "The benchmarks used for FoG evaluation cover two knowledge graphs, with data sourced as follows:",
+   "zh": "用于 FoG 评估的基准测试涵盖两个知识图谱，其数据来源如下：",
+   "sents": null
+  },
+  {
+   "en": "WikiWebQuestions: Ported from WebQuestions and re-annotated with SPARQL queries over Wikidata Xu et al. (2023) , consisting of real-world natural language questions.",
+   "zh": "WikiWebQuestions：移植自 WebQuestions，并由 Xu 等人（2023）使用针对 Wikidata 的 SPARQL 查询进行了重新标注，由真实的自然语言问题组成。 （2023），包含真实世界的自然语言问题。",
+   "sents": [
+    {
+     "en": "WikiWebQuestions: Ported from WebQuestions and re-annotated with SPARQL queries over Wikidata Xu et al.",
+     "zh": "WikiWebQuestions：移植自 WebQuestions，并由 Xu 等人（2023）使用针对 Wikidata 的 SPARQL 查询进行了重新标注，由真实的自然语言问题组成。"
+    },
+    {
+     "en": "(2023) , consisting of real-world natural language questions.",
+     "zh": "（2023），包含真实世界的自然语言问题。"
+    }
+   ]
+  },
+  {
+   "en": "QALD10-en: Derived from the English subset of the tenth QALD challenge Usbeck et al. (2024) , the first edition to adopt Wikidata, covering 394 expert-written test questions with multi-hop and qualifier constraints.",
+   "zh": "QALD10-en：源自第十届 QALD 挑战赛（Usbeck et al.）的英语子集， (2024)，这是首个采用 Wikidata 的 edition，包含 394 道由专家编写的测试问题，涉及多跳（multi-hop）和限定符（qualifier）约束。",
+   "sents": [
+    {
+     "en": "QALD10-en: Derived from the English subset of the tenth QALD challenge Usbeck et al.",
+     "zh": "QALD10-en：源自第十届 QALD 挑战赛（Usbeck et al.）的英语子集，"
+    },
+    {
+     "en": "(2024) , the first edition to adopt Wikidata, covering 394 expert-written test questions with multi-hop and qualifier constraints.",
+     "zh": "(2024)，这是首个采用 Wikidata 的 edition，包含 394 道由专家编写的测试问题，涉及多跳（multi-hop）和限定符（qualifier）约束。"
+    }
+   ]
+  },
+  {
+   "en": "GTSQA: Built over Wikidata with 30,144 training and 1,622 test questions Cattaneo et al. (2026) , each annotated with a gold answer subgraph and a query-graph isomorphism label.",
+   "zh": "GTSQA：基于 Wikidata 构建，包含 30,144 个训练问题和 1,622 个测试问题 Cattaneo et al. (2026)，每个问题都标注了标准答案子图以及查询图同构标签。",
+   "sents": [
+    {
+     "en": "GTSQA: Built over Wikidata with 30,144 training and 1,622 test questions Cattaneo et al.",
+     "zh": "GTSQA：基于 Wikidata 构建，包含 30,144 个训练问题和 1,622 个测试问题 Cattaneo et al."
+    },
+    {
+     "en": "(2026) , each annotated with a gold answer subgraph and a query-graph isomorphism label.",
+     "zh": "(2026)，每个问题都标注了标准答案子图以及查询图同构标签。"
+    }
+   ]
+  },
+  {
+   "en": "WebQSP: Sourced from Freebase Yih et al. (2016) and used only for the zero-shot cross-KG transfer experiment.",
+   "zh": "WebQSP：源自Freebase（Yih等人）。 （2016），仅用于零样本跨知识图谱迁移实验。",
+   "sents": [
+    {
+     "en": "WebQSP: Sourced from Freebase Yih et al.",
+     "zh": "WebQSP：源自Freebase（Yih等人）。"
+    },
+    {
+     "en": "(2016) and used only for the zero-shot cross-KG transfer experiment.",
+     "zh": "（2016），仅用于零样本跨知识图谱迁移实验。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate model performance using four complementary metrics that assess two aspects of KGQA: answer accuracy (Hit@1 and F1) and evidence coverage (Cov and RetQ).",
+   "zh": "我们使用四个互补的指标来评估模型性能，这些指标衡量 KGQA 的两个维度：答案准确率（Hit@1 和 F1）与证据覆盖率（Cov 和 RetQ）。",
+   "sents": null
+  },
+  {
+   "en": "(i) Hit@1. Hit@1 quantifies whether the predicted answer is correct. For each question, we check whether the normalized prediction matches any gold answer, and then average over all evaluated questions:",
+   "zh": "(i) Hit@1。 Hit@1 衡量预测答案是否正确。 对于每个问题，我们检查归一化后的预测是否与任一标准答案匹配，然后在所有被评估的问题上取平均：",
+   "sents": [
+    {
+     "en": "(i) Hit@1.",
+     "zh": "(i) Hit@1。"
+    },
+    {
+     "en": "Hit@1 quantifies whether the predicted answer is correct.",
+     "zh": "Hit@1 衡量预测答案是否正确。"
+    },
+    {
+     "en": "For each question, we check whether the normalized prediction matches any gold answer, and then average over all evaluated questions:",
+     "zh": "对于每个问题，我们检查归一化后的预测是否与任一标准答案匹配，然后在所有被评估的问题上取平均："
+    }
+   ]
+  },
+  {
+   "en": "where y ^ i \\hat{y}_{i} and Y i ∗ Y_{i}^{*} denote the prediction and the gold answer set of the i i -th question, norm ⁡ ( ⋅ ) \\mathrm{norm}(\\cdot) removes superficial differences such as case and punctuation, and M M is the total number of evaluated questions in the benchmark.",
+   "zh": "其中 y ^ i \\hat{y}_{i} 和 Y i ∗ Y_{i}^{*} 分别表示第 i i 个问题的预测结果和标准答案集合，norm ⁡ ( ⋅ ) \\mathrm{norm}(\\cdot) 用于去除大小写和标点等表面差异，M M 是基准中评估问题的总数。",
+   "sents": null
+  },
+  {
+   "en": "(ii) Token-level F1. F1 quantifies the token-level overlap between the predicted and gold answers. For each question, we compute the harmonic mean of token precision and recall, and then average:",
+   "zh": "(ii) Token 级 F1。 F1 量化预测答案与标准答案在 token 级别上的重叠程度。 对于每个问题，我们计算 token 精确率和召回率的调和平均数，然后取平均：",
+   "sents": [
+    {
+     "en": "(ii) Token-level F1.",
+     "zh": "(ii) Token 级 F1。"
+    },
+    {
+     "en": "F1 quantifies the token-level overlap between the predicted and gold answers.",
+     "zh": "F1 量化预测答案与标准答案在 token 级别上的重叠程度。"
+    },
+    {
+     "en": "For each question, we compute the harmonic mean of token precision and recall, and then average:",
+     "zh": "对于每个问题，我们计算 token 精确率和召回率的调和平均数，然后取平均："
+    }
+   ]
+  },
+  {
+   "en": "where tokens ⁡ ( ⋅ ) \\mathrm{tokens}(\\cdot) normalizes each answer in a list, splits it on whitespace, and takes the union of the resulting tokens over the list.",
+   "zh": "其中 tokens ⁡ ( ⋅ ) \\mathrm{tokens}(\\cdot) 对列表中的每个答案进行规范化处理，按空白字符进行切分，并取整个列表中所得词元的并集。",
+   "sents": null
+  },
+  {
+   "en": "(iii) Evidence Coverage (Cov). Cov quantifies how much of the gold supporting evidence the agent retrieves along its trajectory. For each question, we compute the fraction of gold supporting triples returned by its KG queries, and then average over all questions:",
+   "zh": "(iii) 证据覆盖率（Cov）。 Cov 量化智能体在其轨迹中检索到的黄金支持证据的比例。 对于每个问题，我们计算其 KG 查询返回的黄金支持三元组所占的比例，然后在所有问题上取平均：",
+   "sents": [
+    {
+     "en": "(iii) Evidence Coverage (Cov).",
+     "zh": "(iii) 证据覆盖率（Cov）。"
+    },
+    {
+     "en": "Cov quantifies how much of the gold supporting evidence the agent retrieves along its trajectory.",
+     "zh": "Cov 量化智能体在其轨迹中检索到的黄金支持证据的比例。"
+    },
+    {
+     "en": "For each question, we compute the fraction of gold supporting triples returned by its KG queries, and then average over all questions:",
+     "zh": "对于每个问题，我们计算其 KG 查询返回的黄金支持三元组所占的比例，然后在所有问题上取平均："
+    }
+   ]
+  },
+  {
+   "en": "where 𝒯 ⁡ ( τ i ) \\mathcal{T}(\\tau_{i}) denotes the set of triples returned by all kg-query actions in the trajectory τ i \\tau_{i} , and 𝒮 i ∗ \\mathcal{S}^{*}_{i} denotes the gold supporting triples of the i i -th question. This metric reflects whether an answer is backed by the complete evidence path.",
+   "zh": "其中 𝒯 ⁡ ( τ i ) \\mathcal{T}(\\tau_{i}) 表示轨迹 τ i \\tau_{i} 中所有 kg-query 动作返回的三元组集合，𝒮 i ∗ \\mathcal{S}^{*}_{i} 表示第 i i 个问题的金标支持三元组。 该指标反映答案是否由完整的证据路径支撑。",
+   "sents": [
+    {
+     "en": "where 𝒯 ⁡ ( τ i ) \\mathcal{T}(\\tau_{i}) denotes the set of triples returned by all kg-query actions in the trajectory τ i \\tau_{i} , and 𝒮 i ∗ \\mathcal{S}^{*}_{i} denotes the gold supporting triples of the i i -th question.",
+     "zh": "其中 𝒯 ⁡ ( τ i ) \\mathcal{T}(\\tau_{i}) 表示轨迹 τ i \\tau_{i} 中所有 kg-query 动作返回的三元组集合，𝒮 i ∗ \\mathcal{S}^{*}_{i} 表示第 i i 个问题的金标支持三元组。"
+    },
+    {
+     "en": "This metric reflects whether an answer is backed by the complete evidence path.",
+     "zh": "该指标反映答案是否由完整的证据路径支撑。"
+    }
+   ]
+  },
+  {
+   "en": "(iv) Retrieval Grounding (RetQ). RetQ quantifies whether the gold answer is retrieved from the KG rather than produced from parametric memory. For each question, we check whether any gold answer appears among the entities returned by its KG queries, and then average over all questions:",
+   "zh": "(iv) 检索接地（RetQ）。 RetQ 衡量黄金答案是否从知识图谱中检索得到，而非由参数化记忆生成。 对于每个问题，我们检查是否有任何黄金答案出现在其知识图谱查询返回的实体中，然后对所有问题取平均：",
+   "sents": [
+    {
+     "en": "(iv) Retrieval Grounding (RetQ).",
+     "zh": "(iv) 检索接地（RetQ）。"
+    },
+    {
+     "en": "RetQ quantifies whether the gold answer is retrieved from the KG rather than produced from parametric memory.",
+     "zh": "RetQ 衡量黄金答案是否从知识图谱中检索得到，而非由参数化记忆生成。"
+    },
+    {
+     "en": "For each question, we check whether any gold answer appears among the entities returned by its KG queries, and then average over all questions:",
+     "zh": "对于每个问题，我们检查是否有任何黄金答案出现在其知识图谱查询返回的实体中，然后对所有问题取平均："
+    }
+   ]
+  },
+  {
+   "en": "where ℰ ⁡ ( τ i ) \\mathcal{E}(\\tau_{i}) denotes the set of entities returned by all KG queries in the trajectory τ i \\tau_{i} .",
+   "zh": "其中 ℰ ⁡ ( τ i ) \\mathcal{E}(\\tau_{i}) 表示轨迹 τ i \\tau_{i} 中所有知识图谱查询返回的实体集合。",
+   "sents": null
+  },
+  {
+   "en": "The gold supporting triples used for evaluation are distinct from those produced by synthesis, which serve only as ECPR supervision during training. GTSQA provides gold answer subgraphs natively. For WikiWebQuestions, which has no such annotation, we follow EoG Yan et al. (2026) and construct them in two stages. We first enumerate candidate paths from each topic entity to each answer entity by BFS under a maximum-hop constraint. An LLM verifier then judges whether each candidate path supports all constraints of the question, and the union of triples on the accepted paths forms the gold supporting triples.",
+   "zh": "用于评估的金标准支撑三元组与合成产生的三元组不同，后者仅在训练过程中作为ECPR的监督信号。 GTSQA天然提供金标准答案子图。 对于没有此类标注的WikiWebQuestions，我们遵循EoG Yan et al. (2026)的方法，分两个阶段构建。 我们首先在最大跳数约束下，通过BFS从每个主题实体到每个答案实体枚举候选路径。 然后由LLM验证器判断每条候选路径是否支持问题的所有约束，被接受路径上的三元组的并集即构成金标准支撑三元组。",
+   "sents": [
+    {
+     "en": "The gold supporting triples used for evaluation are distinct from those produced by synthesis, which serve only as ECPR supervision during training.",
+     "zh": "用于评估的金标准支撑三元组与合成产生的三元组不同，后者仅在训练过程中作为ECPR的监督信号。"
+    },
+    {
+     "en": "GTSQA provides gold answer subgraphs natively.",
+     "zh": "GTSQA天然提供金标准答案子图。"
+    },
+    {
+     "en": "For WikiWebQuestions, which has no such annotation, we follow EoG Yan et al.",
+     "zh": "对于没有此类标注的WikiWebQuestions，我们遵循EoG Yan et al."
+    },
+    {
+     "en": "(2026) and construct them in two stages.",
+     "zh": "(2026)的方法，分两个阶段构建。"
+    },
+    {
+     "en": "We first enumerate candidate paths from each topic entity to each answer entity by BFS under a maximum-hop constraint.",
+     "zh": "我们首先在最大跳数约束下，通过BFS从每个主题实体到每个答案实体枚举候选路径。"
+    },
+    {
+     "en": "An LLM verifier then judges whether each candidate path supports all constraints of the question, and the union of triples on the accepted paths forms the gold supporting triples.",
+     "zh": "然后由LLM验证器判断每条候选路径是否支持问题的所有约束，被接受路径上的三元组的并集即构成金标准支撑三元组。"
+    }
+   ]
+  },
+  {
+   "en": "To validate the constructed paths independently of the LLM verifier, we sample 200 candidate paths from WikiWebQuestions, 100 accepted and 100 rejected by the verifier. Three graduate annotators independently judge whether each path supports all constraints of its question, without seeing the verifier decision. The annotators reach Fleiss’ κ = 0.91 \\kappa=0.91 , and the human–verifier agreement is 93.0%, with a verifier precision of 0.94 and a recall of 0.92. Table 10 shows two representative rejected paths.",
+   "zh": "为了在不依赖大语言模型验证器的情况下独立验证所构建的路径，我们从 WikiWebQuestions 中抽取 200 条候选路径，其中 100 条被验证器接受，100 条被拒绝。 三名研究生标注者独立判断每条路径是否满足其问题的所有约束条件，且不查看验证器的判定结果。 标注者之间达到 Fleiss' κ = 0.91 \\kappa=0.91，人类与验证器的一致率为 93.0%，验证器的精确率为 0.94，召回率为 0.92。 表 10 展示了两条具有代表性的被拒绝路径。",
+   "sents": [
+    {
+     "en": "To validate the constructed paths independently of the LLM verifier, we sample 200 candidate paths from WikiWebQuestions, 100 accepted and 100 rejected by the verifier.",
+     "zh": "为了在不依赖大语言模型验证器的情况下独立验证所构建的路径，我们从 WikiWebQuestions 中抽取 200 条候选路径，其中 100 条被验证器接受，100 条被拒绝。"
+    },
+    {
+     "en": "Three graduate annotators independently judge whether each path supports all constraints of its question, without seeing the verifier decision.",
+     "zh": "三名研究生标注者独立判断每条路径是否满足其问题的所有约束条件，且不查看验证器的判定结果。"
+    },
+    {
+     "en": "The annotators reach Fleiss’ κ = 0.91 \\kappa=0.91 , and the human–verifier agreement is 93.0%, with a verifier precision of 0.94 and a recall of 0.92.",
+     "zh": "标注者之间达到 Fleiss' κ = 0.91 \\kappa=0.91，人类与验证器的一致率为 93.0%，验证器的精确率为 0.94，召回率为 0.92。"
+    },
+    {
+     "en": "Table 10 shows two representative rejected paths.",
+     "zh": "表 10 展示了两条具有代表性的被拒绝路径。"
+    }
+   ]
+  },
+  {
+   "en": "We compare FoG against nine representative baselines that cover the LLM reasoning, retrieval-based, and agent-based paradigms:",
+   "zh": "我们将 FoG 与九个涵盖 LLM 推理、基于检索和基于智能体范式的代表性基线进行了比较：",
+   "sents": null
+  },
+  {
+   "en": "IO Prompt OpenAI (2023) ; Team (2025b) ; DeepSeek-AI (2024) is a KG-free baseline where the LLM directly answers the question from its parametric knowledge. This serves as a lower bound for KG-augmented reasoning.",
+   "zh": "IO 提示（IO Prompt）OpenAI (2023)；Team (2025b)；DeepSeek-AI (2024) 是一种不依赖知识图谱（KG-free）的基线方法，其中大语言模型（LLM）直接根据其参数化知识回答问题。 这可以作为知识图谱增强推理的下界。",
+   "sents": [
+    {
+     "en": "IO Prompt OpenAI (2023) ; Team (2025b) ; DeepSeek-AI (2024) is a KG-free baseline where the LLM directly answers the question from its parametric knowledge.",
+     "zh": "IO 提示（IO Prompt）OpenAI (2023)；Team (2025b)；DeepSeek-AI (2024) 是一种不依赖知识图谱（KG-free）的基线方法，其中大语言模型（LLM）直接根据其参数化知识回答问题。"
+    },
+    {
+     "en": "This serves as a lower bound for KG-augmented reasoning.",
+     "zh": "这可以作为知识图谱增强推理的下界。"
+    }
+   ]
+  },
+  {
+   "en": "CoT Wei et al. (2022) elicits step-by-step reasoning before the final answer, still without any access to the KG.",
+   "zh": "思维链（CoT）Wei 等人 (2022) 在最终答案之前引导逐步推理，但仍然无法访问知识图谱（KG）。",
+   "sents": [
+    {
+     "en": "CoT Wei et al.",
+     "zh": "思维链（CoT）Wei 等人"
+    },
+    {
+     "en": "(2022) elicits step-by-step reasoning before the final answer, still without any access to the KG.",
+     "zh": "(2022) 在最终答案之前引导逐步推理，但仍然无法访问知识图谱（KG）。"
+    }
+   ]
+  },
+  {
+   "en": "Self-Consistency Wang et al. (2023) samples multiple CoT chains and aggregates their answers by majority voting.",
+   "zh": "自洽性（Self-Consistency）Wang 等人 (2023) 采样多条思维链（CoT），并通过多数投票聚合它们的答案。",
+   "sents": [
+    {
+     "en": "Self-Consistency Wang et al.",
+     "zh": "自洽性（Self-Consistency）Wang 等人"
+    },
+    {
+     "en": "(2023) samples multiple CoT chains and aggregates their answers by majority voting.",
+     "zh": "(2023) 采样多条思维链（CoT），并通过多数投票聚合它们的答案。"
+    }
+   ]
+  },
+  {
+   "en": "RoG Luo et al. (2024) generates relation paths as plans, retrieves reasoning paths along them, and answers from the retrieved paths.",
+   "zh": "RoG（Luo 等人） （2024）生成关系路径作为计划，沿这些路径检索推理路径，并基于检索到的路径进行回答。",
+   "sents": [
+    {
+     "en": "RoG Luo et al.",
+     "zh": "RoG（Luo 等人）"
+    },
+    {
+     "en": "(2024) generates relation paths as plans, retrieves reasoning paths along them, and answers from the retrieved paths.",
+     "zh": "（2024）生成关系路径作为计划，沿这些路径检索推理路径，并基于检索到的路径进行回答。"
+    }
+   ]
+  },
+  {
+   "en": "SubGraphRAG Li et al. (2025) retrieves a subgraph with a lightweight MLP that scores triples in parallel, and feeds it to an LLM reader.",
+   "zh": "SubGraphRAG（Li 等人） （2025）使用一个轻量级 MLP 并行地对三元组进行评分来检索子图，并将其输入给一个 LLM 阅读器。",
+   "sents": [
+    {
+     "en": "SubGraphRAG Li et al.",
+     "zh": "SubGraphRAG（Li 等人）"
+    },
+    {
+     "en": "(2025) retrieves a subgraph with a lightweight MLP that scores triples in parallel, and feeds it to an LLM reader.",
+     "zh": "（2025）使用一个轻量级 MLP 并行地对三元组进行评分来检索子图，并将其输入给一个 LLM 阅读器。"
+    }
+   ]
+  },
+  {
+   "en": "GCR Luo et al. (2025) encodes KG paths into a Trie index and constrains LLM decoding with the graph structure.",
+   "zh": "GCR（Luo 等人） （2025）将知识图谱路径编码为 Trie 索引，并利用图结构约束大语言模型的解码过程。",
+   "sents": [
+    {
+     "en": "GCR Luo et al.",
+     "zh": "GCR（Luo 等人）"
+    },
+    {
+     "en": "(2025) encodes KG paths into a Trie index and constrains LLM decoding with the graph structure.",
+     "zh": "（2025）将知识图谱路径编码为 Trie 索引，并利用图结构约束大语言模型的解码过程。"
+    }
+   ]
+  },
+  {
+   "en": "ToG Sun et al. (2024) is a training-free agent that performs beam search over entities and relations through multi-turn KG interaction.",
+   "zh": "ToG（Sun 等人） （2024）是一种免训练的智能体，它通过多轮知识图谱交互对实体和关系执行束搜索。",
+   "sents": [
+    {
+     "en": "ToG Sun et al.",
+     "zh": "ToG（Sun 等人）"
+    },
+    {
+     "en": "(2024) is a training-free agent that performs beam search over entities and relations through multi-turn KG interaction.",
+     "zh": "（2024）是一种免训练的智能体，它通过多轮知识图谱交互对实体和关系执行束搜索。"
+    }
+   ]
+  },
+  {
+   "en": "PoG Chen et al. (2024) decomposes the question into sub-objectives and explores paths with memory updating and self-reflection.",
+   "zh": "PoG（Chen 等人） （2024）将问题分解为子目标，并通过记忆更新和自我反思来探索路径。",
+   "sents": [
+    {
+     "en": "PoG Chen et al.",
+     "zh": "PoG（Chen 等人）"
+    },
+    {
+     "en": "(2024) decomposes the question into sub-objectives and explores paths with memory updating and self-reflection.",
+     "zh": "（2024）将问题分解为子目标，并通过记忆更新和自我反思来探索路径。"
+    }
+   ]
+  },
+  {
+   "en": "KG-R1 Lin et al. (2025) trains a single KG agent end-to-end with GRPO under outcome and turn-level action-validity rewards.",
+   "zh": "KG-R1（Lin 等人） （2025）在结果奖励与回合级动作有效性奖励下，用 GRPO 端到端训练单个知识图谱智能体。",
+   "sents": [
+    {
+     "en": "KG-R1 Lin et al.",
+     "zh": "KG-R1（Lin 等人）"
+    },
+    {
+     "en": "(2025) trains a single KG agent end-to-end with GRPO under outcome and turn-level action-validity rewards.",
+     "zh": "（2025）在结果奖励与回合级动作有效性奖励下，用 GRPO 端到端训练单个知识图谱智能体。"
+    }
+   ]
+  },
+  {
+   "en": "Adaptation to Wikidata. RoG, SubGraphRAG, and GCR were proposed on Freebase and rely on dataset-specific supervision, so they cannot be transferred to a new KG without retraining. We therefore retrain each of them on the training split of every Wikidata benchmark. KG-R1 was also proposed on Freebase. We retrain it on Wikidata with the same training data as FoG.",
+   "zh": "适配 Wikidata。 RoG、SubGraphRAG 和 GCR 是在 Freebase 上提出的，并依赖于特定数据集的监督信号，因此无法在不重新训练的情况下迁移到新的知识图谱。 因此，我们在每个 Wikidata 基准的训练集上对它们逐一进行重新训练。 KG-R1 同样是在 Freebase 上提出的。 我们使用与 FoG 相同的训练数据在 Wikidata 上对其进行重新训练。",
+   "sents": [
+    {
+     "en": "Adaptation to Wikidata.",
+     "zh": "适配 Wikidata。"
+    },
+    {
+     "en": "RoG, SubGraphRAG, and GCR were proposed on Freebase and rely on dataset-specific supervision, so they cannot be transferred to a new KG without retraining.",
+     "zh": "RoG、SubGraphRAG 和 GCR 是在 Freebase 上提出的，并依赖于特定数据集的监督信号，因此无法在不重新训练的情况下迁移到新的知识图谱。"
+    },
+    {
+     "en": "We therefore retrain each of them on the training split of every Wikidata benchmark.",
+     "zh": "因此，我们在每个 Wikidata 基准的训练集上对它们逐一进行重新训练。"
+    },
+    {
+     "en": "KG-R1 was also proposed on Freebase.",
+     "zh": "KG-R1 同样是在 Freebase 上提出的。"
+    },
+    {
+     "en": "We retrain it on Wikidata with the same training data as FoG.",
+     "zh": "我们使用与 FoG 相同的训练数据在 Wikidata 上对其进行重新训练。"
+    }
+   ]
+  },
+  {
+   "en": "To ensure fairness, all methods, including FoG, are evaluated under identical conditions with a single inference run per question, and no multi-run aggregation is used. The backbone of each method is listed in Table 1 .",
+   "zh": "为确保公平，包括 FoG 在内的所有方法均在相同条件下进行评估，每个问题仅运行一次推理，且不使用多次运行的聚合结果。 每种方法的骨干模型列于表 1 中。",
+   "sents": [
+    {
+     "en": "To ensure fairness, all methods, including FoG, are evaluated under identical conditions with a single inference run per question, and no multi-run aggregation is used.",
+     "zh": "为确保公平，包括 FoG 在内的所有方法均在相同条件下进行评估，每个问题仅运行一次推理，且不使用多次运行的聚合结果。"
+    },
+    {
+     "en": "The backbone of each method is listed in Table 1 .",
+     "zh": "每种方法的骨干模型列于表 1 中。"
+    }
+   ]
+  },
+  {
+   "en": "Supervised Fine-Tuning. For SFT, we adopt LLaMA-Factory Zheng et al. (2024) and apply LoRA to all linear layers. The training trajectories are distilled from the same teacher model used in synthesis, Kimi-K2 Team (2025a) , with the prompt in Table 19 . Training runs on a single NVIDIA A100 GPU.",
+   "zh": "监督微调。 对于 SFT，我们采用 LLaMA-Factory（Zheng 等人，2024）。 （2024）并对所有线性层应用 LoRA。 训练轨迹从与合成时使用的同一个教师模型中蒸馏而来，即 Kimi-K2 Team（2025a），所使用的提示词见表 19。 训练在单块 NVIDIA A100 GPU 上进行。",
+   "sents": [
+    {
+     "en": "Supervised Fine-Tuning.",
+     "zh": "监督微调。"
+    },
+    {
+     "en": "For SFT, we adopt LLaMA-Factory Zheng et al.",
+     "zh": "对于 SFT，我们采用 LLaMA-Factory（Zheng 等人，2024）。"
+    },
+    {
+     "en": "(2024) and apply LoRA to all linear layers.",
+     "zh": "（2024）并对所有线性层应用 LoRA。"
+    },
+    {
+     "en": "The training trajectories are distilled from the same teacher model used in synthesis, Kimi-K2 Team (2025a) , with the prompt in Table 19 .",
+     "zh": "训练轨迹从与合成时使用的同一个教师模型中蒸馏而来，即 Kimi-K2 Team（2025a），所使用的提示词见表 19。"
+    },
+    {
+     "en": "Training runs on a single NVIDIA A100 GPU.",
+     "zh": "训练在单块 NVIDIA A100 GPU 上进行。"
+    }
+   ]
+  },
+  {
+   "en": "Reinforcement Learning. For RL, we adopt Verl Sheng et al. (2025) and initialize the policy from the SFT checkpoint. Training runs on a single node with 4 × \\times NVIDIA A100 (40 GB) GPUs, using FSDP with parameter and optimizer CPU offloading, and rollouts are executed with vLLM. For each question, the agent samples N = 4 N{=}4 trajectories with at most 10 KG interaction turns. KL regularization uses the k 3 k_{3} estimator with coefficient 0.03, anchored to the SFT model. Table 11 and Table 12 summarize the detailed hyperparameter configurations used throughout our experiments, and Table 13 lists the coefficients of the composite reward in Section 3.3 .",
+   "zh": "强化学习。 对于强化学习，我们采用 Verl（Sheng 等人）。 （2025），并从 SFT 检查点初始化策略。 训练在配备 4 × \\times NVIDIA A100（40 GB）GPU 的单节点上进行，使用带参数和优化器 CPU 卸载的 FSDP，并使用 vLLM 执行 rollout。 对于每个问题，智能体采样 N = 4 N{=}4 条轨迹，最多进行 10 轮知识图谱交互。 KL 正则化使用 k 3 k_{3} 估计器，系数为 0.03，并以 SFT 模型为锚点。 表 11 和表 12 总结了我们整个实验中使用的详细超参数配置，表 13 列出了 3.3 节中复合奖励的系数。",
+   "sents": [
+    {
+     "en": "Reinforcement Learning.",
+     "zh": "强化学习。"
+    },
+    {
+     "en": "For RL, we adopt Verl Sheng et al.",
+     "zh": "对于强化学习，我们采用 Verl（Sheng 等人）。"
+    },
+    {
+     "en": "(2025) and initialize the policy from the SFT checkpoint.",
+     "zh": "（2025），并从 SFT 检查点初始化策略。"
+    },
+    {
+     "en": "Training runs on a single node with 4 × \\times NVIDIA A100 (40 GB) GPUs, using FSDP with parameter and optimizer CPU offloading, and rollouts are executed with vLLM.",
+     "zh": "训练在配备 4 × \\times NVIDIA A100（40 GB）GPU 的单节点上进行，使用带参数和优化器 CPU 卸载的 FSDP，并使用 vLLM 执行 rollout。"
+    },
+    {
+     "en": "For each question, the agent samples N = 4 N{=}4 trajectories with at most 10 KG interaction turns.",
+     "zh": "对于每个问题，智能体采样 N = 4 N{=}4 条轨迹，最多进行 10 轮知识图谱交互。"
+    },
+    {
+     "en": "KL regularization uses the k 3 k_{3} estimator with coefficient 0.03, anchored to the SFT model.",
+     "zh": "KL 正则化使用 k 3 k_{3} 估计器，系数为 0.03，并以 SFT 模型为锚点。"
+    },
+    {
+     "en": "Table 11 and Table 12 summarize the detailed hyperparameter configurations used throughout our experiments, and Table 13 lists the coefficients of the composite reward in Section 3.3 .",
+     "zh": "表 11 和表 12 总结了我们整个实验中使用的详细超参数配置，表 13 列出了 3.3 节中复合奖励的系数。"
+    }
+   ]
+  },
+  {
+   "en": "Advantage Computation. The turn-level advantage in Section 3.3 is computed as follows. (i) Return. The return G i , t G_{i,t} in Equation 8 adds the immediate process rewards of turn t t to the outcome reward of the trajectory. We use neither discounting nor a reward-to-go, so the evidence reward of a turn is credited to that turn only. (ii) Normalization. The mean μ q \\mu_{q} and standard deviation σ q \\sigma_{q} are computed over all (trajectory, turn) pairs of the N N rollouts of the same question. Trajectories of different lengths need no padding, since each contributes as many returns as it has turns. (iii) Token mask. The advantage of a turn is broadcast to the tokens that the policy generates in that turn, i.e., its reasoning and its tool call or answer. Tool observations are part of the context but are masked out of the policy loss and the KL term. (iv) Objective. The policy maximizes",
+   "zh": "优势计算。 第3.3节中的轮级优势按如下方式计算。(i) 回报。 公式8中的回报 G i , t G_{i,t} 将第 t t 轮的即时过程奖励与该轨迹的结果奖励相加。 我们既不使用折扣也不使用未来奖励累计（reward-to-go），因此某一轮的证据奖励只记入该轮本身。(ii) 归一化。 均值 μ q \\mu_{q} 和标准差 σ q \\sigma_{q} 在同一问题的 N N 个 rollout 的所有（轨迹，轮）对上计算。 不同长度的轨迹无需填充，因为每条轨迹贡献的回报数量与其轮数相同。(iii) Token 掩码。 某一轮的优势被广播到策略在该轮生成的 token 上，即其推理及其工具调用或答案。 工具观测属于上下文的一部分，但在策略损失和 KL 项中被掩码掉。(iv) 目标函数。策略最大化",
+   "sents": [
+    {
+     "en": "Advantage Computation.",
+     "zh": "优势计算。"
+    },
+    {
+     "en": "The turn-level advantage in Section 3.3 is computed as follows. (i) Return.",
+     "zh": "第3.3节中的轮级优势按如下方式计算。(i) 回报。"
+    },
+    {
+     "en": "The return G i , t G_{i,t} in Equation 8 adds the immediate process rewards of turn t t to the outcome reward of the trajectory.",
+     "zh": "公式8中的回报 G i , t G_{i,t} 将第 t t 轮的即时过程奖励与该轨迹的结果奖励相加。"
+    },
+    {
+     "en": "We use neither discounting nor a reward-to-go, so the evidence reward of a turn is credited to that turn only. (ii) Normalization.",
+     "zh": "我们既不使用折扣也不使用未来奖励累计（reward-to-go），因此某一轮的证据奖励只记入该轮本身。(ii) 归一化。"
+    },
+    {
+     "en": "The mean μ q \\mu_{q} and standard deviation σ q \\sigma_{q} are computed over all (trajectory, turn) pairs of the N N rollouts of the same question.",
+     "zh": "均值 μ q \\mu_{q} 和标准差 σ q \\sigma_{q} 在同一问题的 N N 个 rollout 的所有（轨迹，轮）对上计算。"
+    },
+    {
+     "en": "Trajectories of different lengths need no padding, since each contributes as many returns as it has turns. (iii) Token mask.",
+     "zh": "不同长度的轨迹无需填充，因为每条轨迹贡献的回报数量与其轮数相同。(iii) Token 掩码。"
+    },
+    {
+     "en": "The advantage of a turn is broadcast to the tokens that the policy generates in that turn, i.e., its reasoning and its tool call or answer.",
+     "zh": "某一轮的优势被广播到策略在该轮生成的 token 上，即其推理及其工具调用或答案。"
+    },
+    {
+     "en": "Tool observations are part of the context but are masked out of the policy loss and the KL term. (iv) Objective. The policy maximizes",
+     "zh": "工具观测属于上下文的一部分，但在策略损失和 KL 项中被掩码掉。(iv) 目标函数。策略最大化"
+    }
+   ]
+  },
+  {
+   "en": "where j j ranges over the | τ i | |\\tau_{i}| policy-generated tokens, t ⁡ ( j ) t(j) is the turn of token j j , ρ i , j \\rho_{i,j} is the probability ratio, and π ref \\pi_{\\text{ref}} is the SFT model. (v) Difference from trajectory-level credit. When the coverage reward is credited only to the final turn, the turns that actually retrieved the evidence receive the same return as the turns that did not, so the update cannot distinguish them. With first-match attribution, two trajectories with the same coverage still produce different per-turn returns, and the advantage concentrates on the queries that first reach gold triples.",
+   "zh": "其中 j 遍历策略生成的 |τ_i| 个词元，t(j) 是词元 j 所在的轮次，ρ_{i,j} 是概率比率，π_ref 是 SFT 模型。 (v) 与轨迹级信用分配的区别。 当覆盖奖励只记在最后一轮时，真正检索到证据的轮次与未检索到证据的轮次得到相同的回报，因此更新无法区分它们。 通过首次命中归因，具有相同覆盖的两条轨迹仍会产生不同的逐轮回报，且优势集中在首次命中黄金三元组的查询上。",
+   "sents": [
+    {
+     "en": "where j j ranges over the | τ i | |\\tau_{i}| policy-generated tokens, t ⁡ ( j ) t(j) is the turn of token j j , ρ i , j \\rho_{i,j} is the probability ratio, and π ref \\pi_{\\text{ref}} is the SFT model.",
+     "zh": "其中 j 遍历策略生成的 |τ_i| 个词元，t(j) 是词元 j 所在的轮次，ρ_{i,j} 是概率比率，π_ref 是 SFT 模型。"
+    },
+    {
+     "en": "(v) Difference from trajectory-level credit.",
+     "zh": "(v) 与轨迹级信用分配的区别。"
+    },
+    {
+     "en": "When the coverage reward is credited only to the final turn, the turns that actually retrieved the evidence receive the same return as the turns that did not, so the update cannot distinguish them.",
+     "zh": "当覆盖奖励只记在最后一轮时，真正检索到证据的轮次与未检索到证据的轮次得到相同的回报，因此更新无法区分它们。"
+    },
+    {
+     "en": "With first-match attribution, two trajectories with the same coverage still produce different per-turn returns, and the advantage concentrates on the queries that first reach gold triples.",
+     "zh": "通过首次命中归因，具有相同覆盖的两条轨迹仍会产生不同的逐轮回报，且优势集中在首次命中黄金三元组的查询上。"
+    }
+   ]
+  },
+  {
+   "en": "To better understand how much of the supporting evidence different methods retrieve from the KG, we present a case study on the question: “Which airline flies the Embraer 195 and is based at the airport named after Margaret Kenyatta’s father?” As shown in Tables 14 , 15 , and 16 , this question requires resolving the father, the airport named after him, and the airline that is based there and flies the aircraft. All three methods predict the correct answer, but they differ in how much of the evidence chain they recover.",
+   "zh": "为了更好地理解不同方法能从知识图谱中检索到多少支持证据，我们对问题「哪家航空公司运营 Embraer 195，并且基地位于以 Margaret Kenyatta 的父亲命名的机场？」进行了案例研究。如表 14、15 和 16 所示，这个问题需要解析出她的父亲、以其命名的机场，以及驻扎在该机场并运营该机型的航空公司。 三种方法都预测出了正确答案，但它们恢复出的证据链完整程度各不相同。",
+   "sents": [
+    {
+     "en": "To better understand how much of the supporting evidence different methods retrieve from the KG, we present a case study on the question: “Which airline flies the Embraer 195 and is based at the airport named after Margaret Kenyatta’s father?” As shown in Tables 14 , 15 , and 16 , this question requires resolving the father, the airport named after him, and the airline that is based there and flies the aircraft.",
+     "zh": "为了更好地理解不同方法能从知识图谱中检索到多少支持证据，我们对问题「哪家航空公司运营 Embraer 195，并且基地位于以 Margaret Kenyatta 的父亲命名的机场？」进行了案例研究。如表 14、15 和 16 所示，这个问题需要解析出她的父亲、以其命名的机场，以及驻扎在该机场并运营该机型的航空公司。"
+    },
+    {
+     "en": "All three methods predict the correct answer, but they differ in how much of the evidence chain they recover.",
+     "zh": "三种方法都预测出了正确答案，但它们恢复出的证据链完整程度各不相同。"
+    }
+   ]
+  },
+  {
+   "en": "FoG recovers the complete gold evidence. It issues nine KG turns and grounds each hop in the triples returned by the previous one, so every link of the chain can be read from the trajectory.",
+   "zh": "FoG 恢复出完整的黄金证据。 它发起九轮知识图谱（KG）交互，并将每一跳都锚定在上一轮返回的三元组上，因此链条的每一环都可以从轨迹中读出。",
+   "sents": [
+    {
+     "en": "FoG recovers the complete gold evidence.",
+     "zh": "FoG 恢复出完整的黄金证据。"
+    },
+    {
+     "en": "It issues nine KG turns and grounds each hop in the triples returned by the previous one, so every link of the chain can be read from the trajectory.",
+     "zh": "它发起九轮知识图谱（KG）交互，并将每一跳都锚定在上一轮返回的三元组上，因此链条的每一环都可以从轨迹中读出。"
+    }
+   ]
+  },
+  {
+   "en": "In contrast, ToG performs four rounds of beam search but recovers only one relevant triple, missing the links for airport naming and airline hub, so its answer relies mainly on parametric knowledge. PoG answers after a single retrieval step, leaving an evidence chain that cannot be audited from the trajectory. This case highlights the strength of FoG in reaching the answer through evidence that is fully retrieved from the KG.",
+   "zh": "相比之下，ToG 进行了四轮束搜索，却只找回一条相关三元组，遗漏了机场命名和航空枢纽相关的链接，因此其答案主要依赖参数化知识。 PoG 在单次检索步骤后就给出答案，留下的证据链无法从轨迹中进行审计。 该案例凸显了 FoG 的优势：通过完全从知识图谱中检索到的证据得出答案。",
+   "sents": [
+    {
+     "en": "In contrast, ToG performs four rounds of beam search but recovers only one relevant triple, missing the links for airport naming and airline hub, so its answer relies mainly on parametric knowledge.",
+     "zh": "相比之下，ToG 进行了四轮束搜索，却只找回一条相关三元组，遗漏了机场命名和航空枢纽相关的链接，因此其答案主要依赖参数化知识。"
+    },
+    {
+     "en": "PoG answers after a single retrieval step, leaving an evidence chain that cannot be audited from the trajectory.",
+     "zh": "PoG 在单次检索步骤后就给出答案，留下的证据链无法从轨迹中进行审计。"
+    },
+    {
+     "en": "This case highlights the strength of FoG in reaching the answer through evidence that is fully retrieved from the KG.",
+     "zh": "该案例凸显了 FoG 的优势：通过完全从知识图谱中检索到的证据得出答案。"
+    }
+   ]
+  },
+  {
+   "en": "As shown in Table 17 , this prompt is designed for generating seed questions from a sampled subgraph. It guides the teacher to return a question, its logical form, and its supporting triples, which corresponds to π gen \\pi_{\\text{gen}} in Equation 1 .",
+   "zh": "如表17所示，该提示用于从采样的子图中生成种子问题。 它引导教师模型返回一个问题、其逻辑形式及其支持三元组，对应于公式1中的 π gen \\pi_{\\text{gen}}。",
+   "sents": [
+    {
+     "en": "As shown in Table 17 , this prompt is designed for generating seed questions from a sampled subgraph.",
+     "zh": "如表17所示，该提示用于从采样的子图中生成种子问题。"
+    },
+    {
+     "en": "It guides the teacher to return a question, its logical form, and its supporting triples, which corresponds to π gen \\pi_{\\text{gen}} in Equation 1 .",
+     "zh": "它引导教师模型返回一个问题、其逻辑形式及其支持三元组，对应于公式1中的 π gen \\pi_{\\text{gen}}。"
+    }
+   ]
+  },
+  {
+   "en": "As shown in Table 18 , this prompt is used by the backward-expansion agent. The agent is instructed to select an anchor entity, retrieve its neighborhood, generate a sub-question whose answer is the anchor, and verify the result, retrying on failure.",
+   "zh": "如表18所示，该提示词由反向扩展智能体使用。 该智能体被指示选择一个锚点实体，检索其邻域，生成一个以该锚点为答案的子问题，并验证结果，失败时进行重试。",
+   "sents": [
+    {
+     "en": "As shown in Table 18 , this prompt is used by the backward-expansion agent.",
+     "zh": "如表18所示，该提示词由反向扩展智能体使用。"
+    },
+    {
+     "en": "The agent is instructed to select an anchor entity, retrieve its neighborhood, generate a sub-question whose answer is the anchor, and verify the result, retrying on failure.",
+     "zh": "该智能体被指示选择一个锚点实体，检索其邻域，生成一个以该锚点为答案的子问题，并验证结果，失败时进行重试。"
+    }
+   ]
+  },
+  {
+   "en": "As shown in Table 19 , this prompt is used to distill the teacher trajectories for SFT. The teacher is instructed to explore the KG only through the provided tools, explain each call, and answer with entities that appear in the tool responses.",
+   "zh": "如表19所示，该提示词用于为SFT蒸馏教师轨迹。 教师智能体被指示仅通过提供的工具探索知识图谱，解释每次调用，并用工具响应中出现的实体作答。",
+   "sents": [
+    {
+     "en": "As shown in Table 19 , this prompt is used to distill the teacher trajectories for SFT.",
+     "zh": "如表19所示，该提示词用于为SFT蒸馏教师轨迹。"
+    },
+    {
+     "en": "The teacher is instructed to explore the KG only through the provided tools, explain each call, and answer with entities that appear in the tool responses.",
+     "zh": "教师智能体被指示仅通过提供的工具探索知识图谱，解释每次调用，并用工具响应中出现的实体作答。"
+    }
+   ]
+  },
+  {
+   "en": "As shown in Table 20 , this prompt is used by the FoG agent in both training and evaluation. It guides the agent to analyze the question, call the KG operations, and answer from the returned triples.",
+   "zh": "如表20所示，该提示词在训练和评估中均被智能体使用。 它引导智能体分析问题、调用知识图谱操作，并根据返回的三元组进行回答。",
+   "sents": [
+    {
+     "en": "As shown in Table 20 , this prompt is used by the FoG agent in both training and evaluation.",
+     "zh": "如表20所示，该提示词在训练和评估中均被智能体使用。"
+    },
+    {
+     "en": "It guides the agent to analyze the question, call the KG operations, and answer from the returned triples.",
+     "zh": "它引导智能体分析问题、调用知识图谱操作，并根据返回的三元组进行回答。"
+    }
+   ]
+  }
+ ]
+}
