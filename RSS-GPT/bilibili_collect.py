@@ -122,11 +122,36 @@ def fetch_text_stream(session, url, headers, feed_max_bytes):
         return None, f'fetch error: {e}'
 
 
+def _read_cookie_from_env_file():
+    """从同目录 .env 里读 BILI_COOKIE（定时任务不走 run_local 时的兜底）。"""
+    try:
+        env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+        if not os.path.exists(env_path):
+            return ''
+        with open(env_path, encoding='utf-8', errors='replace') as f:
+            for line in f:
+                if line.startswith('BILI_COOKIE='):
+                    return line.split('=', 1)[1].strip()
+    except OSError:
+        pass
+    return ''
+
+
 def make_session():
     """会话引导（契约）：cookiejar opener，先摸首页收 buvid3/b_nut（失败不致命）。
     trust_env=False——api.bilibili.com 直连不走代理（组长实测口径）。"""
     session = requests.Session()
     session.trust_env = False
+    # 登录态：环境变量 BILI_COOKIE 形如 "SESSDATA=xxx; bili_jct=xxx; buvid3=xxx; DedeUserID=xxx"
+    # 未设置时保持匿名（会更容易撞 412 风控）。
+    _ck = os.environ.get('BILI_COOKIE', '').strip()
+    if not _ck:
+        _ck = _read_cookie_from_env_file()
+    if _ck:
+        for _part in _ck.split(';'):
+            if '=' in _part:
+                _k, _v = _part.split('=', 1)
+                session.cookies.set(_k.strip(), _v.strip(), domain='.bilibili.com')
     try:
         session.get('https://www.bilibili.com/', headers={'User-Agent': UA}, timeout=15)
     except requests.RequestException:
