@@ -1,0 +1,1247 @@
+{
+ "id": "a05c807a8f758c7c",
+ "source": "arxiv-agent",
+ "link": "https://arxiv.org/abs/2610.39807v1",
+ "title": "InferD: A Honeypot Framework for AI Inference Infrastructure",
+ "title_zh": "InferD：一个面向AI推理基础设施的蜜罐框架",
+ "published": "2026-10-29T10:50:51Z",
+ "translated_at": "2026-10-31T20:04:21Z",
+ "paragraphs": [
+  {
+   "en": "Large language model serving stacks, commercial inference APIs, vector databases, and agent orchestration gateways are now exposed on the public internet and indexed by commodity scanners within hours of deployment. The threat characteristics of this surface are only beginning to be measured, and the honeypot frameworks that could measure it were designed for conventional network services rather than for AI infrastructure. In fact, emulating an AI service is a distinct deception problem: the observable behavior of the service, including model inventories, token formats, tool-call protocols, and authorization flows, must be reproduced faithfully, while the underlying computation, model inference and tool execution, must never occur. We present InferD, a low-interaction honeypot framework organized around a single principle we call deception without inference : every request an adversary can observe is answered from static response pools, and nothing an adversary submits is ever executed. InferD decomposes the emulation into four deception planes, transport, service protocol, vulnerability surface, and agentic session, adds a provenance plane that links a planted credential to evidence of downstream model-mediated processing.",
+   "zh": "大语言模型服务栈、商用推理 API、向量数据库和智能体编排网关如今已暴露在公共互联网上，并在部署后数小时内即被大众化扫描器索引。 这一暴露面的威胁特征才刚刚开始被测量，而能够对其进行测量的蜜罐框架是为传统网络服务设计的，并非面向 AI 基础设施。 事实上，模拟一个 AI 服务是一个独特的欺骗问题：服务的可观测行为，包括模型清单、令牌格式、工具调用协议和授权流程，必须被忠实再现，而底层计算，即模型推理和工具执行，则绝不能发生。 我们提出 InferD，一个围绕我们称之为“无推理欺骗”这一单一原则组织的低交互蜜罐框架：对手可观察到的每个请求都由静态响应池作答，而对手提交的任何内容都不会被执行。 InferD 将模拟分解为四个欺骗平面，即传输、服务协议、漏洞暴露面和智能体会话，并增加一个溯源平面，将植入的凭据与下游经模型中介处理的证据相关联。",
+   "sents": [
+    {
+     "en": "Large language model serving stacks, commercial inference APIs, vector databases, and agent orchestration gateways are now exposed on the public internet and indexed by commodity scanners within hours of deployment.",
+     "zh": "大语言模型服务栈、商用推理 API、向量数据库和智能体编排网关如今已暴露在公共互联网上，并在部署后数小时内即被大众化扫描器索引。"
+    },
+    {
+     "en": "The threat characteristics of this surface are only beginning to be measured, and the honeypot frameworks that could measure it were designed for conventional network services rather than for AI infrastructure.",
+     "zh": "这一暴露面的威胁特征才刚刚开始被测量，而能够对其进行测量的蜜罐框架是为传统网络服务设计的，并非面向 AI 基础设施。"
+    },
+    {
+     "en": "In fact, emulating an AI service is a distinct deception problem: the observable behavior of the service, including model inventories, token formats, tool-call protocols, and authorization flows, must be reproduced faithfully, while the underlying computation, model inference and tool execution, must never occur.",
+     "zh": "事实上，模拟一个 AI 服务是一个独特的欺骗问题：服务的可观测行为，包括模型清单、令牌格式、工具调用协议和授权流程，必须被忠实再现，而底层计算，即模型推理和工具执行，则绝不能发生。"
+    },
+    {
+     "en": "We present InferD, a low-interaction honeypot framework organized around a single principle we call deception without inference : every request an adversary can observe is answered from static response pools, and nothing an adversary submits is ever executed.",
+     "zh": "我们提出 InferD，一个围绕我们称之为“无推理欺骗”这一单一原则组织的低交互蜜罐框架：对手可观察到的每个请求都由静态响应池作答，而对手提交的任何内容都不会被执行。"
+    },
+    {
+     "en": "InferD decomposes the emulation into four deception planes, transport, service protocol, vulnerability surface, and agentic session, adds a provenance plane that links a planted credential to evidence of downstream model-mediated processing.",
+     "zh": "InferD 将模拟分解为四个欺骗平面，即传输、服务协议、漏洞暴露面和智能体会话，并增加一个溯源平面，将植入的凭据与下游经模型中介处理的证据相关联。"
+    }
+   ]
+  },
+  {
+   "en": "A honeypot is a network-accessible resource with no production purpose, placed where adversaries will find it so that any interaction becomes evidence. The value of the idea has always come from a good match between what the decoy imitates and what the community wants to learn: stack emulation for network reconnaissance, shell emulation for intrusion behavior, protocol emulation for industrial threats ( Provos, 2004 ; Spitzner, 2002 ) . The infrastructure that serves machine-learning inference is a surface the existing decoys were not built for, and it is now exposed at scale. Operators self-host model servers and notebook environments, run vector databases and experiment trackers, and stand up agent gateways that use protocols such as the Model Context Protocol (MCP) 1 1 1 Anthropic Model Context Protocol Specification: https://modelcontextprotocol.io/specification ; commercial inference is reached through a small set of well-known API shapes. Internet-wide scanners index these endpoints within hours ( Durumeric et al., 2013 ) , and the very features that identify an exposed inference service, including a version string, a model inventory, and an authorization header format, are the signals an adversary uses to build a target list.",
+   "zh": "蜜罐是一种没有生产用途、可从网络访问的资源，部署在对手能够发现它的位置，因此任何交互都会成为证据。 这一理念的价值始终来自诱饵所模仿的内容与社区想要了解的内容之间的良好匹配：用于网络侦察的堆栈仿真、用于入侵行为的 shell 仿真、以及针对工业威胁的协议仿真（Provos, 2004; Spitzner, 2002）。 服务机器学习推理的基础设施是现有诱饵尚未针对构建的一个攻击面，而且它如今已大规模暴露。 运营者自行托管模型服务器和 notebook 环境，运行向量数据库和实验追踪器，并搭建使用诸如模型上下文协议（MCP）1 1 1 Anthropic 模型上下文协议规范：https://modelcontextprotocol.io/specification 等协议的智能体网关；商业推理则通过一小套广为人知的 API 形态来访问。 全网范围的扫描器会在数小时内索引这些端点（Durumeric et al., 2013），而那些用于识别暴露推理服务的特征本身——包括版本字符串、模型清单和授权头格式——正是对手用来构建目标列表的信号。",
+   "sents": [
+    {
+     "en": "A honeypot is a network-accessible resource with no production purpose, placed where adversaries will find it so that any interaction becomes evidence.",
+     "zh": "蜜罐是一种没有生产用途、可从网络访问的资源，部署在对手能够发现它的位置，因此任何交互都会成为证据。"
+    },
+    {
+     "en": "The value of the idea has always come from a good match between what the decoy imitates and what the community wants to learn: stack emulation for network reconnaissance, shell emulation for intrusion behavior, protocol emulation for industrial threats ( Provos, 2004 ; Spitzner, 2002 ) .",
+     "zh": "这一理念的价值始终来自诱饵所模仿的内容与社区想要了解的内容之间的良好匹配：用于网络侦察的堆栈仿真、用于入侵行为的 shell 仿真、以及针对工业威胁的协议仿真（Provos, 2004; Spitzner, 2002）。"
+    },
+    {
+     "en": "The infrastructure that serves machine-learning inference is a surface the existing decoys were not built for, and it is now exposed at scale.",
+     "zh": "服务机器学习推理的基础设施是现有诱饵尚未针对构建的一个攻击面，而且它如今已大规模暴露。"
+    },
+    {
+     "en": "Operators self-host model servers and notebook environments, run vector databases and experiment trackers, and stand up agent gateways that use protocols such as the Model Context Protocol (MCP) 1 1 1 Anthropic Model Context Protocol Specification: https://modelcontextprotocol.io/specification ; commercial inference is reached through a small set of well-known API shapes.",
+     "zh": "运营者自行托管模型服务器和 notebook 环境，运行向量数据库和实验追踪器，并搭建使用诸如模型上下文协议（MCP）1 1 1 Anthropic 模型上下文协议规范：https://modelcontextprotocol.io/specification 等协议的智能体网关；商业推理则通过一小套广为人知的 API 形态来访问。"
+    },
+    {
+     "en": "Internet-wide scanners index these endpoints within hours ( Durumeric et al., 2013 ) , and the very features that identify an exposed inference service, including a version string, a model inventory, and an authorization header format, are the signals an adversary uses to build a target list.",
+     "zh": "全网范围的扫描器会在数小时内索引这些端点（Durumeric et al., 2013），而那些用于识别暴露推理服务的特征本身——包括版本字符串、模型清单和授权头格式——正是对手用来构建目标列表的信号。"
+    }
+   ]
+  },
+  {
+   "en": "Emulating this surface is not a matter of porting a honeypot to new ports. The behavior an adversary probes is the behavior of a model, and this creates a tension that sits at the center of the design. To be convincing, the facade must answer everything an adversary can observe: it must return a plausible model inventory, produce well-formed completions with the right streaming semantics, accept and validate credentials in the right formats, and carry an agentic session through its tool-call lifecycle. To be safe and useful as an instrument, it must run nothing an adversary submits, because the computation that would make the service real, executing a model, following a tool call, resolving a submitted URL, is the capability an attacker is trying to reach. A naive way to resolve the tension would be to place a real model behind the facade, as recent language-model-driven honeypots do for shells. For an inference honeypot this is a deliberate design choice with significant tradeoffs: generation reintroduces serving cost and latency variance on the exact axis an adversary can measure, makes responses non-deterministic and hard to reproduce for analysis, and turns the honeypot into a live model that an adversary can prompt, jailbreak, and manipulate, which is precisely the artifact whose abuse the honeypot is meant to study from the outside. A model-backed facade may be appropriate for studying model-level attack behavior in other contexts, but for the goals of this work it is the wrong choice.",
+   "zh": "模拟这个表面并不是把蜜罐移植到新端口那么简单。 对手探测到的行为是一个模型的行为，这就造成了一种处于设计核心的张力。 为了具有说服力，这个门面必须回答对手能观察到的一切：它必须返回一个可信的模型清单，以正确的流式语义产生格式良好的补全，以正确的格式接受并校验凭据，并将智能体会话完整地走完其工具调用生命周期。 作为一个安全且有用的工具，它绝不能执行对手提交的任何内容，因为那些能让服务变得真实 的计算——执行一个模型、跟随一次工具调用、解析一个提交的 URL——恰恰是攻击者试图触达的能力。 解决这种张力的一个简单办法是在门面后面放一个真实的模型，就像近期的语言模型驱动蜜罐对 shell 所做的那样。 对于推理蜜罐而言，这是一个存在重大权衡的刻意设计选择：生成会在对手恰恰能够测量的维度上重新引入服务成本与延迟波动，使响应非确定化且难以复现以供分析，并把蜜罐变成一个对手可以提示、越狱和操纵的活跃模型，而这正是蜜罐本应从外部研究其滥用情况的那个对象。 以模型为后端的门面或许适合在其他情境中研究模型层面的攻击行为，但对于本工作的目标而言，这是一个错误的选择。",
+   "sents": [
+    {
+     "en": "Emulating this surface is not a matter of porting a honeypot to new ports.",
+     "zh": "模拟这个表面并不是把蜜罐移植到新端口那么简单。"
+    },
+    {
+     "en": "The behavior an adversary probes is the behavior of a model, and this creates a tension that sits at the center of the design.",
+     "zh": "对手探测到的行为是一个模型的行为，这就造成了一种处于设计核心的张力。"
+    },
+    {
+     "en": "To be convincing, the facade must answer everything an adversary can observe: it must return a plausible model inventory, produce well-formed completions with the right streaming semantics, accept and validate credentials in the right formats, and carry an agentic session through its tool-call lifecycle.",
+     "zh": "为了具有说服力，这个门面必须回答对手能观察到的一切：它必须返回一个可信的模型清单，以正确的流式语义产生格式良好的补全，以正确的格式接受并校验凭据，并将智能体会话完整地走完其工具调用生命周期。"
+    },
+    {
+     "en": "To be safe and useful as an instrument, it must run nothing an adversary submits, because the computation that would make the service real, executing a model, following a tool call, resolving a submitted URL, is the capability an attacker is trying to reach.",
+     "zh": "作为一个安全且有用的工具，它绝不能执行对手提交的任何内容，因为那些能让服务变得真实 的计算——执行一个模型、跟随一次工具调用、解析一个提交的 URL——恰恰是攻击者试图触达的能力。"
+    },
+    {
+     "en": "A naive way to resolve the tension would be to place a real model behind the facade, as recent language-model-driven honeypots do for shells.",
+     "zh": "解决这种张力的一个简单办法是在门面后面放一个真实的模型，就像近期的语言模型驱动蜜罐对 shell 所做的那样。"
+    },
+    {
+     "en": "For an inference honeypot this is a deliberate design choice with significant tradeoffs: generation reintroduces serving cost and latency variance on the exact axis an adversary can measure, makes responses non-deterministic and hard to reproduce for analysis, and turns the honeypot into a live model that an adversary can prompt, jailbreak, and manipulate, which is precisely the artifact whose abuse the honeypot is meant to study from the outside.",
+     "zh": "对于推理蜜罐而言，这是一个存在重大权衡的刻意设计选择：生成会在对手恰恰能够测量的维度上重新引入服务成本与延迟波动，使响应非确定化且难以复现以供分析，并把蜜罐变成一个对手可以提示、越狱和操纵的活跃模型，而这正是蜜罐本应从外部研究其滥用情况的那个对象。"
+    },
+    {
+     "en": "A model-backed facade may be appropriate for studying model-level attack behavior in other contexts, but for the goals of this work it is the wrong choice.",
+     "zh": "以模型为后端的门面或许适合在其他情境中研究模型层面的攻击行为，但对于本工作的目标而言，这是一个错误的选择。"
+    }
+   ]
+  },
+  {
+   "en": "We resolve the tension with a principle we call deception without inference . Every observable behavior is served from static, pre-authored response pools, and the computation each request implies is logged as intent rather than carried out. This is the organizing idea of InferD, and the paper is largely an argument that it is the right idea and an account of what follows from taking it seriously. Two consequences do most of the work. First, a system that never needs to compute on attacker input has no legitimate reason to execute it or to reach the network on its behalf, which lets us pair non-execution by design with an enforceable operating-system property, a kernel egress rule that prevents any relay or exfiltration. Second, the same principle applies uniformly across a heterogeneous surface: a model-pull request, a chat completion, a vector upsert, and an MCP tool call are all answered from pools and all recorded as intent, so a single framework can span self-hosted services and cloud API facades without special-casing any of them.",
+   "zh": "我们用一个称之为“无需推理的欺骗”的原则来化解这一矛盾。 每一个可观察的行为都由静态的、预先编写的响应池提供，而每个请求所暗示的计算则被记录为意图，而不是被真正执行。 这就是 InferD 的核心组织思想，本文在很大程度上是在论证这是正确的思想，并阐述认真对待它会带来什么。 两个推论承担了大部分论证工作。 首先，一个从不需要对攻击者输入进行计算的系统，没有任何正当理由去执行该输入或代表它访问网络，这使我们可以将“设计上不执行”与一个可实施的操作系统属性相配对，即一条内核出站规则，防止任何中继或数据外泄。 其次，同一原则可以统一应用于异构的接口面：模型拉取请求、聊天补全、向量写入和 MCP 工具调用都从响应池中应答，并且都被记录为意图，因此单一框架即可同时覆盖自托管服务和云端 API 门面，而无需对其中任何一个做特殊处理。",
+   "sents": [
+    {
+     "en": "We resolve the tension with a principle we call deception without inference .",
+     "zh": "我们用一个称之为“无需推理的欺骗”的原则来化解这一矛盾。"
+    },
+    {
+     "en": "Every observable behavior is served from static, pre-authored response pools, and the computation each request implies is logged as intent rather than carried out.",
+     "zh": "每一个可观察的行为都由静态的、预先编写的响应池提供，而每个请求所暗示的计算则被记录为意图，而不是被真正执行。"
+    },
+    {
+     "en": "This is the organizing idea of InferD, and the paper is largely an argument that it is the right idea and an account of what follows from taking it seriously.",
+     "zh": "这就是 InferD 的核心组织思想，本文在很大程度上是在论证这是正确的思想，并阐述认真对待它会带来什么。"
+    },
+    {
+     "en": "Two consequences do most of the work.",
+     "zh": "两个推论承担了大部分论证工作。"
+    },
+    {
+     "en": "First, a system that never needs to compute on attacker input has no legitimate reason to execute it or to reach the network on its behalf, which lets us pair non-execution by design with an enforceable operating-system property, a kernel egress rule that prevents any relay or exfiltration.",
+     "zh": "首先，一个从不需要对攻击者输入进行计算的系统，没有任何正当理由去执行该输入或代表它访问网络，这使我们可以将“设计上不执行”与一个可实施的操作系统属性相配对，即一条内核出站规则，防止任何中继或数据外泄。"
+    },
+    {
+     "en": "Second, the same principle applies uniformly across a heterogeneous surface: a model-pull request, a chat completion, a vector upsert, and an MCP tool call are all answered from pools and all recorded as intent, so a single framework can span self-hosted services and cloud API facades without special-casing any of them.",
+     "zh": "其次，同一原则可以统一应用于异构的接口面：模型拉取请求、聊天补全、向量写入和 MCP 工具调用都从响应池中应答，并且都被记录为意图，因此单一框架即可同时覆盖自托管服务和云端 API 门面，而无需对其中任何一个做特殊处理。"
+    }
+   ]
+  },
+  {
+   "en": "Our contribution is a design and the reasoning behind it. We state the deception without inference principle and develop its consequences as a layered architecture, treating each deception mechanism as a problem of faithful emulation weighed against the alternative it displaces and the way an adversary could detect it. We show how the principle yields two complementary safety guarantees, non-execution of submitted input by construction and kernel-enforced egress containment that holds even if an emulator misbehaves, and we document the systems techniques, source attribution under container networking, egress isolation bound to the emulator’s operating-system user, and response-pool construction, that make the design safe and faithful on commodity hardware. We ground the emulated surface in the record of attributable, exploited-in-the-wild vulnerabilities so that its scope is principled and reproducible, and we make its coverage of the agentic surface legible by mapping it onto an external risk taxonomy. Finally, we report an initial deployment that validates the pipeline end to end and surfaces a first empirical finding: a purpose-built cloud-credential harvester delivered via an MCP stdio code-execution primitive, observed from three sources and captured with zero code executed.",
+   "zh": "我们的贡献是一个设计及其背后的推理依据。 我们陈述「欺骗而不推断」原则，并将其推论发展为一个分层架构，把每种欺骗机制都视为一个忠实模拟问题，需权衡它所替代的替代方案以及对手可能检测它的方式。 我们展示该原则如何带来两项互补的安全保障——提交的输入在构造上不被执行，以及即使模拟器行为异常仍然成立、由内核强制实施的出站流量遏制——并记录使该设计在通用硬件上既安全又忠实的系统技术，包括容器网络下的来源归因、绑定到模拟器操作系统用户的出站隔离，以及响应池的构建。 我们将模拟面建立在可归因、在野外被实际利用的漏洞记录之上，使其范围有据可依且可复现，并通过将其映射到外部风险分类法，使其对智能体攻击面的覆盖清晰可读。 最后，我们报告了一次验证了整条流水线并得出首个实证发现的初步部署：一个通过 MCP stdio 代码执行原语投递的专用云凭据收割器，被三个来源观测到，并在零代码执行的情况下被捕获。",
+   "sents": [
+    {
+     "en": "Our contribution is a design and the reasoning behind it.",
+     "zh": "我们的贡献是一个设计及其背后的推理依据。"
+    },
+    {
+     "en": "We state the deception without inference principle and develop its consequences as a layered architecture, treating each deception mechanism as a problem of faithful emulation weighed against the alternative it displaces and the way an adversary could detect it.",
+     "zh": "我们陈述「欺骗而不推断」原则，并将其推论发展为一个分层架构，把每种欺骗机制都视为一个忠实模拟问题，需权衡它所替代的替代方案以及对手可能检测它的方式。"
+    },
+    {
+     "en": "We show how the principle yields two complementary safety guarantees, non-execution of submitted input by construction and kernel-enforced egress containment that holds even if an emulator misbehaves, and we document the systems techniques, source attribution under container networking, egress isolation bound to the emulator’s operating-system user, and response-pool construction, that make the design safe and faithful on commodity hardware.",
+     "zh": "我们展示该原则如何带来两项互补的安全保障——提交的输入在构造上不被执行，以及即使模拟器行为异常仍然成立、由内核强制实施的出站流量遏制——并记录使该设计在通用硬件上既安全又忠实的系统技术，包括容器网络下的来源归因、绑定到模拟器操作系统用户的出站隔离，以及响应池的构建。"
+    },
+    {
+     "en": "We ground the emulated surface in the record of attributable, exploited-in-the-wild vulnerabilities so that its scope is principled and reproducible, and we make its coverage of the agentic surface legible by mapping it onto an external risk taxonomy.",
+     "zh": "我们将模拟面建立在可归因、在野外被实际利用的漏洞记录之上，使其范围有据可依且可复现，并通过将其映射到外部风险分类法，使其对智能体攻击面的覆盖清晰可读。"
+    },
+    {
+     "en": "Finally, we report an initial deployment that validates the pipeline end to end and surfaces a first empirical finding: a purpose-built cloud-credential harvester delivered via an MCP stdio code-execution primitive, observed from three sources and captured with zero code executed.",
+     "zh": "最后，我们报告了一次验证了整条流水线并得出首个实证发现的初步部署：一个通过 MCP stdio 代码执行原语投递的专用云凭据收割器，被三个来源观测到，并在零代码执行的情况下被捕获。"
+    }
+   ]
+  },
+  {
+   "en": "The paper is organized as follows. Section 2 sets out why the surface exists and is exposed, what makes its emulation distinct, and the threat model and design goals that follow. Section 3 develops the design: the deception without inference principle, the architecture, and the deception planes. Section 4 documents the implementation and safety guarantees. Section 5 reports the deployment, including a case study of a captured credential-harvesting payload. Section 6 covers detectability limits, extensibility, and related work. Section 7 concludes.",
+   "zh": "本文的组织结构如下。 第2节阐述该表面为何存在并被暴露、其模拟的独特之处，以及由此产生的威胁模型和设计目标。 第3节展开设计：无推理欺骗原则、系统架构以及欺骗平面。 第4节记录实现与安全保证。 第5节报告部署情况，包括对一个被捕获的凭据窃取载荷的案例研究。 第6节讨论可检测性限制、可扩展性及相关工作。第7节进行总结。",
+   "sents": [
+    {
+     "en": "The paper is organized as follows.",
+     "zh": "本文的组织结构如下。"
+    },
+    {
+     "en": "Section 2 sets out why the surface exists and is exposed, what makes its emulation distinct, and the threat model and design goals that follow.",
+     "zh": "第2节阐述该表面为何存在并被暴露、其模拟的独特之处，以及由此产生的威胁模型和设计目标。"
+    },
+    {
+     "en": "Section 3 develops the design: the deception without inference principle, the architecture, and the deception planes.",
+     "zh": "第3节展开设计：无推理欺骗原则、系统架构以及欺骗平面。"
+    },
+    {
+     "en": "Section 4 documents the implementation and safety guarantees.",
+     "zh": "第4节记录实现与安全保证。"
+    },
+    {
+     "en": "Section 5 reports the deployment, including a case study of a captured credential-harvesting payload.",
+     "zh": "第5节报告部署情况，包括对一个被捕获的凭据窃取载荷的案例研究。"
+    },
+    {
+     "en": "Section 6 covers detectability limits, extensibility, and related work. Section 7 concludes.",
+     "zh": "第6节讨论可检测性限制、可扩展性及相关工作。第7节进行总结。"
+    }
+   ]
+  },
+  {
+   "en": "That so much inference infrastructure is reachable from the open internet is not simply carelessness but rather a predictable consequence of how the software distributes its own threat model. A recurring pattern in AI serving frameworks is to ship with a security posture that presumes a trusted network and to delegate the residual isolation requirement to the operator. Concretely: Ollama 2 2 2 Ollama: Run Large Language Models Locally. https://ollama.ai binds to loopback by default, but its documented multi-user configuration sets OLLAMA_HOST=0.0.0.0 , making network-wide exposure the recommended deployment posture; Ray’s cluster dashboard is documented as unauthenticated by design, with the explicit assumption that a cluster-level firewall supplies the missing boundary. When the operator does not supply that isolation, the result is not an aberration but the predictable default outcome. Internet-wide measurement confirms this is not anecdotal: a study of 320,102 publicly reachable LLM services across 15 deployment frameworks found widespread absence of authentication and TLS, with unauthenticated endpoints concentrated on the same well-known ports that scanners trivially enumerate ( Hou et al., 2025 ) . 3 3 3 Industry scanning of approximately one million exposed AI endpoints corroborates these findings at larger scale; see https://thebrightbyte.com/playbook/insights/one-million-exposed-ai-services-2026 . Ray’s cluster API was exploited at this scale in the ShadowRay campaign 4 4 4 Oligo Security, ShadowRay: First Known Attack Campaign Targeting AI Workloads Actively Exploited in the Wild (CVE-2023-48022) , 2024. https://www.oligo.security/blog/shadowray-attack-ai-workloads-actively-exploited-in-the-wild , and the Probllama path-traversal flaw became remotely exploitable with root privileges precisely because Ollama’s recommended configuration binds to all interfaces 5 5 5 Wiz Research, Probllama: Ollama Remote Code Execution Vulnerability (CVE-2024-37032) , 2024. https://www.wiz.io/blog/probllama-ollama-vulnerability-cve-2024-37032 . The decoy needs only to present the observable fingerprint of a default, network-exposed deployment, a posture the broader ecosystem produces routinely, whether through deliberate exposure or absent isolation.",
+   "zh": "如此多的推理基础设施可以从开放互联网访问到，这并非单纯的疏忽大意，而是该软件如何分配自身威胁模型所导致的可预见后果。 AI 服务框架中反复出现的一种模式是，出厂时采用假定网络环境可信的安全姿态，并将剩余的隔离要求转交给运维人员。 具体而言：Ollama 2 2 2 Ollama: Run Large Language Models Locally. https://ollama.ai 默认绑定到回环地址，但其文档记载的多用户配置将 OLLAMA_HOST 设置为 0.0.0.0，使全网暴露成为推荐的部署姿态；Ray 的集群仪表盘在文档中被明确设计为无需身份认证，并显式假定由集群级防火墙提供缺失的边界。 当运维人员不提供那种隔离时，其结果不是异常事故，而是可预见的默认结局。 全互联网范围的测量证实这并非孤例：一项针对 15 个部署框架下 320,102 个公网可达 LLM 服务的研究发现，身份认证和 TLS 普遍缺失，且未认证的端点集中在扫描器轻易就能枚举的同一批知名端口上（ Hou et al., 2025 ） 。 3 3 3 对约一百万个暴露 AI 端点的行业扫描在更大规模上佐证了这些发现；见 https://thebrightbyte.com/playbook/insights/one-million-exposed-ai-services-2026 。 Ray 的集群 API 在 ShadowRay 攻击行动中就曾以此规模被利用 4 4 4 Oligo Security, ShadowRay: First Known Attack Campaign Targeting AI Workloads Actively Exploited in the Wild (CVE-2023-48022) , 2024. https://www.oligo.security/blog/shadowray-attack-ai-workloads-actively-exploited-in-the-wild ，而 Probllama 路径遍历漏洞之所以能被远程利用并获得 root 权限，正是因为 Ollama 的推荐配置绑定到所有网络接口 5 5 5 Wiz Research, Probllama: Ollama Remote Code Execution Vulnerability (CVE-2024-37032) , 2024. https://www.wiz.io/blog/probllama-ollama-vulnerability-cve-2024-37032 。 诱饵只需呈现出默认网络暴露部署的可观测指纹即可，而这种姿态在整个生态系统中 routinely 地产生，无论是出于刻意的暴露还是隔离的缺失。",
+   "sents": [
+    {
+     "en": "That so much inference infrastructure is reachable from the open internet is not simply carelessness but rather a predictable consequence of how the software distributes its own threat model.",
+     "zh": "如此多的推理基础设施可以从开放互联网访问到，这并非单纯的疏忽大意，而是该软件如何分配自身威胁模型所导致的可预见后果。"
+    },
+    {
+     "en": "A recurring pattern in AI serving frameworks is to ship with a security posture that presumes a trusted network and to delegate the residual isolation requirement to the operator.",
+     "zh": "AI 服务框架中反复出现的一种模式是，出厂时采用假定网络环境可信的安全姿态，并将剩余的隔离要求转交给运维人员。"
+    },
+    {
+     "en": "Concretely: Ollama 2 2 2 Ollama: Run Large Language Models Locally. https://ollama.ai binds to loopback by default, but its documented multi-user configuration sets OLLAMA_HOST=0.0.0.0 , making network-wide exposure the recommended deployment posture; Ray’s cluster dashboard is documented as unauthenticated by design, with the explicit assumption that a cluster-level firewall supplies the missing boundary.",
+     "zh": "具体而言：Ollama 2 2 2 Ollama: Run Large Language Models Locally. https://ollama.ai 默认绑定到回环地址，但其文档记载的多用户配置将 OLLAMA_HOST 设置为 0.0.0.0，使全网暴露成为推荐的部署姿态；Ray 的集群仪表盘在文档中被明确设计为无需身份认证，并显式假定由集群级防火墙提供缺失的边界。"
+    },
+    {
+     "en": "When the operator does not supply that isolation, the result is not an aberration but the predictable default outcome.",
+     "zh": "当运维人员不提供那种隔离时，其结果不是异常事故，而是可预见的默认结局。"
+    },
+    {
+     "en": "Internet-wide measurement confirms this is not anecdotal: a study of 320,102 publicly reachable LLM services across 15 deployment frameworks found widespread absence of authentication and TLS, with unauthenticated endpoints concentrated on the same well-known ports that scanners trivially enumerate ( Hou et al., 2025 ) . 3 3 3 Industry scanning of approximately one million exposed AI endpoints corroborates these findings at larger scale; see https://thebrightbyte.com/playbook/insights/one-million-exposed-ai-services-2026 .",
+     "zh": "全互联网范围的测量证实这并非孤例：一项针对 15 个部署框架下 320,102 个公网可达 LLM 服务的研究发现，身份认证和 TLS 普遍缺失，且未认证的端点集中在扫描器轻易就能枚举的同一批知名端口上（ Hou et al., 2025 ） 。 3 3 3 对约一百万个暴露 AI 端点的行业扫描在更大规模上佐证了这些发现；见 https://thebrightbyte.com/playbook/insights/one-million-exposed-ai-services-2026 。"
+    },
+    {
+     "en": "Ray’s cluster API was exploited at this scale in the ShadowRay campaign 4 4 4 Oligo Security, ShadowRay: First Known Attack Campaign Targeting AI Workloads Actively Exploited in the Wild (CVE-2023-48022) , 2024. https://www.oligo.security/blog/shadowray-attack-ai-workloads-actively-exploited-in-the-wild , and the Probllama path-traversal flaw became remotely exploitable with root privileges precisely because Ollama’s recommended configuration binds to all interfaces 5 5 5 Wiz Research, Probllama: Ollama Remote Code Execution Vulnerability (CVE-2024-37032) , 2024. https://www.wiz.io/blog/probllama-ollama-vulnerability-cve-2024-37032 .",
+     "zh": "Ray 的集群 API 在 ShadowRay 攻击行动中就曾以此规模被利用 4 4 4 Oligo Security, ShadowRay: First Known Attack Campaign Targeting AI Workloads Actively Exploited in the Wild (CVE-2023-48022) , 2024. https://www.oligo.security/blog/shadowray-attack-ai-workloads-actively-exploited-in-the-wild ，而 Probllama 路径遍历漏洞之所以能被远程利用并获得 root 权限，正是因为 Ollama 的推荐配置绑定到所有网络接口 5 5 5 Wiz Research, Probllama: Ollama Remote Code Execution Vulnerability (CVE-2024-37032) , 2024. https://www.wiz.io/blog/probllama-ollama-vulnerability-cve-2024-37032 。"
+    },
+    {
+     "en": "The decoy needs only to present the observable fingerprint of a default, network-exposed deployment, a posture the broader ecosystem produces routinely, whether through deliberate exposure or absent isolation.",
+     "zh": "诱饵只需呈现出默认网络暴露部署的可观测指纹即可，而这种姿态在整个生态系统中 routinely 地产生，无论是出于刻意的暴露还是隔离的缺失。"
+    }
+   ]
+  },
+  {
+   "en": "Three properties separate this surface from the services classical honeypots imitate. First, fidelity is defined against the behavior of a model. A model server does not merely return a banner; it advertises an inventory, negotiates streaming, and produces content whose shape an adversary can inspect. Second, part of the surface is stateful and agentic. A single request from an automated agent reveals little, but a maintained session of tool calls exposes structured intent, so an instrument that captures only isolated requests misses the most informative behavior. Third, part of the surface is reached through credentials rather than through open ports, which shifts the observation problem from “who connects” to “who possesses a key and what they do with it” . Each property pulls toward higher interaction, and each therefore sharpens the tension between fidelity and safety that the next section resolves.",
+   "zh": "有三个特性将该攻击面与经典蜜罐所模拟的服务区分开来。 首先，保真度是针对模型的行为来定义的。 模型服务器不仅仅是返回一条横幅信息；它会公布可用的模型清单，协商流式传输，并生成敌方可以检查其结构的内容。 其次，该攻击面的一部分是有状态的，并且具有智能体特性。 来自自动化智能体的单个请求所透露的信息很少，但一个持续维护的工具调用会话会暴露出结构化的意图，因此仅捕获孤立请求的监测手段会错过信息量最大的行为。 第三，该攻击面的一部分是通过凭据而非开放端口来访问的，这将观测问题从「谁在连接」转变为「谁持有密钥以及他们用密钥做了什么」。 每个特性都朝着更高交互程度的方向推动，因此每一个都加剧了保真度与安全性之间的张力，下一节将解决这一张力。",
+   "sents": [
+    {
+     "en": "Three properties separate this surface from the services classical honeypots imitate.",
+     "zh": "有三个特性将该攻击面与经典蜜罐所模拟的服务区分开来。"
+    },
+    {
+     "en": "First, fidelity is defined against the behavior of a model.",
+     "zh": "首先，保真度是针对模型的行为来定义的。"
+    },
+    {
+     "en": "A model server does not merely return a banner; it advertises an inventory, negotiates streaming, and produces content whose shape an adversary can inspect.",
+     "zh": "模型服务器不仅仅是返回一条横幅信息；它会公布可用的模型清单，协商流式传输，并生成敌方可以检查其结构的内容。"
+    },
+    {
+     "en": "Second, part of the surface is stateful and agentic.",
+     "zh": "其次，该攻击面的一部分是有状态的，并且具有智能体特性。"
+    },
+    {
+     "en": "A single request from an automated agent reveals little, but a maintained session of tool calls exposes structured intent, so an instrument that captures only isolated requests misses the most informative behavior.",
+     "zh": "来自自动化智能体的单个请求所透露的信息很少，但一个持续维护的工具调用会话会暴露出结构化的意图，因此仅捕获孤立请求的监测手段会错过信息量最大的行为。"
+    },
+    {
+     "en": "Third, part of the surface is reached through credentials rather than through open ports, which shifts the observation problem from “who connects” to “who possesses a key and what they do with it” .",
+     "zh": "第三，该攻击面的一部分是通过凭据而非开放端口来访问的，这将观测问题从「谁在连接」转变为「谁持有密钥以及他们用密钥做了什么」。"
+    },
+    {
+     "en": "Each property pulls toward higher interaction, and each therefore sharpens the tension between fidelity and safety that the next section resolves.",
+     "zh": "每个特性都朝着更高交互程度的方向推动，因此每一个都加剧了保真度与安全性之间的张力，下一节将解决这一张力。"
+    }
+   ]
+  },
+  {
+   "en": "We design InferD against five adversary classes, ordered by increasing sophistication and decreasing prevalence. A1, indiscriminate scanners issue a small fixed set of probes to every reachable host and rarely return. A2, fingerprinters enumerate inventories, versions, and token formats to catalog exposed capacity. A3, credential abusers present keys, stuffed or recovered, against inference facades to obtain unauthorized model access. A4, exploit operators send payloads crafted for specific software flaws. A5, agentic actors maintain multi-step sessions, issue tool calls, or route captured output back through a model, exposing intent that a single request does not.",
+   "zh": "我们针对五类对手设计 InferD，按复杂程度递增、普遍程度递减的顺序排列。 A1，无差别扫描器向每个可达主机发送一小组固定探针，且很少返回。 A2，指纹采集器枚举资产清单、版本和令牌格式，以编目暴露的容量。 A3，凭据滥用者提交密钥（无论是撞库所得还是恢复所得）来攻击推理门面，以获取未经授权的模型访问。 A4，漏洞利用操作者发送针对特定软件缺陷精心构造的载荷。 A5，智能体行为者会维持多步骤会话、发起工具调用，或将捕获的输出回传给模型，从而暴露单个请求所无法暴露的意图。",
+   "sents": [
+    {
+     "en": "We design InferD against five adversary classes, ordered by increasing sophistication and decreasing prevalence.",
+     "zh": "我们针对五类对手设计 InferD，按复杂程度递增、普遍程度递减的顺序排列。"
+    },
+    {
+     "en": "A1, indiscriminate scanners issue a small fixed set of probes to every reachable host and rarely return.",
+     "zh": "A1，无差别扫描器向每个可达主机发送一小组固定探针，且很少返回。"
+    },
+    {
+     "en": "A2, fingerprinters enumerate inventories, versions, and token formats to catalog exposed capacity.",
+     "zh": "A2，指纹采集器枚举资产清单、版本和令牌格式，以编目暴露的容量。"
+    },
+    {
+     "en": "A3, credential abusers present keys, stuffed or recovered, against inference facades to obtain unauthorized model access.",
+     "zh": "A3，凭据滥用者提交密钥（无论是撞库所得还是恢复所得）来攻击推理门面，以获取未经授权的模型访问。"
+    },
+    {
+     "en": "A4, exploit operators send payloads crafted for specific software flaws.",
+     "zh": "A4，漏洞利用操作者发送针对特定软件缺陷精心构造的载荷。"
+    },
+    {
+     "en": "A5, agentic actors maintain multi-step sessions, issue tool calls, or route captured output back through a model, exposing intent that a single request does not.",
+     "zh": "A5，智能体行为者会维持多步骤会话、发起工具调用，或将捕获的输出回传给模型，从而暴露单个请求所无法暴露的意图。"
+    }
+   ]
+  },
+  {
+   "en": "The design is bounded first by what the instrument must never do, treated as constraints rather than options: it must not execute submitted code, forward or evaluate tool calls, run a model, emit outbound traffic, or disclose the real addresses of the sources it observes. From these constraints and the adversary classes we derive six design goals, named and referenced throughout. G1, protocol fidelity : requests and responses should be indistinguishable from the real service. G2, non-execution : the system records but never performs the computation an attacker attempts to induce. G3, source attribution : the true origin of each request is captured despite proxying and container networking; this is non-trivial because standard container port mapping silently rewrites every source address to the container gateway IP, producing a dataset that appears complete but records the wrong address for every event. G4, stateful capture : agentic interactions persist across requests. G5, provenance : a planted credential can be linked to its first use and, where possible, to downstream model-mediated processing. G6, fingerprint resistance : responses carry enough controlled diversity that the facade is not trivially cataloged from repetition.",
+   "zh": "设计首先受到仪器绝不能做什么的限制，这些被视作约束而非可选项：它不得执行提交的代码、转发或评估工具调用、运行模型、发出出站流量，或泄露其所观测来源的真实地址。 从这些约束和对手类别出发，我们推导出六项设计目标，并在全文中命名和引用它们。 G1，协议保真：请求与响应应与真实服务不可区分。 G2，不执行：系统仅记录攻击者试图诱导的计算，但从不真正执行。 G3，来源归因：尽管存在代理和容器网络，仍捕获每个请求的真实来源；这一点并不简单，因为标准的容器端口映射会悄悄把每个来源地址改写为容器网关 IP，产生一个看似完整却对每个事件都记录了错误地址的数据集。 G4，有状态捕获：智能体交互可跨请求持续存在。 G5，溯源：植入的凭据可以关联到其首次使用，并尽可能关联到下游经由模型中介的处理过程。 G6，抗指纹性：响应携带足够多的受控多样性，使得该门面不会因重复而轻易被编目识别。",
+   "sents": [
+    {
+     "en": "The design is bounded first by what the instrument must never do, treated as constraints rather than options: it must not execute submitted code, forward or evaluate tool calls, run a model, emit outbound traffic, or disclose the real addresses of the sources it observes.",
+     "zh": "设计首先受到仪器绝不能做什么的限制，这些被视作约束而非可选项：它不得执行提交的代码、转发或评估工具调用、运行模型、发出出站流量，或泄露其所观测来源的真实地址。"
+    },
+    {
+     "en": "From these constraints and the adversary classes we derive six design goals, named and referenced throughout.",
+     "zh": "从这些约束和对手类别出发，我们推导出六项设计目标，并在全文中命名和引用它们。"
+    },
+    {
+     "en": "G1, protocol fidelity : requests and responses should be indistinguishable from the real service.",
+     "zh": "G1，协议保真：请求与响应应与真实服务不可区分。"
+    },
+    {
+     "en": "G2, non-execution : the system records but never performs the computation an attacker attempts to induce.",
+     "zh": "G2，不执行：系统仅记录攻击者试图诱导的计算，但从不真正执行。"
+    },
+    {
+     "en": "G3, source attribution : the true origin of each request is captured despite proxying and container networking; this is non-trivial because standard container port mapping silently rewrites every source address to the container gateway IP, producing a dataset that appears complete but records the wrong address for every event.",
+     "zh": "G3，来源归因：尽管存在代理和容器网络，仍捕获每个请求的真实来源；这一点并不简单，因为标准的容器端口映射会悄悄把每个来源地址改写为容器网关 IP，产生一个看似完整却对每个事件都记录了错误地址的数据集。"
+    },
+    {
+     "en": "G4, stateful capture : agentic interactions persist across requests.",
+     "zh": "G4，有状态捕获：智能体交互可跨请求持续存在。"
+    },
+    {
+     "en": "G5, provenance : a planted credential can be linked to its first use and, where possible, to downstream model-mediated processing.",
+     "zh": "G5，溯源：植入的凭据可以关联到其首次使用，并尽可能关联到下游经由模型中介的处理过程。"
+    },
+    {
+     "en": "G6, fingerprint resistance : responses carry enough controlled diversity that the facade is not trivially cataloged from repetition.",
+     "zh": "G6，抗指纹性：响应携带足够多的受控多样性，使得该门面不会因重复而轻易被编目识别。"
+    }
+   ]
+  },
+  {
+   "en": "The design has three parts. The deception without inference principle determines what gets answered and what gets withheld: a static response for every observable request, and a log entry for every implied computation. The architecture determines where emulators sit and how traffic reaches them: a two-surface model separating open-port services from credential-gated cloud facades, unified under a single egress boundary. The deception planes determine how each observable layer of an AI service is reproduced, with each plane developed against the alternative it rejects and the detection vector it accepts. The three parts are described in the subsections that follow.",
+   "zh": "该设计由三部分组成。 无推理欺骗原则决定了哪些内容会被响应、哪些内容会被隐匿：对每一个可观察请求返回静态响应，对每一次隐含计算记录一条日志。 架构决定了仿真器所处的位置以及流量如何到达它们：一个双表面模型将开放端口服务与凭证门控的云伪装分离开来，并在单一的出口边界下统一起来。 欺骗平面决定了 AI 服务的每一个可观察层如何被复现，每个平面的设计都针对其拒绝的替代方案及其接受的检测向量。 以下小节将对这三部分进行描述。",
+   "sents": [
+    {
+     "en": "The design has three parts.",
+     "zh": "该设计由三部分组成。"
+    },
+    {
+     "en": "The deception without inference principle determines what gets answered and what gets withheld: a static response for every observable request, and a log entry for every implied computation.",
+     "zh": "无推理欺骗原则决定了哪些内容会被响应、哪些内容会被隐匿：对每一个可观察请求返回静态响应，对每一次隐含计算记录一条日志。"
+    },
+    {
+     "en": "The architecture determines where emulators sit and how traffic reaches them: a two-surface model separating open-port services from credential-gated cloud facades, unified under a single egress boundary.",
+     "zh": "架构决定了仿真器所处的位置以及流量如何到达它们：一个双表面模型将开放端口服务与凭证门控的云伪装分离开来，并在单一的出口边界下统一起来。"
+    },
+    {
+     "en": "The deception planes determine how each observable layer of an AI service is reproduced, with each plane developed against the alternative it rejects and the detection vector it accepts.",
+     "zh": "欺骗平面决定了 AI 服务的每一个可观察层如何被复现，每个平面的设计都针对其拒绝的替代方案及其接受的检测向量。"
+    },
+    {
+     "en": "The three parts are described in the subsections that follow.",
+     "zh": "以下小节将对这三部分进行描述。"
+    }
+   ]
+  },
+  {
+   "en": "The principle states that faithful protocol behavior can be delivered entirely from static response pools, while the computation each request implies is recorded and withheld.",
+   "zh": "该原则指出，忠实的协议行为可以完全由静态响应池交付，而每个请求所隐含的计算则被记录并扣留不发。",
+   "sents": null
+  },
+  {
+   "en": "The alternative to static pools is generation: place a model, or a fine-tuned smaller model, behind the facade and let it answer, as language-model-driven shell honeypots do to obtain unbounded interaction depth ( Sladić et al., 2024 ; Otal and Canbaz, 2024 ) . For a shell this is attractive because depth is the point. For an inference honeypot, however, generation reintroduces serving cost and latency variance on the exact axis an adversary can measure; it makes responses non-deterministic and therefore hard to reason about or to reproduce for analysis; and, most importantly, it turns the honeypot into a live model that an adversary can prompt, jailbreak, and manipulate, which is the artifact whose abuse the honeypot is meant to study from the outside. Static pools invert every one of these properties. They are cheap and constant in latency, they are deterministic and auditable, and they present no model to attack. Besides, retrieval-augmented designs such as DecoyPot ( Sezgin and Boyacı, 2025 ) narrow the hallucination gap but still infer at request time, so the measurable latency and the non-execution guarantee remain unmet. The cost they pay is finite response depth: a pool cannot answer an adversarial prompt whose correct reply depends on genuine reasoning. We accept this cost knowingly, mitigate its most visible symptom (repetition) with variant expansion (Section 4.4 ), and note that it is detectable only by an adversary who specifically tests for reasoning, a small and identifiable minority of the traffic that reaches such a surface. We regard the finite depth not as a weakness of the instrument but as the price of a much stronger position, which the principle buys almost for free: a facade that never computes on attacker input has no legitimate reason to reach the network, so the design’s non-execution can be backed by a kernel-enforced egress guarantee that no emulator bug can void (Section 4.5 ).",
+   "zh": "静态池的替代方案是生成：在门面之后放置一个模型，或一个微调过的较小模型，让它来应答，就像由语言模型驱动的 shell 蜜罐那样，以获得无限的交互深度（Sladić et al., 2024；Otal and Canbaz, 2024）。 对 shell 来说这很有吸引力，因为深度正是关键所在。 然而对于推理蜜罐而言，生成恰恰在对手能够测量的维度上重新引入了服务成本和延迟波动；它使响应变得非确定，因而难以推理，也难以复现用于分析；而且最重要的是，它把蜜罐变成了一个活生生的模型，对手可以向其提示、越狱和操纵，而这正是蜜罐本应从外部研究其滥用的对象。 静态池将上述每一项属性都反转了。 它们成本低廉且延迟恒定，是确定性的且可审计的，并且不提供任何可供攻击的模型。 此外，诸如 DecoyPot（Sezgin and Boyacı, 2025）这类检索增强设计缩小了幻觉差距，但仍在请求时进行推理，因此可测量的延迟与非执行保证仍未得到满足。 它们付出的代价是有限的响应深度：面对那些正确回复依赖于真实推理的对抗性提示，池无法应答。 我们有意接受这一代价，用变体扩展（第 4.4 节）缓解其最明显的症状（重复），并指出只有专门测试推理能力的对手才能察觉这一点，而这只是到达此类界面的流量中很小且可识别的少数部分。 我们认为有限深度不是该工具的弱点，而是一项原则几乎免费换来的更强立足点的代价：一个从不对攻击者输入进行计算的门面没有任何合法理由访问网络，因此该设计的非执行性可以由内核强制执行的出站保证来支撑，任何模拟器缺陷都无法使其失效（第 4.5 节）。",
+   "sents": [
+    {
+     "en": "The alternative to static pools is generation: place a model, or a fine-tuned smaller model, behind the facade and let it answer, as language-model-driven shell honeypots do to obtain unbounded interaction depth ( Sladić et al., 2024 ; Otal and Canbaz, 2024 ) .",
+     "zh": "静态池的替代方案是生成：在门面之后放置一个模型，或一个微调过的较小模型，让它来应答，就像由语言模型驱动的 shell 蜜罐那样，以获得无限的交互深度（Sladić et al., 2024；Otal and Canbaz, 2024）。"
+    },
+    {
+     "en": "For a shell this is attractive because depth is the point.",
+     "zh": "对 shell 来说这很有吸引力，因为深度正是关键所在。"
+    },
+    {
+     "en": "For an inference honeypot, however, generation reintroduces serving cost and latency variance on the exact axis an adversary can measure; it makes responses non-deterministic and therefore hard to reason about or to reproduce for analysis; and, most importantly, it turns the honeypot into a live model that an adversary can prompt, jailbreak, and manipulate, which is the artifact whose abuse the honeypot is meant to study from the outside.",
+     "zh": "然而对于推理蜜罐而言，生成恰恰在对手能够测量的维度上重新引入了服务成本和延迟波动；它使响应变得非确定，因而难以推理，也难以复现用于分析；而且最重要的是，它把蜜罐变成了一个活生生的模型，对手可以向其提示、越狱和操纵，而这正是蜜罐本应从外部研究其滥用的对象。"
+    },
+    {
+     "en": "Static pools invert every one of these properties.",
+     "zh": "静态池将上述每一项属性都反转了。"
+    },
+    {
+     "en": "They are cheap and constant in latency, they are deterministic and auditable, and they present no model to attack.",
+     "zh": "它们成本低廉且延迟恒定，是确定性的且可审计的，并且不提供任何可供攻击的模型。"
+    },
+    {
+     "en": "Besides, retrieval-augmented designs such as DecoyPot ( Sezgin and Boyacı, 2025 ) narrow the hallucination gap but still infer at request time, so the measurable latency and the non-execution guarantee remain unmet.",
+     "zh": "此外，诸如 DecoyPot（Sezgin and Boyacı, 2025）这类检索增强设计缩小了幻觉差距，但仍在请求时进行推理，因此可测量的延迟与非执行保证仍未得到满足。"
+    },
+    {
+     "en": "The cost they pay is finite response depth: a pool cannot answer an adversarial prompt whose correct reply depends on genuine reasoning.",
+     "zh": "它们付出的代价是有限的响应深度：面对那些正确回复依赖于真实推理的对抗性提示，池无法应答。"
+    },
+    {
+     "en": "We accept this cost knowingly, mitigate its most visible symptom (repetition) with variant expansion (Section 4.4 ), and note that it is detectable only by an adversary who specifically tests for reasoning, a small and identifiable minority of the traffic that reaches such a surface.",
+     "zh": "我们有意接受这一代价，用变体扩展（第 4.4 节）缓解其最明显的症状（重复），并指出只有专门测试推理能力的对手才能察觉这一点，而这只是到达此类界面的流量中很小且可识别的少数部分。"
+    },
+    {
+     "en": "We regard the finite depth not as a weakness of the instrument but as the price of a much stronger position, which the principle buys almost for free: a facade that never computes on attacker input has no legitimate reason to reach the network, so the design’s non-execution can be backed by a kernel-enforced egress guarantee that no emulator bug can void (Section 4.5 ).",
+     "zh": "我们认为有限深度不是该工具的弱点，而是一项原则几乎免费换来的更强立足点的代价：一个从不对攻击者输入进行计算的门面没有任何合法理由访问网络，因此该设计的非执行性可以由内核强制执行的出站保证来支撑，任何模拟器缺陷都无法使其失效（第 4.5 节）。"
+    }
+   ]
+  },
+  {
+   "en": "The principle also gives the framework its uniformity. Because every emulated service is an instance of the same idea, answer from a pool and record the implied computation, a single middleware and storage path can serve a heterogeneous surface without per-service trust decisions, which is what makes it sensible to speak of a framework rather than a collection of decoys.",
+   "zh": "这一原则也赋予了该框架统一性。 由于每个模拟服务都是同一理念的一个实例——从资源池中应答并记录所隐含的计算——单一中间件和存储路径就能服务于异构的表面，而无需针对每个服务做信任决策，这正是我们可以称之为一个框架而非一堆诱饵集合的原因所在。",
+   "sents": [
+    {
+     "en": "The principle also gives the framework its uniformity.",
+     "zh": "这一原则也赋予了该框架统一性。"
+    },
+    {
+     "en": "Because every emulated service is an instance of the same idea, answer from a pool and record the implied computation, a single middleware and storage path can serve a heterogeneous surface without per-service trust decisions, which is what makes it sensible to speak of a framework rather than a collection of decoys.",
+     "zh": "由于每个模拟服务都是同一理念的一个实例——从资源池中应答并记录所隐含的计算——单一中间件和存储路径就能服务于异构的表面，而无需针对每个服务做信任决策，这正是我们可以称之为一个框架而非一堆诱饵集合的原因所在。"
+    }
+   ]
+  },
+  {
+   "en": "InferD runs as a single host-networked container on a commodity server. A reverse proxy terminates TLS for the cloud API facades and forwards plaintext to an internal port; the self-hosted services bind directly on their conventional ports. All traffic passes through common middleware before reaching a per-service emulator, and the whole application runs inside a kernel-level egress boundary (Figure 1 ).",
+   "zh": "InferD 以单个主机网络容器的形式运行在普通服务器上。 反向代理为云 API 门面终止 TLS，并将明文转发到内部端口；自托管服务则直接绑定在其常规端口上。 所有流量在到达每个服务各自的模拟器之前都会经过公共中间件，而整个应用程序运行在内核级出站边界内（图 1）。",
+   "sents": [
+    {
+     "en": "InferD runs as a single host-networked container on a commodity server.",
+     "zh": "InferD 以单个主机网络容器的形式运行在普通服务器上。"
+    },
+    {
+     "en": "A reverse proxy terminates TLS for the cloud API facades and forwards plaintext to an internal port; the self-hosted services bind directly on their conventional ports.",
+     "zh": "反向代理为云 API 门面终止 TLS，并将明文转发到内部端口；自托管服务则直接绑定在其常规端口上。"
+    },
+    {
+     "en": "All traffic passes through common middleware before reaching a per-service emulator, and the whole application runs inside a kernel-level egress boundary (Figure 1 ).",
+     "zh": "所有流量在到达每个服务各自的模拟器之前都会经过公共中间件，而整个应用程序运行在内核级出站边界内（图 1）。"
+    }
+   ]
+  },
+  {
+   "en": "A design decision that recurs through the paper is to treat the surface as two structurally different parts rather than one, because they attract different adversaries and demand different instrumentation. Surface 1 comprises self-hosted services discovered through open ports; the deception target is the default, network-exposed deployment described in Section 2 , and the capture of interest is reconnaissance, inventory enumeration, and vulnerability probing. Surface 2 comprises cloud API facades reached not by scanning but by an adversary who already holds a credential; the deception target is a genuine software-as-a-service endpoint, and the capture of interest is credential abuse and the content of the prompts and tool definitions an authenticated caller submits. Keeping the two apart lets the provenance plane attach specifically to Surface 2, where credentials are the entry mechanism, without complicating the open-port emulators where they are not. Table 1 lists the emulated facades; each is an instance of deception without inference .",
+   "zh": "贯穿全文的一个设计决策是将攻击面视为两个结构上不同的部分而非一个，因为它们吸引不同的对手，并需要不同的监测手段。 攻击面 1 包括通过开放端口发现的自主托管服务；欺骗目标是第 2 节所述的默认的、暴露于网络的部署，所关注的捕获内容是侦察、资产清点枚举和漏洞探测。 攻击面 2 包括并非通过扫描、而是由已持有凭证的对手访问的云 API 外观；欺骗目标是真实的软件即服务端点，所关注的捕获内容是凭证滥用以及经认证的调用者提交的提示词和工具定义的内容。 将两者区分开来，可以让溯源平面专门附加于凭证作为进入机制的攻击面 2，而不必使凭证并非进入机制的开放端口模拟器复杂化。 表 1 列出了被模拟的外观；每一个都是无推理欺骗的一个实例。",
+   "sents": [
+    {
+     "en": "A design decision that recurs through the paper is to treat the surface as two structurally different parts rather than one, because they attract different adversaries and demand different instrumentation.",
+     "zh": "贯穿全文的一个设计决策是将攻击面视为两个结构上不同的部分而非一个，因为它们吸引不同的对手，并需要不同的监测手段。"
+    },
+    {
+     "en": "Surface 1 comprises self-hosted services discovered through open ports; the deception target is the default, network-exposed deployment described in Section 2 , and the capture of interest is reconnaissance, inventory enumeration, and vulnerability probing.",
+     "zh": "攻击面 1 包括通过开放端口发现的自主托管服务；欺骗目标是第 2 节所述的默认的、暴露于网络的部署，所关注的捕获内容是侦察、资产清点枚举和漏洞探测。"
+    },
+    {
+     "en": "Surface 2 comprises cloud API facades reached not by scanning but by an adversary who already holds a credential; the deception target is a genuine software-as-a-service endpoint, and the capture of interest is credential abuse and the content of the prompts and tool definitions an authenticated caller submits.",
+     "zh": "攻击面 2 包括并非通过扫描、而是由已持有凭证的对手访问的云 API 外观；欺骗目标是真实的软件即服务端点，所关注的捕获内容是凭证滥用以及经认证的调用者提交的提示词和工具定义的内容。"
+    },
+    {
+     "en": "Keeping the two apart lets the provenance plane attach specifically to Surface 2, where credentials are the entry mechanism, without complicating the open-port emulators where they are not.",
+     "zh": "将两者区分开来，可以让溯源平面专门附加于凭证作为进入机制的攻击面 2，而不必使凭证并非进入机制的开放端口模拟器复杂化。"
+    },
+    {
+     "en": "Table 1 lists the emulated facades; each is an instance of deception without inference .",
+     "zh": "表 1 列出了被模拟的外观；每一个都是无推理欺骗的一个实例。"
+    }
+   ]
+  },
+  {
+   "en": "The principle becomes a system through a stack of independent mechanisms, each operating at a different level of what the adversary can observe. We develop each as a problem of faithful emulation, state the alternative we considered and rejected, and name the way an adversary could detect the deception. The recurring shape of these limits, that non-execution is detectable to anyone who tests for effect, and is a trade-off of the design.",
+   "zh": "该原则通过一组相互独立的机制成为一套系统，每个机制都在对手可观察内容的不同层面发挥作用。 我们将每一项作为一个忠实仿真问题来展开，说明我们曾考虑并放弃的替代方案，并指出对手可能借此识破欺骗的方式。 这些限制反复呈现的形态是：不真正执行会被任何测试效果的人察觉，这是该设计的一项权衡。",
+   "sents": [
+    {
+     "en": "The principle becomes a system through a stack of independent mechanisms, each operating at a different level of what the adversary can observe.",
+     "zh": "该原则通过一组相互独立的机制成为一套系统，每个机制都在对手可观察内容的不同层面发挥作用。"
+    },
+    {
+     "en": "We develop each as a problem of faithful emulation, state the alternative we considered and rejected, and name the way an adversary could detect the deception.",
+     "zh": "我们将每一项作为一个忠实仿真问题来展开，说明我们曾考虑并放弃的替代方案，并指出对手可能借此识破欺骗的方式。"
+    },
+    {
+     "en": "The recurring shape of these limits, that non-execution is detectable to anyone who tests for effect, and is a trade-off of the design.",
+     "zh": "这些限制反复呈现的形态是：不真正执行会被任何测试效果的人察觉，这是该设计的一项权衡。"
+    }
+   ]
+  },
+  {
+   "en": "The problem is to record the true origin of each request despite the reverse proxy in front of Surface 2, and to present transport characteristics consistent with the imitated service. Running the container in host-network mode preserves the genuine peer address on the direct ports, and for proxied traffic the middleware trusts the X-Forwarded-For header only from the loopback proxy peer, ignoring it from any other source; the mechanism is detailed in Section 4.2 . The alternative, standard container port mapping, is what a straightforward deployment would use, and it silently rewrites every source address to the container gateway IP, with no error or warning, so the dataset appears complete but records the same gateway address for every event; we treat avoiding this as a correctness requirement, not an optimization. The residual limit is that a determined adversary can compare the transport fingerprint against the genuine provider and may find discrepancies; we log the fingerprint so that any such mismatch is visible in our own data as well.",
+   "zh": "问题在于，尽管 Surface 2 前面存在反向代理，仍要记录每个请求的真实来源，并呈现与被模仿服务一致的传输层特征。 以主机网络模式运行容器可在直连端口上保留真实的对端地址；对于经过代理的流量，中间件仅信任来自回环代理对端的 X-Forwarded-For 头，而忽略来自任何其他来源的该头部；该机制详见第 4.2 节。 另一种选择是标准的容器端口映射，这也是直接部署时会采用的方式，但它会悄然把每个源地址改写为容器网关 IP，没有任何错误或警告，因此数据集看似完整，却为每个事件都记录了相同的网关地址；我们把避免这一点视为正确性要求，而非优化。 残留的局限在于，一个蓄意的攻击者可以将传输层指纹与真实服务商进行比对，并可能发现差异；我们记录该指纹，以便任何此类不匹配在我们自己的数据中同样可见。",
+   "sents": [
+    {
+     "en": "The problem is to record the true origin of each request despite the reverse proxy in front of Surface 2, and to present transport characteristics consistent with the imitated service.",
+     "zh": "问题在于，尽管 Surface 2 前面存在反向代理，仍要记录每个请求的真实来源，并呈现与被模仿服务一致的传输层特征。"
+    },
+    {
+     "en": "Running the container in host-network mode preserves the genuine peer address on the direct ports, and for proxied traffic the middleware trusts the X-Forwarded-For header only from the loopback proxy peer, ignoring it from any other source; the mechanism is detailed in Section 4.2 .",
+     "zh": "以主机网络模式运行容器可在直连端口上保留真实的对端地址；对于经过代理的流量，中间件仅信任来自回环代理对端的 X-Forwarded-For 头，而忽略来自任何其他来源的该头部；该机制详见第 4.2 节。"
+    },
+    {
+     "en": "The alternative, standard container port mapping, is what a straightforward deployment would use, and it silently rewrites every source address to the container gateway IP, with no error or warning, so the dataset appears complete but records the same gateway address for every event; we treat avoiding this as a correctness requirement, not an optimization.",
+     "zh": "另一种选择是标准的容器端口映射，这也是直接部署时会采用的方式，但它会悄然把每个源地址改写为容器网关 IP，没有任何错误或警告，因此数据集看似完整，却为每个事件都记录了相同的网关地址；我们把避免这一点视为正确性要求，而非优化。"
+    },
+    {
+     "en": "The residual limit is that a determined adversary can compare the transport fingerprint against the genuine provider and may find discrepancies; we log the fingerprint so that any such mismatch is visible in our own data as well.",
+     "zh": "残留的局限在于，一个蓄意的攻击者可以将传输层指纹与真实服务商进行比对，并可能发现差异；我们记录该指纹，以便任何此类不匹配在我们自己的数据中同样可见。"
+    }
+   ]
+  },
+  {
+   "en": "Here the adversary reads what the service advertises and the shape of what it returns, and fidelity (G1) is the reproduction of that behavior without computing it. InferD serves each endpoint from a static pool and diversifies a small number of fields per response through variant expansion (Section 4.4 ), so that repeated requests do not return byte-identical replies. The residual limit is the finite depth of a pool: an adversary who submits a prompt with a checkable answer will find that the facade does not reason. This limit is real and we do not paper over it, but it binds only the most capable adversaries and is, usefully, itself a detector of them.",
+   "zh": "在这里，攻击者读取服务所宣称的内容以及其返回内容的形态，而保真度（G1）是在不真正计算的情况下复现该行为。 InferD 从一个静态池中为每个端点提供服务，并通过变体扩展（第 4.4 节）使每个响应中的少量字段多样化，从而使重复请求不会返回字节级完全相同的回复。 剩余的局限在于池的有限深度：提交带有可验证答案的提示词的攻击者会发现该门面并不进行推理。 这一局限是真实存在的，我们不会掩饰它，但它只对能力最强的攻击者构成约束，而且很有用的是，它本身就能检测出这类攻击者。",
+   "sents": [
+    {
+     "en": "Here the adversary reads what the service advertises and the shape of what it returns, and fidelity (G1) is the reproduction of that behavior without computing it.",
+     "zh": "在这里，攻击者读取服务所宣称的内容以及其返回内容的形态，而保真度（G1）是在不真正计算的情况下复现该行为。"
+    },
+    {
+     "en": "InferD serves each endpoint from a static pool and diversifies a small number of fields per response through variant expansion (Section 4.4 ), so that repeated requests do not return byte-identical replies.",
+     "zh": "InferD 从一个静态池中为每个端点提供服务，并通过变体扩展（第 4.4 节）使每个响应中的少量字段多样化，从而使重复请求不会返回字节级完全相同的回复。"
+    },
+    {
+     "en": "The residual limit is the finite depth of a pool: an adversary who submits a prompt with a checkable answer will find that the facade does not reason.",
+     "zh": "剩余的局限在于池的有限深度：提交带有可验证答案的提示词的攻击者会发现该门面并不进行推理。"
+    },
+    {
+     "en": "This limit is real and we do not paper over it, but it binds only the most capable adversaries and is, usefully, itself a detector of them.",
+     "zh": "这一局限是真实存在的，我们不会掩饰它，但它只对能力最强的攻击者构成约束，而且很有用的是，它本身就能检测出这类攻击者。"
+    }
+   ]
+  },
+  {
+   "en": "Exploit operators (A4) send payloads crafted for specific flaws, and to capture those payloads the facade must present the vulnerable-looking interface while the flaw itself does not exist. The emulated surfaces combine two categories: interfaces grounded in attributable CVEs from the incident record, which ensures the bait matches payloads observed in the wild, and structurally motivated surfaces for services whose architectural properties make specific attack patterns likely even without a single documented incident. The set is not exhaustive; the pool-and-emulator architecture is designed to accommodate additional surfaces as the CVE record and threat landscape evolve. Current CVE-grounded surfaces include: a model-pull endpoint that accepts an attacker-supplied registry path, mirroring the Ollama path traversal of CVE-2024-37032 (documented above); a completions field that a vulnerable vLLM build would deserialize when processing multimodal inputs; a gateway request that a vulnerable build would forward with its upstream credential attached, mirroring the server-side request forgery ( Pellegrino et al., 2016 ) of CVE-2024-6587 6 6 6 National Vulnerability Database, CVE-2024-6587: Server-Side Request Forgery in LiteLLM , 2024. https://nvd.nist.gov/vuln/detail/CVE-2024-6587 ; and an MCP test/connection endpoint that a vulnerable LiteLLM 7 7 7 LiteLLM: Call 100+ LLM APIs using the OpenAI format. https://github.com/BerriAI/litellm build would use to spawn an attacker-specified subprocess. Alongside these signature-shaped surfaces the middleware runs a structural anomaly scan, independent of any single vulnerability, examining each request for shell metacharacters, embedded code, unexpected URL fields, and path traversal, so that payloads whose significance is not yet known are preserved for retrospective analysis. The structural anomaly scan proved its value beyond signature-matched CVEs in the deployment: it correctly identified a novel credential-harvesting payload delivered via the LiteLLM MCP test-connection feature, a pattern not matching any single known CVE at capture time, and preserved the full payload for the retrospective analysis in Section 5.2 .",
+   "zh": "利用型智能体（A4）会针对特定缺陷发送精心构造的载荷，为了捕获这些载荷，门面必须呈现出看似存在漏洞的接口，而缺陷本身并不存在。 这些仿真界面结合了两类：一类是基于事件记录中可归因的 CVE 构建的界面，这确保了诱饵与在野外观察到的载荷相匹配；另一类是基于结构动机构建的界面，针对那些其架构特性使特定攻击模式很可能出现的服务，即使没有单一的在案事件。 该集合并非详尽无遗；池化与仿真器架构旨在随着 CVE 记录和威胁态势的演变而容纳更多界面。 当前基于 CVE 的界面包括：一个接受攻击者提供的注册表路径的模型拉取端点，对应 CVE-2024-37032（如上所述）中的 Ollama 路径遍历；一个在处理多模态输入时会被存在漏洞的 vLLM 构建版本反序列化的补全字段；一个会被存在漏洞的构建版本连同其上游凭证一起转发的网关请求，对应 CVE-2024-6587 中的服务端请求伪造（Pellegrino et al., 2016）6 6 6 National Vulnerability Database, CVE-2024-6587: Server-Side Request Forgery in LiteLLM, 2024. https://nvd.nist.gov/vuln/detail/CVE-2024-6587；以及一个会被存在漏洞的 LiteLLM 7 7 7 LiteLLM: Call 100+ LLM APIs using the OpenAI format. https://github.com/BerriAI/litellm 构建版本用来派生攻击者指定子进程的 MCP 测试/连接端点。 除了这些具有特征形态的界面之外，中间件还运行一种独立于任何单一漏洞的结构异常扫描，检查每个请求中是否包含 shell 元字符、嵌入式代码、意外出现的 URL 字段和路径遍历，从而将那些重要性尚不明确的载荷保留下来以供回顾性分析。 在部署中，结构异常扫描的价值超越了特征匹配的 CVE：它正确识别了通过 LiteLLM MCP 测试连接功能投递的一种新型凭证收集载荷——这一模式在捕获时并不匹配任何单一已知 CVE——并完整保留了该载荷以供第 5.2 节的回顾性分析。",
+   "sents": [
+    {
+     "en": "Exploit operators (A4) send payloads crafted for specific flaws, and to capture those payloads the facade must present the vulnerable-looking interface while the flaw itself does not exist.",
+     "zh": "利用型智能体（A4）会针对特定缺陷发送精心构造的载荷，为了捕获这些载荷，门面必须呈现出看似存在漏洞的接口，而缺陷本身并不存在。"
+    },
+    {
+     "en": "The emulated surfaces combine two categories: interfaces grounded in attributable CVEs from the incident record, which ensures the bait matches payloads observed in the wild, and structurally motivated surfaces for services whose architectural properties make specific attack patterns likely even without a single documented incident.",
+     "zh": "这些仿真界面结合了两类：一类是基于事件记录中可归因的 CVE 构建的界面，这确保了诱饵与在野外观察到的载荷相匹配；另一类是基于结构动机构建的界面，针对那些其架构特性使特定攻击模式很可能出现的服务，即使没有单一的在案事件。"
+    },
+    {
+     "en": "The set is not exhaustive; the pool-and-emulator architecture is designed to accommodate additional surfaces as the CVE record and threat landscape evolve.",
+     "zh": "该集合并非详尽无遗；池化与仿真器架构旨在随着 CVE 记录和威胁态势的演变而容纳更多界面。"
+    },
+    {
+     "en": "Current CVE-grounded surfaces include: a model-pull endpoint that accepts an attacker-supplied registry path, mirroring the Ollama path traversal of CVE-2024-37032 (documented above); a completions field that a vulnerable vLLM build would deserialize when processing multimodal inputs; a gateway request that a vulnerable build would forward with its upstream credential attached, mirroring the server-side request forgery ( Pellegrino et al., 2016 ) of CVE-2024-6587 6 6 6 National Vulnerability Database, CVE-2024-6587: Server-Side Request Forgery in LiteLLM , 2024. https://nvd.nist.gov/vuln/detail/CVE-2024-6587 ; and an MCP test/connection endpoint that a vulnerable LiteLLM 7 7 7 LiteLLM: Call 100+ LLM APIs using the OpenAI format. https://github.com/BerriAI/litellm build would use to spawn an attacker-specified subprocess.",
+     "zh": "当前基于 CVE 的界面包括：一个接受攻击者提供的注册表路径的模型拉取端点，对应 CVE-2024-37032（如上所述）中的 Ollama 路径遍历；一个在处理多模态输入时会被存在漏洞的 vLLM 构建版本反序列化的补全字段；一个会被存在漏洞的构建版本连同其上游凭证一起转发的网关请求，对应 CVE-2024-6587 中的服务端请求伪造（Pellegrino et al., 2016）6 6 6 National Vulnerability Database, CVE-2024-6587: Server-Side Request Forgery in LiteLLM, 2024. https://nvd.nist.gov/vuln/detail/CVE-2024-6587；以及一个会被存在漏洞的 LiteLLM 7 7 7 LiteLLM: Call 100+ LLM APIs using the OpenAI format. https://github.com/BerriAI/litellm 构建版本用来派生攻击者指定子进程的 MCP 测试/连接端点。"
+    },
+    {
+     "en": "Alongside these signature-shaped surfaces the middleware runs a structural anomaly scan, independent of any single vulnerability, examining each request for shell metacharacters, embedded code, unexpected URL fields, and path traversal, so that payloads whose significance is not yet known are preserved for retrospective analysis.",
+     "zh": "除了这些具有特征形态的界面之外，中间件还运行一种独立于任何单一漏洞的结构异常扫描，检查每个请求中是否包含 shell 元字符、嵌入式代码、意外出现的 URL 字段和路径遍历，从而将那些重要性尚不明确的载荷保留下来以供回顾性分析。"
+    },
+    {
+     "en": "The structural anomaly scan proved its value beyond signature-matched CVEs in the deployment: it correctly identified a novel credential-harvesting payload delivered via the LiteLLM MCP test-connection feature, a pattern not matching any single known CVE at capture time, and preserved the full payload for the retrospective analysis in Section 5.2 .",
+     "zh": "在部署中，结构异常扫描的价值超越了特征匹配的 CVE：它正确识别了通过 LiteLLM MCP 测试连接功能投递的一种新型凭证收集载荷——这一模式在捕获时并不匹配任何单一已知 CVE——并完整保留了该载荷以供第 5.2 节的回顾性分析。"
+    }
+   ]
+  },
+  {
+   "en": "A single request from an agentic actor (A5) reveals little; a maintained session of tool calls reveals structured intent, so this layer is where statefulness (G4) earns its cost. InferD carries two stateful surfaces: an assistants interface 8 8 8 OpenAI Assistants API Documentation: https://platform.openai.com/docs/assistants whose threads expose a create-run-submit lifecycle, and an MCP surface that implements the handshake, authorization discovery, dynamic client registration, and a token endpoint, holding session state so that a tool-call sequence and its arguments are recorded together. Tool calls are logged as arguments and never dispatched, which keeps the layer inside the non-execution guarantee. The agentic capture machinery is designed and implemented; its empirical validation against organic A5 traffic is limited in the current window, as discussed in Section 5 . We frame the intent these sessions expose using the lethal trifecta, Willison’s formulation 9 9 9 Simon Willison, The Lethal Trifecta for AI Agents (2025). https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/ under which an agentic attack requires the co-occurrence of untrusted instructions, access to sensitive data, and an exfiltration path. The honeypot instruments the untrusted-instruction and exfiltration-path legs while structurally withholding the data leg. This framing is more than descriptive. Systematic evaluation shows that current agents comply with instructions embedded in tool descriptions at substantial rates, that susceptibility rises with model capability, and that safety alignment offers little protection before execution ( Wang et al., 2026 ; Gasmi et al., 2026 ) , which is the reason to record tool-call arguments verbatim rather than to rely on the agent to refuse.",
+   "zh": "来自智能体行为者（A5）的单一请求所透露的信息很少；而一段持续维护的工具调用会话则会揭示结构化的意图，因此这一层正是有状态性（G4）体现其价值的地方。 InferD 具有两个有状态的服务面：一个是助手（assistants）接口 8 8 8 OpenAI Assistants API 文档：https://platform.openai.com/docs/assistants，其线程（threads）暴露出创建-运行-提交（create-run-submit）的生命周期；另一个是 MCP 服务面，它实现了握手、授权发现、动态客户端注册以及令牌端点，并保存会话状态，使得一次工具调用序列及其参数被一并记录。 工具调用仅以参数形式被记录而从不被真正派发，这使该层保持在非执行保证的范围内。 智能体捕获机制已经完成设计与实现；但如第 5 节所述，其针对真实 A5 流量的实证验证在当前窗口内仍然有限。 我们使用「致命三要素」（lethal trifecta）来框定这些会话所暴露的意图，这是 Willison 的提法 9 9 9 Simon Willison, The Lethal Trifecta for AI Agents (2025). https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/，即智能体攻击需要不可信指令、敏感数据访问权限与外泄路径三者同时出现。 该蜜罐对「不可信指令」和「外泄路径」这两条要素进行了布设，而在结构上刻意缺失「数据」这一要素。 这一框架不仅仅是描述性的。 系统性评估表明，当前的智能体会在相当高的比例上遵从嵌入在工具描述中的指令，这种易感性随模型能力的提升而上升，且安全对齐在执行之前几乎不提供保护（Wang et al., 2026; Gasmi et al., 2026），这正是我们要逐字记录工具调用参数、而不是依赖智能体自身拒绝执行的原因。",
+   "sents": [
+    {
+     "en": "A single request from an agentic actor (A5) reveals little; a maintained session of tool calls reveals structured intent, so this layer is where statefulness (G4) earns its cost.",
+     "zh": "来自智能体行为者（A5）的单一请求所透露的信息很少；而一段持续维护的工具调用会话则会揭示结构化的意图，因此这一层正是有状态性（G4）体现其价值的地方。"
+    },
+    {
+     "en": "InferD carries two stateful surfaces: an assistants interface 8 8 8 OpenAI Assistants API Documentation: https://platform.openai.com/docs/assistants whose threads expose a create-run-submit lifecycle, and an MCP surface that implements the handshake, authorization discovery, dynamic client registration, and a token endpoint, holding session state so that a tool-call sequence and its arguments are recorded together.",
+     "zh": "InferD 具有两个有状态的服务面：一个是助手（assistants）接口 8 8 8 OpenAI Assistants API 文档：https://platform.openai.com/docs/assistants，其线程（threads）暴露出创建-运行-提交（create-run-submit）的生命周期；另一个是 MCP 服务面，它实现了握手、授权发现、动态客户端注册以及令牌端点，并保存会话状态，使得一次工具调用序列及其参数被一并记录。"
+    },
+    {
+     "en": "Tool calls are logged as arguments and never dispatched, which keeps the layer inside the non-execution guarantee.",
+     "zh": "工具调用仅以参数形式被记录而从不被真正派发，这使该层保持在非执行保证的范围内。"
+    },
+    {
+     "en": "The agentic capture machinery is designed and implemented; its empirical validation against organic A5 traffic is limited in the current window, as discussed in Section 5 .",
+     "zh": "智能体捕获机制已经完成设计与实现；但如第 5 节所述，其针对真实 A5 流量的实证验证在当前窗口内仍然有限。"
+    },
+    {
+     "en": "We frame the intent these sessions expose using the lethal trifecta, Willison’s formulation 9 9 9 Simon Willison, The Lethal Trifecta for AI Agents (2025). https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/ under which an agentic attack requires the co-occurrence of untrusted instructions, access to sensitive data, and an exfiltration path.",
+     "zh": "我们使用「致命三要素」（lethal trifecta）来框定这些会话所暴露的意图，这是 Willison 的提法 9 9 9 Simon Willison, The Lethal Trifecta for AI Agents (2025). https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/，即智能体攻击需要不可信指令、敏感数据访问权限与外泄路径三者同时出现。"
+    },
+    {
+     "en": "The honeypot instruments the untrusted-instruction and exfiltration-path legs while structurally withholding the data leg.",
+     "zh": "该蜜罐对「不可信指令」和「外泄路径」这两条要素进行了布设，而在结构上刻意缺失「数据」这一要素。"
+    },
+    {
+     "en": "This framing is more than descriptive.",
+     "zh": "这一框架不仅仅是描述性的。"
+    },
+    {
+     "en": "Systematic evaluation shows that current agents comply with instructions embedded in tool descriptions at substantial rates, that susceptibility rises with model capability, and that safety alignment offers little protection before execution ( Wang et al., 2026 ; Gasmi et al., 2026 ) , which is the reason to record tool-call arguments verbatim rather than to rely on the agent to refuse.",
+     "zh": "系统性评估表明，当前的智能体会在相当高的比例上遵从嵌入在工具描述中的指令，这种易感性随模型能力的提升而上升，且安全对齐在执行之前几乎不提供保护（Wang et al., 2026; Gasmi et al., 2026），这正是我们要逐字记录工具调用参数、而不是依赖智能体自身拒绝执行的原因。"
+    }
+   ]
+  },
+  {
+   "en": "Because coverage of an emerging surface is easy to assert and hard to substantiate, we state it against an external taxonomy, the OWASP MCP Top 10 10 10 10 https://owasp.org/www-project-mcp-top-10/ , a community project to catalog the most critical security risks in MCP tool integration. We use this MCP-specific taxonomy rather than the broader OWASP Top 10 for LLM Applications 11 11 11 https://owasp.org/www-project-top-10-for-large-language-model-applications/ because the agentic session layer’s capture is defined at the protocol level MCP introduces, not at the level of general LLM application risk. Table 2 maps InferD’s coverage onto all ten OWASP MCP Top 10 categories, reporting whether each is captured (✓), outside the passive inbound observation scope (✗), or partially observable (~). The mapping is pointed in two places: category MCP05 (command injection and execution) is now directly demonstrated rather than claimed, as the LiteLLM credential-harvesting payload in Section 5.2 is precisely an MCP05 exploitation attempt captured in the wild; and category MCP08 (lack of audit and telemetry) names a passive honeypot as a source of precisely the tool-invocation telemetry whose absence it describes, so the instrument’s function coincides with a named gap in the standard.",
+   "zh": "由于对新兴攻击面的覆盖声明容易断言而难以证实，我们将其对照一个外部分类体系来陈述，即 OWASP MCP Top 10 10 10 10 https://owasp.org/www-project-mcp-top-10/ ，这是一个旨在梳理 MCP 工具集成中最关键安全风险的社区项目。 我们使用这一 MCP 专用分类体系而非更宽泛的面向 LLM 应用的 OWASP Top 10 11 11 11 https://owasp.org/www-project-top-10-for-large-language-model-applications/ ，因为智能体会话层的捕获是在 MCP 所引入的协议层面定义的，而非在一般 LLM 应用风险层面定义的。 表 2 将 InferD 的覆盖情况映射到 OWASP MCP Top 10 的全部十个类别上，标注每一类是被捕获（✓）、处于被动入站观测范围之外（✗），还是可部分观测（~）。 该映射有两处值得指出：类别 MCP05（命令注入与执行）如今得到直接证明而非仅是声称，因为 5.2 节中的 LiteLLM 凭据窃取载荷正是一次在野外捕获的 MCP05 利用尝试；类别 MCP08（缺乏审计与遥测）则将一个被动蜜罐列为来源，恰好提供其所描述缺失的那类工具调用遥测数据，因此该工具的功能与该标准中点名的缺口恰好重合。",
+   "sents": [
+    {
+     "en": "Because coverage of an emerging surface is easy to assert and hard to substantiate, we state it against an external taxonomy, the OWASP MCP Top 10 10 10 10 https://owasp.org/www-project-mcp-top-10/ , a community project to catalog the most critical security risks in MCP tool integration.",
+     "zh": "由于对新兴攻击面的覆盖声明容易断言而难以证实，我们将其对照一个外部分类体系来陈述，即 OWASP MCP Top 10 10 10 10 https://owasp.org/www-project-mcp-top-10/ ，这是一个旨在梳理 MCP 工具集成中最关键安全风险的社区项目。"
+    },
+    {
+     "en": "We use this MCP-specific taxonomy rather than the broader OWASP Top 10 for LLM Applications 11 11 11 https://owasp.org/www-project-top-10-for-large-language-model-applications/ because the agentic session layer’s capture is defined at the protocol level MCP introduces, not at the level of general LLM application risk.",
+     "zh": "我们使用这一 MCP 专用分类体系而非更宽泛的面向 LLM 应用的 OWASP Top 10 11 11 11 https://owasp.org/www-project-top-10-for-large-language-model-applications/ ，因为智能体会话层的捕获是在 MCP 所引入的协议层面定义的，而非在一般 LLM 应用风险层面定义的。"
+    },
+    {
+     "en": "Table 2 maps InferD’s coverage onto all ten OWASP MCP Top 10 categories, reporting whether each is captured (✓), outside the passive inbound observation scope (✗), or partially observable (~).",
+     "zh": "表 2 将 InferD 的覆盖情况映射到 OWASP MCP Top 10 的全部十个类别上，标注每一类是被捕获（✓）、处于被动入站观测范围之外（✗），还是可部分观测（~）。"
+    },
+    {
+     "en": "The mapping is pointed in two places: category MCP05 (command injection and execution) is now directly demonstrated rather than claimed, as the LiteLLM credential-harvesting payload in Section 5.2 is precisely an MCP05 exploitation attempt captured in the wild; and category MCP08 (lack of audit and telemetry) names a passive honeypot as a source of precisely the tool-invocation telemetry whose absence it describes, so the instrument’s function coincides with a named gap in the standard.",
+     "zh": "该映射有两处值得指出：类别 MCP05（命令注入与执行）如今得到直接证明而非仅是声称，因为 5.2 节中的 LiteLLM 凭据窃取载荷正是一次在野外捕获的 MCP05 利用尝试；类别 MCP08（缺乏审计与遥测）则将一个被动蜜罐列为来源，恰好提供其所描述缺失的那类工具调用遥测数据，因此该工具的功能与该标准中点名的缺口恰好重合。"
+    }
+   ]
+  },
+  {
+   "en": "† MCP08 is a defensive gap, not an attacker behavior. InferD covers it by supplying the missing telemetry; the ✓ rows denote attacks observed in captured traffic.",
+   "zh": "† MCP08 是一个防御缺口，而非攻击者行为。 InferD 通过补充缺失的遥测数据来覆盖该缺口；带 ✓ 的行表示在捕获流量中观察到的攻击。",
+   "sents": [
+    {
+     "en": "† MCP08 is a defensive gap, not an attacker behavior.",
+     "zh": "† MCP08 是一个防御缺口，而非攻击者行为。"
+    },
+    {
+     "en": "InferD covers it by supplying the missing telemetry; the ✓ rows denote attacks observed in captured traffic.",
+     "zh": "InferD 通过补充缺失的遥测数据来覆盖该缺口；带 ✓ 的行表示在捕获流量中观察到的攻击。"
+    }
+   ]
+  },
+  {
+   "en": "Observing that a credential was used is informative; tracing a specific planted credential from theft to first use, and further to evidence that captured output was processed by a model, is more so, and this is the provenance goal (G5). InferD seeds honeytokens, credentials whose only purpose is to be stolen ( Spitzner, 2003 ; Shabtai et al., 2016 ) , and records on every request whether the presented credential matches a planted one and which token it is ( Srinivasa et al., 2020 ) . A fraction of honeytoken responses embed a canary 12 12 12 Thinkst Canarytokens: https://canarytokens.org , a unique marker with no legitimate reason to reappear; a later re-presentation of that marker is evidence that the captured output was ingested and re-emitted by a model-mediated pipeline rather than replayed. The plane’s honest dependency, which the deployment made concrete, is that it produces signal only when credentials are actually found and used; a decoy that waits passively will observe credential abuse only once its keys are in circulation, a point we return to in Section 5 .",
+   "zh": "观察到某个凭据被使用是有信息量的；追踪一个特定投放的凭据从失窃到首次使用，并进一步追踪到证明被捕获的输出曾被某个模型处理过的证据，则更有信息量，而这正是溯源目标（G5）。 InferD 播种蜜令（honeytoken），即唯一目的就是被窃取的凭据（Spitzner, 2003；Shabtai et al., 2016），并在每个请求上记录所提交的凭据是否与某个投放的凭据匹配以及是哪一个蜜令（Srinivasa et al., 2020）。 一部分蜜令响应中嵌入金丝雀标记 12 12 12 Thinkst Canarytokens：https://canarytokens.org，这是一种没有正当理由会再次出现的唯一标记；该标记随后再次出现，即是被捕获的输出被某个以模型为中介的流水线摄取并重新输出、而非被重放的证据。 该平面的诚实依赖（部署已将其具体化）是：只有当凭据实际被找到并被使用时它才产生信号；一个被动等待的诱饵只有在自己的密钥进入流通后才能观察到凭据滥用，这一点我们将在第 5 节中再次讨论。",
+   "sents": [
+    {
+     "en": "Observing that a credential was used is informative; tracing a specific planted credential from theft to first use, and further to evidence that captured output was processed by a model, is more so, and this is the provenance goal (G5).",
+     "zh": "观察到某个凭据被使用是有信息量的；追踪一个特定投放的凭据从失窃到首次使用，并进一步追踪到证明被捕获的输出曾被某个模型处理过的证据，则更有信息量，而这正是溯源目标（G5）。"
+    },
+    {
+     "en": "InferD seeds honeytokens, credentials whose only purpose is to be stolen ( Spitzner, 2003 ; Shabtai et al., 2016 ) , and records on every request whether the presented credential matches a planted one and which token it is ( Srinivasa et al., 2020 ) .",
+     "zh": "InferD 播种蜜令（honeytoken），即唯一目的就是被窃取的凭据（Spitzner, 2003；Shabtai et al., 2016），并在每个请求上记录所提交的凭据是否与某个投放的凭据匹配以及是哪一个蜜令（Srinivasa et al., 2020）。"
+    },
+    {
+     "en": "A fraction of honeytoken responses embed a canary 12 12 12 Thinkst Canarytokens: https://canarytokens.org , a unique marker with no legitimate reason to reappear; a later re-presentation of that marker is evidence that the captured output was ingested and re-emitted by a model-mediated pipeline rather than replayed.",
+     "zh": "一部分蜜令响应中嵌入金丝雀标记 12 12 12 Thinkst Canarytokens：https://canarytokens.org，这是一种没有正当理由会再次出现的唯一标记；该标记随后再次出现，即是被捕获的输出被某个以模型为中介的流水线摄取并重新输出、而非被重放的证据。"
+    },
+    {
+     "en": "The plane’s honest dependency, which the deployment made concrete, is that it produces signal only when credentials are actually found and used; a decoy that waits passively will observe credential abuse only once its keys are in circulation, a point we return to in Section 5 .",
+     "zh": "该平面的诚实依赖（部署已将其具体化）是：只有当凭据实际被找到并被使用时它才产生信号；一个被动等待的诱饵只有在自己的密钥进入流通后才能观察到凭据滥用，这一点我们将在第 5 节中再次讨论。"
+    }
+   ]
+  },
+  {
+   "en": "We describe the implementation with emphasis on the few places where a straightforward build would quietly do the wrong thing, since those are where the design’s guarantees are actually won.",
+   "zh": "我们描述其实现，重点放在那些直接构建会悄然出错的地方，因为设计的保证正是在这些地方真正得以实现的。",
+   "sents": null
+  },
+  {
+   "en": "The facades are implemented as routers organized into ten process groups by port and transport, one group serving the TLS-fronted cloud facades and one each for the self-hosted services, each a separate application server managed by supervisord inside a single container. The arrangement is more than operational tidiness. Every group runs as the same unprivileged operating-system user, and that user is the one to which the egress rule of Section 4.3 is bound, so a single kernel-level control covers all services regardless of which one an adversary reaches. Tying the process model to the safety boundary in this way means that adding a service cannot silently widen the trust surface: a new group inherits the same user and therefore the same egress prohibition.",
+   "zh": "这些门面（facade）实现为路由器，按端口和传输方式划分为十个进程组：一个组服务于以 TLS 为前端的云端门面，其余各组分别服务于自托管服务，每组都是单个容器内由 supervisord 管理的独立应用服务器。 这种安排不只是运维上的整洁。 每个进程组都以同一个非特权操作系统用户运行，而第 4.3 节的出站规则正是绑定到该用户，因此无论对手攻入哪一个服务，单一内核级控制即可覆盖所有服务。 以这种方式将进程模型与安全边界绑定，意味着新增服务无法悄然扩大信任面：新进程组会继承同一个用户，因而也继承同样的出站禁令。",
+   "sents": [
+    {
+     "en": "The facades are implemented as routers organized into ten process groups by port and transport, one group serving the TLS-fronted cloud facades and one each for the self-hosted services, each a separate application server managed by supervisord inside a single container.",
+     "zh": "这些门面（facade）实现为路由器，按端口和传输方式划分为十个进程组：一个组服务于以 TLS 为前端的云端门面，其余各组分别服务于自托管服务，每组都是单个容器内由 supervisord 管理的独立应用服务器。"
+    },
+    {
+     "en": "The arrangement is more than operational tidiness.",
+     "zh": "这种安排不只是运维上的整洁。"
+    },
+    {
+     "en": "Every group runs as the same unprivileged operating-system user, and that user is the one to which the egress rule of Section 4.3 is bound, so a single kernel-level control covers all services regardless of which one an adversary reaches.",
+     "zh": "每个进程组都以同一个非特权操作系统用户运行，而第 4.3 节的出站规则正是绑定到该用户，因此无论对手攻入哪一个服务，单一内核级控制即可覆盖所有服务。"
+    },
+    {
+     "en": "Tying the process model to the safety boundary in this way means that adding a service cannot silently widen the trust surface: a new group inherits the same user and therefore the same egress prohibition.",
+     "zh": "以这种方式将进程模型与安全边界绑定，意味着新增服务无法悄然扩大信任面：新进程组会继承同一个用户，因而也继承同样的出站禁令。"
+    }
+   ]
+  },
+  {
+   "en": "Correct attribution (G3) is the most easily lost property in a containerized deployment. Standard port mapping routes traffic through a userland proxy, so the application sees every connection as originating from the container gateway and the true address is rewritten before it arrives; the failure is silent because no error is raised and the application continues to log normally, with every recorded source address resolving to the same Docker bridge IP. The resulting dataset appears complete but is analytically worthless for any attribution, geographic, or campaign-correlation analysis. InferD runs in host-network mode so that each process observes the raw peer address at the host interface. For TLS connections the socket peer is always the loopback proxy, so the middleware reads the X-Forwarded-For header set by the reverse proxy in that case, and only from the loopback peer, which prevents an external caller from spoofing its own origin.",
+   "zh": "正确归因（G3）是容器化部署中最容易丢失的性质。 标准端口映射会通过用户态代理转发流量，因此应用看到的每个连接都源自容器网关，真实地址在到达之前就被改写；这种失败是静默的，因为不会抛出任何错误，应用照常记录日志，而每条记录的源地址都解析为同一个 Docker 网桥 IP。 由此得到的数据集看似完整，但对任何归因、地理或活动关联分析而言都毫无分析价值。 InferD 以主机网络模式运行，使每个进程都能在主机接口处观测到原始对端地址。 对于 TLS 连接，套接字对端始终是回环代理，因此在这种情况下中间件会读取反向代理设置的 X-Forwarded-For 头，并且只信任来自回环对端的该头，这可以防止外部调用者伪造自己的来源。",
+   "sents": [
+    {
+     "en": "Correct attribution (G3) is the most easily lost property in a containerized deployment.",
+     "zh": "正确归因（G3）是容器化部署中最容易丢失的性质。"
+    },
+    {
+     "en": "Standard port mapping routes traffic through a userland proxy, so the application sees every connection as originating from the container gateway and the true address is rewritten before it arrives; the failure is silent because no error is raised and the application continues to log normally, with every recorded source address resolving to the same Docker bridge IP.",
+     "zh": "标准端口映射会通过用户态代理转发流量，因此应用看到的每个连接都源自容器网关，真实地址在到达之前就被改写；这种失败是静默的，因为不会抛出任何错误，应用照常记录日志，而每条记录的源地址都解析为同一个 Docker 网桥 IP。"
+    },
+    {
+     "en": "The resulting dataset appears complete but is analytically worthless for any attribution, geographic, or campaign-correlation analysis.",
+     "zh": "由此得到的数据集看似完整，但对任何归因、地理或活动关联分析而言都毫无分析价值。"
+    },
+    {
+     "en": "InferD runs in host-network mode so that each process observes the raw peer address at the host interface.",
+     "zh": "InferD 以主机网络模式运行，使每个进程都能在主机接口处观测到原始对端地址。"
+    },
+    {
+     "en": "For TLS connections the socket peer is always the loopback proxy, so the middleware reads the X-Forwarded-For header set by the reverse proxy in that case, and only from the loopback peer, which prevents an external caller from spoofing its own origin.",
+     "zh": "对于 TLS 连接，套接字对端始终是回环代理，因此在这种情况下中间件会读取反向代理设置的 X-Forwarded-For 头，并且只信任来自回环对端的该头，这可以防止外部调用者伪造自己的来源。"
+    }
+   ]
+  },
+  {
+   "en": "Container runtimes manipulate the host firewall directly, and higher-level firewall configuration does not intercept traffic the runtime has already permitted, so a container has unrestricted outbound access by default. For a honeypot that receives tool-call arguments containing attacker-specified URLs, this is the difference between an instrument and a relay. The mitigation binds the firewall to the operating-system user that runs every emulator (G2): loopback outbound is allowed so the reverse-proxy flow works, established connections are allowed so responses reach clients, and every other new outbound connection from that user is dropped, for IPv4 and IPv6, persisted across reboots:",
+   "zh": "容器运行时直接操作主机防火墙，更高层的防火墙配置无法拦截运行时已经放行的流量，因此容器默认拥有不受限制的出站访问。 对于一个接收包含攻击者指定 URL 的工具调用参数的蜜罐（honeypot）而言，这就是「记录仪器」与「转发中继」之间的区别。 该缓解措施将防火墙绑定到运行每个模拟器（G2）的操作系统用户：允许环回出站流量以保证反向代理流程正常工作，允许已建立的连接以便响应能到达客户端，并丢弃来自该用户的所有其他新建出站连接，同时覆盖 IPv4 与 IPv6，并在重启后持久生效：",
+   "sents": [
+    {
+     "en": "Container runtimes manipulate the host firewall directly, and higher-level firewall configuration does not intercept traffic the runtime has already permitted, so a container has unrestricted outbound access by default.",
+     "zh": "容器运行时直接操作主机防火墙，更高层的防火墙配置无法拦截运行时已经放行的流量，因此容器默认拥有不受限制的出站访问。"
+    },
+    {
+     "en": "For a honeypot that receives tool-call arguments containing attacker-specified URLs, this is the difference between an instrument and a relay.",
+     "zh": "对于一个接收包含攻击者指定 URL 的工具调用参数的蜜罐（honeypot）而言，这就是「记录仪器」与「转发中继」之间的区别。"
+    },
+    {
+     "en": "The mitigation binds the firewall to the operating-system user that runs every emulator (G2): loopback outbound is allowed so the reverse-proxy flow works, established connections are allowed so responses reach clients, and every other new outbound connection from that user is dropped, for IPv4 and IPv6, persisted across reboots:",
+     "zh": "该缓解措施将防火墙绑定到运行每个模拟器（G2）的操作系统用户：允许环回出站流量以保证反向代理流程正常工作，允许已建立的连接以便响应能到达客户端，并丢弃来自该用户的所有其他新建出站连接，同时覆盖 IPv4 与 IPv6，并在重启后持久生效："
+    }
+   ]
+  },
+  {
+   "en": "Because the boundary is enforced by the kernel, the relay-prevention property does not depend on the correctness of any emulator; a bug that attempted to follow an attacker URL could not leave the host. This is a stronger guarantee than a high-interaction honeypot can offer, since the latter attains realism by running the very software whose exploitation is documented in the incident record.",
+   "zh": "由于边界由内核强制执行，中转阻断特性不依赖于任何模拟器的正确性；即使存在试图访问攻击者 URL 的缺陷，也无法离开宿主机。 这是高交互蜜罐无法提供的更强保证，因为后者是通过运行其漏洞利用正被记录在事件档案中的那类软件来实现真实感的。",
+   "sents": [
+    {
+     "en": "Because the boundary is enforced by the kernel, the relay-prevention property does not depend on the correctness of any emulator; a bug that attempted to follow an attacker URL could not leave the host.",
+     "zh": "由于边界由内核强制执行，中转阻断特性不依赖于任何模拟器的正确性；即使存在试图访问攻击者 URL 的缺陷，也无法离开宿主机。"
+    },
+    {
+     "en": "This is a stronger guarantee than a high-interaction honeypot can offer, since the latter attains realism by running the very software whose exploitation is documented in the incident record.",
+     "zh": "这是高交互蜜罐无法提供的更强保证，因为后者是通过运行其漏洞利用正被记录在事件档案中的那类软件来实现真实感的。"
+    }
+   ]
+  },
+  {
+   "en": "A response pool is a set of pre-authored objects for an endpoint; at response time the emulator draws one and expands a small number of marked fields so that identical requests do not yield identical replies, which is the concrete mechanism behind fingerprint resistance (G6) and, at the protocol layer, behind fidelity (G1). Pool size varies by endpoint: completion endpoints carry 40 to 60 variants, model-inventory endpoints carry 15 to 20 variants, and embedding endpoints are served from pools of unit-norm vectors at the standard dimensionalities so that an embeddings request returns vectors of the expected shape without any model. Variant expansion randomizes token counts, latency headers, request-id fields, and a small number of content tokens across each draw. A source sending more requests than the pool size will begin to observe content repetition; variant expansion defers byte-identical repetition by randomizing several fields per draw, but does not prevent a statistical fingerprint from emerging with sufficient samples, which we acknowledge as the concrete detectability limit discussed in Section 6.2 .",
+   "zh": "响应池是一组为某个端点预先编写的对象；在响应时，模拟器会从中抽取一个，并展开少量被标记的字段，使相同的请求不会得到完全相同的回复，这正是抗指纹能力（G6）背后的具体机制，在协议层面上也是保真度（G1）背后的具体机制。 池的大小因端点而异：补全端点携带 40 至 60 个变体，模型清单端点携带 15 至 20 个变体，而嵌入端点则从标准维度下单位范数向量池中提供响应，使嵌入请求无需任何模型即可返回预期形状的向量。 变体展开会在每次抽取时随机化令牌数量、延迟头部、请求 ID 字段以及少量内容令牌。 当一个来源发送的请求数超过池大小时，将开始观察到内容重复；变体展开通过在每次抽取中随机化若干字段来推迟字节级完全相同的重复出现，但无法阻止在足够样本量下统计指纹的形成，我们将其确认为第 6.2 节所讨论的具体可检测性上限。",
+   "sents": [
+    {
+     "en": "A response pool is a set of pre-authored objects for an endpoint; at response time the emulator draws one and expands a small number of marked fields so that identical requests do not yield identical replies, which is the concrete mechanism behind fingerprint resistance (G6) and, at the protocol layer, behind fidelity (G1).",
+     "zh": "响应池是一组为某个端点预先编写的对象；在响应时，模拟器会从中抽取一个，并展开少量被标记的字段，使相同的请求不会得到完全相同的回复，这正是抗指纹能力（G6）背后的具体机制，在协议层面上也是保真度（G1）背后的具体机制。"
+    },
+    {
+     "en": "Pool size varies by endpoint: completion endpoints carry 40 to 60 variants, model-inventory endpoints carry 15 to 20 variants, and embedding endpoints are served from pools of unit-norm vectors at the standard dimensionalities so that an embeddings request returns vectors of the expected shape without any model.",
+     "zh": "池的大小因端点而异：补全端点携带 40 至 60 个变体，模型清单端点携带 15 至 20 个变体，而嵌入端点则从标准维度下单位范数向量池中提供响应，使嵌入请求无需任何模型即可返回预期形状的向量。"
+    },
+    {
+     "en": "Variant expansion randomizes token counts, latency headers, request-id fields, and a small number of content tokens across each draw.",
+     "zh": "变体展开会在每次抽取时随机化令牌数量、延迟头部、请求 ID 字段以及少量内容令牌。"
+    },
+    {
+     "en": "A source sending more requests than the pool size will begin to observe content repetition; variant expansion defers byte-identical repetition by randomizing several fields per draw, but does not prevent a statistical fingerprint from emerging with sufficient samples, which we acknowledge as the concrete detectability limit discussed in Section 6.2 .",
+     "zh": "当一个来源发送的请求数超过池大小时，将开始观察到内容重复；变体展开通过在每次抽取中随机化若干字段来推迟字节级完全相同的重复出现，但无法阻止在足够样本量下统计指纹的形成，我们将其确认为第 6.2 节所讨论的具体可检测性上限。"
+    }
+   ]
+  },
+  {
+   "en": "InferD makes two guarantees. Non-execution is a property of the design: every request is answered from a static pool, and no emulator spawns a process, evaluates code, loads a model, or dispatches a tool call, so payloads are logged as intent and never run. The decoy also holds no real model, key, or datastore, so nothing of value exists to compromise. As a backstop, the kernel egress rule of Section 4.3 drops all outbound connections from the honeypot user, so even a buggy emulator could not relay or exfiltrate.",
+   "zh": "InferD 提供两项保证。 不执行是设计本身的一项属性：每个请求都从一个静态池中获得应答，没有任何模拟器会启动进程、执行代码、加载模型或分发工具调用，因此载荷只被记录为意图而永远不会运行。 诱饵环境同样不持有任何真实模型、密钥或数据存储，因此不存在任何有价值的东西可供窃取。 作为兜底措施，第 4.3 节的内核出站规则会丢弃来自蜜罐用户的全部出站连接，因此即使模拟器存在缺陷也无法中继或外泄数据。",
+   "sents": [
+    {
+     "en": "InferD makes two guarantees.",
+     "zh": "InferD 提供两项保证。"
+    },
+    {
+     "en": "Non-execution is a property of the design: every request is answered from a static pool, and no emulator spawns a process, evaluates code, loads a model, or dispatches a tool call, so payloads are logged as intent and never run.",
+     "zh": "不执行是设计本身的一项属性：每个请求都从一个静态池中获得应答，没有任何模拟器会启动进程、执行代码、加载模型或分发工具调用，因此载荷只被记录为意图而永远不会运行。"
+    },
+    {
+     "en": "The decoy also holds no real model, key, or datastore, so nothing of value exists to compromise.",
+     "zh": "诱饵环境同样不持有任何真实模型、密钥或数据存储，因此不存在任何有价值的东西可供窃取。"
+    },
+    {
+     "en": "As a backstop, the kernel egress rule of Section 4.3 drops all outbound connections from the honeypot user, so even a buggy emulator could not relay or exfiltrate.",
+     "zh": "作为兜底措施，第 4.3 节的内核出站规则会丢弃来自蜜罐用户的全部出站连接，因此即使模拟器存在缺陷也无法中继或外泄数据。"
+    }
+   ]
+  },
+  {
+   "en": "This structural property also settles the ethical position. The prevailing view holds that passive defensive deception is permissible for security research when the operator does not initiate attacks against third parties, does not entrap those who would not otherwise act, and does not operate the honeypot as a relay ( Sokol et al., 2017 ; Ngoma et al., 2024 ) ; InferD satisfies all three structurally rather than by policy, since it accepts only inbound connections, scripts every response, and blocks outbound traffic at the kernel. This design aligns with the ethical guidelines for passive internet measurement that Partridge and Allman ( Partridge and Allman, 2016 ) propose: the collection methodology does not require human-subject consent, does not interfere with third-party systems, and does not produce data obtainable by other means. Because the deception imposes no cost on anyone not already engaged in unauthorized access or automated scanning, the proportionality condition for deception-based research is met ( Fraunholz et al., 2018 ) .",
+   "zh": "这一结构性特征同时也确定了伦理立场。 主流观点认为，当运营者不主动对第三方发起攻击、不诱陷原本不会行动的人、且不将蜜罐用作中继时，出于安全研究目的的被动式防御性欺骗是可接受的（Sokol et al., 2017；Ngoma et al., 2024）；InferD 在结构上而非通过策略满足全部三个条件，因为它只接受入站连接、对每个响应都进行脚本化处理，并在内核层阻止出站流量。 该设计与 Partridge 和 Allman（Partridge and Allman, 2016）提出的被动式互联网测量伦理准则相一致：其数据采集方法不需要人类受试者的同意，不干扰第三方系统，也不产生可通过其他手段获得的数据。 由于这种欺骗对任何未参与未授权访问或自动化扫描的人都不施加任何代价，基于欺骗的研究的比例性条件得以满足（Fraunholz et al., 2018）。",
+   "sents": [
+    {
+     "en": "This structural property also settles the ethical position.",
+     "zh": "这一结构性特征同时也确定了伦理立场。"
+    },
+    {
+     "en": "The prevailing view holds that passive defensive deception is permissible for security research when the operator does not initiate attacks against third parties, does not entrap those who would not otherwise act, and does not operate the honeypot as a relay ( Sokol et al., 2017 ; Ngoma et al., 2024 ) ; InferD satisfies all three structurally rather than by policy, since it accepts only inbound connections, scripts every response, and blocks outbound traffic at the kernel.",
+     "zh": "主流观点认为，当运营者不主动对第三方发起攻击、不诱陷原本不会行动的人、且不将蜜罐用作中继时，出于安全研究目的的被动式防御性欺骗是可接受的（Sokol et al., 2017；Ngoma et al., 2024）；InferD 在结构上而非通过策略满足全部三个条件，因为它只接受入站连接、对每个响应都进行脚本化处理，并在内核层阻止出站流量。"
+    },
+    {
+     "en": "This design aligns with the ethical guidelines for passive internet measurement that Partridge and Allman ( Partridge and Allman, 2016 ) propose: the collection methodology does not require human-subject consent, does not interfere with third-party systems, and does not produce data obtainable by other means.",
+     "zh": "该设计与 Partridge 和 Allman（Partridge and Allman, 2016）提出的被动式互联网测量伦理准则相一致：其数据采集方法不需要人类受试者的同意，不干扰第三方系统，也不产生可通过其他手段获得的数据。"
+    },
+    {
+     "en": "Because the deception imposes no cost on anyone not already engaged in unauthorized access or automated scanning, the proportionality condition for deception-based research is met ( Fraunholz et al., 2018 ) .",
+     "zh": "由于这种欺骗对任何未参与未授权访问或自动化扫描的人都不施加任何代价，基于欺骗的研究的比例性条件得以满足（Fraunholz et al., 2018）。"
+    }
+   ]
+  },
+  {
+   "en": "We deployed InferD on a single commodity server and operated it continuously for Eight weeks (May-July 2026). We present the deployment as a pipeline validation, not a measurement study, and we are deliberately conservative in what we read from it: a single-vantage observation over a short window can establish that the instrument functions and can suggest the shape of the traffic, but it cannot support population-level claims, and we do not make any.",
+   "zh": "我们将 InferD 部署在一台普通商用服务器上，并连续运行了八周（2026 年 5 月至 7 月）。 我们将该部署呈现为一次流水线验证，而非测量研究，并且在解读其结果时刻意保持保守：单一观测点在短时间窗口内的观察只能证明该工具可以正常工作，并能大致反映流量的形态，但无法支持总体层面的结论，我们也未做出任何此类结论。",
+   "sents": [
+    {
+     "en": "We deployed InferD on a single commodity server and operated it continuously for Eight weeks (May-July 2026).",
+     "zh": "我们将 InferD 部署在一台普通商用服务器上，并连续运行了八周（2026 年 5 月至 7 月）。"
+    },
+    {
+     "en": "We present the deployment as a pipeline validation, not a measurement study, and we are deliberately conservative in what we read from it: a single-vantage observation over a short window can establish that the instrument functions and can suggest the shape of the traffic, but it cannot support population-level claims, and we do not make any.",
+     "zh": "我们将该部署呈现为一次流水线验证，而非测量研究，并且在解读其结果时刻意保持保守：单一观测点在短时间窗口内的观察只能证明该工具可以正常工作，并能大致反映流量的形态，但无法支持总体层面的结论，我们也未做出任何此类结论。"
+    }
+   ]
+  },
+  {
+   "en": "Two things the deployment establishes are worth stating plainly. First, the instrument works end to end: it attracts organic traffic without seeding, attributes it correctly, and records it through the full pipeline, with the first probes arriving within hours of exposure and no active advertisement. Second, the composition of that traffic is consistent with the design’s premises. Activity concentrated on the self-hosted surface and on its most commonly exposed services; a large fraction of sources sent a single request and never returned; and a substantial share of distinct sources belonged to recognized internet-wide scanning services. Table 3 summarizes the window, and Figure 2 shows the daily volume, a slowly rising baseline punctuated by short campaign bursts. We report these as characteristics of the observed traffic, not as estimates of the surface at large.",
+   "zh": "本次部署确立了两点，值得明确说明。 首先，该工具实现了端到端的运作：它无需播种即可吸引自然流量，正确地归因这些流量，并通过完整流水线将其记录下来；首批探测在暴露后数小时内即到达，且没有任何主动的广告宣传。 其次，这些流量的构成与该设计的前提一致。 活动集中在自托管面上及其最常暴露的服务上；很大一部分来源仅发送了一次请求且从未返回；并且相当大比例的独立来源属于已被识别的互联网范围扫描服务。 表 3 总结了观测窗口，图 2 展示了每日流量，呈现为一条缓慢上升的基线，其间夹杂着短暂的活动爆发。 我们将这些报告为所观测流量的特征，而非对该面的整体情况的估计。",
+   "sents": [
+    {
+     "en": "Two things the deployment establishes are worth stating plainly.",
+     "zh": "本次部署确立了两点，值得明确说明。"
+    },
+    {
+     "en": "First, the instrument works end to end: it attracts organic traffic without seeding, attributes it correctly, and records it through the full pipeline, with the first probes arriving within hours of exposure and no active advertisement.",
+     "zh": "首先，该工具实现了端到端的运作：它无需播种即可吸引自然流量，正确地归因这些流量，并通过完整流水线将其记录下来；首批探测在暴露后数小时内即到达，且没有任何主动的广告宣传。"
+    },
+    {
+     "en": "Second, the composition of that traffic is consistent with the design’s premises.",
+     "zh": "其次，这些流量的构成与该设计的前提一致。"
+    },
+    {
+     "en": "Activity concentrated on the self-hosted surface and on its most commonly exposed services; a large fraction of sources sent a single request and never returned; and a substantial share of distinct sources belonged to recognized internet-wide scanning services.",
+     "zh": "活动集中在自托管面上及其最常暴露的服务上；很大一部分来源仅发送了一次请求且从未返回；并且相当大比例的独立来源属于已被识别的互联网范围扫描服务。"
+    },
+    {
+     "en": "Table 3 summarizes the window, and Figure 2 shows the daily volume, a slowly rising baseline punctuated by short campaign bursts.",
+     "zh": "表 3 总结了观测窗口，图 2 展示了每日流量，呈现为一条缓慢上升的基线，其间夹杂着短暂的活动爆发。"
+    },
+    {
+     "en": "We report these as characteristics of the observed traffic, not as estimates of the surface at large.",
+     "zh": "我们将这些报告为所观测流量的特征，而非对该面的整体情况的估计。"
+    }
+   ]
+  },
+  {
+   "en": "ASNs = distinct operator-controlled IP blocks.",
+   "zh": "ASN = 由不同运营商控制的 IP 块。",
+   "sents": null
+  },
+  {
+   "en": "The deployment surfaces a result of independent interest that is a direct consequence of deception without inference . Requests that pull or name a model at the Ollama facade expose the specific inventory an adversary is cataloging, and because the facade answers them faithfully without loading anything, it captures the full distribution of requested models (Figure 3 ). That distribution is dominated by current open-weight families, with Llama 3.x, Mistral, DeepSeek-R1, and Qwen variants accounting for the bulk of requests. The concentration on models small enough to run on consumer GPU hardware suggests that the actors probing exposed model servers are enumerating capacity for cheap, widely deployable inference rather than targeting frontier-model capability specifically. The presence of DeepSeek-R1 and Qwen variants, which are among the most widely deployed open-weight families globally, is consistent with broad-scope tooling targeting available capacity rather than geographically selective targeting. One selection effect qualifies this: an Ollama facade attracts tooling that already expects small, self-hostable models, so the concentration on consumer-GPU models is partly an artifact of the decoy’s identity, not a property of the adversary population. We offer this as an illustrative early finding rather than a quantified claim: faithful emulation of the model-pull protocol yields the target list as a byproduct, with no model ever present.",
+   "zh": "该部署呈现了一个具有独立研究价值的结果，它是在无推理情况下欺骗的直接产物。 在 Ollama 门面处拉取或指定模型的请求会暴露对手正在编目的具体清单，而且由于该门面在不加载任何内容的情况下如实响应这些请求，它能够捕捉到被请求模型的完整分布（图 3）。 该分布以当前的开源权重模型家族为主，其中 Llama 3.x、Mistral、DeepSeek-R1 和 Qwen 变体占请求的大多数。 对小到足以在消费级 GPU 硬件上运行的模型的这种集中度表明，探测暴露的模型服务器的行为者是在枚举可用于廉价、广泛部署的推理的算力，而不是专门针对前沿模型能力。 DeepSeek-R1 和 Qwen 变体是全球部署最广泛的开源权重家族之列，它们的存在与针对可用算力的广谱工具一致，而非具有地理选择性的定向行为。 有一个选择效应需要对上述结论加以限定：Ollama 门面会吸引本就预期小型、可自托管模型的工具，因此对消费级 GPU 模型的集中在一定程度上是诱饵身份造成的假象，而非对手群体的属性。 我们将其作为一项示例性的早期发现而非量化的结论提出：对模型拉取协议的忠实仿真会顺带产出目标清单，而实际上从未有任何模型存在。",
+   "sents": [
+    {
+     "en": "The deployment surfaces a result of independent interest that is a direct consequence of deception without inference .",
+     "zh": "该部署呈现了一个具有独立研究价值的结果，它是在无推理情况下欺骗的直接产物。"
+    },
+    {
+     "en": "Requests that pull or name a model at the Ollama facade expose the specific inventory an adversary is cataloging, and because the facade answers them faithfully without loading anything, it captures the full distribution of requested models (Figure 3 ).",
+     "zh": "在 Ollama 门面处拉取或指定模型的请求会暴露对手正在编目的具体清单，而且由于该门面在不加载任何内容的情况下如实响应这些请求，它能够捕捉到被请求模型的完整分布（图 3）。"
+    },
+    {
+     "en": "That distribution is dominated by current open-weight families, with Llama 3.x, Mistral, DeepSeek-R1, and Qwen variants accounting for the bulk of requests.",
+     "zh": "该分布以当前的开源权重模型家族为主，其中 Llama 3.x、Mistral、DeepSeek-R1 和 Qwen 变体占请求的大多数。"
+    },
+    {
+     "en": "The concentration on models small enough to run on consumer GPU hardware suggests that the actors probing exposed model servers are enumerating capacity for cheap, widely deployable inference rather than targeting frontier-model capability specifically.",
+     "zh": "对小到足以在消费级 GPU 硬件上运行的模型的这种集中度表明，探测暴露的模型服务器的行为者是在枚举可用于廉价、广泛部署的推理的算力，而不是专门针对前沿模型能力。"
+    },
+    {
+     "en": "The presence of DeepSeek-R1 and Qwen variants, which are among the most widely deployed open-weight families globally, is consistent with broad-scope tooling targeting available capacity rather than geographically selective targeting.",
+     "zh": "DeepSeek-R1 和 Qwen 变体是全球部署最广泛的开源权重家族之列，它们的存在与针对可用算力的广谱工具一致，而非具有地理选择性的定向行为。"
+    },
+    {
+     "en": "One selection effect qualifies this: an Ollama facade attracts tooling that already expects small, self-hostable models, so the concentration on consumer-GPU models is partly an artifact of the decoy’s identity, not a property of the adversary population.",
+     "zh": "有一个选择效应需要对上述结论加以限定：Ollama 门面会吸引本就预期小型、可自托管模型的工具，因此对消费级 GPU 模型的集中在一定程度上是诱饵身份造成的假象，而非对手群体的属性。"
+    },
+    {
+     "en": "We offer this as an illustrative early finding rather than a quantified claim: faithful emulation of the model-pull protocol yields the target list as a byproduct, with no model ever present.",
+     "zh": "我们将其作为一项示例性的早期发现而非量化的结论提出：对模型拉取协议的忠实仿真会顺带产出目标清单，而实际上从未有任何模型存在。"
+    }
+   ]
+  },
+  {
+   "en": "The vulnerability surface layer and the structural anomaly scan (Section 3 ) jointly produced the most substantive empirical finding of the deployment window. Across the observation period, three probe sources sent a combined 601 requests to the LiteLLM-emulated facade, distributed across 14 distinct endpoint-path variants, including health-check, versioned-API, and double-slash path forms, and two request actions: test/connection and test/tools/list . Each request carried an embedded, base64-encoded Python payload delivered via the MCP stdio transport convention introduced above: a JSON body specifying transport: stdio , command: python3 , and an args field containing a self-executing base64 blob. The test/connection endpoint is a legitimate LiteLLM feature for verifying that a configured tool backend is reachable; when invoked with the stdio transport, it accepts an arbitrary command specification from the request body and is designed to spawn the specified process to test connectivity. In a real deployment this constitutes a code-execution primitive: any caller with access to the endpoint can supply an arbitrary subprocess command. InferD emulates the endpoint response without executing anything (Figure 4 ).",
+   "zh": "漏洞表层与结构异常扫描（第 3 节）共同产出了本次部署窗口中最具实质性的实证发现。 在观测期内，三个探测源向 LiteLLM 模拟门面共发送了 601 个请求，分布在 14 个不同的端点路径变体上，包括健康检查、带版本号的 API 以及双斜杠路径形式，以及两类请求动作：test/connection 和 test/tools/list。 每个请求都携带一个嵌入的、经 base64 编码的 Python 载荷，通过上文介绍的 MCP stdio 传输约定投递：即一个 JSON 请求体，指定 transport: stdio、command: python3，以及一个包含自执行 base64 数据块的 args 字段。 test/connection 端点是 LiteLLM 的一个合法功能，用于验证所配置的工具后端是否可达；当以 stdio 传输方式调用时，它接受来自请求体的任意命令规范，并被设计为派生指定的进程以测试连通性。 在真实部署中，这构成了一个代码执行原语：任何能访问该端点的调用者都可以提供任意的子进程命令。 InferD 模拟了该端点的响应，但不执行任何内容（图 4）。",
+   "sents": [
+    {
+     "en": "The vulnerability surface layer and the structural anomaly scan (Section 3 ) jointly produced the most substantive empirical finding of the deployment window.",
+     "zh": "漏洞表层与结构异常扫描（第 3 节）共同产出了本次部署窗口中最具实质性的实证发现。"
+    },
+    {
+     "en": "Across the observation period, three probe sources sent a combined 601 requests to the LiteLLM-emulated facade, distributed across 14 distinct endpoint-path variants, including health-check, versioned-API, and double-slash path forms, and two request actions: test/connection and test/tools/list .",
+     "zh": "在观测期内，三个探测源向 LiteLLM 模拟门面共发送了 601 个请求，分布在 14 个不同的端点路径变体上，包括健康检查、带版本号的 API 以及双斜杠路径形式，以及两类请求动作：test/connection 和 test/tools/list。"
+    },
+    {
+     "en": "Each request carried an embedded, base64-encoded Python payload delivered via the MCP stdio transport convention introduced above: a JSON body specifying transport: stdio , command: python3 , and an args field containing a self-executing base64 blob.",
+     "zh": "每个请求都携带一个嵌入的、经 base64 编码的 Python 载荷，通过上文介绍的 MCP stdio 传输约定投递：即一个 JSON 请求体，指定 transport: stdio、command: python3，以及一个包含自执行 base64 数据块的 args 字段。"
+    },
+    {
+     "en": "The test/connection endpoint is a legitimate LiteLLM feature for verifying that a configured tool backend is reachable; when invoked with the stdio transport, it accepts an arbitrary command specification from the request body and is designed to spawn the specified process to test connectivity.",
+     "zh": "test/connection 端点是 LiteLLM 的一个合法功能，用于验证所配置的工具后端是否可达；当以 stdio 传输方式调用时，它接受来自请求体的任意命令规范，并被设计为派生指定的进程以测试连通性。"
+    },
+    {
+     "en": "In a real deployment this constitutes a code-execution primitive: any caller with access to the endpoint can supply an arbitrary subprocess command.",
+     "zh": "在真实部署中，这构成了一个代码执行原语：任何能访问该端点的调用者都可以提供任意的子进程命令。"
+    },
+    {
+     "en": "InferD emulates the endpoint response without executing anything (Figure 4 ).",
+     "zh": "InferD 模拟了该端点的响应，但不执行任何内容（图 4）。"
+    }
+   ]
+  },
+  {
+   "en": "Static analysis of the decoded payloads, recovered by both anomaly-flag-driven queries (flags base64_payload , command_field , code_in_field ) and an independent flag-agnostic base64 scan of every stored request body (see Appendix A ), revealed a purpose-built cloud-credential harvester structured as an ordered extraction pipeline rather than a single-vulnerability exploit, making it agnostic to the specific mechanism by which code execution was obtained. The pipeline proceeds through eight stages: environment enumeration across all process /proc/[pid]/environ entries on the host, prioritizing processes whose command line references LiteLLM and checking approximately 80 hardcoded high-value variable names spanning providers including OpenAI, Anthropic, AWS, Azure, Slack, Stripe, and HashiCorp Vault; configuration-file parsing extracting the --config argument from the LiteLLM process and reading the referenced YAML; mounted-secret path traversal over /run/secrets , /var/run/secrets , and /app/secrets ; value-pattern detection by credential string prefix independent of variable naming, covering approximately two dozen formats such as sk-proj- , sk-ant-api03- , xai- , AIzaSy , and hvs. ; ambient cloud-identity token acquisition via AWS EC2 IMDS (both IMDSv2 and v1 fallback), ECS/Fargate task metadata, EKS pod-identity, and in the later variant Azure Instance Metadata Service; secret-manager traversal using the acquired identity across HashiCorp Vault, Azure Key Vault, GCP Secret Manager, AWS SSM Parameter Store, Doppler, and Infisical; Kubernetes API enumeration via the pod’s mounted service-account token (later variant only); and exfiltration via the protocol response channel described below. One implementation detail worth noting for pattern-matching purposes is that the cloud-metadata address 169.254.169.254 is constructed at runtime via struct.pack(\">I\", 0xA9FEA9FE) rather than appearing as a literal string in the source, consistent with evading naive string-based static detection, though its effect against this deployment’s payload-inspection tooling was immaterial.",
+   "zh": "对解码后载荷的静态分析——这些载荷既通过由异常标志驱动的查询（标志为 base64_payload、command_field、code_in_field）获取，也通过对每个存储的请求体进行独立的、与标志无关的 base64 扫描获取（见附录 A）——揭示了一个专门构建的云凭证窃取工具，其结构是一条有序的提取流水线，而非针对单一漏洞的利用程序，这使其对获取代码执行的具体机制不敏感。 该流水线分八个阶段进行：环境变量枚举，遍历主机上所有进程的 /proc/[pid]/environ 条目，优先处理命令行中引用 LiteLLM 的进程，并检查约 80 个硬编码的高价值变量名，涵盖 OpenAI、Anthropic、AWS、Azure、Slack、Stripe 和 HashiCorp Vault 等提供商；配置文件解析，从 LiteLLM 进程中提取 --config 参数并读取所引用的 YAML；挂载密钥路径遍历，覆盖 /run/secrets、/var/run/secrets 和 /app/secrets；值模式检测，依据凭证字符串前缀进行判断而与变量命名无关，覆盖约二十余种格式，如 sk-proj-、sk-ant-api03-、xai-、AIzaSy 和 hvs.；环境云身份令牌获取，通过 AWS EC2 IMDS（同时支持 IMDSv2 和 v1 回退）、ECS/Fargate 任务元数据、EKS Pod 身份，以及在后期变体中的 Azure 实例元数据服务；密钥管理器遍历，使用获取的身份访问 HashiCorp Vault、Azure Key Vault、GCP Secret Manager、AWS SSM Parameter Store、Doppler 和 Infisical；Kubernetes API 枚举，通过 Pod 挂载的服务账户令牌（仅限后期变体）；以及通过下文描述的协议响应通道进行的数据外传。 出于模式匹配目的值得注意的一个实现细节是，云元数据地址 169.254.169.254 是在运行时通过 struct.pack(\">I\", 0xA9FEA9FE) 构造的，而非以字面字符串形式出现在源码中，这与规避简单的基于字符串的静态检测相一致，尽管其对本次部署中载荷检查工具的实际影响微乎其微。",
+   "sents": [
+    {
+     "en": "Static analysis of the decoded payloads, recovered by both anomaly-flag-driven queries (flags base64_payload , command_field , code_in_field ) and an independent flag-agnostic base64 scan of every stored request body (see Appendix A ), revealed a purpose-built cloud-credential harvester structured as an ordered extraction pipeline rather than a single-vulnerability exploit, making it agnostic to the specific mechanism by which code execution was obtained.",
+     "zh": "对解码后载荷的静态分析——这些载荷既通过由异常标志驱动的查询（标志为 base64_payload、command_field、code_in_field）获取，也通过对每个存储的请求体进行独立的、与标志无关的 base64 扫描获取（见附录 A）——揭示了一个专门构建的云凭证窃取工具，其结构是一条有序的提取流水线，而非针对单一漏洞的利用程序，这使其对获取代码执行的具体机制不敏感。"
+    },
+    {
+     "en": "The pipeline proceeds through eight stages: environment enumeration across all process /proc/[pid]/environ entries on the host, prioritizing processes whose command line references LiteLLM and checking approximately 80 hardcoded high-value variable names spanning providers including OpenAI, Anthropic, AWS, Azure, Slack, Stripe, and HashiCorp Vault; configuration-file parsing extracting the --config argument from the LiteLLM process and reading the referenced YAML; mounted-secret path traversal over /run/secrets , /var/run/secrets , and /app/secrets ; value-pattern detection by credential string prefix independent of variable naming, covering approximately two dozen formats such as sk-proj- , sk-ant-api03- , xai- , AIzaSy , and hvs. ; ambient cloud-identity token acquisition via AWS EC2 IMDS (both IMDSv2 and v1 fallback), ECS/Fargate task metadata, EKS pod-identity, and in the later variant Azure Instance Metadata Service; secret-manager traversal using the acquired identity across HashiCorp Vault, Azure Key Vault, GCP Secret Manager, AWS SSM Parameter Store, Doppler, and Infisical; Kubernetes API enumeration via the pod’s mounted service-account token (later variant only); and exfiltration via the protocol response channel described below.",
+     "zh": "该流水线分八个阶段进行：环境变量枚举，遍历主机上所有进程的 /proc/[pid]/environ 条目，优先处理命令行中引用 LiteLLM 的进程，并检查约 80 个硬编码的高价值变量名，涵盖 OpenAI、Anthropic、AWS、Azure、Slack、Stripe 和 HashiCorp Vault 等提供商；配置文件解析，从 LiteLLM 进程中提取 --config 参数并读取所引用的 YAML；挂载密钥路径遍历，覆盖 /run/secrets、/var/run/secrets 和 /app/secrets；值模式检测，依据凭证字符串前缀进行判断而与变量命名无关，覆盖约二十余种格式，如 sk-proj-、sk-ant-api03-、xai-、AIzaSy 和 hvs.；环境云身份令牌获取，通过 AWS EC2 IMDS（同时支持 IMDSv2 和 v1 回退）、ECS/Fargate 任务元数据、EKS Pod 身份，以及在后期变体中的 Azure 实例元数据服务；密钥管理器遍历，使用获取的身份访问 HashiCorp Vault、Azure Key Vault、GCP Secret Manager、AWS SSM Parameter Store、Doppler 和 Infisical；Kubernetes API 枚举，通过 Pod 挂载的服务账户令牌（仅限后期变体）；以及通过下文描述的协议响应通道进行的数据外传。"
+    },
+    {
+     "en": "One implementation detail worth noting for pattern-matching purposes is that the cloud-metadata address 169.254.169.254 is constructed at runtime via struct.pack(\">I\", 0xA9FEA9FE) rather than appearing as a literal string in the source, consistent with evading naive string-based static detection, though its effect against this deployment’s payload-inspection tooling was immaterial.",
+     "zh": "出于模式匹配目的值得注意的一个实现细节是，云元数据地址 169.254.169.254 是在运行时通过 struct.pack(\">I\", 0xA9FEA9FE) 构造的，而非以字面字符串形式出现在源码中，这与规避简单的基于字符串的静态检测相一致，尽管其对本次部署中载荷检查工具的实际影响微乎其微。"
+    }
+   ]
+  },
+  {
+   "en": "Rather than opening an outbound connection to a separate collection endpoint, the harvested data is serialized into the description field of a fabricated MCP tools/list response and returned inline to the caller. The attack is entirely in-band within the MCP protocol: no separate command-and-control channel is opened, and network-egress monitoring that relies on identifying anomalous outbound connections would not observe this exfiltration path. Under InferD this distinction is immaterial: the emulator answered all 601 requests from the static pool and never spawned the process, so no stage ran, and the egress rule would in any case have blocked any outbound leg. The exfiltration mechanism is recorded as intent, which is precisely what the non-execution principle guarantees. The design implication for detection of the real services InferD emulates is that credential exfiltration via in-band protocol channels requires monitoring of response content rather than network egress, a point we return to in Section 6.2 .",
+   "zh": "与其向单独的数据收集端点建立出站连接，窃取到的数据被序列化到一个伪造的 MCP tools/list 响应的描述字段中，并内联返回给调用方。 该攻击完全在 MCP 协议的带内进行：不会打开单独的命令与控制通道，而依赖识别异常出站连接的网络出站监控将无法观察到这条数据外泄路径。 在 InferD 下这一区别无关紧要：模拟器用静态资源池应答了全部 601 个请求，从未启动该进程，因此没有任何阶段运行，而且无论如何，出站规则本会阻断任何出站行为。 数据外泄机制被记录为意图，而这正是非执行原则所保证的内容。 对 InferD 所模拟的真实服务的检测而言，其设计启示是：通过带内协议通道进行凭据外泄需要对响应内容而非网络出站进行监控，我们将在 6.2 节回到这一点。",
+   "sents": [
+    {
+     "en": "Rather than opening an outbound connection to a separate collection endpoint, the harvested data is serialized into the description field of a fabricated MCP tools/list response and returned inline to the caller.",
+     "zh": "与其向单独的数据收集端点建立出站连接，窃取到的数据被序列化到一个伪造的 MCP tools/list 响应的描述字段中，并内联返回给调用方。"
+    },
+    {
+     "en": "The attack is entirely in-band within the MCP protocol: no separate command-and-control channel is opened, and network-egress monitoring that relies on identifying anomalous outbound connections would not observe this exfiltration path.",
+     "zh": "该攻击完全在 MCP 协议的带内进行：不会打开单独的命令与控制通道，而依赖识别异常出站连接的网络出站监控将无法观察到这条数据外泄路径。"
+    },
+    {
+     "en": "Under InferD this distinction is immaterial: the emulator answered all 601 requests from the static pool and never spawned the process, so no stage ran, and the egress rule would in any case have blocked any outbound leg.",
+     "zh": "在 InferD 下这一区别无关紧要：模拟器用静态资源池应答了全部 601 个请求，从未启动该进程，因此没有任何阶段运行，而且无论如何，出站规则本会阻断任何出站行为。"
+    },
+    {
+     "en": "The exfiltration mechanism is recorded as intent, which is precisely what the non-execution principle guarantees.",
+     "zh": "数据外泄机制被记录为意图，而这正是非执行原则所保证的内容。"
+    },
+    {
+     "en": "The design implication for detection of the real services InferD emulates is that credential exfiltration via in-band protocol channels requires monitoring of response content rather than network egress, a point we return to in Section 6.2 .",
+     "zh": "对 InferD 所模拟的真实服务的检测而言，其设计启示是：通过带内协议通道进行凭据外泄需要对响应内容而非网络出站进行监控，我们将在 6.2 节回到这一点。"
+    }
+   ]
+  },
+  {
+   "en": "Two distinct payload builds were identified by SHA-256 of decoded content (Table 4 ), related as a strict superset with a sequence similarity of 0.929, confirming common lineage rather than independent construction. Variant A was observed from a single source in AS37693 (Ooredoo Tunisie, mobile carrier). Variant B, which adds the Azure Instance Metadata Service and Kubernetes API enumeration modules, appeared three days later from two sources in AS14061 (DigitalOcean, Germany). All three sources shared an identical HTTP User-Agent string, a non-generic string consistent with a scanning tool rather than a standard browser or library default, despite spanning two structurally different network types; this is a stronger indicator of shared tooling than IP co-location alone, but does not establish that a single operator was responsible for both sessions. None of the three sources matched the published ASNs of known internet-wide research-scanning projects such as Censys (AS398722) or Shodan (AS212238), and none carried a PTR record.",
+   "zh": "通过对解码内容的 SHA-256 计算识别出两个不同的载荷构建版本（表 4），二者为严格超集关系，序列相似度为 0.929，证实其具有共同谱系而非独立构建。 变体 A 观测于 AS37693（突尼斯电信运营商 Ooredoo Tunisie）的单一来源。 变体 B 增加了 Azure 实例元数据服务和 Kubernetes API 枚举模块，三天后出现于 AS14061（DigitalOcean，德国）的两个来源。 尽管这三个来源分属两种结构不同的网络类型，它们却共享完全相同的 HTTP User-Agent 字符串，这是一个非通用字符串，与扫描工具的特征一致，而非标准浏览器或常见库的默认值；相比仅凭 IP 邻近性，这是共享工具的更强指标，但并不能证明两次会话由同一操作者发起。 这三个来源均未匹配已知互联网范围研究扫描项目（如 Censys（AS398722）或 Shodan（AS212238））公布的 ASN，且均无 PTR 记录。",
+   "sents": [
+    {
+     "en": "Two distinct payload builds were identified by SHA-256 of decoded content (Table 4 ), related as a strict superset with a sequence similarity of 0.929, confirming common lineage rather than independent construction.",
+     "zh": "通过对解码内容的 SHA-256 计算识别出两个不同的载荷构建版本（表 4），二者为严格超集关系，序列相似度为 0.929，证实其具有共同谱系而非独立构建。"
+    },
+    {
+     "en": "Variant A was observed from a single source in AS37693 (Ooredoo Tunisie, mobile carrier).",
+     "zh": "变体 A 观测于 AS37693（突尼斯电信运营商 Ooredoo Tunisie）的单一来源。"
+    },
+    {
+     "en": "Variant B, which adds the Azure Instance Metadata Service and Kubernetes API enumeration modules, appeared three days later from two sources in AS14061 (DigitalOcean, Germany).",
+     "zh": "变体 B 增加了 Azure 实例元数据服务和 Kubernetes API 枚举模块，三天后出现于 AS14061（DigitalOcean，德国）的两个来源。"
+    },
+    {
+     "en": "All three sources shared an identical HTTP User-Agent string, a non-generic string consistent with a scanning tool rather than a standard browser or library default, despite spanning two structurally different network types; this is a stronger indicator of shared tooling than IP co-location alone, but does not establish that a single operator was responsible for both sessions.",
+     "zh": "尽管这三个来源分属两种结构不同的网络类型，它们却共享完全相同的 HTTP User-Agent 字符串，这是一个非通用字符串，与扫描工具的特征一致，而非标准浏览器或常见库的默认值；相比仅凭 IP 邻近性，这是共享工具的更强指标，但并不能证明两次会话由同一操作者发起。"
+    },
+    {
+     "en": "None of the three sources matched the published ASNs of known internet-wide research-scanning projects such as Censys (AS398722) or Shodan (AS212238), and none carried a PTR record.",
+     "zh": "这三个来源均未匹配已知互联网范围研究扫描项目（如 Censys（AS398722）或 Shodan（AS212238））公布的 ASN，且均无 PTR 记录。"
+    }
+   ]
+  },
+  {
+   "en": "Several limitations bound what can be inferred from this observation. The sample is small: three sources, a eight-week window, and a single vantage point preclude any population-level claim. Attribution of the two network-type groups to a single operator is not established; shared tooling and independent reuse are equally consistent with the evidence. The infrastructure metadata is suggestive of operational rather than research scanning but does not constitute attribution. What the observation does establish concretely is that a purpose-built, cloud-provider-aware post-exploitation tool is being delivered to exposed LiteLLM endpoints using an MCP-specific code-execution primitive, that the tool is under active development within a detectable timeframe, and that inferD’s structural anomaly scan correctly flagged all 601 instances at capture time without any signature specific to this payload. Cross-referencing all three source addresses against every honeytoken and canary record in the dataset returned zero matches, consistent with the non-execution guarantee: no credential, real or planted, existed for the attacker’s pipeline to harvest and subsequently reuse.",
+   "zh": "有若干局限性约束了从这一观察中能够推断出的内容。 样本很小：三个来源、八周的时间窗口以及单一的观察视角，使得任何总体层面的结论都无法成立。 将这两个网络类型分组归属于单一运营者的说法并未得到证实；共享工具链与独立复用同样能与证据相符。 该基础设施元数据暗示这是运营性而非研究性的扫描，但这并不构成归因依据。 这一观察确实具体确立的是：一款专门构建、具备云服务商感知能力的后利用工具，正通过一种 MCP 专用的代码执行原语被投递到暴露的 LiteLLM 端点；该工具在一个可检测的时间范围内处于活跃开发状态；并且 inferD 的结构异常扫描在捕获时正确标记了全部 601 个实例，而无需任何针对该载荷的特定签名。 将这三个源地址与数据集中的每一个蜜令牌（honeytoken）和蜜罐（canary）记录进行交叉比对，结果均为零匹配，这与未执行保证相一致：攻击者的流水线没有任何可窃取并随后复用的凭据，无论是真实凭据还是植入的凭据。",
+   "sents": [
+    {
+     "en": "Several limitations bound what can be inferred from this observation.",
+     "zh": "有若干局限性约束了从这一观察中能够推断出的内容。"
+    },
+    {
+     "en": "The sample is small: three sources, a eight-week window, and a single vantage point preclude any population-level claim.",
+     "zh": "样本很小：三个来源、八周的时间窗口以及单一的观察视角，使得任何总体层面的结论都无法成立。"
+    },
+    {
+     "en": "Attribution of the two network-type groups to a single operator is not established; shared tooling and independent reuse are equally consistent with the evidence.",
+     "zh": "将这两个网络类型分组归属于单一运营者的说法并未得到证实；共享工具链与独立复用同样能与证据相符。"
+    },
+    {
+     "en": "The infrastructure metadata is suggestive of operational rather than research scanning but does not constitute attribution.",
+     "zh": "该基础设施元数据暗示这是运营性而非研究性的扫描，但这并不构成归因依据。"
+    },
+    {
+     "en": "What the observation does establish concretely is that a purpose-built, cloud-provider-aware post-exploitation tool is being delivered to exposed LiteLLM endpoints using an MCP-specific code-execution primitive, that the tool is under active development within a detectable timeframe, and that inferD’s structural anomaly scan correctly flagged all 601 instances at capture time without any signature specific to this payload.",
+     "zh": "这一观察确实具体确立的是：一款专门构建、具备云服务商感知能力的后利用工具，正通过一种 MCP 专用的代码执行原语被投递到暴露的 LiteLLM 端点；该工具在一个可检测的时间范围内处于活跃开发状态；并且 inferD 的结构异常扫描在捕获时正确标记了全部 601 个实例，而无需任何针对该载荷的特定签名。"
+    },
+    {
+     "en": "Cross-referencing all three source addresses against every honeytoken and canary record in the dataset returned zero matches, consistent with the non-execution guarantee: no credential, real or planted, existed for the attacker’s pipeline to harvest and subsequently reuse.",
+     "zh": "将这三个源地址与数据集中的每一个蜜令牌（honeytoken）和蜜罐（canary）记录进行交叉比对，结果均为零匹配，这与未执行保证相一致：攻击者的流水线没有任何可窃取并随后复用的凭据，无论是真实凭据还是植入的凭据。"
+    }
+   ]
+  },
+  {
+   "en": "The provenance and agentic planes, which capture the signals the framework most wants, produced nothing in the window: no honeytoken authentications, no canary echoes, and no populated multi-step tool-call sessions. These planes are conditional instruments: the provenance plane can only register credential abuse once planted credentials are in circulation to be stolen, and the agentic plane can only populate when agentic traffic reaches the decoy, which over a short single-vantage window is rare. The null also has a design-level cause: A5 actors are precisely those able to run the reasoning probe of Section 6.1 and disengage on detecting a static-pool facade, so these planes bound sophisticated activity from below rather than measure it, even under longer collection. The null is therefore primarily a statement about the deployment, not about the world, and it identifies the two concrete steps, active honeytoken seeding and longer multi-vantage collection, that a measurement study built on this instrument would have to take. Reporting these null results rather than eliding them is part of treating the deployment as a pipeline validation rather than a measurement study: the instrument confirms end-to-end function and makes explicit what the conditional planes need to register signal, which is the prerequisite for a follow-on study.",
+   "zh": "溯源平面与智能体平面虽然捕获的是该框架最想要的信号，但在观测窗口内一无所获：没有蜜罐令牌认证，没有金丝雀回声，也没有填充了内容的多步工具调用会话。 这两个平面都是有条件的测量工具：溯源平面只有在植入的凭据已被投放出去并可能被窃取时才能记录凭据滥用，而智能体平面只有在智能体流量到达诱饵时才会有内容，而这在单一观测点的短窗口内是罕见的。 这一空结果还有一个设计层面的原因：A5 级攻击者恰恰是那些有能力运行第 6.1 节所述推理探测并在检测到静态假象后撤离的攻击者，因此这些平面是在下界上约束而非度量这类复杂活动，即使延长采集时间也是如此。 因此，这一空结果主要是对本次部署的陈述，而非对现实世界的陈述，它指出了两个具体步骤——主动播撒蜜罐令牌和更长时长的多观测点采集——这是基于该工具的测量研究必须采取的。 报告这些空结果而非将其省略，正是把本次部署当作流水线验证而非测量研究的一部分：该工具确认了端到端功能，并明确了这些有条件平面要产生信号所需要满足的条件，而这正是后续研究的前提。",
+   "sents": [
+    {
+     "en": "The provenance and agentic planes, which capture the signals the framework most wants, produced nothing in the window: no honeytoken authentications, no canary echoes, and no populated multi-step tool-call sessions.",
+     "zh": "溯源平面与智能体平面虽然捕获的是该框架最想要的信号，但在观测窗口内一无所获：没有蜜罐令牌认证，没有金丝雀回声，也没有填充了内容的多步工具调用会话。"
+    },
+    {
+     "en": "These planes are conditional instruments: the provenance plane can only register credential abuse once planted credentials are in circulation to be stolen, and the agentic plane can only populate when agentic traffic reaches the decoy, which over a short single-vantage window is rare.",
+     "zh": "这两个平面都是有条件的测量工具：溯源平面只有在植入的凭据已被投放出去并可能被窃取时才能记录凭据滥用，而智能体平面只有在智能体流量到达诱饵时才会有内容，而这在单一观测点的短窗口内是罕见的。"
+    },
+    {
+     "en": "The null also has a design-level cause: A5 actors are precisely those able to run the reasoning probe of Section 6.1 and disengage on detecting a static-pool facade, so these planes bound sophisticated activity from below rather than measure it, even under longer collection.",
+     "zh": "这一空结果还有一个设计层面的原因：A5 级攻击者恰恰是那些有能力运行第 6.1 节所述推理探测并在检测到静态假象后撤离的攻击者，因此这些平面是在下界上约束而非度量这类复杂活动，即使延长采集时间也是如此。"
+    },
+    {
+     "en": "The null is therefore primarily a statement about the deployment, not about the world, and it identifies the two concrete steps, active honeytoken seeding and longer multi-vantage collection, that a measurement study built on this instrument would have to take.",
+     "zh": "因此，这一空结果主要是对本次部署的陈述，而非对现实世界的陈述，它指出了两个具体步骤——主动播撒蜜罐令牌和更长时长的多观测点采集——这是基于该工具的测量研究必须采取的。"
+    },
+    {
+     "en": "Reporting these null results rather than eliding them is part of treating the deployment as a pipeline validation rather than a measurement study: the instrument confirms end-to-end function and makes explicit what the conditional planes need to register signal, which is the prerequisite for a follow-on study.",
+     "zh": "报告这些空结果而非将其省略，正是把本次部署当作流水线验证而非测量研究的一部分：该工具确认了端到端功能，并明确了这些有条件平面要产生信号所需要满足的条件，而这正是后续研究的前提。"
+    }
+   ]
+  },
+  {
+   "en": "A honeypot design earns trust by confronting how it can be unmasked. The most fundamental tell in InferD is the one the principle chooses to accept: the facade does not reason, so an adversary who submits a prompt with a verifiable answer and checks the reply can detect the absence of genuine inference. This is the deliberate cost of non-execution, and it binds only adversaries sophisticated enough to test for reasoning. A second tell is response repetition, which variant expansion mitigates but a patient adversary collecting many responses could still use to estimate pool size ( Srinivasa et al., 2023 ) . A third is timing: a facade that answers a completion in milliseconds is immediately distinguishable from a real model that requires seconds per generation, the LLM-specific instance of a timing-based detectability category established for classical honeypots ( Holz and Raynal, 2005 ) and now formalized as a measurable metric for LLM-powered honeypots specifically ( Vero et al., 2026 ) , and modeling plausible inter-token latency would close this gap as a natural refinement. A fourth is the transport fingerprint, which may diverge from the genuine provider, including differences in TLS certificate organization fields and HTTP header ordering, and which we log so that any such divergence is visible in our own data as well ( Vetterl and Clayton, 2018 ) . The decisive tell for the vulnerability and agentic planes is that an adversary with out-of-band confirmation of effect will observe that the effect never occurs. We restate this rather than minimize it: non-execution is, by construction, detectable to anyone who looks for its absence. The design’s position is that it is better to observe intent safely than to demonstrate effect dangerously, and the detectability of the safety property is the visible signature of that choice.",
+   "zh": "蜜罐设计赢得信任的方式，是直面它可能如何被识破。 InferD 中最基本的破绽是原理本身选择接受的一条：外壳不做推理，因此攻击者只需提交一个带可验证答案的提示词并核对回复，就能发现真正推理的缺失。 这是非执行的有意代价，且只约束那些精于测试推理能力的攻击者。 第二个破绽是回复重复，变体扩展虽能缓解，但一个有耐心的攻击者收集大量回复后仍可借此估算回复池的规模（Srinivasa et al., 2023）。 第三个破绽是时序：毫秒级完成补全的外壳，与每秒生成需要数秒的真实模型立即可区分，这是经典蜜罐中已确立的基于时序的可检测性类别（Holz and Raynal, 2005）在 LLM 上的具体实例，如今已被形式化为专门针对 LLM 蜜罐的可测量指标（Vero et al., 2026），而对合理的词间延迟进行建模将作为自然的改进来弥合这一差距。 第四个破绽是传输层指纹，它可能与真实服务商存在差异，包括 TLS 证书组织字段和 HTTP 头顺序的不同，我们对此进行记录，以便任何此类差异在我们自己的数据中也清晰可见（Vetterl and Clayton, 2018）。 对漏洞面和智能体面而言，决定性的破绽是：拥有带外确认手段的攻击者会观察到该效果从未真正发生。 我们重申这一点而非淡化它：非执行在构造上，对任何寻找其缺失的人都是可检测的。 该设计的立场是：安全地观察意图优于危险地展示效果，而安全属性的可检测性正是这一选择的可见印记。",
+   "sents": [
+    {
+     "en": "A honeypot design earns trust by confronting how it can be unmasked.",
+     "zh": "蜜罐设计赢得信任的方式，是直面它可能如何被识破。"
+    },
+    {
+     "en": "The most fundamental tell in InferD is the one the principle chooses to accept: the facade does not reason, so an adversary who submits a prompt with a verifiable answer and checks the reply can detect the absence of genuine inference.",
+     "zh": "InferD 中最基本的破绽是原理本身选择接受的一条：外壳不做推理，因此攻击者只需提交一个带可验证答案的提示词并核对回复，就能发现真正推理的缺失。"
+    },
+    {
+     "en": "This is the deliberate cost of non-execution, and it binds only adversaries sophisticated enough to test for reasoning.",
+     "zh": "这是非执行的有意代价，且只约束那些精于测试推理能力的攻击者。"
+    },
+    {
+     "en": "A second tell is response repetition, which variant expansion mitigates but a patient adversary collecting many responses could still use to estimate pool size ( Srinivasa et al., 2023 ) .",
+     "zh": "第二个破绽是回复重复，变体扩展虽能缓解，但一个有耐心的攻击者收集大量回复后仍可借此估算回复池的规模（Srinivasa et al., 2023）。"
+    },
+    {
+     "en": "A third is timing: a facade that answers a completion in milliseconds is immediately distinguishable from a real model that requires seconds per generation, the LLM-specific instance of a timing-based detectability category established for classical honeypots ( Holz and Raynal, 2005 ) and now formalized as a measurable metric for LLM-powered honeypots specifically ( Vero et al., 2026 ) , and modeling plausible inter-token latency would close this gap as a natural refinement.",
+     "zh": "第三个破绽是时序：毫秒级完成补全的外壳，与每秒生成需要数秒的真实模型立即可区分，这是经典蜜罐中已确立的基于时序的可检测性类别（Holz and Raynal, 2005）在 LLM 上的具体实例，如今已被形式化为专门针对 LLM 蜜罐的可测量指标（Vero et al., 2026），而对合理的词间延迟进行建模将作为自然的改进来弥合这一差距。"
+    },
+    {
+     "en": "A fourth is the transport fingerprint, which may diverge from the genuine provider, including differences in TLS certificate organization fields and HTTP header ordering, and which we log so that any such divergence is visible in our own data as well ( Vetterl and Clayton, 2018 ) .",
+     "zh": "第四个破绽是传输层指纹，它可能与真实服务商存在差异，包括 TLS 证书组织字段和 HTTP 头顺序的不同，我们对此进行记录，以便任何此类差异在我们自己的数据中也清晰可见（Vetterl and Clayton, 2018）。"
+    },
+    {
+     "en": "The decisive tell for the vulnerability and agentic planes is that an adversary with out-of-band confirmation of effect will observe that the effect never occurs.",
+     "zh": "对漏洞面和智能体面而言，决定性的破绽是：拥有带外确认手段的攻击者会观察到该效果从未真正发生。"
+    },
+    {
+     "en": "We restate this rather than minimize it: non-execution is, by construction, detectable to anyone who looks for its absence.",
+     "zh": "我们重申这一点而非淡化它：非执行在构造上，对任何寻找其缺失的人都是可检测的。"
+    },
+    {
+     "en": "The design’s position is that it is better to observe intent safely than to demonstrate effect dangerously, and the detectability of the safety property is the visible signature of that choice.",
+     "zh": "该设计的立场是：安全地观察意图优于危险地展示效果，而安全属性的可检测性正是这一选择的可见印记。"
+    }
+   ]
+  },
+  {
+   "en": "The deployment’s limits point directly at the work the instrument is built to enable. Its most valuable planes are conditional, and exercising them defines a measurement agenda rather than a defect: seeding honeytokens where adversaries collect leaked credentials, so that Surface 2 and the provenance plane can register abuse; extending collection across time and across geographically distributed vantage points, so that rarer agentic behavior can accumulate and so that globally uniform scanning can be separated from locality-specific activity; and modeling response latency to narrow one detectability gap. There are limits the design does not address at all: it observes inbound threat traffic only, and says nothing about supply-chain compromise of models or packages, or about activity confined to a victim’s internal network.",
+   "zh": "该部署的限制恰好指向了这一工具旨在支持的工作。 其最有价值的平面是有条件的，而启用这些平面所要做的是一项测量议程而非缺陷：在对手收集泄露凭据之处布置蜜罐令牌，使 Surface 2 与溯源平面能够记录滥用行为；跨时间和跨地理分布的观测点扩展数据收集，使更罕见的智能体行为得以累积，并使全球一致的扫描活动与局部特定活动得以区分；以及对响应延迟进行建模，以缩小一项可检测性差距。 还有一些限制是该设计完全未涉及的：它仅观测入站威胁流量，对模型或软件包的供应链入侵毫无涉及，对仅局限于受害者内部网络的活动亦无涉及。",
+   "sents": [
+    {
+     "en": "The deployment’s limits point directly at the work the instrument is built to enable.",
+     "zh": "该部署的限制恰好指向了这一工具旨在支持的工作。"
+    },
+    {
+     "en": "Its most valuable planes are conditional, and exercising them defines a measurement agenda rather than a defect: seeding honeytokens where adversaries collect leaked credentials, so that Surface 2 and the provenance plane can register abuse; extending collection across time and across geographically distributed vantage points, so that rarer agentic behavior can accumulate and so that globally uniform scanning can be separated from locality-specific activity; and modeling response latency to narrow one detectability gap.",
+     "zh": "其最有价值的平面是有条件的，而启用这些平面所要做的是一项测量议程而非缺陷：在对手收集泄露凭据之处布置蜜罐令牌，使 Surface 2 与溯源平面能够记录滥用行为；跨时间和跨地理分布的观测点扩展数据收集，使更罕见的智能体行为得以累积，并使全球一致的扫描活动与局部特定活动得以区分；以及对响应延迟进行建模，以缩小一项可检测性差距。"
+    },
+    {
+     "en": "There are limits the design does not address at all: it observes inbound threat traffic only, and says nothing about supply-chain compromise of models or packages, or about activity confined to a victim’s internal network.",
+     "zh": "还有一些限制是该设计完全未涉及的：它仅观测入站威胁流量，对模型或软件包的供应链入侵毫无涉及，对仅局限于受害者内部网络的活动亦无涉及。"
+    }
+   ]
+  },
+  {
+   "en": "The instrument is designed to extend in three directions as the threat landscape evolves. First, multi-vantage deployment: distributing InferD instances across geographically diverse ASNs and coordinating their pseudonymized logs into a shared event stream would allow globally uniform scanning to be separated from locality-specific campaigns, following the distributed observatory model of network telescopes ( Bailey et al., 2006 ; Sordello et al., 2025 ) . Second, surface extension: the pool-and-emulator architecture accommodates new services incrementally; each new CVE or emerging deployment pattern can be absorbed by adding one router and one response pool without modifying shared middleware. Third, active honeytoken seeding: planting InferD-specific credential patterns in controlled environments where harvesting tools are known to operate, then observing whether those tokens appear against Surface 2, would activate the provenance plane without requiring passive waiting.",
+   "zh": "该工具设计为可沿三个方向扩展，以应对威胁态势的不断演变。 首先，多观测点部署：将 InferD 实例分布在不同地理位置的自治系统（ASN）中，并将其经匿名化处理的日志汇聚成共享事件流，可以把全球统一的扫描与针对特定地区的攻击活动区分开来，这遵循了网络望远镜的分布式观测站模型（Bailey et al., 2006; Sordello et al., 2025）。 其次，攻击面扩展：池与仿真器的架构支持渐进式纳入新服务；每出现一个新的 CVE 或新的部署模式，只需增加一个路由器和一个响应池即可吸收，无需修改共享中间件。 第三，主动蜜标植入：在已知采集工具运行的可控环境中植入 InferD 特有的凭据模式，然后观察这些令牌是否出现在表面 2 上，即可在不依赖被动等待的情况下激活溯源平面。",
+   "sents": [
+    {
+     "en": "The instrument is designed to extend in three directions as the threat landscape evolves.",
+     "zh": "该工具设计为可沿三个方向扩展，以应对威胁态势的不断演变。"
+    },
+    {
+     "en": "First, multi-vantage deployment: distributing InferD instances across geographically diverse ASNs and coordinating their pseudonymized logs into a shared event stream would allow globally uniform scanning to be separated from locality-specific campaigns, following the distributed observatory model of network telescopes ( Bailey et al., 2006 ; Sordello et al., 2025 ) .",
+     "zh": "首先，多观测点部署：将 InferD 实例分布在不同地理位置的自治系统（ASN）中，并将其经匿名化处理的日志汇聚成共享事件流，可以把全球统一的扫描与针对特定地区的攻击活动区分开来，这遵循了网络望远镜的分布式观测站模型（Bailey et al., 2006; Sordello et al., 2025）。"
+    },
+    {
+     "en": "Second, surface extension: the pool-and-emulator architecture accommodates new services incrementally; each new CVE or emerging deployment pattern can be absorbed by adding one router and one response pool without modifying shared middleware.",
+     "zh": "其次，攻击面扩展：池与仿真器的架构支持渐进式纳入新服务；每出现一个新的 CVE 或新的部署模式，只需增加一个路由器和一个响应池即可吸收，无需修改共享中间件。"
+    },
+    {
+     "en": "Third, active honeytoken seeding: planting InferD-specific credential patterns in controlled environments where harvesting tools are known to operate, then observing whether those tokens appear against Surface 2, would activate the provenance plane without requiring passive waiting.",
+     "zh": "第三，主动蜜标植入：在已知采集工具运行的可控环境中植入 InferD 特有的凭据模式，然后观察这些令牌是否出现在表面 2 上，即可在不依赖被动等待的情况下激活溯源平面。"
+    }
+   ]
+  },
+  {
+   "en": "With the design in view, its relationship to prior work is easier to state. In fact, classical honeypot frameworks established the vocabulary we inherit: that one host can present many convincing services, and that resisting fingerprinting is as important as the emulation itself ( Provos, 2004 ; Spitzner, 2002 ; Mokube and Adams, 2007 ) , a lineage surveyed at the software level ( Nawrocki et al., 2016 ) and, more broadly, across the full space of honeypots, honeytokens, and moving-target defense ( Han et al., 2018 ; Javadpour et al., 2024 ) , an idea operationalized for shells and network services by interaction-focused systems such as Cowrie 13 13 13 Michel Oosterhof, Cowrie SSH/Telnet Honeypot , 2017. https://github.com/cowrie/cowrie . InferD adopts their discipline and their honesty about detectability, but targets a surface, AI inference infrastructure, that they were not built to imitate, and where fidelity is defined against the behavior of a model. Multi-service honeypot platforms such as T-Pot 14 14 14 Telekom Security, T-Pot: The All-In-One Multi-Honeypot Platform. https://github.com/telekom-security/tpotce demonstrate the value of aggregating heterogeneous emulators under a single deployment unit, an architectural parallel to InferD’s two-surface model, though none of their constituent emulators was designed for AI-specific protocol fidelity or the non-execution guarantee that AI inference emulation requires.",
+   "zh": "有了这一设计的背景，它与先前工作之间的关系就更容易阐述了。 事实上，经典的蜜罐框架确立了我们所继承的术语体系：一台主机可以呈现出多个令人信服的服务，而且对抗指纹识别与仿真本身同等重要（Provos, 2004；Spitzner, 2002；Mokube and Adams, 2007），这一脉络在软件层面（Nawrocki et al., 2016）以及更广泛的、涵盖蜜罐、蜜标与移动目标防御的整个领域（Han et al., 2018；Javadpour et al., 2024）都已被综述过，而这一理念由以交互为核心的一些系统在 shell 和网络服务上加以实现，例如 Cowrie 13 13 13 Michel Oosterhof, Cowrie SSH/Telnet Honeypot, 2017. https://github.com/cowrie/cowrie 。 InferD 采纳了它们的纪律以及它们对可检测性的坦诚态度，但所针对的是它们并非为模仿而构建的一个层面——AI 推理基础设施——在这一层面上，保真度是相对于模型的行为来定义的。 诸如 T-Pot 14 14 14 Telekom Security, T-Pot: The All-In-One Multi-Honeypot Platform. https://github.com/telekom-security/tpotce 之类的多服务蜜罐平台展示了在单一部署单元下聚合异构仿真器的价值，这与 InferD 的双层面模型在架构上相呼应，尽管它们的组成仿真器都不是为 AI 特定的协议保真度或 AI 推理仿真所需的非执行保证而设计的。",
+   "sents": [
+    {
+     "en": "With the design in view, its relationship to prior work is easier to state.",
+     "zh": "有了这一设计的背景，它与先前工作之间的关系就更容易阐述了。"
+    },
+    {
+     "en": "In fact, classical honeypot frameworks established the vocabulary we inherit: that one host can present many convincing services, and that resisting fingerprinting is as important as the emulation itself ( Provos, 2004 ; Spitzner, 2002 ; Mokube and Adams, 2007 ) , a lineage surveyed at the software level ( Nawrocki et al., 2016 ) and, more broadly, across the full space of honeypots, honeytokens, and moving-target defense ( Han et al., 2018 ; Javadpour et al., 2024 ) , an idea operationalized for shells and network services by interaction-focused systems such as Cowrie 13 13 13 Michel Oosterhof, Cowrie SSH/Telnet Honeypot , 2017. https://github.com/cowrie/cowrie .",
+     "zh": "事实上，经典的蜜罐框架确立了我们所继承的术语体系：一台主机可以呈现出多个令人信服的服务，而且对抗指纹识别与仿真本身同等重要（Provos, 2004；Spitzner, 2002；Mokube and Adams, 2007），这一脉络在软件层面（Nawrocki et al., 2016）以及更广泛的、涵盖蜜罐、蜜标与移动目标防御的整个领域（Han et al., 2018；Javadpour et al., 2024）都已被综述过，而这一理念由以交互为核心的一些系统在 shell 和网络服务上加以实现，例如 Cowrie 13 13 13 Michel Oosterhof, Cowrie SSH/Telnet Honeypot, 2017. https://github.com/cowrie/cowrie 。"
+    },
+    {
+     "en": "InferD adopts their discipline and their honesty about detectability, but targets a surface, AI inference infrastructure, that they were not built to imitate, and where fidelity is defined against the behavior of a model.",
+     "zh": "InferD 采纳了它们的纪律以及它们对可检测性的坦诚态度，但所针对的是它们并非为模仿而构建的一个层面——AI 推理基础设施——在这一层面上，保真度是相对于模型的行为来定义的。"
+    },
+    {
+     "en": "Multi-service honeypot platforms such as T-Pot 14 14 14 Telekom Security, T-Pot: The All-In-One Multi-Honeypot Platform. https://github.com/telekom-security/tpotce demonstrate the value of aggregating heterogeneous emulators under a single deployment unit, an architectural parallel to InferD’s two-surface model, though none of their constituent emulators was designed for AI-specific protocol fidelity or the non-execution guarantee that AI inference emulation requires.",
+     "zh": "诸如 T-Pot 14 14 14 Telekom Security, T-Pot: The All-In-One Multi-Honeypot Platform. https://github.com/telekom-security/tpotce 之类的多服务蜜罐平台展示了在单一部署单元下聚合异构仿真器的价值，这与 InferD 的双层面模型在架构上相呼应，尽管它们的组成仿真器都不是为 AI 特定的协议保真度或 AI 推理仿真所需的非执行保证而设计的。"
+    }
+   ]
+  },
+  {
+   "en": "A recent line of work places a language model inside the honeypot as its response generator, obtaining unbounded interaction depth for shells ( Sladić et al., 2024 ; Otal and Canbaz, 2024 ) . InferD deliberately inverts this relationship: the model is our subject, not our tool, and Section 3 argues why generating responses with a model is the wrong choice for an inference honeypot specifically. Closest in intent is work that instruments generic honeypots to detect autonomous agents through prompt injection and timing analysis ( Reworr and Volkov, 2024 ) , from which we adapt the canary technique; that work studies agents attacking conventional infrastructure, whereas InferD studies attacks directed at AI infrastructure. At the industry scale, telemetry has documented mass reconnaissance of exposed model servers 15 15 15 GreyNoise Intelligence, Threat Actors Actively Targeting LLMs: Mass Scanning of Exposed AI Infrastructure , 2026. https://www.greynoise.io/blog/threat-actors-actively-targeting-llms , and concurrent work reports a honeypot of comparable two-surface scope whose measurement results are not yet public 16 16 16 Adam Toscher, Building Honey-AI, Part 1 (2026). https://www.cobalt.io/blog/building-honey-ai-part-1-why-ai-infrastructure-needs-its-own-honeypot ; a systematization of honeypots and language models situates these efforts and marks the AI infrastructure surface, treated as a target, as the least developed among them ( Bridges et al., 2025 ) . What distinguishes InferD within this landscape is not scope but method: non-execution by design paired with a kernel-enforced egress guarantee, a threat model and emulated surface grounded in the attributable incident record (CVE-2023-48022, CVE-2024-37032, CVE-2024-6587, documented above), and coverage of the agentic surface stated against an external taxonomy.",
+   "zh": "最近的一系列工作将语言模型置于蜜罐中作为其响应生成器，从而为 shell 获得无限制的交互深度（Sladić et al., 2024; Otal and Canbaz, 2024）。 InferD 刻意反转了这一关系：模型是我们的研究对象，而非我们的工具，第 3 节论证了为什么用模型生成响应对于推理蜜罐而言 specifically 是错误的选择。 意图上最接近的是通过提示注入和时序分析对通用蜜罐进行改造以检测智能体的工作（Reworr and Volkov, 2024），我们从中借鉴了金丝雀技术；该工作研究的是攻击传统基础设施的智能体，而 InferD 研究的是针对 AI 基础设施的攻击。 在行业规模上，遥测数据已记录了对暴露模型服务器的大规模侦察 15 15 15 GreyNoise Intelligence, Threat Actors Actively Targeting LLMs: Mass Scanning of Exposed AI Infrastructure, 2026. https://www.greynoise.io/blog/threat-actors-actively-targeting-llms，同时期的工作报告了一个具有类似双表面规模的蜜罐，其测量结果尚未公开 16 16 16 Adam Toscher, Building Honey-AI, Part 1 (2026). https://www.cobalt.io/blog/building-honey-ai-part-1-why-ai-infrastructure-needs-its-own-honeypot；一项对蜜罐与语言模型的系统化梳理对这些工作进行了定位，并将被视为攻击目标的 AI 基础设施表面标记为其中发展最不成熟的部分（Bridges et al., 2025）。 InferD 在这一领域中的独特之处不在于范围而在于方法：设计上的不执行配合内核强制实施的出站保证、基于可归因事件记录（上文记录的 CVE-2023-48022、CVE-2024-37032、CVE-2024-6587）构建的威胁模型与仿真表面，以及依据外部分类法阐述的智能体表面覆盖范围。",
+   "sents": [
+    {
+     "en": "A recent line of work places a language model inside the honeypot as its response generator, obtaining unbounded interaction depth for shells ( Sladić et al., 2024 ; Otal and Canbaz, 2024 ) .",
+     "zh": "最近的一系列工作将语言模型置于蜜罐中作为其响应生成器，从而为 shell 获得无限制的交互深度（Sladić et al., 2024; Otal and Canbaz, 2024）。"
+    },
+    {
+     "en": "InferD deliberately inverts this relationship: the model is our subject, not our tool, and Section 3 argues why generating responses with a model is the wrong choice for an inference honeypot specifically.",
+     "zh": "InferD 刻意反转了这一关系：模型是我们的研究对象，而非我们的工具，第 3 节论证了为什么用模型生成响应对于推理蜜罐而言 specifically 是错误的选择。"
+    },
+    {
+     "en": "Closest in intent is work that instruments generic honeypots to detect autonomous agents through prompt injection and timing analysis ( Reworr and Volkov, 2024 ) , from which we adapt the canary technique; that work studies agents attacking conventional infrastructure, whereas InferD studies attacks directed at AI infrastructure.",
+     "zh": "意图上最接近的是通过提示注入和时序分析对通用蜜罐进行改造以检测智能体的工作（Reworr and Volkov, 2024），我们从中借鉴了金丝雀技术；该工作研究的是攻击传统基础设施的智能体，而 InferD 研究的是针对 AI 基础设施的攻击。"
+    },
+    {
+     "en": "At the industry scale, telemetry has documented mass reconnaissance of exposed model servers 15 15 15 GreyNoise Intelligence, Threat Actors Actively Targeting LLMs: Mass Scanning of Exposed AI Infrastructure , 2026. https://www.greynoise.io/blog/threat-actors-actively-targeting-llms , and concurrent work reports a honeypot of comparable two-surface scope whose measurement results are not yet public 16 16 16 Adam Toscher, Building Honey-AI, Part 1 (2026). https://www.cobalt.io/blog/building-honey-ai-part-1-why-ai-infrastructure-needs-its-own-honeypot ; a systematization of honeypots and language models situates these efforts and marks the AI infrastructure surface, treated as a target, as the least developed among them ( Bridges et al., 2025 ) .",
+     "zh": "在行业规模上，遥测数据已记录了对暴露模型服务器的大规模侦察 15 15 15 GreyNoise Intelligence, Threat Actors Actively Targeting LLMs: Mass Scanning of Exposed AI Infrastructure, 2026. https://www.greynoise.io/blog/threat-actors-actively-targeting-llms，同时期的工作报告了一个具有类似双表面规模的蜜罐，其测量结果尚未公开 16 16 16 Adam Toscher, Building Honey-AI, Part 1 (2026). https://www.cobalt.io/blog/building-honey-ai-part-1-why-ai-infrastructure-needs-its-own-honeypot；一项对蜜罐与语言模型的系统化梳理对这些工作进行了定位，并将被视为攻击目标的 AI 基础设施表面标记为其中发展最不成熟的部分（Bridges et al., 2025）。"
+    },
+    {
+     "en": "What distinguishes InferD within this landscape is not scope but method: non-execution by design paired with a kernel-enforced egress guarantee, a threat model and emulated surface grounded in the attributable incident record (CVE-2023-48022, CVE-2024-37032, CVE-2024-6587, documented above), and coverage of the agentic surface stated against an external taxonomy.",
+     "zh": "InferD 在这一领域中的独特之处不在于范围而在于方法：设计上的不执行配合内核强制实施的出站保证、基于可归因事件记录（上文记录的 CVE-2023-48022、CVE-2024-37032、CVE-2024-6587）构建的威胁模型与仿真表面，以及依据外部分类法阐述的智能体表面覆盖范围。"
+    }
+   ]
+  },
+  {
+   "en": "Finally, the phenomena InferD is built to observe are documented, so far, mostly under controlled conditions: prompt injection and its indirect variants ( Greshake et al., 2023 ; Liu et al., 2023 ; McHugh et al., 2025 ) , retrieval poisoning ( Chen et al., 2024 ) , multi-agent propagation ( Lee et al., 2025 ) , and tool poisoning against real MCP servers, which a recent benchmark measures at substantial success rates with little pre-execution protection from alignment ( Wang et al., 2026 ; Beurer-Kellner et al., 2025 ) . InferD is designed to observe the operational precursors of these attacks passively, in real traffic, without reproducing them.",
+   "zh": "最后，InferD 旨在观察的现象目前大多是在受控条件下记录的：提示注入及其间接变体（Greshake et al., 2023；Liu et al., 2023；McHugh et al., 2025）、检索投毒（Chen et al., 2024）、多智能体传播（Lee et al., 2025），以及针对真实 MCP 服务器的工具投毒——最近的一项基准测试表明，此类攻击的成功率相当高，而对齐机制在执行前几乎不提供保护（Wang et al., 2026；Beurer-Kellner et al., 2025）。 InferD 的设计目标是在真实流量中被动观察这些攻击的运行前兆，而不复现这些攻击。",
+   "sents": [
+    {
+     "en": "Finally, the phenomena InferD is built to observe are documented, so far, mostly under controlled conditions: prompt injection and its indirect variants ( Greshake et al., 2023 ; Liu et al., 2023 ; McHugh et al., 2025 ) , retrieval poisoning ( Chen et al., 2024 ) , multi-agent propagation ( Lee et al., 2025 ) , and tool poisoning against real MCP servers, which a recent benchmark measures at substantial success rates with little pre-execution protection from alignment ( Wang et al., 2026 ; Beurer-Kellner et al., 2025 ) .",
+     "zh": "最后，InferD 旨在观察的现象目前大多是在受控条件下记录的：提示注入及其间接变体（Greshake et al., 2023；Liu et al., 2023；McHugh et al., 2025）、检索投毒（Chen et al., 2024）、多智能体传播（Lee et al., 2025），以及针对真实 MCP 服务器的工具投毒——最近的一项基准测试表明，此类攻击的成功率相当高，而对齐机制在执行前几乎不提供保护（Wang et al., 2026；Beurer-Kellner et al., 2025）。"
+    },
+    {
+     "en": "InferD is designed to observe the operational precursors of these attacks passively, in real traffic, without reproducing them.",
+     "zh": "InferD 的设计目标是在真实流量中被动观察这些攻击的运行前兆，而不复现这些攻击。"
+    }
+   ]
+  },
+  {
+   "en": "AI inference infrastructure has become a distinct, exposed attack surface, and emulating it for observation poses a deception problem conventional honeypots do not face: the facade must reproduce everything an adversary can observe while executing nothing an adversary submits. InferD resolves this with a single principle, deception without inference , and we have argued that the principle is the right choice rather than a concession, because it avoids reintroducing the model whose abuse the honeypot studies, and because it lets non-execution by design be backed by an egress guarantee the kernel enforces regardless of emulator correctness. Around that principle the framework composes four deception planes and a provenance plane, each developed with its rejected alternative and its detectability limit in view, and realized with the systems techniques that make it faithful and safe on commodity hardware. An initial deployment confirms the instrument functions end to end, surfaces a first empirical finding in the form of a novel credential-harvesting payload delivered via an MCP stdio code-execution primitive.",
+   "zh": "AI推理基础设施已成为一个独立的、暴露的攻击面，而对它进行仿真以供观察带来了一类传统蜜罐不会面对的欺骗问题：这个门面必须复现攻击者所能观察到的一切，却又不执行攻击者提交的任何内容。 InferD以单一原则解决这一问题——不推理的欺骗——我们已论证该原则是正确的选择而非妥协，因为它避免了重新引入蜜罐研究所针对其滥用的模型，也因为它使“设计上不执行”得以由内核强制实施的出站保证来支撑，而无需依赖仿真器的正确性。 围绕这一原则，该框架组合了四个欺骗平面和一个溯源平面，每个平面都结合其被否决的替代方案及其可检测性上限加以设计，并通过使其在商用硬件上忠实且安全的系统技术予以实现。 初步部署证实该工具可端到端运行，并获得了一项首个实证发现：一个通过MCP stdio代码执行原语投递的新型凭据窃取载荷。",
+   "sents": [
+    {
+     "en": "AI inference infrastructure has become a distinct, exposed attack surface, and emulating it for observation poses a deception problem conventional honeypots do not face: the facade must reproduce everything an adversary can observe while executing nothing an adversary submits.",
+     "zh": "AI推理基础设施已成为一个独立的、暴露的攻击面，而对它进行仿真以供观察带来了一类传统蜜罐不会面对的欺骗问题：这个门面必须复现攻击者所能观察到的一切，却又不执行攻击者提交的任何内容。"
+    },
+    {
+     "en": "InferD resolves this with a single principle, deception without inference , and we have argued that the principle is the right choice rather than a concession, because it avoids reintroducing the model whose abuse the honeypot studies, and because it lets non-execution by design be backed by an egress guarantee the kernel enforces regardless of emulator correctness.",
+     "zh": "InferD以单一原则解决这一问题——不推理的欺骗——我们已论证该原则是正确的选择而非妥协，因为它避免了重新引入蜜罐研究所针对其滥用的模型，也因为它使“设计上不执行”得以由内核强制实施的出站保证来支撑，而无需依赖仿真器的正确性。"
+    },
+    {
+     "en": "Around that principle the framework composes four deception planes and a provenance plane, each developed with its rejected alternative and its detectability limit in view, and realized with the systems techniques that make it faithful and safe on commodity hardware.",
+     "zh": "围绕这一原则，该框架组合了四个欺骗平面和一个溯源平面，每个平面都结合其被否决的替代方案及其可检测性上限加以设计，并通过使其在商用硬件上忠实且安全的系统技术予以实现。"
+    },
+    {
+     "en": "An initial deployment confirms the instrument functions end to end, surfaces a first empirical finding in the form of a novel credential-harvesting payload delivered via an MCP stdio code-execution primitive.",
+     "zh": "初步部署证实该工具可端到端运行，并获得了一项首个实证发现：一个通过MCP stdio代码执行原语投递的新型凭据窃取载荷。"
+    }
+   ]
+  },
+  {
+   "en": "The source code and supporting artifacts for InferD, including the emulator code, response-pool schema, and event schema, are publicly available at: https://github.com/hichamhammouchi/InferD .",
+   "zh": "InferD 的源代码及相关辅助材料，包括仿真器代码、响应池模式（response-pool schema）和事件模式（event schema），已公开发布于：https://github.com/hichamhammouchi/InferD 。",
+   "sents": null
+  },
+  {
+   "en": "AI tools were used for language editing for readability and for reviewing and debugging code. All research design, system implementation, and analysis artifacts are authors’ own.",
+   "zh": "AI 工具被用于语言润色以提高可读性，以及用于代码的审查与调试。 所有研究设计、系统实现与分析成果均为作者本人完成。",
+   "sents": [
+    {
+     "en": "AI tools were used for language editing for readability and for reviewing and debugging code.",
+     "zh": "AI 工具被用于语言润色以提高可读性，以及用于代码的审查与调试。"
+    },
+    {
+     "en": "All research design, system implementation, and analysis artifacts are authors’ own.",
+     "zh": "所有研究设计、系统实现与分析成果均为作者本人完成。"
+    }
+   ]
+  },
+  {
+   "en": "Two complementary methods were applied to recover coded payloads from the stored request dataset. The primary method queries events flagged at capture time by the structural anomaly scan, which assigns flags including code_in_field , shell_metachar , command_field , pickle_payload , and base64_payload based on lexical inspection of each request’s body and path fields at ingest. The secondary method applies an independent, flag-agnostic scan of every stored request body for base64-decodable content, attempting base64 decoding of each 32-byte-minimum substring and applying gzip, bz2, lzma, and zlib decompression to the result; payloads encoded with nested base64 are recovered by a second pass of the same procedure. The two methods agreed on the credential-harvesting payloads documented in Section 5.2 and jointly confirmed no additional undetected code payloads elsewhere in the 24,192 requests across the 14 emulated services at the time of analysis. Three additional base64-decodable blobs surfaced in the flag-agnostic scan on an unrelated service and decoded to PNG image data submitted as multimodal chat content, confirmed benign by valid PNG structure verification with no data appended after the terminating chunk. A residual blind spot exists for payloads encoded with schemes outside base64 and the four compressed formats listed above. One capture-pipeline gap was identified separately: probes targeting the Jupyter kernel’s code-execution endpoint trigger the same anomaly flags, but the submitted code is not currently persisted in the stored request body for that service and could not be analyzed; persisting this content is a straightforward fix planned for the next deployment iteration.",
+   "zh": "我们采用了两种互补的方法，从存储的请求数据集中恢复经编码的有效载荷。 主要方法查询在捕获时被结构异常扫描标记的事件，该扫描在摄入时对每个请求的 body 和 path 字段进行词法检查，并据此赋予 code_in_field、shell_metachar、command_field、pickle_payload 和 base64_payload 等标记。 次要方法对每条存储的请求 body 进行独立于标记的扫描，查找可进行 base64 解码的内容，对每个至少 32 字节的子串尝试 base64 解码，并对结果应用 gzip、bz2、lzma 和 zlib 解压；以嵌套 base64 编码的有效载荷则通过对同一流程再执行一遍来恢复。 这两种方法就第 5.2 节记录的凭据窃取类有效载荷达成一致，并共同确认在分析时点，14 个仿真服务共 24,192 个请求中没有其他未被检出的代码有效载荷。 在该独立于标记的扫描中，另一个不相关服务上还出现了三个额外的可 base64 解码的数据块，解码后为作为多模态聊天内容提交的 PNG 图像数据，通过有效的 PNG 结构验证且在终止块之后没有附加数据，确认为良性。 对于采用 base64 及上述四种压缩格式之外编码方案的有效载荷，仍存在残留的盲区。 另外还发现了一个捕获管道的缺口：针对 Jupyter 内核代码执行端点的探测会触发相同的异常标记，但所提交的代码目前并未持久化存储在该服务的请求 body 中，因此无法分析；将此类内容持久化是一项直接的修复措施，已计划在下一部署迭代中实施。",
+   "sents": [
+    {
+     "en": "Two complementary methods were applied to recover coded payloads from the stored request dataset.",
+     "zh": "我们采用了两种互补的方法，从存储的请求数据集中恢复经编码的有效载荷。"
+    },
+    {
+     "en": "The primary method queries events flagged at capture time by the structural anomaly scan, which assigns flags including code_in_field , shell_metachar , command_field , pickle_payload , and base64_payload based on lexical inspection of each request’s body and path fields at ingest.",
+     "zh": "主要方法查询在捕获时被结构异常扫描标记的事件，该扫描在摄入时对每个请求的 body 和 path 字段进行词法检查，并据此赋予 code_in_field、shell_metachar、command_field、pickle_payload 和 base64_payload 等标记。"
+    },
+    {
+     "en": "The secondary method applies an independent, flag-agnostic scan of every stored request body for base64-decodable content, attempting base64 decoding of each 32-byte-minimum substring and applying gzip, bz2, lzma, and zlib decompression to the result; payloads encoded with nested base64 are recovered by a second pass of the same procedure.",
+     "zh": "次要方法对每条存储的请求 body 进行独立于标记的扫描，查找可进行 base64 解码的内容，对每个至少 32 字节的子串尝试 base64 解码，并对结果应用 gzip、bz2、lzma 和 zlib 解压；以嵌套 base64 编码的有效载荷则通过对同一流程再执行一遍来恢复。"
+    },
+    {
+     "en": "The two methods agreed on the credential-harvesting payloads documented in Section 5.2 and jointly confirmed no additional undetected code payloads elsewhere in the 24,192 requests across the 14 emulated services at the time of analysis.",
+     "zh": "这两种方法就第 5.2 节记录的凭据窃取类有效载荷达成一致，并共同确认在分析时点，14 个仿真服务共 24,192 个请求中没有其他未被检出的代码有效载荷。"
+    },
+    {
+     "en": "Three additional base64-decodable blobs surfaced in the flag-agnostic scan on an unrelated service and decoded to PNG image data submitted as multimodal chat content, confirmed benign by valid PNG structure verification with no data appended after the terminating chunk.",
+     "zh": "在该独立于标记的扫描中，另一个不相关服务上还出现了三个额外的可 base64 解码的数据块，解码后为作为多模态聊天内容提交的 PNG 图像数据，通过有效的 PNG 结构验证且在终止块之后没有附加数据，确认为良性。"
+    },
+    {
+     "en": "A residual blind spot exists for payloads encoded with schemes outside base64 and the four compressed formats listed above.",
+     "zh": "对于采用 base64 及上述四种压缩格式之外编码方案的有效载荷，仍存在残留的盲区。"
+    },
+    {
+     "en": "One capture-pipeline gap was identified separately: probes targeting the Jupyter kernel’s code-execution endpoint trigger the same anomaly flags, but the submitted code is not currently persisted in the stored request body for that service and could not be analyzed; persisting this content is a straightforward fix planned for the next deployment iteration.",
+     "zh": "另外还发现了一个捕获管道的缺口：针对 Jupyter 内核代码执行端点的探测会触发相同的异常标记，但所提交的代码目前并未持久化存储在该服务的请求 body 中，因此无法分析；将此类内容持久化是一项直接的修复措施，已计划在下一部署迭代中实施。"
+    }
+   ]
+  }
+ ]
+}
