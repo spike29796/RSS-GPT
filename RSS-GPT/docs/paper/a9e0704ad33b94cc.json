@@ -1,0 +1,1629 @@
+{
+ "id": "a9e0704ad33b94cc",
+ "source": "arxiv-agent",
+ "link": "https://arxiv.org/abs/2610.36849v1",
+ "title": "When All Rollouts Fail: Policy-Compatible Joint Decoding for Hard-Problem Reasoning",
+ "title_zh": "当所有 rollout 都失败时：面向难题推理的策略兼容联合解码",
+ "published": "2026-10-27T08:47:35Z",
+ "translated_at": "2026-11-02T06:11:29Z",
+ "paragraphs": [
+  {
+   "en": "Reinforcement Learning with Verifiable Rewards (RLVR) derives its learning signal from binary rewards via on-policy exploration and becomes a powerful paradigm for improving the reasoning of large language models. Yet it faces a learning cliff on problems beyond model’s current ability: when every rollout fails, the samples reveal nothing about a correct solution, and group-relative estimators (e.g., GRPO, RLOO) collapse the update to zero advantage. Expert trajectories offer a remedy, but they are incompatible with the current policy and often lie in the student’s low-probability regions, so the surviving updates demand large parameter shifts and decay into surface-level imitation rather than transferable reasoning. We argue that a useful learning signal on hard problems must be both verifiably correct and sufficiently compatible with the current policy. We propose Policy-Compatible Reinforcement Learning ( PICO ), which performs distribution-constrained joint decoding: expert data guides decoding at the token level while preserving the student’s relative token probabilities, and a dynamic top-k mechanism confines the sampling distribution under a finite divergence budget, yielding trajectories that are verified and policy-compatible by construction. These trajectories are optimized jointly with on-policy rollouts under a mixed-behavior objective that mitigates their distribution mismatch via importance sampling. Experiments across reasoning diverse datasets and agentic benchmarks demonstrate that PICO consistently outperforms standard RLVR and prior off-policy baselines.",
+   "zh": "带可验证奖励的强化学习（RLVR）通过在策略探索从二值奖励中获得学习信号，并已成为提升大语言模型推理能力的强大范式。 然而它在超出模型当前能力的问题上面临学习断崖：当所有 rollout 都失败时，样本无法揭示任何关于正确解的信息，组相对估计器（如 GRPO、RLOO）会把更新坍缩为零优势。 专家轨迹提供了一种补救手段，但它们与当前策略不兼容，且常常处于学生的低概率区域，因此存留下来的更新需要大幅参数变动，并退化为表层模仿而非可迁移的推理。 我们认为，在困难问题上有效的学习信号必须既可验证地正确，又与当前策略足够兼容。 我们提出策略兼容强化学习（PICO），它执行分布约束下的联合解码：专家数据在 token 层面引导解码，同时保留学生的相对 token 概率，并由动态 top-k 机制在有限散度预算内约束采样分布，从而生成在构造上即可验证且策略兼容的轨迹。 这些轨迹与在策略 rollout 在混合行为目标下联合优化，并通过重要性采样缓解二者之间的分布失配。 在多个推理数据集和智能体基准上的实验表明，PICO 始终优于标准 RLVR 以及先前的离策略基线方法。",
+   "sents": [
+    {
+     "en": "Reinforcement Learning with Verifiable Rewards (RLVR) derives its learning signal from binary rewards via on-policy exploration and becomes a powerful paradigm for improving the reasoning of large language models.",
+     "zh": "带可验证奖励的强化学习（RLVR）通过在策略探索从二值奖励中获得学习信号，并已成为提升大语言模型推理能力的强大范式。"
+    },
+    {
+     "en": "Yet it faces a learning cliff on problems beyond model’s current ability: when every rollout fails, the samples reveal nothing about a correct solution, and group-relative estimators (e.g., GRPO, RLOO) collapse the update to zero advantage.",
+     "zh": "然而它在超出模型当前能力的问题上面临学习断崖：当所有 rollout 都失败时，样本无法揭示任何关于正确解的信息，组相对估计器（如 GRPO、RLOO）会把更新坍缩为零优势。"
+    },
+    {
+     "en": "Expert trajectories offer a remedy, but they are incompatible with the current policy and often lie in the student’s low-probability regions, so the surviving updates demand large parameter shifts and decay into surface-level imitation rather than transferable reasoning.",
+     "zh": "专家轨迹提供了一种补救手段，但它们与当前策略不兼容，且常常处于学生的低概率区域，因此存留下来的更新需要大幅参数变动，并退化为表层模仿而非可迁移的推理。"
+    },
+    {
+     "en": "We argue that a useful learning signal on hard problems must be both verifiably correct and sufficiently compatible with the current policy.",
+     "zh": "我们认为，在困难问题上有效的学习信号必须既可验证地正确，又与当前策略足够兼容。"
+    },
+    {
+     "en": "We propose Policy-Compatible Reinforcement Learning ( PICO ), which performs distribution-constrained joint decoding: expert data guides decoding at the token level while preserving the student’s relative token probabilities, and a dynamic top-k mechanism confines the sampling distribution under a finite divergence budget, yielding trajectories that are verified and policy-compatible by construction.",
+     "zh": "我们提出策略兼容强化学习（PICO），它执行分布约束下的联合解码：专家数据在 token 层面引导解码，同时保留学生的相对 token 概率，并由动态 top-k 机制在有限散度预算内约束采样分布，从而生成在构造上即可验证且策略兼容的轨迹。"
+    },
+    {
+     "en": "These trajectories are optimized jointly with on-policy rollouts under a mixed-behavior objective that mitigates their distribution mismatch via importance sampling.",
+     "zh": "这些轨迹与在策略 rollout 在混合行为目标下联合优化，并通过重要性采样缓解二者之间的分布失配。"
+    },
+    {
+     "en": "Experiments across reasoning diverse datasets and agentic benchmarks demonstrate that PICO consistently outperforms standard RLVR and prior off-policy baselines.",
+     "zh": "在多个推理数据集和智能体基准上的实验表明，PICO 始终优于标准 RLVR 以及先前的离策略基线方法。"
+    }
+   ]
+  },
+  {
+   "en": "Reinforcement learning with verifiable rewards (RLVR) has emerged as a prominent paradigm for post-training large language models (LLMs) ( Guo et al., 2025 ; Jaech et al., 2024 ; Team et al., 2025 ) , demonstrating strong effectiveness in enhancing reasoning capabilities across domains such as mathematics, coding, and agentic tasks ( Dong et al., 2026a ; Zhang et al., 2025a ) . RLVR enables LLMs to learn directly from verifiable reward feedback on trajectories generated through on-policy exploration, yielding substantial and generalizable performance gains ( Zhu et al., 2025 ; Shenfeld et al., 2026 ) . However, this reliance on successful exploration creates a learning cliff on challenging problems beyond the model’s current capabilities: when all sampled rollouts fail, the policy receives no positive reward signal ( Agrawal et al., 2026 ; Zhang et al., 2025b ; Yue et al., 2025 ) . This issue is particularly acute for methods based on group-relative advantage estimation (e.g., GRPO) ( Yu et al., 2026 ; Zhang et al., 2026c ) , as all-zero-reward groups cause the estimated advantages to collapse to zero, leaving no informative learning signal to drive futher improvement on these problems.",
+   "zh": "带可验证奖励的强化学习（RLVR）已成为对大语言模型（LLM）进行后训练的重要范式（Guo et al., 2025；Jaech et al., 2024；Team et al., 2025），在提升数学、编程和智能体任务等领域的推理能力方面展现出显著成效（Dong et al., 2026a；Zhang et al., 2025a）。 RLVR 使 LLM 能够直接从对通过策略内探索生成的轨迹所给出的可验证奖励反馈中学习，从而获得显著且可泛化的性能提升（Zhu et al., 2025；Shenfeld et al., 2026）。 然而，这种对成功探索的依赖在超出模型当前能力的困难问题上造成了学习断崖：当所有采样得到的 rollout 都失败时，策略无法获得任何正向奖励信号（Agrawal et al., 2026；Zhang et al., 2025b；Yue et al., 2025）。 这一问题对于基于组相对优势估计的方法（例如 GRPO）尤为严重（Yu et al., 2026；Zhang et al., 2026c），因为全零奖励的组会使估计的优势坍缩为零，导致没有有效的学习信号来推动模型在这些问题上进一步改进。",
+   "sents": [
+    {
+     "en": "Reinforcement learning with verifiable rewards (RLVR) has emerged as a prominent paradigm for post-training large language models (LLMs) ( Guo et al., 2025 ; Jaech et al., 2024 ; Team et al., 2025 ) , demonstrating strong effectiveness in enhancing reasoning capabilities across domains such as mathematics, coding, and agentic tasks ( Dong et al., 2026a ; Zhang et al., 2025a ) .",
+     "zh": "带可验证奖励的强化学习（RLVR）已成为对大语言模型（LLM）进行后训练的重要范式（Guo et al., 2025；Jaech et al., 2024；Team et al., 2025），在提升数学、编程和智能体任务等领域的推理能力方面展现出显著成效（Dong et al., 2026a；Zhang et al., 2025a）。"
+    },
+    {
+     "en": "RLVR enables LLMs to learn directly from verifiable reward feedback on trajectories generated through on-policy exploration, yielding substantial and generalizable performance gains ( Zhu et al., 2025 ; Shenfeld et al., 2026 ) .",
+     "zh": "RLVR 使 LLM 能够直接从对通过策略内探索生成的轨迹所给出的可验证奖励反馈中学习，从而获得显著且可泛化的性能提升（Zhu et al., 2025；Shenfeld et al., 2026）。"
+    },
+    {
+     "en": "However, this reliance on successful exploration creates a learning cliff on challenging problems beyond the model’s current capabilities: when all sampled rollouts fail, the policy receives no positive reward signal ( Agrawal et al., 2026 ; Zhang et al., 2025b ; Yue et al., 2025 ) .",
+     "zh": "然而，这种对成功探索的依赖在超出模型当前能力的困难问题上造成了学习断崖：当所有采样得到的 rollout 都失败时，策略无法获得任何正向奖励信号（Agrawal et al., 2026；Zhang et al., 2025b；Yue et al., 2025）。"
+    },
+    {
+     "en": "This issue is particularly acute for methods based on group-relative advantage estimation (e.g., GRPO) ( Yu et al., 2026 ; Zhang et al., 2026c ) , as all-zero-reward groups cause the estimated advantages to collapse to zero, leaving no informative learning signal to drive futher improvement on these problems.",
+     "zh": "这一问题对于基于组相对优势估计的方法（例如 GRPO）尤为严重（Yu et al., 2026；Zhang et al., 2026c），因为全零奖励的组会使估计的优势坍缩为零，导致没有有效的学习信号来推动模型在这些问题上进一步改进。"
+    }
+   ]
+  },
+  {
+   "en": "A natural remedy is to leverage expert data, which offer a promising way to overcome this exploration bottleneck and are increasingly used to supplement online RL training. Typically generated by human experts or stronger models, expert trajectories expose the student to high-quality reasoning paths and provide informative learning signals. Yet these trajectories are not necessarily compatible with the current policy and often fall within low-probability regions under its distribution. Existing methods utilize such trajectories in three main ways. Some use them as supervised fine-tuning (SFT) targets alongside RL training ( Ma et al., 2026 ; Fu et al., 2026 ; Zhang et al., 2026b ) . When these trajectories lie in low-probability regions under the current policy, directly fitting them can induce excessive policy drift and result in surface-level imitation rather than transferable reasoning ( Yan et al., 2025 ) . Other approaches incorporate expert trajectories into rollout groups as off-policy samples to recover informative learning signals ( Yan et al., 2025 ; Dong et al., 2026b ) . The distributional mismatch between these off-policy trajectories and on-policy rollouts can distort the resulting learning signals and destabilize optimization ( Agrawal et al., 2026 ; Setlur et al., 2026 ; Shenfeld et al., 2026 ) . A further line of work ( Huang et al., 2026 ; Qu et al., 2026 ; Zhang et al., 2026a ; Zhang et al., 2026d ) leverages expert trajectories indirectly, using them to construct prefixes or hints that guide subsequent exploration and generation. Although the resulting continuations are generated by the current policy, they are conditioned on intermediate states that the policy may not be able to reach on its own from the original prompt ( Ross et al., 2011 ; Qu et al., 2026 ; Agrawal et al., 2026 ) . This creates privileged-context dependence: once the guidance is removed, the model may struggle to reproduce the full reasoning process. Collectively, these limitations reveal a fundamental trade-off: an effective learning signal on challenging problems must come from trajectories that are both verifiably correct and sufficiently compatible with the current student policy. Although expert data can provide verifiably correct trajectories, naively incorporating them may sacrifice policy compatibility by pulling the policy toward behaviors that lie far outside its current distribution, ultimately undermining stable and effective policy improvement.",
+   "zh": "一种自然的补救措施是利用专家数据，它为克服这一探索瓶颈提供了一条有前景的途径，并越来越多地被用于补充在线强化学习训练。 专家轨迹通常由人类专家或更强的模型生成，能够让学生接触高质量的推理路径，并提供有信息量的学习信号。 然而这些轨迹未必与当前策略兼容，并且往往落在其分布的低概率区域之内。 现有方法主要以三种方式利用这类轨迹。 一些方法将它们作为监督微调（SFT）目标，与强化学习训练并行使用（Ma et al., 2026; Fu et al., 2026; Zhang et al., 2026b）。 当这些轨迹位于当前策略的低概率区域时，直接拟合它们可能导致策略过度偏移，造成表面模仿而非可迁移的推理能力（Yan et al., 2025）。 另一些方法将专家轨迹作为离策略样本纳入采样组中，以恢复有信息量的学习信号（Yan et al., 2025; Dong et al., 2026b）。 这些离策略轨迹与在策略采样之间的分布不匹配可能扭曲所得的学习信号，并使优化过程不稳定（Agrawal et al., 2026; Setlur et al., 2026; Shenfeld et al., 2026）。 还有一类工作（Huang et al., 2026; Qu et al., 2026; Zhang et al., 2026a; Zhang et al., 2026d）间接利用专家轨迹，即用它们构造前缀或提示，以引导后续的探索与生成。 尽管由此产生的续写由当前策略生成，但它们所条件化的中间状态，可能是策略仅凭原始提示自身无法到达的（Ross et al., 2011; Qu et al., 2026; Agrawal et al., 2026）。 这造成了特权上下文依赖：一旦移除引导，模型可能难以复现完整的推理过程。 总而言之，这些局限揭示了一个根本性的权衡：在困难问题上有效的学习信号，必须来自既可验证正确、又与当前学生策略足够兼容的轨迹。 尽管专家数据能够提供可验证正确的轨迹，但简单直接地将其纳入，可能把策略拉向远离其当前分布的行为，从而牺牲策略兼容性，最终破坏稳定而有效的策略改进。",
+   "sents": [
+    {
+     "en": "A natural remedy is to leverage expert data, which offer a promising way to overcome this exploration bottleneck and are increasingly used to supplement online RL training.",
+     "zh": "一种自然的补救措施是利用专家数据，它为克服这一探索瓶颈提供了一条有前景的途径，并越来越多地被用于补充在线强化学习训练。"
+    },
+    {
+     "en": "Typically generated by human experts or stronger models, expert trajectories expose the student to high-quality reasoning paths and provide informative learning signals.",
+     "zh": "专家轨迹通常由人类专家或更强的模型生成，能够让学生接触高质量的推理路径，并提供有信息量的学习信号。"
+    },
+    {
+     "en": "Yet these trajectories are not necessarily compatible with the current policy and often fall within low-probability regions under its distribution.",
+     "zh": "然而这些轨迹未必与当前策略兼容，并且往往落在其分布的低概率区域之内。"
+    },
+    {
+     "en": "Existing methods utilize such trajectories in three main ways.",
+     "zh": "现有方法主要以三种方式利用这类轨迹。"
+    },
+    {
+     "en": "Some use them as supervised fine-tuning (SFT) targets alongside RL training ( Ma et al., 2026 ; Fu et al., 2026 ; Zhang et al., 2026b ) .",
+     "zh": "一些方法将它们作为监督微调（SFT）目标，与强化学习训练并行使用（Ma et al., 2026; Fu et al., 2026; Zhang et al., 2026b）。"
+    },
+    {
+     "en": "When these trajectories lie in low-probability regions under the current policy, directly fitting them can induce excessive policy drift and result in surface-level imitation rather than transferable reasoning ( Yan et al., 2025 ) .",
+     "zh": "当这些轨迹位于当前策略的低概率区域时，直接拟合它们可能导致策略过度偏移，造成表面模仿而非可迁移的推理能力（Yan et al., 2025）。"
+    },
+    {
+     "en": "Other approaches incorporate expert trajectories into rollout groups as off-policy samples to recover informative learning signals ( Yan et al., 2025 ; Dong et al., 2026b ) .",
+     "zh": "另一些方法将专家轨迹作为离策略样本纳入采样组中，以恢复有信息量的学习信号（Yan et al., 2025; Dong et al., 2026b）。"
+    },
+    {
+     "en": "The distributional mismatch between these off-policy trajectories and on-policy rollouts can distort the resulting learning signals and destabilize optimization ( Agrawal et al., 2026 ; Setlur et al., 2026 ; Shenfeld et al., 2026 ) .",
+     "zh": "这些离策略轨迹与在策略采样之间的分布不匹配可能扭曲所得的学习信号，并使优化过程不稳定（Agrawal et al., 2026; Setlur et al., 2026; Shenfeld et al., 2026）。"
+    },
+    {
+     "en": "A further line of work ( Huang et al., 2026 ; Qu et al., 2026 ; Zhang et al., 2026a ; Zhang et al., 2026d ) leverages expert trajectories indirectly, using them to construct prefixes or hints that guide subsequent exploration and generation.",
+     "zh": "还有一类工作（Huang et al., 2026; Qu et al., 2026; Zhang et al., 2026a; Zhang et al., 2026d）间接利用专家轨迹，即用它们构造前缀或提示，以引导后续的探索与生成。"
+    },
+    {
+     "en": "Although the resulting continuations are generated by the current policy, they are conditioned on intermediate states that the policy may not be able to reach on its own from the original prompt ( Ross et al., 2011 ; Qu et al., 2026 ; Agrawal et al., 2026 ) .",
+     "zh": "尽管由此产生的续写由当前策略生成，但它们所条件化的中间状态，可能是策略仅凭原始提示自身无法到达的（Ross et al., 2011; Qu et al., 2026; Agrawal et al., 2026）。"
+    },
+    {
+     "en": "This creates privileged-context dependence: once the guidance is removed, the model may struggle to reproduce the full reasoning process.",
+     "zh": "这造成了特权上下文依赖：一旦移除引导，模型可能难以复现完整的推理过程。"
+    },
+    {
+     "en": "Collectively, these limitations reveal a fundamental trade-off: an effective learning signal on challenging problems must come from trajectories that are both verifiably correct and sufficiently compatible with the current student policy.",
+     "zh": "总而言之，这些局限揭示了一个根本性的权衡：在困难问题上有效的学习信号，必须来自既可验证正确、又与当前学生策略足够兼容的轨迹。"
+    },
+    {
+     "en": "Although expert data can provide verifiably correct trajectories, naively incorporating them may sacrifice policy compatibility by pulling the policy toward behaviors that lie far outside its current distribution, ultimately undermining stable and effective policy improvement.",
+     "zh": "尽管专家数据能够提供可验证正确的轨迹，但简单直接地将其纳入，可能把策略拉向远离其当前分布的行为，从而牺牲策略兼容性，最终破坏稳定而有效的策略改进。"
+    }
+   ]
+  },
+  {
+   "en": "To address this challenge, we propose Policy-Compatible Reinforcement Learning ( PICO ), which uses distribution-constrained joint decoding to recover positive learning signals from off-policy trajectories while explicitly controlling the induced distribution shift. Specifically, joint decoding constructs the next-token candidate set by intersecting high-probability tokens predicted by a teacher conditioned on expert data with those predicted by the student, thereby restricting sampling to candidates favored by both models. In this way, the teacher provides token-level guidance to improve rollout accuracy, while sampling according to the student’s relative probabilities preserves its own preferences. To further constrain the joint sampling distribution within a finite divergence budget, we introduce a dynamic top- k k mechanism that adaptively adjusts the teacher’s candidate set. Finally, the resulting trajectories verified for correctness are optimized alongside on-policy rollouts through a mixed-behavior objective.",
+   "zh": "为应对这一挑战，我们提出策略兼容强化学习（PICO），它利用分布约束的联合解码从离策略轨迹中恢复正向学习信号，同时显式控制由此引起的分布偏移。 具体而言，联合解码通过将基于专家数据条件的教师所预测的高概率令牌与学生所预测的令牌取交集来构建下一令牌候选集，从而将采样限制在两个模型都偏好的候选上。 通过这种方式，教师提供令牌级指导以提升轨迹生成的准确性，而按学生的相对概率进行采样则保留了学生自身的偏好。 为了进一步将联合采样分布约束在有限的散度预算之内，我们引入了一种动态 top-k 机制，自适应地调整教师的候选集。 最后，经验证正确的所得轨迹通过与在策略轨迹共同优化的混合行为目标进行训练。",
+   "sents": [
+    {
+     "en": "To address this challenge, we propose Policy-Compatible Reinforcement Learning ( PICO ), which uses distribution-constrained joint decoding to recover positive learning signals from off-policy trajectories while explicitly controlling the induced distribution shift.",
+     "zh": "为应对这一挑战，我们提出策略兼容强化学习（PICO），它利用分布约束的联合解码从离策略轨迹中恢复正向学习信号，同时显式控制由此引起的分布偏移。"
+    },
+    {
+     "en": "Specifically, joint decoding constructs the next-token candidate set by intersecting high-probability tokens predicted by a teacher conditioned on expert data with those predicted by the student, thereby restricting sampling to candidates favored by both models.",
+     "zh": "具体而言，联合解码通过将基于专家数据条件的教师所预测的高概率令牌与学生所预测的令牌取交集来构建下一令牌候选集，从而将采样限制在两个模型都偏好的候选上。"
+    },
+    {
+     "en": "In this way, the teacher provides token-level guidance to improve rollout accuracy, while sampling according to the student’s relative probabilities preserves its own preferences.",
+     "zh": "通过这种方式，教师提供令牌级指导以提升轨迹生成的准确性，而按学生的相对概率进行采样则保留了学生自身的偏好。"
+    },
+    {
+     "en": "To further constrain the joint sampling distribution within a finite divergence budget, we introduce a dynamic top- k k mechanism that adaptively adjusts the teacher’s candidate set.",
+     "zh": "为了进一步将联合采样分布约束在有限的散度预算之内，我们引入了一种动态 top-k 机制，自适应地调整教师的候选集。"
+    },
+    {
+     "en": "Finally, the resulting trajectories verified for correctness are optimized alongside on-policy rollouts through a mixed-behavior objective.",
+     "zh": "最后，经验证正确的所得轨迹通过与在策略轨迹共同优化的混合行为目标进行训练。"
+    }
+   ]
+  },
+  {
+   "en": "As illustrated in Figure 1 , PICO activates joint decoding only for all-failure groups, preserving standard on-policy optimization whenever student exploration already yields positive rewards. Figure 4 further shows that joint decoding recovers verified, positive-reward trajectories in up to 80% of all-failure groups, thereby restoring informative learning signals where standard on-policy sampling yields none. Extensive experiments across mathematics and general reasoning benchmarks demonstrate that PICO consistently outperforms standard RLVR and existing expert-guided baselines. Further evaluations on agentic tasks establish its generalizability beyond conventional reasoning settings. Comprehensive ablation studies validate the effectiveness of its key components and confirm the importance of explicitly controlling the trade-off between rollout quality and student-policy proximity. In summary, our main contributions are threefold:",
+   "zh": "如图1所示，PICO 仅对全失败组启用联合解码，当学生探索已经产生正奖励时，则保留标准的在策略优化。 图4进一步表明，联合解码在高达80%的全失败组中恢复了经过验证的正奖励轨迹，从而在标准在策略采样无法产生学习信号的地方恢复了有信息量的学习信号。 在数学和通用推理基准上进行的大量实验表明，PICO 始终优于标准 RLVR 和现有的专家引导基线。 在智能体任务上的进一步评估证明了其超越传统推理 setting 的泛化能力。 全面的消融研究验证了其关键组件的有效性，并确认了显式控制 rollout 质量与学生策略邻近性之间权衡的重要性。 总之，我们的主要贡献有三点：",
+   "sents": [
+    {
+     "en": "As illustrated in Figure 1 , PICO activates joint decoding only for all-failure groups, preserving standard on-policy optimization whenever student exploration already yields positive rewards.",
+     "zh": "如图1所示，PICO 仅对全失败组启用联合解码，当学生探索已经产生正奖励时，则保留标准的在策略优化。"
+    },
+    {
+     "en": "Figure 4 further shows that joint decoding recovers verified, positive-reward trajectories in up to 80% of all-failure groups, thereby restoring informative learning signals where standard on-policy sampling yields none.",
+     "zh": "图4进一步表明，联合解码在高达80%的全失败组中恢复了经过验证的正奖励轨迹，从而在标准在策略采样无法产生学习信号的地方恢复了有信息量的学习信号。"
+    },
+    {
+     "en": "Extensive experiments across mathematics and general reasoning benchmarks demonstrate that PICO consistently outperforms standard RLVR and existing expert-guided baselines.",
+     "zh": "在数学和通用推理基准上进行的大量实验表明，PICO 始终优于标准 RLVR 和现有的专家引导基线。"
+    },
+    {
+     "en": "Further evaluations on agentic tasks establish its generalizability beyond conventional reasoning settings.",
+     "zh": "在智能体任务上的进一步评估证明了其超越传统推理 setting 的泛化能力。"
+    },
+    {
+     "en": "Comprehensive ablation studies validate the effectiveness of its key components and confirm the importance of explicitly controlling the trade-off between rollout quality and student-policy proximity.",
+     "zh": "全面的消融研究验证了其关键组件的有效性，并确认了显式控制 rollout 质量与学生策略邻近性之间权衡的重要性。"
+    },
+    {
+     "en": "In summary, our main contributions are threefold:",
+     "zh": "总之，我们的主要贡献有三点："
+    }
+   ]
+  },
+  {
+   "en": "We identify a fundamental trade-off between rollout quality and student-policy proximity when incorporating offline expert information into RLVR.",
+   "zh": "在将离线专家信息引入 RLVR 时，我们发现展开质量与学生策略接近度之间存在根本性的权衡。",
+   "sents": null
+  },
+  {
+   "en": "We introduce PICO , which combines distribution-constrained joint decoding with failure-triggered mixed-behavior optimization to generate and learn from verified, policy-compatible trajectories.",
+   "zh": "我们提出 PICO，它将分布约束的联合解码与失败触发的混合行为优化相结合，以生成并从经过验证的、与策略兼容的轨迹中学习。",
+   "sents": null
+  },
+  {
+   "en": "Extensive experiments on mathematics, general reasoning, and agentic tasks demonstrate the effectiveness and generalizability of PICO .",
+   "zh": "在数学、通用推理和智能体任务上的大量实验证明了 PICO 的有效性和泛化能力。",
+   "sents": null
+  },
+  {
+   "en": "Reinforcement Learning with Verifiable Rewards. Let 𝒟 \\mathcal{D} denote a training distribution over queries x ∈ 𝒳 x\\in\\mathcal{X} . Given a query x x , the policy π θ \\pi_{\\theta} generates a response y = ( y 1 , … , y T ) y=(y_{1},\\ldots,y_{T}) autoregressively, where T T is the response length. Let a ⁡ ( y ) a(y) denote the answer extracted from y y and a ⋆ ​ ( x ) a^{\\star}(x) the ground-truth answer to x x . The verifier assigns the binary reward R ( x , y ) = { a ( y ) = a ⋆ ( x ) } . R(x,y)=\\mathbf{1}\\!\\left\\{a(y)=a^{\\star}(x)\\right\\}. The RLVR objective maximizes the expected verifier reward ( Guo et al., 2025 ) :",
+   "zh": "带可验证奖励的强化学习（Reinforcement Learning with Verifiable Rewards）。 设 𝒟 \\mathcal{D} 表示查询 x ∈ 𝒳 x\\in\\mathcal{X} 上的训练分布。 给定查询 x x ，策略 π θ \\pi_{\\theta} 以自回归方式生成回复 y = ( y 1 , … , y T ) y=(y_{1},\\ldots,y_{T}) ，其中 T T 为回复长度。 设 a ⁡ ( y ) a(y) 表示从 y y 中提取的答案， a ⋆ ​ ( x ) a^{\\star}(x) 表示 x x 的真实答案。 验证器给出二值奖励 R ( x , y ) = { a ( y ) = a ⋆ ( x ) } 。 R(x,y)=\\mathbf{1}\\!\\left\\{a(y)=a^{\\star}(x)\\right\\} 。 RLVR 目标最大化期望验证器奖励（Guo et al., 2025）：",
+   "sents": [
+    {
+     "en": "Reinforcement Learning with Verifiable Rewards.",
+     "zh": "带可验证奖励的强化学习（Reinforcement Learning with Verifiable Rewards）。"
+    },
+    {
+     "en": "Let 𝒟 \\mathcal{D} denote a training distribution over queries x ∈ 𝒳 x\\in\\mathcal{X} .",
+     "zh": "设 𝒟 \\mathcal{D} 表示查询 x ∈ 𝒳 x\\in\\mathcal{X} 上的训练分布。"
+    },
+    {
+     "en": "Given a query x x , the policy π θ \\pi_{\\theta} generates a response y = ( y 1 , … , y T ) y=(y_{1},\\ldots,y_{T}) autoregressively, where T T is the response length.",
+     "zh": "给定查询 x x ，策略 π θ \\pi_{\\theta} 以自回归方式生成回复 y = ( y 1 , … , y T ) y=(y_{1},\\ldots,y_{T}) ，其中 T T 为回复长度。"
+    },
+    {
+     "en": "Let a ⁡ ( y ) a(y) denote the answer extracted from y y and a ⋆ ​ ( x ) a^{\\star}(x) the ground-truth answer to x x .",
+     "zh": "设 a ⁡ ( y ) a(y) 表示从 y y 中提取的答案， a ⋆ ​ ( x ) a^{\\star}(x) 表示 x x 的真实答案。"
+    },
+    {
+     "en": "The verifier assigns the binary reward R ( x , y ) = { a ( y ) = a ⋆ ( x ) } .",
+     "zh": "验证器给出二值奖励 R ( x , y ) = { a ( y ) = a ⋆ ( x ) } 。"
+    },
+    {
+     "en": "R(x,y)=\\mathbf{1}\\!\\left\\{a(y)=a^{\\star}(x)\\right\\}.",
+     "zh": "R(x,y)=\\mathbf{1}\\!\\left\\{a(y)=a^{\\star}(x)\\right\\} 。"
+    },
+    {
+     "en": "The RLVR objective maximizes the expected verifier reward ( Guo et al., 2025 ) :",
+     "zh": "RLVR 目标最大化期望验证器奖励（Guo et al., 2025）："
+    }
+   ]
+  },
+  {
+   "en": "Group Relative Policy Optimization. To optimize this objective, policy-gradient methods are commonly employed ( Schulman et al., 2017 ) . Among them, Group Relative Policy Optimization (GRPO) ( Shao et al., 2024 ) is a representative approach that converts binary rewards into relative advantages within each rollout group without requiring a separately trained value model. For each query x x , the behavior policy π old \\pi_{\\mathrm{old}} generates a group of trajectories { y ( i ) } i = 1 n \\{y^{(i)}\\}_{i=1}^{n} , which are scored to obtain rewards { R ( i ) } i = 1 n \\{R^{(i)}\\}_{i=1}^{n} . The advantage of each trajectory is then computed by standardizing its reward within the group:",
+   "zh": "组相对策略优化。 为了优化这一目标，通常采用策略梯度方法（Schulman et al., 2017）。 其中，组相对策略优化（GRPO）（Shao et al., 2024）是一种代表性方法，它将二值奖励转换为每个 rollout 组内的相对优势，而无需单独训练一个价值模型。 对于每个查询 x x，行为策略 π old \\pi_{\\mathrm{old}} 生成一组轨迹 { y ( i ) } i = 1 n \\{y^{(i)}\\}_{i=1}^{n}，对这些轨迹进行评分以获得奖励 { R ( i ) } i = 1 n \\{R^{(i)}\\}_{i=1}^{n}。 然后，通过在组内对每条轨迹的奖励进行标准化来计算其优势：",
+   "sents": [
+    {
+     "en": "Group Relative Policy Optimization.",
+     "zh": "组相对策略优化。"
+    },
+    {
+     "en": "To optimize this objective, policy-gradient methods are commonly employed ( Schulman et al., 2017 ) .",
+     "zh": "为了优化这一目标，通常采用策略梯度方法（Schulman et al., 2017）。"
+    },
+    {
+     "en": "Among them, Group Relative Policy Optimization (GRPO) ( Shao et al., 2024 ) is a representative approach that converts binary rewards into relative advantages within each rollout group without requiring a separately trained value model.",
+     "zh": "其中，组相对策略优化（GRPO）（Shao et al., 2024）是一种代表性方法，它将二值奖励转换为每个 rollout 组内的相对优势，而无需单独训练一个价值模型。"
+    },
+    {
+     "en": "For each query x x , the behavior policy π old \\pi_{\\mathrm{old}} generates a group of trajectories { y ( i ) } i = 1 n \\{y^{(i)}\\}_{i=1}^{n} , which are scored to obtain rewards { R ( i ) } i = 1 n \\{R^{(i)}\\}_{i=1}^{n} .",
+     "zh": "对于每个查询 x x，行为策略 π old \\pi_{\\mathrm{old}} 生成一组轨迹 { y ( i ) } i = 1 n \\{y^{(i)}\\}_{i=1}^{n}，对这些轨迹进行评分以获得奖励 { R ( i ) } i = 1 n \\{R^{(i)}\\}_{i=1}^{n}。"
+    },
+    {
+     "en": "The advantage of each trajectory is then computed by standardizing its reward within the group:",
+     "zh": "然后，通过在组内对每条轨迹的奖励进行标准化来计算其优势："
+    }
+   ]
+  },
+  {
+   "en": "Recent work ( Liu et al., 2025b ) suggests that the standard deviation term in the advantage calculation may introduce bias into policy optimization. The policy is updated by optimizing the clipped, KL-regularized surrogate averaged over training problems:",
+   "zh": "近期研究（Liu et al., 2025b）表明，优势计算中的标准差项可能会给策略优化引入偏差。 通过优化在训练问题上取平均的、经过裁剪并带有 KL 正则化的代理目标来更新策略：",
+   "sents": [
+    {
+     "en": "Recent work ( Liu et al., 2025b ) suggests that the standard deviation term in the advantage calculation may introduce bias into policy optimization.",
+     "zh": "近期研究（Liu et al., 2025b）表明，优势计算中的标准差项可能会给策略优化引入偏差。"
+    },
+    {
+     "en": "The policy is updated by optimizing the clipped, KL-regularized surrogate averaged over training problems:",
+     "zh": "通过优化在训练问题上取平均的、经过裁剪并带有 KL 正则化的代理目标来更新策略："
+    }
+   ]
+  },
+  {
+   "en": "Here, 𝒵 = ∑ i = 1 n | y ( i ) | \\mathcal{Z}=\\sum_{i=1}^{n}|y^{(i)}| is the total number of response tokens in the rollout group, and r i , t ​ ( θ ) = π θ ​ ( y t ( i ) ∣ x , y < t ( i ) ) / π old ​ ( y t ( i ) ∣ x , y < t ( i ) ) r_{i,t}(\\theta)=\\pi_{\\theta}(y_{t}^{(i)}\\mid x,y_{<t}^{(i)})/\\pi_{\\mathrm{old}}(y_{t}^{(i)}\\mid x,y_{<t}^{(i)}) is the importance-sampling ratio. The clipping operation limits excessively large policy updates, while the KL term softly constrains π θ \\pi_{\\theta} to remain close to the reference policy π ref \\pi_{\\mathrm{ref}} . In practice, this KL penalty can be downweighted or omitted when larger policy shifts are desired ( Yan et al., 2025 ; Zhang et al., 2025b ) .",
+   "zh": "这里，𝒵 = ∑ i = 1 n | y ( i ) | \\mathcal{Z}=\\sum_{i=1}^{n}|y^{(i)}| 是 rollout 组中响应 token 的总数，而 r i , t ( θ ) = π θ ( y t ( i ) ∣ x , y < t ( i ) ) / π old ( y t ( i ) ∣ x , y < t ( i ) ) r_{i,t}(\\theta)=\\pi_{\\theta}(y_{t}^{(i)}\\mid x,y_{<t}^{(i)})/\\pi_{\\mathrm{old}}(y_{t}^{(i)}\\mid x,y_{<t}^{(i)}) 是重要性采样比率。 裁剪操作限制了过大的策略更新，而 KL 项则软性地约束 π θ \\pi_{\\theta} 使其保持接近参考策略 π ref \\pi_{\\mathrm{ref}} 。 在实践中，当希望进行较大的策略偏移时，可以对这一 KL 惩罚进行降权或省略 ( Yan et al., 2025 ; Zhang et al., 2025b ) 。",
+   "sents": [
+    {
+     "en": "Here, 𝒵 = ∑ i = 1 n | y ( i ) | \\mathcal{Z}=\\sum_{i=1}^{n}|y^{(i)}| is the total number of response tokens in the rollout group, and r i , t ​ ( θ ) = π θ ​ ( y t ( i ) ∣ x , y < t ( i ) ) / π old ​ ( y t ( i ) ∣ x , y < t ( i ) ) r_{i,t}(\\theta)=\\pi_{\\theta}(y_{t}^{(i)}\\mid x,y_{<t}^{(i)})/\\pi_{\\mathrm{old}}(y_{t}^{(i)}\\mid x,y_{<t}^{(i)}) is the importance-sampling ratio.",
+     "zh": "这里，𝒵 = ∑ i = 1 n | y ( i ) | \\mathcal{Z}=\\sum_{i=1}^{n}|y^{(i)}| 是 rollout 组中响应 token 的总数，而 r i , t ( θ ) = π θ ( y t ( i ) ∣ x , y < t ( i ) ) / π old ( y t ( i ) ∣ x , y < t ( i ) ) r_{i,t}(\\theta)=\\pi_{\\theta}(y_{t}^{(i)}\\mid x,y_{<t}^{(i)})/\\pi_{\\mathrm{old}}(y_{t}^{(i)}\\mid x,y_{<t}^{(i)}) 是重要性采样比率。"
+    },
+    {
+     "en": "The clipping operation limits excessively large policy updates, while the KL term softly constrains π θ \\pi_{\\theta} to remain close to the reference policy π ref \\pi_{\\mathrm{ref}} .",
+     "zh": "裁剪操作限制了过大的策略更新，而 KL 项则软性地约束 π θ \\pi_{\\theta} 使其保持接近参考策略 π ref \\pi_{\\mathrm{ref}} 。"
+    },
+    {
+     "en": "In practice, this KL penalty can be downweighted or omitted when larger policy shifts are desired ( Yan et al., 2025 ; Zhang et al., 2025b ) .",
+     "zh": "在实践中，当希望进行较大的策略偏移时，可以对这一 KL 惩罚进行降权或省略 ( Yan et al., 2025 ; Zhang et al., 2025b ) 。"
+    }
+   ]
+  },
+  {
+   "en": "In this section, we detail the design and implementation of PICO . As illustrated in Figure 1 and Algorithm 1 , the framework consists of two components: distribution-constrained joint decoding and mixed-behavior policy optimization. First, distribution-constrained joint decoding combines the token-level preferences of the teacher and student to generate rollouts, with a dynamic top- k k mechanism adaptively balancing teacher guidance and distribution shift. Second, mixed-behavior policy optimization learns from the resulting trajectories using importance-sampling (IS) ratios to account for the mismatch between the joint-decoding policy and the student policy.",
+   "zh": "在本节中，我们详细介绍 PICO 的设计与实现。 如图 1 和算法 1 所示，该框架由两个部分组成：分布约束联合解码和混合行为策略优化。 首先，分布约束联合解码结合教师与智能体的 token 级偏好来生成 rollout，并通过动态 top- k k 机制自适应地平衡教师指导与分布偏移。 其次，混合行为策略优化利用重要性采样（IS）比率从产生的轨迹中学习，以处理联合解码策略与智能体策略之间的不匹配。",
+   "sents": [
+    {
+     "en": "In this section, we detail the design and implementation of PICO .",
+     "zh": "在本节中，我们详细介绍 PICO 的设计与实现。"
+    },
+    {
+     "en": "As illustrated in Figure 1 and Algorithm 1 , the framework consists of two components: distribution-constrained joint decoding and mixed-behavior policy optimization.",
+     "zh": "如图 1 和算法 1 所示，该框架由两个部分组成：分布约束联合解码和混合行为策略优化。"
+    },
+    {
+     "en": "First, distribution-constrained joint decoding combines the token-level preferences of the teacher and student to generate rollouts, with a dynamic top- k k mechanism adaptively balancing teacher guidance and distribution shift.",
+     "zh": "首先，分布约束联合解码结合教师与智能体的 token 级偏好来生成 rollout，并通过动态 top- k k 机制自适应地平衡教师指导与分布偏移。"
+    },
+    {
+     "en": "Second, mixed-behavior policy optimization learns from the resulting trajectories using importance-sampling (IS) ratios to account for the mismatch between the joint-decoding policy and the student policy.",
+     "zh": "其次，混合行为策略优化利用重要性采样（IS）比率从产生的轨迹中学习，以处理联合解码策略与智能体策略之间的不匹配。"
+    }
+   ]
+  },
+  {
+   "en": "To improve the reliability of sampled trajectories, we employ a teacher–student joint-decoding strategy that restricts token selection to candidates jointly favored by both models. We first construct a consensus support set and then optimize a behavior policy over this set, thereby balancing rollout quality against proximity to the student policy.",
+   "zh": "为了提高采样轨迹的可靠性，我们采用一种师生联合解码策略，将词元选择限制在两个模型共同支持的候选范围内。 我们首先构建一个共识支持集，然后在该集合上优化行为策略，从而在回放质量与学生策略的接近程度之间取得平衡。",
+   "sents": [
+    {
+     "en": "To improve the reliability of sampled trajectories, we employ a teacher–student joint-decoding strategy that restricts token selection to candidates jointly favored by both models.",
+     "zh": "为了提高采样轨迹的可靠性，我们采用一种师生联合解码策略，将词元选择限制在两个模型共同支持的候选范围内。"
+    },
+    {
+     "en": "We first construct a consensus support set and then optimize a behavior policy over this set, thereby balancing rollout quality against proximity to the student policy.",
+     "zh": "我们首先构建一个共识支持集，然后在该集合上优化行为策略，从而在回放质量与学生策略的接近程度之间取得平衡。"
+    }
+   ]
+  },
+  {
+   "en": "Consensus Support Set. Given a query x x , privileged expert guidance g g available only to the teacher, and a shared generated prefix y < t y_{<t} , the next-token distributions of the student and the teacher models are defined as",
+   "zh": "共识支持集。 给定查询 x x、仅教师可用的特权专家指导 g g，以及共享的已生成前缀 y < t y_{<t}，学生模型和教师模型的下一个词元分布定义为",
+   "sents": [
+    {
+     "en": "Consensus Support Set.",
+     "zh": "共识支持集。"
+    },
+    {
+     "en": "Given a query x x , privileged expert guidance g g available only to the teacher, and a shared generated prefix y < t y_{<t} , the next-token distributions of the student and the teacher models are defined as",
+     "zh": "给定查询 x x、仅教师可用的特权专家指导 g g，以及共享的已生成前缀 y < t y_{<t}，学生模型和教师模型的下一个词元分布定义为"
+    }
+   ]
+  },
+  {
+   "en": "where v v denotes a token in the shared vocabulary. Both models condition on the same generated prefix, while only the teacher has access to g g . Thus, the privileged guidance is neither exposed to the student nor appended to its rollout context; it influences generation only through the teacher’s token-level predictions.",
+   "zh": "其中 v v 表示共享词表中的一个词元。 两个模型都以相同的已生成前缀为条件，但只有教师模型能够访问 g g 。 因此，特权引导既不暴露给学生模型，也不会附加到其生成上下文中；它仅通过教师模型的词元级预测来影响生成过程。",
+   "sents": [
+    {
+     "en": "where v v denotes a token in the shared vocabulary.",
+     "zh": "其中 v v 表示共享词表中的一个词元。"
+    },
+    {
+     "en": "Both models condition on the same generated prefix, while only the teacher has access to g g .",
+     "zh": "两个模型都以相同的已生成前缀为条件，但只有教师模型能够访问 g g 。"
+    },
+    {
+     "en": "Thus, the privileged guidance is neither exposed to the student nor appended to its rollout context; it influences generation only through the teacher’s token-level predictions.",
+     "zh": "因此，特权引导既不暴露给学生模型，也不会附加到其生成上下文中；它仅通过教师模型的词元级预测来影响生成过程。"
+    }
+   ]
+  },
+  {
+   "en": "At each decoding step, we construct the consensus support set by intersecting the top- k k sets of the two models:",
+   "zh": "在每个解码步骤中，我们通过将两个模型的 top-k 集合取交集来构建共识支持集：",
+   "sents": null
+  },
+  {
+   "en": "where k T k_{\\mathrm{T}} and k S k_{\\mathrm{S}} denote the teacher and student cutoffs, respectively. By retaining only tokens supported by both models, F t F_{t} filters out predictions that are implausible under either distribution. The teacher contributes privileged information through candidate selection, while the student continues to determine which of the retained tokens are compatible with its current policy.",
+   "zh": "其中 k_T k_{\\mathrm{T}} 和 k_S k_{\\mathrm{S}} 分别表示教师和学生的截断值。 通过仅保留两个模型都支持的词元，F_t F_{t} 过滤掉在任一分布下都不太可能出现的预测。 教师通过候选选择提供特权信息，而智能体（学生）则继续确定保留的词元中哪些与其当前策略相容。",
+   "sents": [
+    {
+     "en": "where k T k_{\\mathrm{T}} and k S k_{\\mathrm{S}} denote the teacher and student cutoffs, respectively.",
+     "zh": "其中 k_T k_{\\mathrm{T}} 和 k_S k_{\\mathrm{S}} 分别表示教师和学生的截断值。"
+    },
+    {
+     "en": "By retaining only tokens supported by both models, F t F_{t} filters out predictions that are implausible under either distribution.",
+     "zh": "通过仅保留两个模型都支持的词元，F_t F_{t} 过滤掉在任一分布下都不太可能出现的预测。"
+    },
+    {
+     "en": "The teacher contributes privileged information through candidate selection, while the student continues to determine which of the retained tokens are compatible with its current policy.",
+     "zh": "教师通过候选选择提供特权信息，而智能体（学生）则继续确定保留的词元中哪些与其当前策略相容。"
+    }
+   ]
+  },
+  {
+   "en": "Joint-Decoding Policy Optimization. Based on a nonempty candidate set F t F_{t} , the remaining challenge is to assign sampling probabilities within this set. The resulting behavior policy must balance two competing objectives. On the one hand, it should assign greater probability to tokens favored by the teacher so that privileged guidance can improve rollout quality. On the other hand, it should remain close to the rollout-time student distribution, thereby keeping the joint trajectory compatible to student optimization.",
+   "zh": "联合解码策略优化。 基于非空候选集 F t F_{t}，剩下的挑战是在该集合内分配采样概率。 由此得到的行为策略必须平衡两个相互竞争的目标。 一方面，它应该给教师偏好的词元分配更大的概率，从而使特权引导能够提升 rollout 质量。 另一方面，它应该保持接近 rollout 时的学生分布，从而使联合轨迹与学生优化保持兼容。",
+   "sents": [
+    {
+     "en": "Joint-Decoding Policy Optimization.",
+     "zh": "联合解码策略优化。"
+    },
+    {
+     "en": "Based on a nonempty candidate set F t F_{t} , the remaining challenge is to assign sampling probabilities within this set.",
+     "zh": "基于非空候选集 F t F_{t}，剩下的挑战是在该集合内分配采样概率。"
+    },
+    {
+     "en": "The resulting behavior policy must balance two competing objectives.",
+     "zh": "由此得到的行为策略必须平衡两个相互竞争的目标。"
+    },
+    {
+     "en": "On the one hand, it should assign greater probability to tokens favored by the teacher so that privileged guidance can improve rollout quality.",
+     "zh": "一方面，它应该给教师偏好的词元分配更大的概率，从而使特权引导能够提升 rollout 质量。"
+    },
+    {
+     "en": "On the other hand, it should remain close to the rollout-time student distribution, thereby keeping the joint trajectory compatible to student optimization.",
+     "zh": "另一方面，它应该保持接近 rollout 时的学生分布，从而使联合轨迹与学生优化保持兼容。"
+    }
+   ]
+  },
+  {
+   "en": "We quantify these objectives using the expected teacher confidence 𝔼 v ∼ μ ​ [ q t ​ ( v ) ] \\mathbb{E}_{v\\sim\\mu}[q_{t}(v)] and the reverse KL divergence D KL ( μ ∥ p t ) D_{\\mathrm{KL}}(\\mu\\|p_{t}) , respectively. This yields the following joint-decoding objective:",
+   "zh": "我们分别使用期望教师置信度 𝔼 v ∼ μ ​ [ q t ​ ( v ) ] \\mathbb{E}_{v\\sim\\mu}[q_{t}(v)] 和反向 KL 散度 D KL ( μ ∥ p t ) D_{\\mathrm{KL}}(\\mu\\|p_{t}) 来量化这些目标。 由此得到如下联合解码目标：",
+   "sents": [
+    {
+     "en": "We quantify these objectives using the expected teacher confidence 𝔼 v ∼ μ ​ [ q t ​ ( v ) ] \\mathbb{E}_{v\\sim\\mu}[q_{t}(v)] and the reverse KL divergence D KL ( μ ∥ p t ) D_{\\mathrm{KL}}(\\mu\\|p_{t}) , respectively.",
+     "zh": "我们分别使用期望教师置信度 𝔼 v ∼ μ ​ [ q t ​ ( v ) ] \\mathbb{E}_{v\\sim\\mu}[q_{t}(v)] 和反向 KL 散度 D KL ( μ ∥ p t ) D_{\\mathrm{KL}}(\\mu\\|p_{t}) 来量化这些目标。"
+    },
+    {
+     "en": "This yields the following joint-decoding objective:",
+     "zh": "由此得到如下联合解码目标："
+    }
+   ]
+  },
+  {
+   "en": "where Δ ⁡ ( F t ) \\Delta(F_{t}) is the set of probability distributions supported on F t F_{t} , and λ ≥ 0 \\lambda\\geq 0 controls the trade-off between teacher guidance and proximity to the student policy. A smaller λ \\lambda better preserves the student’s relative token preferences within F t F_{t} , whereas a larger λ \\lambda gives greater influence to the teacher. We describe how to obtain this target behavior policy in Section 3.2 .",
+   "zh": "其中 Δ ⁡ ( F t ) \\Delta(F_{t}) 是支撑在 F t F_{t} 上的概率分布集合，λ ≥ 0 \\lambda\\geq 0 控制教师指导与学生策略接近程度之间的权衡。 较小的 λ \\lambda 能更好地保留学生在 F t F_{t} 内的相对词元偏好，而较大的 λ \\lambda 则赋予教师更大的影响。 我们在 3.2 节中描述如何获得这一目标行为策略。",
+   "sents": [
+    {
+     "en": "where Δ ⁡ ( F t ) \\Delta(F_{t}) is the set of probability distributions supported on F t F_{t} , and λ ≥ 0 \\lambda\\geq 0 controls the trade-off between teacher guidance and proximity to the student policy.",
+     "zh": "其中 Δ ⁡ ( F t ) \\Delta(F_{t}) 是支撑在 F t F_{t} 上的概率分布集合，λ ≥ 0 \\lambda\\geq 0 控制教师指导与学生策略接近程度之间的权衡。"
+    },
+    {
+     "en": "A smaller λ \\lambda better preserves the student’s relative token preferences within F t F_{t} , whereas a larger λ \\lambda gives greater influence to the teacher.",
+     "zh": "较小的 λ \\lambda 能更好地保留学生在 F t F_{t} 内的相对词元偏好，而较大的 λ \\lambda 则赋予教师更大的影响。"
+    },
+    {
+     "en": "We describe how to obtain this target behavior policy in Section 3.2 .",
+     "zh": "我们在 3.2 节中描述如何获得这一目标行为策略。"
+    }
+   ]
+  },
+  {
+   "en": "Closed-Form Behavior Policy. For a nonempty support set F t F_{t} , the optimization problem in Eq. equation 6 admits the following closed-form solution:",
+   "zh": "闭式行为策略。 对于非空支撑集 F t F_{t}，公式6中的优化问题具有如下闭式解：",
+   "sents": [
+    {
+     "en": "Closed-Form Behavior Policy.",
+     "zh": "闭式行为策略。"
+    },
+    {
+     "en": "For a nonempty support set F t F_{t} , the optimization problem in Eq. equation 6 admits the following closed-form solution:",
+     "zh": "对于非空支撑集 F t F_{t}，公式6中的优化问题具有如下闭式解："
+    }
+   ]
+  },
+  {
+   "en": "where C t ​ ( λ ) C_{t}(\\lambda) is the normalizing constant. The solution incorporates teacher guidance through two complementary mechanisms: F t F_{t} imposes a hard support constraint by retaining only tokens selected by both models, while exp ⁡ ( λ ​ q t ​ ( v ) ) \\exp(\\lambda q_{t}(v)) softly reweights the student probabilities within this support. The distribution shifts induced by support restriction and soft reweighting can be separated exactly.",
+   "zh": "其中 C t ( λ ) C_{t}(\\lambda) 为归一化常数。 该解法通过两种互补机制引入教师引导：F t F_{t} 通过仅保留两个模型共同选中的词元来施加硬支撑约束，而 exp ⁡ ( λ  q t  ( v ) ) \\exp(\\lambda q_{t}(v)) 则在该支撑范围内对学生概率进行软性重加权。 由支撑限制和软性重加权引起的分布偏移可以被精确地分离。",
+   "sents": [
+    {
+     "en": "where C t ​ ( λ ) C_{t}(\\lambda) is the normalizing constant.",
+     "zh": "其中 C t ( λ ) C_{t}(\\lambda) 为归一化常数。"
+    },
+    {
+     "en": "The solution incorporates teacher guidance through two complementary mechanisms: F t F_{t} imposes a hard support constraint by retaining only tokens selected by both models, while exp ⁡ ( λ ​ q t ​ ( v ) ) \\exp(\\lambda q_{t}(v)) softly reweights the student probabilities within this support.",
+     "zh": "该解法通过两种互补机制引入教师引导：F t F_{t} 通过仅保留两个模型共同选中的词元来施加硬支撑约束，而 exp ⁡ ( λ  q t  ( v ) ) \\exp(\\lambda q_{t}(v)) 则在该支撑范围内对学生概率进行软性重加权。"
+    },
+    {
+     "en": "The distribution shifts induced by support restriction and soft reweighting can be separated exactly.",
+     "zh": "由支撑限制和软性重加权引起的分布偏移可以被精确地分离。"
+    }
+   ]
+  },
+  {
+   "en": "Let Z t = ∑ v ∈ F t p t ​ ( v ) Z_{t}=\\sum_{v\\in F_{t}}p_{t}(v) denote the student probability mass retained by F t F_{t} , and let μ t 0 \\mu_{t}^{0} denote the policy in Eq. equation 7 at λ = 0 \\lambda=0 . Then",
+   "zh": "令 Z t = ∑ v ∈ F t p t ( v ) Z_{t}=\\sum_{v\\in F_{t}}p_{t}(v) 表示 F t F_{t} 保留的学生概率质量，令 μ t 0 \\mu_{t}^{0} 表示式 equation 7 在 λ = 0 \\lambda=0 时的策略。则",
+   "sents": null
+  },
+  {
+   "en": "The lower bound is attained at λ = 0 \\lambda=0 , for which μ t λ = μ t 0 \\mu_{t}^{\\lambda}=\\mu_{t}^{0} .",
+   "zh": "下界在 λ = 0 \\lambda=0 处取得，此时 μ t λ = μ t 0 \\mu_{t}^{\\lambda}=\\mu_{t}^{0} 。",
+   "sents": null
+  },
+  {
+   "en": "The first term, − log ⁡ Z t -\\log Z_{t} , measures the shift caused by restricting the sampling support to F t F_{t} , whereas the second term measures the additional shift introduced by soft teacher reweighting. Therefore, for a fixed support set F t F_{t} , the distribution shift is minimized at λ = 0 \\lambda=0 . Empirically, we find that the support constraint alone achieves sufficient rollout accuracy, making additional teacher-based reweighting unnecessary. We therefore set λ = 0 \\lambda=0 and obtain our final hard joint-decoding policy:",
+   "zh": "第一项 − log ⁡ Z t 衡量的是将采样支持限制到 F t 所引起的偏移，而第二项衡量的是软教师重加权引入的额外偏移。 因此，对于固定的支持集 F t，分布偏移在 λ = 0 处最小。 从实证上看，我们发现仅凭支持约束就能达到足够的 rollout 精度，因此无需额外的基于教师的重加权。 因此，我们令 λ = 0，并得到最终的硬联合解码策略：",
+   "sents": [
+    {
+     "en": "The first term, − log ⁡ Z t -\\log Z_{t} , measures the shift caused by restricting the sampling support to F t F_{t} , whereas the second term measures the additional shift introduced by soft teacher reweighting.",
+     "zh": "第一项 − log ⁡ Z t 衡量的是将采样支持限制到 F t 所引起的偏移，而第二项衡量的是软教师重加权引入的额外偏移。"
+    },
+    {
+     "en": "Therefore, for a fixed support set F t F_{t} , the distribution shift is minimized at λ = 0 \\lambda=0 .",
+     "zh": "因此，对于固定的支持集 F t，分布偏移在 λ = 0 处最小。"
+    },
+    {
+     "en": "Empirically, we find that the support constraint alone achieves sufficient rollout accuracy, making additional teacher-based reweighting unnecessary.",
+     "zh": "从实证上看，我们发现仅凭支持约束就能达到足够的 rollout 精度，因此无需额外的基于教师的重加权。"
+    },
+    {
+     "en": "We therefore set λ = 0 \\lambda=0 and obtain our final hard joint-decoding policy:",
+     "zh": "因此，我们令 λ = 0，并得到最终的硬联合解码策略："
+    }
+   ]
+  },
+  {
+   "en": "This policy preserves the student’s relative token probabilities within F t F_{t} , while the teacher continues to guide generation through support selection. The derivation of Eq. equation 7 and the proof of Proposition 1 are provided in Appendix A.1 .",
+   "zh": "该策略在 F t F_{t} 内保留了学生的相对词元概率，同时教师继续通过支持集选择来引导生成。 公式（公式 7）的推导以及命题 1 的证明见附录 A.1。",
+   "sents": [
+    {
+     "en": "This policy preserves the student’s relative token probabilities within F t F_{t} , while the teacher continues to guide generation through support selection.",
+     "zh": "该策略在 F t F_{t} 内保留了学生的相对词元概率，同时教师继续通过支持集选择来引导生成。"
+    },
+    {
+     "en": "The derivation of Eq. equation 7 and the proof of Proposition 1 are provided in Appendix A.1 .",
+     "zh": "公式（公式 7）的推导以及命题 1 的证明见附录 A.1。"
+    }
+   ]
+  },
+  {
+   "en": "Dynamic Top- k k Selection. Under hard joint decoding, the per-step divergence is determined exactly by the retained student probability mass, D KL ( μ t H ∥ p t ) = − log Z t D_{\\mathrm{KL}}(\\mu_{t}^{\\mathrm{H}}\\|p_{t})=-\\log Z_{t} . Therefore, imposing Z t ≥ Z min Z_{t}\\geq Z_{\\min} guarantees D KL ( μ t H ∥ p t ) ≤ − log Z min D_{\\mathrm{KL}}(\\mu_{t}^{\\mathrm{H}}\\|p_{t})\\leq-\\log Z_{\\min} . To enforce this constraint adaptively, we fix the student cutoff K S K_{\\mathrm{S}} and, for each candidate teacher cutoff k k , define",
+   "zh": "动态 Top- k k 选择。 在硬联合解码下，每步的散度由保留的学生概率质量精确确定，D KL ( μ t H ∥ p t ) = − log Z t D_{\\mathrm{KL}}(\\mu_{t}^{\\mathrm{H}}\\|p_{t})=-\\log Z_{t} 。 因此，施加约束 Z t ≥ Z min Z_{t}\\geq Z_{\\min} 即可保证 D KL ( μ t H ∥ p t ) ≤ − log Z min D_{\\mathrm{KL}}(\\mu_{t}^{\\mathrm{H}}\\|p_{t})\\leq-\\log Z_{\\min} 。 为了自适应地强制执行该约束，我们固定学生截断值 K S K_{\\mathrm{S}} ，并针对每个候选教师截断值 k k 定义",
+   "sents": [
+    {
+     "en": "Dynamic Top- k k Selection.",
+     "zh": "动态 Top- k k 选择。"
+    },
+    {
+     "en": "Under hard joint decoding, the per-step divergence is determined exactly by the retained student probability mass, D KL ( μ t H ∥ p t ) = − log Z t D_{\\mathrm{KL}}(\\mu_{t}^{\\mathrm{H}}\\|p_{t})=-\\log Z_{t} .",
+     "zh": "在硬联合解码下，每步的散度由保留的学生概率质量精确确定，D KL ( μ t H ∥ p t ) = − log Z t D_{\\mathrm{KL}}(\\mu_{t}^{\\mathrm{H}}\\|p_{t})=-\\log Z_{t} 。"
+    },
+    {
+     "en": "Therefore, imposing Z t ≥ Z min Z_{t}\\geq Z_{\\min} guarantees D KL ( μ t H ∥ p t ) ≤ − log Z min D_{\\mathrm{KL}}(\\mu_{t}^{\\mathrm{H}}\\|p_{t})\\leq-\\log Z_{\\min} .",
+     "zh": "因此，施加约束 Z t ≥ Z min Z_{t}\\geq Z_{\\min} 即可保证 D KL ( μ t H ∥ p t ) ≤ − log Z min D_{\\mathrm{KL}}(\\mu_{t}^{\\mathrm{H}}\\|p_{t})\\leq-\\log Z_{\\min} 。"
+    },
+    {
+     "en": "To enforce this constraint adaptively, we fix the student cutoff K S K_{\\mathrm{S}} and, for each candidate teacher cutoff k k , define",
+     "zh": "为了自适应地强制执行该约束，我们固定学生截断值 K S K_{\\mathrm{S}} ，并针对每个候选教师截断值 k k 定义"
+    }
+   ]
+  },
+  {
+   "en": "We select the smallest teacher cutoff whose consensus support retains at least Z min Z_{\\min} student probability mass:",
+   "zh": "我们选择满足共识支持仍保留至少 Z min Z_{\\min} 学生概率质量的最小教师截断值：",
+   "sents": null
+  },
+  {
+   "en": "In practice, we increase k k from 1 1 to K T max K_{\\mathrm{T}}^{\\max} and stop at the first value satisfying the retained- mass constraint. We then set F t = F t ​ ( k t ⋆ ) F_{t}=F_{t}(k_{t}^{\\star}) and Z t = Z t ​ ( k t ⋆ ) Z_{t}=Z_{t}(k_{t}^{\\star}) If no feasible cutoff exists, we fall back to the student policy by setting μ t = p t \\mu_{t}=p_{t} for that decoding step.",
+   "zh": "在实践中，我们将 k k 从 1 1 增大到 K T max K_{\\mathrm{T}}^{\\max}，并在第一个满足保留质量约束的值处停止。 然后我们设 F t = F t ​ ( k t ⋆ ) F_{t}=F_{t}(k_{t}^{\\star}) 以及 Z t = Z t ​ ( k t ⋆ ) Z_{t}=Z_{t}(k_{t}^{\\star})。若不存在可行的截断值，我们则通过在该解码步设置 μ t = p t \\mu_{t}=p_{t} 来回退到学生策略。",
+   "sents": [
+    {
+     "en": "In practice, we increase k k from 1 1 to K T max K_{\\mathrm{T}}^{\\max} and stop at the first value satisfying the retained- mass constraint.",
+     "zh": "在实践中，我们将 k k 从 1 1 增大到 K T max K_{\\mathrm{T}}^{\\max}，并在第一个满足保留质量约束的值处停止。"
+    },
+    {
+     "en": "We then set F t = F t ​ ( k t ⋆ ) F_{t}=F_{t}(k_{t}^{\\star}) and Z t = Z t ​ ( k t ⋆ ) Z_{t}=Z_{t}(k_{t}^{\\star}) If no feasible cutoff exists, we fall back to the student policy by setting μ t = p t \\mu_{t}=p_{t} for that decoding step.",
+     "zh": "然后我们设 F t = F t ​ ( k t ⋆ ) F_{t}=F_{t}(k_{t}^{\\star}) 以及 Z t = Z t ​ ( k t ⋆ ) Z_{t}=Z_{t}(k_{t}^{\\star})。若不存在可行的截断值，我们则通过在该解码步设置 μ t = p t \\mu_{t}=p_{t} 来回退到学生策略。"
+    }
+   ]
+  },
+  {
+   "en": "Failure-Triggered Group Reconstruction. Following the GRPO procedure described in Section 2 , we invoke joint decoding only when all n n trajectories in a rollout group are incorrect. we sample one additional trajectory y J y^{\\mathrm{J}} using the hard joint-decoding policy. If y J y^{\\mathrm{J}} passes verification, it replaces one incorrect trajectory in the original group. Without loss of generality, let y ( n ) y^{(n)} be the replaced trajectory. The resulting mixed-behavior group and its reward set are",
+   "zh": "失败触发的组重建。 遵循第 2 节所述的 GRPO 流程，仅当 rollout 组中全部 n 条轨迹都不正确时，我们才调用联合解码。我们使用硬联合解码策略额外采样一条轨迹 y^{\\mathrm{J}}。 如果 y^{\\mathrm{J}} 通过验证，它将替换原组中的一条不正确轨迹。 不失一般性，设 y^{(n)} 为被替换的轨迹。 由此得到的混合行为组及其奖励集为",
+   "sents": [
+    {
+     "en": "Failure-Triggered Group Reconstruction.",
+     "zh": "失败触发的组重建。"
+    },
+    {
+     "en": "Following the GRPO procedure described in Section 2 , we invoke joint decoding only when all n n trajectories in a rollout group are incorrect. we sample one additional trajectory y J y^{\\mathrm{J}} using the hard joint-decoding policy.",
+     "zh": "遵循第 2 节所述的 GRPO 流程，仅当 rollout 组中全部 n 条轨迹都不正确时，我们才调用联合解码。我们使用硬联合解码策略额外采样一条轨迹 y^{\\mathrm{J}}。"
+    },
+    {
+     "en": "If y J y^{\\mathrm{J}} passes verification, it replaces one incorrect trajectory in the original group.",
+     "zh": "如果 y^{\\mathrm{J}} 通过验证，它将替换原组中的一条不正确轨迹。"
+    },
+    {
+     "en": "Without loss of generality, let y ( n ) y^{(n)} be the replaced trajectory.",
+     "zh": "不失一般性，设 y^{(n)} 为被替换的轨迹。"
+    },
+    {
+     "en": "The resulting mixed-behavior group and its reward set are",
+     "zh": "由此得到的混合行为组及其奖励集为"
+    }
+   ]
+  },
+  {
+   "en": "For a successfully reconstructed group, the advantage of each trajectory is computed as",
+   "zh": "对于成功重建的组，计算每条轨迹的优势如下",
+   "sents": null
+  },
+  {
+   "en": "where R ~ ( i ) = R ( i ) \\widetilde{R}^{(i)}=R^{(i)} for i < n i<n , R ~ ( n ) = R J \\widetilde{R}^{(n)}=R^{\\mathrm{J}} , and A J := A ( n ) A^{\\mathrm{J}}:=A^{(n)} . The verified joint trajectory thus restores reward variation to a group that would otherwise provide no group-relative learning signal.",
+   "zh": "其中当 i<n 时，R~(i)=R(i)，R~(n)=R^J，且 A^J:=A(n)。 经过验证的联合轨迹由此为一类原本无法提供群体相对学习信号的群体恢复了奖励差异。",
+   "sents": [
+    {
+     "en": "where R ~ ( i ) = R ( i ) \\widetilde{R}^{(i)}=R^{(i)} for i < n i<n , R ~ ( n ) = R J \\widetilde{R}^{(n)}=R^{\\mathrm{J}} , and A J := A ( n ) A^{\\mathrm{J}}:=A^{(n)} .",
+     "zh": "其中当 i<n 时，R~(i)=R(i)，R~(n)=R^J，且 A^J:=A(n)。"
+    },
+    {
+     "en": "The verified joint trajectory thus restores reward variation to a group that would otherwise provide no group-relative learning signal.",
+     "zh": "经过验证的联合轨迹由此为一类原本无法提供群体相对学习信号的群体恢复了奖励差异。"
+    }
+   ]
+  },
+  {
+   "en": "Mixed-Behavior Policy Optimization. The reconstructed group contains n − 1 n-1 trajectories sampled from π old \\pi_{\\mathrm{old}} and one trajectory sampled from the joint behavior policy. We optimize the student using the following clipped surrogate objective, averaged over training problems:",
+   "zh": "混合行为策略优化。 重构组包含 n − 1 n-1 条从 π old \\pi_{\\mathrm{old}} 采样的轨迹和一条从联合行为策略采样的轨迹。 我们使用以下裁剪代理目标在训练问题上取平均来优化学生模型：",
+   "sents": [
+    {
+     "en": "Mixed-Behavior Policy Optimization.",
+     "zh": "混合行为策略优化。"
+    },
+    {
+     "en": "The reconstructed group contains n − 1 n-1 trajectories sampled from π old \\pi_{\\mathrm{old}} and one trajectory sampled from the joint behavior policy.",
+     "zh": "重构组包含 n − 1 n-1 条从 π old \\pi_{\\mathrm{old}} 采样的轨迹和一条从联合行为策略采样的轨迹。"
+    },
+    {
+     "en": "We optimize the student using the following clipped surrogate objective, averaged over training problems:",
+     "zh": "我们使用以下裁剪代理目标在训练问题上取平均来优化学生模型："
+    }
+   ]
+  },
+  {
+   "en": "where 𝒵 = ∑ i = 1 n − 1 | y ( i ) | + | y J | \\mathcal{Z}=\\sum_{i=1}^{n-1}|y^{(i)}|+|y^{\\mathrm{J}}| is the total number of response tokens in the reconstructed group and r ^ J , t ​ ( θ ) \\widehat{r}_{\\mathrm{J},t}(\\theta) is the off-policy importance ratio for the joint trajectory",
+   "zh": "其中 𝒵 = ∑ i = 1 n − 1 | y ( i ) | + | y J | \\mathcal{Z}=\\sum_{i=1}^{n-1}|y^{(i)}|+|y^{\\mathrm{J}}| 是重构组中响应词元的总数，而 r ^ J , t ​ ( θ ) \\widehat{r}_{\\mathrm{J},t}(\\theta) 是联合轨迹的离策略重要性比率",
+   "sents": null
+  },
+  {
+   "en": "At a fallback step, μ t = p t \\mu_{t}=p_{t} and Z t = 1 Z_{t}=1 , so r ^ J , t ​ ( θ ) \\widehat{r}_{\\mathrm{J},t}(\\theta) reduces to the standard policy ratio. This importance ratio accounts for the token-level behavior-policy mismatch introduced by joint decoding.",
+   "zh": "在回退步骤中，μ t = p t \\mu_{t}=p_{t} 且 Z t = 1 Z_{t}=1，因此 r ^ J , t ( θ ) \\widehat{r}_{\\mathrm{J},t}(\\theta) 化简为标准的策略比率。 该重要性比率刻画了由联合解码引入的 token 级别行为策略不匹配。",
+   "sents": [
+    {
+     "en": "At a fallback step, μ t = p t \\mu_{t}=p_{t} and Z t = 1 Z_{t}=1 , so r ^ J , t ​ ( θ ) \\widehat{r}_{\\mathrm{J},t}(\\theta) reduces to the standard policy ratio.",
+     "zh": "在回退步骤中，μ t = p t \\mu_{t}=p_{t} 且 Z t = 1 Z_{t}=1，因此 r ^ J , t ( θ ) \\widehat{r}_{\\mathrm{J},t}(\\theta) 化简为标准的策略比率。"
+    },
+    {
+     "en": "This importance ratio accounts for the token-level behavior-policy mismatch introduced by joint decoding.",
+     "zh": "该重要性比率刻画了由联合解码引入的 token 级别行为策略不匹配。"
+    }
+   ]
+  },
+  {
+   "en": "Models and Datasets. In our main experiments, we consider three student policies with different model scales and instruction-tuning configurations: Qwen3-4B-Base, Qwen3-8B-Base, and Qwen3-4B-Instruct ( Yang et al., 2025 ) . We use Qwen3-4B-Instruct specifically for the agentic-task experiments. Across all settings, Qwen3-4B-Instruct, conditioned on expert solutions, serves as the teacher model. For mathematical and general reasoning tasks, we use DAPO-Math-17K ( Yu et al., 2026 ) as the training set, which contains a large collection of challenging problems paired with high-quality expert demonstrations. For agentic tasks, we conduct experiments on ALFWorld and ScienceWorld, two widely used interactive reasoning benchmarks.",
+   "zh": "模型与数据集。 在我们的主要实验中，我们考虑三种具有不同模型规模和指令微调配置的学生策略：Qwen3-4B-Base、Qwen3-8B-Base 和 Qwen3-4B-Instruct（Yang et al., 2025）。 我们专门使用 Qwen3-4B-Instruct 进行智能体任务实验。 在所有设置中，以专家解答为条件的 Qwen3-4B-Instruct 充当教师模型。 对于数学和通用推理任务，我们使用 DAPO-Math-17K（Yu et al., 2026）作为训练集，其中包含大量配有高质量专家示范的具有挑战性的问题。 对于智能体任务，我们在 ALFWorld 和 ScienceWorld 这两个广泛使用的交互式推理基准上进行实验。",
+   "sents": [
+    {
+     "en": "Models and Datasets.",
+     "zh": "模型与数据集。"
+    },
+    {
+     "en": "In our main experiments, we consider three student policies with different model scales and instruction-tuning configurations: Qwen3-4B-Base, Qwen3-8B-Base, and Qwen3-4B-Instruct ( Yang et al., 2025 ) .",
+     "zh": "在我们的主要实验中，我们考虑三种具有不同模型规模和指令微调配置的学生策略：Qwen3-4B-Base、Qwen3-8B-Base 和 Qwen3-4B-Instruct（Yang et al., 2025）。"
+    },
+    {
+     "en": "We use Qwen3-4B-Instruct specifically for the agentic-task experiments.",
+     "zh": "我们专门使用 Qwen3-4B-Instruct 进行智能体任务实验。"
+    },
+    {
+     "en": "Across all settings, Qwen3-4B-Instruct, conditioned on expert solutions, serves as the teacher model.",
+     "zh": "在所有设置中，以专家解答为条件的 Qwen3-4B-Instruct 充当教师模型。"
+    },
+    {
+     "en": "For mathematical and general reasoning tasks, we use DAPO-Math-17K ( Yu et al., 2026 ) as the training set, which contains a large collection of challenging problems paired with high-quality expert demonstrations.",
+     "zh": "对于数学和通用推理任务，我们使用 DAPO-Math-17K（Yu et al., 2026）作为训练集，其中包含大量配有高质量专家示范的具有挑战性的问题。"
+    },
+    {
+     "en": "For agentic tasks, we conduct experiments on ALFWorld and ScienceWorld, two widely used interactive reasoning benchmarks.",
+     "zh": "对于智能体任务，我们在 ALFWorld 和 ScienceWorld 这两个广泛使用的交互式推理基准上进行实验。"
+    }
+   ]
+  },
+  {
+   "en": "Baselines. We compare PICO against GRPO and three representative off-policy methods , as well as a self-distillation baseline. Specifically, LUFFY ( Yan et al., 2025 ) combines on-policy rollouts with off-policy demonstrations through mixed-policy GRPO and regularized policy shaping; Prefix-RFT ( Huang et al., 2026 ) constructs hybrid trajectories by pairing prefixes sampled from expert demonstrations with policy-generated continuations; and ReLIFT ( Ma et al., 2026 ) interleaves reinforcement learning with targeted online supervised fine-tuning on challenging problems. We additionally compare with RLRT ( Kim et al., 2026 ) , a self-distillation method that uses reversed teacher signals to emphasize student-preferred tokens in verified successful trajectories.",
+   "zh": "基线方法。 我们将 PICO 与 GRPO 以及三种具有代表性的离策略方法进行比较，同时还包括一个自蒸馏基线。 具体而言，LUFFY（Yan et al., 2025）通过混合策略 GRPO 和正则化策略塑形，将在线策略的采样与离策略的示范结合起来；Prefix-RFT（Huang et al., 2026）通过将专家示范中采样得到的前缀与策略生成的后续部分配对来构建混合轨迹；而 ReLIFT（Ma et al., 2026）则将强化学习与针对具有挑战性问题的定向在线监督微调交替进行。 我们还与 RLRT（Kim et al., 2026）进行了比较，这是一种自蒸馏方法，它利用反向教师信号在经过验证的成功轨迹中强调学生偏好的词元。",
+   "sents": [
+    {
+     "en": "Baselines.",
+     "zh": "基线方法。"
+    },
+    {
+     "en": "We compare PICO against GRPO and three representative off-policy methods , as well as a self-distillation baseline.",
+     "zh": "我们将 PICO 与 GRPO 以及三种具有代表性的离策略方法进行比较，同时还包括一个自蒸馏基线。"
+    },
+    {
+     "en": "Specifically, LUFFY ( Yan et al., 2025 ) combines on-policy rollouts with off-policy demonstrations through mixed-policy GRPO and regularized policy shaping; Prefix-RFT ( Huang et al., 2026 ) constructs hybrid trajectories by pairing prefixes sampled from expert demonstrations with policy-generated continuations; and ReLIFT ( Ma et al., 2026 ) interleaves reinforcement learning with targeted online supervised fine-tuning on challenging problems.",
+     "zh": "具体而言，LUFFY（Yan et al., 2025）通过混合策略 GRPO 和正则化策略塑形，将在线策略的采样与离策略的示范结合起来；Prefix-RFT（Huang et al., 2026）通过将专家示范中采样得到的前缀与策略生成的后续部分配对来构建混合轨迹；而 ReLIFT（Ma et al., 2026）则将强化学习与针对具有挑战性问题的定向在线监督微调交替进行。"
+    },
+    {
+     "en": "We additionally compare with RLRT ( Kim et al., 2026 ) , a self-distillation method that uses reversed teacher signals to emphasize student-preferred tokens in verified successful trajectories.",
+     "zh": "我们还与 RLRT（Kim et al., 2026）进行了比较，这是一种自蒸馏方法，它利用反向教师信号在经过验证的成功轨迹中强调学生偏好的词元。"
+    }
+   ]
+  },
+  {
+   "en": "Training Details. For a fair comparison, we use the same training configuration for all RL methods. We remove the KL regularization term by setting β = 0 \\beta=0 and omit standard-deviation normalization in the advantage computation to avoid implicitly reweighting problems according to their within-group reward variance. We fix the total rollout group size at 8 for every query. For PICO and all off-policy baselines, each mixed group consists of 7 on-policy trajectories and 1 off-policy trajectory. We use a global training batch size of 128, a PPO mini-batch size of 64, and a maximum response length of 20,480 20{,}480 tokens. Following DAPO, we adopt asymmetric clipping with ϵ high = 0.28 \\epsilon_{\\mathrm{high}}=0.28 and ϵ low = 0.20 \\epsilon_{\\mathrm{low}}=0.20 . The complete training configuration is provided in Appendix C.1 .",
+   "zh": "训练细节。 为进行公平比较，我们对所有强化学习方法使用相同的训练配置。 我们通过设置 β = 0 \\beta=0 移除 KL 正则化项，并在优势计算中省略标准差归一化，以避免根据问题在组内奖励方差对其隐式重新加权。 我们将每个查询的总 rollout 组大小固定为 8。 对于 PICO 和所有离策略基线，每个混合组由 7 条在策略轨迹和 1 条离策略轨迹组成。 我们使用 128 的全局训练批次大小、64 的 PPO 迷你批次大小，以及 20,480 20{,}480 个 token 的最大响应长度。 遵循 DAPO，我们采用非对称裁剪，其中 ϵ high = 0.28 \\epsilon_{\\mathrm{high}}=0.28 且 ϵ low = 0.20 \\epsilon_{\\mathrm{low}}=0.20 。 完整的训练配置见附录 C.1 。",
+   "sents": [
+    {
+     "en": "Training Details.",
+     "zh": "训练细节。"
+    },
+    {
+     "en": "For a fair comparison, we use the same training configuration for all RL methods.",
+     "zh": "为进行公平比较，我们对所有强化学习方法使用相同的训练配置。"
+    },
+    {
+     "en": "We remove the KL regularization term by setting β = 0 \\beta=0 and omit standard-deviation normalization in the advantage computation to avoid implicitly reweighting problems according to their within-group reward variance.",
+     "zh": "我们通过设置 β = 0 \\beta=0 移除 KL 正则化项，并在优势计算中省略标准差归一化，以避免根据问题在组内奖励方差对其隐式重新加权。"
+    },
+    {
+     "en": "We fix the total rollout group size at 8 for every query.",
+     "zh": "我们将每个查询的总 rollout 组大小固定为 8。"
+    },
+    {
+     "en": "For PICO and all off-policy baselines, each mixed group consists of 7 on-policy trajectories and 1 off-policy trajectory.",
+     "zh": "对于 PICO 和所有离策略基线，每个混合组由 7 条在策略轨迹和 1 条离策略轨迹组成。"
+    },
+    {
+     "en": "We use a global training batch size of 128, a PPO mini-batch size of 64, and a maximum response length of 20,480 20{,}480 tokens.",
+     "zh": "我们使用 128 的全局训练批次大小、64 的 PPO 迷你批次大小，以及 20,480 20{,}480 个 token 的最大响应长度。"
+    },
+    {
+     "en": "Following DAPO, we adopt asymmetric clipping with ϵ high = 0.28 \\epsilon_{\\mathrm{high}}=0.28 and ϵ low = 0.20 \\epsilon_{\\mathrm{low}}=0.20 .",
+     "zh": "遵循 DAPO，我们采用非对称裁剪，其中 ϵ high = 0.28 \\epsilon_{\\mathrm{high}}=0.28 且 ϵ low = 0.20 \\epsilon_{\\mathrm{low}}=0.20 。"
+    },
+    {
+     "en": "The complete training configuration is provided in Appendix C.1 .",
+     "zh": "完整的训练配置见附录 C.1 。"
+    }
+   ]
+  },
+  {
+   "en": "Evaluations. Following prior work, we evaluate primarily on four widely used and challenging mathematical reasoning benchmarks: AIME 2025, AIME 2026, HMMT 2026, and MATH-500. During evaluation, we set the sampling temperature to 0.6 0.6 and the maximum response length to 20,480 20{,}480 tokens. To reduce the effect of sampling variance, we independently sample 16 responses for each problem and report the average accuracy across these samples (avg@16). To assess out-of-distribution generalization beyond the mathematics-focused training domain, we additionally evaluate on GPQA-Diamond and Humanity’s Last Exam (HLE). Appendix C.2 provides additional information about the evaluation benchmarks.",
+   "zh": "评估。 遵循先前的工作，我们主要在四个广泛使用且具有挑战性的数学推理基准上进行评估：AIME 2025、AIME 2026、HMMT 2026 和 MATH-500。 在评估过程中，我们将采样温度设为 0.6 0.6，并将最大响应长度设为 20,480 20{,}480 个 token。 为了减少采样方差的影响，我们对每个问题独立采样 16 个响应，并报告这些样本的平均准确率（avg@16）。 为了评估超出以数学为重点的训练域的分布外泛化能力，我们还在 GPQA-Diamond 和 Humanity’s Last Exam（HLE）上进行评估。 附录 C.2 提供了有关评估基准的更多信息。",
+   "sents": [
+    {
+     "en": "Evaluations.",
+     "zh": "评估。"
+    },
+    {
+     "en": "Following prior work, we evaluate primarily on four widely used and challenging mathematical reasoning benchmarks: AIME 2025, AIME 2026, HMMT 2026, and MATH-500.",
+     "zh": "遵循先前的工作，我们主要在四个广泛使用且具有挑战性的数学推理基准上进行评估：AIME 2025、AIME 2026、HMMT 2026 和 MATH-500。"
+    },
+    {
+     "en": "During evaluation, we set the sampling temperature to 0.6 0.6 and the maximum response length to 20,480 20{,}480 tokens.",
+     "zh": "在评估过程中，我们将采样温度设为 0.6 0.6，并将最大响应长度设为 20,480 20{,}480 个 token。"
+    },
+    {
+     "en": "To reduce the effect of sampling variance, we independently sample 16 responses for each problem and report the average accuracy across these samples (avg@16).",
+     "zh": "为了减少采样方差的影响，我们对每个问题独立采样 16 个响应，并报告这些样本的平均准确率（avg@16）。"
+    },
+    {
+     "en": "To assess out-of-distribution generalization beyond the mathematics-focused training domain, we additionally evaluate on GPQA-Diamond and Humanity’s Last Exam (HLE).",
+     "zh": "为了评估超出以数学为重点的训练域的分布外泛化能力，我们还在 GPQA-Diamond 和 Humanity’s Last Exam（HLE）上进行评估。"
+    },
+    {
+     "en": "Appendix C.2 provides additional information about the evaluation benchmarks.",
+     "zh": "附录 C.2 提供了有关评估基准的更多信息。"
+    }
+   ]
+  },
+  {
+   "en": "Performance Comparison. As shown in Table 1 , PICO consistently achieves the strongest overall performance across both model scales. It improves the average score over GRPO by 4.1 4.1 percentage points with Qwen3-4B-Base and by 3.6 3.6 points with Qwen3-8B-Base, while outperforming the strongest competing method by 2.2 2.2 and 1.8 1.8 points, respectively. The gains are particularly pronounced on challenging benchmarks such as AIME26 and HMMT26, supporting our claim that PICO enables effective learning from difficult problems that frequently produce all-incorrect rollout groups. Moreover, the consistent improvements on GPQA-Diamond and HLE demonstrate that the learned reasoning capability generalizes beyond the mathematics-focused training distribution. Since the teacher is unavailable during evaluation, these gains reflect improvements internalized by the student rather than reliance on privileged guidance.",
+   "zh": "性能比较。 如表 1 所示，PICO 在两种模型规模下均持续取得最强的整体性能。 使用 Qwen3-4B-Base 时，其平均得分比 GRPO 提高 4.1 4.1 个百分点；使用 Qwen3-8B-Base 时提高 3.6 3.6 个百分点；同时分别比最强的对比方法高出 2.2 2.2 和 1.8 1.8 个百分点。 这些提升在 AIME26 和 HMMT26 等具有挑战性的基准上尤为显著，支持了我们的主张：PICO 能够从难题中进行有效学习，而这类难题在采样时经常产生全错的 rollout 组。 此外，在 GPQA-Diamond 和 HLE 上取得的一致提升表明，所学到的推理能力能够泛化到以数学为主的训练分布之外。 由于评估时教师不可用，这些提升反映了智能体（学生模型）内化的改进，而非对特权引导的依赖。",
+   "sents": [
+    {
+     "en": "Performance Comparison.",
+     "zh": "性能比较。"
+    },
+    {
+     "en": "As shown in Table 1 , PICO consistently achieves the strongest overall performance across both model scales.",
+     "zh": "如表 1 所示，PICO 在两种模型规模下均持续取得最强的整体性能。"
+    },
+    {
+     "en": "It improves the average score over GRPO by 4.1 4.1 percentage points with Qwen3-4B-Base and by 3.6 3.6 points with Qwen3-8B-Base, while outperforming the strongest competing method by 2.2 2.2 and 1.8 1.8 points, respectively.",
+     "zh": "使用 Qwen3-4B-Base 时，其平均得分比 GRPO 提高 4.1 4.1 个百分点；使用 Qwen3-8B-Base 时提高 3.6 3.6 个百分点；同时分别比最强的对比方法高出 2.2 2.2 和 1.8 1.8 个百分点。"
+    },
+    {
+     "en": "The gains are particularly pronounced on challenging benchmarks such as AIME26 and HMMT26, supporting our claim that PICO enables effective learning from difficult problems that frequently produce all-incorrect rollout groups.",
+     "zh": "这些提升在 AIME26 和 HMMT26 等具有挑战性的基准上尤为显著，支持了我们的主张：PICO 能够从难题中进行有效学习，而这类难题在采样时经常产生全错的 rollout 组。"
+    },
+    {
+     "en": "Moreover, the consistent improvements on GPQA-Diamond and HLE demonstrate that the learned reasoning capability generalizes beyond the mathematics-focused training distribution.",
+     "zh": "此外，在 GPQA-Diamond 和 HLE 上取得的一致提升表明，所学到的推理能力能够泛化到以数学为主的训练分布之外。"
+    },
+    {
+     "en": "Since the teacher is unavailable during evaluation, these gains reflect improvements internalized by the student rather than reliance on privileged guidance.",
+     "zh": "由于评估时教师不可用，这些提升反映了智能体（学生模型）内化的改进，而非对特权引导的依赖。"
+    }
+   ]
+  },
+  {
+   "en": "Training Dynamics. Figure 2 shows that PICO maintains higher training rewards and consistently fewer solve-none questions than GRPO and LUFFY across both model scales. While the baselines tend to plateau after the initial stage, PICO continues to improve, indicating that failure-triggered joint decoding converts otherwise uninformative all-incorrect groups into useful learning signals. PICO also produces longer responses, which, together with the higher verified rewards and lower solve-none counts, suggests more sustained reasoning on difficult problems. Overall, these results show that PICO improves difficult-problem exploration without compromising training stability. Additional analyses in Appendix B.2 and Fig. 4 show that joint decoding consistently rescues questions for which all student self-sampled trajectories fail, thereby restoring effective learning signals for otherwise uninformative groups.",
+   "zh": "训练动态。 图 2 显示，在两种模型规模下，PICO 都比 GRPO 和 LUFFY 保持更高的训练奖励，并且解不出任何答案的问题数量始终更少。 虽然各基线方法在初始阶段之后往往趋于停滞，但 PICO 持续改进，这表明由失败触发的联合解码将原本不提供信息的全错组转化为有用的学习信号。 PICO 还产生更长的回复，结合更高的经验证奖励和更低的解不出任何答案的问题数量，这表明智能体在困难问题上进行了更持续的推理。 总体而言，这些结果表明 PICO 在不损害训练稳定性的情况下改善了困难问题的探索。 附录 B.2 和图 4 中的附加分析表明，联合解码始终能够挽救所有学生自采样轨迹都失败的问题，从而为原本不提供信息的组恢复有效的学习信号。",
+   "sents": [
+    {
+     "en": "Training Dynamics.",
+     "zh": "训练动态。"
+    },
+    {
+     "en": "Figure 2 shows that PICO maintains higher training rewards and consistently fewer solve-none questions than GRPO and LUFFY across both model scales.",
+     "zh": "图 2 显示，在两种模型规模下，PICO 都比 GRPO 和 LUFFY 保持更高的训练奖励，并且解不出任何答案的问题数量始终更少。"
+    },
+    {
+     "en": "While the baselines tend to plateau after the initial stage, PICO continues to improve, indicating that failure-triggered joint decoding converts otherwise uninformative all-incorrect groups into useful learning signals.",
+     "zh": "虽然各基线方法在初始阶段之后往往趋于停滞，但 PICO 持续改进，这表明由失败触发的联合解码将原本不提供信息的全错组转化为有用的学习信号。"
+    },
+    {
+     "en": "PICO also produces longer responses, which, together with the higher verified rewards and lower solve-none counts, suggests more sustained reasoning on difficult problems.",
+     "zh": "PICO 还产生更长的回复，结合更高的经验证奖励和更低的解不出任何答案的问题数量，这表明智能体在困难问题上进行了更持续的推理。"
+    },
+    {
+     "en": "Overall, these results show that PICO improves difficult-problem exploration without compromising training stability.",
+     "zh": "总体而言，这些结果表明 PICO 在不损害训练稳定性的情况下改善了困难问题的探索。"
+    },
+    {
+     "en": "Additional analyses in Appendix B.2 and Fig. 4 show that joint decoding consistently rescues questions for which all student self-sampled trajectories fail, thereby restoring effective learning signals for otherwise uninformative groups.",
+     "zh": "附录 B.2 和图 4 中的附加分析表明，联合解码始终能够挽救所有学生自采样轨迹都失败的问题，从而为原本不提供信息的组恢复有效的学习信号。"
+    }
+   ]
+  },
+  {
+   "en": "We conduct the agentic-task experiments using Qwen3-4B-Instruct as both the student policy and the teacher providing token-level guidance. As shown in Table 2 , PICO consistently outperforms all baselines across ALFWorld and ScienceWorld, achieving the highest average success rate of 74.3 % 74.3\\% . Compared with GRPO, PICO improves the average performance by 6.8 6.8 percentage points, demonstrating its effectiveness in interactive environments characterized by long-horizon decision-making and sparse rewards. It also surpasses the off-policy RL method LUFFY and the prefix-guided method Prefix-RFT by 4.9 4.9 and 5.2 5.2 points on average, respectively, further validating the effectiveness of token-level joint guidance for agentic reasoning.",
+   "zh": "我们使用 Qwen3-4B-Instruct 同时作为学生策略和提供 token 级引导的教师模型来开展智能体任务实验。 如表 2 所示，PICO 在 ALFWorld 和 ScienceWorld 上始终优于所有基线方法，取得了 74.3% 的最高平均成功率。 与 GRPO 相比，PICO 将平均性能提升了 6.8 个百分点，证明了其在以长程决策和稀疏奖励为特征的交互式环境中的有效性。 它还分别以平均 4.9 分和 5.2 分的优势超越了离策略强化学习方法 LUFFY 和前缀引导方法 Prefix-RFT，进一步验证了 token 级联合引导对智能体推理的有效性。",
+   "sents": [
+    {
+     "en": "We conduct the agentic-task experiments using Qwen3-4B-Instruct as both the student policy and the teacher providing token-level guidance.",
+     "zh": "我们使用 Qwen3-4B-Instruct 同时作为学生策略和提供 token 级引导的教师模型来开展智能体任务实验。"
+    },
+    {
+     "en": "As shown in Table 2 , PICO consistently outperforms all baselines across ALFWorld and ScienceWorld, achieving the highest average success rate of 74.3 % 74.3\\% .",
+     "zh": "如表 2 所示，PICO 在 ALFWorld 和 ScienceWorld 上始终优于所有基线方法，取得了 74.3% 的最高平均成功率。"
+    },
+    {
+     "en": "Compared with GRPO, PICO improves the average performance by 6.8 6.8 percentage points, demonstrating its effectiveness in interactive environments characterized by long-horizon decision-making and sparse rewards.",
+     "zh": "与 GRPO 相比，PICO 将平均性能提升了 6.8 个百分点，证明了其在以长程决策和稀疏奖励为特征的交互式环境中的有效性。"
+    },
+    {
+     "en": "It also surpasses the off-policy RL method LUFFY and the prefix-guided method Prefix-RFT by 4.9 4.9 and 5.2 5.2 points on average, respectively, further validating the effectiveness of token-level joint guidance for agentic reasoning.",
+     "zh": "它还分别以平均 4.9 分和 5.2 分的优势超越了离策略强化学习方法 LUFFY 和前缀引导方法 Prefix-RFT，进一步验证了 token 级联合引导对智能体推理的有效性。"
+    }
+   ]
+  },
+  {
+   "en": "We analyze the contribution of each component of PICO . As shown in Table 3 , the results highlight the importance of maintaining compatibility between guided trajectories and the student policy. Directly sampling from the teacher without joint decoding introduces the largest behavior mismatch and yields the weakest ablation result, reducing the average score from 37.2 % 37.2\\% to 33.8 % 33.8\\% . The fixed- k k variants further reveal a trade-off between teacher guidance and student compatibility. Increasing k k retains more student-compatible tokens but weakens the selectivity of teacher guidance, potentially reducing rollout accuracy. As long as the candidate set remains sufficiently accurate, increasing k k improves learning, as evidenced by the gain from k = 5 k=5 to k = 10 k=10 . However, further increasing k k to 20 20 weakens teacher guidance and slightly reduces performance, making k = 10 k=10 the best fixed setting. In contrast, our dynamic top- k k strategy adapts the candidate set at each decoding step according to the retained student probability mass, achieving a better balance and the highest average score of 37.2 % 37.2\\% . Finally, removing the off-policy importance-sampling ratio reduces performance to 35.3 % 35.3\\% , confirming the importance of explicitly accounting for the remaining behavior-policy mismatch during optimization.",
+   "zh": "我们分析 PICO 各个组成部分的贡献。 如表 3 所示，结果突出了保持引导轨迹与学生策略之间兼容性的重要性。 在没有联合解码的情况下直接从教师采样会引入最大的行为失配，并产生最差的消融结果，使平均分数从 37.2 % 37.2\\% 降至 33.8 % 33.8\\% 。 固定 k k 的变体进一步揭示了教师指导与学生兼容性之间的权衡。 增大 k k 会保留更多与学生兼容的 token，但会削弱教师指导的选择性，可能降低 rollout 准确率。 只要候选集保持足够准确，增大 k k 就能改进学习效果，从 k = 5 k=5 到 k = 10 k=10 的提升即为证据。 然而，进一步将 k k 增大到 20 20 会削弱教师指导并轻微降低性能，因此 k = 10 k=10 是最佳的固定设置。 相比之下，我们的动态 top- k k 策略根据保留的学生概率质量在每个解码步骤调整候选集，实现了更好的平衡，并取得了 37.2 % 37.2\\% 的最高平均分数。 最后，移除非策略（off-policy）重要性采样比率会将性能降低到 35.3 % 35.3\\% ，这证实在优化过程中显式考虑剩余的行为策略失配非常重要。",
+   "sents": [
+    {
+     "en": "We analyze the contribution of each component of PICO .",
+     "zh": "我们分析 PICO 各个组成部分的贡献。"
+    },
+    {
+     "en": "As shown in Table 3 , the results highlight the importance of maintaining compatibility between guided trajectories and the student policy.",
+     "zh": "如表 3 所示，结果突出了保持引导轨迹与学生策略之间兼容性的重要性。"
+    },
+    {
+     "en": "Directly sampling from the teacher without joint decoding introduces the largest behavior mismatch and yields the weakest ablation result, reducing the average score from 37.2 % 37.2\\% to 33.8 % 33.8\\% .",
+     "zh": "在没有联合解码的情况下直接从教师采样会引入最大的行为失配，并产生最差的消融结果，使平均分数从 37.2 % 37.2\\% 降至 33.8 % 33.8\\% 。"
+    },
+    {
+     "en": "The fixed- k k variants further reveal a trade-off between teacher guidance and student compatibility.",
+     "zh": "固定 k k 的变体进一步揭示了教师指导与学生兼容性之间的权衡。"
+    },
+    {
+     "en": "Increasing k k retains more student-compatible tokens but weakens the selectivity of teacher guidance, potentially reducing rollout accuracy.",
+     "zh": "增大 k k 会保留更多与学生兼容的 token，但会削弱教师指导的选择性，可能降低 rollout 准确率。"
+    },
+    {
+     "en": "As long as the candidate set remains sufficiently accurate, increasing k k improves learning, as evidenced by the gain from k = 5 k=5 to k = 10 k=10 .",
+     "zh": "只要候选集保持足够准确，增大 k k 就能改进学习效果，从 k = 5 k=5 到 k = 10 k=10 的提升即为证据。"
+    },
+    {
+     "en": "However, further increasing k k to 20 20 weakens teacher guidance and slightly reduces performance, making k = 10 k=10 the best fixed setting.",
+     "zh": "然而，进一步将 k k 增大到 20 20 会削弱教师指导并轻微降低性能，因此 k = 10 k=10 是最佳的固定设置。"
+    },
+    {
+     "en": "In contrast, our dynamic top- k k strategy adapts the candidate set at each decoding step according to the retained student probability mass, achieving a better balance and the highest average score of 37.2 % 37.2\\% .",
+     "zh": "相比之下，我们的动态 top- k k 策略根据保留的学生概率质量在每个解码步骤调整候选集，实现了更好的平衡，并取得了 37.2 % 37.2\\% 的最高平均分数。"
+    },
+    {
+     "en": "Finally, removing the off-policy importance-sampling ratio reduces performance to 35.3 % 35.3\\% , confirming the importance of explicitly accounting for the remaining behavior-policy mismatch during optimization.",
+     "zh": "最后，移除非策略（off-policy）重要性采样比率会将性能降低到 35.3 % 35.3\\% ，这证实在优化过程中显式考虑剩余的行为策略失配非常重要。"
+    }
+   ]
+  },
+  {
+   "en": "Recent studies show that on-policy optimization is fundamentally bounded by the current policy’s exploration capacity, often causing learning to stall on challenging problems ( Yue et al., 2025 ) . To overcome this exploration bottleneck, a growing line of work incorporates off-policy expert trajectories into RLVR training ( Dong et al., 2026b ; Liu et al., 2025a ) . LUFFY ( Yan et al., 2025 ) combines expert demonstrations with on-policy rollouts through mixed-policy optimization, while ReLIFT ( Ma et al., 2026 ) interleaves reinforcement learning with supervised fine-tuning on high-quality solutions to challenging problems. SRFT and Chord further unifies supervised learning from expert demonstrations and reinforcement learning from self-generated rollouts within a single training stage ( Fu et al., 2026 ; Zhang et al., 2026b ) . However, because expert trajectories may lie in low-probability regions under the current student policy, directly optimizing on them can induce substantial distribution mismatch, potentially leading to excessive policy drift and unstable optimization ( Agrawal et al., 2026 ; Setlur et al., 2026 ; Zheng et al., 2026 ; Yang et al., 2026 ) . In contrast, PICO uses expert trajectories to guide distribution-constrained joint decoding, producing successful rollouts that remain compatible with the student policy.",
+   "zh": "近期研究表明，同策略优化从根本上受限于当前策略的探索能力，常常导致学习在具有挑战性的问题上陷入停滞（Yue et al., 2025）。 为了克服这一探索瓶颈，越来越多的研究工作将离策略的专家轨迹引入 RLVR 训练中（Dong et al., 2026b；Liu et al., 2025a）。 LUFFY（Yan et al., 2025）通过混合策略优化将专家演示与同策略采样相结合，而 ReLIFT（Ma et al., 2026）则将强化学习与针对难题的高质量解的监督微调交替进行。 SRFT 和 Chord 进一步将从专家演示中进行的监督学习与从自采样轨迹中进行的强化学习统一到单一训练阶段中（Fu et al., 2026；Zhang et al., 2026b）。 然而，由于专家轨迹可能位于当前学生策略的低概率区域，直接在其上进行优化会引起显著的分布失配，可能导致策略过度漂移和优化不稳定（Agrawal et al., 2026；Setlur et al., 2026；Zheng et al., 2026；Yang et al., 2026）。 相比之下，PICO 利用专家轨迹来引导分布受限的联合解码，生成与学生策略保持兼容的成功采样轨迹。",
+   "sents": [
+    {
+     "en": "Recent studies show that on-policy optimization is fundamentally bounded by the current policy’s exploration capacity, often causing learning to stall on challenging problems ( Yue et al., 2025 ) .",
+     "zh": "近期研究表明，同策略优化从根本上受限于当前策略的探索能力，常常导致学习在具有挑战性的问题上陷入停滞（Yue et al., 2025）。"
+    },
+    {
+     "en": "To overcome this exploration bottleneck, a growing line of work incorporates off-policy expert trajectories into RLVR training ( Dong et al., 2026b ; Liu et al., 2025a ) .",
+     "zh": "为了克服这一探索瓶颈，越来越多的研究工作将离策略的专家轨迹引入 RLVR 训练中（Dong et al., 2026b；Liu et al., 2025a）。"
+    },
+    {
+     "en": "LUFFY ( Yan et al., 2025 ) combines expert demonstrations with on-policy rollouts through mixed-policy optimization, while ReLIFT ( Ma et al., 2026 ) interleaves reinforcement learning with supervised fine-tuning on high-quality solutions to challenging problems.",
+     "zh": "LUFFY（Yan et al., 2025）通过混合策略优化将专家演示与同策略采样相结合，而 ReLIFT（Ma et al., 2026）则将强化学习与针对难题的高质量解的监督微调交替进行。"
+    },
+    {
+     "en": "SRFT and Chord further unifies supervised learning from expert demonstrations and reinforcement learning from self-generated rollouts within a single training stage ( Fu et al., 2026 ; Zhang et al., 2026b ) .",
+     "zh": "SRFT 和 Chord 进一步将从专家演示中进行的监督学习与从自采样轨迹中进行的强化学习统一到单一训练阶段中（Fu et al., 2026；Zhang et al., 2026b）。"
+    },
+    {
+     "en": "However, because expert trajectories may lie in low-probability regions under the current student policy, directly optimizing on them can induce substantial distribution mismatch, potentially leading to excessive policy drift and unstable optimization ( Agrawal et al., 2026 ; Setlur et al., 2026 ; Zheng et al., 2026 ; Yang et al., 2026 ) .",
+     "zh": "然而，由于专家轨迹可能位于当前学生策略的低概率区域，直接在其上进行优化会引起显著的分布失配，可能导致策略过度漂移和优化不稳定（Agrawal et al., 2026；Setlur et al., 2026；Zheng et al., 2026；Yang et al., 2026）。"
+    },
+    {
+     "en": "In contrast, PICO uses expert trajectories to guide distribution-constrained joint decoding, producing successful rollouts that remain compatible with the student policy.",
+     "zh": "相比之下，PICO 利用专家轨迹来引导分布受限的联合解码，生成与学生策略保持兼容的成功采样轨迹。"
+    }
+   ]
+  },
+  {
+   "en": "Rather than directly optimizing on off-policy demonstrations, another line of work uses expert information to guide rollout generation ( Jiang et al., 2026 ; Zhang et al., 2025b ; Liu et al., 2026 ) . Prefix-RFT ( Huang et al., 2026 ) conditions rollouts on prefixes sampled from expert demonstrations, while BREAD and StepHint use expert-derived prefixes or intermediate hints to steer exploration toward promising reasoning states ( Zhang et al., 2026d ; Zhang et al., 2026a ) . OC-GRPO ( Agrawal et al., 2026 ) further applies importance sampling ratio to account for the mismatch between guided rollouts and the original unguided policy. Although these methods facilitate successful exploration, injecting guidance into the rollout context may teach the student to continue from expert-induced states without learning how to reach those states independently from the original prompt ( Qu et al., 2026 ; Ross et al., 2011 ; Zhang et al., 2026c ) . A related line of work combines or contrasts the token distributions of models with different capabilities to steer generation toward higher-quality outputs ( Liu et al., 2021 ; Li et al., 2023 ; Dekoninck et al., 2024 ) . The effectiveness of these methods motivates us to incorporate teacher guidance at the token level. Accordingly, PICO employs distribution-constrained joint decoding to construct policy-compatible trajectories.",
+   "zh": "与其直接在离策略示范上进行优化，另一类研究工作则利用专家信息来引导回合生成（Jiang et al., 2026；Zhang et al., 2025b；Liu et al., 2026）。 Prefix-RFT（Huang et al., 2026）以从专家示范中采样的前缀为条件来生成回合，而 BREAD 和 StepHint 则使用由专家衍生的前缀或中间提示，将探索引导至有前景的推理状态（Zhang et al., 2026d；Zhang et al., 2026a）。 OC-GRPO（Agrawal et al., 2026）进一步应用重要性采样比率，以处理受引导的回合与原始未受引导的策略之间的不匹配问题。 尽管这些方法促进了成功的探索，但将引导注入回合上下文，可能只会教会学生智能体从专家引入的状态继续推进，而没有学会如何从原始提示出发独立到达这些状态（Qu et al., 2026；Ross et al., 2011；Zhang et al., 2026c）。 另一类相关工作通过组合或对比具有不同能力的模型的词元分布，来引导生成朝向更高质量的输出（Liu et al., 2021；Li et al., 2023；Dekoninck et al., 2024）。 这些方法的有效性促使我们在词元层面引入教师引导。 因此，PICO 采用分布约束的联合解码来构建与策略兼容的轨迹。",
+   "sents": [
+    {
+     "en": "Rather than directly optimizing on off-policy demonstrations, another line of work uses expert information to guide rollout generation ( Jiang et al., 2026 ; Zhang et al., 2025b ; Liu et al., 2026 ) .",
+     "zh": "与其直接在离策略示范上进行优化，另一类研究工作则利用专家信息来引导回合生成（Jiang et al., 2026；Zhang et al., 2025b；Liu et al., 2026）。"
+    },
+    {
+     "en": "Prefix-RFT ( Huang et al., 2026 ) conditions rollouts on prefixes sampled from expert demonstrations, while BREAD and StepHint use expert-derived prefixes or intermediate hints to steer exploration toward promising reasoning states ( Zhang et al., 2026d ; Zhang et al., 2026a ) .",
+     "zh": "Prefix-RFT（Huang et al., 2026）以从专家示范中采样的前缀为条件来生成回合，而 BREAD 和 StepHint 则使用由专家衍生的前缀或中间提示，将探索引导至有前景的推理状态（Zhang et al., 2026d；Zhang et al., 2026a）。"
+    },
+    {
+     "en": "OC-GRPO ( Agrawal et al., 2026 ) further applies importance sampling ratio to account for the mismatch between guided rollouts and the original unguided policy.",
+     "zh": "OC-GRPO（Agrawal et al., 2026）进一步应用重要性采样比率，以处理受引导的回合与原始未受引导的策略之间的不匹配问题。"
+    },
+    {
+     "en": "Although these methods facilitate successful exploration, injecting guidance into the rollout context may teach the student to continue from expert-induced states without learning how to reach those states independently from the original prompt ( Qu et al., 2026 ; Ross et al., 2011 ; Zhang et al., 2026c ) .",
+     "zh": "尽管这些方法促进了成功的探索，但将引导注入回合上下文，可能只会教会学生智能体从专家引入的状态继续推进，而没有学会如何从原始提示出发独立到达这些状态（Qu et al., 2026；Ross et al., 2011；Zhang et al., 2026c）。"
+    },
+    {
+     "en": "A related line of work combines or contrasts the token distributions of models with different capabilities to steer generation toward higher-quality outputs ( Liu et al., 2021 ; Li et al., 2023 ; Dekoninck et al., 2024 ) .",
+     "zh": "另一类相关工作通过组合或对比具有不同能力的模型的词元分布，来引导生成朝向更高质量的输出（Liu et al., 2021；Li et al., 2023；Dekoninck et al., 2024）。"
+    },
+    {
+     "en": "The effectiveness of these methods motivates us to incorporate teacher guidance at the token level.",
+     "zh": "这些方法的有效性促使我们在词元层面引入教师引导。"
+    },
+    {
+     "en": "Accordingly, PICO employs distribution-constrained joint decoding to construct policy-compatible trajectories.",
+     "zh": "因此，PICO 采用分布约束的联合解码来构建与策略兼容的轨迹。"
+    }
+   ]
+  },
+  {
+   "en": "In this work, we introduced PICO , a policy-compatible reinforcement learning framework for overcoming the exploration bottleneck of RLVR on challenging problems. PICO leverages expert data to generate verified trajectories while controlling their deviation from the student policy, and selectively incorporates these trajectories into all-failure groups to restore informative learning signals. Extensive experiments across mathematical reasoning, general reasoning, and agentic tasks demonstrate that PICO consistently outperforms standard RLVR and representative expert-guided baselines across different model scales, without requiring teacher guidance at inference time. Ablation studies further validate the effectiveness of each component. Overall, our results highlight policy compatibility as a key principle for effectively incorporating expert knowledge into RLVR, providing a practical approach to improving models beyond the limits of unaided on-policy exploration.",
+   "zh": "在本工作中，我们提出了 PICO，一个策略兼容的强化学习框架，用于克服 RLVR 在高难度问题上的探索瓶颈。 PICO 利用专家数据生成经验证的轨迹，同时控制这些轨迹与学生策略的偏差，并有选择地将这些轨迹纳入全失败组中，以恢复有信息量的学习信号。 在数学推理、通用推理和智能体任务上的大量实验表明，PICO 在不同模型规模下始终优于标准 RLVR 和具有代表性的专家引导基线，且在推理时无需教师指导。 消融实验进一步验证了每个组件的有效性。 总体而言，我们的结果凸显了策略兼容性作为将专家知识有效融入 RLVR 的关键原则，为突破无辅助在线策略探索的极限、改进模型提供了一种实用的方法。",
+   "sents": [
+    {
+     "en": "In this work, we introduced PICO , a policy-compatible reinforcement learning framework for overcoming the exploration bottleneck of RLVR on challenging problems.",
+     "zh": "在本工作中，我们提出了 PICO，一个策略兼容的强化学习框架，用于克服 RLVR 在高难度问题上的探索瓶颈。"
+    },
+    {
+     "en": "PICO leverages expert data to generate verified trajectories while controlling their deviation from the student policy, and selectively incorporates these trajectories into all-failure groups to restore informative learning signals.",
+     "zh": "PICO 利用专家数据生成经验证的轨迹，同时控制这些轨迹与学生策略的偏差，并有选择地将这些轨迹纳入全失败组中，以恢复有信息量的学习信号。"
+    },
+    {
+     "en": "Extensive experiments across mathematical reasoning, general reasoning, and agentic tasks demonstrate that PICO consistently outperforms standard RLVR and representative expert-guided baselines across different model scales, without requiring teacher guidance at inference time.",
+     "zh": "在数学推理、通用推理和智能体任务上的大量实验表明，PICO 在不同模型规模下始终优于标准 RLVR 和具有代表性的专家引导基线，且在推理时无需教师指导。"
+    },
+    {
+     "en": "Ablation studies further validate the effectiveness of each component.",
+     "zh": "消融实验进一步验证了每个组件的有效性。"
+    },
+    {
+     "en": "Overall, our results highlight policy compatibility as a key principle for effectively incorporating expert knowledge into RLVR, providing a practical approach to improving models beyond the limits of unaided on-policy exploration.",
+     "zh": "总体而言，我们的结果凸显了策略兼容性作为将专家知识有效融入 RLVR 的关键原则，为突破无辅助在线策略探索的极限、改进模型提供了一种实用的方法。"
+    }
+   ]
+  },
+  {
+   "en": "In this work, we used generative AI tools to assist in the writing of proofs and with translation. We did not use generative AI tools to formulate mathematical claims, provide critical ingredients for proving mathematical claims, propose or refine hypotheses, design or provide feedback on research methodology or experiments, implement methods, support qualitative or thematic data analysis, or interpret results. Generating synthetic datasets, developing theoretical models or conceptual frameworks, and cleaning or reformatting datasets were not applicable to this work. Additionally, we used generative AI tools to create or modify scientific figures or images, draft parts of the manuscript, support brainstorming, and source or search for information. We have reviewed all AI-assisted work. In particular, the authors manually verified every step of the AI-assisted proofs; checked translations against the original text to preserve their technical meaning; inspected AI-assisted figures and images for consistency with the underlying results; and carefully reviewed and revised all AI-assisted manuscript text. Ideas and information obtained through AI-assisted brainstorming or search were treated only as preliminary suggestions and were independently validated through manual literature review and consultation of the original sources. We take responsibility for the final content of this work, including text, claims, or artifacts produced with the aid of generative AI.",
+   "zh": "在本工作中，我们使用生成式 AI 工具辅助撰写证明以及进行翻译。 我们没有使用生成式 AI 工具来提出数学论断、为证明数学论断提供关键要素、提出或完善假设、设计研究方法或实验或对其提供反馈、实现方法、支持定性或主题数据分析，或解释结果。 生成合成数据集、开发理论模型或概念框架，以及清理或重新格式化数据集均不适用于本工作。 此外，我们还使用生成式 AI 工具来创建或修改科学图表或图像、撰写部分稿件、支持头脑风暴，以及获取或检索信息。 我们已审查所有 AI 辅助完成的工作。 具体而言，作者逐步人工验证了所有 AI 辅助的证明；将译文与原文对照检查以保留其技术含义；检查 AI 辅助制作的图表和图像是否与基础结果一致；并仔细审阅和修改了所有 AI 辅助撰写的稿件文本。 通过 AI 辅助的头脑风暴或信息检索获得的想法和信息仅被视为初步建议，并已通过人工文献检索和查阅原始资料进行了独立验证。 我们对本工作的最终内容（包括借助生成式 AI 制作的文本、论断或成果）承担责任。",
+   "sents": [
+    {
+     "en": "In this work, we used generative AI tools to assist in the writing of proofs and with translation.",
+     "zh": "在本工作中，我们使用生成式 AI 工具辅助撰写证明以及进行翻译。"
+    },
+    {
+     "en": "We did not use generative AI tools to formulate mathematical claims, provide critical ingredients for proving mathematical claims, propose or refine hypotheses, design or provide feedback on research methodology or experiments, implement methods, support qualitative or thematic data analysis, or interpret results.",
+     "zh": "我们没有使用生成式 AI 工具来提出数学论断、为证明数学论断提供关键要素、提出或完善假设、设计研究方法或实验或对其提供反馈、实现方法、支持定性或主题数据分析，或解释结果。"
+    },
+    {
+     "en": "Generating synthetic datasets, developing theoretical models or conceptual frameworks, and cleaning or reformatting datasets were not applicable to this work.",
+     "zh": "生成合成数据集、开发理论模型或概念框架，以及清理或重新格式化数据集均不适用于本工作。"
+    },
+    {
+     "en": "Additionally, we used generative AI tools to create or modify scientific figures or images, draft parts of the manuscript, support brainstorming, and source or search for information.",
+     "zh": "此外，我们还使用生成式 AI 工具来创建或修改科学图表或图像、撰写部分稿件、支持头脑风暴，以及获取或检索信息。"
+    },
+    {
+     "en": "We have reviewed all AI-assisted work.",
+     "zh": "我们已审查所有 AI 辅助完成的工作。"
+    },
+    {
+     "en": "In particular, the authors manually verified every step of the AI-assisted proofs; checked translations against the original text to preserve their technical meaning; inspected AI-assisted figures and images for consistency with the underlying results; and carefully reviewed and revised all AI-assisted manuscript text.",
+     "zh": "具体而言，作者逐步人工验证了所有 AI 辅助的证明；将译文与原文对照检查以保留其技术含义；检查 AI 辅助制作的图表和图像是否与基础结果一致；并仔细审阅和修改了所有 AI 辅助撰写的稿件文本。"
+    },
+    {
+     "en": "Ideas and information obtained through AI-assisted brainstorming or search were treated only as preliminary suggestions and were independently validated through manual literature review and consultation of the original sources.",
+     "zh": "通过 AI 辅助的头脑风暴或信息检索获得的想法和信息仅被视为初步建议，并已通过人工文献检索和查阅原始资料进行了独立验证。"
+    },
+    {
+     "en": "We take responsibility for the final content of this work, including text, claims, or artifacts produced with the aid of generative AI.",
+     "zh": "我们对本工作的最终内容（包括借助生成式 AI 制作的文本、论断或成果）承担责任。"
+    }
+   ]
+  },
+  {
+   "en": "This work does not involve human subjects, personally identifiable or sensitive information, or the collection and release of new datasets. All experiments are conducted using publicly available models, datasets, and benchmarks for research purposes. Our method focuses on improving reinforcement learning with verifiable rewards and is not designed for high-risk or directly harmful applications.",
+   "zh": "本工作不涉及人类受试者、可识别个人身份的信息或敏感信息，也不涉及新数据集的收集与发布。 所有实验均基于公开可用的模型、数据集和基准进行，仅用于研究目的。 我们的方法聚焦于利用可验证奖励改进强化学习，并非为高风险或直接有害的应用而设计。",
+   "sents": [
+    {
+     "en": "This work does not involve human subjects, personally identifiable or sensitive information, or the collection and release of new datasets.",
+     "zh": "本工作不涉及人类受试者、可识别个人身份的信息或敏感信息，也不涉及新数据集的收集与发布。"
+    },
+    {
+     "en": "All experiments are conducted using publicly available models, datasets, and benchmarks for research purposes.",
+     "zh": "所有实验均基于公开可用的模型、数据集和基准进行，仅用于研究目的。"
+    },
+    {
+     "en": "Our method focuses on improving reinforcement learning with verifiable rewards and is not designed for high-risk or directly harmful applications.",
+     "zh": "我们的方法聚焦于利用可验证奖励改进强化学习，并非为高风险或直接有害的应用而设计。"
+    }
+   ]
+  },
+  {
+   "en": "To support reproducibility, Section 3 provides a complete specification of the proposed method, while Section 4.1 summarizes the main experimental setup. Appendix C provides further details on the training procedure, benchmark construction, data processing, and evaluation configurations, with the complete training hyperparameters reported in Tables 5 and 6 . All prompts used for training and evaluation are provided in Appendix D .",
+   "zh": "为支持可复现性，第 3 节完整给出了所提出方法的规范说明，第 4.1 节则概述了主要实验设置。 附录 C 提供了训练流程、基准构建、数据处理和评估配置的更多细节，完整的训练超参数报告于表 5 和表 6。 用于训练和评估的所有提示词均提供于附录 D。",
+   "sents": [
+    {
+     "en": "To support reproducibility, Section 3 provides a complete specification of the proposed method, while Section 4.1 summarizes the main experimental setup.",
+     "zh": "为支持可复现性，第 3 节完整给出了所提出方法的规范说明，第 4.1 节则概述了主要实验设置。"
+    },
+    {
+     "en": "Appendix C provides further details on the training procedure, benchmark construction, data processing, and evaluation configurations, with the complete training hyperparameters reported in Tables 5 and 6 .",
+     "zh": "附录 C 提供了训练流程、基准构建、数据处理和评估配置的更多细节，完整的训练超参数报告于表 5 和表 6。"
+    },
+    {
+     "en": "All prompts used for training and evaluation are provided in Appendix D .",
+     "zh": "用于训练和评估的所有提示词均提供于附录 D。"
+    }
+   ]
+  },
+  {
+   "en": "This section provides the derivations underlying the joint-decoding policy and makes explicit the guarantees induced by the retained-mass constraint. We assume that the student and teacher share a tokenizer and vocabulary 𝒱 \\mathcal{V} . Since p t p_{t} is obtained from a softmax distribution, we have p t ​ ( v ) > 0 p_{t}(v)>0 for every v ∈ 𝒱 v\\in\\mathcal{V} . We also assume a fixed tie-breaking rule for top- k k selection, so the selected sets are nested as k k increases. The retained-mass threshold satisfies Z min ∈ ( 0 , 1 ] Z_{\\min}\\in(0,1] . All token-level statements below are conditioned on a fixed query, privileged guidance, and generated prefix; we suppress this conditioning when it is clear from context.",
+   "zh": "本节给出联合解码策略背后的推导，并明确由保留质量约束所引入的保证。 我们假设学生模型与教师模型共享同一个分词器和词表 𝒱 \\mathcal{V}。 由于 p t p_{t} 由 softmax 分布得到，对于每个 v ∈ 𝒱 v\\in\\mathcal{V}，我们有 p t ( v ) > 0 p_{t}(v)>0。 我们还假设 top- k k 选择采用固定的平局裁决规则，因此随着 k k 增大，所选集合是嵌套的。 保留质量阈值满足 Z min ∈ ( 0 , 1 ] Z_{\\min}\\in(0,1]。 下文所有 token 级别的表述均以固定的查询、特权引导和已生成前缀为条件；当从上下文中可以明确看出该条件时，我们将省略这一条件说明。",
+   "sents": [
+    {
+     "en": "This section provides the derivations underlying the joint-decoding policy and makes explicit the guarantees induced by the retained-mass constraint.",
+     "zh": "本节给出联合解码策略背后的推导，并明确由保留质量约束所引入的保证。"
+    },
+    {
+     "en": "We assume that the student and teacher share a tokenizer and vocabulary 𝒱 \\mathcal{V} .",
+     "zh": "我们假设学生模型与教师模型共享同一个分词器和词表 𝒱 \\mathcal{V}。"
+    },
+    {
+     "en": "Since p t p_{t} is obtained from a softmax distribution, we have p t ​ ( v ) > 0 p_{t}(v)>0 for every v ∈ 𝒱 v\\in\\mathcal{V} .",
+     "zh": "由于 p t p_{t} 由 softmax 分布得到，对于每个 v ∈ 𝒱 v\\in\\mathcal{V}，我们有 p t ( v ) > 0 p_{t}(v)>0。"
+    },
+    {
+     "en": "We also assume a fixed tie-breaking rule for top- k k selection, so the selected sets are nested as k k increases.",
+     "zh": "我们还假设 top- k k 选择采用固定的平局裁决规则，因此随着 k k 增大，所选集合是嵌套的。"
+    },
+    {
+     "en": "The retained-mass threshold satisfies Z min ∈ ( 0 , 1 ] Z_{\\min}\\in(0,1] .",
+     "zh": "保留质量阈值满足 Z min ∈ ( 0 , 1 ] Z_{\\min}\\in(0,1]。"
+    },
+    {
+     "en": "All token-level statements below are conditioned on a fixed query, privileged guidance, and generated prefix; we suppress this conditioning when it is clear from context.",
+     "zh": "下文所有 token 级别的表述均以固定的查询、特权引导和已生成前缀为条件；当从上下文中可以明确看出该条件时，我们将省略这一条件说明。"
+    }
+   ]
+  },
+  {
+   "en": "For a nonempty consensus set F t F_{t} , Eq. equation 6 can be written as",
+   "zh": "对于非空共识集 F t F_{t}，式 equation 6 可以写为",
+   "sents": null
+  },
+  {
+   "en": "Introducing a Lagrange multiplier η \\eta for the normalization constraint gives",
+   "zh": "引入拉格朗日乘子 η \\eta 来处理归一化约束，可得",
+   "sents": null
+  },
+  {
+   "en": "At the optimum, stationarity with respect to each μ ⁡ ( v ) \\mu(v) yields",
+   "zh": "在最优点处，对每个 μ ⁡ ( v ) \\mu(v) 取驻点条件可得",
+   "sents": null
+  },
+  {
+   "en": "which is Eq. equation 7 . The KL term is strictly convex in μ \\mu on Δ ⁡ ( F t ) \\Delta(F_{t}) , while the teacher-confidence term is linear; therefore, this stationary point is the unique global minimizer.",
+   "zh": "即式 equation 7 。 KL 项在 Δ ⁡ ( F t ) \\Delta(F_{t}) 上关于 μ \\mu 是严格凸的，而教师置信度项是线性的；因此，该驻点是唯一的全局最小值点。",
+   "sents": [
+    {
+     "en": "which is Eq. equation 7 .",
+     "zh": "即式 equation 7 。"
+    },
+    {
+     "en": "The KL term is strictly convex in μ \\mu on Δ ⁡ ( F t ) \\Delta(F_{t}) , while the teacher-confidence term is linear; therefore, this stationary point is the unique global minimizer.",
+     "zh": "KL 项在 Δ ⁡ ( F t ) \\Delta(F_{t}) 上关于 μ \\mu 是严格凸的，而教师置信度项是线性的；因此，该驻点是唯一的全局最小值点。"
+    }
+   ]
+  },
+  {
+   "en": "Let Z t = ∑ v ∈ F t p t ​ ( v ) Z_{t}=\\sum_{v\\in F_{t}}p_{t}(v) and define the student distribution conditioned on the consensus support as",
+   "zh": "令 Z t = ∑ v ∈ F t p t ​ ( v ) Z_{t}=\\sum_{v\\in F_{t}}p_{t}(v)，并将以共识支撑集为条件的学生分布定义为",
+   "sents": null
+  },
+  {
+   "en": "For any distribution μ \\mu supported on F t F_{t} ,",
+   "zh": "对于任意支撑在 F t F_{t} 上的分布 μ \\mu ，",
+   "sents": null
+  },
+  {
+   "en": "Substituting μ = μ t λ \\mu=\\mu_{t}^{\\lambda} proves Proposition 1 . Since KL divergence is nonnegative, the minimum divergence over all distributions supported on F t F_{t} is − log ⁡ Z t -\\log Z_{t} , attained uniquely by μ t 0 \\mu_{t}^{0} . Thus, once the support has been fixed, soft teacher reweighting cannot decrease the distribution shift from the student; for every λ > 0 \\lambda>0 , it increases the shift strictly unless q t q_{t} is constant on F t F_{t} .",
+   "zh": "代入 μ = μ t λ \\mu=\\mu_{t}^{\\lambda} 即可证明命题 1。 由于 KL 散度非负，在所有支撑于 F t F_{t} 的分布上，最小散度为 − log ⁡ Z t -\\log Z_{t} ，且由 μ t 0 \\mu_{t}^{0} 唯一取得。 因此，一旦支撑集固定，软教师重加权无法减小相对学生的分布偏移；对每个 λ > 0 \\lambda>0 ，除非 q t q_{t} 在 F t F_{t} 上为常数，否则它会严格增大该偏移。",
+   "sents": [
+    {
+     "en": "Substituting μ = μ t λ \\mu=\\mu_{t}^{\\lambda} proves Proposition 1 .",
+     "zh": "代入 μ = μ t λ \\mu=\\mu_{t}^{\\lambda} 即可证明命题 1。"
+    },
+    {
+     "en": "Since KL divergence is nonnegative, the minimum divergence over all distributions supported on F t F_{t} is − log ⁡ Z t -\\log Z_{t} , attained uniquely by μ t 0 \\mu_{t}^{0} .",
+     "zh": "由于 KL 散度非负，在所有支撑于 F t F_{t} 的分布上，最小散度为 − log ⁡ Z t -\\log Z_{t} ，且由 μ t 0 \\mu_{t}^{0} 唯一取得。"
+    },
+    {
+     "en": "Thus, once the support has been fixed, soft teacher reweighting cannot decrease the distribution shift from the student; for every λ > 0 \\lambda>0 , it increases the shift strictly unless q t q_{t} is constant on F t F_{t} .",
+     "zh": "因此，一旦支撑集固定，软教师重加权无法减小相对学生的分布偏移；对每个 λ > 0 \\lambda>0 ，除非 q t q_{t} 在 F t F_{t} 上为常数，否则它会严格增大该偏移。"
+    }
+   ]
+  },
+  {
+   "en": "This last statement can also be seen directly. Let m t ​ ( λ ) = 𝔼 v ∼ μ t λ ​ [ q t ​ ( v ) ] m_{t}(\\lambda)=\\mathbb{E}_{v\\sim\\mu_{t}^{\\lambda}}[q_{t}(v)] . Standard properties of exponential families give",
+   "zh": "最后这个论断也可以直接看出。 设 m_t(λ) = 𝔼_{v∼μ_t^λ}[q_t(v)]。 指数族的标准性质给出",
+   "sents": [
+    {
+     "en": "This last statement can also be seen directly.",
+     "zh": "最后这个论断也可以直接看出。"
+    },
+    {
+     "en": "Let m t ​ ( λ ) = 𝔼 v ∼ μ t λ ​ [ q t ​ ( v ) ] m_{t}(\\lambda)=\\mathbb{E}_{v\\sim\\mu_{t}^{\\lambda}}[q_{t}(v)] .",
+     "zh": "设 m_t(λ) = 𝔼_{v∼μ_t^λ}[q_t(v)]。"
+    },
+    {
+     "en": "Standard properties of exponential families give",
+     "zh": "指数族的标准性质给出"
+    }
+   ]
+  },
+  {
+   "en": "Consequently, if q t q_{t} is nonconstant on F t F_{t} , the expected teacher confidence is strictly increasing on [ 0 , ∞ ) [0,\\infty) , while the additional KL cost is strictly increasing on ( 0 , ∞ ) (0,\\infty) and has its unique minimum at λ = 0 \\lambda=0 . Our hard policy selects this minimum-shift endpoint and uses the teacher only to determine the support.",
+   "zh": "因此，若 q t q_{t} 在 F t F_{t} 上不是常数，则期望的智能体置信度（教师置信度）在 [ 0 , ∞ ) [0,\\infty) 上严格递增，而额外的 KL 代价在 ( 0 , ∞ ) (0,\\infty) 上严格递增，并在 λ = 0 \\lambda=0 处取得唯一最小值。 我们的硬策略选取这个偏移最小的端点，并且仅利用教师来确定支撑集。",
+   "sents": [
+    {
+     "en": "Consequently, if q t q_{t} is nonconstant on F t F_{t} , the expected teacher confidence is strictly increasing on [ 0 , ∞ ) [0,\\infty) , while the additional KL cost is strictly increasing on ( 0 , ∞ ) (0,\\infty) and has its unique minimum at λ = 0 \\lambda=0 .",
+     "zh": "因此，若 q t q_{t} 在 F t F_{t} 上不是常数，则期望的智能体置信度（教师置信度）在 [ 0 , ∞ ) [0,\\infty) 上严格递增，而额外的 KL 代价在 ( 0 , ∞ ) (0,\\infty) 上严格递增，并在 λ = 0 \\lambda=0 处取得唯一最小值。"
+    },
+    {
+     "en": "Our hard policy selects this minimum-shift endpoint and uses the teacher only to determine the support.",
+     "zh": "我们的硬策略选取这个偏移最小的端点，并且仅利用教师来确定支撑集。"
+    }
+   ]
+  },
+  {
+   "en": "The per-token retained-mass constraint also controls the divergence of the complete autoregressive behavior policy. This is formalized below.",
+   "zh": "逐词 token 的保留质量约束同样能够控制完整的自回归行为策略的散度。 这在下面进行了形式化说明。",
+   "sents": [
+    {
+     "en": "The per-token retained-mass constraint also controls the divergence of the complete autoregressive behavior policy.",
+     "zh": "逐词 token 的保留质量约束同样能够控制完整的自回归行为策略的散度。"
+    },
+    {
+     "en": "This is formalized below.",
+     "zh": "这在下面进行了形式化说明。"
+    }
+   ]
+  },
+  {
+   "en": "Let μ J ​ ( y ∣ x , g ) \\mu^{\\mathrm{J}}(y\\mid x,g) be the autoregressive joint-decoding policy and let π old ​ ( y ∣ x ) \\pi_{\\mathrm{old}}(y\\mid x) be the rollout-time student policy. If every guided step satisfies Z t ≥ Z min Z_{t}\\geq Z_{\\min} , every infeasible step falls back to p t p_{t} , and generation has horizon T max T_{\\max} , then",
+   "zh": "设 μ J ​ ( y ∣ x , g ) \\mu^{\\mathrm{J}}(y\\mid x,g) 为自回归联合解码策略，设 π old ​ ( y ∣ x ) \\pi_{\\mathrm{old}}(y\\mid x) 为 rollout 阶段的学生策略。 若每个引导步都满足 Z t ≥ Z min Z_{t}\\geq Z_{\\min} ，每个不可行步都回退到 p t p_{t} ，且生成的时域为 T max T_{\\max} ，则",
+   "sents": [
+    {
+     "en": "Let μ J ​ ( y ∣ x , g ) \\mu^{\\mathrm{J}}(y\\mid x,g) be the autoregressive joint-decoding policy and let π old ​ ( y ∣ x ) \\pi_{\\mathrm{old}}(y\\mid x) be the rollout-time student policy.",
+     "zh": "设 μ J ​ ( y ∣ x , g ) \\mu^{\\mathrm{J}}(y\\mid x,g) 为自回归联合解码策略，设 π old ​ ( y ∣ x ) \\pi_{\\mathrm{old}}(y\\mid x) 为 rollout 阶段的学生策略。"
+    },
+    {
+     "en": "If every guided step satisfies Z t ≥ Z min Z_{t}\\geq Z_{\\min} , every infeasible step falls back to p t p_{t} , and generation has horizon T max T_{\\max} , then",
+     "zh": "若每个引导步都满足 Z t ≥ Z min Z_{t}\\geq Z_{\\min} ，每个不可行步都回退到 p t p_{t} ，且生成的时域为 T max T_{\\max} ，则"
+    }
+   ]
+  },
+  {
+   "en": "Here, variable-length responses are represented on the fixed horizon by treating the end-of-sequence state as absorbing and setting the two policies equal after termination. More precisely, the divergence equals the expected cumulative per-step cost 𝔼 y ∼ μ J [ ∑ t = 1 T max − log Z t ] \\mathbb{E}_{y\\sim\\mu^{\\mathrm{J}}}[\\sum_{t=1}^{T_{\\max}}-\\log Z_{t}] , where Z t = 1 Z_{t}=1 at fallback and post-termination steps.",
+   "zh": "在这里，变长响应通过将序列结束状态视为吸收态并在终止后将两个策略设为相等，从而在固定时间范围上表示。 更准确地说，该散度等于期望的逐步累积代价 𝔼 y ∼ μ J [ ∑ t = 1 T max − log Z t ] \\mathbb{E}_{y\\sim\\mu^{\\mathrm{J}}}[\\sum_{t=1}^{T_{\\max}}-\\log Z_{t}] ，其中 Z t = 1 Z_{t}=1 在回退步骤和终止后步骤处成立。",
+   "sents": [
+    {
+     "en": "Here, variable-length responses are represented on the fixed horizon by treating the end-of-sequence state as absorbing and setting the two policies equal after termination.",
+     "zh": "在这里，变长响应通过将序列结束状态视为吸收态并在终止后将两个策略设为相等，从而在固定时间范围上表示。"
+    },
+    {
+     "en": "More precisely, the divergence equals the expected cumulative per-step cost 𝔼 y ∼ μ J [ ∑ t = 1 T max − log Z t ] \\mathbb{E}_{y\\sim\\mu^{\\mathrm{J}}}[\\sum_{t=1}^{T_{\\max}}-\\log Z_{t}] , where Z t = 1 Z_{t}=1 at fallback and post-termination steps.",
+     "zh": "更准确地说，该散度等于期望的逐步累积代价 𝔼 y ∼ μ J [ ∑ t = 1 T max − log Z t ] \\mathbb{E}_{y\\sim\\mu^{\\mathrm{J}}}[\\sum_{t=1}^{T_{\\max}}-\\log Z_{t}] ，其中 Z t = 1 Z_{t}=1 在回退步骤和终止后步骤处成立。"
+    }
+   ]
+  },
+  {
+   "en": "By the chain rule for KL divergence between autoregressive distributions,",
+   "zh": "根据自回归分布之间 KL 散度的链式法则，",
+   "sents": null
+  },
+  {
+   "en": "The second equality follows from Eq. equation 22 at μ = μ t 0 \\mu=\\mu_{t}^{0} . A fallback step has μ t = p t \\mu_{t}=p_{t} and therefore contributes zero. At every guided step, Z t ≥ Z min Z_{t}\\geq Z_{\\min} implies − log ⁡ Z t ≤ − log ⁡ Z min -\\log Z_{t}\\leq-\\log Z_{\\min} . Summing over the horizon gives Eq. equation 25 . ∎",
+   "zh": "第二个等式可由公式 22 在 μ = μ t 0 \\mu=\\mu_{t}^{0} 处得出。 回退步满足 μ t = p t \\mu_{t}=p_{t}，因此贡献为零。 在每个引导步中，Z t ≥ Z min Z_{t}\\geq Z_{\\min} 意味着 − log ⁡ Z t ≤ − log ⁡ Z min -\\log Z_{t}\\leq-\\log Z_{\\min} 。 对整个时域求和即得公式 25 。∎",
+   "sents": [
+    {
+     "en": "The second equality follows from Eq. equation 22 at μ = μ t 0 \\mu=\\mu_{t}^{0} .",
+     "zh": "第二个等式可由公式 22 在 μ = μ t 0 \\mu=\\mu_{t}^{0} 处得出。"
+    },
+    {
+     "en": "A fallback step has μ t = p t \\mu_{t}=p_{t} and therefore contributes zero.",
+     "zh": "回退步满足 μ t = p t \\mu_{t}=p_{t}，因此贡献为零。"
+    },
+    {
+     "en": "At every guided step, Z t ≥ Z min Z_{t}\\geq Z_{\\min} implies − log ⁡ Z t ≤ − log ⁡ Z min -\\log Z_{t}\\leq-\\log Z_{\\min} .",
+     "zh": "在每个引导步中，Z t ≥ Z min Z_{t}\\geq Z_{\\min} 意味着 − log ⁡ Z t ≤ − log ⁡ Z min -\\log Z_{t}\\leq-\\log Z_{\\min} 。"
+    },
+    {
+     "en": "Summing over the horizon gives Eq. equation 25 . ∎",
+     "zh": "对整个时域求和即得公式 25 。∎"
+    }
+   ]
+  },
+  {
+   "en": "At a fixed prefix h t = ( x , y < t ) h_{t}=(x,y_{<t}) , for any sampled token v ∈ F t ​ ( h t ) v\\in F_{t}(h_{t}) , the hard policy satisfies",
+   "zh": "在固定前缀 h t = ( x , y < t ) h_{t}=(x,y_{<t}) 处，对于任意采样得到的词元 v ∈ F t ( h t ) v\\in F_{t}(h_{t})，硬策略满足",
+   "sents": null
+  },
+  {
+   "en": "which gives Eq. equation 15 . The factor Z t Z_{t} exactly corrects the renormalization of the student probabilities on F t F_{t} . More formally, for any bounded token-level quantity f f ,",
+   "zh": "由此得到式 equation 15 。 因子 Z t Z_{t} 恰好校正了学生概率在 F t F_{t} 上的重归一化。 更正式地，对于任意有界的词元级量 f f ，",
+   "sents": [
+    {
+     "en": "which gives Eq. equation 15 .",
+     "zh": "由此得到式 equation 15 。"
+    },
+    {
+     "en": "The factor Z t Z_{t} exactly corrects the renormalization of the student probabilities on F t F_{t} .",
+     "zh": "因子 Z t Z_{t} 恰好校正了学生概率在 F t F_{t} 上的重归一化。"
+    },
+    {
+     "en": "More formally, for any bounded token-level quantity f f ,",
+     "zh": "更正式地，对于任意有界的词元级量 f f ，"
+    }
+   ]
+  },
+  {
+   "en": "Thus, conditional on the prefix, the action-level correction is exact on the retained support. As with any hard-support behavior policy, it cannot recover contributions from tokens outside F t F_{t} . At data collection, when π θ = p t \\pi_{\\theta}=p_{t} , the magnitude of the omitted contribution is bounded by",
+   "zh": "因此，在前缀给定的条件下，动作层面的校正在被保留的支持集上是精确的。 与任何硬支持行为策略一样，它无法恢复 F t F_{t} 之外的 token 所贡献的部分。 在数据收集阶段，当 π θ = p t \\pi_{\\theta}=p_{t} 时，被忽略贡献的大小以下式为界：",
+   "sents": [
+    {
+     "en": "Thus, conditional on the prefix, the action-level correction is exact on the retained support.",
+     "zh": "因此，在前缀给定的条件下，动作层面的校正在被保留的支持集上是精确的。"
+    },
+    {
+     "en": "As with any hard-support behavior policy, it cannot recover contributions from tokens outside F t F_{t} .",
+     "zh": "与任何硬支持行为策略一样，它无法恢复 F t F_{t} 之外的 token 所贡献的部分。"
+    },
+    {
+     "en": "At data collection, when π θ = p t \\pi_{\\theta}=p_{t} , the magnitude of the omitted contribution is bounded by",
+     "zh": "在数据收集阶段，当 π θ = p t \\pi_{\\theta}=p_{t} 时，被忽略贡献的大小以下式为界："
+    }
+   ]
+  },
+  {
+   "en": "For the rollout-time student, the retained-mass constraint therefore controls both the KL shift and the residual support truncation. Moreover, at data collection the IS factor is the token-independent constant Z t Z_{t} , avoiding the additional within-step weight variance that would arise from soft teacher reweighting.",
+   "zh": "因此，对于 rollout 阶段的学生智能体，保留质量约束同时控制了 KL 偏移和残差支撑截断。 此外，在数据收集时，IS 因子是与 token 无关的常数 Z t Z_{t}，从而避免了软教师重加权会带来的步内额外权重方差。",
+   "sents": [
+    {
+     "en": "For the rollout-time student, the retained-mass constraint therefore controls both the KL shift and the residual support truncation.",
+     "zh": "因此，对于 rollout 阶段的学生智能体，保留质量约束同时控制了 KL 偏移和残差支撑截断。"
+    },
+    {
+     "en": "Moreover, at data collection the IS factor is the token-independent constant Z t Z_{t} , avoiding the additional within-step weight variance that would arise from soft teacher reweighting.",
+     "zh": "此外，在数据收集时，IS 因子是与 token 无关的常数 Z t Z_{t}，从而避免了软教师重加权会带来的步内额外权重方差。"
+    }
+   ]
+  },
+  {
+   "en": "Equation equation 28 is a conditional, action-level identity; it does not convert prefixes sampled under μ J \\mu^{\\mathrm{J}} into prefixes sampled under π θ \\pi_{\\theta} . A fully trajectory-corrected estimator would require cumulative importance ratios and target-policy absolute continuity, π θ ≪ μ J \\pi_{\\theta}\\ll\\mu^{\\mathrm{J}} , over complete trajectories. This condition fails whenever the hard support restriction removes a token to which π θ \\pi_{\\theta} assigns positive probability. In addition, PPO clipping deliberately introduces bias into the surrogate. Accordingly, Eq. equation 14 should be understood as a mixed-behavior surrogate with exact per-token probability ratios on sampled actions, rather than an unbiased estimator of the original on-policy RLVR objective.",
+   "zh": "公式28是一个条件性的、动作层面的恒等式；它并不能把在 μ J \\mu^{\\mathrm{J}} 下采样得到的前缀转换为在 π θ \\pi_{\\theta} 下采样得到的前缀。 完全轨迹修正的估计器需要累积重要性比率以及目标策略的绝对连续性 π θ ≪ μ J \\pi_{\\theta}\\ll\\mu^{\\mathrm{J}} ，并且要在完整轨迹上成立。 只要硬性支持限制移除了某个 π θ \\pi_{\\theta} 赋予正概率的词元，该条件就会失效。 此外，PPO 裁剪有意在代理目标中引入了偏差。 因此，公式14应被理解为一个混合行为的代理目标，其在采样动作上具有精确的逐词元概率比率，而非原始同策略 RLVR 目标的无偏估计器。",
+   "sents": [
+    {
+     "en": "Equation equation 28 is a conditional, action-level identity; it does not convert prefixes sampled under μ J \\mu^{\\mathrm{J}} into prefixes sampled under π θ \\pi_{\\theta} .",
+     "zh": "公式28是一个条件性的、动作层面的恒等式；它并不能把在 μ J \\mu^{\\mathrm{J}} 下采样得到的前缀转换为在 π θ \\pi_{\\theta} 下采样得到的前缀。"
+    },
+    {
+     "en": "A fully trajectory-corrected estimator would require cumulative importance ratios and target-policy absolute continuity, π θ ≪ μ J \\pi_{\\theta}\\ll\\mu^{\\mathrm{J}} , over complete trajectories.",
+     "zh": "完全轨迹修正的估计器需要累积重要性比率以及目标策略的绝对连续性 π θ ≪ μ J \\pi_{\\theta}\\ll\\mu^{\\mathrm{J}} ，并且要在完整轨迹上成立。"
+    },
+    {
+     "en": "This condition fails whenever the hard support restriction removes a token to which π θ \\pi_{\\theta} assigns positive probability.",
+     "zh": "只要硬性支持限制移除了某个 π θ \\pi_{\\theta} 赋予正概率的词元，该条件就会失效。"
+    },
+    {
+     "en": "In addition, PPO clipping deliberately introduces bias into the surrogate.",
+     "zh": "此外，PPO 裁剪有意在代理目标中引入了偏差。"
+    },
+    {
+     "en": "Accordingly, Eq. equation 14 should be understood as a mixed-behavior surrogate with exact per-token probability ratios on sampled actions, rather than an unbiased estimator of the original on-policy RLVR objective.",
+     "zh": "因此，公式14应被理解为一个混合行为的代理目标，其在采样动作上具有精确的逐词元概率比率，而非原始同策略 RLVR 目标的无偏估计器。"
+    }
+   ]
+  },
+  {
+   "en": "Algorithm 1 gives the complete failure-triggered training procedure. The teacher is frozen throughout training, and π old \\pi_{\\mathrm{old}} is held fixed during rollout collection for a policy update. The privileged guidance g ⁡ ( x ) g(x) is supplied only to the teacher; the student always evaluates the original query and the jointly generated response prefix.",
+   "zh": "算法 1 给出了完整的失败触发训练流程。 教师在整个训练过程中保持冻结，且 π old \\pi_{\\mathrm{old}} 在为一次策略更新收集 rollout 期间保持固定。 特权引导 g ⁡ ( x ) g(x) 仅提供给教师；智能体始终评估原始查询和共同生成的响应前缀。",
+   "sents": [
+    {
+     "en": "Algorithm 1 gives the complete failure-triggered training procedure.",
+     "zh": "算法 1 给出了完整的失败触发训练流程。"
+    },
+    {
+     "en": "The teacher is frozen throughout training, and π old \\pi_{\\mathrm{old}} is held fixed during rollout collection for a policy update.",
+     "zh": "教师在整个训练过程中保持冻结，且 π old \\pi_{\\mathrm{old}} 在为一次策略更新收集 rollout 期间保持固定。"
+    },
+    {
+     "en": "The privileged guidance g ⁡ ( x ) g(x) is supplied only to the teacher; the student always evaluates the original query and the jointly generated response prefix.",
+     "zh": "特权引导 g ⁡ ( x ) g(x) 仅提供给教师；智能体始终评估原始查询和共同生成的响应前缀。"
+    }
+   ]
+  },
+  {
+   "en": "As shown in Table 4 , PICO substantially improves Pass@16 across both model scales. Compared with GRPO, it raises the average Pass@16 by 8.8 8.8 percentage points on Qwen3-4B-Base and 10.8 10.8 points on Qwen3-8B-Base. With the 4B model, PICO achieves the best average result of 43.3 % 43.3\\% , outperforming the strongest baseline by 6.6 6.6 points. With the 8B model, it reaches 45.5 % 45.5\\% and matches the best baseline. These gains indicate that PICO improves not only average single-sample accuracy but also the likelihood of discovering at least one correct solution under repeated sampling, supporting its effectiveness in expanding successful exploration on difficult problems.",
+   "zh": "如表4所示，PICO在两个模型规模上都显著提升了Pass@16。 与GRPO相比，PICO在Qwen3-4B-Base上将平均Pass@16提升了8.8 8.8个百分点，在Qwen3-8B-Base上提升了10.8 10.8个百分点。 使用4B模型时，PICO取得了43.3 % 43.3\\%的最佳平均结果，超过最强基线6.6 6.6分。 使用8B模型时，PICO达到45.5 % 45.5\\%，与最佳基线持平。 这些提升表明，PICO不仅提高了平均单样本准确率，还提高了在重复采样下至少发现一个正确解的可能性，支持了其在困难问题上拓展成功探索的有效性。",
+   "sents": [
+    {
+     "en": "As shown in Table 4 , PICO substantially improves Pass@16 across both model scales.",
+     "zh": "如表4所示，PICO在两个模型规模上都显著提升了Pass@16。"
+    },
+    {
+     "en": "Compared with GRPO, it raises the average Pass@16 by 8.8 8.8 percentage points on Qwen3-4B-Base and 10.8 10.8 points on Qwen3-8B-Base.",
+     "zh": "与GRPO相比，PICO在Qwen3-4B-Base上将平均Pass@16提升了8.8 8.8个百分点，在Qwen3-8B-Base上提升了10.8 10.8个百分点。"
+    },
+    {
+     "en": "With the 4B model, PICO achieves the best average result of 43.3 % 43.3\\% , outperforming the strongest baseline by 6.6 6.6 points.",
+     "zh": "使用4B模型时，PICO取得了43.3 % 43.3\\%的最佳平均结果，超过最强基线6.6 6.6分。"
+    },
+    {
+     "en": "With the 8B model, it reaches 45.5 % 45.5\\% and matches the best baseline.",
+     "zh": "使用8B模型时，PICO达到45.5 % 45.5\\%，与最佳基线持平。"
+    },
+    {
+     "en": "These gains indicate that PICO improves not only average single-sample accuracy but also the likelihood of discovering at least one correct solution under repeated sampling, supporting its effectiveness in expanding successful exploration on difficult problems.",
+     "zh": "这些提升表明，PICO不仅提高了平均单样本准确率，还提高了在重复采样下至少发现一个正确解的可能性，支持了其在困难问题上拓展成功探索的有效性。"
+    }
+   ]
+  },
+  {
+   "en": "Question Rescue through Joint Decoding. Figure 4 directly illustrates how joint decoding recovers learning signals from questions that are entirely unsolved by student self-sampling. Across training, joint decoding rescues approximately 80 % 80\\% and 76 % 76\\% of these questions for Qwen3-4B and Qwen3-8B on mathematical reasoning tasks, respectively, substantially reducing the number of all-incorrect groups. It also rescues 36 % 36\\% of the failed questions on ALFWorld, despite the greater difficulty of long-horizon interaction. These results confirm that joint decoding enables the policy to obtain successful trajectories on problems beyond the reach of its current self-exploration, thereby converting otherwise uninformative groups into effective training signals.",
+   "zh": "通过联合解码实现问题拯救。 图 4 直观展示了联合解码如何从学生自采样完全无法解决的问题中恢复学习信号。 在整个训练过程中，联合解码在数学推理任务上分别为 Qwen3-4B 和 Qwen3-8B 拯救了约 80 % 80\\% 和 76 % 76\\% 的此类问题，大幅减少了全错误的分组数量。 在 ALFWorld 上，尽管长程交互的难度更大，它仍拯救了 36 % 36\\% 的失败问题。 这些结果证实，联合解码使策略能够在超出其当前自我探索能力范围的问题上获得成功轨迹，从而将原本无信息量的分组转化为有效的训练信号。",
+   "sents": [
+    {
+     "en": "Question Rescue through Joint Decoding.",
+     "zh": "通过联合解码实现问题拯救。"
+    },
+    {
+     "en": "Figure 4 directly illustrates how joint decoding recovers learning signals from questions that are entirely unsolved by student self-sampling.",
+     "zh": "图 4 直观展示了联合解码如何从学生自采样完全无法解决的问题中恢复学习信号。"
+    },
+    {
+     "en": "Across training, joint decoding rescues approximately 80 % 80\\% and 76 % 76\\% of these questions for Qwen3-4B and Qwen3-8B on mathematical reasoning tasks, respectively, substantially reducing the number of all-incorrect groups.",
+     "zh": "在整个训练过程中，联合解码在数学推理任务上分别为 Qwen3-4B 和 Qwen3-8B 拯救了约 80 % 80\\% 和 76 % 76\\% 的此类问题，大幅减少了全错误的分组数量。"
+    },
+    {
+     "en": "It also rescues 36 % 36\\% of the failed questions on ALFWorld, despite the greater difficulty of long-horizon interaction.",
+     "zh": "在 ALFWorld 上，尽管长程交互的难度更大，它仍拯救了 36 % 36\\% 的失败问题。"
+    },
+    {
+     "en": "These results confirm that joint decoding enables the policy to obtain successful trajectories on problems beyond the reach of its current self-exploration, thereby converting otherwise uninformative groups into effective training signals.",
+     "zh": "这些结果证实，联合解码使策略能够在超出其当前自我探索能力范围的问题上获得成功轨迹，从而将原本无信息量的分组转化为有效的训练信号。"
+    }
+   ]
+  },
+  {
+   "en": "Behavior-Policy Divergence. Figure 5 shows that the retained student probability mass Z t Z_{t} remains consistently high throughout training, increasing from approximately 0.91 0.91 to 0.94 0.94 . Correspondingly, the induced token-level KL divergence, − log ⁡ Z t -\\log Z_{t} , decreases from roughly 0.10 0.10 to 0.06 0.06 . This trend indicates that dynamic top- k k joint decoding preserves most of the student probability mass and becomes increasingly compatible with the evolving student policy, thereby providing teacher guidance without introducing a large behavior-policy shift.",
+   "zh": "行为策略偏移。 图 5 显示，被保留的学生概率质量 Z t Z_{t} 在整个训练过程中始终保持在较高水平，从约 0.91 0.91 增加到 0.94 0.94。 相应地，由此引起的词元级 KL 散度 − log ⁡ Z t -\\log Z_{t} 从约 0.10 0.10 下降到 0.06 0.06。 这一趋势表明，动态 top- k k 联合解码保留了大部分学生概率质量，并且与不断演进的学生策略越来越兼容，从而在不引入较大行为策略偏移的情况下提供教师指导。",
+   "sents": [
+    {
+     "en": "Behavior-Policy Divergence.",
+     "zh": "行为策略偏移。"
+    },
+    {
+     "en": "Figure 5 shows that the retained student probability mass Z t Z_{t} remains consistently high throughout training, increasing from approximately 0.91 0.91 to 0.94 0.94 .",
+     "zh": "图 5 显示，被保留的学生概率质量 Z t Z_{t} 在整个训练过程中始终保持在较高水平，从约 0.91 0.91 增加到 0.94 0.94。"
+    },
+    {
+     "en": "Correspondingly, the induced token-level KL divergence, − log ⁡ Z t -\\log Z_{t} , decreases from roughly 0.10 0.10 to 0.06 0.06 .",
+     "zh": "相应地，由此引起的词元级 KL 散度 − log ⁡ Z t -\\log Z_{t} 从约 0.10 0.10 下降到 0.06 0.06。"
+    },
+    {
+     "en": "This trend indicates that dynamic top- k k joint decoding preserves most of the student probability mass and becomes increasingly compatible with the evolving student policy, thereby providing teacher guidance without introducing a large behavior-policy shift.",
+     "zh": "这一趋势表明，动态 top- k k 联合解码保留了大部分学生概率质量，并且与不断演进的学生策略越来越兼容，从而在不引入较大行为策略偏移的情况下提供教师指导。"
+    }
+   ]
+  },
+  {
+   "en": "We build all methods on top of the verl framework. For mathematical reasoning, we use Qwen3-4B-Base and Qwen3-8B-Base as the student policies. For a fair comparison, all reasoning methods are trained on the same DAPO-Math-17K corpus ( Yu et al., 2026 ) using a shared hyperparameter configuration. For the agentic experiments, we train Qwen3-4B-Instruct separately on ALFWorld and ScienceWorld. Across all settings, Qwen3-4B-Instruct serves as the teacher and conditions on expert solutions to provide token-level guidance. All experiments are conducted on four NVIDIA H20 GPUs. Training either Qwen3-4B-Base or Qwen3-8B-Base on DAPO-Math-17K takes approximately 1.5 1.5 – 2 2 days, while training Qwen3-4B-Instruct for each agentic task takes approximately 1 day.",
+   "zh": "我们在 verl 框架之上构建所有方法。 在数学推理任务中，我们使用 Qwen3-4B-Base 和 Qwen3-8B-Base 作为学生策略。 为公平比较，所有推理方法都在相同的 DAPO-Math-17K 语料库（ Yu et al., 2026 ）上使用共享的超参数配置进行训练。 在智能体实验中，我们分别在 ALFWorld 和 ScienceWorld 上训练 Qwen3-4B-Instruct。 在所有设置中，Qwen3-4B-Instruct 都充当教师，并以专家解决方案为条件来提供词元级指导。 所有实验均在四块 NVIDIA H20 GPU 上进行。 在 DAPO-Math-17K 上训练 Qwen3-4B-Base 或 Qwen3-8B-Base 大约需要 1.5 1.5 – 2 2 天，而针对每个智能体任务训练 Qwen3-4B-Instruct 大约需要 1 天。",
+   "sents": [
+    {
+     "en": "We build all methods on top of the verl framework.",
+     "zh": "我们在 verl 框架之上构建所有方法。"
+    },
+    {
+     "en": "For mathematical reasoning, we use Qwen3-4B-Base and Qwen3-8B-Base as the student policies.",
+     "zh": "在数学推理任务中，我们使用 Qwen3-4B-Base 和 Qwen3-8B-Base 作为学生策略。"
+    },
+    {
+     "en": "For a fair comparison, all reasoning methods are trained on the same DAPO-Math-17K corpus ( Yu et al., 2026 ) using a shared hyperparameter configuration.",
+     "zh": "为公平比较，所有推理方法都在相同的 DAPO-Math-17K 语料库（ Yu et al., 2026 ）上使用共享的超参数配置进行训练。"
+    },
+    {
+     "en": "For the agentic experiments, we train Qwen3-4B-Instruct separately on ALFWorld and ScienceWorld.",
+     "zh": "在智能体实验中，我们分别在 ALFWorld 和 ScienceWorld 上训练 Qwen3-4B-Instruct。"
+    },
+    {
+     "en": "Across all settings, Qwen3-4B-Instruct serves as the teacher and conditions on expert solutions to provide token-level guidance.",
+     "zh": "在所有设置中，Qwen3-4B-Instruct 都充当教师，并以专家解决方案为条件来提供词元级指导。"
+    },
+    {
+     "en": "All experiments are conducted on four NVIDIA H20 GPUs.",
+     "zh": "所有实验均在四块 NVIDIA H20 GPU 上进行。"
+    },
+    {
+     "en": "Training either Qwen3-4B-Base or Qwen3-8B-Base on DAPO-Math-17K takes approximately 1.5 1.5 – 2 2 days, while training Qwen3-4B-Instruct for each agentic task takes approximately 1 day.",
+     "zh": "在 DAPO-Math-17K 上训练 Qwen3-4B-Base 或 Qwen3-8B-Base 大约需要 1.5 1.5 – 2 2 天，而针对每个智能体任务训练 Qwen3-4B-Instruct 大约需要 1 天。"
+    }
+   ]
+  },
+  {
+   "en": "Training Efficiency. As shown in Table 7 , PICO increases the average time per training step from 28.3 28.3 to 43.6 43.6 minutes due to the additional teacher-guided decoding. This additional computation, however, improves rollout utilization from 57.2 % 57.2\\% to 91.9 % 91.9\\% , allowing substantially more sampled groups to provide effective learning signals. The utilization-per-time ratio also remains comparable to that of GRPO ( 2.11 2.11 vs. 2.01 2.01 percentage points per minute). Thus, PICO introduces a clear wall-clock overhead, but recovers considerably more useful training samples from each rollout batch.",
+   "zh": "训练效率。 如表 7 所示，由于额外的教师引导解码，PICO 将每个训练步骤的平均时间从 28.3 28.3 分钟增加到 43.6 43.6 分钟。 然而，这一额外计算将采样利用率从 57.2% 57.2\\% 提升到 91.9% 91.9\\%，使得多得多的高采样组能够提供有效的学习信号。 单位时间利用率与 GRPO 相比仍然相当（每分钟 2.11 2.11 个百分点对比 2.01 2.01 个百分点）。 因此，PICO 带来了明显的实际时间开销，但从每个采样批次中回收了多得多的有用训练样本。",
+   "sents": [
+    {
+     "en": "Training Efficiency.",
+     "zh": "训练效率。"
+    },
+    {
+     "en": "As shown in Table 7 , PICO increases the average time per training step from 28.3 28.3 to 43.6 43.6 minutes due to the additional teacher-guided decoding.",
+     "zh": "如表 7 所示，由于额外的教师引导解码，PICO 将每个训练步骤的平均时间从 28.3 28.3 分钟增加到 43.6 43.6 分钟。"
+    },
+    {
+     "en": "This additional computation, however, improves rollout utilization from 57.2 % 57.2\\% to 91.9 % 91.9\\% , allowing substantially more sampled groups to provide effective learning signals.",
+     "zh": "然而，这一额外计算将采样利用率从 57.2% 57.2\\% 提升到 91.9% 91.9\\%，使得多得多的高采样组能够提供有效的学习信号。"
+    },
+    {
+     "en": "The utilization-per-time ratio also remains comparable to that of GRPO ( 2.11 2.11 vs. 2.01 2.01 percentage points per minute).",
+     "zh": "单位时间利用率与 GRPO 相比仍然相当（每分钟 2.11 2.11 个百分点对比 2.01 2.01 个百分点）。"
+    },
+    {
+     "en": "Thus, PICO introduces a clear wall-clock overhead, but recovers considerably more useful training samples from each rollout batch.",
+     "zh": "因此，PICO 带来了明显的实际时间开销，但从每个采样批次中回收了多得多的有用训练样本。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate mathematical reasoning on AIME 2025, AIME 2026, HMMT 2026, and MATH500. AIME 2025 and AIME 2026 each contain 30 problems drawn from the corresponding AIME I and AIME II competitions. These problems require exact numerical answers and cover algebra, geometry, combinatorics, and number theory. HMMT 2026 contains 33 problems from the February 2026 Harvard–MIT Mathematics Tournament and provides a complementary evaluation of advanced competition-level mathematical reasoning. MATH-500 is a widely used subset of the MATH test set comprising 500 problems across seven mathematical subjects and a range of difficulty levels. Compared with the recent competition benchmarks, MATH-500 provides broader coverage of mathematical topics and evaluates performance on a larger and more diverse problem set. Since our reasoning models are trained on DAPO-Math-17K, we treat these three competition-mathematics benchmarks as in-domain evaluations.",
+   "zh": "我们在 AIME 2025、AIME 2026、HMMT 2026 和 MATH500 上评估数学推理能力。 AIME 2025 和 AIME 2026 各包含 30 道题，题目选自对应的 AIME I 和 AIME II 竞赛。 这些题目要求给出精确的数值答案，涵盖代数、几何、组合数学和数论。 HMMT 2026 包含 33 道题，来自 2026 年 2 月的哈佛—麻省理工数学锦标赛，为高难度竞赛级数学推理提供了补充评估。 MATH-500 是 MATH 测试集的一个广泛使用的子集，包含 500 道题，覆盖七个数学科目和多种难度级别。 与近期的竞赛基准相比，MATH-500 对数学主题的覆盖面更广，可在更大、更多样化的题目集上评估性能。 由于我们的推理模型在 DAPO-Math-17K 上训练，我们将这三个竞赛数学基准视为域内评估。",
+   "sents": [
+    {
+     "en": "We evaluate mathematical reasoning on AIME 2025, AIME 2026, HMMT 2026, and MATH500.",
+     "zh": "我们在 AIME 2025、AIME 2026、HMMT 2026 和 MATH500 上评估数学推理能力。"
+    },
+    {
+     "en": "AIME 2025 and AIME 2026 each contain 30 problems drawn from the corresponding AIME I and AIME II competitions.",
+     "zh": "AIME 2025 和 AIME 2026 各包含 30 道题，题目选自对应的 AIME I 和 AIME II 竞赛。"
+    },
+    {
+     "en": "These problems require exact numerical answers and cover algebra, geometry, combinatorics, and number theory.",
+     "zh": "这些题目要求给出精确的数值答案，涵盖代数、几何、组合数学和数论。"
+    },
+    {
+     "en": "HMMT 2026 contains 33 problems from the February 2026 Harvard–MIT Mathematics Tournament and provides a complementary evaluation of advanced competition-level mathematical reasoning.",
+     "zh": "HMMT 2026 包含 33 道题，来自 2026 年 2 月的哈佛—麻省理工数学锦标赛，为高难度竞赛级数学推理提供了补充评估。"
+    },
+    {
+     "en": "MATH-500 is a widely used subset of the MATH test set comprising 500 problems across seven mathematical subjects and a range of difficulty levels.",
+     "zh": "MATH-500 是 MATH 测试集的一个广泛使用的子集，包含 500 道题，覆盖七个数学科目和多种难度级别。"
+    },
+    {
+     "en": "Compared with the recent competition benchmarks, MATH-500 provides broader coverage of mathematical topics and evaluates performance on a larger and more diverse problem set.",
+     "zh": "与近期的竞赛基准相比，MATH-500 对数学主题的覆盖面更广，可在更大、更多样化的题目集上评估性能。"
+    },
+    {
+     "en": "Since our reasoning models are trained on DAPO-Math-17K, we treat these three competition-mathematics benchmarks as in-domain evaluations.",
+     "zh": "由于我们的推理模型在 DAPO-Math-17K 上训练，我们将这三个竞赛数学基准视为域内评估。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate cross-domain generalization on GPQA-Diamond and Humanity’s Last Exam (HLE). GPQA-Diamond contains 198 expert-written, graduate-level multiple-choice questions, primarily covering physics, chemistry, and biology. The full HLE benchmark comprises 2,500 expert-level questions spanning more than 100 academic and professional subjects. We use its text-only subset, which contains 500 questions and excludes items that require multimodal inputs. These benchmarks differ substantially from the mathematics-focused training distribution and therefore assess whether the reasoning capabilities acquired during training transfer to previously unseen domains.",
+   "zh": "我们在 GPQA-Diamond 和 Humanity’s Last Exam（HLE）上评估跨领域泛化能力。 GPQA-Diamond 包含 198 道由专家编写的研究生级多项选择题，主要涵盖物理、化学和生物学。 完整的 HLE 基准包含 2,500 道专家级问题，涵盖 100 多个学术和专业学科。 我们使用其纯文本子集，该子集包含 500 道问题，并排除了需要多模态输入的题目。 这些基准与以数学为核心的训练分布差异很大，因此可以评估训练中获得的推理能力能否迁移到之前未见过的领域。",
+   "sents": [
+    {
+     "en": "We evaluate cross-domain generalization on GPQA-Diamond and Humanity’s Last Exam (HLE).",
+     "zh": "我们在 GPQA-Diamond 和 Humanity’s Last Exam（HLE）上评估跨领域泛化能力。"
+    },
+    {
+     "en": "GPQA-Diamond contains 198 expert-written, graduate-level multiple-choice questions, primarily covering physics, chemistry, and biology.",
+     "zh": "GPQA-Diamond 包含 198 道由专家编写的研究生级多项选择题，主要涵盖物理、化学和生物学。"
+    },
+    {
+     "en": "The full HLE benchmark comprises 2,500 expert-level questions spanning more than 100 academic and professional subjects.",
+     "zh": "完整的 HLE 基准包含 2,500 道专家级问题，涵盖 100 多个学术和专业学科。"
+    },
+    {
+     "en": "We use its text-only subset, which contains 500 questions and excludes items that require multimodal inputs.",
+     "zh": "我们使用其纯文本子集，该子集包含 500 道问题，并排除了需要多模态输入的题目。"
+    },
+    {
+     "en": "These benchmarks differ substantially from the mathematics-focused training distribution and therefore assess whether the reasoning capabilities acquired during training transfer to previously unseen domains.",
+     "zh": "这些基准与以数学为核心的训练分布差异很大，因此可以评估训练中获得的推理能力能否迁移到之前未见过的领域。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate agentic reasoning on ALFWorld and ScienceWorld using Qwen3-4B-Instruct. ALFWorld is a text-based interactive benchmark in which an agent must complete household tasks by interpreting observations and executing sequences of admissible actions. Following the standard evaluation protocol, we evaluate on 140 task instances from the valid-seen split and 134 task instances from the valid-unseen split. ScienceWorld is an interactive text environment centered on elementary-science reasoning. It comprises 30 task types across 10 scientific topics, instantiated into 1,819 task variations. These tasks require the agent to explore the environment, manipulate objects, and complete multi-step scientific procedures. For both benchmarks, each rollout corresponds to a complete interaction episode, and we use the environment-provided task-completion signal to determine success.",
+   "zh": "我们使用 Qwen3-4B-Instruct 在 ALFWorld 和 ScienceWorld 上评估智能体推理能力。 ALFWorld 是一个基于文本的交互式基准，其中智能体必须通过解读观察结果并执行一系列可执行动作来完成家务任务。 遵循标准评估协议，我们在 valid-seen 划分的 140 个任务实例和 valid-unseen 划分的 134 个任务实例上进行评估。 ScienceWorld 是一个以基础科学推理为核心的交互式文本环境。 它包含 10 个科学主题下的 30 种任务类型，被实例化为 1,819 个任务变体。 这些任务要求智能体探索环境、操作物体，并完成多步骤的科学流程。 对于这两个基准，每次 rollout 对应一次完整的交互片段，我们使用环境提供的任务完成信号来判定成功与否。",
+   "sents": [
+    {
+     "en": "We evaluate agentic reasoning on ALFWorld and ScienceWorld using Qwen3-4B-Instruct.",
+     "zh": "我们使用 Qwen3-4B-Instruct 在 ALFWorld 和 ScienceWorld 上评估智能体推理能力。"
+    },
+    {
+     "en": "ALFWorld is a text-based interactive benchmark in which an agent must complete household tasks by interpreting observations and executing sequences of admissible actions.",
+     "zh": "ALFWorld 是一个基于文本的交互式基准，其中智能体必须通过解读观察结果并执行一系列可执行动作来完成家务任务。"
+    },
+    {
+     "en": "Following the standard evaluation protocol, we evaluate on 140 task instances from the valid-seen split and 134 task instances from the valid-unseen split.",
+     "zh": "遵循标准评估协议，我们在 valid-seen 划分的 140 个任务实例和 valid-unseen 划分的 134 个任务实例上进行评估。"
+    },
+    {
+     "en": "ScienceWorld is an interactive text environment centered on elementary-science reasoning.",
+     "zh": "ScienceWorld 是一个以基础科学推理为核心的交互式文本环境。"
+    },
+    {
+     "en": "It comprises 30 task types across 10 scientific topics, instantiated into 1,819 task variations.",
+     "zh": "它包含 10 个科学主题下的 30 种任务类型，被实例化为 1,819 个任务变体。"
+    },
+    {
+     "en": "These tasks require the agent to explore the environment, manipulate objects, and complete multi-step scientific procedures.",
+     "zh": "这些任务要求智能体探索环境、操作物体，并完成多步骤的科学流程。"
+    },
+    {
+     "en": "For both benchmarks, each rollout corresponds to a complete interaction episode, and we use the environment-provided task-completion signal to determine success.",
+     "zh": "对于这两个基准，每次 rollout 对应一次完整的交互片段，我们使用环境提供的任务完成信号来判定成功与否。"
+    }
+   ]
+  },
+  {
+   "en": "For all reasoning benchmarks, we independently sample 16 responses per problem and report both avg@16 and pass@16. We use a sampling temperature of 0.6 0.6 , top- p p of 1 1 , top- k k of − 1 -1 , and a maximum response length of 20,480 20{,}480 tokens. We apply the same prompt template, answer extractor, and verifier to all methods. For ALFWorld and ScienceWorld, we use a sampling temperature of 1 and a maximum of 20 interaction steps per episode. We evaluate each task instance over 8 episode(s) and report the mean episode success rate. During all evaluations, the student operates independently from the original task input without expert solutions, teacher predictions, or joint decoding.",
+   "zh": "对于所有推理基准，我们对每个问题独立采样 16 个回答，并同时报告 avg@16 和 pass@16。 我们使用 0.6 0.6 的采样温度、1 1 的 top- p p、− 1 -1 的 top- k k，以及 20,480 20{,}480 个词元的最大回答长度。 我们对所有方法应用相同的提示模板、答案抽取器和验证器。 对于 ALFWorld 和 ScienceWorld，我们使用 1 的采样温度和每回合最多 20 步交互。 我们对每个任务实例评估 8 个回合，并报告平均回合成功率。 在所有评估中，学生智能体仅根据原始任务输入独立运行，不使用专家解答、教师预测或联合解码。",
+   "sents": [
+    {
+     "en": "For all reasoning benchmarks, we independently sample 16 responses per problem and report both avg@16 and pass@16.",
+     "zh": "对于所有推理基准，我们对每个问题独立采样 16 个回答，并同时报告 avg@16 和 pass@16。"
+    },
+    {
+     "en": "We use a sampling temperature of 0.6 0.6 , top- p p of 1 1 , top- k k of − 1 -1 , and a maximum response length of 20,480 20{,}480 tokens.",
+     "zh": "我们使用 0.6 0.6 的采样温度、1 1 的 top- p p、− 1 -1 的 top- k k，以及 20,480 20{,}480 个词元的最大回答长度。"
+    },
+    {
+     "en": "We apply the same prompt template, answer extractor, and verifier to all methods.",
+     "zh": "我们对所有方法应用相同的提示模板、答案抽取器和验证器。"
+    },
+    {
+     "en": "For ALFWorld and ScienceWorld, we use a sampling temperature of 1 and a maximum of 20 interaction steps per episode.",
+     "zh": "对于 ALFWorld 和 ScienceWorld，我们使用 1 的采样温度和每回合最多 20 步交互。"
+    },
+    {
+     "en": "We evaluate each task instance over 8 episode(s) and report the mean episode success rate.",
+     "zh": "我们对每个任务实例评估 8 个回合，并报告平均回合成功率。"
+    },
+    {
+     "en": "During all evaluations, the student operates independently from the original task input without expert solutions, teacher predictions, or joint decoding.",
+     "zh": "在所有评估中，学生智能体仅根据原始任务输入独立运行，不使用专家解答、教师预测或联合解码。"
+    }
+   ]
+  },
+  {
+   "en": "we present the prompts used for mathematical reasoning and agentic tasks. The student prompt contains only the original task information and the interaction context available under the target policy. The teacher receives the same task context together with privileged guidance derived from off-policy data. For mathematical reasoning, this guidance is an expert solution associated with the training problem. For ALFWorld, it is a known-correct expert trajectory, which the teacher aligns with the current observation and action history to identify a suitable next action. The off-policy data is never included in the student’s prompt or generated context. Instead, the teacher uses it only to produce token-level predictions during joint decoding, while the student distribution determines the relative sampling probabilities over the retained candidate tokens. This design incorporates information from successful off-policy solutions without training the student directly on their full trajectories or exposing privileged information at inference time.",
+   "zh": "我们展示了用于数学推理和智能体任务的提示词。 学生提示词仅包含原始任务信息以及在目标策略下可获得的交互上下文。 教师则接收相同的任务上下文，以及从离策略数据中导出的特权指导信息。 在数学推理中，该指导信息是与训练题目相关联的专家解答。 在 ALFWorld 中，它是一条已知正确的专家轨迹，教师将其与当前的观察和动作历史对齐，以确定合适的下一步动作。 离策略数据绝不会出现在学生的提示词或其生成的上下文中。 相反，教师仅在联合解码时利用它来生成词元级预测，而学生分布决定被保留候选词元的相对采样概率。 这一设计融入了来自成功离策略解答的信息，同时无需直接在完整轨迹上训练学生，也不会在推理时暴露特权信息。",
+   "sents": [
+    {
+     "en": "we present the prompts used for mathematical reasoning and agentic tasks.",
+     "zh": "我们展示了用于数学推理和智能体任务的提示词。"
+    },
+    {
+     "en": "The student prompt contains only the original task information and the interaction context available under the target policy.",
+     "zh": "学生提示词仅包含原始任务信息以及在目标策略下可获得的交互上下文。"
+    },
+    {
+     "en": "The teacher receives the same task context together with privileged guidance derived from off-policy data.",
+     "zh": "教师则接收相同的任务上下文，以及从离策略数据中导出的特权指导信息。"
+    },
+    {
+     "en": "For mathematical reasoning, this guidance is an expert solution associated with the training problem.",
+     "zh": "在数学推理中，该指导信息是与训练题目相关联的专家解答。"
+    },
+    {
+     "en": "For ALFWorld, it is a known-correct expert trajectory, which the teacher aligns with the current observation and action history to identify a suitable next action.",
+     "zh": "在 ALFWorld 中，它是一条已知正确的专家轨迹，教师将其与当前的观察和动作历史对齐，以确定合适的下一步动作。"
+    },
+    {
+     "en": "The off-policy data is never included in the student’s prompt or generated context.",
+     "zh": "离策略数据绝不会出现在学生的提示词或其生成的上下文中。"
+    },
+    {
+     "en": "Instead, the teacher uses it only to produce token-level predictions during joint decoding, while the student distribution determines the relative sampling probabilities over the retained candidate tokens.",
+     "zh": "相反，教师仅在联合解码时利用它来生成词元级预测，而学生分布决定被保留候选词元的相对采样概率。"
+    },
+    {
+     "en": "This design incorporates information from successful off-policy solutions without training the student directly on their full trajectories or exposing privileged information at inference time.",
+     "zh": "这一设计融入了来自成功离策略解答的信息，同时无需直接在完整轨迹上训练学生，也不会在推理时暴露特权信息。"
+    }
+   ]
+  }
+ ]
+}
