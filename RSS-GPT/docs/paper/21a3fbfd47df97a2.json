@@ -1,0 +1,1212 @@
+{
+ "id": "21a3fbfd47df97a2",
+ "source": "arxiv-agent",
+ "link": "https://arxiv.org/abs/2611.06829v1",
+ "title": "Enabling AWS Cloud FPGA Development Using High-Level Vitis HLS",
+ "title_zh": "利用高级 Vitis HLS 实现 AWS 云 FPGA 开发",
+ "published": "2026-11-04T17:44:04Z",
+ "translated_at": "2026-11-05T20:13:45Z",
+ "paragraphs": [
+  {
+   "en": "We present a toolchain for development of ML models on AWS EC2 F2 cloud FPGA infrastructure from high-level language, implementing a complete Vitis HLS → \\to HDK bridge → \\to AFI workflow that has been absent from the academic literature despite eight years of AWS FPGA availability. We introduce a four-level methodology (FP32 PyTorch → \\to bit-accurate quantized Python → \\to HLS C-simulation → \\to physical FPGA) to aid in localizing errors, including FPGA-specific circuit errors. Together these tools allow coding agents to effectively implement FPGA designs from user directions, testing and debugging as needed. We document the deployment workflow, timing closure strategies, and practical HLS engineering decisions that proved crucial. We validate using TinyBERT fine-tuned for address Named Entity Recognition, implementing the embedding layer and the first of four encoder layers on the FPGA hardware. Our implementation streams weights from host DRAM, yielding poor performance compared to CPU/GPU implementations; we discuss forward paths.",
+   "zh": "我们提出了一套在 AWS EC2 F2 云 FPGA 基础设施上从高级语言开发机器学习模型的工具链，实现了完整的 Vitis HLS → HDK 桥接 → AFI 工作流程；尽管 AWS FPGA 已推出八年，这一流程在学术文献中一直缺失。 我们引入了一套四级方法论（FP32 PyTorch → 位精确量化 Python → HLS C 仿真 → 物理 FPGA），用于帮助定位错误，包括 FPGA 特有的电路错误。 这些工具相结合，使智能体能够根据用户指令有效地实现 FPGA 设计，并按需进行测试与调试。 我们记录了部署工作流程、时序收敛策略以及被证明至关重要的实用 HLS 工程决策。 我们使用针对命名实体识别任务微调的 TinyBERT 进行验证，在 FPGA 硬件上实现了嵌入层和四个编码器层中的第一层。 我们的实现从主机 DRAM 流式读取权重，导致性能相比 CPU/GPU 实现较差；我们讨论了未来的改进路径。",
+   "sents": [
+    {
+     "en": "We present a toolchain for development of ML models on AWS EC2 F2 cloud FPGA infrastructure from high-level language, implementing a complete Vitis HLS → \\to HDK bridge → \\to AFI workflow that has been absent from the academic literature despite eight years of AWS FPGA availability.",
+     "zh": "我们提出了一套在 AWS EC2 F2 云 FPGA 基础设施上从高级语言开发机器学习模型的工具链，实现了完整的 Vitis HLS → HDK 桥接 → AFI 工作流程；尽管 AWS FPGA 已推出八年，这一流程在学术文献中一直缺失。"
+    },
+    {
+     "en": "We introduce a four-level methodology (FP32 PyTorch → \\to bit-accurate quantized Python → \\to HLS C-simulation → \\to physical FPGA) to aid in localizing errors, including FPGA-specific circuit errors.",
+     "zh": "我们引入了一套四级方法论（FP32 PyTorch → 位精确量化 Python → HLS C 仿真 → 物理 FPGA），用于帮助定位错误，包括 FPGA 特有的电路错误。"
+    },
+    {
+     "en": "Together these tools allow coding agents to effectively implement FPGA designs from user directions, testing and debugging as needed.",
+     "zh": "这些工具相结合，使智能体能够根据用户指令有效地实现 FPGA 设计，并按需进行测试与调试。"
+    },
+    {
+     "en": "We document the deployment workflow, timing closure strategies, and practical HLS engineering decisions that proved crucial.",
+     "zh": "我们记录了部署工作流程、时序收敛策略以及被证明至关重要的实用 HLS 工程决策。"
+    },
+    {
+     "en": "We validate using TinyBERT fine-tuned for address Named Entity Recognition, implementing the embedding layer and the first of four encoder layers on the FPGA hardware.",
+     "zh": "我们使用针对命名实体识别任务微调的 TinyBERT 进行验证，在 FPGA 硬件上实现了嵌入层和四个编码器层中的第一层。"
+    },
+    {
+     "en": "Our implementation streams weights from host DRAM, yielding poor performance compared to CPU/GPU implementations; we discuss forward paths.",
+     "zh": "我们的实现从主机 DRAM 流式读取权重，导致性能相比 CPU/GPU 实现较差；我们讨论了未来的改进路径。"
+    }
+   ]
+  },
+  {
+   "en": "Engineering demanding workloads such as ML inference requires coordinated optimization between the hardware architecture and software operations. The transformer-based software stack that represents current state of the art in ML implements a neural network via matrix multiplication operations. These operations are accelerated by high-performance hardware GPUs with on-board memory. Transformer inference is increasingly constrained by memory bandwidth rather than compute [ 1 , 2 , 3 , 4 ] .",
+   "zh": "工程化诸如机器学习推理这类高负载工作，需要在硬件架构与软件操作之间进行协同优化。 代表当前机器学习最先进水平的基于 Transformer 的软件栈，通过矩阵乘法运算来实现神经网络。 这些运算由配备片上存储器的高性能硬件 GPU 来加速。 Transformer 推理日益受到内存带宽而非算力的制约 [ 1 , 2 , 3 , 4 ] 。",
+   "sents": [
+    {
+     "en": "Engineering demanding workloads such as ML inference requires coordinated optimization between the hardware architecture and software operations.",
+     "zh": "工程化诸如机器学习推理这类高负载工作，需要在硬件架构与软件操作之间进行协同优化。"
+    },
+    {
+     "en": "The transformer-based software stack that represents current state of the art in ML implements a neural network via matrix multiplication operations.",
+     "zh": "代表当前机器学习最先进水平的基于 Transformer 的软件栈，通过矩阵乘法运算来实现神经网络。"
+    },
+    {
+     "en": "These operations are accelerated by high-performance hardware GPUs with on-board memory.",
+     "zh": "这些运算由配备片上存储器的高性能硬件 GPU 来加速。"
+    },
+    {
+     "en": "Transformer inference is increasingly constrained by memory bandwidth rather than compute [ 1 , 2 , 3 , 4 ] .",
+     "zh": "Transformer 推理日益受到内存带宽而非算力的制约 [ 1 , 2 , 3 , 4 ] 。"
+    }
+   ]
+  },
+  {
+   "en": "In comparison with the essentially von Neumann-based CPU/GPU architecture, Field Programmable Gate Array (FPGA) devices represent an alternative hardware platform. FPGAs offer memory distributed throughout the device and feature programmable circuitry, allowing memory and compute to be placed together in a more distributed way. These features support deterministic latency and fixed power draw independent of request rate, and could permit more efficient designs, particularly for implementing smaller models and those where GPU tail-latency variance and idle power are concerns [ 5 , 6 ] .",
+   "zh": "与本质上基于冯·诺依曼架构的 CPU/GPU 架构相比，现场可编程门阵列（FPGA）设备代表了一种替代性的硬件平台。 FPGA 在整个器件中分布着存储器，并具有可编程电路的特性，使存储和计算能够以更分布式的方式放置在一起。 这些特性支持确定性的延迟和与请求速率无关的固定功耗，并可能实现更高效的设计，特别是对于部署较小的模型以及那些 GPU 尾延迟波动和空闲功耗令人担忧的场景 [ 5 , 6 ] 。",
+   "sents": [
+    {
+     "en": "In comparison with the essentially von Neumann-based CPU/GPU architecture, Field Programmable Gate Array (FPGA) devices represent an alternative hardware platform.",
+     "zh": "与本质上基于冯·诺依曼架构的 CPU/GPU 架构相比，现场可编程门阵列（FPGA）设备代表了一种替代性的硬件平台。"
+    },
+    {
+     "en": "FPGAs offer memory distributed throughout the device and feature programmable circuitry, allowing memory and compute to be placed together in a more distributed way.",
+     "zh": "FPGA 在整个器件中分布着存储器，并具有可编程电路的特性，使存储和计算能够以更分布式的方式放置在一起。"
+    },
+    {
+     "en": "These features support deterministic latency and fixed power draw independent of request rate, and could permit more efficient designs, particularly for implementing smaller models and those where GPU tail-latency variance and idle power are concerns [ 5 , 6 ] .",
+     "zh": "这些特性支持确定性的延迟和与请求速率无关的固定功耗，并可能实现更高效的设计，特别是对于部署较小的模型以及那些 GPU 尾延迟波动和空闲功耗令人担忧的场景 [ 5 , 6 ] 。"
+    }
+   ]
+  },
+  {
+   "en": "Research in generative AI using FPGA devices has been constrained, however, by the difficulty of programming ML systems on them. Despite eight years of availability (F1 since 2017, F2 since December 2024 [ 7 ] ), AWS cloud FPGA instances have not been used for ML inference in any published academic work, although their pay-on-demand cost model lowers the funding barrier for research projects. The University of Toronto noted in 2024 that F1 instances “have not been used for such large ML applications” [ 8 ] . The gap is not hardware capability; the AMD VU47P on F2 has 9,024 DSP slices, 16 GiB HBM, and 64 GiB DDR4. We identify the absence of a documented, reproducible workflow from HLS C++ kernels to deployed Amazon FPGA Images (AFIs) as the barrier.",
+   "zh": "然而，使用 FPGA 器件进行生成式 AI 研究一直受到制约，原因在于在其上编程 ML 系统十分困难。 尽管 AWS 云 FPGA 实例已经可用八年之久（F1 自 2017 年起，F2 自 2024 年 12 月起 [ 7 ] ），但在任何已发表的学术工作中都没有将其用于 ML 推理，尽管其按需付费的成本模式降低了研究项目的资金门槛。 多伦多大学在 2024 年指出，F1 实例“尚未被用于此类大型 ML 应用” [ 8 ] 。 这一差距并非源于硬件能力；F2 上的 AMD VU47P 拥有 9,024 个 DSP 切片、16 GiB HBM 和 64 GiB DDR4。 我们认为，从 HLS C++ 内核到已部署的 Amazon FPGA 镜像（AFI）缺乏有文档记录且可复现的工作流程，才是真正的障碍。",
+   "sents": [
+    {
+     "en": "Research in generative AI using FPGA devices has been constrained, however, by the difficulty of programming ML systems on them.",
+     "zh": "然而，使用 FPGA 器件进行生成式 AI 研究一直受到制约，原因在于在其上编程 ML 系统十分困难。"
+    },
+    {
+     "en": "Despite eight years of availability (F1 since 2017, F2 since December 2024 [ 7 ] ), AWS cloud FPGA instances have not been used for ML inference in any published academic work, although their pay-on-demand cost model lowers the funding barrier for research projects.",
+     "zh": "尽管 AWS 云 FPGA 实例已经可用八年之久（F1 自 2017 年起，F2 自 2024 年 12 月起 [ 7 ] ），但在任何已发表的学术工作中都没有将其用于 ML 推理，尽管其按需付费的成本模式降低了研究项目的资金门槛。"
+    },
+    {
+     "en": "The University of Toronto noted in 2024 that F1 instances “have not been used for such large ML applications” [ 8 ] .",
+     "zh": "多伦多大学在 2024 年指出，F1 实例“尚未被用于此类大型 ML 应用” [ 8 ] 。"
+    },
+    {
+     "en": "The gap is not hardware capability; the AMD VU47P on F2 has 9,024 DSP slices, 16 GiB HBM, and 64 GiB DDR4.",
+     "zh": "这一差距并非源于硬件能力；F2 上的 AMD VU47P 拥有 9,024 个 DSP 切片、16 GiB HBM 和 64 GiB DDR4。"
+    },
+    {
+     "en": "We identify the absence of a documented, reproducible workflow from HLS C++ kernels to deployed Amazon FPGA Images (AFIs) as the barrier.",
+     "zh": "我们认为，从 HLS C++ 内核到已部署的 Amazon FPGA 镜像（AFI）缺乏有文档记录且可复现的工作流程，才是真正的障碍。"
+    }
+   ]
+  },
+  {
+   "en": "This paper intends to close this gap. We present a complete toolchain and methodology for developing ML models on AWS EC2 F2 using the complete Vitis HLS (high level language) → \\to HDK bridge → \\to AFI workflow for ML workloads. Supporting contributions include a four-level validation methodology (§ 2.8 ), build time characterization for the AWS F2 HDK workflow [ 9 ] (§ 3.3 ), and a timing closure analysis for SSI FPGA devices under ML workloads (§ 3.2 ).",
+   "zh": "本文旨在填补这一空白。 我们提出了一套完整的工具链和方法，用于在 AWS EC2 F2 上开发机器学习模型，采用完整的 Vitis HLS（高层次语言）→ \\to HDK 桥接 → \\to AFI 工作流来处理机器学习工作负载。 支持性贡献包括四级验证方法（§ 2.8）、AWS F2 HDK 工作流的构建时间特性分析 [ 9 ]（§ 3.3），以及机器学习工作负载下 SSI FPGA 器件的时序收敛分析（§ 3.2）。",
+   "sents": [
+    {
+     "en": "This paper intends to close this gap.",
+     "zh": "本文旨在填补这一空白。"
+    },
+    {
+     "en": "We present a complete toolchain and methodology for developing ML models on AWS EC2 F2 using the complete Vitis HLS (high level language) → \\to HDK bridge → \\to AFI workflow for ML workloads.",
+     "zh": "我们提出了一套完整的工具链和方法，用于在 AWS EC2 F2 上开发机器学习模型，采用完整的 Vitis HLS（高层次语言）→ \\to HDK 桥接 → \\to AFI 工作流来处理机器学习工作负载。"
+    },
+    {
+     "en": "Supporting contributions include a four-level validation methodology (§ 2.8 ), build time characterization for the AWS F2 HDK workflow [ 9 ] (§ 3.3 ), and a timing closure analysis for SSI FPGA devices under ML workloads (§ 3.2 ).",
+     "zh": "支持性贡献包括四级验证方法（§ 2.8）、AWS F2 HDK 工作流的构建时间特性分析 [ 9 ]（§ 3.3），以及机器学习工作负载下 SSI FPGA 器件的时序收敛分析（§ 3.2）。"
+    }
+   ]
+  },
+  {
+   "en": "Our primary research goal was to characterize a working toolchain and analysis path by which a transformer could be implemented on an AWS F2 FPGA. This goal led to the following design decisions (detailed more fully in following subsections). Taking true advantage of the FPGA’s architectural capabilities would require different choices, discussed in Section 4.2 :",
+   "zh": "我们的主要研究目标是构建一套可运行的工具链与分析路径，使 Transformer 能够在 AWS F2 FPGA 上实现。 这一目标引出了以下设计决策（将在后续小节中更详细地阐述）。 要真正发挥 FPGA 的架构能力，则需要做出不同的选择，相关内容将在第 4.2 节中讨论：",
+   "sents": [
+    {
+     "en": "Our primary research goal was to characterize a working toolchain and analysis path by which a transformer could be implemented on an AWS F2 FPGA.",
+     "zh": "我们的主要研究目标是构建一套可运行的工具链与分析路径，使 Transformer 能够在 AWS F2 FPGA 上实现。"
+    },
+    {
+     "en": "This goal led to the following design decisions (detailed more fully in following subsections).",
+     "zh": "这一目标引出了以下设计决策（将在后续小节中更详细地阐述）。"
+    },
+    {
+     "en": "Taking true advantage of the FPGA’s architectural capabilities would require different choices, discussed in Section 4.2 :",
+     "zh": "要真正发挥 FPGA 的架构能力，则需要做出不同的选择，相关内容将在第 4.2 节中讨论："
+    }
+   ]
+  },
+  {
+   "en": "High level language: For ease of implementation we chose the C++-based Vitis HLS language instead of lower-level Verilog HDL.",
+   "zh": "高级语言：为了便于实现，我们选择了基于 C++ 的 Vitis HLS 语言，而不是更底层的 Verilog HDL。",
+   "sents": null
+  },
+  {
+   "en": "Community bridge: The F2 toolchain does not natively support creating an AFI image from high-level Vitis HLS. We used a community-based open source bridge [ 10 ] to facilitate this path.",
+   "zh": "社区桥接方案：F2 工具链原生并不支持从高层 Vitis HLS 创建 AFI 镜像。 我们使用了一个基于社区的开源桥接方案 [ 10 ] 来打通这一路径。",
+   "sents": [
+    {
+     "en": "Community bridge: The F2 toolchain does not natively support creating an AFI image from high-level Vitis HLS.",
+     "zh": "社区桥接方案：F2 工具链原生并不支持从高层 Vitis HLS 创建 AFI 镜像。"
+    },
+    {
+     "en": "We used a community-based open source bridge [ 10 ] to facilitate this path.",
+     "zh": "我们使用了一个基于社区的开源桥接方案 [ 10 ] 来打通这一路径。"
+    }
+   ]
+  },
+  {
+   "en": "W16A16 quantization: To better debug numerical issues resulting from FPGA design logic, we chose INT16 weights and INT16 activations (vs. more common INT8 quantizations)",
+   "zh": "W16A16 量化：为了更好地调试由 FPGA 设计逻辑导致的数值问题，我们选择了 INT16 权重和 INT16 激活（而不是更常见的 INT8 量化）",
+   "sents": null
+  },
+  {
+   "en": "Four-level validation methodology: To localize where in the stack errors were appearing, we developed a four-level validation methodology described further in Section 2.8",
+   "zh": "四级验证方法：为了定位错误在技术栈中出现的位置，我们开发了一种四级验证方法，将在第 2.8 节中进一步描述。",
+   "sents": null
+  },
+  {
+   "en": "While FPGAs provide programmable hardware, the physical architecture of the device remains important for combined hardware/software optimization. The AWS F2 instance hosts an AMD VU47P Virtex UltraScale+ FPGA which is organized in three separate dies called Super-Logic Regions (SLRs), which are co-located and wired together (see Figure 1 ). Crossing an SLR boundary requires traversing a long wire, which may cause signal timing problems.",
+   "zh": "虽然 FPGA 提供了可编程硬件，但器件的物理架构对于软硬件联合优化仍然十分重要。 AWS F2 实例搭载了一颗 AMD VU47P Virtex UltraScale+ FPGA，该 FPGA 由三个称为 Super-Logic Region（SLR）的独立裸片组成，这些裸片并列放置并通过连线互连（见图 1）。 跨越 SLR 边界需要经过一根很长的连线，这可能引发信号时序问题。",
+   "sents": [
+    {
+     "en": "While FPGAs provide programmable hardware, the physical architecture of the device remains important for combined hardware/software optimization.",
+     "zh": "虽然 FPGA 提供了可编程硬件，但器件的物理架构对于软硬件联合优化仍然十分重要。"
+    },
+    {
+     "en": "The AWS F2 instance hosts an AMD VU47P Virtex UltraScale+ FPGA which is organized in three separate dies called Super-Logic Regions (SLRs), which are co-located and wired together (see Figure 1 ).",
+     "zh": "AWS F2 实例搭载了一颗 AMD VU47P Virtex UltraScale+ FPGA，该 FPGA 由三个称为 Super-Logic Region（SLR）的独立裸片组成，这些裸片并列放置并通过连线互连（见图 1）。"
+    },
+    {
+     "en": "Crossing an SLR boundary requires traversing a long wire, which may cause signal timing problems.",
+     "zh": "跨越 SLR 边界需要经过一根很长的连线，这可能引发信号时序问题。"
+    }
+   ]
+  },
+  {
+   "en": "Memory in an FPGA is distributed throughout SLRs and is available in a hierarchy of layers that are progressively both larger and farther away from individual logic elements, as shown in Table 1 .",
+   "zh": "FPGA 中的存储器分布在各个 SLR 中，并以分层结构提供，各层级规模逐渐增大，且距离单个逻辑元件越来越远，如表 1 所示。",
+   "sents": null
+  },
+  {
+   "en": "FPGA devices are natively programmed in a low-level Hardware Description Language (HDL), the most popular being Verilog/SystemVerilog and VHDL. When fed into a synthesis tool (\"Vivado\" on the AMD/Xilinx FPGAs that the AWS F2 uses) the HDL code produces a physical design that specifies the direct placement of logic cells, lookup tables (LUTs), and routing, to which the FPGA is then configured. This level of implementation is termed Register-Transfer Level (RTL) logic. While conceptually comparable to an assembler producing machine code, the physical design is literally a circuit design which the FPGA directly manifests via a grid (array) of programmable logic gates, as compared with the set of CPU instructions that machine code represents. The physical design can thus, for example, specify many paths that execute in parallel by physically manifesting different circuit paths. The Vivado synthesis tool performs more sophisticated operations than an assembler, making use of simulation to optimize the timing and physical placement of the circuit design.",
+   "zh": "FPGA 器件通常使用底层硬件描述语言（HDL）进行编程，最常用的是 Verilog/SystemVerilog 和 VHDL。 将 HDL 代码输入综合工具（AWS F2 所使用的 AMD/Xilinx FPGA 上的“Vivado”）后，会生成一个物理设计，其中指定了逻辑单元、查找表（LUT）和布线的直接放置位置，FPGA 随后被配置为该设计。 这种实现层次被称为寄存器传输级（RTL）逻辑。 虽然在概念上类似于汇编器生成机器码，但物理设计实际上是一个电路设计，FPGA 通过可编程逻辑门构成的网格（阵列）直接将其呈现出来，这与机器码所代表的一组 CPU 指令形成对比。 因此，物理设计可以通过物理呈现不同的电路路径，指定许多并行执行的路径。 Vivado 综合工具比汇编器执行更复杂的操作，利用仿真来优化电路设计的时序和物理布局。",
+   "sents": [
+    {
+     "en": "FPGA devices are natively programmed in a low-level Hardware Description Language (HDL), the most popular being Verilog/SystemVerilog and VHDL.",
+     "zh": "FPGA 器件通常使用底层硬件描述语言（HDL）进行编程，最常用的是 Verilog/SystemVerilog 和 VHDL。"
+    },
+    {
+     "en": "When fed into a synthesis tool (\"Vivado\" on the AMD/Xilinx FPGAs that the AWS F2 uses) the HDL code produces a physical design that specifies the direct placement of logic cells, lookup tables (LUTs), and routing, to which the FPGA is then configured.",
+     "zh": "将 HDL 代码输入综合工具（AWS F2 所使用的 AMD/Xilinx FPGA 上的“Vivado”）后，会生成一个物理设计，其中指定了逻辑单元、查找表（LUT）和布线的直接放置位置，FPGA 随后被配置为该设计。"
+    },
+    {
+     "en": "This level of implementation is termed Register-Transfer Level (RTL) logic.",
+     "zh": "这种实现层次被称为寄存器传输级（RTL）逻辑。"
+    },
+    {
+     "en": "While conceptually comparable to an assembler producing machine code, the physical design is literally a circuit design which the FPGA directly manifests via a grid (array) of programmable logic gates, as compared with the set of CPU instructions that machine code represents.",
+     "zh": "虽然在概念上类似于汇编器生成机器码，但物理设计实际上是一个电路设计，FPGA 通过可编程逻辑门构成的网格（阵列）直接将其呈现出来，这与机器码所代表的一组 CPU 指令形成对比。"
+    },
+    {
+     "en": "The physical design can thus, for example, specify many paths that execute in parallel by physically manifesting different circuit paths.",
+     "zh": "因此，物理设计可以通过物理呈现不同的电路路径，指定许多并行执行的路径。"
+    },
+    {
+     "en": "The Vivado synthesis tool performs more sophisticated operations than an assembler, making use of simulation to optimize the timing and physical placement of the circuit design.",
+     "zh": "Vivado 综合工具比汇编器执行更复杂的操作，利用仿真来优化电路设计的时序和物理布局。"
+    }
+   ]
+  },
+  {
+   "en": "While HDL provides the most control, its verbose low-level nature can prove a barrier to quickly implementing interesting ML designs. We chose to target a High Level Synthesis (HLS) language, the C/C++-based \"Vitis HLS\", which the Vitis tool synthesizes to lower-level HDL.",
+   "zh": "虽然 HDL 提供了最高程度的控制，但其冗长的低层特性可能成为快速实现有趣机器学习设计的障碍。 我们选择以高层次综合（HLS）语言为目标，即基于 C/C++ 的「Vitis HLS」，Vitis 工具会将其综合为较低层次的 HDL。",
+   "sents": [
+    {
+     "en": "While HDL provides the most control, its verbose low-level nature can prove a barrier to quickly implementing interesting ML designs.",
+     "zh": "虽然 HDL 提供了最高程度的控制，但其冗长的低层特性可能成为快速实现有趣机器学习设计的障碍。"
+    },
+    {
+     "en": "We chose to target a High Level Synthesis (HLS) language, the C/C++-based \"Vitis HLS\", which the Vitis tool synthesizes to lower-level HDL.",
+     "zh": "我们选择以高层次综合（HLS）语言为目标，即基于 C/C++ 的「Vitis HLS」，Vitis 工具会将其综合为较低层次的 HDL。"
+    }
+   ]
+  },
+  {
+   "en": "The Hardware Development Kit (HDK) for the AWS F2 [ 9 ] provides a shell that separates AWS-managed infrastructure (PCIe, DDR controllers, DMA) from user custom logic (CL). The shell handles infrastructure functions and provides defined interface points to which the user-supplied CL integrates. Unlike the user/kernel separation in a traditional OS, the shell and user CL are combined by the Vivado synthesizer to produce the RTL/circuit design, so both shell and user CL ultimately directly manifest hardware. Conceptually the shell is more similar to the set of linked libraries that operate the loop and pseudo-OS functions in a Real-Time Development Kit (RTK).",
+   "zh": "适用于 AWS F2 [ 9 ] 的硬件开发套件（HDK）提供了一个外壳（shell），将 AWS 管理的基础设施（PCIe、DDR 控制器、DMA）与用户自定义逻辑（CL）分离。 外壳负责基础设施功能，并提供定义好的接口点，用户提供的自定义逻辑（CL）集成到这些接口点上。 与传统操作系统中的用户/内核分离不同，外壳和用户自定义逻辑由 Vivado 综合器组合以生成 RTL/电路设计，因此外壳和用户自定义逻辑最终都直接体现为硬件。 从概念上讲，外壳更类似于在实时开发套件（RTK）中操作循环和伪操作系统功能的链接库集合。",
+   "sents": [
+    {
+     "en": "The Hardware Development Kit (HDK) for the AWS F2 [ 9 ] provides a shell that separates AWS-managed infrastructure (PCIe, DDR controllers, DMA) from user custom logic (CL).",
+     "zh": "适用于 AWS F2 [ 9 ] 的硬件开发套件（HDK）提供了一个外壳（shell），将 AWS 管理的基础设施（PCIe、DDR 控制器、DMA）与用户自定义逻辑（CL）分离。"
+    },
+    {
+     "en": "The shell handles infrastructure functions and provides defined interface points to which the user-supplied CL integrates.",
+     "zh": "外壳负责基础设施功能，并提供定义好的接口点，用户提供的自定义逻辑（CL）集成到这些接口点上。"
+    },
+    {
+     "en": "Unlike the user/kernel separation in a traditional OS, the shell and user CL are combined by the Vivado synthesizer to produce the RTL/circuit design, so both shell and user CL ultimately directly manifest hardware.",
+     "zh": "与传统操作系统中的用户/内核分离不同，外壳和用户自定义逻辑由 Vivado 综合器组合以生成 RTL/电路设计，因此外壳和用户自定义逻辑最终都直接体现为硬件。"
+    },
+    {
+     "en": "Conceptually the shell is more similar to the set of linked libraries that operate the loop and pseudo-OS functions in a Real-Time Development Kit (RTK).",
+     "zh": "从概念上讲，外壳更类似于在实时开发套件（RTK）中操作循环和伪操作系统功能的链接库集合。"
+    }
+   ]
+  },
+  {
+   "en": "Pre-created CL for common tasks can also be imported using \"IP cores\" which play a role analogous to reusable libraries in CPU-based programming.",
+   "zh": "预先创建的用于常见任务的电路逻辑（CL）也可以通过“IP 核”导入，其作用类似于基于 CPU 的编程中的可复用库。",
+   "sents": null
+  },
+  {
+   "en": "The HDK Custom Logic (CL) flow creates an AFI file, which is loaded to the FPGA. The higher-level Vitis HLS that we target cannot produce an AFI directly. To bridge this gap, we used a community-developed bridge to allow end-to-end flow from Vitis HLS to an AFI, as shown in Figure 2 .",
+   "zh": "HDK 自定义逻辑（CL）流程会生成一个 AFI 文件，该文件被加载到 FPGA 上。 我们所针对的更高层级的 Vitis HLS 无法直接生成 AFI。 为了弥合这一差距，我们使用了一个社区开发的桥接工具，以实现从 Vitis HLS 到 AFI 的端到端流程，如图 2 所示。",
+   "sents": [
+    {
+     "en": "The HDK Custom Logic (CL) flow creates an AFI file, which is loaded to the FPGA.",
+     "zh": "HDK 自定义逻辑（CL）流程会生成一个 AFI 文件，该文件被加载到 FPGA 上。"
+    },
+    {
+     "en": "The higher-level Vitis HLS that we target cannot produce an AFI directly.",
+     "zh": "我们所针对的更高层级的 Vitis HLS 无法直接生成 AFI。"
+    },
+    {
+     "en": "To bridge this gap, we used a community-developed bridge to allow end-to-end flow from Vitis HLS to an AFI, as shown in Figure 2 .",
+     "zh": "为了弥合这一差距，我们使用了一个社区开发的桥接工具，以实现从 Vitis HLS 到 AFI 的端到端流程，如图 2 所示。"
+    }
+   ]
+  },
+  {
+   "en": "Vitis HLS C++ → \\to RTL export → \\to hls_to_cl.py (bridge) → \\to HDK CL project → \\to post-bridge patches → \\to DCP build (Vivado) → \\to AFI creation → \\to physical FPGA",
+   "zh": "Vitis HLS C++ → \\to RTL 导出 → \\to hls_to_cl.py（桥接）→ \\to HDK CL 项目 → \\to 桥接后补丁 → \\to DCP 构建（Vivado）→ \\to AFI 创建 → \\to 物理 FPGA",
+   "sents": null
+  },
+  {
+   "en": "While it did allow for creation of a loadable AFI from Vitis HLS code, the community-supported bridge imposed several limitations, which caused later downstream issues:",
+   "zh": "虽然它确实支持从 Vitis HLS 代码创建可加载的 AFI，但该社区支持的桥接器存在若干限制，从而在后续的下游环节引发了问题：",
+   "sents": null
+  },
+  {
+   "en": "Single memory master. The bridge supports exactly one m_axi port and one s_axilite control interface per kernel 1 1 1 AXI: Advanced eXtensible Interface, a bus standard for moving data between hardware blocks. . Having only a single memory access port pair significantly limits the design’s memory access bandwidth, since higher bandwidth would require multiple channels with multiple AXI ports.",
+   "zh": "单一存储主控。 该桥每个内核仅支持一个 m_axi 端口和一个 s_axilite 控制接口 1 1 1 AXI：高级可扩展接口（Advanced eXtensible Interface），一种用于在硬件模块之间传输数据的总线标准。。 仅有单一的存储访问端口对会显著限制设计的存储访问带宽，因为更高的带宽需要具有多个 AXI 端口的多个通道。",
+   "sents": [
+    {
+     "en": "Single memory master.",
+     "zh": "单一存储主控。"
+    },
+    {
+     "en": "The bridge supports exactly one m_axi port and one s_axilite control interface per kernel 1 1 1 AXI: Advanced eXtensible Interface, a bus standard for moving data between hardware blocks. .",
+     "zh": "该桥每个内核仅支持一个 m_axi 端口和一个 s_axilite 控制接口 1 1 1 AXI：高级可扩展接口（Advanced eXtensible Interface），一种用于在硬件模块之间传输数据的总线标准。。"
+    },
+    {
+     "en": "Having only a single memory access port pair significantly limits the design’s memory access bandwidth, since higher bandwidth would require multiple channels with multiple AXI ports.",
+     "zh": "仅有单一的存储访问端口对会显著限制设计的存储访问带宽，因为更高的带宽需要具有多个 AXI 端口的多个通道。"
+    }
+   ]
+  },
+  {
+   "en": "DDR only; no HBM. The bridge template connects the single m_axi port directly to the DDR controller (memory on the EC2 host), not to the FPGA’s near-chip High Bandwidth Memory (HBM), a major limitation.",
+   "zh": "仅支持 DDR；不支持 HBM。 该桥接模板将单个 m_axi 端口直接连接到 DDR 控制器（内存位于 EC2 主机上），而不是连接到 FPGA 芯片内的高带宽内存（HBM），这是一个重大局限。",
+   "sents": [
+    {
+     "en": "DDR only; no HBM.",
+     "zh": "仅支持 DDR；不支持 HBM。"
+    },
+    {
+     "en": "The bridge template connects the single m_axi port directly to the DDR controller (memory on the EC2 host), not to the FPGA’s near-chip High Bandwidth Memory (HBM), a major limitation.",
+     "zh": "该桥接模板将单个 m_axi 端口直接连接到 DDR 控制器（内存位于 EC2 主机上），而不是连接到 FPGA 芯片内的高带宽内存（HBM），这是一个重大局限。"
+    }
+   ]
+  },
+  {
+   "en": "Fixed 512-bit data width. The template assumes a 512-bit AXI data path and does not adapt to the data width of the generated kernel port.",
+   "zh": "固定 512 位数据宽度。 该模板假设 512 位的 AXI 数据通路，且不会适配所生成的内核端口的数据宽度。",
+   "sents": [
+    {
+     "en": "Fixed 512-bit data width.",
+     "zh": "固定 512 位数据宽度。"
+    },
+    {
+     "en": "The template assumes a 512-bit AXI data path and does not adapt to the data width of the generated kernel port.",
+     "zh": "该模板假设 512 位的 AXI 数据通路，且不会适配所生成的内核端口的数据宽度。"
+    }
+   ]
+  },
+  {
+   "en": "No multi-die (SSI) awareness. The bridge does not insert SLR-crossing pipeline registers or provide SLR placement constraints.",
+   "zh": "不具备多裸片（SSI）感知能力。 该桥接不会插入跨 SLR 的流水线寄存器，也不提供 SLR 布局约束。",
+   "sents": [
+    {
+     "en": "No multi-die (SSI) awareness.",
+     "zh": "不具备多裸片（SSI）感知能力。"
+    },
+    {
+     "en": "The bridge does not insert SLR-crossing pipeline registers or provide SLR placement constraints.",
+     "zh": "该桥接不会插入跨 SLR 的流水线寄存器，也不提供 SLR 布局约束。"
+    }
+   ]
+  },
+  {
+   "en": "Incomplete IP packaging. The bridge does not copy the VHDL sub-IP files for HLS-generated floating-point cores ( fdiv_32 , fpext ) into the CL project.",
+   "zh": "IP 打包不完整。 该桥接程序不会将 HLS 生成的浮点核（fdiv_32、fpext）的 VHDL 子 IP 文件复制到 CL 工程中。",
+   "sents": [
+    {
+     "en": "Incomplete IP packaging.",
+     "zh": "IP 打包不完整。"
+    },
+    {
+     "en": "The bridge does not copy the VHDL sub-IP files for HLS-generated floating-point cores ( fdiv_32 , fpext ) into the CL project.",
+     "zh": "该桥接程序不会将 HLS 生成的浮点核（fdiv_32、fpext）的 VHDL 子 IP 文件复制到 CL 工程中。"
+    }
+   ]
+  },
+  {
+   "en": "For a testbed model we chose TinyBERT [ 11 ] , a 4-layer, 312-hidden-dimension distilled BERT variant [ 12 , 13 ] with ∼ \\sim 14.5M parameters, primarily because it was small and well understood. We fine-tuned the huawei-noah/TinyBERT_General_4L_312D pretrained checkpoint using HuggingFace Transformers [ 14 ] with AdamW, learning rate 5 × 10 − 5 5\\times 10^{-5} , 5 epochs.",
+   "zh": "对于测试平台模型，我们选择了 TinyBERT [ 11 ]，这是一个 4 层、312 隐藏维度的蒸馏 BERT 变体 [ 12 , 13 ]，参数量约为 ∼ \\sim 14.5M，选择它主要是因为它规模小且已被充分理解。 我们使用 HuggingFace Transformers [ 14 ] 对 huawei-noah/TinyBERT_General_4L_312D 预训练检查点进行了微调，采用 AdamW 优化器，学习率为 5 × 10 − 5 5\\times 10^{-5} ，训练 5 个 epoch。",
+   "sents": [
+    {
+     "en": "For a testbed model we chose TinyBERT [ 11 ] , a 4-layer, 312-hidden-dimension distilled BERT variant [ 12 , 13 ] with ∼ \\sim 14.5M parameters, primarily because it was small and well understood.",
+     "zh": "对于测试平台模型，我们选择了 TinyBERT [ 11 ]，这是一个 4 层、312 隐藏维度的蒸馏 BERT 变体 [ 12 , 13 ]，参数量约为 ∼ \\sim 14.5M，选择它主要是因为它规模小且已被充分理解。"
+    },
+    {
+     "en": "We fine-tuned the huawei-noah/TinyBERT_General_4L_312D pretrained checkpoint using HuggingFace Transformers [ 14 ] with AdamW, learning rate 5 × 10 − 5 5\\times 10^{-5} , 5 epochs.",
+     "zh": "我们使用 HuggingFace Transformers [ 14 ] 对 huawei-noah/TinyBERT_General_4L_312D 预训练检查点进行了微调，采用 AdamW 优化器，学习率为 5 × 10 − 5 5\\times 10^{-5} ，训练 5 个 epoch。"
+    }
+   ]
+  },
+  {
+   "en": "For a test task we chose name-entity recognition (NER). We fine-tuned on a synthetically generated BIO-tagged address NER dataset (560 train / 120 val / 500 test samples). The dataset generator ( data/generate_address_ner_dataset.py ) is released with the code. Entity types are STREET, CITY, STATE, ZIP, and PERSON.",
+   "zh": "对于测试任务，我们选择了命名实体识别（NER）。 我们在一个合成生成的、带有 BIO 标注的地址 NER 数据集（560 个训练 / 120 个验证 / 500 个测试样本）上进行了微调。 该数据集生成器（ data/generate_address_ner_dataset.py ）随代码一并发布。 实体类型为 STREET、CITY、STATE、ZIP 和 PERSON。",
+   "sents": [
+    {
+     "en": "For a test task we chose name-entity recognition (NER).",
+     "zh": "对于测试任务，我们选择了命名实体识别（NER）。"
+    },
+    {
+     "en": "We fine-tuned on a synthetically generated BIO-tagged address NER dataset (560 train / 120 val / 500 test samples).",
+     "zh": "我们在一个合成生成的、带有 BIO 标注的地址 NER 数据集（560 个训练 / 120 个验证 / 500 个测试样本）上进行了微调。"
+    },
+    {
+     "en": "The dataset generator ( data/generate_address_ner_dataset.py ) is released with the code.",
+     "zh": "该数据集生成器（ data/generate_address_ner_dataset.py ）随代码一并发布。"
+    },
+    {
+     "en": "Entity types are STREET, CITY, STATE, ZIP, and PERSON.",
+     "zh": "实体类型为 STREET、CITY、STATE、ZIP 和 PERSON。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 3 shows the system architecture. The host loads tokenized input and packed W16A16 weights into DDR4 via PCIe. The CL kernel processes the four-layer TinyBERT pipeline through a single m_axi DDR port: each stage reads its weight matrix and input activations, computes, and writes output activations back to DDR at fixed offsets. This sequential DDR round-trip is the primary latency bottleneck in the current design.",
+   "zh": "图3展示了系统架构。 主机通过 PCIe 将分词后的输入和打包的 W16A16 权重加载到 DDR4 中。 CL 内核通过单个 m_axi DDR 端口处理四层 TinyBERT 流水线：每个阶段读取其权重矩阵和输入激活，进行计算，并将输出激活写回 DDR 的固定偏移位置。 这种顺序的 DDR 往返访问是当前设计中主要的延迟瓶颈。",
+   "sents": [
+    {
+     "en": "Figure 3 shows the system architecture.",
+     "zh": "图3展示了系统架构。"
+    },
+    {
+     "en": "The host loads tokenized input and packed W16A16 weights into DDR4 via PCIe.",
+     "zh": "主机通过 PCIe 将分词后的输入和打包的 W16A16 权重加载到 DDR4 中。"
+    },
+    {
+     "en": "The CL kernel processes the four-layer TinyBERT pipeline through a single m_axi DDR port: each stage reads its weight matrix and input activations, computes, and writes output activations back to DDR at fixed offsets.",
+     "zh": "CL 内核通过单个 m_axi DDR 端口处理四层 TinyBERT 流水线：每个阶段读取其权重矩阵和输入激活，进行计算，并将输出激活写回 DDR 的固定偏移位置。"
+    },
+    {
+     "en": "This sequential DDR round-trip is the primary latency bottleneck in the current design.",
+     "zh": "这种顺序的 DDR 往返访问是当前设计中主要的延迟瓶颈。"
+    }
+   ]
+  },
+  {
+   "en": "We originally stored the weights in BRAM. Our first design resulted in a deep LUT mux tree that could not close 250 MHz timing. A redesign partitioned weights in BRAM into banks, but the transformer matmul (a fundamentally global operation) created cross-SLR routing congestion that also could not close timing. HBM would have been ideal for this case, but since the bridge can not address it (Section 2.3 ), we needed to store weights in DRAM. Still, BRAM working storage spanned two of the three SLRs (SLR0 53.5%, SLR1 46.9%, with SLR2 at 3.9% holding only the shell’s DDR controller), forcing the working footprint across an SLR boundary and continually causing timing violations. The issue was finally resolved by moving the largest ∼ {\\sim} 600k array to URAM, clearing timing (WNS = +0.027ns).",
+   "zh": "我们最初将权重存储在 BRAM 中。 我们的第一版设计产生了一个深层的 LUT 多路选择树，无法收敛 250 MHz 的时序。 重新设计后将 BRAM 中的权重划分为多个存储体，但 transformer 的矩阵乘法（一种本质上全局的操作）产生了跨 SLR 的布线拥塞，同样无法收敛时序。 HMB 本来是这种情况的理想选择，但由于桥接器无法对其进行寻址（第 2.3 节），我们需要将权重存储在 DRAM 中。 尽管如此，BRAM 工作存储仍跨越了三个 SLR 中的两个（SLR0 占 53.5%，SLR1 占 46.9%，SLR2 仅占 3.9%，只容纳外壳的 DDR 控制器），迫使工作足迹跨越 SLR 边界，并持续导致时序违例。 该问题最终通过将最大的约 60 万大小的数组移至 URAM 而得到解决，时序收敛（WNS = +0.027ns）。",
+   "sents": [
+    {
+     "en": "We originally stored the weights in BRAM.",
+     "zh": "我们最初将权重存储在 BRAM 中。"
+    },
+    {
+     "en": "Our first design resulted in a deep LUT mux tree that could not close 250 MHz timing.",
+     "zh": "我们的第一版设计产生了一个深层的 LUT 多路选择树，无法收敛 250 MHz 的时序。"
+    },
+    {
+     "en": "A redesign partitioned weights in BRAM into banks, but the transformer matmul (a fundamentally global operation) created cross-SLR routing congestion that also could not close timing.",
+     "zh": "重新设计后将 BRAM 中的权重划分为多个存储体，但 transformer 的矩阵乘法（一种本质上全局的操作）产生了跨 SLR 的布线拥塞，同样无法收敛时序。"
+    },
+    {
+     "en": "HBM would have been ideal for this case, but since the bridge can not address it (Section 2.3 ), we needed to store weights in DRAM.",
+     "zh": "HMB 本来是这种情况的理想选择，但由于桥接器无法对其进行寻址（第 2.3 节），我们需要将权重存储在 DRAM 中。"
+    },
+    {
+     "en": "Still, BRAM working storage spanned two of the three SLRs (SLR0 53.5%, SLR1 46.9%, with SLR2 at 3.9% holding only the shell’s DDR controller), forcing the working footprint across an SLR boundary and continually causing timing violations.",
+     "zh": "尽管如此，BRAM 工作存储仍跨越了三个 SLR 中的两个（SLR0 占 53.5%，SLR1 占 46.9%，SLR2 仅占 3.9%，只容纳外壳的 DDR 控制器），迫使工作足迹跨越 SLR 边界，并持续导致时序违例。"
+    },
+    {
+     "en": "The issue was finally resolved by moving the largest ∼ {\\sim} 600k array to URAM, clearing timing (WNS = +0.027ns).",
+     "zh": "该问题最终通过将最大的约 60 万大小的数组移至 URAM 而得到解决，时序收敛（WNS = +0.027ns）。"
+    }
+   ]
+  },
+  {
+   "en": "We began with W8A8 (INT8 weights and activations with per-channel/per-token dynamic scaling). Two problems emerged. First, INT8 per-token quantization produces large intermediate errors (maximum 86.0 at the FFN stage for a known outlier activation of ∼ 4528 {\\sim}4528 in FP32). While these errors often cancel at the argmax level, they make layer-by-layer FPGA verification intractable: when each stage must be numerically compared against the reference, errors of this magnitude obscure the distinction between quantization noise and implementation bugs. Second, W8A8 generated timing violations on the FPGA: the per-token quantization division produced a hardware divider that failed timing ( WNS = − 1.148 \\text{WNS}=-1.148 ns), and FP32 intermediate operations could not meet the 250 MHz clock constraint. W16A16 resolves both issues: the division is replaced by a reciprocal multiply (Section 2.6 ) and maximum intermediate error drops to ≤ 0.137 {\\leq}\\,0.137 across all encoder stages, enabling the four-level validation methodology (Section 2.8 ).",
+   "zh": "我们从 W8A8（INT8 权重与激活值，采用逐通道/逐词元动态缩放）开始。随后出现了两个问题。 首先，INT8 逐词元量化会产生较大的中间误差（对于 FP32 中约 4528 的已知离群激活值，在 FFN 阶段的最大误差达到 86.0）。 虽然这些误差在 argmax 层面常常相互抵消，但它们使得逐层的 FPGA 验证难以进行：当每个阶段都必须与参考结果进行数值比较时，这种量级的误差会掩盖量化噪声与实现缺陷之间的区别。 其次，W8A8 在 FPGA 上产生了时序违例：逐词元量化中的除法生成了无法满足时序要求的硬件除法器（WNS = -1.148 ns），且 FP32 中间运算无法满足 250 MHz 的时钟约束。 W16A16 同时解决了这两个问题：除法被替换为倒数乘法（见 2.6 节），并且所有编码器阶段的最大中间误差降至 ≤ 0.137，从而支持了四级验证方法（见 2.8 节）。",
+   "sents": [
+    {
+     "en": "We began with W8A8 (INT8 weights and activations with per-channel/per-token dynamic scaling). Two problems emerged.",
+     "zh": "我们从 W8A8（INT8 权重与激活值，采用逐通道/逐词元动态缩放）开始。随后出现了两个问题。"
+    },
+    {
+     "en": "First, INT8 per-token quantization produces large intermediate errors (maximum 86.0 at the FFN stage for a known outlier activation of ∼ 4528 {\\sim}4528 in FP32).",
+     "zh": "首先，INT8 逐词元量化会产生较大的中间误差（对于 FP32 中约 4528 的已知离群激活值，在 FFN 阶段的最大误差达到 86.0）。"
+    },
+    {
+     "en": "While these errors often cancel at the argmax level, they make layer-by-layer FPGA verification intractable: when each stage must be numerically compared against the reference, errors of this magnitude obscure the distinction between quantization noise and implementation bugs.",
+     "zh": "虽然这些误差在 argmax 层面常常相互抵消，但它们使得逐层的 FPGA 验证难以进行：当每个阶段都必须与参考结果进行数值比较时，这种量级的误差会掩盖量化噪声与实现缺陷之间的区别。"
+    },
+    {
+     "en": "Second, W8A8 generated timing violations on the FPGA: the per-token quantization division produced a hardware divider that failed timing ( WNS = − 1.148 \\text{WNS}=-1.148 ns), and FP32 intermediate operations could not meet the 250 MHz clock constraint.",
+     "zh": "其次，W8A8 在 FPGA 上产生了时序违例：逐词元量化中的除法生成了无法满足时序要求的硬件除法器（WNS = -1.148 ns），且 FP32 中间运算无法满足 250 MHz 的时钟约束。"
+    },
+    {
+     "en": "W16A16 resolves both issues: the division is replaced by a reciprocal multiply (Section 2.6 ) and maximum intermediate error drops to ≤ 0.137 {\\leq}\\,0.137 across all encoder stages, enabling the four-level validation methodology (Section 2.8 ).",
+     "zh": "W16A16 同时解决了这两个问题：除法被替换为倒数乘法（见 2.6 节），并且所有编码器阶段的最大中间误差降至 ≤ 0.137，从而支持了四级验证方法（见 2.8 节）。"
+    }
+   ]
+  },
+  {
+   "en": "Better quantization schemes for optimizing memory and model size are available, particularly those described in [ 15 ] . However, FPGA development is, at its core, electrical engineering, not computer programming. As such, it imposes significant and fundamental differences on error analysis. In traditional CPU/GPU-based programming, mathematical operations themselves can be assumed to work. This is not the case in FPGA design synthesis, where these operations represent circuits that can be malformed, or can use IP cores that do not work properly in the accuracy range requested. Using W16A16 with generous accumulators, while not optimal for efficiency, allowed sufficient headroom to identify when errors were being introduced so they could be localized using the four-level validation method described in § 2.8 .",
+   "zh": "更好的用于优化内存和模型规模的量化方案是存在的，特别是 [ 15 ] 中描述的那些方案。 然而，FPGA 开发本质上是电气工程，而不是计算机编程。 因此，它给误差分析带来了重大且根本性的差异。 在传统的基于 CPU/GPU 的编程中，数学运算本身可以被假定为正常工作的。 但在 FPGA 设计综合中情况并非如此，因为这些运算代表的是可能构造不良的电路，或者可能使用在所要求的精度范围内无法正常工作的 IP 核。 使用 W16A16 以及宽裕的累加器，虽然从效率上看并非最优，但提供了足够的余量来识别何时引入了误差，从而可以利用 § 2.8 中描述的四级验证方法对其进行定位。",
+   "sents": [
+    {
+     "en": "Better quantization schemes for optimizing memory and model size are available, particularly those described in [ 15 ] .",
+     "zh": "更好的用于优化内存和模型规模的量化方案是存在的，特别是 [ 15 ] 中描述的那些方案。"
+    },
+    {
+     "en": "However, FPGA development is, at its core, electrical engineering, not computer programming.",
+     "zh": "然而，FPGA 开发本质上是电气工程，而不是计算机编程。"
+    },
+    {
+     "en": "As such, it imposes significant and fundamental differences on error analysis.",
+     "zh": "因此，它给误差分析带来了重大且根本性的差异。"
+    },
+    {
+     "en": "In traditional CPU/GPU-based programming, mathematical operations themselves can be assumed to work.",
+     "zh": "在传统的基于 CPU/GPU 的编程中，数学运算本身可以被假定为正常工作的。"
+    },
+    {
+     "en": "This is not the case in FPGA design synthesis, where these operations represent circuits that can be malformed, or can use IP cores that do not work properly in the accuracy range requested.",
+     "zh": "但在 FPGA 设计综合中情况并非如此，因为这些运算代表的是可能构造不良的电路，或者可能使用在所要求的精度范围内无法正常工作的 IP 核。"
+    },
+    {
+     "en": "Using W16A16 with generous accumulators, while not optimal for efficiency, allowed sufficient headroom to identify when errors were being introduced so they could be localized using the four-level validation method described in § 2.8 .",
+     "zh": "使用 W16A16 以及宽裕的累加器，虽然从效率上看并非最优，但提供了足够的余量来识别何时引入了误差，从而可以利用 § 2.8 中描述的四级验证方法对其进行定位。"
+    }
+   ]
+  },
+  {
+   "en": "We used INT16 weights × \\times INT16 activations (W16A16) with ap_fixed<32,16> element-wise operations and ap_fixed<64,32> dequantization. Each weight matrix row is quantized to INT16 using per-channel absmax scaling:",
+   "zh": "我们采用 INT16 权重 × \\times INT16 激活（W16A16），逐元素运算使用 ap_fixed<32,16>，反量化使用 ap_fixed<64,32>。 每个权重矩阵行通过逐通道 absmax 缩放被量化为 INT16：",
+   "sents": [
+    {
+     "en": "We used INT16 weights × \\times INT16 activations (W16A16) with ap_fixed<32,16> element-wise operations and ap_fixed<64,32> dequantization.",
+     "zh": "我们采用 INT16 权重 × \\times INT16 激活（W16A16），逐元素运算使用 ap_fixed<32,16>，反量化使用 ap_fixed<64,32>。"
+    },
+    {
+     "en": "Each weight matrix row is quantized to INT16 using per-channel absmax scaling:",
+     "zh": "每个权重矩阵行通过逐通道 absmax 缩放被量化为 INT16："
+    }
+   ]
+  },
+  {
+   "en": "The absmax value (not absmax/32767) is stored as the per-channel scale in ap_fixed<32,16> .",
+   "zh": "absmax 值（而不是 absmax/32767）被存储为 ap_fixed<32,16> 中的逐通道缩放因子。",
+   "sents": null
+  },
+  {
+   "en": "Each token’s activation vector is quantized to INT16 using per-token absmax. The division is performed as a float32 reciprocal followed by a per-element multiply (see Non-linear operations below).",
+   "zh": "每个 token 的激活向量使用逐 token 的 absmax 量化为 INT16。 除法运算以 float32 取倒数后接逐元素相乘的方式实现（参见下文的「非线性运算」）。",
+   "sents": [
+    {
+     "en": "Each token’s activation vector is quantized to INT16 using per-token absmax.",
+     "zh": "每个 token 的激活向量使用逐 token 的 absmax 量化为 INT16。"
+    },
+    {
+     "en": "The division is performed as a float32 reciprocal followed by a per-element multiply (see Non-linear operations below).",
+     "zh": "除法运算以 float32 取倒数后接逐元素相乘的方式实现（参见下文的「非线性运算」）。"
+    }
+   ]
+  },
+  {
+   "en": "INT16 × \\times INT16 products accumulate in ap_int<48> (sufficient for 312-element dot products without overflow). The four-step wide dequantization, all in ap_fixed<64,32> , is:",
+   "zh": "INT16 × \\times INT16 的乘积在 ap_int<48> 中累加（对于 312 个元素的点积而言足够，不会溢出）。 宽反量化的四个步骤，全部在 ap_fixed<64,32> 中进行，具体为：",
+   "sents": [
+    {
+     "en": "INT16 × \\times INT16 products accumulate in ap_int<48> (sufficient for 312-element dot products without overflow).",
+     "zh": "INT16 × \\times INT16 的乘积在 ap_int<48> 中累加（对于 312 个元素的点积而言足够，不会溢出）。"
+    },
+    {
+     "en": "The four-step wide dequantization, all in ap_fixed<64,32> , is:",
+     "zh": "宽反量化的四个步骤，全部在 ap_fixed<64,32> 中进行，具体为："
+    }
+   ]
+  },
+  {
+   "en": "Our initial implementation used hls_math.h vendor functions throughout. In practice, we found that hls::exp() on ap_fixed<32,16> returns zero on physical FPGA after place-and-route (an apparent bug in the HLS-generated RTL core); hls::erf() promotes to FP64, generating dmul_64 / dadd_64 IP cores that violate 250 MHz timing; and 64-bit fixed-point division generates an sdiv_80ns_48ns_80 hardware divider (WNS = − 1.148 =-1.148 ns). We replaced each with a targeted alternative: (1) softmax exp uses a 2048-entry LUT covering [ − 11 , 0 ] [-11,0] ; (2) GELU uses a 4096-entry LUT with linear interpolation covering [ − 8 , 8 ] [-8,8] (max error < 3 × 10 − 5 <3\\times 10^{-5} vs. FP64, 30 × \\times better than a tanh approximation); (3) activation quantization division uses a float32 reciprocal ( inv_am = 1.0f / (float)am ) followed by per-element multiply. A fourth issue, dequantization overflow for large accumulator products (e.g., FFN dim 3 outlier: ∼ \\sim 69B, overflowing ap_fixed<64,32> ’s ± \\pm 2.1B range), was resolved by widening steps 1–2 of the four-step dequantization to ap_fixed<80,48> before truncating. As a timing closure technique, the GELU output array ( 128 × 1200 = 600 128\\times 1200=600 KB BRAM) was eliminated by computing GELU twice (once for absmax, once for quantization), avoiding an SLR-crossing BRAM placement that added 2.3 ns logic + 2.7 ns routing. Fuketa et al. [ 16 ] take a contrasting approach, replacing all transcendentals with polynomial matrix approximations; our hybrid LUT strategy prioritizes accuracy (vendor-optimized or validated LUT) while avoiding the timing hazards of large IP cores.",
+   "zh": "我们的初始实现全程使用了 hls_math.h 供应商函数。 在实践中，我们发现 hls::exp() 作用于 ap_fixed<32,16> 时，在布局布线后的物理 FPGA 上返回零（这是 HLS 生成的 RTL 核心中一个明显的 bug）；hls::erf() 会提升为 FP64，生成违反 250 MHz 时序要求的 dmul_64 / dadd_64 IP 核；而 64 位定点除法会生成 sdiv_80ns_48ns_80 硬件除法器（WNS = −1.148 ns）。 我们将每一项都替换为针对性的替代方案：(1) softmax 的 exp 使用覆盖 [−11, 0] 的 2048 项查找表；(2) GELU 使用覆盖 [−8, 8]、带线性插值的 4096 项查找表（与 FP64 相比最大误差 < 3 × 10⁻⁵，比 tanh 近似好 30 倍）；(3) 激活量化除法使用 float32 倒数（inv_am = 1.0f / (float)am），随后逐元素相乘。 第四个问题是大规模累加器乘积的反量化溢出（例如 FFN 维度 3 的离群值：约 690 亿，超出 ap_fixed<64,32> 的 ±21 亿范围），通过在截断前将四步反量化的第 1–2 步加宽为 ap_fixed<80,48> 来解决。 作为一种时序收敛技术，GELU 输出数组（128 × 1200 = 600 KB BRAM）被消除，方法是计算 GELU 两次（一次用于 absmax，一次用于量化），从而避免了增加 2.3 ns 逻辑延迟 + 2.7 ns 布线延迟的跨 SLR BRAM 布局。Fuketa 等人 [16] 采取了相反的思路，用多项式矩阵近似替换所有超越函数；我们的混合查找表策略在避免大型 IP 核时序隐患的同时，优先保证精度（使用供应商优化或经过验证的查找表）。",
+   "sents": [
+    {
+     "en": "Our initial implementation used hls_math.h vendor functions throughout.",
+     "zh": "我们的初始实现全程使用了 hls_math.h 供应商函数。"
+    },
+    {
+     "en": "In practice, we found that hls::exp() on ap_fixed<32,16> returns zero on physical FPGA after place-and-route (an apparent bug in the HLS-generated RTL core); hls::erf() promotes to FP64, generating dmul_64 / dadd_64 IP cores that violate 250 MHz timing; and 64-bit fixed-point division generates an sdiv_80ns_48ns_80 hardware divider (WNS = − 1.148 =-1.148 ns).",
+     "zh": "在实践中，我们发现 hls::exp() 作用于 ap_fixed<32,16> 时，在布局布线后的物理 FPGA 上返回零（这是 HLS 生成的 RTL 核心中一个明显的 bug）；hls::erf() 会提升为 FP64，生成违反 250 MHz 时序要求的 dmul_64 / dadd_64 IP 核；而 64 位定点除法会生成 sdiv_80ns_48ns_80 硬件除法器（WNS = −1.148 ns）。"
+    },
+    {
+     "en": "We replaced each with a targeted alternative: (1) softmax exp uses a 2048-entry LUT covering [ − 11 , 0 ] [-11,0] ; (2) GELU uses a 4096-entry LUT with linear interpolation covering [ − 8 , 8 ] [-8,8] (max error < 3 × 10 − 5 <3\\times 10^{-5} vs.",
+     "zh": "我们将每一项都替换为针对性的替代方案：(1) softmax 的 exp 使用覆盖 [−11, 0] 的 2048 项查找表；(2) GELU 使用覆盖 [−8, 8]、带线性插值的 4096 项查找表（与"
+    },
+    {
+     "en": "FP64, 30 × \\times better than a tanh approximation); (3) activation quantization division uses a float32 reciprocal ( inv_am = 1.0f / (float)am ) followed by per-element multiply.",
+     "zh": "FP64 相比最大误差 < 3 × 10⁻⁵，比 tanh 近似好 30 倍）；(3) 激活量化除法使用 float32 倒数（inv_am = 1.0f / (float)am），随后逐元素相乘。"
+    },
+    {
+     "en": "A fourth issue, dequantization overflow for large accumulator products (e.g., FFN dim 3 outlier: ∼ \\sim 69B, overflowing ap_fixed<64,32> ’s ± \\pm 2.1B range), was resolved by widening steps 1–2 of the four-step dequantization to ap_fixed<80,48> before truncating.",
+     "zh": "第四个问题是大规模累加器乘积的反量化溢出（例如 FFN 维度 3 的离群值：约 690 亿，超出 ap_fixed<64,32> 的 ±21 亿范围），通过在截断前将四步反量化的第 1–2 步加宽为 ap_fixed<80,48> 来解决。"
+    },
+    {
+     "en": "As a timing closure technique, the GELU output array ( 128 × 1200 = 600 128\\times 1200=600 KB BRAM) was eliminated by computing GELU twice (once for absmax, once for quantization), avoiding an SLR-crossing BRAM placement that added 2.3 ns logic + 2.7 ns routing. Fuketa et al.",
+     "zh": "作为一种时序收敛技术，GELU 输出数组（128 × 1200 = 600 KB BRAM）被消除，方法是计算 GELU 两次（一次用于 absmax，一次用于量化），从而避免了增加 2.3 ns 逻辑延迟 + 2.7 ns 布线延迟的跨 SLR BRAM 布局。Fuketa 等人"
+    },
+    {
+     "en": "[ 16 ] take a contrasting approach, replacing all transcendentals with polynomial matrix approximations; our hybrid LUT strategy prioritizes accuracy (vendor-optimized or validated LUT) while avoiding the timing hazards of large IP cores.",
+     "zh": "[16] 采取了相反的思路，用多项式矩阵近似替换所有超越函数；我们的混合查找表策略在避免大型 IP 核时序隐患的同时，优先保证精度（使用供应商优化或经过验证的查找表）。"
+    }
+   ]
+  },
+  {
+   "en": "The kernel ( tinybert_ner_axi ) is a single HLS C++ function with one m_axi DDR port ( ap_uint<512>* ) and one s_axilite control interface. All weights, activations, and debug outputs share a single DDR buffer (required by the bridge PoC’s single-port constraint).",
+   "zh": "内核（tinybert_ner_axi）是一个单一的 HLS C++ 函数，具有一个 m_axi DDR 端口（ap_uint<512>*）和一个 s_axilite 控制接口。 所有权重、激活值和调试输出共享同一个 DDR 缓冲区（这是桥接 PoC 单端口约束所要求的）。",
+   "sents": [
+    {
+     "en": "The kernel ( tinybert_ner_axi ) is a single HLS C++ function with one m_axi DDR port ( ap_uint<512>* ) and one s_axilite control interface.",
+     "zh": "内核（tinybert_ner_axi）是一个单一的 HLS C++ 函数，具有一个 m_axi DDR 端口（ap_uint<512>*）和一个 s_axilite 控制接口。"
+    },
+    {
+     "en": "All weights, activations, and debug outputs share a single DDR buffer (required by the bridge PoC’s single-port constraint).",
+     "zh": "所有权重、激活值和调试输出共享同一个 DDR 缓冲区（这是桥接 PoC 单端口约束所要求的）。"
+    }
+   ]
+  },
+  {
+   "en": "Token IDs → \\to Embedding (lookup + LayerNorm) → \\to 4 × \\times Encoder Layer (QKV projection + scaled dot-product attention + output projection + LayerNorm + FFN + LayerNorm) → \\to Classification Head → \\to Logits.",
+   "zh": "Token IDs → \\to Embedding（查表 + LayerNorm）→ \\to 4 × \\times 编码器层（QKV 投影 + 缩放点积注意力 + 输出投影 + LayerNorm + FFN + LayerNorm）→ \\to 分类头 → \\to Logits。",
+   "sents": null
+  },
+  {
+   "en": "Weight matrices are streamed from DDR in tiles rather than stored on-chip. This eliminates BRAM cascade timing violations (WNS = − 1.399 -1.399 ns with on-chip weights) at the cost of DDR bandwidth and inference latency, which is dominated by sequential DDR weight reads rather than compute. The 512-bit AXI bus width requires 64-byte-aligned writes; a read-modify-write pattern creates a 6.5 ns critical path that violates the 4.0 ns budget. Table 2 gives the resulting device utilization for the embedding layer plus encoder layer 0 build.",
+   "zh": "权重矩阵以分块形式从 DDR 流式读取，而不是存储在片上。 这消除了 BRAM 级联的时序违例（片上存储权重时 WNS = −1.399 ns），代价是占用 DDR 带宽并增加推理延迟，而推理延迟主要由顺序的 DDR 权重读取而非计算所主导。 512 位的 AXI 总线宽度要求按 64 字节对齐写入；读-改-写模式会产生 6.5 ns 的关键路径，超出 4.0 ns 的时序预算。 表 2 给出了包含嵌入层和编码器第 0 层的构建所得出的器件资源利用率。",
+   "sents": [
+    {
+     "en": "Weight matrices are streamed from DDR in tiles rather than stored on-chip.",
+     "zh": "权重矩阵以分块形式从 DDR 流式读取，而不是存储在片上。"
+    },
+    {
+     "en": "This eliminates BRAM cascade timing violations (WNS = − 1.399 -1.399 ns with on-chip weights) at the cost of DDR bandwidth and inference latency, which is dominated by sequential DDR weight reads rather than compute.",
+     "zh": "这消除了 BRAM 级联的时序违例（片上存储权重时 WNS = −1.399 ns），代价是占用 DDR 带宽并增加推理延迟，而推理延迟主要由顺序的 DDR 权重读取而非计算所主导。"
+    },
+    {
+     "en": "The 512-bit AXI bus width requires 64-byte-aligned writes; a read-modify-write pattern creates a 6.5 ns critical path that violates the 4.0 ns budget.",
+     "zh": "512 位的 AXI 总线宽度要求按 64 字节对齐写入；读-改-写模式会产生 6.5 ns 的关键路径，超出 4.0 ns 的时序预算。"
+    },
+    {
+     "en": "Table 2 gives the resulting device utilization for the embedding layer plus encoder layer 0 build.",
+     "zh": "表 2 给出了包含嵌入层和编码器第 0 层的构建所得出的器件资源利用率。"
+    }
+   ]
+  },
+  {
+   "en": "Per-SLR BRAM-tile occupancy (shell+CL): SLR0 53.5%, SLR1 46.9%, SLR2 3.9%. The custom-logic BRAM occupies the two lower SLRs (SLR0 just over half-full), while SLR2 holds only the shell’s DDR controller. This near-even split across the SLR0–SLR1 boundary constrains placement of the memory-heavy attention datapath.",
+   "zh": "每个SLR的BRAM.tile占用率（外壳+自定义逻辑）：SLR0为53.5%，SLR1为46.9%，SLR2为3.9%。 自定义逻辑的BRAM占用了下面两个SLR（SLR0刚超过一半），而SLR2只保留了外壳的DDR控制器。 这种跨SLR0–SLR1边界的近似均分限制了内存密集型注意力数据通路的布局。",
+   "sents": [
+    {
+     "en": "Per-SLR BRAM-tile occupancy (shell+CL): SLR0 53.5%, SLR1 46.9%, SLR2 3.9%.",
+     "zh": "每个SLR的BRAM.tile占用率（外壳+自定义逻辑）：SLR0为53.5%，SLR1为46.9%，SLR2为3.9%。"
+    },
+    {
+     "en": "The custom-logic BRAM occupies the two lower SLRs (SLR0 just over half-full), while SLR2 holds only the shell’s DDR controller.",
+     "zh": "自定义逻辑的BRAM占用了下面两个SLR（SLR0刚超过一半），而SLR2只保留了外壳的DDR控制器。"
+    },
+    {
+     "en": "This near-even split across the SLR0–SLR1 boundary constrains placement of the memory-heavy attention datapath.",
+     "zh": "这种跨SLR0–SLR1边界的近似均分限制了内存密集型注意力数据通路的布局。"
+    }
+   ]
+  },
+  {
+   "en": "We validate correctness through four implementation levels (Figure 4 ). The L2 intermediate is the key contribution: a Python reference that replicates HLS ap_fixed arithmetic exactly, enabling per-stage error isolation without FPGA builds. When L3 or L4 output diverges from L1, L2 isolates whether the cause is quantization design (L1 vs L2 mismatch) or implementation error (L2 vs L3/L4 mismatch). For example, when implementing the first TinyBERT layer we observed incorrect results in L4, while L3 was correct: the logic and code were correct, but there was an error specific to the FPGA implementation. Investigation via targeted builds eventually determined that the HLS-to-CL bridge had not copied the .dat initialization file into the synthesis directory. Vivado silently zero-filled the ROM, so on hardware the LUT returned zero for every input. The 4-level validation serves as an effective loop closure tool, allowing the coding agent to autonomously localize and diagnose problems.",
+   "zh": "我们通过四个实现层级（图 4）验证正确性。 L2 中间层是关键贡献：这是一个精确复现 HLS ap_fixed 算术运算的 Python 参考实现，无需 FPGA 构建即可实现逐级误差隔离。 当 L3 或 L4 的输出与 L1 不一致时，L2 可以隔离判断原因是量化设计问题（L1 与 L2 不一致）还是实现错误（L2 与 L3/L4 不一致）。 例如，在实现第一个 TinyBERT 层时，我们观察到 L4 的结果不正确，而 L3 是正确的：逻辑和代码都没有问题，但存在一个 FPGA 实现特有的错误。 通过针对性构建进行排查后，最终确定是 HLS 到 CL 的桥接层没有将 .dat 初始化文件复制到综合目录中。 Vivado 静默地将 ROM 填充为零，因此在硬件上查找表对每个输入都返回零。 这种四层级验证是一个有效的闭环工具，使编码智能体能够自主定位和诊断问题。",
+   "sents": [
+    {
+     "en": "We validate correctness through four implementation levels (Figure 4 ).",
+     "zh": "我们通过四个实现层级（图 4）验证正确性。"
+    },
+    {
+     "en": "The L2 intermediate is the key contribution: a Python reference that replicates HLS ap_fixed arithmetic exactly, enabling per-stage error isolation without FPGA builds.",
+     "zh": "L2 中间层是关键贡献：这是一个精确复现 HLS ap_fixed 算术运算的 Python 参考实现，无需 FPGA 构建即可实现逐级误差隔离。"
+    },
+    {
+     "en": "When L3 or L4 output diverges from L1, L2 isolates whether the cause is quantization design (L1 vs L2 mismatch) or implementation error (L2 vs L3/L4 mismatch).",
+     "zh": "当 L3 或 L4 的输出与 L1 不一致时，L2 可以隔离判断原因是量化设计问题（L1 与 L2 不一致）还是实现错误（L2 与 L3/L4 不一致）。"
+    },
+    {
+     "en": "For example, when implementing the first TinyBERT layer we observed incorrect results in L4, while L3 was correct: the logic and code were correct, but there was an error specific to the FPGA implementation.",
+     "zh": "例如，在实现第一个 TinyBERT 层时，我们观察到 L4 的结果不正确，而 L3 是正确的：逻辑和代码都没有问题，但存在一个 FPGA 实现特有的错误。"
+    },
+    {
+     "en": "Investigation via targeted builds eventually determined that the HLS-to-CL bridge had not copied the .dat initialization file into the synthesis directory.",
+     "zh": "通过针对性构建进行排查后，最终确定是 HLS 到 CL 的桥接层没有将 .dat 初始化文件复制到综合目录中。"
+    },
+    {
+     "en": "Vivado silently zero-filled the ROM, so on hardware the LUT returned zero for every input.",
+     "zh": "Vivado 静默地将 ROM 填充为零，因此在硬件上查找表对每个输入都返回零。"
+    },
+    {
+     "en": "The 4-level validation serves as an effective loop closure tool, allowing the coding agent to autonomously localize and diagnose problems.",
+     "zh": "这种四层级验证是一个有效的闭环工具，使编码智能体能够自主定位和诊断问题。"
+    }
+   ]
+  },
+  {
+   "en": "We conducted the work during a 1-month research spike, which included initial paper writeup. The team consisted of a single human researcher using an AWS Kiro IDE coding agent (responsible for FPGA programming and investigation) and an Amazon Quick desktop AI (responsible for higher level strategic inquiry, including literature searches, and also LaTeX formatting). At project beginning, the human researcher knew AI engineering but no FPGA programming 2 2 2 Although by the end he knew considerably more. . The researcher employed loop engineering principles to insure the agents had clear goals, success metrics, and necessary loop closure tools (including the F2 instance) to allow evaluating their own progress towards the goal [ 17 ] .",
+   "zh": "我们在一项为期一个月的研究冲刺中完成了这项工作，其中包括最初的论文撰写。 团队由一名人类研究人员组成，他使用 AWS Kiro IDE 编码智能体（负责 FPGA 编程与调查研究）和一个 Amazon Quick 桌面 AI（负责更高层面的战略性问题，包括文献检索，以及 LaTeX 格式排版）。 在项目开始时，这名人类研究人员懂 AI 工程，但不懂 FPGA 编程 2 2 2 不过到项目结束时，他已懂得多得多了。。 这名研究人员运用了循环工程原则，以确保各个智能体拥有清晰的目标、成功指标以及必要的循环闭合工具（包括 F2 实例），从而使其能够评估自己朝目标推进的进展情况 [ 17 ] 。",
+   "sents": [
+    {
+     "en": "We conducted the work during a 1-month research spike, which included initial paper writeup.",
+     "zh": "我们在一项为期一个月的研究冲刺中完成了这项工作，其中包括最初的论文撰写。"
+    },
+    {
+     "en": "The team consisted of a single human researcher using an AWS Kiro IDE coding agent (responsible for FPGA programming and investigation) and an Amazon Quick desktop AI (responsible for higher level strategic inquiry, including literature searches, and also LaTeX formatting).",
+     "zh": "团队由一名人类研究人员组成，他使用 AWS Kiro IDE 编码智能体（负责 FPGA 编程与调查研究）和一个 Amazon Quick 桌面 AI（负责更高层面的战略性问题，包括文献检索，以及 LaTeX 格式排版）。"
+    },
+    {
+     "en": "At project beginning, the human researcher knew AI engineering but no FPGA programming 2 2 2 Although by the end he knew considerably more. .",
+     "zh": "在项目开始时，这名人类研究人员懂 AI 工程，但不懂 FPGA 编程 2 2 2 不过到项目结束时，他已懂得多得多了。。"
+    },
+    {
+     "en": "The researcher employed loop engineering principles to insure the agents had clear goals, success metrics, and necessary loop closure tools (including the F2 instance) to allow evaluating their own progress towards the goal [ 17 ] .",
+     "zh": "这名研究人员运用了循环工程原则，以确保各个智能体拥有清晰的目标、成功指标以及必要的循环闭合工具（包括 F2 实例），从而使其能够评估自己朝目标推进的进展情况 [ 17 ] 。"
+    }
+   ]
+  },
+  {
+   "en": "Stage 1 (embedding layer) is validated on physical FPGA (L4) with 100% accuracy across 500 samples (max error ≤ 0.013 \\leq 0.013 ). Stage 2 (encoder layer 0) has achieved timing closure on the VU47P; a deterministic logic-level discrepancy in the attention computation is under investigation. Encoder layers 1–3 and the classifier are validated at L3 (C-simulation). All full-pipeline accuracy claims are based on L3, which has proven equivalent to L4 on validated stages.",
+   "zh": "第一阶段（嵌入层）已在物理 FPGA（L4）上完成验证，在 500 个样本上准确率为 100%（最大误差 ≤ 0.013 \\leq 0.013）。 第二阶段（编码器第 0 层）已在 VU47P 上实现时序收敛；注意力计算中一个确定性的逻辑级差异正在调查中。 编码器第 1–3 层和分类器已在 L3（C 仿真）层面完成验证。 所有关于完整流水线的准确率结论均基于 L3，而 L3 已在已验证的阶段上被证明与 L4 等效。",
+   "sents": [
+    {
+     "en": "Stage 1 (embedding layer) is validated on physical FPGA (L4) with 100% accuracy across 500 samples (max error ≤ 0.013 \\leq 0.013 ).",
+     "zh": "第一阶段（嵌入层）已在物理 FPGA（L4）上完成验证，在 500 个样本上准确率为 100%（最大误差 ≤ 0.013 \\leq 0.013）。"
+    },
+    {
+     "en": "Stage 2 (encoder layer 0) has achieved timing closure on the VU47P; a deterministic logic-level discrepancy in the attention computation is under investigation.",
+     "zh": "第二阶段（编码器第 0 层）已在 VU47P 上实现时序收敛；注意力计算中一个确定性的逻辑级差异正在调查中。"
+    },
+    {
+     "en": "Encoder layers 1–3 and the classifier are validated at L3 (C-simulation).",
+     "zh": "编码器第 1–3 层和分类器已在 L3（C 仿真）层面完成验证。"
+    },
+    {
+     "en": "All full-pipeline accuracy claims are based on L3, which has proven equivalent to L4 on validated stages.",
+     "zh": "所有关于完整流水线的准确率结论均基于 L3，而 L3 已在已验证的阶段上被证明与 L4 等效。"
+    }
+   ]
+  },
+  {
+   "en": "Table 3 compares quantization schemes on the 500-sample test set using C simulation. W16A16 preserves FP32 accuracy (86.54 vs 86.63 F1, within noise) with maximum element error of 0.137 across all encoder stages. W8A8 achieves comparable label-level F1 (85.59). L3 C-simulation matches L2 Python at 100% label agreement, confirming the HLS implementation is bit-accurate to the quantized reference. The test dataset is small and the task is simply a basic proof-of-concept, as our primary focus was toolchain development, so extensive analysis is precluded.",
+   "zh": "表 3 使用 C 仿真在 500 样本测试集上比较了各量化方案。 W16A16 保持了 FP32 精度（86.54 对 86.63 F1，在噪声范围内），且在所有编码器阶段的最大元素误差为 0.137。 W8A8 达到了相近的标签级 F1（85.59）。 L3 的 C 仿真与 L2 的 Python 实现 label 一致率达到 100%，证实 HLS 实现与量化参考结果是位精确一致的。 测试数据集规模较小，且该任务仅是基本的概念验证，因为我们的主要重点是工具链开发，因此无法进行深入分析。",
+   "sents": [
+    {
+     "en": "Table 3 compares quantization schemes on the 500-sample test set using C simulation.",
+     "zh": "表 3 使用 C 仿真在 500 样本测试集上比较了各量化方案。"
+    },
+    {
+     "en": "W16A16 preserves FP32 accuracy (86.54 vs 86.63 F1, within noise) with maximum element error of 0.137 across all encoder stages.",
+     "zh": "W16A16 保持了 FP32 精度（86.54 对 86.63 F1，在噪声范围内），且在所有编码器阶段的最大元素误差为 0.137。"
+    },
+    {
+     "en": "W8A8 achieves comparable label-level F1 (85.59).",
+     "zh": "W8A8 达到了相近的标签级 F1（85.59）。"
+    },
+    {
+     "en": "L3 C-simulation matches L2 Python at 100% label agreement, confirming the HLS implementation is bit-accurate to the quantized reference.",
+     "zh": "L3 的 C 仿真与 L2 的 Python 实现 label 一致率达到 100%，证实 HLS 实现与量化参考结果是位精确一致的。"
+    },
+    {
+     "en": "The test dataset is small and the task is simply a basic proof-of-concept, as our primary focus was toolchain development, so extensive analysis is precluded.",
+     "zh": "测试数据集规模较小，且该任务仅是基本的概念验证，因为我们的主要重点是工具链开发，因此无法进行深入分析。"
+    }
+   ]
+  },
+  {
+   "en": "Achieving timing closure on the AMD VU47P (3-SLR SSI device) for an ML workload required 21+ DCP builds across two stages. Stage 1 (embedding layer) converged from − 1.533 -1.533 ns to − 0.050 -0.050 ns over 10 builds; Stage 2 (encoder layer 0) converged from − 1.533 -1.533 ns to + 0.001 +0.001 ns over 16 builds. The Worst Negative Slack (WNS) convergence follows a logarithmic decay with non-monotone excursions from failed experiments (Figure 5 ).",
+   "zh": "在 AMD VU47P（3-SLR SSI 器件）上为机器学习负载实现时序收敛，需要在两个阶段中进行超过 21 次 DCP 构建。 阶段 1（嵌入层）经过 10 次构建，从不收敛的 −1.533 ns 收敛到 −0.050 ns；阶段 2（编码器第 0 层）经过 16 次构建，从 −1.533 ns 收敛到 +0.001 ns。 最差负时序裕量（WNS）的收敛过程呈现对数衰减趋势，并因失败的实验而出现非单调的波动（图 5）。",
+   "sents": [
+    {
+     "en": "Achieving timing closure on the AMD VU47P (3-SLR SSI device) for an ML workload required 21+ DCP builds across two stages.",
+     "zh": "在 AMD VU47P（3-SLR SSI 器件）上为机器学习负载实现时序收敛，需要在两个阶段中进行超过 21 次 DCP 构建。"
+    },
+    {
+     "en": "Stage 1 (embedding layer) converged from − 1.533 -1.533 ns to − 0.050 -0.050 ns over 10 builds; Stage 2 (encoder layer 0) converged from − 1.533 -1.533 ns to + 0.001 +0.001 ns over 16 builds.",
+     "zh": "阶段 1（嵌入层）经过 10 次构建，从不收敛的 −1.533 ns 收敛到 −0.050 ns；阶段 2（编码器第 0 层）经过 16 次构建，从 −1.533 ns 收敛到 +0.001 ns。"
+    },
+    {
+     "en": "The Worst Negative Slack (WNS) convergence follows a logarithmic decay with non-monotone excursions from failed experiments (Figure 5 ).",
+     "zh": "最差负时序裕量（WNS）的收敛过程呈现对数衰减趋势，并因失败的实验而出现非单调的波动（图 5）。"
+    }
+   ]
+  },
+  {
+   "en": "DCP builds take 38–82 minutes depending on design complexity. Enabling phys_opt adds 11–41 minutes but improves timing closure by 0.2–0.5 ns.",
+   "zh": "DCP 构建耗时 38–82 分钟，具体取决于设计复杂度。 启用 phys_opt 会增加 11–41 分钟，但可将时序收敛改善 0.2–0.5 ns。",
+   "sents": [
+    {
+     "en": "DCP builds take 38–82 minutes depending on design complexity.",
+     "zh": "DCP 构建耗时 38–82 分钟，具体取决于设计复杂度。"
+    },
+    {
+     "en": "Enabling phys_opt adds 11–41 minutes but improves timing closure by 0.2–0.5 ns.",
+     "zh": "启用 phys_opt 会增加 11–41 分钟，但可将时序收敛改善 0.2–0.5 ns。"
+    }
+   ]
+  },
+  {
+   "en": "(1) AXI register slice on PCIS path for SLR crossing timing. (2) VHDL sub-IP copy for HLS-generated float IPs ( fdiv_32 , fpext ).",
+   "zh": "(1) 在 PCIS 路径上使用 AXI 寄存器切片以满足跨 SLR 的时序要求。 (2) 为 HLS 生成的浮点 IP（fdiv_32、fpext）复制 VHDL 子 IP。",
+   "sents": [
+    {
+     "en": "(1) AXI register slice on PCIS path for SLR crossing timing.",
+     "zh": "(1) 在 PCIS 路径上使用 AXI 寄存器切片以满足跨 SLR 的时序要求。"
+    },
+    {
+     "en": "(2) VHDL sub-IP copy for HLS-generated float IPs ( fdiv_32 , fpext ).",
+     "zh": "(2) 为 HLS 生成的浮点 IP（fdiv_32、fpext）复制 VHDL 子 IP。"
+    }
+   ]
+  },
+  {
+   "en": "Default Vivado directives (not Performance_Explore ) reduce DCP build time by 30–50%. maxThreads=24 saturates the F2’s 24 vCPUs. Incremental checkpoints reduce re-build time after minor changes by ∼ \\sim 40%.",
+   "zh": "默认的 Vivado 指令（非 Performance_Explore）可将 DCP 构建时间缩短 30–50%。maxThreads=24 可饱和利用 F2 的 24 个 vCPU。 增量检查点可将微小改动后的重新构建时间缩短约 40%。",
+   "sents": [
+    {
+     "en": "Default Vivado directives (not Performance_Explore ) reduce DCP build time by 30–50%. maxThreads=24 saturates the F2’s 24 vCPUs.",
+     "zh": "默认的 Vivado 指令（非 Performance_Explore）可将 DCP 构建时间缩短 30–50%。maxThreads=24 可饱和利用 F2 的 24 个 vCPU。"
+    },
+    {
+     "en": "Incremental checkpoints reduce re-build time after minor changes by ∼ \\sim 40%.",
+     "zh": "增量检查点可将微小改动后的重新构建时间缩短约 40%。"
+    }
+   ]
+  },
+  {
+   "en": "Because the FPGA build was complete only for the embedding layer and encoder layer 0, we measured that portion across FPGA, CPU, and GPU, using identical inputs. For a short 16-token input (representative of NER), the FPGA is ∼ 480 × {\\sim}480\\times slower than CPU and ∼ 410 × {\\sim}410\\times slower than GPU (Table 4 ), almost completely due to the latency of fetching weights from host DRAM.",
+   "zh": "由于 FPGA 构建仅完成了嵌入层和编码器第 0 层，我们在 FPGA、CPU 和 GPU 上使用相同输入对这部分进行了测量。 对于较短的 16 个词元的输入（可代表 NER 任务），FPGA 比 CPU 慢约 {\\sim}480 倍，比 GPU 慢约 {\\sim}410 倍（表 4），这几乎完全是由于从主机 DRAM 获取权重的延迟所致。",
+   "sents": [
+    {
+     "en": "Because the FPGA build was complete only for the embedding layer and encoder layer 0, we measured that portion across FPGA, CPU, and GPU, using identical inputs.",
+     "zh": "由于 FPGA 构建仅完成了嵌入层和编码器第 0 层，我们在 FPGA、CPU 和 GPU 上使用相同输入对这部分进行了测量。"
+    },
+    {
+     "en": "For a short 16-token input (representative of NER), the FPGA is ∼ 480 × {\\sim}480\\times slower than CPU and ∼ 410 × {\\sim}410\\times slower than GPU (Table 4 ), almost completely due to the latency of fetching weights from host DRAM.",
+     "zh": "对于较短的 16 个词元的输入（可代表 NER 任务），FPGA 比 CPU 慢约 {\\sim}480 倍，比 GPU 慢约 {\\sim}410 倍（表 4），这几乎完全是由于从主机 DRAM 获取权重的延迟所致。"
+    }
+   ]
+  },
+  {
+   "en": "Debug writes dominate routing pressure. Removing the GELU output debug dump alone improved WNS by 0.37 ns (v2_enc0g). Debug writes add DDR write calls that increase routing congestion and can place small arrays across SLR boundaries.",
+   "zh": "调试写入主导了布线压力。 仅移除 GELU 输出调试转储一项，就将 WNS 改善了 0.37 ns（v2_enc0g）。 调试写入会增加 DDR 写调用，从而加剧布线拥塞，并可能使小型阵列跨越 SLR 边界分布。",
+   "sents": [
+    {
+     "en": "Debug writes dominate routing pressure.",
+     "zh": "调试写入主导了布线压力。"
+    },
+    {
+     "en": "Removing the GELU output debug dump alone improved WNS by 0.37 ns (v2_enc0g).",
+     "zh": "仅移除 GELU 输出调试转储一项，就将 WNS 改善了 0.37 ns（v2_enc0g）。"
+    },
+    {
+     "en": "Debug writes add DDR write calls that increase routing congestion and can place small arrays across SLR boundaries.",
+     "zh": "调试写入会增加 DDR 写调用，从而加剧布线拥塞，并可能使小型阵列跨越 SLR 边界分布。"
+    }
+   ]
+  },
+  {
+   "en": "LUTRAM for small arrays is critical. Bias and LayerNorm parameter arrays (312–1200 elements × \\times 4B) mapped to BRAM can cross SLR boundaries under routing pressure, adding 1+ ns. Forcing LUTRAM ( #pragma HLS BIND_STORAGE impl=lutram ) eliminates this.",
+   "zh": "小容量数组使用 LUTRAM 至关重要。 偏置和 LayerNorm 参数数组（312–1200 个元素 × \\times 4B）若映射到 BRAM，在布线压力下可能跨越 SLR 边界，额外增加 1+ ns 延迟。 强制使用 LUTRAM（#pragma HLS BIND_STORAGE impl=lutram）可以消除这一问题。",
+   "sents": [
+    {
+     "en": "LUTRAM for small arrays is critical.",
+     "zh": "小容量数组使用 LUTRAM 至关重要。"
+    },
+    {
+     "en": "Bias and LayerNorm parameter arrays (312–1200 elements × \\times 4B) mapped to BRAM can cross SLR boundaries under routing pressure, adding 1+ ns.",
+     "zh": "偏置和 LayerNorm 参数数组（312–1200 个元素 × \\times 4B）若映射到 BRAM，在布线压力下可能跨越 SLR 边界，额外增加 1+ ns 延迟。"
+    },
+    {
+     "en": "Forcing LUTRAM ( #pragma HLS BIND_STORAGE impl=lutram ) eliminates this.",
+     "zh": "强制使用 LUTRAM（#pragma HLS BIND_STORAGE impl=lutram）可以消除这一问题。"
+    }
+   ]
+  },
+  {
+   "en": "BRAM latency pragmas are non-monotone. latency=2 on input_i16 (78 KB INT16 activation buffer) improved WNS from − 0.534 -0.534 ns to − 0.343 -0.343 ns. Applying latency=2 to all large arrays (Q/K/V/attn_out) worsened WNS from − 0.343 -0.343 ns to − 0.649 -0.649 ns as Vivado placed the BRAMs further apart under tighter scheduling constraints. The sweet spot is selective application to the specific array on the critical path.",
+   "zh": "BRAM 延迟 pragma 的效果是非单调的。对 input_i16（78 KB 的 INT16 激活缓冲区）设置 latency=2 后，WNS 从 −0.534 ns 改善到 −0.343 ns。 将 latency=2 应用于所有大数组（Q/K/V/attn_out）反而使 WNS 从 −0.343 ns 恶化到 −0.649 ns，因为在更紧的调度约束下，Vivado 将这些 BRAM 布置得更远。 最佳做法是选择性地只对位于关键路径上的特定数组应用该 pragma。",
+   "sents": [
+    {
+     "en": "BRAM latency pragmas are non-monotone. latency=2 on input_i16 (78 KB INT16 activation buffer) improved WNS from − 0.534 -0.534 ns to − 0.343 -0.343 ns.",
+     "zh": "BRAM 延迟 pragma 的效果是非单调的。对 input_i16（78 KB 的 INT16 激活缓冲区）设置 latency=2 后，WNS 从 −0.534 ns 改善到 −0.343 ns。"
+    },
+    {
+     "en": "Applying latency=2 to all large arrays (Q/K/V/attn_out) worsened WNS from − 0.343 -0.343 ns to − 0.649 -0.649 ns as Vivado placed the BRAMs further apart under tighter scheduling constraints.",
+     "zh": "将 latency=2 应用于所有大数组（Q/K/V/attn_out）反而使 WNS 从 −0.343 ns 恶化到 −0.649 ns，因为在更紧的调度约束下，Vivado 将这些 BRAM 布置得更远。"
+    },
+    {
+     "en": "The sweet spot is selective application to the specific array on the critical path.",
+     "zh": "最佳做法是选择性地只对位于关键路径上的特定数组应用该 pragma。"
+    }
+   ]
+  },
+  {
+   "en": "SSI_SpreadLogic_high + physopt-loop produced the largest combined improvement in Stage 2: − 0.286 -0.286 ns → \\to + 0.001 +0.001 ns. The SSI_SpreadLogic_high placement directive spreads logic across SLR boundaries to reduce routing congestion; the physopt-loop (4 iterations with 0.25 ns over-constraint) then closes the remaining slack.",
+   "zh": "SSI_SpreadLogic_high + physopt-loop 在阶段 2 中产生了最大的综合改进：− 0.286 -0.286 ns → \\to + 0.001 +0.001 ns。 SSI_SpreadLogic_high 布局指令将逻辑分散到 SLR 边界以减少布线拥塞；随后 physopt-loop（4 次迭代，0.25 ns 过约束）闭合剩余的裕量。",
+   "sents": [
+    {
+     "en": "SSI_SpreadLogic_high + physopt-loop produced the largest combined improvement in Stage 2: − 0.286 -0.286 ns → \\to + 0.001 +0.001 ns.",
+     "zh": "SSI_SpreadLogic_high + physopt-loop 在阶段 2 中产生了最大的综合改进：− 0.286 -0.286 ns → \\to + 0.001 +0.001 ns。"
+    },
+    {
+     "en": "The SSI_SpreadLogic_high placement directive spreads logic across SLR boundaries to reduce routing congestion; the physopt-loop (4 iterations with 0.25 ns over-constraint) then closes the remaining slack.",
+     "zh": "SSI_SpreadLogic_high 布局指令将逻辑分散到 SLR 边界以减少布线拥塞；随后 physopt-loop（4 次迭代，0.25 ns 过约束）闭合剩余的裕量。"
+    }
+   ]
+  },
+  {
+   "en": "A small ( − 0.050 -0.050 ns) timing violation in Stage 1 did not corrupt computation. The critical path is a pure routing delay (95.5% routing, 0.165 ns logic) on the matmul pipeline enable → \\to K array BRAM write enable. Despite the marginal violation, Stage 1 produces correct results across all 500 samples.",
+   "zh": "第一级（Stage 1）中一个很小的（−0.050 ns）时序违例并未破坏计算。 关键路径是矩阵乘流水线使能 → \\to K 数组 BRAM 写使能上的纯布线延迟（95.5% 为布线延迟，逻辑延迟为 0.165 ns）。 尽管存在这一临界违例，第一级在全部 500 个样本上均产生正确结果。",
+   "sents": [
+    {
+     "en": "A small ( − 0.050 -0.050 ns) timing violation in Stage 1 did not corrupt computation.",
+     "zh": "第一级（Stage 1）中一个很小的（−0.050 ns）时序违例并未破坏计算。"
+    },
+    {
+     "en": "The critical path is a pure routing delay (95.5% routing, 0.165 ns logic) on the matmul pipeline enable → \\to K array BRAM write enable.",
+     "zh": "关键路径是矩阵乘流水线使能 → \\to K 数组 BRAM 写使能上的纯布线延迟（95.5% 为布线延迟，逻辑延迟为 0.165 ns）。"
+    },
+    {
+     "en": "Despite the marginal violation, Stage 1 produces correct results across all 500 samples.",
+     "zh": "尽管存在这一临界违例，第一级在全部 500 个样本上均产生正确结果。"
+    }
+   ]
+  },
+  {
+   "en": "The FPGA implementation is only partially complete: the embedding layer and encoder layer 0 (1 of 4) are deployed on the hardware. It is, however, sufficient to note several important results:",
+   "zh": "FPGA 实现仅部分完成：嵌入层和编码器第 0 层（4 层中的第 1 层）已部署到硬件上。 然而，这已足以说明几个重要结果：",
+   "sents": [
+    {
+     "en": "The FPGA implementation is only partially complete: the embedding layer and encoder layer 0 (1 of 4) are deployed on the hardware.",
+     "zh": "FPGA 实现仅部分完成：嵌入层和编码器第 0 层（4 层中的第 1 层）已部署到硬件上。"
+    },
+    {
+     "en": "It is, however, sufficient to note several important results:",
+     "zh": "然而，这已足以说明几个重要结果："
+    }
+   ]
+  },
+  {
+   "en": "The toolchain described in § 2.2 effectively enables writing high-level code in Vitis HLS and deploying it to a cloud-based F2 instance.",
+   "zh": "§2.2 中描述的工具链有效地支持了在 Vitis HLS 中编写高级代码，并将其部署到基于云的 F2 实例。",
+   "sents": null
+  },
+  {
+   "en": "The 4-level validation process is effective at identifying FPGA-specific problem areas such as broken IP cores and logic manifestation defects, and with sufficient continued effort would facilitate building out the remaining layers.",
+   "zh": "四级验证流程能够有效识别 FPGA 特有的问题领域，例如损坏的 IP 核和逻辑显现缺陷，并且只要持续投入足够的努力，将有助于构建其余的层。",
+   "sents": null
+  },
+  {
+   "en": "Performance of our reference TinyBERT implementation is poor vs. a standard GPU implementation, although we expect it could be improved considerably by moving to more standard INT8 quantization now that the toolchain is established and design patterns identified.",
+   "zh": "我们的参考 TinyBERT 实现的性能相比标准 GPU 实现较差，不过我们预计，既然工具链已经建立、设计模式也已明确，通过转向更标准的 INT8 量化，其性能可以得到显著提升。",
+   "sents": null
+  },
+  {
+   "en": "Moving weights from DRAM onto the FPGA dominated latency, a cost made worse by the bridge’s single DDR port and lack of HBM access (Section 2.3 ).",
+   "zh": "将权重从 DRAM 搬运到 FPGA 上占据了主要延迟，而桥接器的单 DDR 端口以及缺乏 HBM 访问能力使这一开销进一步恶化（第 2.3 节）。",
+   "sents": null
+  },
+  {
+   "en": "Transformers are architecturally optimized for large tensor operations that perform well on GPU hardware acceleration - fundamentally a von Neumann approach. A naive transformer implementation does not fit optimally to the FPGA’s multi-layer distributed memory architecture.",
+   "zh": "Transformer 在架构上针对大型张量运算进行了优化，这类运算在 GPU 硬件加速上表现良好——本质上是一种冯·诺依曼方法。 朴素的 Transformer 实现并不能最优地适配 FPGA 的多层分布式内存架构。",
+   "sents": [
+    {
+     "en": "Transformers are architecturally optimized for large tensor operations that perform well on GPU hardware acceleration - fundamentally a von Neumann approach.",
+     "zh": "Transformer 在架构上针对大型张量运算进行了优化，这类运算在 GPU 硬件加速上表现良好——本质上是一种冯·诺依曼方法。"
+    },
+    {
+     "en": "A naive transformer implementation does not fit optimally to the FPGA’s multi-layer distributed memory architecture.",
+     "zh": "朴素的 Transformer 实现并不能最优地适配 FPGA 的多层分布式内存架构。"
+    }
+   ]
+  },
+  {
+   "en": "Given the above results, pursuing higher performance solutions must contemplate either augmenting or abandoning the bridge, and should consider non-transformer architectures for which distributed memory local to compute elements is more advantageous.",
+   "zh": "鉴于上述结果，追求更高性能的解决方案必须考虑增强或放弃该桥接结构，并应考虑采用非 Transformer 架构，因为此类架构中计算单元本地的分布式内存更具优势。",
+   "sents": null
+  },
+  {
+   "en": "Although we have established a toolchain that allows development of a FPGA design from a high level language (Vitis HLS) to a deployable AFI, this path comes at the cost of greatly limited memory management. One path forward would require enhancing the bridge to support multi-channel DMA access and HBM access. There are no conceptual barriers to doing this. Although it is a large lift, with coding agent assistance, loop engineering principles, and the four-level validation methodology this path appears reachable.",
+   "zh": "尽管我们已经建立了一条从高级语言（Vitis HLS）到可部署 AFI 的 FPGA 设计工具链，但这条路径的代价是内存管理受到极大限制。 前进的一条路径需要增强桥接器以支持多通道 DMA 访问和 HBM 访问。 这样做不存在概念上的障碍。 虽然这是一项巨大的工程，但在智能体编码辅助、循环工程原则以及四级验证方法的支持下，这条路径看起来是可以实现的。",
+   "sents": [
+    {
+     "en": "Although we have established a toolchain that allows development of a FPGA design from a high level language (Vitis HLS) to a deployable AFI, this path comes at the cost of greatly limited memory management.",
+     "zh": "尽管我们已经建立了一条从高级语言（Vitis HLS）到可部署 AFI 的 FPGA 设计工具链，但这条路径的代价是内存管理受到极大限制。"
+    },
+    {
+     "en": "One path forward would require enhancing the bridge to support multi-channel DMA access and HBM access.",
+     "zh": "前进的一条路径需要增强桥接器以支持多通道 DMA 访问和 HBM 访问。"
+    },
+    {
+     "en": "There are no conceptual barriers to doing this.",
+     "zh": "这样做不存在概念上的障碍。"
+    },
+    {
+     "en": "Although it is a large lift, with coding agent assistance, loop engineering principles, and the four-level validation methodology this path appears reachable.",
+     "zh": "虽然这是一项巨大的工程，但在智能体编码辅助、循环工程原则以及四级验证方法的支持下，这条路径看起来是可以实现的。"
+    }
+   ]
+  },
+  {
+   "en": "Another option is to simply abandon the bridge, which also requires abandoning high-level Vitis HLS and instead implement designs in much lower-level HDL code. Here again the increasing sophistication of coding agents at building low-level code like circuit designs may lower the traditionally high barrier of effort.",
+   "zh": "另一种选择是干脆放弃桥接方案，这也意味着放弃高层的 Vitis HLS，转而用低得多的 HDL 代码来实现设计。 同样，编程智能体在构建电路设计等低层代码方面的能力日益精湛，可能会降低传统上高昂的投入门槛。",
+   "sents": [
+    {
+     "en": "Another option is to simply abandon the bridge, which also requires abandoning high-level Vitis HLS and instead implement designs in much lower-level HDL code.",
+     "zh": "另一种选择是干脆放弃桥接方案，这也意味着放弃高层的 Vitis HLS，转而用低得多的 HDL 代码来实现设计。"
+    },
+    {
+     "en": "Here again the increasing sophistication of coding agents at building low-level code like circuit designs may lower the traditionally high barrier of effort.",
+     "zh": "同样，编程智能体在构建电路设计等低层代码方面的能力日益精湛，可能会降低传统上高昂的投入门槛。"
+    }
+   ]
+  },
+  {
+   "en": "Work is under way on running non-transformer generative architectures such as Mamba [ 18 ] on FPGAs [ 19 ] , but these designs still stream weights from off-chip memory (§ 5.4 ). The FPGA’s highly parallel, distributed-memory fabric is better suited to traditional machine-learning models, which coding agents can now build and deploy with the toolchain we describe. Boosted decision trees compiled to FPGA firmware evaluate in tens of nanoseconds [ 20 , 21 ] , and online tree learning can run on the incoming data stream itself [ 22 ] . Network security is a natural target: traffic is a continuous stream, the market is established, and detection rules must change as attacks evolve. Flow-based intrusion detectors already classify traffic on FPGA SmartNICs at line rate using a few hundred LUTs [ 23 ] , and a coding agent able to regenerate and redeploy such a detector as threats change would make the approach considerably more practical.",
+   "zh": "目前已有工作在研究如何在 FPGA 上运行 Mamba [18] 等非 Transformer 生成式架构 [19]，但这些设计仍然需要从片外内存流式读取权重（见 §5.4）。 FPGA 高度并行、分布式内存的结构更适合传统的机器学习模型，而智能体现在可以借助我们描述的工具链来构建并部署这些模型。 编译成 FPGA 固件的提升决策树可以在几十纳秒内完成评估 [20, 21]，而且在线树学习可以直接在输入数据流上运行 [22]。 网络安全是一个天然的目标应用：流量本身是连续的数据流，市场已经成熟，而检测规则必须随攻击手段的演变而不断更新。 基于流的入侵检测器已经在 FPGA 智能网卡（SmartNIC）上仅用几百个 LUT 就能以线速对流量进行分类 [23]，如果智能体能够在威胁变化时重新生成并重新部署这样的检测器，将使这一方法更加实用。",
+   "sents": [
+    {
+     "en": "Work is under way on running non-transformer generative architectures such as Mamba [ 18 ] on FPGAs [ 19 ] , but these designs still stream weights from off-chip memory (§ 5.4 ).",
+     "zh": "目前已有工作在研究如何在 FPGA 上运行 Mamba [18] 等非 Transformer 生成式架构 [19]，但这些设计仍然需要从片外内存流式读取权重（见 §5.4）。"
+    },
+    {
+     "en": "The FPGA’s highly parallel, distributed-memory fabric is better suited to traditional machine-learning models, which coding agents can now build and deploy with the toolchain we describe.",
+     "zh": "FPGA 高度并行、分布式内存的结构更适合传统的机器学习模型，而智能体现在可以借助我们描述的工具链来构建并部署这些模型。"
+    },
+    {
+     "en": "Boosted decision trees compiled to FPGA firmware evaluate in tens of nanoseconds [ 20 , 21 ] , and online tree learning can run on the incoming data stream itself [ 22 ] .",
+     "zh": "编译成 FPGA 固件的提升决策树可以在几十纳秒内完成评估 [20, 21]，而且在线树学习可以直接在输入数据流上运行 [22]。"
+    },
+    {
+     "en": "Network security is a natural target: traffic is a continuous stream, the market is established, and detection rules must change as attacks evolve.",
+     "zh": "网络安全是一个天然的目标应用：流量本身是连续的数据流，市场已经成熟，而检测规则必须随攻击手段的演变而不断更新。"
+    },
+    {
+     "en": "Flow-based intrusion detectors already classify traffic on FPGA SmartNICs at line rate using a few hundred LUTs [ 23 ] , and a coding agent able to regenerate and redeploy such a detector as threats change would make the approach considerably more practical.",
+     "zh": "基于流的入侵检测器已经在 FPGA 智能网卡（SmartNIC）上仅用几百个 LUT 就能以线速对流量进行分类 [23]，如果智能体能够在威胁变化时重新生成并重新部署这样的检测器，将使这一方法更加实用。"
+    }
+   ]
+  },
+  {
+   "en": "All HLS source code, validation infrastructure, build scripts, and the complete deployment workflow are available at https://github.com/rostcheck/fpga-transformer . The four-level validation framework enables any researcher to reproduce our results without FPGA hardware (L1/L2/L3 run locally).",
+   "zh": "所有 HLS 源代码、验证基础设施、构建脚本以及完整的部署工作流均可在 https://github.com/rostcheck/fpga-transformer 获取。 四级验证框架使任何研究者无需 FPGA 硬件即可复现我们的结果（L1/L2/L3 均可在本地运行）。",
+   "sents": [
+    {
+     "en": "All HLS source code, validation infrastructure, build scripts, and the complete deployment workflow are available at https://github.com/rostcheck/fpga-transformer .",
+     "zh": "所有 HLS 源代码、验证基础设施、构建脚本以及完整的部署工作流均可在 https://github.com/rostcheck/fpga-transformer 获取。"
+    },
+    {
+     "en": "The four-level validation framework enables any researcher to reproduce our results without FPGA hardware (L1/L2/L3 run locally).",
+     "zh": "四级验证框架使任何研究者无需 FPGA 硬件即可复现我们的结果（L1/L2/L3 均可在本地运行）。"
+    }
+   ]
+  },
+  {
+   "en": "The FPGA transformer acceleration literature has grown rapidly since FQ-BERT (2021) [ 24 ] , which first demonstrated fully-quantized BERT-base inference on Xilinx ZCU102. Recent work includes ProTEA [ 25 ] and FAMOUS [ 26 ] (programmable encoder accelerators on Alveo U55C), ADAPTOR [ 27 ] (runtime-adaptive encoder/decoder), BETA [ 28 ] (binary transformers on ZCU102), and HLSTransform [ 29 ] (HLS-based Llama 2 on VU9P). NPE [ 30 ] introduced an overlay processor approach for NLP on FPGA. The two Waterloo 2025 theses [ 31 , 32 ] represent the closest prior work: integer-only BERT on PYNQ-Z1/KV260 for GLUE benchmarks. Other recent contributions include g-BERT [ 33 ] (hardware-aware pruning), Fuketa et al. [ 16 ] (matrix arithmetic-only BERT), BAQET [ 34 ] (BRAM-aware quantization), and AutoTrans [ 35 ] (automated accelerator generation). The hls4ml framework [ 36 ] targets sub-1K parameter models for particle physics applications, a fundamentally different scale from the 14.5M-parameter full transformer addressed here. Table 5 compares these works with ours.",
+   "zh": "自 FQ-BERT（2021）[24] 首次在 Xilinx ZCU102 上演示了全量化 BERT-base 推理以来，FPGA transformer 加速领域的文献迅速增长。 近期的工作包括 ProTEA [25] 和 FAMOUS [26]（Alveo U55C 上的可编程编码器加速器）、ADAPTOR [27]（运行时自适应的编码器/解码器）、BETA [28]（ZCU102 上的二值化 transformer）以及 HLSTransform [29]（VU9P 上基于 HLS 的 Llama 2）。 NPE [30] 提出了一种面向 FPGA 上自然语言处理的覆盖层处理器方法。 两篇滑铁卢大学 2025 年的学位论文 [31, 32] 代表了最接近的已有工作：在 PYNQ-Z1/KV260 上实现面向 GLUE 基准的仅整数 BERT。 其他近期贡献包括 g-BERT [33]（硬件感知剪枝）、Fuketa 等人 [16]（仅矩阵运算的 BERT）、BAQET [34]（BRAM 感知量化）以及 AutoTrans [35]（自动化加速器生成）。 hls4ml 框架 [36] 面向的是粒子物理应用中参数量低于 1K 的模型，这与本文所处理的 1450 万参数的完整 transformer 在规模上有着根本的不同。 表 5 将这些工作与我们的工作进行了比较。",
+   "sents": [
+    {
+     "en": "The FPGA transformer acceleration literature has grown rapidly since FQ-BERT (2021) [ 24 ] , which first demonstrated fully-quantized BERT-base inference on Xilinx ZCU102.",
+     "zh": "自 FQ-BERT（2021）[24] 首次在 Xilinx ZCU102 上演示了全量化 BERT-base 推理以来，FPGA transformer 加速领域的文献迅速增长。"
+    },
+    {
+     "en": "Recent work includes ProTEA [ 25 ] and FAMOUS [ 26 ] (programmable encoder accelerators on Alveo U55C), ADAPTOR [ 27 ] (runtime-adaptive encoder/decoder), BETA [ 28 ] (binary transformers on ZCU102), and HLSTransform [ 29 ] (HLS-based Llama 2 on VU9P).",
+     "zh": "近期的工作包括 ProTEA [25] 和 FAMOUS [26]（Alveo U55C 上的可编程编码器加速器）、ADAPTOR [27]（运行时自适应的编码器/解码器）、BETA [28]（ZCU102 上的二值化 transformer）以及 HLSTransform [29]（VU9P 上基于 HLS 的 Llama 2）。"
+    },
+    {
+     "en": "NPE [ 30 ] introduced an overlay processor approach for NLP on FPGA.",
+     "zh": "NPE [30] 提出了一种面向 FPGA 上自然语言处理的覆盖层处理器方法。"
+    },
+    {
+     "en": "The two Waterloo 2025 theses [ 31 , 32 ] represent the closest prior work: integer-only BERT on PYNQ-Z1/KV260 for GLUE benchmarks.",
+     "zh": "两篇滑铁卢大学 2025 年的学位论文 [31, 32] 代表了最接近的已有工作：在 PYNQ-Z1/KV260 上实现面向 GLUE 基准的仅整数 BERT。"
+    },
+    {
+     "en": "Other recent contributions include g-BERT [ 33 ] (hardware-aware pruning), Fuketa et al.",
+     "zh": "其他近期贡献包括 g-BERT [33]（硬件感知剪枝）、Fuketa 等人"
+    },
+    {
+     "en": "[ 16 ] (matrix arithmetic-only BERT), BAQET [ 34 ] (BRAM-aware quantization), and AutoTrans [ 35 ] (automated accelerator generation).",
+     "zh": "[16]（仅矩阵运算的 BERT）、BAQET [34]（BRAM 感知量化）以及 AutoTrans [35]（自动化加速器生成）。"
+    },
+    {
+     "en": "The hls4ml framework [ 36 ] targets sub-1K parameter models for particle physics applications, a fundamentally different scale from the 14.5M-parameter full transformer addressed here.",
+     "zh": "hls4ml 框架 [36] 面向的是粒子物理应用中参数量低于 1K 的模型，这与本文所处理的 1450 万参数的完整 transformer 在规模上有着根本的不同。"
+    },
+    {
+     "en": "Table 5 compares these works with ours.",
+     "zh": "表 5 将这些工作与我们的工作进行了比较。"
+    }
+   ]
+  },
+  {
+   "en": "The FPGA transformer community has generally converged on INT8 or lower to maximize throughput and minimize latency. FQ-BERT uses full quantization, BETA uses binary (1-bit) weights, TerEffic [ 37 ] uses ternary (1.58-bit), FlightLLM [ 6 ] uses INT4/INT8. TATAA [ 38 ] uses mixed INT8 + bfloat16, the closest to higher precision. ITA [ 39 ] demonstrates integer-only softmax at 8-bit. We instead used W16A16 (16-bit fixed-point weights and activations), chosen so that numerical errors introduced by the circuit itself could be separated from quantization noise (Section 2.6 ).",
+   "zh": "FPGA Transformer 社区普遍已收敛到 INT8 或更低精度，以最大化吞吐量并最小化延迟。 FQ-BERT 采用全量化，BETA 使用二值（1 位）权重，TerEffic [ 37 ] 使用三值（1.58 位），FlightLLM [ 6 ] 使用 INT4/INT8。 TATAA [ 38 ] 使用 INT8 与 bfloat16 的混合精度，是最接近更高精度的方案。 ITA [ 39 ] 展示了 8 位的纯整数 softmax。 我们则采用 W16A16（16 位定点权重与激活值），这样选择是为了能够将电路本身引入的数值误差与量化噪声分离开来（第 2.6 节）。",
+   "sents": [
+    {
+     "en": "The FPGA transformer community has generally converged on INT8 or lower to maximize throughput and minimize latency.",
+     "zh": "FPGA Transformer 社区普遍已收敛到 INT8 或更低精度，以最大化吞吐量并最小化延迟。"
+    },
+    {
+     "en": "FQ-BERT uses full quantization, BETA uses binary (1-bit) weights, TerEffic [ 37 ] uses ternary (1.58-bit), FlightLLM [ 6 ] uses INT4/INT8.",
+     "zh": "FQ-BERT 采用全量化，BETA 使用二值（1 位）权重，TerEffic [ 37 ] 使用三值（1.58 位），FlightLLM [ 6 ] 使用 INT4/INT8。"
+    },
+    {
+     "en": "TATAA [ 38 ] uses mixed INT8 + bfloat16, the closest to higher precision.",
+     "zh": "TATAA [ 38 ] 使用 INT8 与 bfloat16 的混合精度，是最接近更高精度的方案。"
+    },
+    {
+     "en": "ITA [ 39 ] demonstrates integer-only softmax at 8-bit.",
+     "zh": "ITA [ 39 ] 展示了 8 位的纯整数 softmax。"
+    },
+    {
+     "en": "We instead used W16A16 (16-bit fixed-point weights and activations), chosen so that numerical errors introduced by the circuit itself could be separated from quantization noise (Section 2.6 ).",
+     "zh": "我们则采用 W16A16（16 位定点权重与激活值），这样选择是为了能够将电路本身引入的数值误差与量化噪声分离开来（第 2.6 节）。"
+    }
+   ]
+  },
+  {
+   "en": "BAQET [ 34 ] demonstrates that BRAM utilization is the binding constraint on quantization granularity for stream-based FPGA transformer designs.",
+   "zh": "BAQET [34] 证明了对于基于数据流的 FPGA Transformer 设计而言，BRAM 利用率是限制量化粒度的关键约束。",
+   "sents": null
+  },
+  {
+   "en": "AWS F1 (2017) and F2 (December 2024) [ 7 ] provide FPGA instances via the HDK (Hardware Development Kit) framework [ 9 ] . Despite eight years of availability, no academic paper has deployed ML inference on any AWS FPGA instance. A 2024 survey of 287 FPGA ML acceleration papers [ 5 ] makes no mention of AWS F2. Montgomerie-Corcoran et al. [ 40 ] confirm no cloud FPGA ML work through 2023. The University of Toronto explicitly noted the gap for F1 [ 8 ] . HyperAccel’s commercial LPU deployment on F2 [ 41 ] demonstrates that the VU47P is capable of competitive ML inference (1.25 ms/token on a 1.3B-parameter model), but uses a completely different architecture (a closed-source highly pipelined 4mm ASIC design emulated on FPGA).",
+   "zh": "AWS F1（2017）与 F2（2024年12月）[ 7 ] 通过 HDK（硬件开发套件）框架 [ 9 ] 提供 FPGA 实例。 尽管已可用八年，尚无学术论文在任何 AWS FPGA 实例上部署过机器学习推理。 一项针对 287 篇 FPGA 机器学习加速论文的 2024 年综述 [ 5 ] 完全没有提及 AWS F2。 Montgomerie-Corcoran 等人。 [ 40 ] 证实截至 2023 年没有云端 FPGA 机器学习方面的工作。 多伦多大学明确指出了 F1 的这一空白 [ 8 ] 。 HyperAccel 在 F2 上的商用 LPU 部署 [ 41 ] 表明 VU47P 具备有竞争力的机器学习推理能力（在 1.3B 参数模型上每 token 1.25 毫秒），但其采用了完全不同的架构（一种在 FPGA 上仿真的闭源高度流水线的 4 毫米 ASIC 设计）。",
+   "sents": [
+    {
+     "en": "AWS F1 (2017) and F2 (December 2024) [ 7 ] provide FPGA instances via the HDK (Hardware Development Kit) framework [ 9 ] .",
+     "zh": "AWS F1（2017）与 F2（2024年12月）[ 7 ] 通过 HDK（硬件开发套件）框架 [ 9 ] 提供 FPGA 实例。"
+    },
+    {
+     "en": "Despite eight years of availability, no academic paper has deployed ML inference on any AWS FPGA instance.",
+     "zh": "尽管已可用八年，尚无学术论文在任何 AWS FPGA 实例上部署过机器学习推理。"
+    },
+    {
+     "en": "A 2024 survey of 287 FPGA ML acceleration papers [ 5 ] makes no mention of AWS F2.",
+     "zh": "一项针对 287 篇 FPGA 机器学习加速论文的 2024 年综述 [ 5 ] 完全没有提及 AWS F2。"
+    },
+    {
+     "en": "Montgomerie-Corcoran et al.",
+     "zh": "Montgomerie-Corcoran 等人。"
+    },
+    {
+     "en": "[ 40 ] confirm no cloud FPGA ML work through 2023.",
+     "zh": "[ 40 ] 证实截至 2023 年没有云端 FPGA 机器学习方面的工作。"
+    },
+    {
+     "en": "The University of Toronto explicitly noted the gap for F1 [ 8 ] .",
+     "zh": "多伦多大学明确指出了 F1 的这一空白 [ 8 ] 。"
+    },
+    {
+     "en": "HyperAccel’s commercial LPU deployment on F2 [ 41 ] demonstrates that the VU47P is capable of competitive ML inference (1.25 ms/token on a 1.3B-parameter model), but uses a completely different architecture (a closed-source highly pipelined 4mm ASIC design emulated on FPGA).",
+     "zh": "HyperAccel 在 F2 上的商用 LPU 部署 [ 41 ] 表明 VU47P 具备有竞争力的机器学习推理能力（在 1.3B 参数模型上每 token 1.25 毫秒），但其采用了完全不同的架构（一种在 FPGA 上仿真的闭源高度流水线的 4 毫米 ASIC 设计）。"
+    }
+   ]
+  },
+  {
+   "en": "The weight-streaming bottleneck we characterize (§ 2.3 ) follows from the transformer’s reliance on large weight matrices that cannot reside on-chip. Architectures with a bounded working set avoid the growing key-value cache. Mamba [ 18 ] replaces attention with a linear-time selective recurrence and a fixed-size hidden state. LightMamba [ 19 ] , the first FPGA Mamba accelerator, keeps that state on-chip but still streams weights from off-chip memory, and reaches 7.21 tokens/s on a Versal VCK190. HFRWKV [ 42 ] implements the RNN-style RWKV model [ 43 ] fully on-chip for smaller models and reports 32 × \\times the throughput of a GPU on Alveo U50 and U280 cards. To our knowledge, no published FPGA design runs a Mamba model with its weights resident on-chip.",
+   "zh": "我们在第2.3节中所刻画的权重流式传输瓶颈，源于Transformer对无法完全驻留在片上的大型权重矩阵的依赖。 具有有界工作集的架构避免了不断增长的键值缓存。 Mamba [18] 用线性时间的选择性递归和固定大小的隐藏状态取代了注意力机制。 LightMamba [19] 是首个FPGA Mamba加速器，它将该状态保留在片上，但仍需从片外存储器流式传输权重，并在Versal VCK190上达到7.21 tokens/s。 HFRWKV [42] 为较小的模型将RNN风格的RWKV模型 [43] 完全实现在片上，并在Alveo U50和U280卡上报告了32 × \\times 于GPU的吞吐量。 据我们所知，目前尚无已发表的FPGA设计能够运行权重完全驻留在片上的Mamba模型。",
+   "sents": [
+    {
+     "en": "The weight-streaming bottleneck we characterize (§ 2.3 ) follows from the transformer’s reliance on large weight matrices that cannot reside on-chip.",
+     "zh": "我们在第2.3节中所刻画的权重流式传输瓶颈，源于Transformer对无法完全驻留在片上的大型权重矩阵的依赖。"
+    },
+    {
+     "en": "Architectures with a bounded working set avoid the growing key-value cache.",
+     "zh": "具有有界工作集的架构避免了不断增长的键值缓存。"
+    },
+    {
+     "en": "Mamba [ 18 ] replaces attention with a linear-time selective recurrence and a fixed-size hidden state.",
+     "zh": "Mamba [18] 用线性时间的选择性递归和固定大小的隐藏状态取代了注意力机制。"
+    },
+    {
+     "en": "LightMamba [ 19 ] , the first FPGA Mamba accelerator, keeps that state on-chip but still streams weights from off-chip memory, and reaches 7.21 tokens/s on a Versal VCK190.",
+     "zh": "LightMamba [19] 是首个FPGA Mamba加速器，它将该状态保留在片上，但仍需从片外存储器流式传输权重，并在Versal VCK190上达到7.21 tokens/s。"
+    },
+    {
+     "en": "HFRWKV [ 42 ] implements the RNN-style RWKV model [ 43 ] fully on-chip for smaller models and reports 32 × \\times the throughput of a GPU on Alveo U50 and U280 cards.",
+     "zh": "HFRWKV [42] 为较小的模型将RNN风格的RWKV模型 [43] 完全实现在片上，并在Alveo U50和U280卡上报告了32 × \\times 于GPU的吞吐量。"
+    },
+    {
+     "en": "To our knowledge, no published FPGA design runs a Mamba model with its weights resident on-chip.",
+     "zh": "据我们所知，目前尚无已发表的FPGA设计能够运行权重完全驻留在片上的Mamba模型。"
+    }
+   ]
+  },
+  {
+   "en": "We presented a complete toolchain for development of ML models on the AWS EC2 F2 cloud FPGA infrastructure, from high-level Vitis HLS code to the deployable AFI image. We introduced a 4-level validation methodology to localize errors to logic, quantization, HLS code, or FPGA circuit implementation. Together these tools allow coding agents to effectively implement designs on a cloud FPGA, testing and debugging until the design is valid. We documented the practical design issues, including various kinds of defects, and their resolutions. For a validation test we implemented the TinyBERT transformer fine-tuned for Named Entity Recognition on a synthetic address data set, implementing the full transformer in C-sim and the embedding layer and the first of four encoder layers on the FPGA hardware. Performance on the FPGA is poor due to latency streaming weights from host DRAM; we discuss the memory access limitations of the community bridge and the directions of future work, including expanding the bridge or switching to lower level HDL, why transformers are poorly suited to FPGA hardware, and which kinds of ML problems the FPGA can best be applied to, particularly now that the toolchain facilitates agentic FPGA development. We hope this work lowers the barrier to cloud FPGA deployment for ML practitioners and opens the AWS F2 platform to the broader ML research community.",
+   "zh": "我们展示了一套完整的工具链，用于在 AWS EC2 F2 云 FPGA 基础设施上开发机器学习模型，涵盖从高层 Vitis HLS 代码到可部署 AFI 镜像的全流程。 我们提出了一种四级验证方法，可将错误定位到逻辑、量化、HLS 代码或 FPGA 电路实现层面。 这些工具结合起来，使智能体能够在云 FPGA 上有效地实现设计，并进行测试和调试，直至设计有效。 我们记录了实际设计中的问题，包括各类缺陷及其解决方法。 作为验证测试，我们在一个合成地址数据集上实现了针对命名实体识别微调的 TinyBERT transformer，在 C 仿真中实现了完整的 transformer，并在 FPGA 硬件上实现了嵌入层和四个编码器层中的第一层。 FPGA 上的性能较差，原因是从主机 DRAM 流式读取权重带来的延迟；我们讨论了社区桥接的内存访问限制以及未来工作的方向，包括扩展桥接或切换到更低层的 HDL、为什么 transformer 不适合 FPGA 硬件，以及哪些类型的机器学习问题最适合应用 FPGA——尤其是在该工具链使得智能体化的 FPGA 开发成为可能的当下。 我们希望这项工作能降低机器学习从业者部署云 FPGA 的门槛，并将 AWS F2 平台向更广泛的机器学习研究社区开放。",
+   "sents": [
+    {
+     "en": "We presented a complete toolchain for development of ML models on the AWS EC2 F2 cloud FPGA infrastructure, from high-level Vitis HLS code to the deployable AFI image.",
+     "zh": "我们展示了一套完整的工具链，用于在 AWS EC2 F2 云 FPGA 基础设施上开发机器学习模型，涵盖从高层 Vitis HLS 代码到可部署 AFI 镜像的全流程。"
+    },
+    {
+     "en": "We introduced a 4-level validation methodology to localize errors to logic, quantization, HLS code, or FPGA circuit implementation.",
+     "zh": "我们提出了一种四级验证方法，可将错误定位到逻辑、量化、HLS 代码或 FPGA 电路实现层面。"
+    },
+    {
+     "en": "Together these tools allow coding agents to effectively implement designs on a cloud FPGA, testing and debugging until the design is valid.",
+     "zh": "这些工具结合起来，使智能体能够在云 FPGA 上有效地实现设计，并进行测试和调试，直至设计有效。"
+    },
+    {
+     "en": "We documented the practical design issues, including various kinds of defects, and their resolutions.",
+     "zh": "我们记录了实际设计中的问题，包括各类缺陷及其解决方法。"
+    },
+    {
+     "en": "For a validation test we implemented the TinyBERT transformer fine-tuned for Named Entity Recognition on a synthetic address data set, implementing the full transformer in C-sim and the embedding layer and the first of four encoder layers on the FPGA hardware.",
+     "zh": "作为验证测试，我们在一个合成地址数据集上实现了针对命名实体识别微调的 TinyBERT transformer，在 C 仿真中实现了完整的 transformer，并在 FPGA 硬件上实现了嵌入层和四个编码器层中的第一层。"
+    },
+    {
+     "en": "Performance on the FPGA is poor due to latency streaming weights from host DRAM; we discuss the memory access limitations of the community bridge and the directions of future work, including expanding the bridge or switching to lower level HDL, why transformers are poorly suited to FPGA hardware, and which kinds of ML problems the FPGA can best be applied to, particularly now that the toolchain facilitates agentic FPGA development.",
+     "zh": "FPGA 上的性能较差，原因是从主机 DRAM 流式读取权重带来的延迟；我们讨论了社区桥接的内存访问限制以及未来工作的方向，包括扩展桥接或切换到更低层的 HDL、为什么 transformer 不适合 FPGA 硬件，以及哪些类型的机器学习问题最适合应用 FPGA——尤其是在该工具链使得智能体化的 FPGA 开发成为可能的当下。"
+    },
+    {
+     "en": "We hope this work lowers the barrier to cloud FPGA deployment for ML practitioners and opens the AWS F2 platform to the broader ML research community.",
+     "zh": "我们希望这项工作能降低机器学习从业者部署云 FPGA 的门槛，并将 AWS F2 平台向更广泛的机器学习研究社区开放。"
+    }
+   ]
+  }
+ ]
+}

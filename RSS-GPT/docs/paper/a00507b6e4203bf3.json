@@ -1,0 +1,1084 @@
+{
+ "id": "a00507b6e4203bf3",
+ "source": "arxiv-agent",
+ "link": "https://arxiv.org/abs/2611.06445v1",
+ "title": "SUMONE: A Simple and Efficient Summarizer for Plug-and-Play Agent Memory",
+ "title_zh": "SUMONE：面向即插即用智能体记忆的简单高效摘要器",
+ "published": "2026-11-04T12:49:07Z",
+ "translated_at": "2026-11-05T21:30:55Z",
+ "paragraphs": [
+  {
+   "en": "Long-horizon language-model agents accumulate increasingly large interaction histories, making context compaction essential for efficient execution. Existing learned compaction methods often rely on downstream task outcomes or solver behavior, coupling training to specific tasks or agents. We introduce SumOne, a standalone summarizer trained to preserve information in agent histories through masked reconstruction. Given a summary of the expired history, a frozen reconstructor recovers randomly masked portions of the original trajectory; reconstruction quality, combined with a length penalty, provides a task-agnostic reward for optimizing the summarizer with GRPO. This yields self-supervision directly from raw trajectories, without reference summaries or downstream task execution. At inference time, only the lightweight summarizer is retained, enabling plug-and-play context compression for otherwise unchanged agents. We conduct a systematic evaluation of SumOne in long-horizon search and software-engineering tasks. SumOne reduces estimated inference cost by approximately 78% on DeepSearchQA and 75% on SWE-bench Verified relative to operating with full context, with absolute decreases of 0.04. The same checkpoint also transfers across downstream models and agent harnesses without additional fine-tuning.",
+   "zh": "长时程语言模型智能体会积累越来越庞大的交互历史，使得上下文压缩对于高效执行至关重要。 现有的学习式压缩方法通常依赖下游任务结果或求解器行为，将训练与特定任务或智能体耦合在一起。 我们提出 SumOne，一个独立的摘要器，通过掩码重构训练以保留智能体历史中的信息。 给定已过期历史的摘要，一个冻结的重构器恢复原始轨迹中被随机掩码的部分；重构质量结合长度惩罚，提供了一个任务无关的奖励，用于以 GRPO 优化摘要器。 这直接从原始轨迹产生自监督，无需参考摘要或下游任务执行。 在推理时只需保留轻量级的摘要器，即可为其余保持不变的智能体实现即插即用的上下文压缩。 我们在长时程搜索和软件工程任务上对 SumOne 进行了系统性评估。 相对于使用完整上下文运行，SumOne 在 DeepSearchQA 上将估计推理成本降低约 78%，在 SWE-bench Verified 上降低约 75%，绝对下降仅为 0.04。 同一检查点还可以跨下游模型和智能体框架迁移，无需额外微调。",
+   "sents": [
+    {
+     "en": "Long-horizon language-model agents accumulate increasingly large interaction histories, making context compaction essential for efficient execution.",
+     "zh": "长时程语言模型智能体会积累越来越庞大的交互历史，使得上下文压缩对于高效执行至关重要。"
+    },
+    {
+     "en": "Existing learned compaction methods often rely on downstream task outcomes or solver behavior, coupling training to specific tasks or agents.",
+     "zh": "现有的学习式压缩方法通常依赖下游任务结果或求解器行为，将训练与特定任务或智能体耦合在一起。"
+    },
+    {
+     "en": "We introduce SumOne, a standalone summarizer trained to preserve information in agent histories through masked reconstruction.",
+     "zh": "我们提出 SumOne，一个独立的摘要器，通过掩码重构训练以保留智能体历史中的信息。"
+    },
+    {
+     "en": "Given a summary of the expired history, a frozen reconstructor recovers randomly masked portions of the original trajectory; reconstruction quality, combined with a length penalty, provides a task-agnostic reward for optimizing the summarizer with GRPO.",
+     "zh": "给定已过期历史的摘要，一个冻结的重构器恢复原始轨迹中被随机掩码的部分；重构质量结合长度惩罚，提供了一个任务无关的奖励，用于以 GRPO 优化摘要器。"
+    },
+    {
+     "en": "This yields self-supervision directly from raw trajectories, without reference summaries or downstream task execution.",
+     "zh": "这直接从原始轨迹产生自监督，无需参考摘要或下游任务执行。"
+    },
+    {
+     "en": "At inference time, only the lightweight summarizer is retained, enabling plug-and-play context compression for otherwise unchanged agents.",
+     "zh": "在推理时只需保留轻量级的摘要器，即可为其余保持不变的智能体实现即插即用的上下文压缩。"
+    },
+    {
+     "en": "We conduct a systematic evaluation of SumOne in long-horizon search and software-engineering tasks.",
+     "zh": "我们在长时程搜索和软件工程任务上对 SumOne 进行了系统性评估。"
+    },
+    {
+     "en": "SumOne reduces estimated inference cost by approximately 78% on DeepSearchQA and 75% on SWE-bench Verified relative to operating with full context, with absolute decreases of 0.04.",
+     "zh": "相对于使用完整上下文运行，SumOne 在 DeepSearchQA 上将估计推理成本降低约 78%，在 SWE-bench Verified 上降低约 75%，绝对下降仅为 0.04。"
+    },
+    {
+     "en": "The same checkpoint also transfers across downstream models and agent harnesses without additional fine-tuning.",
+     "zh": "同一检查点还可以跨下游模型和智能体框架迁移，无需额外微调。"
+    }
+   ]
+  },
+  {
+   "en": "Large language models are increasingly used to build agents that reason over multiple steps, call tools, and respond to observations from an external environment ( Yao et al., 2023 ; OpenAI, 2025 ; Anthropic, 2026 ; Kimi Team et al., 2026 ) . Such agents need access to earlier interactions: a search agent may have to combine evidence found at different steps, while a coding agent may need to recall a user constraint, a previous code change, or the outcome of a failed test. As the task continues, these interactions accumulate into a long trajectory. Passing the entire trajectory to the model increases inference cost and eventually reaches its context limit ( Liu et al., 2024 ; Su et al., 2024 ) . Yet keeping every interaction verbatim is often unnecessary. Tool outputs contain irrelevant details, and the outcome of a completed step may be more useful than its full sequence of actions. The challenge is therefore to reduce the context the agent reads without discarding information it may need later ( Hu et al., 2025b ) .",
+   "zh": "大语言模型越来越多地被用于构建能够进行多步推理、调用工具并响应外部环境观测的智能体（Yao et al., 2023；OpenAI, 2025；Anthropic, 2026；Kimi Team et al., 2026）。 这类智能体需要访问早期的交互内容：搜索智能体可能需要整合在不同步骤中找到的证据，而编程智能体可能需要回想起某个用户约束、之前的一次代码改动或某次失败测试的结果。 随着任务的持续进行，这些交互会累积成一条长长的轨迹。 将整条轨迹传给模型会增加推理成本，并最终达到模型的上下文上限（Liu et al., 2024；Su et al., 2024）。 然而，逐字保留每一次交互往往是不必要的。 工具输出中包含无关细节，而一个已完成步骤的结果可能比其完整的动作序列更有用。 因此，挑战在于在不丢弃智能体后续可能需要的信息的前提下，缩减智能体所读取的上下文（Hu et al., 2025b）。",
+   "sents": [
+    {
+     "en": "Large language models are increasingly used to build agents that reason over multiple steps, call tools, and respond to observations from an external environment ( Yao et al., 2023 ; OpenAI, 2025 ; Anthropic, 2026 ; Kimi Team et al., 2026 ) .",
+     "zh": "大语言模型越来越多地被用于构建能够进行多步推理、调用工具并响应外部环境观测的智能体（Yao et al., 2023；OpenAI, 2025；Anthropic, 2026；Kimi Team et al., 2026）。"
+    },
+    {
+     "en": "Such agents need access to earlier interactions: a search agent may have to combine evidence found at different steps, while a coding agent may need to recall a user constraint, a previous code change, or the outcome of a failed test.",
+     "zh": "这类智能体需要访问早期的交互内容：搜索智能体可能需要整合在不同步骤中找到的证据，而编程智能体可能需要回想起某个用户约束、之前的一次代码改动或某次失败测试的结果。"
+    },
+    {
+     "en": "As the task continues, these interactions accumulate into a long trajectory.",
+     "zh": "随着任务的持续进行，这些交互会累积成一条长长的轨迹。"
+    },
+    {
+     "en": "Passing the entire trajectory to the model increases inference cost and eventually reaches its context limit ( Liu et al., 2024 ; Su et al., 2024 ) .",
+     "zh": "将整条轨迹传给模型会增加推理成本，并最终达到模型的上下文上限（Liu et al., 2024；Su et al., 2024）。"
+    },
+    {
+     "en": "Yet keeping every interaction verbatim is often unnecessary.",
+     "zh": "然而，逐字保留每一次交互往往是不必要的。"
+    },
+    {
+     "en": "Tool outputs contain irrelevant details, and the outcome of a completed step may be more useful than its full sequence of actions.",
+     "zh": "工具输出中包含无关细节，而一个已完成步骤的结果可能比其完整的动作序列更有用。"
+    },
+    {
+     "en": "The challenge is therefore to reduce the context the agent reads without discarding information it may need later ( Hu et al., 2025b ) .",
+     "zh": "因此，挑战在于在不丢弃智能体后续可能需要的信息的前提下，缩减智能体所读取的上下文（Hu et al., 2025b）。"
+    }
+   ]
+  },
+  {
+   "en": "Existing approaches to agent context management can be roughly organized into three groups. The first uses prompting or simple rules to shorten the context, for example, by discarding older interactions or asking a model to summarize them. Automatic compaction in Codex and Claude Code shows the practical value of this approach ( Pathak and Fabbri, 2026 ; Anthropic, ) . The second group ties memory management to the agent’s task or training process. HiAgent summarizes completed subgoals within the agent workflow; FoldGRPO trains agents to operate with compressed tool responses; ( Hu et al., 2025a ; Sun and others, 2025 ) . These methods can adapt memory to the decisions an agent must make, but their design or training depends on a particular task workflow or downstream solver. The third group provides more general memory frameworks. A-MEM ( Xu et al., 2026 ) , for instance, manages information across context and external storage, with explicit decisions about what to retain and retrieve. Such frameworks offer a broader memory interface, but also require the agent to additionally interact with that interface.",
+   "zh": "现有的智能体上下文管理方法大致可以分为三类。 第一类使用提示词或简单规则来缩短上下文，例如丢弃较早的交互内容，或要求模型对它们进行总结。 Codex 和 Claude Code 中的自动压缩展示了这一方法的实用价值（Pathak and Fabbri, 2026；Anthropic,）。 第二类将记忆管理与智能体的任务或训练过程绑定在一起。 HiAgent 在智能体工作流内总结已完成的子目标；FoldGRPO 训练智能体在压缩后的工具响应下运行（Hu et al., 2025a；Sun and others, 2025）。 这些方法能够让记忆适应智能体必须做出的决策，但它们的设计或训练依赖于特定的任务工作流或下游求解器。 第三类提供了更通用的记忆框架。 例如，A-MEM（Xu et al., 2026）在上下文与外部存储之间管理信息，并显式地决定保留和检索哪些内容。 这类框架提供了更广泛的记忆接口，但也要求智能体额外与该接口进行交互。",
+   "sents": [
+    {
+     "en": "Existing approaches to agent context management can be roughly organized into three groups.",
+     "zh": "现有的智能体上下文管理方法大致可以分为三类。"
+    },
+    {
+     "en": "The first uses prompting or simple rules to shorten the context, for example, by discarding older interactions or asking a model to summarize them.",
+     "zh": "第一类使用提示词或简单规则来缩短上下文，例如丢弃较早的交互内容，或要求模型对它们进行总结。"
+    },
+    {
+     "en": "Automatic compaction in Codex and Claude Code shows the practical value of this approach ( Pathak and Fabbri, 2026 ; Anthropic, ) .",
+     "zh": "Codex 和 Claude Code 中的自动压缩展示了这一方法的实用价值（Pathak and Fabbri, 2026；Anthropic,）。"
+    },
+    {
+     "en": "The second group ties memory management to the agent’s task or training process.",
+     "zh": "第二类将记忆管理与智能体的任务或训练过程绑定在一起。"
+    },
+    {
+     "en": "HiAgent summarizes completed subgoals within the agent workflow; FoldGRPO trains agents to operate with compressed tool responses; ( Hu et al., 2025a ; Sun and others, 2025 ) .",
+     "zh": "HiAgent 在智能体工作流内总结已完成的子目标；FoldGRPO 训练智能体在压缩后的工具响应下运行（Hu et al., 2025a；Sun and others, 2025）。"
+    },
+    {
+     "en": "These methods can adapt memory to the decisions an agent must make, but their design or training depends on a particular task workflow or downstream solver.",
+     "zh": "这些方法能够让记忆适应智能体必须做出的决策，但它们的设计或训练依赖于特定的任务工作流或下游求解器。"
+    },
+    {
+     "en": "The third group provides more general memory frameworks.",
+     "zh": "第三类提供了更通用的记忆框架。"
+    },
+    {
+     "en": "A-MEM ( Xu et al., 2026 ) , for instance, manages information across context and external storage, with explicit decisions about what to retain and retrieve.",
+     "zh": "例如，A-MEM（Xu et al., 2026）在上下文与外部存储之间管理信息，并显式地决定保留和检索哪些内容。"
+    },
+    {
+     "en": "Such frameworks offer a broader memory interface, but also require the agent to additionally interact with that interface.",
+     "zh": "这类框架提供了更广泛的记忆接口，但也要求智能体额外与该接口进行交互。"
+    }
+   ]
+  },
+  {
+   "en": "Together, these approaches leave room for a memory mechanism that is agnostic to specific tasks, lightweight to use, while maintaining high information density. We propose to train a dedicated small language model that compresses running context of other agents, only using raw trajectories. However, the central challenge would be the training signal. Given a long agent trajectory and its compressed version, how should one judge its completeness and compactness? In this paper, we use masked reconstruction, a classic training objective in self-supervised learning ( Lewis et al., 2020 ; He et al., 2022 ) , as a proxy to assess what a summary preserves. Given a summary of trajectory segments, we first mask parts of the original trajectory, and adopt a frozen model to predict the complete history. As a result, the overlap between the original trajectory and the prediction provides a training signal derived from the data itself, without external references or downstream task execution.",
+   "zh": "总而言之，这些方法为一种记忆机制留下了空间：该机制不依赖特定任务、使用轻量，同时保持高信息密度。 我们提出训练一个专用的小型语言模型，仅使用原始轨迹来压缩其他智能体的运行上下文。 然而，核心挑战在于训练信号。 给定一条长的智能体轨迹及其压缩版本，应如何评判其完整性与紧凑性？ 在本文中，我们使用掩码重建——自监督学习中的经典训练目标（Lewis et al., 2020; He et al., 2022）——作为评估摘要保留了多少信息的代理指标。 给定轨迹片段的摘要，我们首先遮蔽原始轨迹的部分内容，然后采用一个冻结的模型来预测完整的历史。 由此，原始轨迹与预测之间的重叠提供了源自数据本身的训练信号，无需外部参考或下游任务执行。",
+   "sents": [
+    {
+     "en": "Together, these approaches leave room for a memory mechanism that is agnostic to specific tasks, lightweight to use, while maintaining high information density.",
+     "zh": "总而言之，这些方法为一种记忆机制留下了空间：该机制不依赖特定任务、使用轻量，同时保持高信息密度。"
+    },
+    {
+     "en": "We propose to train a dedicated small language model that compresses running context of other agents, only using raw trajectories.",
+     "zh": "我们提出训练一个专用的小型语言模型，仅使用原始轨迹来压缩其他智能体的运行上下文。"
+    },
+    {
+     "en": "However, the central challenge would be the training signal.",
+     "zh": "然而，核心挑战在于训练信号。"
+    },
+    {
+     "en": "Given a long agent trajectory and its compressed version, how should one judge its completeness and compactness?",
+     "zh": "给定一条长的智能体轨迹及其压缩版本，应如何评判其完整性与紧凑性？"
+    },
+    {
+     "en": "In this paper, we use masked reconstruction, a classic training objective in self-supervised learning ( Lewis et al., 2020 ; He et al., 2022 ) , as a proxy to assess what a summary preserves.",
+     "zh": "在本文中，我们使用掩码重建——自监督学习中的经典训练目标（Lewis et al., 2020; He et al., 2022）——作为评估摘要保留了多少信息的代理指标。"
+    },
+    {
+     "en": "Given a summary of trajectory segments, we first mask parts of the original trajectory, and adopt a frozen model to predict the complete history.",
+     "zh": "给定轨迹片段的摘要，我们首先遮蔽原始轨迹的部分内容，然后采用一个冻结的模型来预测完整的历史。"
+    },
+    {
+     "en": "As a result, the overlap between the original trajectory and the prediction provides a training signal derived from the data itself, without external references or downstream task execution.",
+     "zh": "由此，原始轨迹与预测之间的重叠提供了源自数据本身的训练信号，无需外部参考或下游任务执行。"
+    }
+   ]
+  },
+  {
+   "en": "We implement the above procedure as the reward model in a GRPO-style RL training loop Shao et al. (2024) , and collect a training dataset of 5k trajectories primarily sampled from web search and coding agents. The resulting model, which we call SumOne , is a specialized compression model for agentic context with merely 2 billion parameters. As illustrated in Figure 1(a) , SumOne undergoes task-independent training on raw trajectories. It specializes in compressing agent trajectories into textual memory on-the-fly, and proves to be effective across a wide range of settings based on our experiments.",
+   "zh": "我们将上述过程实现为 Shao et al. (2024) 提出的 GRPO 风格强化学习训练循环中的奖励模型，并收集了一个包含 5k 条轨迹的训练数据集，这些轨迹主要采样自网络搜索和编程智能体。 （应合并说明：此处编号对应上句引文拆分） 由此得到的模型，我们称之为 SumOne，是一个仅有 20 亿参数、面向智能体上下文的专用压缩模型。 如图 1(a) 所示，SumOne 在原始轨迹上进行与任务无关的训练。 它专注于将智能体轨迹即时压缩为文本记忆，并且根据我们的实验，在多种设置下均被证明是有效的。",
+   "sents": [
+    {
+     "en": "We implement the above procedure as the reward model in a GRPO-style RL training loop Shao et al.",
+     "zh": "我们将上述过程实现为 Shao et al. (2024) 提出的 GRPO 风格强化学习训练循环中的奖励模型，并收集了一个包含 5k 条轨迹的训练数据集，这些轨迹主要采样自网络搜索和编程智能体。"
+    },
+    {
+     "en": "(2024) , and collect a training dataset of 5k trajectories primarily sampled from web search and coding agents.",
+     "zh": "（应合并说明：此处编号对应上句引文拆分）"
+    },
+    {
+     "en": "The resulting model, which we call SumOne , is a specialized compression model for agentic context with merely 2 billion parameters.",
+     "zh": "由此得到的模型，我们称之为 SumOne，是一个仅有 20 亿参数、面向智能体上下文的专用压缩模型。"
+    },
+    {
+     "en": "As illustrated in Figure 1(a) , SumOne undergoes task-independent training on raw trajectories.",
+     "zh": "如图 1(a) 所示，SumOne 在原始轨迹上进行与任务无关的训练。"
+    },
+    {
+     "en": "It specializes in compressing agent trajectories into textual memory on-the-fly, and proves to be effective across a wide range of settings based on our experiments.",
+     "zh": "它专注于将智能体轨迹即时压缩为文本记忆，并且根据我们的实验，在多种设置下均被证明是有效的。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate SumOne on long-horizon search and software-engineering tasks, together with agentic memory benchmarks and transfer across downstream agents and harnesses. On DeepSearchQA ( Gupta et al., 2026 ) , SumOne reduces more than 70% cumulative agent input and 77% end-to-end task cost per query compared to evaluating with full context, while causing merely 0.04 drop in F1 score. On SWE-bench Verified ( Jimenez et al., 2024a ) , it achieves a 59% resolved rate versus 63%, while reducing input from 4.1M to 1.09M tokens per task. Compared with agent self-summarization, SumOne performs better on both benchmarks while using notably less end-to-end cost,with Figure 1(b) highlighting the results for SWE-bench Verified. It also achieves the strongest results among compression methods on LongMemEval-S ( Wu et al., 2025 ) and transfers across multiple downstream LLMs and agent harnesses without additional fine-tuning.",
+   "zh": "我们在长程搜索与软件工程任务上评估 SumOne，同时使用智能体记忆基准，并测试其在下游智能体与运行框架之间的迁移能力。 在 DeepSearchQA（Gupta et al., 2026）上，与使用完整上下文进行评估相比，SumOne 将每个查询的智能体累计输入减少了 70% 以上，端到端任务成本降低了 77%，而 F1 分数仅下降 0.04。 在 SWE-bench Verified（Jimenez et al., 2024a）上，其解决率为 59%（相比 63%），同时将每个任务的输入从 4.1M token 减少到 1.09M token。 与智能体自我摘要相比，SumOne 在两个基准上都表现更好，同时显著降低端到端成本，图 1(b) 突出展示了 SWE-bench Verified 上的结果。 它还在 LongMemEval-S（Wu et al., 2025）上的压缩方法中取得了最强结果，并且无需额外微调即可在多个下游 LLM 和智能体运行框架之间迁移。",
+   "sents": [
+    {
+     "en": "We evaluate SumOne on long-horizon search and software-engineering tasks, together with agentic memory benchmarks and transfer across downstream agents and harnesses.",
+     "zh": "我们在长程搜索与软件工程任务上评估 SumOne，同时使用智能体记忆基准，并测试其在下游智能体与运行框架之间的迁移能力。"
+    },
+    {
+     "en": "On DeepSearchQA ( Gupta et al., 2026 ) , SumOne reduces more than 70% cumulative agent input and 77% end-to-end task cost per query compared to evaluating with full context, while causing merely 0.04 drop in F1 score.",
+     "zh": "在 DeepSearchQA（Gupta et al., 2026）上，与使用完整上下文进行评估相比，SumOne 将每个查询的智能体累计输入减少了 70% 以上，端到端任务成本降低了 77%，而 F1 分数仅下降 0.04。"
+    },
+    {
+     "en": "On SWE-bench Verified ( Jimenez et al., 2024a ) , it achieves a 59% resolved rate versus 63%, while reducing input from 4.1M to 1.09M tokens per task.",
+     "zh": "在 SWE-bench Verified（Jimenez et al., 2024a）上，其解决率为 59%（相比 63%），同时将每个任务的输入从 4.1M token 减少到 1.09M token。"
+    },
+    {
+     "en": "Compared with agent self-summarization, SumOne performs better on both benchmarks while using notably less end-to-end cost,with Figure 1(b) highlighting the results for SWE-bench Verified.",
+     "zh": "与智能体自我摘要相比，SumOne 在两个基准上都表现更好，同时显著降低端到端成本，图 1(b) 突出展示了 SWE-bench Verified 上的结果。"
+    },
+    {
+     "en": "It also achieves the strongest results among compression methods on LongMemEval-S ( Wu et al., 2025 ) and transfers across multiple downstream LLMs and agent harnesses without additional fine-tuning.",
+     "zh": "它还在 LongMemEval-S（Wu et al., 2025）上的压缩方法中取得了最强结果，并且无需额外微调即可在多个下游 LLM 和智能体运行框架之间迁移。"
+    }
+   ]
+  },
+  {
+   "en": "Our broader aim is to make memory management a capability of a dedicated module that can serve different agents, similar to the role that hippocampus plays in human brains ( McClelland et al., 1995 ) . SumOne addresses one part of this problem: learning to write compact memory from raw interaction histories, with supervision obtained from the data itself. To summarize, the advantages of SumOne are as follows:",
+   "zh": "我们更宏观的目标是让记忆管理成为专用模块的一项能力，该模块可以服务于不同的智能体，类似于海马体在人脑中所扮演的角色（McClelland et al., 1995）。 SumOne 解决了这个问题的一部分：从原始交互历史中学习撰写紧凑的记忆，其监督信号来自数据本身。 总而言之，SumOne 的优势如下：",
+   "sents": [
+    {
+     "en": "Our broader aim is to make memory management a capability of a dedicated module that can serve different agents, similar to the role that hippocampus plays in human brains ( McClelland et al., 1995 ) .",
+     "zh": "我们更宏观的目标是让记忆管理成为专用模块的一项能力，该模块可以服务于不同的智能体，类似于海马体在人脑中所扮演的角色（McClelland et al., 1995）。"
+    },
+    {
+     "en": "SumOne addresses one part of this problem: learning to write compact memory from raw interaction histories, with supervision obtained from the data itself.",
+     "zh": "SumOne 解决了这个问题的一部分：从原始交互历史中学习撰写紧凑的记忆，其监督信号来自数据本身。"
+    },
+    {
+     "en": "To summarize, the advantages of SumOne are as follows:",
+     "zh": "总而言之，SumOne 的优势如下："
+    }
+   ]
+  },
+  {
+   "en": "Self-supervised training. SumOne learns directly from raw agent trajectories, using masked reconstruction to derive its training signal without human annotations, external reference summaries, or downstream task execution.",
+   "zh": "自监督训练。 SumOne 直接从原始智能体轨迹中学习，使用掩码重建来获取训练信号，无需人工标注、外部参考摘要或下游任务执行。",
+   "sents": [
+    {
+     "en": "Self-supervised training.",
+     "zh": "自监督训练。"
+    },
+    {
+     "en": "SumOne learns directly from raw agent trajectories, using masked reconstruction to derive its training signal without human annotations, external reference summaries, or downstream task execution.",
+     "zh": "SumOne 直接从原始智能体轨迹中学习，使用掩码重建来获取训练信号，无需人工标注、外部参考摘要或下游任务执行。"
+    }
+   ]
+  },
+  {
+   "en": "Efficient inference. SumOne is a lightweight 2B-parameter model specialized for context compression. By replacing inference over an ever-growing, append-only context with a shorter, bounded context maintained by SumOne , it reduces end-to-end task cost by 70% on the DeepSearch QA and SWE-Bench-Verfied benchmarks, while incurring a modest performance drop of 0.04.",
+   "zh": "高效推理。 SumOne 是一个专门用于上下文压缩的轻量级 2B 参数模型。 通过将对不断增长的、仅追加的上下文的推理替换为由 SumOne 维护的更短的、有界的上下文，它在 DeepSearch QA 和 SWE-Bench-Verified 基准测试上将端到端任务成本降低了 70%，同时仅带来 0.04 的轻微性能下降。",
+   "sents": [
+    {
+     "en": "Efficient inference.",
+     "zh": "高效推理。"
+    },
+    {
+     "en": "SumOne is a lightweight 2B-parameter model specialized for context compression.",
+     "zh": "SumOne 是一个专门用于上下文压缩的轻量级 2B 参数模型。"
+    },
+    {
+     "en": "By replacing inference over an ever-growing, append-only context with a shorter, bounded context maintained by SumOne , it reduces end-to-end task cost by 70% on the DeepSearch QA and SWE-Bench-Verfied benchmarks, while incurring a modest performance drop of 0.04.",
+     "zh": "通过将对不断增长的、仅追加的上下文的推理替换为由 SumOne 维护的更短的、有界的上下文，它在 DeepSearch QA 和 SWE-Bench-Verified 基准测试上将端到端任务成本降低了 70%，同时仅带来 0.04 的轻微性能下降。"
+    }
+   ]
+  },
+  {
+   "en": "Plug-and-play deployment. SumOne is trained independently of any particular task, agent model, or harness. Our empirical study demonstrates its transferability across 3 domains, 5 downstream LLMs including GPT-6 ( OpenAI, 2026b ) , and 4 coding agent harnesses without extra fine-tuning.",
+   "zh": "即插即用的部署。 SumOne 的训练不依赖于任何特定任务、智能体模型或框架。 我们的实证研究表明，它可以在 3 个领域、5 个下游 LLM（包括 GPT-6（OpenAI, 2026b））以及 4 个编码智能体框架之间实现迁移，无需额外微调。",
+   "sents": [
+    {
+     "en": "Plug-and-play deployment.",
+     "zh": "即插即用的部署。"
+    },
+    {
+     "en": "SumOne is trained independently of any particular task, agent model, or harness.",
+     "zh": "SumOne 的训练不依赖于任何特定任务、智能体模型或框架。"
+    },
+    {
+     "en": "Our empirical study demonstrates its transferability across 3 domains, 5 downstream LLMs including GPT-6 ( OpenAI, 2026b ) , and 4 coding agent harnesses without extra fine-tuning.",
+     "zh": "我们的实证研究表明，它可以在 3 个领域、5 个下游 LLM（包括 GPT-6（OpenAI, 2026b））以及 4 个编码智能体框架之间实现迁移，无需额外微调。"
+    }
+   ]
+  },
+  {
+   "en": "We position our paper in the field of agentic memory, and it is especially related to studies trying to compact running context of agents for efficiency. Our core training algorithm involves mask reconstruction, a classic self-supervised learning objective. Therefore, we briefly review the two research areas below.",
+   "zh": "我们将本文定位于智能体记忆这一领域，它与那些试图压缩智能体运行上下文以提升效率的研究尤为相关。 我们的核心训练算法涉及掩码重构，这是一种经典的自我监督学习目标。 因此，我们在下文简要回顾这两个研究领域。",
+   "sents": [
+    {
+     "en": "We position our paper in the field of agentic memory, and it is especially related to studies trying to compact running context of agents for efficiency.",
+     "zh": "我们将本文定位于智能体记忆这一领域，它与那些试图压缩智能体运行上下文以提升效率的研究尤为相关。"
+    },
+    {
+     "en": "Our core training algorithm involves mask reconstruction, a classic self-supervised learning objective.",
+     "zh": "我们的核心训练算法涉及掩码重构，这是一种经典的自我监督学习目标。"
+    },
+    {
+     "en": "Therefore, we briefly review the two research areas below.",
+     "zh": "因此，我们在下文简要回顾这两个研究领域。"
+    }
+   ]
+  },
+  {
+   "en": "Tool-using agents accumulate long histories of actions and observations ( Yao et al., 2023 ) , motivating mechanisms for retaining useful information under limited context budgets. Existing approaches can be broadly grouped into three categories. First , input-level compression reduces context by selecting, removing, or masking parts of the original input, rather than synthesizing a new memory representation, as in prompt compression ( Jiang et al., 2023 ; Pan and others, 2024 ) and observation masking ( Lindenbauer et al., 2025 ) . Second , agent-managed compaction incorporates memory maintenance into the agent workflow, such as subgoal summarization in HiAgent ( Hu et al., 2025a ) and learned context folding ( Sun and others, 2025 ; Ye and others, 2025 ) . Third , standalone summarization methods compress interaction histories into textual memory for subsequent agent execution. Methods ( Wu and others, 2025 ; Kang and others, 2025 ; Zhang and others, 2026 ) in this category typically tie the learning or evaluation of summaries to downstream task outcomes or solver behavior. SumOne also adopts a standalone summarizer, but learns it with a task-agnostic reconstruction objective.",
+   "zh": "使用工具的智能体会积累冗长的动作与观察历史（Yao 等， 2023），这促使人们设计在有限上下文预算下保留有用信息的机制。 现有方法可以大致分为三类。 第一类是输入级压缩，通过选择、删除或遮蔽原始输入的部分内容来缩减上下文，而不是合成新的记忆表示，例如提示压缩（Jiang 等， 2023；Pan 等， 2024）和观察遮蔽（Lindenbauer 等， 2025）。 第二类是智能体自主管理的压缩，将记忆维护纳入智能体工作流中，例如 HiAgent 中的子目标摘要（Hu 等， 2025a）以及学习到的上下文折叠（Sun 等， 2025；Ye 等， 2025）。 第三类是独立摘要方法，将交互历史压缩为文本记忆，供后续智能体执行使用。 这一类别中的方法（Wu 等， 2025；Kang 等， 2025；Zhang 等， 2026）通常将摘要的学习或评估与下游任务结果或求解器行为绑定。 SumOne 同样采用独立的摘要器，但通过一个与任务无关的重构目标来学习它。",
+   "sents": [
+    {
+     "en": "Tool-using agents accumulate long histories of actions and observations ( Yao et al., 2023 ) , motivating mechanisms for retaining useful information under limited context budgets.",
+     "zh": "使用工具的智能体会积累冗长的动作与观察历史（Yao 等， 2023），这促使人们设计在有限上下文预算下保留有用信息的机制。"
+    },
+    {
+     "en": "Existing approaches can be broadly grouped into three categories.",
+     "zh": "现有方法可以大致分为三类。"
+    },
+    {
+     "en": "First , input-level compression reduces context by selecting, removing, or masking parts of the original input, rather than synthesizing a new memory representation, as in prompt compression ( Jiang et al., 2023 ; Pan and others, 2024 ) and observation masking ( Lindenbauer et al., 2025 ) .",
+     "zh": "第一类是输入级压缩，通过选择、删除或遮蔽原始输入的部分内容来缩减上下文，而不是合成新的记忆表示，例如提示压缩（Jiang 等， 2023；Pan 等， 2024）和观察遮蔽（Lindenbauer 等， 2025）。"
+    },
+    {
+     "en": "Second , agent-managed compaction incorporates memory maintenance into the agent workflow, such as subgoal summarization in HiAgent ( Hu et al., 2025a ) and learned context folding ( Sun and others, 2025 ; Ye and others, 2025 ) .",
+     "zh": "第二类是智能体自主管理的压缩，将记忆维护纳入智能体工作流中，例如 HiAgent 中的子目标摘要（Hu 等， 2025a）以及学习到的上下文折叠（Sun 等， 2025；Ye 等， 2025）。"
+    },
+    {
+     "en": "Third , standalone summarization methods compress interaction histories into textual memory for subsequent agent execution.",
+     "zh": "第三类是独立摘要方法，将交互历史压缩为文本记忆，供后续智能体执行使用。"
+    },
+    {
+     "en": "Methods ( Wu and others, 2025 ; Kang and others, 2025 ; Zhang and others, 2026 ) in this category typically tie the learning or evaluation of summaries to downstream task outcomes or solver behavior.",
+     "zh": "这一类别中的方法（Wu 等， 2025；Kang 等， 2025；Zhang 等， 2026）通常将摘要的学习或评估与下游任务结果或求解器行为绑定。"
+    },
+    {
+     "en": "SumOne also adopts a standalone summarizer, but learns it with a task-agnostic reconstruction objective.",
+     "zh": "SumOne 同样采用独立的摘要器，但通过一个与任务无关的重构目标来学习它。"
+    }
+   ]
+  },
+  {
+   "en": "Reconstruction has long provided self-supervision for learning information-preserving representations. Denoising autoencoders ( Vincent et al., 2008 ) , masked language modeling ( Devlin et al., 2019 ) , sequence denoising ( Lewis et al., 2020 ) , and masked autoencoders ( He et al., 2022 ) learn representations by recovering corrupted or missing input. Closer to our setting, MemTrain ( Li et al., 2026 ) uses masked-entity reconstruction and intermediate recall to train an agent to manage its own memory. In contrast, our method trains a separate textual summarizer, while keeping the downstream agent entirely outside the training loop.",
+   "zh": "重建长期以来为学习信息保留型表示提供自监督。 去噪自编码器（Vincent et al., 2008）、掩码语言建模（Devlin et al., 2019）、序列去噪（Lewis et al., 2020）和掩码自编码器（He et al., 2022）通过恢复被破坏或缺失的输入来学习表示。 与我们的设定更接近的是，MemTrain（Li et al., 2026）使用掩码实体重建和中间召回来训练智能体管理自己的记忆。 相比之下，我们的方法训练一个独立的文本摘要器，同时让下游智能体完全处于训练循环之外。",
+   "sents": [
+    {
+     "en": "Reconstruction has long provided self-supervision for learning information-preserving representations.",
+     "zh": "重建长期以来为学习信息保留型表示提供自监督。"
+    },
+    {
+     "en": "Denoising autoencoders ( Vincent et al., 2008 ) , masked language modeling ( Devlin et al., 2019 ) , sequence denoising ( Lewis et al., 2020 ) , and masked autoencoders ( He et al., 2022 ) learn representations by recovering corrupted or missing input.",
+     "zh": "去噪自编码器（Vincent et al., 2008）、掩码语言建模（Devlin et al., 2019）、序列去噪（Lewis et al., 2020）和掩码自编码器（He et al., 2022）通过恢复被破坏或缺失的输入来学习表示。"
+    },
+    {
+     "en": "Closer to our setting, MemTrain ( Li et al., 2026 ) uses masked-entity reconstruction and intermediate recall to train an agent to manage its own memory.",
+     "zh": "与我们的设定更接近的是，MemTrain（Li et al., 2026）使用掩码实体重建和中间召回来训练智能体管理自己的记忆。"
+    },
+    {
+     "en": "In contrast, our method trains a separate textual summarizer, while keeping the downstream agent entirely outside the training loop.",
+     "zh": "相比之下，我们的方法训练一个独立的文本摘要器，同时让下游智能体完全处于训练循环之外。"
+    }
+   ]
+  },
+  {
+   "en": "We introduce SumOne , a framework for learning compact agent memories without relying on downstream task execution as supervision. Our key idea is to treat summarization as information-preserving compression : a good summary should retain information from the expired interaction history that remains useful after the original history is discarded. To train for this property directly, SumOne generates a summary of the expired history (Section 3.1 ), masks part of the original history, and asks a frozen reconstructor to recover the missing content from the summary and retained context (Section 3.2 ). Reconstruction quality is then converted into a reward for optimizing the summarizer with GRPO ( Shao et al., 2024 ) (Section 3.3 ). At inference time, the reconstruction pipeline is removed, leaving only the lightweight summarizer as a plug-and-play context compression module (Section 3.4 ).",
+   "zh": "我们提出 SumOne，一个用于学习紧凑智能体记忆的框架，它不依赖下游任务执行作为监督信号。 我们的核心思路是将摘要视为信息保持压缩：一个好的摘要应当保留已过期交互历史中的信息，使得在原始历史被丢弃后，这些信息仍然有用。 为了直接训练这一特性，SumOne 对已过期历史生成摘要（第 3.1 节），掩盖原始历史的一部分，并要求一个冻结的重构器根据摘要和保留的上下文恢复缺失内容（第 3.2 节）。 重构质量随后被转化为奖励，用于通过 GRPO（Shao et al., 2024）优化摘要器（第 3.3 节）。 在推理时，重构流程被移除，仅保留轻量级摘要器作为一个即插即用的上下文压缩模块（第 3.4 节）。",
+   "sents": [
+    {
+     "en": "We introduce SumOne , a framework for learning compact agent memories without relying on downstream task execution as supervision.",
+     "zh": "我们提出 SumOne，一个用于学习紧凑智能体记忆的框架，它不依赖下游任务执行作为监督信号。"
+    },
+    {
+     "en": "Our key idea is to treat summarization as information-preserving compression : a good summary should retain information from the expired interaction history that remains useful after the original history is discarded.",
+     "zh": "我们的核心思路是将摘要视为信息保持压缩：一个好的摘要应当保留已过期交互历史中的信息，使得在原始历史被丢弃后，这些信息仍然有用。"
+    },
+    {
+     "en": "To train for this property directly, SumOne generates a summary of the expired history (Section 3.1 ), masks part of the original history, and asks a frozen reconstructor to recover the missing content from the summary and retained context (Section 3.2 ).",
+     "zh": "为了直接训练这一特性，SumOne 对已过期历史生成摘要（第 3.1 节），掩盖原始历史的一部分，并要求一个冻结的重构器根据摘要和保留的上下文恢复缺失内容（第 3.2 节）。"
+    },
+    {
+     "en": "Reconstruction quality is then converted into a reward for optimizing the summarizer with GRPO ( Shao et al., 2024 ) (Section 3.3 ).",
+     "zh": "重构质量随后被转化为奖励，用于通过 GRPO（Shao et al., 2024）优化摘要器（第 3.3 节）。"
+    },
+    {
+     "en": "At inference time, the reconstruction pipeline is removed, leaving only the lightweight summarizer as a plug-and-play context compression module (Section 3.4 ).",
+     "zh": "在推理时，重构流程被移除，仅保留轻量级摘要器作为一个即插即用的上下文压缩模块（第 3.4 节）。"
+    }
+   ]
+  },
+  {
+   "en": "Let H H denote the expired interaction history to be compressed, and let C C denote the context retained unchanged during the current compaction step, including the system instructions, task specification, existing memory, and recent interactions. Given ( C , H ) (C,H) , the summarizer π θ \\pi_{\\theta} generates a textual summary",
+   "zh": "设 H H 表示待压缩的过期交互历史，设 C C 表示在当前压缩步骤中保持不变的上下文，包括系统指令、任务规范、已有记忆以及近期交互。 给定 ( C , H ) (C,H)，摘要器 π θ \\pi_{\\theta} 生成一段文本摘要",
+   "sents": [
+    {
+     "en": "Let H H denote the expired interaction history to be compressed, and let C C denote the context retained unchanged during the current compaction step, including the system instructions, task specification, existing memory, and recent interactions.",
+     "zh": "设 H H 表示待压缩的过期交互历史，设 C C 表示在当前压缩步骤中保持不变的上下文，包括系统指令、任务规范、已有记忆以及近期交互。"
+    },
+    {
+     "en": "Given ( C , H ) (C,H) , the summarizer π θ \\pi_{\\theta} generates a textual summary",
+     "zh": "给定 ( C , H ) (C,H)，摘要器 π θ \\pi_{\\theta} 生成一段文本摘要"
+    }
+   ]
+  },
+  {
+   "en": "The objective is to produce a concise S S that preserves information in H H . Rather than supervising S S with a reference summary or downstream task reward, SumOne derives its training signal directly from the original history through masked reconstruction.",
+   "zh": "目标是生成一个简洁的 S S，以保留 H H 中的信息。 SumOne 不使用参考摘要或下游任务奖励来监督 S S，而是通过掩码重构直接从原始历史中获取训练信号。",
+   "sents": [
+    {
+     "en": "The objective is to produce a concise S S that preserves information in H H .",
+     "zh": "目标是生成一个简洁的 S S，以保留 H H 中的信息。"
+    },
+    {
+     "en": "Rather than supervising S S with a reference summary or downstream task reward, SumOne derives its training signal directly from the original history through masked reconstruction.",
+     "zh": "SumOne 不使用参考摘要或下游任务奖励来监督 S S，而是通过掩码重构直接从原始历史中获取训练信号。"
+    }
+   ]
+  },
+  {
+   "en": "To measure how much information from H H is preserved in S S , we mask part of the original history and test whether it can be recovered from the summary. Specifically, we partition H H into approximately equal-sized blocks, preferring natural interaction boundaries such as role transitions and tool calls whenever possible. We sample a subset of blocks Ω \\Omega and replace them with missing-span markers, producing a partially observed history",
+   "zh": "为了衡量 H H 中有多少信息被保留在 S S 中，我们遮蔽原始历史的一部分，并测试它能否从摘要中被恢复。 具体而言，我们将 H H 划分为大小近似相等的块，并尽可能优先选择自然的交互边界，例如角色转换和工具调用。 我们采样一部分块 Ω \\Omega 并将其替换为缺失区间标记，从而得到一个部分可观测的历史",
+   "sents": [
+    {
+     "en": "To measure how much information from H H is preserved in S S , we mask part of the original history and test whether it can be recovered from the summary.",
+     "zh": "为了衡量 H H 中有多少信息被保留在 S S 中，我们遮蔽原始历史的一部分，并测试它能否从摘要中被恢复。"
+    },
+    {
+     "en": "Specifically, we partition H H into approximately equal-sized blocks, preferring natural interaction boundaries such as role transitions and tool calls whenever possible.",
+     "zh": "具体而言，我们将 H H 划分为大小近似相等的块，并尽可能优先选择自然的交互边界，例如角色转换和工具调用。"
+    },
+    {
+     "en": "We sample a subset of blocks Ω \\Omega and replace them with missing-span markers, producing a partially observed history",
+     "zh": "我们采样一部分块 Ω \\Omega 并将其替换为缺失区间标记，从而得到一个部分可观测的历史"
+    }
+   ]
+  },
+  {
+   "en": "A reconstructor D D then predicts the masked content conditioned on the summary and the remaining context:",
+   "zh": "重建器 D 随后在给定摘要和剩余上下文的条件下，预测被掩码的内容：",
+   "sents": null
+  },
+  {
+   "en": "Intuitively, if S S preserves information that becomes unavailable after masking H Ω H_{\\Omega} , conditioning on S S should make the missing content easier to recover. Reconstruction quality therefore provides a functional measure of information retained by the summary.",
+   "zh": "直观地说，如果 S 保留了在遮蔽 H Ω 后变得不可用的信息，那么以 S 为条件应该能让缺失的内容更容易恢复。 因此，重建质量为摘要所保留的信息提供了一种功能性度量。",
+   "sents": [
+    {
+     "en": "Intuitively, if S S preserves information that becomes unavailable after masking H Ω H_{\\Omega} , conditioning on S S should make the missing content easier to recover.",
+     "zh": "直观地说，如果 S 保留了在遮蔽 H Ω 后变得不可用的信息，那么以 S 为条件应该能让缺失的内容更容易恢复。"
+    },
+    {
+     "en": "Reconstruction quality therefore provides a functional measure of information retained by the summary.",
+     "zh": "因此，重建质量为摘要所保留的信息提供了一种功能性度量。"
+    }
+   ]
+  },
+  {
+   "en": "This view also admits an information-theoretic interpretation. Let H Ω ¯ H_{\\bar{\\Omega}} denote the visible portion of the history. The additional information provided by S S about the missing content can be characterized by",
+   "zh": "这一观点也容许一种信息论解释。 设 H Ω ¯ H_{\\bar{\\Omega}} 表示历史中可见的部分。 S S 所提供的关于缺失内容的额外信息可以用如下方式刻画：",
+   "sents": [
+    {
+     "en": "This view also admits an information-theoretic interpretation.",
+     "zh": "这一观点也容许一种信息论解释。"
+    },
+    {
+     "en": "Let H Ω ¯ H_{\\bar{\\Omega}} denote the visible portion of the history.",
+     "zh": "设 H Ω ¯ H_{\\bar{\\Omega}} 表示历史中可见的部分。"
+    },
+    {
+     "en": "The additional information provided by S S about the missing content can be characterized by",
+     "zh": "S S 所提供的关于缺失内容的额外信息可以用如下方式刻画："
+    }
+   ]
+  },
+  {
+   "en": "Since the first term does not depend on the summarizer, a summary that better reduces uncertainty about H Ω H_{\\Omega} preserves more information beyond the retained context. SumOne does not estimate this quantity explicitly; reconstruction quality serves as a semantic surrogate.",
+   "zh": "由于第一项不依赖于摘要器，一个更好地降低关于 H Ω H_{\\Omega} 的不确定性的摘要会保留超出已保留上下文的更多信息。 SumOne 并不显式估计这个量；重建质量作为其语义替代指标。",
+   "sents": [
+    {
+     "en": "Since the first term does not depend on the summarizer, a summary that better reduces uncertainty about H Ω H_{\\Omega} preserves more information beyond the retained context.",
+     "zh": "由于第一项不依赖于摘要器，一个更好地降低关于 H Ω H_{\\Omega} 的不确定性的摘要会保留超出已保留上下文的更多信息。"
+    },
+    {
+     "en": "SumOne does not estimate this quantity explicitly; reconstruction quality serves as a semantic surrogate.",
+     "zh": "SumOne 并不显式估计这个量；重建质量作为其语义替代指标。"
+    }
+   ]
+  },
+  {
+   "en": "We optimize the summarizer with GRPO based on reconstruction quality. To this end, we first formulate the reconstruction quality as a scalar reward.",
+   "zh": "我们基于重建质量使用GRPO优化摘要器。 为此，我们首先将重建质量表述为一个标量奖励。",
+   "sents": [
+    {
+     "en": "We optimize the summarizer with GRPO based on reconstruction quality.",
+     "zh": "我们基于重建质量使用GRPO优化摘要器。"
+    },
+    {
+     "en": "To this end, we first formulate the reconstruction quality as a scalar reward.",
+     "zh": "为此，我们首先将重建质量表述为一个标量奖励。"
+    }
+   ]
+  },
+  {
+   "en": "An LLM judge evaluates each reconstructed block against its ground-truth content along two dimensions: precision and recall . Precision measures the fraction of the predicted content that is supported by the ground truth, whereas recall measures the fraction of the ground-truth content that is successfully recovered. Let r i r_{i} and p i p_{i} denote the two scores for masked block h i h_{i} . The overall reconstruction quality is",
+   "zh": "一个大语言模型评判器从两个维度（精确率和召回率）评估每个重建块与其真实内容的一致性。 精确率衡量预测内容中被真实内容支持的比例，而召回率衡量真实内容被成功恢复的比例。 设 r i r_{i} 和 p i p_{i} 表示被遮蔽块 h i h_{i} 的这两个分数。 整体重建质量为",
+   "sents": [
+    {
+     "en": "An LLM judge evaluates each reconstructed block against its ground-truth content along two dimensions: precision and recall .",
+     "zh": "一个大语言模型评判器从两个维度（精确率和召回率）评估每个重建块与其真实内容的一致性。"
+    },
+    {
+     "en": "Precision measures the fraction of the predicted content that is supported by the ground truth, whereas recall measures the fraction of the ground-truth content that is successfully recovered.",
+     "zh": "精确率衡量预测内容中被真实内容支持的比例，而召回率衡量真实内容被成功恢复的比例。"
+    },
+    {
+     "en": "Let r i r_{i} and p i p_{i} denote the two scores for masked block h i h_{i} .",
+     "zh": "设 r i r_{i} 和 p i p_{i} 表示被遮蔽块 h i h_{i} 的这两个分数。"
+    },
+    {
+     "en": "The overall reconstruction quality is",
+     "zh": "整体重建质量为"
+    }
+   ]
+  },
+  {
+   "en": "Optimizing reconstruction quality alone may favor overly long summaries that preserve most of the original history. We therefore introduce a length penalty and define the final reward as",
+   "zh": "仅优化重构质量可能会偏向于保留大部分原始历史的过长摘要。 因此，我们引入长度惩罚，并将最终奖励定义为",
+   "sents": [
+    {
+     "en": "Optimizing reconstruction quality alone may favor overly long summaries that preserve most of the original history.",
+     "zh": "仅优化重构质量可能会偏向于保留大部分原始历史的过长摘要。"
+    },
+    {
+     "en": "We therefore introduce a length penalty and define the final reward as",
+     "zh": "因此，我们引入长度惩罚，并将最终奖励定义为"
+    }
+   ]
+  },
+  {
+   "en": "where | S | |S| denotes the summary length, L max L_{\\max} is the maximum summary budget, and λ \\lambda controls the trade-off between information preservation and compression. This objective captures a compression–fidelity trade-off: Q ⁡ ( S ) Q(S) measures how well information is preserved, while summary length controls the cost of compression.",
+   "zh": "其中 | S | |S| 表示摘要长度，L max L_{\\max} 是最大摘要预算，λ \\lambda 控制信息保留与压缩之间的权衡。 该目标刻画了压缩与保真度之间的权衡：Q ⁡ ( S ) Q(S) 衡量信息被保留的程度，而摘要长度控制压缩的成本。",
+   "sents": [
+    {
+     "en": "where | S | |S| denotes the summary length, L max L_{\\max} is the maximum summary budget, and λ \\lambda controls the trade-off between information preservation and compression.",
+     "zh": "其中 | S | |S| 表示摘要长度，L max L_{\\max} 是最大摘要预算，λ \\lambda 控制信息保留与压缩之间的权衡。"
+    },
+    {
+     "en": "This objective captures a compression–fidelity trade-off: Q ⁡ ( S ) Q(S) measures how well information is preserved, while summary length controls the cost of compression.",
+     "zh": "该目标刻画了压缩与保真度之间的权衡：Q ⁡ ( S ) Q(S) 衡量信息被保留的程度，而摘要长度控制压缩的成本。"
+    }
+   ]
+  },
+  {
+   "en": "For each context, we sample G G candidate summaries from π θ \\pi_{\\theta} and evaluate them using the reconstruction-based reward described above. Following GRPO, we normalize the rewards within each group to obtain a relative advantage for each candidate:",
+   "zh": "对于每个上下文，我们从 π θ \\pi_{\\theta} 中采样 G G 个候选摘要，并使用上述基于重构的奖励对它们进行评估。 按照 GRPO，我们在每组内对奖励进行归一化，以获得每个候选的相对优势：",
+   "sents": [
+    {
+     "en": "For each context, we sample G G candidate summaries from π θ \\pi_{\\theta} and evaluate them using the reconstruction-based reward described above.",
+     "zh": "对于每个上下文，我们从 π θ \\pi_{\\theta} 中采样 G G 个候选摘要，并使用上述基于重构的奖励对它们进行评估。"
+    },
+    {
+     "en": "Following GRPO, we normalize the rewards within each group to obtain a relative advantage for each candidate:",
+     "zh": "按照 GRPO，我们在每组内对奖励进行归一化，以获得每个候选的相对优势："
+    }
+   ]
+  },
+  {
+   "en": "where μ R \\mu_{R} and σ R \\sigma_{R} denote the mean and standard deviation of the group rewards. The summarizer is then optimized with the standard GRPO objective, while the reconstructor remains frozen.",
+   "zh": "其中 μ R \\mu_{R} 和 σ R \\sigma_{R} 表示组奖励的均值和标准差。 随后使用标准的 GRPO 目标对摘要器进行优化，而重建器保持冻结。",
+   "sents": [
+    {
+     "en": "where μ R \\mu_{R} and σ R \\sigma_{R} denote the mean and standard deviation of the group rewards.",
+     "zh": "其中 μ R \\mu_{R} 和 σ R \\sigma_{R} 表示组奖励的均值和标准差。"
+    },
+    {
+     "en": "The summarizer is then optimized with the standard GRPO objective, while the reconstructor remains frozen.",
+     "zh": "随后使用标准的 GRPO 目标对摘要器进行优化，而重建器保持冻结。"
+    }
+   ]
+  },
+  {
+   "en": "Once training is complete, the learned summarizer can be directly paired with a downstream agent for inference. SumOne replaces the expired history H H with its summary S S from Eq. 1 , and the agent continues execution using ( C , S ) (C,S) . The reconstruction and judge pipeline are no longer required at inference time.",
+   "zh": "训练完成后，学习到的摘要器可以直接与下游智能体配对进行推理。 SumOne 用公式 1 中的摘要 S S 替换过期历史 H H，智能体使用 ( C , S ) (C,S) 继续执行。 在推理阶段不再需要重建和评判流程。",
+   "sents": [
+    {
+     "en": "Once training is complete, the learned summarizer can be directly paired with a downstream agent for inference.",
+     "zh": "训练完成后，学习到的摘要器可以直接与下游智能体配对进行推理。"
+    },
+    {
+     "en": "SumOne replaces the expired history H H with its summary S S from Eq. 1 , and the agent continues execution using ( C , S ) (C,S) .",
+     "zh": "SumOne 用公式 1 中的摘要 S S 替换过期历史 H H，智能体使用 ( C , S ) (C,S) 继续执行。"
+    },
+    {
+     "en": "The reconstruction and judge pipeline are no longer required at inference time.",
+     "zh": "在推理阶段不再需要重建和评判流程。"
+    }
+   ]
+  },
+  {
+   "en": "We construct approximately 5K compaction instances at 16K and 32K context lengths, roughly balanced between web-search trajectories from OpenSeeker-v1-Data ( Du et al., 2026 ) and software-engineering trajectories from SWE-smith ( Yang et al., 2026 ) . For reconstruction, we partition the expired history into roughly 512-token blocks, preserving natural interaction boundaries where possible, and randomly mask 50% of them. We initialize the SumOne summarizer from Qwen3.5-2B, use a frozen Qwen3.5-9B as the reconstructor, and employ DeepSeek V4.1 Flash to judge content recovery and fabrication. We optimize the summarizer with GRPO for 600 steps using a batch size of 6, a group size of 8, and a learning rate of 1 × 10 − 6 1\\times 10^{-6} . Additional training details are provided in Appendix 6.1 .",
+   "zh": "我们在 16K 和 32K 上下文长度下构建了约 5K 个压缩实例，大致均衡地来自 OpenSeeker-v1-Data（Du et al., 2026）的网络搜索轨迹和 SWE-smith（Yang et al., 2026）的软件工程轨迹。 在重建时，我们将过期历史切分为约 512 词元的块，尽可能保留自然的交互边界，并随机遮蔽其中 50% 的块。 我们以 Qwen3.5-2B 初始化 SumOne 摘要器，使用冻结的 Qwen3.5-9B 作为重建器，并采用 DeepSeek V4.1 Flash 来评判内容恢复情况与捏造情况。 我们使用 GRPO 优化摘要器 600 步，批次大小为 6，组大小为 8，学习率为 1 × 10 − 6 1\\times 10^{-6}。 更多训练细节见附录 6.1。",
+   "sents": [
+    {
+     "en": "We construct approximately 5K compaction instances at 16K and 32K context lengths, roughly balanced between web-search trajectories from OpenSeeker-v1-Data ( Du et al., 2026 ) and software-engineering trajectories from SWE-smith ( Yang et al., 2026 ) .",
+     "zh": "我们在 16K 和 32K 上下文长度下构建了约 5K 个压缩实例，大致均衡地来自 OpenSeeker-v1-Data（Du et al., 2026）的网络搜索轨迹和 SWE-smith（Yang et al., 2026）的软件工程轨迹。"
+    },
+    {
+     "en": "For reconstruction, we partition the expired history into roughly 512-token blocks, preserving natural interaction boundaries where possible, and randomly mask 50% of them.",
+     "zh": "在重建时，我们将过期历史切分为约 512 词元的块，尽可能保留自然的交互边界，并随机遮蔽其中 50% 的块。"
+    },
+    {
+     "en": "We initialize the SumOne summarizer from Qwen3.5-2B, use a frozen Qwen3.5-9B as the reconstructor, and employ DeepSeek V4.1 Flash to judge content recovery and fabrication.",
+     "zh": "我们以 Qwen3.5-2B 初始化 SumOne 摘要器，使用冻结的 Qwen3.5-9B 作为重建器，并采用 DeepSeek V4.1 Flash 来评判内容恢复情况与捏造情况。"
+    },
+    {
+     "en": "We optimize the summarizer with GRPO for 600 steps using a batch size of 6, a group size of 8, and a learning rate of 1 × 10 − 6 1\\times 10^{-6} .",
+     "zh": "我们使用 GRPO 优化摘要器 600 步，批次大小为 6，组大小为 8，学习率为 1 × 10 − 6 1\\times 10^{-6}。"
+    },
+    {
+     "en": "Additional training details are provided in Appendix 6.1 .",
+     "zh": "更多训练细节见附录 6.1。"
+    }
+   ]
+  },
+  {
+   "en": "Our primary agent benchmarks are DeepSearchQA ( Gupta et al., 2026 ) for web search and SWE-bench Verified ( Jimenez et al., 2024b ) for software engineering; we additionally use LongMemEval-S for isolated memory evaluation. Unless otherwise specified, we use Qwen3.5-35B-A3B with OpenCode ( Anomaly, 2026 ) as the downstream agent and harness. Native harness compaction is disabled, and all evaluated methods use a 32K compaction threshold; Full History instead retains the complete trajectory up to the model’s native context limit. To test plug-and-play generalization, we additionally evaluate across DeepSeek V4.1 Flash ( DeepSeek-AI, 2026b ) , GPT-6 Luna ( OpenAI, 2026b ) , GLM-5.3 ( Z.ai, 2026 ) , and Gemini 3.7 Flash ( Google, 2026 ) , as well as DeepSeek Harness ( DeepSeek-AI, 2026a ) , OpenHands ( Wang and others, 2025 ) , and Codex ( OpenAI, 2026a ) .",
+   "zh": "我们的主要智能体基准测试包括用于网页搜索的 DeepSearchQA（Gupta et al., 2026）和用于软件工程的 SWE-bench Verified（Jimenez et al., 2024b）；此外，我们还使用 LongMemEval-S 进行独立的记忆评估。 除非另有说明，我们使用 Qwen3.5-35B-A3B 搭配 OpenCode（Anomaly, 2026）作为下游智能体与运行框架。 原生运行框架的压缩功能被禁用，所有被评估的方法均使用 32K 的压缩阈值；Full History 则保留至模型原生上下文上限为止的完整轨迹。 为测试即插即用的泛化能力，我们还跨 DeepSeek V4.1 Flash（DeepSeek-AI, 2026b）、GPT-6 Luna（OpenAI, 2026b）、GLM-5.3（Z.ai, 2026）和 Gemini 3.7 Flash（Google, 2026），以及 DeepSeek Harness（DeepSeek-AI, 2026a）、OpenHands（Wang and others, 2025）和 Codex（OpenAI, 2026a）进行了评估。",
+   "sents": [
+    {
+     "en": "Our primary agent benchmarks are DeepSearchQA ( Gupta et al., 2026 ) for web search and SWE-bench Verified ( Jimenez et al., 2024b ) for software engineering; we additionally use LongMemEval-S for isolated memory evaluation.",
+     "zh": "我们的主要智能体基准测试包括用于网页搜索的 DeepSearchQA（Gupta et al., 2026）和用于软件工程的 SWE-bench Verified（Jimenez et al., 2024b）；此外，我们还使用 LongMemEval-S 进行独立的记忆评估。"
+    },
+    {
+     "en": "Unless otherwise specified, we use Qwen3.5-35B-A3B with OpenCode ( Anomaly, 2026 ) as the downstream agent and harness.",
+     "zh": "除非另有说明，我们使用 Qwen3.5-35B-A3B 搭配 OpenCode（Anomaly, 2026）作为下游智能体与运行框架。"
+    },
+    {
+     "en": "Native harness compaction is disabled, and all evaluated methods use a 32K compaction threshold; Full History instead retains the complete trajectory up to the model’s native context limit.",
+     "zh": "原生运行框架的压缩功能被禁用，所有被评估的方法均使用 32K 的压缩阈值；Full History 则保留至模型原生上下文上限为止的完整轨迹。"
+    },
+    {
+     "en": "To test plug-and-play generalization, we additionally evaluate across DeepSeek V4.1 Flash ( DeepSeek-AI, 2026b ) , GPT-6 Luna ( OpenAI, 2026b ) , GLM-5.3 ( Z.ai, 2026 ) , and Gemini 3.7 Flash ( Google, 2026 ) , as well as DeepSeek Harness ( DeepSeek-AI, 2026a ) , OpenHands ( Wang and others, 2025 ) , and Codex ( OpenAI, 2026a ) .",
+     "zh": "为测试即插即用的泛化能力，我们还跨 DeepSeek V4.1 Flash（DeepSeek-AI, 2026b）、GPT-6 Luna（OpenAI, 2026b）、GLM-5.3（Z.ai, 2026）和 Gemini 3.7 Flash（Google, 2026），以及 DeepSeek Harness（DeepSeek-AI, 2026a）、OpenHands（Wang and others, 2025）和 Codex（OpenAI, 2026a）进行了评估。"
+    }
+   ]
+  },
+  {
+   "en": "We compare SumOne against five context-management baselines. Full History retains the complete interaction history without compression. Recency Truncation ( Ubicloud, 2026 ; OpenAI, 2026c ) discards the oldest interactions once the compaction threshold is reached. Self-Summary uses the downstream agent itself to summarize the expired trajectories. Prompt-2B uses Qwen3.5-2B and summarization prompt as prompt as SumOne , but without any additional training, isolating the effect of our training objective. CoMem ( Zhang and others, 2026 ) is a learned standalone memory model supervised by downstream agent behavior. All compression methods use the same compaction threshold and output budget whenever applicable. We report downstream task performance, cumulative downstream-agent input tokens, inference cost, average compactions per query, and compression ratio:",
+   "zh": "我们将 SumOne 与五种上下文管理基线方法进行比较。 Full History 保留完整的交互历史，不做任何压缩。 Recency Truncation（Ubicloud, 2026；OpenAI, 2026c）在达到压缩阈值后丢弃最旧的交互。 Self-Summary 使用下游智能体自身来总结过期轨迹。 Prompt-2B 使用 Qwen3.5-2B 和与 SumOne 相同的总结提示词，但不进行任何额外训练，从而隔离我们训练目标的效果。 CoMem（Zhang and others, 2026）是一个通过下游智能体行为监督训练的独立记忆模型。 所有压缩方法在适用时均使用相同的压缩阈值和输出预算。 我们报告下游任务性能、下游智能体累计输入 token 数、推理成本、每次查询的平均压缩次数以及压缩率：",
+   "sents": [
+    {
+     "en": "We compare SumOne against five context-management baselines.",
+     "zh": "我们将 SumOne 与五种上下文管理基线方法进行比较。"
+    },
+    {
+     "en": "Full History retains the complete interaction history without compression.",
+     "zh": "Full History 保留完整的交互历史，不做任何压缩。"
+    },
+    {
+     "en": "Recency Truncation ( Ubicloud, 2026 ; OpenAI, 2026c ) discards the oldest interactions once the compaction threshold is reached.",
+     "zh": "Recency Truncation（Ubicloud, 2026；OpenAI, 2026c）在达到压缩阈值后丢弃最旧的交互。"
+    },
+    {
+     "en": "Self-Summary uses the downstream agent itself to summarize the expired trajectories.",
+     "zh": "Self-Summary 使用下游智能体自身来总结过期轨迹。"
+    },
+    {
+     "en": "Prompt-2B uses Qwen3.5-2B and summarization prompt as prompt as SumOne , but without any additional training, isolating the effect of our training objective.",
+     "zh": "Prompt-2B 使用 Qwen3.5-2B 和与 SumOne 相同的总结提示词，但不进行任何额外训练，从而隔离我们训练目标的效果。"
+    },
+    {
+     "en": "CoMem ( Zhang and others, 2026 ) is a learned standalone memory model supervised by downstream agent behavior.",
+     "zh": "CoMem（Zhang and others, 2026）是一个通过下游智能体行为监督训练的独立记忆模型。"
+    },
+    {
+     "en": "All compression methods use the same compaction threshold and output budget whenever applicable.",
+     "zh": "所有压缩方法在适用时均使用相同的压缩阈值和输出预算。"
+    },
+    {
+     "en": "We report downstream task performance, cumulative downstream-agent input tokens, inference cost, average compactions per query, and compression ratio:",
+     "zh": "我们报告下游任务性能、下游智能体累计输入 token 数、推理成本、每次查询的平均压缩次数以及压缩率："
+    }
+   ]
+  },
+  {
+   "en": "where H e H_{e} and S e S_{e} denote the expired history and its compressed summary at compaction event e e . Model-specific API prices are provided in Appendix 6.2 .",
+   "zh": "其中 H e H_{e} 和 S e S_{e} 分别表示第 e e 次压缩事件时的过期历史及其压缩摘要。 各模型具体的 API 价格见附录 6.2。",
+   "sents": [
+    {
+     "en": "where H e H_{e} and S e S_{e} denote the expired history and its compressed summary at compaction event e e .",
+     "zh": "其中 H e H_{e} 和 S e S_{e} 分别表示第 e e 次压缩事件时的过期历史及其压缩摘要。"
+    },
+    {
+     "en": "Model-specific API prices are provided in Appendix 6.2 .",
+     "zh": "各模型具体的 API 价格见附录 6.2。"
+    }
+   ]
+  },
+  {
+   "en": "SumOne retains most of the Full History performance at a fraction of the cost. Table 1 reports the main results on DeepSearchQA and SWE-bench Verified, using Qwen3.5-35B-A3B as the downstream agent with OpenCode as the agent harness. On DeepSearchQA, SumOne achieves 0.48 F1 compared with 0.52 for Full History, while reducing cumulative agent input from 2.83M to 591K tokens and requiring only 22% of the total inference cost of Full History. A similar pattern holds on SWE-bench Verified, where SumOne reaches a 0.59 resolved rate compared with 0.63 for Full History, while reducing cumulative input from 4.10M to 1.09M tokens and using only 58% of the Full History cost. These results show that SumOne preserves most of the utility of the full interaction history with a substantially smaller context and cost footprint.",
+   "zh": "SumOne 以极低的成本保留了 Full History 的大部分性能。 表 1 报告了在 DeepSearchQA 和 SWE-bench Verified 上的主要结果，使用 Qwen3.5-35B-A3B 作为下游智能体，并使用 OpenCode 作为智能体框架。 在 DeepSearchQA 上，SumOne 取得 0.48 F1，而 Full History 为 0.52，同时将累积智能体输入从 2.83M 个词元降至 591K 个词元，且仅需 Full History 总推理成本的 22%。 SWE-bench Verified 上也呈现类似的模式，SumOne 达到 0.59 的解决率，而 Full History 为 0.63，同时将累积输入从 4.10M 个词元降至 1.09M 个词元，且仅使用 Full History 成本的 58%。 这些结果表明，SumOne 以显著更小的上下文和成本开销，保留了完整交互历史的大部分效用。",
+   "sents": [
+    {
+     "en": "SumOne retains most of the Full History performance at a fraction of the cost.",
+     "zh": "SumOne 以极低的成本保留了 Full History 的大部分性能。"
+    },
+    {
+     "en": "Table 1 reports the main results on DeepSearchQA and SWE-bench Verified, using Qwen3.5-35B-A3B as the downstream agent with OpenCode as the agent harness.",
+     "zh": "表 1 报告了在 DeepSearchQA 和 SWE-bench Verified 上的主要结果，使用 Qwen3.5-35B-A3B 作为下游智能体，并使用 OpenCode 作为智能体框架。"
+    },
+    {
+     "en": "On DeepSearchQA, SumOne achieves 0.48 F1 compared with 0.52 for Full History, while reducing cumulative agent input from 2.83M to 591K tokens and requiring only 22% of the total inference cost of Full History.",
+     "zh": "在 DeepSearchQA 上，SumOne 取得 0.48 F1，而 Full History 为 0.52，同时将累积智能体输入从 2.83M 个词元降至 591K 个词元，且仅需 Full History 总推理成本的 22%。"
+    },
+    {
+     "en": "A similar pattern holds on SWE-bench Verified, where SumOne reaches a 0.59 resolved rate compared with 0.63 for Full History, while reducing cumulative input from 4.10M to 1.09M tokens and using only 58% of the Full History cost.",
+     "zh": "SWE-bench Verified 上也呈现类似的模式，SumOne 达到 0.59 的解决率，而 Full History 为 0.63，同时将累积输入从 4.10M 个词元降至 1.09M 个词元，且仅使用 Full History 成本的 58%。"
+    },
+    {
+     "en": "These results show that SumOne preserves most of the utility of the full interaction history with a substantially smaller context and cost footprint.",
+     "zh": "这些结果表明，SumOne 以显著更小的上下文和成本开销，保留了完整交互历史的大部分效用。"
+    }
+   ]
+  },
+  {
+   "en": "SumOne provides a better performance–cost trade-off than existing summarization approaches. On DeepSearchQA, SumOne improves over Self-Summary from 0.44 to 0.48 F1 while requiring only 0.04 × 0.04\\times the summarization cost and 0.86 × 0.86\\times the total inference cost. On SWE-bench Verified, SumOne similarly improves the resolved rate from 0.56 to 0.59, using only 0.08 × 0.08\\times the summarization cost and 0.86 × 0.86\\times the total inference cost of Self-Summary. SumOne also consistently outperforms Prompt-2B under comparable compression and achieves stronger overall performance than CoMem across the two tasks. The substantial improvement over Prompt-2B suggests that simply replacing self-summarization with a lightweight standalone model is insufficient; reconstruction-based training enables the summarizer to preserve information that is more useful for subsequent agent execution.",
+   "zh": "SumOne 相比现有摘要方法提供了更优的性能–成本权衡。 在 DeepSearchQA 上，SumOne 将 Self-Summary 的 F1 从 0.44 提升至 0.48，同时仅需 0.04 × 0.04\\times 的摘要成本和 0.86 × 0.86\\times 的总推理成本。 在 SWE-bench Verified 上，SumOne 同样将解决率从 0.56 提升至 0.59，仅使用 Self-Summary 的 0.08 × 0.08\\times 摘要成本和 0.86 × 0.86\\times 的总推理成本。 在相近压缩率下，SumOne 也持续优于 Prompt-2B，并且在两项任务上均取得比 CoMem 更强的整体性能。 相对 Prompt-2B 的显著提升表明，仅仅用轻量级独立模型替换自摘要是不够的；基于重构的训练使摘要器能够保留对后续智能体执行更有用的信息。",
+   "sents": [
+    {
+     "en": "SumOne provides a better performance–cost trade-off than existing summarization approaches.",
+     "zh": "SumOne 相比现有摘要方法提供了更优的性能–成本权衡。"
+    },
+    {
+     "en": "On DeepSearchQA, SumOne improves over Self-Summary from 0.44 to 0.48 F1 while requiring only 0.04 × 0.04\\times the summarization cost and 0.86 × 0.86\\times the total inference cost.",
+     "zh": "在 DeepSearchQA 上，SumOne 将 Self-Summary 的 F1 从 0.44 提升至 0.48，同时仅需 0.04 × 0.04\\times 的摘要成本和 0.86 × 0.86\\times 的总推理成本。"
+    },
+    {
+     "en": "On SWE-bench Verified, SumOne similarly improves the resolved rate from 0.56 to 0.59, using only 0.08 × 0.08\\times the summarization cost and 0.86 × 0.86\\times the total inference cost of Self-Summary.",
+     "zh": "在 SWE-bench Verified 上，SumOne 同样将解决率从 0.56 提升至 0.59，仅使用 Self-Summary 的 0.08 × 0.08\\times 摘要成本和 0.86 × 0.86\\times 的总推理成本。"
+    },
+    {
+     "en": "SumOne also consistently outperforms Prompt-2B under comparable compression and achieves stronger overall performance than CoMem across the two tasks.",
+     "zh": "在相近压缩率下，SumOne 也持续优于 Prompt-2B，并且在两项任务上均取得比 CoMem 更强的整体性能。"
+    },
+    {
+     "en": "The substantial improvement over Prompt-2B suggests that simply replacing self-summarization with a lightweight standalone model is insufficient; reconstruction-based training enables the summarizer to preserve information that is more useful for subsequent agent execution.",
+     "zh": "相对 Prompt-2B 的显著提升表明，仅仅用轻量级独立模型替换自摘要是不够的；基于重构的训练使摘要器能够保留对后续智能体执行更有用的信息。"
+    }
+   ]
+  },
+  {
+   "en": "SumOne preserves more generally accessible information for subsequent retrieval and reasoning. While Section 4.2 evaluates compression through downstream agent performance, here we further decouple memory quality from task execution using LongMemEval-S , which directly evaluates long-term memory capabilities. As shown in Table 4 , the overall performance follows Oracle > > Full History > > SumOne > > Prompt-2B > > CoMem . Among compression methods, SumOne achieves the highest overall score (0.47), outperforming Prompt-2B (0.43) and CoMem (0.31). More importantly, SumOne exhibits relatively balanced performance across different memory capabilities: while Prompt-2B is stronger on multi-session questions and CoMem performs particularly well on knowledge updates, both degrade substantially on other categories. In contrast, SumOne maintains competitive performance across single-session retrieval, multi-session reasoning, temporal reasoning, and knowledge updates. This more balanced behavior is consistent with our task-agnostic reconstruction objective, which encourages broad information preservation rather than optimizing memory toward a particular downstream task or capability.",
+   "zh": "SumOne 保留了更普遍可访问的信息，以供后续检索与推理使用。 虽然第 4.2 节通过下游智能体性能来评估压缩效果，但这里我们使用 LongMemEval-S 进一步将记忆质量与任务执行解耦，该基准直接评估长期记忆能力。 如表 4 所示，整体性能排序为 Oracle > > Full History > > SumOne > > Prompt-2B > > CoMem。 在各压缩方法中，SumOne 取得了最高的总分（0.47），优于 Prompt-2B（0.43）和 CoMem（0.31）。 更重要的是，SumOne 在不同记忆能力上表现出相对均衡的性能：虽然 Prompt-2B 在多会话问题上更强，CoMem 在知识更新上表现尤为突出，但二者在其他类别上都有明显下降。 相比之下，SumOne 在单会话检索、多会话推理、时间推理和知识更新方面均保持了有竞争力的性能。 这种更均衡的表现与我们的任务无关重构目标一致，该目标鼓励广泛地保留信息，而不是将记忆向特定的下游任务或能力优化。",
+   "sents": [
+    {
+     "en": "SumOne preserves more generally accessible information for subsequent retrieval and reasoning.",
+     "zh": "SumOne 保留了更普遍可访问的信息，以供后续检索与推理使用。"
+    },
+    {
+     "en": "While Section 4.2 evaluates compression through downstream agent performance, here we further decouple memory quality from task execution using LongMemEval-S , which directly evaluates long-term memory capabilities.",
+     "zh": "虽然第 4.2 节通过下游智能体性能来评估压缩效果，但这里我们使用 LongMemEval-S 进一步将记忆质量与任务执行解耦，该基准直接评估长期记忆能力。"
+    },
+    {
+     "en": "As shown in Table 4 , the overall performance follows Oracle > > Full History > > SumOne > > Prompt-2B > > CoMem .",
+     "zh": "如表 4 所示，整体性能排序为 Oracle > > Full History > > SumOne > > Prompt-2B > > CoMem。"
+    },
+    {
+     "en": "Among compression methods, SumOne achieves the highest overall score (0.47), outperforming Prompt-2B (0.43) and CoMem (0.31).",
+     "zh": "在各压缩方法中，SumOne 取得了最高的总分（0.47），优于 Prompt-2B（0.43）和 CoMem（0.31）。"
+    },
+    {
+     "en": "More importantly, SumOne exhibits relatively balanced performance across different memory capabilities: while Prompt-2B is stronger on multi-session questions and CoMem performs particularly well on knowledge updates, both degrade substantially on other categories.",
+     "zh": "更重要的是，SumOne 在不同记忆能力上表现出相对均衡的性能：虽然 Prompt-2B 在多会话问题上更强，CoMem 在知识更新上表现尤为突出，但二者在其他类别上都有明显下降。"
+    },
+    {
+     "en": "In contrast, SumOne maintains competitive performance across single-session retrieval, multi-session reasoning, temporal reasoning, and knowledge updates.",
+     "zh": "相比之下，SumOne 在单会话检索、多会话推理、时间推理和知识更新方面均保持了有竞争力的性能。"
+    },
+    {
+     "en": "This more balanced behavior is consistent with our task-agnostic reconstruction objective, which encourages broad information preservation rather than optimizing memory toward a particular downstream task or capability.",
+     "zh": "这种更均衡的表现与我们的任务无关重构目标一致，该目标鼓励广泛地保留信息，而不是将记忆向特定的下游任务或能力优化。"
+    }
+   ]
+  },
+  {
+   "en": "SumOne transfers across different downstream models without model-specific retraining. We evaluate the same SumOne model on SWE-bench Verified with OpenCode as well as DeepSearchQA while varying only the downstream LLM among DeepSeek V4.1 Flash, GPT-6 Luna, GLM-5.3, and Gemini 3.7 Flash. Table 8 and Table 9 show that across all evaluated models, SumOne consistently approaches the performance of Full History while outperforming Self-Summary, indicating that the information preserved by SumOne is not specific to a particular downstream model. At the same time, SumOne reduces inference cost by offloading context compaction from the downstream agent to a lightweight Qwen3.5-2B summarizer; compared with Self-Summary, this advantage is particularly pronounced for more expensive agent models. These results demonstrate that a single SumOne checkpoint can serve as a solver-independent memory compressor across heterogeneous LLM backbones.",
+   "zh": "SumOne 可跨不同下游模型迁移，无需针对特定模型进行再训练。 我们在 SWE-bench Verified（搭配 OpenCode）以及 DeepSearchQA 上评估同一个 SumOne 模型，仅改变下游 LLM，在 DeepSeek V4.1 Flash、GPT-6 Luna、GLM-5.3 和 Gemini 3.7 Flash 之间切换。 表 8 和表 9 显示，在所有被评估的模型上，SumOne 始终接近 Full History 的性能，同时优于 Self-Summary，这表明 SumOne 所保留的信息并不依赖于某个特定的下游模型。 同时，SumOne 通过将上下文压缩从下游智能体卸载到轻量级的 Qwen3.5-2B 摘要器来降低推理成本；与 Self-Summary 相比，这一优势在更昂贵的智能体模型上尤为显著。 这些结果表明，单个 SumOne 检查点可以作为独立于求解器的记忆压缩器，服务于异构的 LLM 骨干。",
+   "sents": [
+    {
+     "en": "SumOne transfers across different downstream models without model-specific retraining.",
+     "zh": "SumOne 可跨不同下游模型迁移，无需针对特定模型进行再训练。"
+    },
+    {
+     "en": "We evaluate the same SumOne model on SWE-bench Verified with OpenCode as well as DeepSearchQA while varying only the downstream LLM among DeepSeek V4.1 Flash, GPT-6 Luna, GLM-5.3, and Gemini 3.7 Flash.",
+     "zh": "我们在 SWE-bench Verified（搭配 OpenCode）以及 DeepSearchQA 上评估同一个 SumOne 模型，仅改变下游 LLM，在 DeepSeek V4.1 Flash、GPT-6 Luna、GLM-5.3 和 Gemini 3.7 Flash 之间切换。"
+    },
+    {
+     "en": "Table 8 and Table 9 show that across all evaluated models, SumOne consistently approaches the performance of Full History while outperforming Self-Summary, indicating that the information preserved by SumOne is not specific to a particular downstream model.",
+     "zh": "表 8 和表 9 显示，在所有被评估的模型上，SumOne 始终接近 Full History 的性能，同时优于 Self-Summary，这表明 SumOne 所保留的信息并不依赖于某个特定的下游模型。"
+    },
+    {
+     "en": "At the same time, SumOne reduces inference cost by offloading context compaction from the downstream agent to a lightweight Qwen3.5-2B summarizer; compared with Self-Summary, this advantage is particularly pronounced for more expensive agent models.",
+     "zh": "同时，SumOne 通过将上下文压缩从下游智能体卸载到轻量级的 Qwen3.5-2B 摘要器来降低推理成本；与 Self-Summary 相比，这一优势在更昂贵的智能体模型上尤为显著。"
+    },
+    {
+     "en": "These results demonstrate that a single SumOne checkpoint can serve as a solver-independent memory compressor across heterogeneous LLM backbones.",
+     "zh": "这些结果表明，单个 SumOne 检查点可以作为独立于求解器的记忆压缩器，服务于异构的 LLM 骨干。"
+    }
+   ]
+  },
+  {
+   "en": "SumOne remains effective across different agent harnesses without harness-specific adaptation. We fix Qwen3.5-35B-A3B as the downstream model and evaluate the same SumOne checkpoint on DeepsearchQA across OpenCode, DeepSeek Harness, Codex, and OpenHands and the results are shown in Table 3 . In each harness, SumOne consistently approaches the performance of Full History while outperforming Self-Summary, showing that its memory representation is not tied to a particular agent execution framework. SumOne also maintains comparable compression and lower overall inference cost across harnesses. These results suggest that SumOne can be integrated into diverse agent systems as a plug-and-play context compressor without modifying or retraining the underlying harness.",
+   "zh": "SumOne 在不同的智能体框架（harness）上均能保持有效，无需针对特定框架进行适配。 我们将 Qwen3.5-35B-A3B 固定为下游模型，并在 OpenCode、DeepSeek Harness、Codex 和 OpenHands 上评估同一个 SumOne 检查点在 DeepsearchQA 上的表现，结果如表 3 所示。 在每个框架中，SumOne 始终接近 Full History 的性能，同时优于 Self-Summary，这表明其记忆表示并不依赖于特定的智能体执行框架。 SumOne 在各框架间还保持了相当的压缩率和更低的总体推理成本。 这些结果表明，SumOne 可以作为即插即用的上下文压缩器集成到多样化的智能体系统中，而无需修改或重新训练底层框架。",
+   "sents": [
+    {
+     "en": "SumOne remains effective across different agent harnesses without harness-specific adaptation.",
+     "zh": "SumOne 在不同的智能体框架（harness）上均能保持有效，无需针对特定框架进行适配。"
+    },
+    {
+     "en": "We fix Qwen3.5-35B-A3B as the downstream model and evaluate the same SumOne checkpoint on DeepsearchQA across OpenCode, DeepSeek Harness, Codex, and OpenHands and the results are shown in Table 3 .",
+     "zh": "我们将 Qwen3.5-35B-A3B 固定为下游模型，并在 OpenCode、DeepSeek Harness、Codex 和 OpenHands 上评估同一个 SumOne 检查点在 DeepsearchQA 上的表现，结果如表 3 所示。"
+    },
+    {
+     "en": "In each harness, SumOne consistently approaches the performance of Full History while outperforming Self-Summary, showing that its memory representation is not tied to a particular agent execution framework.",
+     "zh": "在每个框架中，SumOne 始终接近 Full History 的性能，同时优于 Self-Summary，这表明其记忆表示并不依赖于特定的智能体执行框架。"
+    },
+    {
+     "en": "SumOne also maintains comparable compression and lower overall inference cost across harnesses.",
+     "zh": "SumOne 在各框架间还保持了相当的压缩率和更低的总体推理成本。"
+    },
+    {
+     "en": "These results suggest that SumOne can be integrated into diverse agent systems as a plug-and-play context compressor without modifying or retraining the underlying harness.",
+     "zh": "这些结果表明，SumOne 可以作为即插即用的上下文压缩器集成到多样化的智能体系统中，而无需修改或重新训练底层框架。"
+    }
+   ]
+  },
+  {
+   "en": "SumOne is naturally compatible with further downstream RL training of the agent, bringing further benefits. Beyond inference-time compaction in Table 1 , we integrate SumOne into task-specific RL training for search and coding agents, using OpenSeeker-v1-Data and SWE-smith, respectively. As shown in Table 2 , SumOne remains competitive across both DeepSearchQA and SWE-bench Verified after task-specific RL. It achieves the best performance on SWE-bench (0.68) and closely matches Self-Summary on DeepSearchQA (0.55 vs. 0.57), while reducing the average inference cost from 0.052 to 0.039. These results suggest that SumOne is not limited to agent inference, but can also serve as a lightweight and reusable context-compression component during long-horizon agent RL.",
+   "zh": "SumOne 天然兼容对智能体进行进一步的下游 RL 训练，从而带来更多收益。 除了表 1 中的推理时压缩之外，我们还将 SumOne 集成到面向搜索智能体和编程智能体的任务特定 RL 训练中，分别使用 OpenSeeker-v1-Data 和 SWE-smith。 如表 2 所示，经过任务特定 RL 之后，SumOne 在 DeepSearchQA 和 SWE-bench Verified 上均保持竞争力。 它在 SWE-bench 上取得最佳性能（0.68），并在 DeepSearchQA 上与 Self-Summary 十分接近（0.55 对 0.57），同时将平均推理成本从 0.052 降至 0.039。 这些结果表明，SumOne 不仅限于智能体推理，还可以作为轻量且可复用的上下文压缩组件，用于长程智能体 RL 训练中。",
+   "sents": [
+    {
+     "en": "SumOne is naturally compatible with further downstream RL training of the agent, bringing further benefits.",
+     "zh": "SumOne 天然兼容对智能体进行进一步的下游 RL 训练，从而带来更多收益。"
+    },
+    {
+     "en": "Beyond inference-time compaction in Table 1 , we integrate SumOne into task-specific RL training for search and coding agents, using OpenSeeker-v1-Data and SWE-smith, respectively.",
+     "zh": "除了表 1 中的推理时压缩之外，我们还将 SumOne 集成到面向搜索智能体和编程智能体的任务特定 RL 训练中，分别使用 OpenSeeker-v1-Data 和 SWE-smith。"
+    },
+    {
+     "en": "As shown in Table 2 , SumOne remains competitive across both DeepSearchQA and SWE-bench Verified after task-specific RL.",
+     "zh": "如表 2 所示，经过任务特定 RL 之后，SumOne 在 DeepSearchQA 和 SWE-bench Verified 上均保持竞争力。"
+    },
+    {
+     "en": "It achieves the best performance on SWE-bench (0.68) and closely matches Self-Summary on DeepSearchQA (0.55 vs. 0.57), while reducing the average inference cost from 0.052 to 0.039.",
+     "zh": "它在 SWE-bench 上取得最佳性能（0.68），并在 DeepSearchQA 上与 Self-Summary 十分接近（0.55 对 0.57），同时将平均推理成本从 0.052 降至 0.039。"
+    },
+    {
+     "en": "These results suggest that SumOne is not limited to agent inference, but can also serve as a lightweight and reusable context-compression component during long-horizon agent RL.",
+     "zh": "这些结果表明，SumOne 不仅限于智能体推理，还可以作为轻量且可复用的上下文压缩组件，用于长程智能体 RL 训练中。"
+    }
+   ]
+  },
+  {
+   "en": "We compare three variants based on the same Qwen3.5-2B initialization: Prompted 2B , Direct Summary Judge Reward optimized with GRPO, and our Reconstruction Reward . For the RL variants, we keep the training data, optimization budget, and length regularization fixed, changing only the reward signal.",
+   "zh": "我们基于相同的 Qwen3.5-2B 初始化比较了三种变体：Prompted 2B（提示式 2B）、使用 GRPO 优化的 Direct Summary Judge Reward（直接摘要裁判奖励），以及我们的重建奖励。 对于强化学习变体，我们保持训练数据、优化预算和长度正则化不变，仅改变奖励信号。",
+   "sents": [
+    {
+     "en": "We compare three variants based on the same Qwen3.5-2B initialization: Prompted 2B , Direct Summary Judge Reward optimized with GRPO, and our Reconstruction Reward .",
+     "zh": "我们基于相同的 Qwen3.5-2B 初始化比较了三种变体：Prompted 2B（提示式 2B）、使用 GRPO 优化的 Direct Summary Judge Reward（直接摘要裁判奖励），以及我们的重建奖励。"
+    },
+    {
+     "en": "For the RL variants, we keep the training data, optimization budget, and length regularization fixed, changing only the reward signal.",
+     "zh": "对于强化学习变体，我们保持训练数据、优化预算和长度正则化不变，仅改变奖励信号。"
+    }
+   ]
+  },
+  {
+   "en": "Reconstruction provides a more grounded supervision signal for summary learning. Direct Judge Reward avoids reference targets, but still relies on a global and under-specified judgment of summary quality. In contrast, reconstruction directly tests whether information from the original trajectory can be recovered from the summary. As shown in Table 5 , Reconstruction Reward consistently performs best under comparable compression, suggesting that its advantage comes from explicitly supervising information preservation rather than reference imitation or perceived summary quality.",
+   "zh": "重构为摘要学习提供了更扎实的监督信号。 直接裁判奖励避免了参考目标，但仍依赖于对摘要质量的全局且欠明确的判断。 相比之下，重构直接检验能否从摘要中恢复原始轨迹中的信息。 如表5所示，在相近压缩率下，重构奖励始终表现最佳，这表明其优势来自对信息保留的显式监督，而非参考模仿或感知到的摘要质量。",
+   "sents": [
+    {
+     "en": "Reconstruction provides a more grounded supervision signal for summary learning.",
+     "zh": "重构为摘要学习提供了更扎实的监督信号。"
+    },
+    {
+     "en": "Direct Judge Reward avoids reference targets, but still relies on a global and under-specified judgment of summary quality.",
+     "zh": "直接裁判奖励避免了参考目标，但仍依赖于对摘要质量的全局且欠明确的判断。"
+    },
+    {
+     "en": "In contrast, reconstruction directly tests whether information from the original trajectory can be recovered from the summary.",
+     "zh": "相比之下，重构直接检验能否从摘要中恢复原始轨迹中的信息。"
+    },
+    {
+     "en": "As shown in Table 5 , Reconstruction Reward consistently performs best under comparable compression, suggesting that its advantage comes from explicitly supervising information preservation rather than reference imitation or perceived summary quality.",
+     "zh": "如表5所示，在相近压缩率下，重构奖励始终表现最佳，这表明其优势来自对信息保留的显式监督，而非参考模仿或感知到的摘要质量。"
+    }
+   ]
+  },
+  {
+   "en": "A moderate mask ratio yields better performance. We study the effect of the reconstruction mask ratio in Table 6(a) . A mask ratio of 50% performs best on both DeepSearchQA and LongMemEval-S, achieving 48% and 7%, respectively. Reducing the mask ratio to 25% weakens the reconstruction objective: since much of the original trajectory remains directly observable, the reconstructor relies less on the summary, resulting in a weaker learning signal for the summarizer. In contrast, increasing the mask ratio to 75% substantially degrades performance, likely because recovering such a large portion of the trajectory becomes overly challenging for the reconstructor and consequently introduces a noisier training signal. These results suggest that masking roughly half of the expired history provides a better balance between reconstruction difficulty and supervision quality.",
+   "zh": "适中的掩码比例能带来更好的性能。 我们在表 6(a) 中研究了重建掩码比例的影响。 50% 的掩码比例在 DeepSearchQA 和 LongMemEval-S 上均表现最佳，分别取得 48% 和 7% 的成绩。 将掩码比例降低到 25% 会削弱重建目标：由于原始轨迹的很大部分仍然可以直接观察到，重建器对摘要的依赖减少，从而为摘要器提供了较弱的学习信号。 相反，将掩码比例提高到 75% 会使性能显著下降，这很可能是因为恢复如此大比例的轨迹对重建器来说过于困难，进而引入了更嘈杂的训练信号。 这些结果表明，掩掉大约一半的过期历史能在重建难度与监督质量之间取得更好的平衡。",
+   "sents": [
+    {
+     "en": "A moderate mask ratio yields better performance.",
+     "zh": "适中的掩码比例能带来更好的性能。"
+    },
+    {
+     "en": "We study the effect of the reconstruction mask ratio in Table 6(a) .",
+     "zh": "我们在表 6(a) 中研究了重建掩码比例的影响。"
+    },
+    {
+     "en": "A mask ratio of 50% performs best on both DeepSearchQA and LongMemEval-S, achieving 48% and 7%, respectively.",
+     "zh": "50% 的掩码比例在 DeepSearchQA 和 LongMemEval-S 上均表现最佳，分别取得 48% 和 7% 的成绩。"
+    },
+    {
+     "en": "Reducing the mask ratio to 25% weakens the reconstruction objective: since much of the original trajectory remains directly observable, the reconstructor relies less on the summary, resulting in a weaker learning signal for the summarizer.",
+     "zh": "将掩码比例降低到 25% 会削弱重建目标：由于原始轨迹的很大部分仍然可以直接观察到，重建器对摘要的依赖减少，从而为摘要器提供了较弱的学习信号。"
+    },
+    {
+     "en": "In contrast, increasing the mask ratio to 75% substantially degrades performance, likely because recovering such a large portion of the trajectory becomes overly challenging for the reconstructor and consequently introduces a noisier training signal.",
+     "zh": "相反，将掩码比例提高到 75% 会使性能显著下降，这很可能是因为恢复如此大比例的轨迹对重建器来说过于困难，进而引入了更嘈杂的训练信号。"
+    },
+    {
+     "en": "These results suggest that masking roughly half of the expired history provides a better balance between reconstruction difficulty and supervision quality.",
+     "zh": "这些结果表明，掩掉大约一半的过期历史能在重建难度与监督质量之间取得更好的平衡。"
+    }
+   ]
+  },
+  {
+   "en": "A moderate length penalty balances well between compression and information preservation. We study the effect of the length-penalty coefficient λ \\lambda in Equation 6 , with results reported in Table 6(b) . A moderate value of λ = 0.1 \\lambda=0.1 performs best on both DeepSearchQA and LongMemEval-S. When the penalty is too weak ( λ = 0.01 \\lambda=0.01 ), the summarizer is insufficiently constrained and tends to produce unnecessarily long summaries, reducing compression efficiency without yielding proportional performance gains. In contrast, stronger penalties ( λ = 0.2 \\lambda=0.2 or 0.5 0.5 ) encourage overly aggressive compression, causing useful information to be discarded and degrading downstream performance.",
+   "zh": "适中的长度惩罚在压缩与信息保留之间取得了良好的平衡。 我们研究了公式 6 中长度惩罚系数 λ \\lambda 的影响，结果报告在表 6(b) 中。 适中的 λ = 0.1 \\lambda=0.1 在 DeepSearchQA 和 LongMemEval-S 上都表现最佳。 当惩罚过弱（λ = 0.01 \\lambda=0.01）时，总结器受到的约束不足，倾向于产生不必要的长摘要，降低了压缩效率却没有带来相应的性能提升。 相反，更强的惩罚（λ = 0.2 \\lambda=0.2 或 0.5 0.5）会促使过度激进的压缩，导致有用信息被丢弃，从而降低下游性能。",
+   "sents": [
+    {
+     "en": "A moderate length penalty balances well between compression and information preservation.",
+     "zh": "适中的长度惩罚在压缩与信息保留之间取得了良好的平衡。"
+    },
+    {
+     "en": "We study the effect of the length-penalty coefficient λ \\lambda in Equation 6 , with results reported in Table 6(b) .",
+     "zh": "我们研究了公式 6 中长度惩罚系数 λ \\lambda 的影响，结果报告在表 6(b) 中。"
+    },
+    {
+     "en": "A moderate value of λ = 0.1 \\lambda=0.1 performs best on both DeepSearchQA and LongMemEval-S.",
+     "zh": "适中的 λ = 0.1 \\lambda=0.1 在 DeepSearchQA 和 LongMemEval-S 上都表现最佳。"
+    },
+    {
+     "en": "When the penalty is too weak ( λ = 0.01 \\lambda=0.01 ), the summarizer is insufficiently constrained and tends to produce unnecessarily long summaries, reducing compression efficiency without yielding proportional performance gains.",
+     "zh": "当惩罚过弱（λ = 0.01 \\lambda=0.01）时，总结器受到的约束不足，倾向于产生不必要的长摘要，降低了压缩效率却没有带来相应的性能提升。"
+    },
+    {
+     "en": "In contrast, stronger penalties ( λ = 0.2 \\lambda=0.2 or 0.5 0.5 ) encourage overly aggressive compression, causing useful information to be discarded and degrading downstream performance.",
+     "zh": "相反，更强的惩罚（λ = 0.2 \\lambda=0.2 或 0.5 0.5）会促使过度激进的压缩，导致有用信息被丢弃，从而降低下游性能。"
+    }
+   ]
+  },
+  {
+   "en": "While SumOne demonstrates that masked reconstruction provides an effective task-agnostic signal for learning compact agent memory, several limitations remain. First, our training data are concentrated in web-search and software-engineering trajectories, and broader domains may exhibit different memory requirements. Second, the training signal depends on a frozen reconstructor and an LLM-based reconstruction judge; although neither is needed at inference time, their capabilities may affect the quality of the learned summarizer. For future work, extending the module with adaptive memory management, retrieval, tools, and meta-memory is a promising direction toward a more complete agent memory system.",
+   "zh": "虽然 SumOne 证明了掩码重建为学习紧凑的智能体记忆提供了有效的任务无关信号，但仍存在若干局限。 首先，我们的训练数据集中在网络搜索和软件工程轨迹上，更广泛的领域可能表现出不同的记忆需求。 其次，训练信号依赖于一个冻结的重建器和一个基于大语言模型的重建评判器；尽管两者在推理时都不需要，但它们的能力可能影响所学摘要器的质量。 对于未来的工作，通过自适应记忆管理、检索、工具和元记忆来扩展该模块，是迈向更完整智能体记忆系统的一个有前景的方向。",
+   "sents": [
+    {
+     "en": "While SumOne demonstrates that masked reconstruction provides an effective task-agnostic signal for learning compact agent memory, several limitations remain.",
+     "zh": "虽然 SumOne 证明了掩码重建为学习紧凑的智能体记忆提供了有效的任务无关信号，但仍存在若干局限。"
+    },
+    {
+     "en": "First, our training data are concentrated in web-search and software-engineering trajectories, and broader domains may exhibit different memory requirements.",
+     "zh": "首先，我们的训练数据集中在网络搜索和软件工程轨迹上，更广泛的领域可能表现出不同的记忆需求。"
+    },
+    {
+     "en": "Second, the training signal depends on a frozen reconstructor and an LLM-based reconstruction judge; although neither is needed at inference time, their capabilities may affect the quality of the learned summarizer.",
+     "zh": "其次，训练信号依赖于一个冻结的重建器和一个基于大语言模型的重建评判器；尽管两者在推理时都不需要，但它们的能力可能影响所学摘要器的质量。"
+    },
+    {
+     "en": "For future work, extending the module with adaptive memory management, retrieval, tools, and meta-memory is a promising direction toward a more complete agent memory system.",
+     "zh": "对于未来的工作，通过自适应记忆管理、检索、工具和元记忆来扩展该模块，是迈向更完整智能体记忆系统的一个有前景的方向。"
+    }
+   ]
+  },
+  {
+   "en": "We introduced SumOne , a lightweight plug-and-play summarizer for compressing long agent interaction histories. Rather than supervising summaries through downstream task outcomes or reference summaries, SumOne learns directly from raw trajectories by rewarding summaries that enable masked portions of the original history to be reconstructed, while regularizing summary length. Across long-horizon search, software engineering, and direct memory evaluation, SumOne substantially reduces context consumption while retaining most of the utility of full interaction histories, and transfers across downstream models and agent harnesses without additional fine-tuning. These results suggest that reconstruction-based self-supervision offers a simple and general route toward reusable memory modules for long-running language-model agents.",
+   "zh": "我们提出了 SumOne，一个轻量级即插即用的摘要器，用于压缩智能体交互历史。 SumOne 不通过下游任务结果或参考摘要来监督摘要，而是直接从原始轨迹中学习，奖励那些能够重建原始历史中被遮蔽部分的摘要，同时对摘要长度进行正则化。 在长程搜索、软件工程和直接记忆评估中，SumOne 在保留完整交互历史大部分效用的同时大幅降低了上下文消耗，并且无需额外微调即可在不同下游模型和智能体框架之间迁移。 这些结果表明，基于重建的自监督为长期运行的语言模型智能体提供了一条简单而通用的路径，以构建可复用的记忆模块。",
+   "sents": [
+    {
+     "en": "We introduced SumOne , a lightweight plug-and-play summarizer for compressing long agent interaction histories.",
+     "zh": "我们提出了 SumOne，一个轻量级即插即用的摘要器，用于压缩智能体交互历史。"
+    },
+    {
+     "en": "Rather than supervising summaries through downstream task outcomes or reference summaries, SumOne learns directly from raw trajectories by rewarding summaries that enable masked portions of the original history to be reconstructed, while regularizing summary length.",
+     "zh": "SumOne 不通过下游任务结果或参考摘要来监督摘要，而是直接从原始轨迹中学习，奖励那些能够重建原始历史中被遮蔽部分的摘要，同时对摘要长度进行正则化。"
+    },
+    {
+     "en": "Across long-horizon search, software engineering, and direct memory evaluation, SumOne substantially reduces context consumption while retaining most of the utility of full interaction histories, and transfers across downstream models and agent harnesses without additional fine-tuning.",
+     "zh": "在长程搜索、软件工程和直接记忆评估中，SumOne 在保留完整交互历史大部分效用的同时大幅降低了上下文消耗，并且无需额外微调即可在不同下游模型和智能体框架之间迁移。"
+    },
+    {
+     "en": "These results suggest that reconstruction-based self-supervision offers a simple and general route toward reusable memory modules for long-running language-model agents.",
+     "zh": "这些结果表明，基于重建的自监督为长期运行的语言模型智能体提供了一条简单而通用的路径，以构建可复用的记忆模块。"
+    }
+   ]
+  },
+  {
+   "en": "In this work, we used generative AI tools only for language editing and polishing of the manuscript. We did not use generative AI tools for research ideation, experimental design, implementation, data analysis, result interpretation, literature review, or the generation of scientific claims. All AI-assisted text was carefully reviewed and revised by the authors. We take full responsibility for the final content of this work.",
+   "zh": "在本工作中，我们仅使用生成式人工智能工具对稿件进行语言编辑与润色。 我们未将生成式人工智能工具用于研究构思、实验设计、实施、数据分析、结果解读、文献综述或科学论断的生成。 所有人工智能辅助生成的文本均经作者仔细审阅与修订。 我们对本工作的最终内容承担全部责任。",
+   "sents": [
+    {
+     "en": "In this work, we used generative AI tools only for language editing and polishing of the manuscript.",
+     "zh": "在本工作中，我们仅使用生成式人工智能工具对稿件进行语言编辑与润色。"
+    },
+    {
+     "en": "We did not use generative AI tools for research ideation, experimental design, implementation, data analysis, result interpretation, literature review, or the generation of scientific claims.",
+     "zh": "我们未将生成式人工智能工具用于研究构思、实验设计、实施、数据分析、结果解读、文献综述或科学论断的生成。"
+    },
+    {
+     "en": "All AI-assisted text was carefully reviewed and revised by the authors.",
+     "zh": "所有人工智能辅助生成的文本均经作者仔细审阅与修订。"
+    },
+    {
+     "en": "We take full responsibility for the final content of this work.",
+     "zh": "我们对本工作的最终内容承担全部责任。"
+    }
+   ]
+  },
+  {
+   "en": "This work does not involve human subjects, sensitive or personally identifiable data, dataset release, or other issues requiring specific ethical consideration. We do not identify any particular ethical concerns related to the methodology, experiments, or applications presented in this work.",
+   "zh": "本工作不涉及人类受试者、敏感或可个人识别的数据、数据集发布，或其他需要特定伦理考量的问题。 我们未发现与本工作所提出的方法、实验或应用相关的任何特定伦理问题。",
+   "sents": [
+    {
+     "en": "This work does not involve human subjects, sensitive or personally identifiable data, dataset release, or other issues requiring specific ethical consideration.",
+     "zh": "本工作不涉及人类受试者、敏感或可个人识别的数据、数据集发布，或其他需要特定伦理考量的问题。"
+    },
+    {
+     "en": "We do not identify any particular ethical concerns related to the methodology, experiments, or applications presented in this work.",
+     "zh": "我们未发现与本工作所提出的方法、实验或应用相关的任何特定伦理问题。"
+    }
+   ]
+  },
+  {
+   "en": "All datasets and benchmarks used in this work are publicly available. We provide the key methodological details, training setup, evaluation protocols, and implementation settings in the main text and appendices to facilitate reproduction of our results. Additional hyperparameters and experimental details are also documented in the appendix. Upon acceptance, we will release our code and related implementation resources to further support reproducibility.",
+   "zh": "本工作中使用的所有数据集和基准测试均公开可用。 我们在正文和附录中提供了关键的方法细节、训练设置、评估协议和实现配置，以便于复现我们的结果。 额外的超参数和实验细节也记录在附录中。 论文被接收后，我们将发布代码和相关实现资源，以进一步支持可复现性。",
+   "sents": [
+    {
+     "en": "All datasets and benchmarks used in this work are publicly available.",
+     "zh": "本工作中使用的所有数据集和基准测试均公开可用。"
+    },
+    {
+     "en": "We provide the key methodological details, training setup, evaluation protocols, and implementation settings in the main text and appendices to facilitate reproduction of our results.",
+     "zh": "我们在正文和附录中提供了关键的方法细节、训练设置、评估协议和实现配置，以便于复现我们的结果。"
+    },
+    {
+     "en": "Additional hyperparameters and experimental details are also documented in the appendix.",
+     "zh": "额外的超参数和实验细节也记录在附录中。"
+    },
+    {
+     "en": "Upon acceptance, we will release our code and related implementation resources to further support reproducibility.",
+     "zh": "论文被接收后，我们将发布代码和相关实现资源，以进一步支持可复现性。"
+    }
+   ]
+  },
+  {
+   "en": "We summarize the training configuration of SumOne in Table 7 . We optimize the summarizer with GRPO for 600 steps using veRL on a single node with eight H20 GPUs.",
+   "zh": "我们在表7中总结了SumOne的训练配置。 我们使用veRL在配备八块H20 GPU的单节点上，通过GRPO对摘要模型进行了600步的优化。",
+   "sents": [
+    {
+     "en": "We summarize the training configuration of SumOne in Table 7 .",
+     "zh": "我们在表7中总结了SumOne的训练配置。"
+    },
+    {
+     "en": "We optimize the summarizer with GRPO for 600 steps using veRL on a single node with eight H20 GPUs.",
+     "zh": "我们使用veRL在配备八块H20 GPU的单节点上，通过GRPO对摘要模型进行了600步的优化。"
+    }
+   ]
+  },
+  {
+   "en": "To ensure consistent cost estimation across models and experiments, we use the standard API prices listed in Table 10 . All prices are reported in USD per one million tokens. For simplicity and reproducibility, we use the listed base prices only and do not account for cache-hit discounts, promotional pricing, batch discounts, or other temporary pricing policies. When a model is not included in this table, we use the publicly available price from its official API provider whenever possible.",
+   "zh": "为了确保跨模型和跨实验的成本估算保持一致，我们使用表 10 中列出的标准 API 价格。 所有价格均以每百万 tokens 的美元（USD）为单位报告。 为简单起见并保证可复现性，我们仅使用所列的基础价格，不考虑缓存命中折扣、促销价格、批量折扣或其他临时定价政策。 当某个模型未包含在本表中时，我们尽可能使用其官方 API 提供方公开的价格。",
+   "sents": [
+    {
+     "en": "To ensure consistent cost estimation across models and experiments, we use the standard API prices listed in Table 10 .",
+     "zh": "为了确保跨模型和跨实验的成本估算保持一致，我们使用表 10 中列出的标准 API 价格。"
+    },
+    {
+     "en": "All prices are reported in USD per one million tokens.",
+     "zh": "所有价格均以每百万 tokens 的美元（USD）为单位报告。"
+    },
+    {
+     "en": "For simplicity and reproducibility, we use the listed base prices only and do not account for cache-hit discounts, promotional pricing, batch discounts, or other temporary pricing policies.",
+     "zh": "为简单起见并保证可复现性，我们仅使用所列的基础价格，不考虑缓存命中折扣、促销价格、批量折扣或其他临时定价政策。"
+    },
+    {
+     "en": "When a model is not included in this table, we use the publicly available price from its official API provider whenever possible.",
+     "zh": "当某个模型未包含在本表中时，我们尽可能使用其官方 API 提供方公开的价格。"
+    }
+   ]
+  }
+ ]
+}
