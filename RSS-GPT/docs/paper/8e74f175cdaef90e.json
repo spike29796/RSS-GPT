@@ -1,0 +1,1942 @@
+{
+ "id": "8e74f175cdaef90e",
+ "source": "arxiv-agent",
+ "link": "https://arxiv.org/abs/2611.07932v1",
+ "title": "AttnSR: Attention Step Reward for Long-Horizon Agentic RL",
+ "title_zh": "AttnSR：面向长程智能体强化学习的注意力步骤奖励",
+ "published": "2026-11-05T12:37:19Z",
+ "translated_at": "2026-11-06T21:15:57Z",
+ "paragraphs": [
+  {
+   "en": "Long-horizon LLM agents make multi-step decisions, yet outcome-reward-only reinforcement learning provides little direct supervision for individual steps. We introduce AttnSR , a step-level reward augmentation method that derives reward allocations from policy attention extracted during training replay, without a separately trained reward model or additional rollouts. AttnSR traces backward through the policy model attention graph to estimate the relevance of earlier steps to the final response. The terminal step, measured relative to a running baseline, determines whether these rewards reinforce or penalize the selected steps. In a controlled Qwen2.5-7B-Instruct study, AttnSR consistently outperforms the PPO baseline across all evaluated checkpoints on ALFWorld , raising final held-out success from 91.2% to 97.1%. The ablation experiment shows that the benefit depends on how intermediate rewards are assigned, rather than simple accumulation of step rewards over time. AttnSR also improves ScienceWorld at every checkpoint while cutting environment interactions by 29.9%. These results support policy attention as a practical prior for step-level reward allocation in long-horizon agentic RL. Code is available at https://github.com/fairyshine/AttnSR .",
+   "zh": "长时程 LLM 智能体需要做出多步决策，然而仅依赖结果奖励的强化学习几乎无法为单步提供直接监督。 我们提出 AttnSR，这是一种步级奖励增强方法，它从训练重放期间提取的策略注意力中推导奖励分配，无需单独训练奖励模型，也无需额外的轨迹采样。 AttnSR 通过策略模型的注意力图进行反向追踪，以估计早期步骤与最终响应的相关性。 终端步骤相对于运行基线的表现决定这些奖励是强化还是惩罚所选步骤。 在受控的 Qwen2.5-7B-Instruct 实验中，AttnSR 在 ALFWorld 上所有评估检查点均持续优于 PPO 基线，将最终留出集成功率从 91.2% 提升至 97.1%。 消融实验表明，这一收益取决于中间奖励的分配方式，而非简单的步级奖励随时间的累积。 AttnSR 在 ScienceWorld 的每个检查点上也均有提升，同时将环境交互次数减少了 29.9%。 这些结果支持将策略注意力作为长时程智能体强化学习中步级奖励分配的实用先验。 代码已发布于 https://github.com/fairyshine/AttnSR 。",
+   "sents": [
+    {
+     "en": "Long-horizon LLM agents make multi-step decisions, yet outcome-reward-only reinforcement learning provides little direct supervision for individual steps.",
+     "zh": "长时程 LLM 智能体需要做出多步决策，然而仅依赖结果奖励的强化学习几乎无法为单步提供直接监督。"
+    },
+    {
+     "en": "We introduce AttnSR , a step-level reward augmentation method that derives reward allocations from policy attention extracted during training replay, without a separately trained reward model or additional rollouts.",
+     "zh": "我们提出 AttnSR，这是一种步级奖励增强方法，它从训练重放期间提取的策略注意力中推导奖励分配，无需单独训练奖励模型，也无需额外的轨迹采样。"
+    },
+    {
+     "en": "AttnSR traces backward through the policy model attention graph to estimate the relevance of earlier steps to the final response.",
+     "zh": "AttnSR 通过策略模型的注意力图进行反向追踪，以估计早期步骤与最终响应的相关性。"
+    },
+    {
+     "en": "The terminal step, measured relative to a running baseline, determines whether these rewards reinforce or penalize the selected steps.",
+     "zh": "终端步骤相对于运行基线的表现决定这些奖励是强化还是惩罚所选步骤。"
+    },
+    {
+     "en": "In a controlled Qwen2.5-7B-Instruct study, AttnSR consistently outperforms the PPO baseline across all evaluated checkpoints on ALFWorld , raising final held-out success from 91.2% to 97.1%.",
+     "zh": "在受控的 Qwen2.5-7B-Instruct 实验中，AttnSR 在 ALFWorld 上所有评估检查点均持续优于 PPO 基线，将最终留出集成功率从 91.2% 提升至 97.1%。"
+    },
+    {
+     "en": "The ablation experiment shows that the benefit depends on how intermediate rewards are assigned, rather than simple accumulation of step rewards over time.",
+     "zh": "消融实验表明，这一收益取决于中间奖励的分配方式，而非简单的步级奖励随时间的累积。"
+    },
+    {
+     "en": "AttnSR also improves ScienceWorld at every checkpoint while cutting environment interactions by 29.9%.",
+     "zh": "AttnSR 在 ScienceWorld 的每个检查点上也均有提升，同时将环境交互次数减少了 29.9%。"
+    },
+    {
+     "en": "These results support policy attention as a practical prior for step-level reward allocation in long-horizon agentic RL.",
+     "zh": "这些结果支持将策略注意力作为长时程智能体强化学习中步级奖励分配的实用先验。"
+    },
+    {
+     "en": "Code is available at https://github.com/fairyshine/AttnSR .",
+     "zh": "代码已发布于 https://github.com/fairyshine/AttnSR 。"
+    }
+   ]
+  },
+  {
+   "en": "Reinforcement learning (RL) with verifiable rewards ( Shao et al., 2024 ; DeepSeek-AI, 2025 ) is increasingly applied to agents that interleave reasoning and tool use ( Putta et al., 2024 ; Wang et al., 2025b ; Yao et al., 2023 ) . In environments such as ALFWorld , WebShop , and ScienceWorld , agents make sequences of decisions to complete a task ( Shridhar et al., 2021 ; Yao et al., 2022 ; Wang et al., 2022 ) . Vanilla PPO uses the outcome reward to estimate value targets and policy advantages ( Schulman et al., 2017 ; Schulman et al., 2016 ) , but says little about how intermediate actions contribute. Assigning credit to earlier decisions thus remains a core challenge in long-horizon RL ( Zhang, 2026 ) .",
+   "zh": "带可验证奖励的强化学习（RL）（Shao et al., 2024；DeepSeek-AI, 2025）正越来越多地应用于交错进行推理与工具使用的智能体（Putta et al., 2024；Wang et al., 2025b；Yao et al., 2023）。 在 ALFWorld、WebShop 和 ScienceWorld 等环境中，智能体通过一系列决策来完成任务（Shridhar et al., 2021；Yao et al., 2022；Wang et al., 2022）。 标准 PPO 使用结果奖励来估计价值目标和策略优势（Schulman et al., 2017；Schulman et al., 2016），但对中间动作如何做出贡献却几乎没有说明。 因此，如何为较早的决策分配信用仍然是长程强化学习中的一项核心挑战（Zhang, 2026）。",
+   "sents": [
+    {
+     "en": "Reinforcement learning (RL) with verifiable rewards ( Shao et al., 2024 ; DeepSeek-AI, 2025 ) is increasingly applied to agents that interleave reasoning and tool use ( Putta et al., 2024 ; Wang et al., 2025b ; Yao et al., 2023 ) .",
+     "zh": "带可验证奖励的强化学习（RL）（Shao et al., 2024；DeepSeek-AI, 2025）正越来越多地应用于交错进行推理与工具使用的智能体（Putta et al., 2024；Wang et al., 2025b；Yao et al., 2023）。"
+    },
+    {
+     "en": "In environments such as ALFWorld , WebShop , and ScienceWorld , agents make sequences of decisions to complete a task ( Shridhar et al., 2021 ; Yao et al., 2022 ; Wang et al., 2022 ) .",
+     "zh": "在 ALFWorld、WebShop 和 ScienceWorld 等环境中，智能体通过一系列决策来完成任务（Shridhar et al., 2021；Yao et al., 2022；Wang et al., 2022）。"
+    },
+    {
+     "en": "Vanilla PPO uses the outcome reward to estimate value targets and policy advantages ( Schulman et al., 2017 ; Schulman et al., 2016 ) , but says little about how intermediate actions contribute.",
+     "zh": "标准 PPO 使用结果奖励来估计价值目标和策略优势（Schulman et al., 2017；Schulman et al., 2016），但对中间动作如何做出贡献却几乎没有说明。"
+    },
+    {
+     "en": "Assigning credit to earlier decisions thus remains a core challenge in long-horizon RL ( Zhang, 2026 ) .",
+     "zh": "因此，如何为较早的决策分配信用仍然是长程强化学习中的一项核心挑战（Zhang, 2026）。"
+    }
+   ]
+  },
+  {
+   "en": "Step-level rewards address this challenge by providing more localized training signals, but obtaining them can require step annotations, additional environment interactions, or a separately trained evaluator ( Lightman et al., 2024 ; Setlur et al., 2024 ; Kazemnejad et al., 2025 ) . This motivates using signals already available within the policy model to guide intermediate rewards, without incurring the substantial training and environment-interaction costs.",
+   "zh": "步骤级奖励通过提供更局部化的训练信号来解决这一挑战，但获取步骤级奖励可能需要步骤标注、额外的环境交互，或单独训练的评估器（Lightman et al., 2024；Setlur et al., 2024；Kazemnejad et al., 2025）。 这促使我们利用策略模型内部已有的信号来引导中间奖励，而无需承担高昂的训练与环境交互成本。",
+   "sents": [
+    {
+     "en": "Step-level rewards address this challenge by providing more localized training signals, but obtaining them can require step annotations, additional environment interactions, or a separately trained evaluator ( Lightman et al., 2024 ; Setlur et al., 2024 ; Kazemnejad et al., 2025 ) .",
+     "zh": "步骤级奖励通过提供更局部化的训练信号来解决这一挑战，但获取步骤级奖励可能需要步骤标注、额外的环境交互，或单独训练的评估器（Lightman et al., 2024；Setlur et al., 2024；Kazemnejad et al., 2025）。"
+    },
+    {
+     "en": "This motivates using signals already available within the policy model to guide intermediate rewards, without incurring the substantial training and environment-interaction costs.",
+     "zh": "这促使我们利用策略模型内部已有的信号来引导中间奖励，而无需承担高昂的训练与环境交互成本。"
+    }
+   ]
+  },
+  {
+   "en": "Attention patterns in the policy model may provide such a signal, since they record how later decisions attend to earlier actions and observations. We hypothesize that these relationships provide a useful prior for allocating intermediate rewards, although attention alone does not establish causal contributions ( Jain and Wallace, 2019 ; Abnar and Zuidema, 2020 ) . The signal can be extracted during the existing forward pass of the policy model over collected trajectories. The method adds little computation and requires neither a separate attribution backward pass nor a learned progress estimator.",
+   "zh": "策略模型中的注意力模式可以提供这样的信号，因为它们记录了后续决策如何关注先前的动作和观察。 我们假设这些关系为分配中间奖励提供了有用的先验，尽管仅凭注意力并不能确立因果贡献（Jain and Wallace, 2019；Abnar and Zuidema, 2020）。 该信号可以在策略模型对已收集轨迹进行的现有前向传播过程中提取。 该方法几乎不增加计算量，既不需要单独的归因反向传播，也不需要学习进度估计器。",
+   "sents": [
+    {
+     "en": "Attention patterns in the policy model may provide such a signal, since they record how later decisions attend to earlier actions and observations.",
+     "zh": "策略模型中的注意力模式可以提供这样的信号，因为它们记录了后续决策如何关注先前的动作和观察。"
+    },
+    {
+     "en": "We hypothesize that these relationships provide a useful prior for allocating intermediate rewards, although attention alone does not establish causal contributions ( Jain and Wallace, 2019 ; Abnar and Zuidema, 2020 ) .",
+     "zh": "我们假设这些关系为分配中间奖励提供了有用的先验，尽管仅凭注意力并不能确立因果贡献（Jain and Wallace, 2019；Abnar and Zuidema, 2020）。"
+    },
+    {
+     "en": "The signal can be extracted during the existing forward pass of the policy model over collected trajectories.",
+     "zh": "该信号可以在策略模型对已收集轨迹进行的现有前向传播过程中提取。"
+    },
+    {
+     "en": "The method adds little computation and requires neither a separate attribution backward pass nor a learned progress estimator.",
+     "zh": "该方法几乎不增加计算量，既不需要单独的归因反向传播，也不需要学习进度估计器。"
+    }
+   ]
+  },
+  {
+   "en": "Building on this hypothesis, we introduce Attention Step Reward ( AttnSR ), which uses the attention of the policy model to identify relevant earlier steps and turns the task outcome into intermediate training signals. Starting from the final step, it traces attention links backward to estimate the relevance of earlier actions and observations. These estimates determine which intermediate steps receive reward, while weaker or less consistent attention reduces their overall magnitude. Outcomes above the running average score yield positive intermediate rewards, and those below it yield negative rewards. These signals can in principle be used directly by step-level RL algorithms or placed at assistant-step endpoints for token-level RL. We study the latter integration in PPO, where the added rewards change value targets and policy advantages while retaining the critic architecture and losses.",
+   "zh": "在该假设的基础上，我们提出注意力步骤奖励（Attention Step Reward，AttnSR），它利用策略模型的注意力识别相关的较早步骤，并将任务结果转化为中间训练信号。 它从最终步骤出发，沿注意力链接向后追溯，以估计较早动作和观察的相关性。 这些估计决定了哪些中间步骤获得奖励，而较弱或不一致的注意力会降低奖励的整体幅度。 结果高于运行平均分时产生正向中间奖励，低于运行平均分时产生负向奖励。 这些信号原则上可以直接用于步骤级强化学习算法，也可以放置在助手步骤端点处用于词元级强化学习。 我们在 PPO 中研究了后一种集成方式，其中新增的奖励会改变价值目标和策略优势，同时保留评论家网络的结构和损失函数。",
+   "sents": [
+    {
+     "en": "Building on this hypothesis, we introduce Attention Step Reward ( AttnSR ), which uses the attention of the policy model to identify relevant earlier steps and turns the task outcome into intermediate training signals.",
+     "zh": "在该假设的基础上，我们提出注意力步骤奖励（Attention Step Reward，AttnSR），它利用策略模型的注意力识别相关的较早步骤，并将任务结果转化为中间训练信号。"
+    },
+    {
+     "en": "Starting from the final step, it traces attention links backward to estimate the relevance of earlier actions and observations.",
+     "zh": "它从最终步骤出发，沿注意力链接向后追溯，以估计较早动作和观察的相关性。"
+    },
+    {
+     "en": "These estimates determine which intermediate steps receive reward, while weaker or less consistent attention reduces their overall magnitude.",
+     "zh": "这些估计决定了哪些中间步骤获得奖励，而较弱或不一致的注意力会降低奖励的整体幅度。"
+    },
+    {
+     "en": "Outcomes above the running average score yield positive intermediate rewards, and those below it yield negative rewards.",
+     "zh": "结果高于运行平均分时产生正向中间奖励，低于运行平均分时产生负向奖励。"
+    },
+    {
+     "en": "These signals can in principle be used directly by step-level RL algorithms or placed at assistant-step endpoints for token-level RL.",
+     "zh": "这些信号原则上可以直接用于步骤级强化学习算法，也可以放置在助手步骤端点处用于词元级强化学习。"
+    },
+    {
+     "en": "We study the latter integration in PPO, where the added rewards change value targets and policy advantages while retaining the critic architecture and losses.",
+     "zh": "我们在 PPO 中研究了后一种集成方式，其中新增的奖励会改变价值目标和策略优势，同时保留评论家网络的结构和损失函数。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate AttnSR on ALFWorld , ScienceWorld , and WebShop using Qwen2.5-7B-Instruct with matched token-level PPO training. ALFWorld success rises from 91.2% to 97.1%, with larger gains on unseen tasks, whereas the positional ablation reaches 92.3%. On ScienceWorld, AttnSR yields higher official scores at all four reported checkpoints and 29.9% fewer mean environment steps. These results suggest that policy attention can serve as a useful signal for intermediate reward allocation, offering a way to enrich outcome-based supervision without additional rollouts or a separately trained reward model.",
+   "zh": "我们在 ALFWorld、ScienceWorld 和 WebShop 上，使用经过匹配的 token 级 PPO 训练的 Qwen2.5-7B-Instruct 对 AttnSR 进行评估。 ALFWorld 的成功率从 91.2% 提升到 97.1%，在未见任务上的提升更大，而位置消融版本达到 92.3%。 在 ScienceWorld 上，AttnSR 在所报告的全部四个检查点都取得了更高的官方分数，并且平均环境步数减少了 29.9%。 这些结果表明，策略注意力可以作为中间奖励分配的有效信号，提供了一种在不增加额外 rollout 或单独训练奖励模型的情况下丰富基于结果监督的途径。",
+   "sents": [
+    {
+     "en": "We evaluate AttnSR on ALFWorld , ScienceWorld , and WebShop using Qwen2.5-7B-Instruct with matched token-level PPO training.",
+     "zh": "我们在 ALFWorld、ScienceWorld 和 WebShop 上，使用经过匹配的 token 级 PPO 训练的 Qwen2.5-7B-Instruct 对 AttnSR 进行评估。"
+    },
+    {
+     "en": "ALFWorld success rises from 91.2% to 97.1%, with larger gains on unseen tasks, whereas the positional ablation reaches 92.3%.",
+     "zh": "ALFWorld 的成功率从 91.2% 提升到 97.1%，在未见任务上的提升更大，而位置消融版本达到 92.3%。"
+    },
+    {
+     "en": "On ScienceWorld, AttnSR yields higher official scores at all four reported checkpoints and 29.9% fewer mean environment steps.",
+     "zh": "在 ScienceWorld 上，AttnSR 在所报告的全部四个检查点都取得了更高的官方分数，并且平均环境步数减少了 29.9%。"
+    },
+    {
+     "en": "These results suggest that policy attention can serve as a useful signal for intermediate reward allocation, offering a way to enrich outcome-based supervision without additional rollouts or a separately trained reward model.",
+     "zh": "这些结果表明，策略注意力可以作为中间奖励分配的有效信号，提供了一种在不增加额外 rollout 或单独训练奖励模型的情况下丰富基于结果监督的途径。"
+    }
+   ]
+  },
+  {
+   "en": "We hypothesize that policy attention provides a relevance prior over interaction steps by indicating how later decisions attend to earlier actions and observations. Based on this hypothesis, we use attention-derived dependencies to distribute outcome information across steps for temporal credit assignment, treating attention as a heuristic relevance signal, not evidence of causal contribution.",
+   "zh": "我们假设，策略注意力通过揭示后续决策如何关注早先的动作与观测，为交互步骤提供了一个相关性先验。 基于这一假设，我们利用注意力导出的依赖关系，将结果信息分布到各个步骤中以进行时间信用分配，并将注意力视为一种启发式的相关性信号，而非因果贡献的证据。",
+   "sents": [
+    {
+     "en": "We hypothesize that policy attention provides a relevance prior over interaction steps by indicating how later decisions attend to earlier actions and observations.",
+     "zh": "我们假设，策略注意力通过揭示后续决策如何关注早先的动作与观测，为交互步骤提供了一个相关性先验。"
+    },
+    {
+     "en": "Based on this hypothesis, we use attention-derived dependencies to distribute outcome information across steps for temporal credit assignment, treating attention as a heuristic relevance signal, not evidence of causal contribution.",
+     "zh": "基于这一假设，我们利用注意力导出的依赖关系，将结果信息分布到各个步骤中以进行时间信用分配，并将注意力视为一种启发式的相关性信号，而非因果贡献的证据。"
+    }
+   ]
+  },
+  {
+   "en": "We introduce AttnSR , a step-level reward augmentation scheme that combines attention-based allocation, confidence gating, and outcome centering. The signals can be used directly as step-level rewards or aligned with assistant-step endpoints for token-level objectives, and we study the latter integration with PPO. It needs neither counterfactual rollouts nor a separately trained reward model.",
+   "zh": "我们提出 AttnSR，一种步骤级奖励增强方案，它结合了基于注意力的分配、置信度门控和结果中心化。 这些信号既可以直接用作步骤级奖励，也可以与智能体步骤端点对齐用于词元级目标，我们研究了后者与 PPO 的集成。 它既不需要反事实 rollout，也不需要单独训练的奖励模型。",
+   "sents": [
+    {
+     "en": "We introduce AttnSR , a step-level reward augmentation scheme that combines attention-based allocation, confidence gating, and outcome centering.",
+     "zh": "我们提出 AttnSR，一种步骤级奖励增强方案，它结合了基于注意力的分配、置信度门控和结果中心化。"
+    },
+    {
+     "en": "The signals can be used directly as step-level rewards or aligned with assistant-step endpoints for token-level objectives, and we study the latter integration with PPO.",
+     "zh": "这些信号既可以直接用作步骤级奖励，也可以与智能体步骤端点对齐用于词元级目标，我们研究了后者与 PPO 的集成。"
+    },
+    {
+     "en": "It needs neither counterfactual rollouts nor a separately trained reward model.",
+     "zh": "它既不需要反事实 rollout，也不需要单独训练的奖励模型。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate AttnSR across three agentic benchmarks with ablation and trajectory analysis to characterize its performance gains and potential boundary conditions across tasks with different interaction lengths. The results are consistent with a stronger benefit on complex, long-horizon tasks, while suggesting more limited gains when trajectories are short.",
+   "zh": "我们在三个智能体基准上对 AttnSR 进行了评估，并通过消融实验和轨迹分析来刻画其性能提升，以及在不同交互长度任务中的潜在边界条件。 结果表明，该方法在复杂的长时程任务上收益更为显著，而在轨迹较短时收益相对有限。",
+   "sents": [
+    {
+     "en": "We evaluate AttnSR across three agentic benchmarks with ablation and trajectory analysis to characterize its performance gains and potential boundary conditions across tasks with different interaction lengths.",
+     "zh": "我们在三个智能体基准上对 AttnSR 进行了评估，并通过消融实验和轨迹分析来刻画其性能提升，以及在不同交互长度任务中的潜在边界条件。"
+    },
+    {
+     "en": "The results are consistent with a stronger benefit on complex, long-horizon tasks, while suggesting more limited gains when trajectories are short.",
+     "zh": "结果表明，该方法在复杂的长时程任务上收益更为显著，而在轨迹较短时收益相对有限。"
+    }
+   ]
+  },
+  {
+   "en": "We model each LLM-based agent interaction trajectory as a multi-turn conversation. Episode i i starts from a task query and contains K i K_{i} decision steps. Each step S i , k S_{i,k} comprises an assistant message A i , k A_{i,k} and its environment observation O i , k O_{i,k} when present, and the final message may have no observation. Let ℐ i , k \\mathcal{I}_{i,k} be the assistant token indices at step k k , and e i , k ∈ ℐ i , k e_{i,k}\\in\\mathcal{I}_{i,k} its last trainable token, the step endpoint . We supply PPO with a task outcome reward R i ∈ [ 0 , 1 ] R_{i}\\in[0,1] . In the canonical runs, R i R_{i} is binary success for ALFWorld , the normalized official score for WebShop , and the normalized final score for ScienceWorld . Format-error trajectories receive R i = 0 R_{i}=0 . Thus the binary success metric for WebShop and ScienceWorld is an evaluation threshold on the official score, not a replacement for the training reward. Table 16 in Appendix H summarizes the notation.",
+   "zh": "我们将每个基于 LLM 的智能体交互轨迹建模为多轮对话。 回合 i 从一个任务查询开始，包含 K_{i} 个决策步骤。 每个步骤 S_{i,k} 由一条助手消息 A_{i,k} 及其存在时的环境观测 O_{i,k} 组成，且最后一条消息可能没有观测。 设 ℐ_{i,k} 为步骤 k 处的助手 token 索引，e_{i,k}∈ℐ_{i,k} 为其最后一个可训练 token，即步骤端点。 我们为 PPO 提供任务结果奖励 R_{i}∈[0,1]。 在标准运行中，R_{i} 在 ALFWorld 上为二元成功值，在 WebShop 上为归一化的官方分数，在 ScienceWorld 上为归一化的最终分数。 格式错误的轨迹获得 R_{i}=0。 因此，WebShop 和 ScienceWorld 的二元成功指标是对官方分数设定的评估阈值，而非训练奖励的替代。 附录 H 中的表 16 总结了相关符号。",
+   "sents": [
+    {
+     "en": "We model each LLM-based agent interaction trajectory as a multi-turn conversation.",
+     "zh": "我们将每个基于 LLM 的智能体交互轨迹建模为多轮对话。"
+    },
+    {
+     "en": "Episode i i starts from a task query and contains K i K_{i} decision steps.",
+     "zh": "回合 i 从一个任务查询开始，包含 K_{i} 个决策步骤。"
+    },
+    {
+     "en": "Each step S i , k S_{i,k} comprises an assistant message A i , k A_{i,k} and its environment observation O i , k O_{i,k} when present, and the final message may have no observation.",
+     "zh": "每个步骤 S_{i,k} 由一条助手消息 A_{i,k} 及其存在时的环境观测 O_{i,k} 组成，且最后一条消息可能没有观测。"
+    },
+    {
+     "en": "Let ℐ i , k \\mathcal{I}_{i,k} be the assistant token indices at step k k , and e i , k ∈ ℐ i , k e_{i,k}\\in\\mathcal{I}_{i,k} its last trainable token, the step endpoint .",
+     "zh": "设 ℐ_{i,k} 为步骤 k 处的助手 token 索引，e_{i,k}∈ℐ_{i,k} 为其最后一个可训练 token，即步骤端点。"
+    },
+    {
+     "en": "We supply PPO with a task outcome reward R i ∈ [ 0 , 1 ] R_{i}\\in[0,1] .",
+     "zh": "我们为 PPO 提供任务结果奖励 R_{i}∈[0,1]。"
+    },
+    {
+     "en": "In the canonical runs, R i R_{i} is binary success for ALFWorld , the normalized official score for WebShop , and the normalized final score for ScienceWorld .",
+     "zh": "在标准运行中，R_{i} 在 ALFWorld 上为二元成功值，在 WebShop 上为归一化的官方分数，在 ScienceWorld 上为归一化的最终分数。"
+    },
+    {
+     "en": "Format-error trajectories receive R i = 0 R_{i}=0 .",
+     "zh": "格式错误的轨迹获得 R_{i}=0。"
+    },
+    {
+     "en": "Thus the binary success metric for WebShop and ScienceWorld is an evaluation threshold on the official score, not a replacement for the training reward.",
+     "zh": "因此，WebShop 和 ScienceWorld 的二元成功指标是对官方分数设定的评估阈值，而非训练奖励的替代。"
+    },
+    {
+     "en": "Table 16 in Appendix H summarizes the notation.",
+     "zh": "附录 H 中的表 16 总结了相关符号。"
+    }
+   ]
+  },
+  {
+   "en": "Our terminal-only PPO baseline aligns rewards with trajectory tokens, indexed by u u , placing the outcome at the final assistant endpoint as",
+   "zh": "我们仅使用最终结果的 PPO 基线将奖励与轨迹 token 对齐，索引为 u u，并将结果置于最后一个助手端点处，即",
+   "sents": null
+  },
+  {
+   "en": "where 𝟙 ​ [ ⋅ ] \\mathbb{1}[\\cdot] is the indicator function. Observation tokens provide context but are masked from actor and critic losses. TD residuals and GAE compute value-function targets and policy advantages over valid assistant tokens, skipping masked positions ( Schulman et al., 2016 ; Schulman et al., 2017 ) . The outcome reward evaluates the whole trajectory without specifying contributions of individual actions.",
+   "zh": "其中 𝟙 ​ [ ⋅ ] \\mathbb{1}[\\cdot] 为指示函数。 观测token提供上下文，但在演员与评论家的损失中被屏蔽。 TD残差和GAE在有效的助手token上计算价值函数目标和策略优势，跳过被屏蔽的位置（Schulman et al., 2016；Schulman et al., 2017）。 结果奖励对整条轨迹进行评估，而不指定各个动作的贡献。",
+   "sents": [
+    {
+     "en": "where 𝟙 ​ [ ⋅ ] \\mathbb{1}[\\cdot] is the indicator function.",
+     "zh": "其中 𝟙 ​ [ ⋅ ] \\mathbb{1}[\\cdot] 为指示函数。"
+    },
+    {
+     "en": "Observation tokens provide context but are masked from actor and critic losses.",
+     "zh": "观测token提供上下文，但在演员与评论家的损失中被屏蔽。"
+    },
+    {
+     "en": "TD residuals and GAE compute value-function targets and policy advantages over valid assistant tokens, skipping masked positions ( Schulman et al., 2016 ; Schulman et al., 2017 ) .",
+     "zh": "TD残差和GAE在有效的助手token上计算价值函数目标和策略优势，跳过被屏蔽的位置（Schulman et al., 2016；Schulman et al., 2017）。"
+    },
+    {
+     "en": "The outcome reward evaluates the whole trajectory without specifying contributions of individual actions.",
+     "zh": "结果奖励对整条轨迹进行评估，而不指定各个动作的贡献。"
+    }
+   ]
+  },
+  {
+   "en": "Let s i , k s_{i,k} denote a signed shaping reward assigned to intermediate step k < K i k<K_{i} . AttnSR augments the baseline reward sequence as",
+   "zh": "设 s_{i,k} 表示赋给中间步骤 k<K_i 的带符号整形奖励。 AttnSR 将基准奖励序列扩充为",
+   "sents": [
+    {
+     "en": "Let s i , k s_{i,k} denote a signed shaping reward assigned to intermediate step k < K i k<K_{i} .",
+     "zh": "设 s_{i,k} 表示赋给中间步骤 k<K_i 的带符号整形奖励。"
+    },
+    {
+     "en": "AttnSR augments the baseline reward sequence as",
+     "zh": "AttnSR 将基准奖励序列扩充为"
+    }
+   ]
+  },
+  {
+   "en": "This retains R i R_{i} at the final endpoint and adds s i , k s_{i,k} at intermediate assistant endpoints. Algorithms that consume step-level rewards can use these signals directly in principle, and Equation 2 specifies their token-level placement for the PPO implementation studied here. Our goal is to derive s i , k s_{i,k} from actor attention and terminal outcomes. Section 3 defines its allocation, confidence gate, and sign.",
+   "zh": "这在最终端点保留 R i R_{i}，并在中间的助手端点添加 s i , k s_{i,k}。 消耗步骤级奖励的算法原则上可以直接使用这些信号，公式 2 规定了它们在本文研究的 PPO 实现中的词元级放置位置。 我们的目标是从智能体注意力与终端结果中推导出 s i , k s_{i,k}。 第 3 节定义了它的分配方式、置信度门控与符号。",
+   "sents": [
+    {
+     "en": "This retains R i R_{i} at the final endpoint and adds s i , k s_{i,k} at intermediate assistant endpoints.",
+     "zh": "这在最终端点保留 R i R_{i}，并在中间的助手端点添加 s i , k s_{i,k}。"
+    },
+    {
+     "en": "Algorithms that consume step-level rewards can use these signals directly in principle, and Equation 2 specifies their token-level placement for the PPO implementation studied here.",
+     "zh": "消耗步骤级奖励的算法原则上可以直接使用这些信号，公式 2 规定了它们在本文研究的 PPO 实现中的词元级放置位置。"
+    },
+    {
+     "en": "Our goal is to derive s i , k s_{i,k} from actor attention and terminal outcomes.",
+     "zh": "我们的目标是从智能体注意力与终端结果中推导出 s i , k s_{i,k}。"
+    },
+    {
+     "en": "Section 3 defines its allocation, confidence gate, and sign.",
+     "zh": "第 3 节定义了它的分配方式、置信度门控与符号。"
+    }
+   ]
+  },
+  {
+   "en": "AttnSR constructs intermediate rewards by tracing how later decisions attend to earlier interaction steps. It uses these relationships to allocate rewards, with their magnitude and sign determined by the reliability of the attention signal and the trajectory outcome relative to a running baseline.",
+   "zh": "AttnSR 通过追踪后续决策如何关注早期的交互步骤来构建中间奖励。 它利用这些关系来分配奖励，其大小和正负号由注意力信号的可靠性以及轨迹相对于运行基线的结果决定。",
+   "sents": [
+    {
+     "en": "AttnSR constructs intermediate rewards by tracing how later decisions attend to earlier interaction steps.",
+     "zh": "AttnSR 通过追踪后续决策如何关注早期的交互步骤来构建中间奖励。"
+    },
+    {
+     "en": "It uses these relationships to allocate rewards, with their magnitude and sign determined by the reliability of the attention signal and the trajectory outcome relative to a running baseline.",
+     "zh": "它利用这些关系来分配奖励，其大小和正负号由注意力信号的可靠性以及轨迹相对于运行基线的结果决定。"
+    }
+   ]
+  },
+  {
+   "en": "For each selected transformer layer l l , we construct a directed graph over interaction steps. Its components G i , AA ( l ) ​ [ j , k ] G_{i,\\mathrm{AA}}^{(l)}[j,k] and G i , AO ( l ) ​ [ j , k ] G_{i,\\mathrm{AO}}^{(l)}[j,k] measure attention from the assistant message at step j j to the assistant and observation messages at step k k , respectively. We sum causal attention probabilities over each historical message key tokens, then average over step j j query tokens and heads. Only k < j k<j edges are retained, and missing observations contribute zero AO mass. The combined graph is G i ( l ) = 0.5 ​ G i , AA ( l ) + 0.5 ​ G i , AO ( l ) G_{i}^{(l)}=0.5G_{i,\\mathrm{AA}}^{(l)}+0.5G_{i,\\mathrm{AO}}^{(l)} .",
+   "zh": "对于每个被选中的 Transformer 层 l l，我们在交互步骤上构建一个有向图。 其分量 G i , AA ( l ) ​ [ j , k ] G_{i,\\mathrm{AA}}^{(l)}[j,k] 和 G i , AO ( l ) ​ [ j , k ] G_{i,\\mathrm{AO}}^{(l)}[j,k] 分别度量第 j j 步的助手消息对第 k k 步的助手消息和观察消息的注意力。 我们对每条历史消息的键 token 求因果注意力概率之和，然后对第 j j 步的查询 token 和注意力头取平均。 仅保留 k < j k<j 的边，缺失的观察贡献的 AO 质量为零。 合并后的图为 G i ( l ) = 0.5 ​ G i , AA ( l ) + 0.5 ​ G i , AO ( l ) G_{i}^{(l)}=0.5G_{i,\\mathrm{AA}}^{(l)}+0.5G_{i,\\mathrm{AO}}^{(l)}。",
+   "sents": [
+    {
+     "en": "For each selected transformer layer l l , we construct a directed graph over interaction steps.",
+     "zh": "对于每个被选中的 Transformer 层 l l，我们在交互步骤上构建一个有向图。"
+    },
+    {
+     "en": "Its components G i , AA ( l ) ​ [ j , k ] G_{i,\\mathrm{AA}}^{(l)}[j,k] and G i , AO ( l ) ​ [ j , k ] G_{i,\\mathrm{AO}}^{(l)}[j,k] measure attention from the assistant message at step j j to the assistant and observation messages at step k k , respectively.",
+     "zh": "其分量 G i , AA ( l ) ​ [ j , k ] G_{i,\\mathrm{AA}}^{(l)}[j,k] 和 G i , AO ( l ) ​ [ j , k ] G_{i,\\mathrm{AO}}^{(l)}[j,k] 分别度量第 j j 步的助手消息对第 k k 步的助手消息和观察消息的注意力。"
+    },
+    {
+     "en": "We sum causal attention probabilities over each historical message key tokens, then average over step j j query tokens and heads.",
+     "zh": "我们对每条历史消息的键 token 求因果注意力概率之和，然后对第 j j 步的查询 token 和注意力头取平均。"
+    },
+    {
+     "en": "Only k < j k<j edges are retained, and missing observations contribute zero AO mass.",
+     "zh": "仅保留 k < j k<j 的边，缺失的观察贡献的 AO 质量为零。"
+    },
+    {
+     "en": "The combined graph is G i ( l ) = 0.5 ​ G i , AA ( l ) + 0.5 ​ G i , AO ( l ) G_{i}^{(l)}=0.5G_{i,\\mathrm{AA}}^{(l)}+0.5G_{i,\\mathrm{AO}}^{(l)} .",
+     "zh": "合并后的图为 G i ( l ) = 0.5 ​ G i , AA ( l ) + 0.5 ​ G i , AO ( l ) G_{i}^{(l)}=0.5G_{i,\\mathrm{AA}}^{(l)}+0.5G_{i,\\mathrm{AO}}^{(l)}。"
+    }
+   ]
+  },
+  {
+   "en": "During actor replay for old log-probabilities, we capture Q/K after rotary position embedding ( Su et al., 2024 ) and before fused attention ( Dao et al., 2022 ) , reconstructing the packed tensor/context-parallel sequence. Query blocks use full causal-prefix normalization before message aggregation, and the historical-step submatrix is not renormalized, which preserves its mass relative to other context tokens. Figure 1 illustrates how token attention becomes a step graph for reward construction.",
+   "zh": "在对旧对数概率进行智能体重放时，我们在旋转位置嵌入（Su et al., 2024）之后、融合注意力（Dao et al., 2022）之前捕获 Q/K，并重建打包张量/上下文并行序列。 查询块在消息聚合前使用完整的因果前缀归一化，且历史步子矩阵不进行重新归一化，这保持了其相对于其他上下文词元的权重质量。 图 1 展示了词元注意力如何转变为用于奖励构建的步级图。",
+   "sents": [
+    {
+     "en": "During actor replay for old log-probabilities, we capture Q/K after rotary position embedding ( Su et al., 2024 ) and before fused attention ( Dao et al., 2022 ) , reconstructing the packed tensor/context-parallel sequence.",
+     "zh": "在对旧对数概率进行智能体重放时，我们在旋转位置嵌入（Su et al., 2024）之后、融合注意力（Dao et al., 2022）之前捕获 Q/K，并重建打包张量/上下文并行序列。"
+    },
+    {
+     "en": "Query blocks use full causal-prefix normalization before message aggregation, and the historical-step submatrix is not renormalized, which preserves its mass relative to other context tokens.",
+     "zh": "查询块在消息聚合前使用完整的因果前缀归一化，且历史步子矩阵不进行重新归一化，这保持了其相对于其他上下文词元的权重质量。"
+    },
+    {
+     "en": "Figure 1 illustrates how token attention becomes a step graph for reward construction.",
+     "zh": "图 1 展示了词元注意力如何转变为用于奖励构建的步级图。"
+    }
+   ]
+  },
+  {
+   "en": "Relevance then flows backward from the terminal step, independently within each layer. Writing a i , k ( l ) ≥ 0 a_{i,k}^{(l)}\\geq 0 for the relevance layer l l assigns to step k k ,",
+   "zh": "相关性随后从末端的步骤反向传播，且在各层内独立进行。 记 a i , k ( l ) ≥ 0 a_{i,k}^{(l)}\\geq 0 为第 l l 层分配给步骤 k k 的相关性，",
+   "sents": [
+    {
+     "en": "Relevance then flows backward from the terminal step, independently within each layer.",
+     "zh": "相关性随后从末端的步骤反向传播，且在各层内独立进行。"
+    },
+    {
+     "en": "Writing a i , k ( l ) ≥ 0 a_{i,k}^{(l)}\\geq 0 for the relevance layer l l assigns to step k k ,",
+     "zh": "记 a i , k ( l ) ≥ 0 a_{i,k}^{(l)}\\geq 0 为第 l l 层分配给步骤 k k 的相关性，"
+    }
+   ]
+  },
+  {
+   "en": "where j ≤ K i j\\leq K_{i} . Each backward path contributes its edge-weight product with decay ρ = 0.85 \\rho=0.85 per hop, capturing direct and indirect dependencies. This graph-hop decay differs from the temporal-distance correction below. Only k < K i k<K_{i} scores enter reward allocation.",
+   "zh": "其中 j ≤ K i j\\leq K_{i} 。 每条反向路径按每跳衰减 ρ = 0.85 \\rho=0.85 贡献其边权乘积，从而捕捉直接与间接依赖。 这种图跳衰减不同于下文的时间距离修正。 只有 k < K i k<K_{i} 的分数进入奖励分配。",
+   "sents": [
+    {
+     "en": "where j ≤ K i j\\leq K_{i} .",
+     "zh": "其中 j ≤ K i j\\leq K_{i} 。"
+    },
+    {
+     "en": "Each backward path contributes its edge-weight product with decay ρ = 0.85 \\rho=0.85 per hop, capturing direct and indirect dependencies.",
+     "zh": "每条反向路径按每跳衰减 ρ = 0.85 \\rho=0.85 贡献其边权乘积，从而捕捉直接与间接依赖。"
+    },
+    {
+     "en": "This graph-hop decay differs from the temporal-distance correction below.",
+     "zh": "这种图跳衰减不同于下文的时间距离修正。"
+    },
+    {
+     "en": "Only k < K i k<K_{i} scores enter reward allocation.",
+     "zh": "只有 k < K i k<K_{i} 的分数进入奖励分配。"
+    }
+   ]
+  },
+  {
+   "en": "To reduce recency preference, define terminal distance Δ i , k = K i − k \\Delta_{i,k}=K_{i}-k and proximity d i , k = exp ( − ( Δ i , k − 1 ) / κ ) d_{i,k}=\\exp(-(\\Delta_{i,k}-1)/\\kappa) . For K i > 1 K_{i}>1 , we standardize log relevance and proximity over intermediate steps as",
+   "zh": "为了减少近因偏好，定义末端距离 Δ i , k = K i − k \\Delta_{i,k}=K_{i}-k 与邻近度 d i , k = exp ( − ( Δ i , k − 1 ) / κ ) d_{i,k}=\\exp(-(\\Delta_{i,k}-1)/\\kappa) 。 对于 K i > 1 K_{i}>1 ，我们将中间步骤上的对数相关性与邻近度进行标准化，即",
+   "sents": [
+    {
+     "en": "To reduce recency preference, define terminal distance Δ i , k = K i − k \\Delta_{i,k}=K_{i}-k and proximity d i , k = exp ( − ( Δ i , k − 1 ) / κ ) d_{i,k}=\\exp(-(\\Delta_{i,k}-1)/\\kappa) .",
+     "zh": "为了减少近因偏好，定义末端距离 Δ i , k = K i − k \\Delta_{i,k}=K_{i}-k 与邻近度 d i , k = exp ( − ( Δ i , k − 1 ) / κ ) d_{i,k}=\\exp(-(\\Delta_{i,k}-1)/\\kappa) 。"
+    },
+    {
+     "en": "For K i > 1 K_{i}>1 , we standardize log relevance and proximity over intermediate steps as",
+     "zh": "对于 K i > 1 K_{i}>1 ，我们将中间步骤上的对数相关性与邻近度进行标准化，即"
+    }
+   ]
+  },
+  {
+   "en": "Here ϵ = 10 − 12 \\epsilon=10^{-12} and norm ⁡ ( x ) = ( x − mean ⁡ ( x ) ) / std ⁡ ( x ) \\operatorname{norm}(x)=(x-\\operatorname{mean}(x))/\\operatorname{std}(x) uses population standard deviation, returning zero for a single element or standard deviation at most 10 − 6 10^{-6} . We use T = 1 T=1 , κ = 4 \\kappa=4 , and η = − 0.25 \\eta=-0.25 . The negative proximity term reduces allocation to recent steps but does not set the sign.",
+   "zh": "这里 ϵ = 10 − 12 \\epsilon=10^{-12} ，且 norm ⁡ ( x ) = ( x − mean ⁡ ( x ) ) / std ⁡ ( x ) \\operatorname{norm}(x)=(x-\\operatorname{mean}(x))/\\operatorname{std}(x) 使用总体标准差，当仅有一个元素或标准差不超过 10 − 6 10^{-6} 时返回零。 我们使用 T = 1 T=1 、 κ = 4 \\kappa=4 和 η = − 0.25 \\eta=-0.25 。 负的邻近项会减少分配给近期步骤的份额，但不会决定符号。",
+   "sents": [
+    {
+     "en": "Here ϵ = 10 − 12 \\epsilon=10^{-12} and norm ⁡ ( x ) = ( x − mean ⁡ ( x ) ) / std ⁡ ( x ) \\operatorname{norm}(x)=(x-\\operatorname{mean}(x))/\\operatorname{std}(x) uses population standard deviation, returning zero for a single element or standard deviation at most 10 − 6 10^{-6} .",
+     "zh": "这里 ϵ = 10 − 12 \\epsilon=10^{-12} ，且 norm ⁡ ( x ) = ( x − mean ⁡ ( x ) ) / std ⁡ ( x ) \\operatorname{norm}(x)=(x-\\operatorname{mean}(x))/\\operatorname{std}(x) 使用总体标准差，当仅有一个元素或标准差不超过 10 − 6 10^{-6} 时返回零。"
+    },
+    {
+     "en": "We use T = 1 T=1 , κ = 4 \\kappa=4 , and η = − 0.25 \\eta=-0.25 .",
+     "zh": "我们使用 T = 1 T=1 、 κ = 4 \\kappa=4 和 η = − 0.25 \\eta=-0.25 。"
+    },
+    {
+     "en": "The negative proximity term reduces allocation to recent steps but does not set the sign.",
+     "zh": "负的邻近项会减少分配给近期步骤的份额，但不会决定符号。"
+    }
+   ]
+  },
+  {
+   "en": "Because attribution varies across layers ( Abnar and Zuidema, 2020 ) , we fuse their independently computed allocations by a geometric mean,",
+   "zh": "由于归因在各层之间存在差异（Abnar and Zuidema, 2020），我们通过几何平均融合它们独立计算的分配结果，",
+   "sents": null
+  },
+  {
+   "en": "where L = | ℒ | L=|\\mathcal{L}| is the number of selected layers. Geometric fusion favors consistent support across layers, and the normalization runs over intermediate steps.",
+   "zh": "其中 L = | ℒ | L=|\\mathcal{L}| 表示所选层的数量。 几何融合倾向于在各层之间保持一致的支持，并且该归一化在中间步骤上进行。",
+   "sents": [
+    {
+     "en": "where L = | ℒ | L=|\\mathcal{L}| is the number of selected layers.",
+     "zh": "其中 L = | ℒ | L=|\\mathcal{L}| 表示所选层的数量。"
+    },
+    {
+     "en": "Geometric fusion favors consistent support across layers, and the normalization runs over intermediate steps.",
+     "zh": "几何融合倾向于在各层之间保持一致的支持，并且该归一化在中间步骤上进行。"
+    }
+   ]
+  },
+  {
+   "en": "Confidence controls the strength of the attention-derived reward. For layer l l , define the terminal covered mass as",
+   "zh": "置信度控制由注意力推导的奖励的强度。 对于层 l l，将末端覆盖质量定义为",
+   "sents": [
+    {
+     "en": "Confidence controls the strength of the attention-derived reward.",
+     "zh": "置信度控制由注意力推导的奖励的强度。"
+    },
+    {
+     "en": "For layer l l , define the terminal covered mass as",
+     "zh": "对于层 l l，将末端覆盖质量定义为"
+    }
+   ]
+  },
+  {
+   "en": "This uses the summed AA and AO masses before the equal-weight graph mixture. For K i > 2 K_{i}>2 , define the normalized entropy",
+   "zh": "这在等权图混合之前使用了 AA 和 AO 的质量之和。 对于 K i > 2 K_{i}>2，定义归一化熵",
+   "sents": [
+    {
+     "en": "This uses the summed AA and AO masses before the equal-weight graph mixture.",
+     "zh": "这在等权图混合之前使用了 AA 和 AO 的质量之和。"
+    },
+    {
+     "en": "For K i > 2 K_{i}>2 , define the normalized entropy",
+     "zh": "对于 K i > 2 K_{i}>2，定义归一化熵"
+    }
+   ]
+  },
+  {
+   "en": "For K i = 2 K_{i}=2 , the unique intermediate step has allocation one and we set H i ( l ) = 0 H_{i}^{(l)}=0 . The confidence components are",
+   "zh": "对于 K i = 2 K_{i}=2，唯一的中间步骤分配为 1，我们设 H i ( l ) = 0 H_{i}^{(l)}=0。 置信度分量为",
+   "sents": [
+    {
+     "en": "For K i = 2 K_{i}=2 , the unique intermediate step has allocation one and we set H i ( l ) = 0 H_{i}^{(l)}=0 .",
+     "zh": "对于 K i = 2 K_{i}=2，唯一的中间步骤分配为 1，我们设 H i ( l ) = 0 H_{i}^{(l)}=0。"
+    },
+    {
+     "en": "The confidence components are",
+     "zh": "置信度分量为"
+    }
+   ]
+  },
+  {
+   "en": "where clip ⁡ ( x , 0 , 1 ) \\operatorname{clip}(x,0,1) saturates to [ 0 , 1 ] [0,1] and TV ⁡ ( p , q ) = 1 2 ​ ∑ k | p k − q k | \\operatorname{TV}(p,q)=\\frac{1}{2}\\sum_{k}|p_{k}-q_{k}| . Covered mass, concentration, and layer agreement measure historical attention, selectivity, and consistency, respectively. The values 0.20 0.20 and 0.15 0.15 are saturation thresholds. The resulting confidence is a shaping gate, not a calibrated probability of correct attribution.",
+   "zh": "其中 clip ⁡ ( x , 0 , 1 ) \\operatorname{clip}(x,0,1) 将数值截断到 [ 0 , 1 ] [0,1]，且 TV ⁡ ( p , q ) = 1 2 ​ ∑ k | p k − q k | \\operatorname{TV}(p,q)=\\frac{1}{2}\\sum_{k}|p_{k}-q_{k}| 。 覆盖质量、集中度与层间一致性分别衡量历史注意力、选择性与一致性。 数值 0.20 0.20 与 0.15 0.15 是饱和阈值。 所得的置信度是一个塑形门控，而非正确归因的校准概率。",
+   "sents": [
+    {
+     "en": "where clip ⁡ ( x , 0 , 1 ) \\operatorname{clip}(x,0,1) saturates to [ 0 , 1 ] [0,1] and TV ⁡ ( p , q ) = 1 2 ​ ∑ k | p k − q k | \\operatorname{TV}(p,q)=\\frac{1}{2}\\sum_{k}|p_{k}-q_{k}| .",
+     "zh": "其中 clip ⁡ ( x , 0 , 1 ) \\operatorname{clip}(x,0,1) 将数值截断到 [ 0 , 1 ] [0,1]，且 TV ⁡ ( p , q ) = 1 2 ​ ∑ k | p k − q k | \\operatorname{TV}(p,q)=\\frac{1}{2}\\sum_{k}|p_{k}-q_{k}| 。"
+    },
+    {
+     "en": "Covered mass, concentration, and layer agreement measure historical attention, selectivity, and consistency, respectively.",
+     "zh": "覆盖质量、集中度与层间一致性分别衡量历史注意力、选择性与一致性。"
+    },
+    {
+     "en": "The values 0.20 0.20 and 0.15 0.15 are saturation thresholds.",
+     "zh": "数值 0.20 0.20 与 0.15 0.15 是饱和阈值。"
+    },
+    {
+     "en": "The resulting confidence is a shaping gate, not a calibrated probability of correct attribution.",
+     "zh": "所得的置信度是一个塑形门控，而非正确归因的校准概率。"
+    }
+   ]
+  },
+  {
+   "en": "Zero total intermediate relevance sets that layer focus confidence to zero. For K i = 1 K_{i}=1 , we skip allocation, set C i = 0 C_{i}=0 , and retain terminal-only rewards.",
+   "zh": "中间相关性集合总数为零时，会将该层的聚焦置信度置为零。 当 K i = 1 K_{i}=1 时，我们跳过分配，设 C i = 0 C_{i}=0，并仅保留终止奖励。",
+   "sents": [
+    {
+     "en": "Zero total intermediate relevance sets that layer focus confidence to zero.",
+     "zh": "中间相关性集合总数为零时，会将该层的聚焦置信度置为零。"
+    },
+    {
+     "en": "For K i = 1 K_{i}=1 , we skip allocation, set C i = 0 C_{i}=0 , and retain terminal-only rewards.",
+     "zh": "当 K i = 1 K_{i}=1 时，我们跳过分配，设 C i = 0 C_{i}=0，并仅保留终止奖励。"
+    }
+   ]
+  },
+  {
+   "en": "Attention indicates computational relevance, not whether a step contributed positively to success. We determine reward sign relative to a running outcome baseline. For collected training batch t t with mean outcome reward M t M_{t} , we initialize or update the baseline before shaping as",
+   "zh": "注意力反映的是计算相关性，而非某个步骤是否对成功做出了正面贡献。 我们相对于一个持续更新的结果基线来确定奖励的符号。 对于收集到的训练批次 t t 及其平均结果奖励 M t M_{t} ，我们在塑形之前初始化或更新基线，具体如下：",
+   "sents": [
+    {
+     "en": "Attention indicates computational relevance, not whether a step contributed positively to success.",
+     "zh": "注意力反映的是计算相关性，而非某个步骤是否对成功做出了正面贡献。"
+    },
+    {
+     "en": "We determine reward sign relative to a running outcome baseline.",
+     "zh": "我们相对于一个持续更新的结果基线来确定奖励的符号。"
+    },
+    {
+     "en": "For collected training batch t t with mean outcome reward M t M_{t} , we initialize or update the baseline before shaping as",
+     "zh": "对于收集到的训练批次 t t 及其平均结果奖励 M t M_{t} ，我们在塑形之前初始化或更新基线，具体如下："
+    }
+   ]
+  },
+  {
+   "en": "where β = 0.25 \\beta=0.25 . The detached baseline is shared across the batch. Outcomes above it yield positive budgets, and those below it yield negative budgets. Thus sign reflects relative outcome quality, not binary success. For k < K i k<K_{i} , we assign",
+   "zh": "其中 β = 0.25 \\beta=0.25 。 分离的基线在整个批次间共享。 高于该基线的结果产生正预算，低于该基线的结果产生负预算。 因此符号反映的是相对结果质量，而非二元的成功与否。 对于 k < K i k<K_{i} ，我们分配",
+   "sents": [
+    {
+     "en": "where β = 0.25 \\beta=0.25 .",
+     "zh": "其中 β = 0.25 \\beta=0.25 。"
+    },
+    {
+     "en": "The detached baseline is shared across the batch.",
+     "zh": "分离的基线在整个批次间共享。"
+    },
+    {
+     "en": "Outcomes above it yield positive budgets, and those below it yield negative budgets.",
+     "zh": "高于该基线的结果产生正预算，低于该基线的结果产生负预算。"
+    },
+    {
+     "en": "Thus sign reflects relative outcome quality, not binary success.",
+     "zh": "因此符号反映的是相对结果质量，而非二元的成功与否。"
+    },
+    {
+     "en": "For k < K i k<K_{i} , we assign",
+     "zh": "对于 k < K i k<K_{i} ，我们分配"
+    }
+   ]
+  },
+  {
+   "en": "at endpoint e i , k e_{i,k} , retaining R i R_{i} at e i , K i e_{i,K_{i}} . For K i > 1 K_{i}>1 , intermediate rewards sum to B i B_{i} , and zero confidence yields no shaping. Format-error trajectories retain environment reward R i = 0 R_{i}=0 and participate in the EMA update. Algorithm 1 summarizes reward construction for one batch.",
+   "zh": "在端点 e i , k e_{i,k} 处，在 e i , K i e_{i,K_{i}} 处保留 R i R_{i}。 当 K i > 1 K_{i}>1 时，中间奖励之和为 B i B_{i}，且零置信度不产生塑形。 格式错误的轨迹保留环境奖励 R i = 0 R_{i}=0，并参与 EMA 更新。 算法 1 总结了单个批次的奖励构建方式。",
+   "sents": [
+    {
+     "en": "at endpoint e i , k e_{i,k} , retaining R i R_{i} at e i , K i e_{i,K_{i}} .",
+     "zh": "在端点 e i , k e_{i,k} 处，在 e i , K i e_{i,K_{i}} 处保留 R i R_{i}。"
+    },
+    {
+     "en": "For K i > 1 K_{i}>1 , intermediate rewards sum to B i B_{i} , and zero confidence yields no shaping.",
+     "zh": "当 K i > 1 K_{i}>1 时，中间奖励之和为 B i B_{i}，且零置信度不产生塑形。"
+    },
+    {
+     "en": "Format-error trajectories retain environment reward R i = 0 R_{i}=0 and participate in the EMA update.",
+     "zh": "格式错误的轨迹保留环境奖励 R i = 0 R_{i}=0，并参与 EMA 更新。"
+    },
+    {
+     "en": "Algorithm 1 summarizes reward construction for one batch.",
+     "zh": "算法 1 总结了单个批次的奖励构建方式。"
+    }
+   ]
+  },
+  {
+   "en": "Since C i , R i , R ¯ t ∈ [ 0 , 1 ] C_{i},R_{i},\\bar{R}_{t}\\in[0,1] , ∑ k < K i | s i , k | = | B i | ≤ β \\sum_{k<K_{i}}|s_{i,k}|=|B_{i}|\\leq\\beta , so the upper bound is length-independent, while the realized budget depends on confidence and outcome. The undiscounted shaped return is R i + B i R_{i}+B_{i} , so policy invariance is not guaranteed. This is a training heuristic distinct from return-preserving redistribution ( Arjona-Medina et al., 2019 ) , and evaluation uses the original task metrics.",
+   "zh": "由于 C i 、R i 、R ¯ t ∈ [ 0 , 1 ] C_{i},R_{i},\\bar{R}_{t}\\in[0,1] ，∑ k < K i | s i , k | = | B i | ≤ β \\sum_{k<K_{i}}|s_{i,k}|=|B_{i}|\\leq\\beta ，因此该上界与长度无关，而实际预算则取决于置信度与结果。 未折现的塑形回报为 R i + B i R_{i}+B_{i} ，因此不能保证策略不变性。 这是一种训练启发式方法，有别于保持回报不变的重分配（ Arjona-Medina et al., 2019 ），且评估使用原始任务指标。",
+   "sents": [
+    {
+     "en": "Since C i , R i , R ¯ t ∈ [ 0 , 1 ] C_{i},R_{i},\\bar{R}_{t}\\in[0,1] , ∑ k < K i | s i , k | = | B i | ≤ β \\sum_{k<K_{i}}|s_{i,k}|=|B_{i}|\\leq\\beta , so the upper bound is length-independent, while the realized budget depends on confidence and outcome.",
+     "zh": "由于 C i 、R i 、R ¯ t ∈ [ 0 , 1 ] C_{i},R_{i},\\bar{R}_{t}\\in[0,1] ，∑ k < K i | s i , k | = | B i | ≤ β \\sum_{k<K_{i}}|s_{i,k}|=|B_{i}|\\leq\\beta ，因此该上界与长度无关，而实际预算则取决于置信度与结果。"
+    },
+    {
+     "en": "The undiscounted shaped return is R i + B i R_{i}+B_{i} , so policy invariance is not guaranteed.",
+     "zh": "未折现的塑形回报为 R i + B i R_{i}+B_{i} ，因此不能保证策略不变性。"
+    },
+    {
+     "en": "This is a training heuristic distinct from return-preserving redistribution ( Arjona-Medina et al., 2019 ) , and evaluation uses the original task metrics.",
+     "zh": "这是一种训练启发式方法，有别于保持回报不变的重分配（ Arjona-Medina et al., 2019 ），且评估使用原始任务指标。"
+    }
+   ]
+  },
+  {
+   "en": "Blockwise aggregation into step buckets avoids storing full token attention matrices but retains quadratic query–key arithmetic and selected-layer buffers. It reuses the actor forward pass without additional rollouts or a separately trained reward model. Wall-clock and peak-memory overheads remain unmeasured. Rewards enter PPO before advantage estimation, keeping its critic and losses.",
+   "zh": "按块聚合到步骤桶中避免了存储完整的 token 注意力矩阵，但仍保留了二次方的查询–键运算以及选定层的缓存。 它复用 actor 的前向传播，无需额外的 rollout 或单独训练的奖励模型。 实际耗时与峰值内存开销尚未测量。 奖励在优势估计之前进入 PPO，保留其 critic 与损失函数。",
+   "sents": [
+    {
+     "en": "Blockwise aggregation into step buckets avoids storing full token attention matrices but retains quadratic query–key arithmetic and selected-layer buffers.",
+     "zh": "按块聚合到步骤桶中避免了存储完整的 token 注意力矩阵，但仍保留了二次方的查询–键运算以及选定层的缓存。"
+    },
+    {
+     "en": "It reuses the actor forward pass without additional rollouts or a separately trained reward model.",
+     "zh": "它复用 actor 的前向传播，无需额外的 rollout 或单独训练的奖励模型。"
+    },
+    {
+     "en": "Wall-clock and peak-memory overheads remain unmeasured.",
+     "zh": "实际耗时与峰值内存开销尚未测量。"
+    },
+    {
+     "en": "Rewards enter PPO before advantage estimation, keeping its critic and losses.",
+     "zh": "奖励在优势估计之前进入 PPO，保留其 critic 与损失函数。"
+    }
+   ]
+  },
+  {
+   "en": "Actor attention is detached when constructing rewards, while policy probabilities remain differentiable during optimization. Given pre-update critic values V u old V_{u}^{\\mathrm{old}} and unnormalized GAE advantages A ^ u \\hat{A}_{u} , the canonical PPO training signals are",
+   "zh": "在构建奖励时，行动者的注意力是分离的，而策略概率在优化过程中保持可微。 给定更新前的评论者价值 V u old V_{u}^{\\mathrm{old}} 和未归一化的 GAE 优势 A ^ u \\hat{A}_{u}，标准的 PPO 训练信号为",
+   "sents": [
+    {
+     "en": "Actor attention is detached when constructing rewards, while policy probabilities remain differentiable during optimization.",
+     "zh": "在构建奖励时，行动者的注意力是分离的，而策略概率在优化过程中保持可微。"
+    },
+    {
+     "en": "Given pre-update critic values V u old V_{u}^{\\mathrm{old}} and unnormalized GAE advantages A ^ u \\hat{A}_{u} , the canonical PPO training signals are",
+     "zh": "给定更新前的评论者价值 V u old V_{u}^{\\mathrm{old}} 和未归一化的 GAE 优势 A ^ u \\hat{A}_{u}，标准的 PPO 训练信号为"
+    }
+   ]
+  },
+  {
+   "en": "where Norm \\operatorname{Norm} uses the response mask and sg \\operatorname{sg} denotes stop-gradient. The actor uses A ~ u \\widetilde{A}_{u} in its clipped surrogate, and the critic fits returns y u y_{u} , constructed before advantage normalization, using the existing clipped value loss with reference V old V^{\\mathrm{old}} . Both signals remain fixed within the batch, and neither loss backpropagates through GAE or reward construction.",
+   "zh": "其中 Norm \\operatorname{Norm} 使用响应掩码，sg \\operatorname{sg} 表示停止梯度。 智能体在其裁剪代理目标中使用 A ~ u \\widetilde{A}_{u}，而评论智能体使用现有的带参考值 V old V^{\\mathrm{old}} 的裁剪价值损失来拟合在优势归一化之前构造的回报 y u y_{u}。 这两个信号在批次内保持固定，且两个损失都不会通过 GAE 或奖励构造进行反向传播。",
+   "sents": [
+    {
+     "en": "where Norm \\operatorname{Norm} uses the response mask and sg \\operatorname{sg} denotes stop-gradient.",
+     "zh": "其中 Norm \\operatorname{Norm} 使用响应掩码，sg \\operatorname{sg} 表示停止梯度。"
+    },
+    {
+     "en": "The actor uses A ~ u \\widetilde{A}_{u} in its clipped surrogate, and the critic fits returns y u y_{u} , constructed before advantage normalization, using the existing clipped value loss with reference V old V^{\\mathrm{old}} .",
+     "zh": "智能体在其裁剪代理目标中使用 A ~ u \\widetilde{A}_{u}，而评论智能体使用现有的带参考值 V old V^{\\mathrm{old}} 的裁剪价值损失来拟合在优势归一化之前构造的回报 y u y_{u}。"
+    },
+    {
+     "en": "Both signals remain fixed within the batch, and neither loss backpropagates through GAE or reward construction.",
+     "zh": "这两个信号在批次内保持固定，且两个损失都不会通过 GAE 或奖励构造进行反向传播。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate on ALFWorld (274 held-out tasks, 140 seen and 134 unseen), WebShop (500 test tasks), and ScienceWorld (1,819 test tasks) ( Shridhar et al., 2021 ; Yao et al., 2022 ; Wang et al., 2022 ) , covering household interaction, online shopping, and scientific procedures. ALFWorld official score equals task success rate. WebShop and ScienceWorld additionally provide graded scores for partial progress, reported separately from binary success. Their evaluators mark success at normalized scores of at least 0.99 0.99 and 0.999 0.999 , respectively.",
+   "zh": "我们在 ALFWorld（274 个保留任务，其中 140 个已见、134 个未见）、WebShop（500 个测试任务）和 ScienceWorld（1,819 个测试任务）上进行评估，涵盖家庭场景交互、在线购物和科学实验流程。 ALFWorld 的官方分数即为任务成功率。 WebShop 和 ScienceWorld 还额外提供针对部分进展的分级分数，该分数与二元成功指标分开报告。 它们的评估器分别在归一化分数达到至少 0.99 和 0.999 时标记为成功。",
+   "sents": [
+    {
+     "en": "We evaluate on ALFWorld (274 held-out tasks, 140 seen and 134 unseen), WebShop (500 test tasks), and ScienceWorld (1,819 test tasks) ( Shridhar et al., 2021 ; Yao et al., 2022 ; Wang et al., 2022 ) , covering household interaction, online shopping, and scientific procedures.",
+     "zh": "我们在 ALFWorld（274 个保留任务，其中 140 个已见、134 个未见）、WebShop（500 个测试任务）和 ScienceWorld（1,819 个测试任务）上进行评估，涵盖家庭场景交互、在线购物和科学实验流程。"
+    },
+    {
+     "en": "ALFWorld official score equals task success rate.",
+     "zh": "ALFWorld 的官方分数即为任务成功率。"
+    },
+    {
+     "en": "WebShop and ScienceWorld additionally provide graded scores for partial progress, reported separately from binary success.",
+     "zh": "WebShop 和 ScienceWorld 还额外提供针对部分进展的分级分数，该分数与二元成功指标分开报告。"
+    },
+    {
+     "en": "Their evaluators mark success at normalized scores of at least 0.99 0.99 and 0.999 0.999 , respectively.",
+     "zh": "它们的评估器分别在归一化分数达到至少 0.99 和 0.999 时标记为成功。"
+    }
+   ]
+  },
+  {
+   "en": "We use Qwen2.5-7B-Instruct ( Qwen Team, 2024 ) with a frozen base model and rank-64 LoRA adapters ( Hu et al., 2022 ) for actor and critic. Both learning rates are 5 × 10 − 6 5\\times 10^{-6} , the global batch size is 8, and the reference KL coefficient is 0.02. PPO uses one rollout per prompt and one optimization epoch per batch. Separate policies train on each benchmark training split, excluding held-out tasks. Table 7 in Appendix C reports data sizes and update counts. Figure 2 shows how detached actor attention changes policy advantages and value targets through intermediate rewards, retaining the PPO losses. We evaluate after each of four data epochs. Training uses VeRL ( Sheng et al., 2025 ) , Megatron ( Shoeybi et al., 2019 ) , and vLLM ( Kwon et al., 2023 ) on 8 × \\times H200 GPUs (140 GB each), with a 32,768-token context and no additional per-turn token or turn-count cap. Attention extraction uses L = 6 L=6 layers and 128-token query blocks. Appendix C lists all hyperparameters.",
+   "zh": "我们使用 Qwen2.5-7B-Instruct（Qwen Team, 2024），底座模型冻结，并为 actor 和 critic 配备秩为 64 的 LoRA 适配器（Hu et al., 2022）。 两个学习率均为 5 × 10 − 6 5\\times 10^{-6}，全局批大小为 8，参考 KL 系数为 0.02。 PPO 对每个提示执行一次 rollout，并对每个批次执行一个优化轮次（epoch）。 各策略分别在每个基准的训练划分上训练，不包括留出任务。 附录 C 中的表 7 报告了数据规模和更新次数。 图 2 展示了分离的 actor 注意力如何通过中间奖励改变策略优势（advantages）和价值目标，同时保留 PPO 损失。 我们在四个数据轮次（epoch）中的每一个之后进行评估。 训练在 8 × \\times H200 GPU（每块 140 GB）上使用 VeRL（Sheng et al., 2025）、Megatron（Shoeybi et al., 2019）和 vLLM（Kwon et al., 2023），上下文长度为 32,768 个 token，且没有额外的每轮 token 上限或轮数上限。 注意力提取使用 L = 6 L=6 层和 128 个 token 的查询块。 附录 C 列出了所有超参数。",
+   "sents": [
+    {
+     "en": "We use Qwen2.5-7B-Instruct ( Qwen Team, 2024 ) with a frozen base model and rank-64 LoRA adapters ( Hu et al., 2022 ) for actor and critic.",
+     "zh": "我们使用 Qwen2.5-7B-Instruct（Qwen Team, 2024），底座模型冻结，并为 actor 和 critic 配备秩为 64 的 LoRA 适配器（Hu et al., 2022）。"
+    },
+    {
+     "en": "Both learning rates are 5 × 10 − 6 5\\times 10^{-6} , the global batch size is 8, and the reference KL coefficient is 0.02.",
+     "zh": "两个学习率均为 5 × 10 − 6 5\\times 10^{-6}，全局批大小为 8，参考 KL 系数为 0.02。"
+    },
+    {
+     "en": "PPO uses one rollout per prompt and one optimization epoch per batch.",
+     "zh": "PPO 对每个提示执行一次 rollout，并对每个批次执行一个优化轮次（epoch）。"
+    },
+    {
+     "en": "Separate policies train on each benchmark training split, excluding held-out tasks.",
+     "zh": "各策略分别在每个基准的训练划分上训练，不包括留出任务。"
+    },
+    {
+     "en": "Table 7 in Appendix C reports data sizes and update counts.",
+     "zh": "附录 C 中的表 7 报告了数据规模和更新次数。"
+    },
+    {
+     "en": "Figure 2 shows how detached actor attention changes policy advantages and value targets through intermediate rewards, retaining the PPO losses.",
+     "zh": "图 2 展示了分离的 actor 注意力如何通过中间奖励改变策略优势（advantages）和价值目标，同时保留 PPO 损失。"
+    },
+    {
+     "en": "We evaluate after each of four data epochs.",
+     "zh": "我们在四个数据轮次（epoch）中的每一个之后进行评估。"
+    },
+    {
+     "en": "Training uses VeRL ( Sheng et al., 2025 ) , Megatron ( Shoeybi et al., 2019 ) , and vLLM ( Kwon et al., 2023 ) on 8 × \\times H200 GPUs (140 GB each), with a 32,768-token context and no additional per-turn token or turn-count cap.",
+     "zh": "训练在 8 × \\times H200 GPU（每块 140 GB）上使用 VeRL（Sheng et al., 2025）、Megatron（Shoeybi et al., 2019）和 vLLM（Kwon et al., 2023），上下文长度为 32,768 个 token，且没有额外的每轮 token 上限或轮数上限。"
+    },
+    {
+     "en": "Attention extraction uses L = 6 L=6 layers and 128-token query blocks.",
+     "zh": "注意力提取使用 L = 6 L=6 层和 128 个 token 的查询块。"
+    },
+    {
+     "en": "Appendix C lists all hyperparameters.",
+     "zh": "附录 C 列出了所有超参数。"
+    }
+   ]
+  },
+  {
+   "en": "Terminal-only PPO matches AttnSR in model, rollouts, optimizer, and evaluation. Linear Step Reward, described in Section 4.3 , controls for positional shaping on ALFWorld. GRPO uses four rollouts per prompt for one epoch. Alongside the 7B GRPO reference, we compare 3B GRPO with an AttnSR token-advantage variant, as detailed in Appendix F.2 . PPO/GRPO optimization budgets differ. We additionally compare adaptations of TARL ( Tan et al., 2025 ) , AgentPRM ( Xi et al., 2025 ) , and FlowTracer ( Dong et al., 2026 ) on ALFWorld after four epochs of Qwen2.5-7B-Instruct LoRA training, using their final checkpoints. Appendix G gives the details.",
+   "zh": "仅终端 PPO 在模型、rollout、优化器和评估方面与 AttnSR 保持一致。 第 4.3 节所述的线性步奖励（Linear Step Reward）在 ALFWorld 上控制位置塑形的影响。 GRPO 在一个 epoch 内对每个提示使用四个 rollout。 除 7B GRPO 参照外，我们还比较了 3B GRPO 与 AttnSR 词元优势变体，详见附录 F.2。 PPO/GRPO 的优化预算不同。 我们还在 Qwen2.5-7B-Instruct 的 LoRA 训练四个 epoch 后，使用其最终检查点，在 ALFWorld 上比较了 TARL（Tan 等，2025）、AgentPRM（Xi 等，2025）和 FlowTracer（Dong 等，2026）的适配版本。 附录 G 给出了详细内容。",
+   "sents": [
+    {
+     "en": "Terminal-only PPO matches AttnSR in model, rollouts, optimizer, and evaluation.",
+     "zh": "仅终端 PPO 在模型、rollout、优化器和评估方面与 AttnSR 保持一致。"
+    },
+    {
+     "en": "Linear Step Reward, described in Section 4.3 , controls for positional shaping on ALFWorld.",
+     "zh": "第 4.3 节所述的线性步奖励（Linear Step Reward）在 ALFWorld 上控制位置塑形的影响。"
+    },
+    {
+     "en": "GRPO uses four rollouts per prompt for one epoch.",
+     "zh": "GRPO 在一个 epoch 内对每个提示使用四个 rollout。"
+    },
+    {
+     "en": "Alongside the 7B GRPO reference, we compare 3B GRPO with an AttnSR token-advantage variant, as detailed in Appendix F.2 .",
+     "zh": "除 7B GRPO 参照外，我们还比较了 3B GRPO 与 AttnSR 词元优势变体，详见附录 F.2。"
+    },
+    {
+     "en": "PPO/GRPO optimization budgets differ.",
+     "zh": "PPO/GRPO 的优化预算不同。"
+    },
+    {
+     "en": "We additionally compare adaptations of TARL ( Tan et al., 2025 ) , AgentPRM ( Xi et al., 2025 ) , and FlowTracer ( Dong et al., 2026 ) on ALFWorld after four epochs of Qwen2.5-7B-Instruct LoRA training, using their final checkpoints.",
+     "zh": "我们还在 Qwen2.5-7B-Instruct 的 LoRA 训练四个 epoch 后，使用其最终检查点，在 ALFWorld 上比较了 TARL（Tan 等，2025）、AgentPRM（Xi 等，2025）和 FlowTracer（Dong 等，2026）的适配版本。"
+    },
+    {
+     "en": "Appendix G gives the details.",
+     "zh": "附录 G 给出了详细内容。"
+    }
+   ]
+  },
+  {
+   "en": "We decode greedily once per held-out task and report full-set metrics. The WebShop validation split is reserved for training-time validation. The main comparison uses epoch 4 without selecting the best test-set checkpoint. Format errors violate the required tool-call protocol and receive outcome reward zero without an additional training penalty. For statistical comparisons, exact-input matching retains all 274 ALFWorld and 500 WebShop tasks and 1,488 of 1,819 ScienceWorld tasks, as described in Appendix E . A two-sided exact McNemar test ( McNemar, 1947 ) assesses binary success differences, and a paired bootstrap ( Efron, 1979 ) with 10,000 resamples estimates 95% percentile intervals for success-rate and official-score differences. These intervals quantify sampling uncertainty over the matched held-out tasks, conditional on the trained policies.",
+   "zh": "我们在每个保留任务上进行一次贪心解码，并报告全集指标。 WebShop 验证集划分保留用于训练时验证。 主要比较使用第 4 个 epoch，未选择测试集上的最佳检查点。 格式错误违反了所需的工具调用协议，其结果奖励为零，且不施加额外的训练惩罚。 对于统计比较，精确输入匹配保留了全部 274 个 ALFWorld 任务和 500 个 WebShop 任务，以及 1,819 个 ScienceWorld 任务中的 1,488 个，如附录 E 所述。 双侧精确 McNemar 检验（McNemar, 1947）用于评估二元成功差异，而带 10,000 次重抽样的配对自助法（Efron, 1979）用于估计成功率与官方分数差异的 95% 分位数区间。 这些区间在训练好的智能体策略条件下，量化了匹配的保留任务上的抽样不确定性。",
+   "sents": [
+    {
+     "en": "We decode greedily once per held-out task and report full-set metrics.",
+     "zh": "我们在每个保留任务上进行一次贪心解码，并报告全集指标。"
+    },
+    {
+     "en": "The WebShop validation split is reserved for training-time validation.",
+     "zh": "WebShop 验证集划分保留用于训练时验证。"
+    },
+    {
+     "en": "The main comparison uses epoch 4 without selecting the best test-set checkpoint.",
+     "zh": "主要比较使用第 4 个 epoch，未选择测试集上的最佳检查点。"
+    },
+    {
+     "en": "Format errors violate the required tool-call protocol and receive outcome reward zero without an additional training penalty.",
+     "zh": "格式错误违反了所需的工具调用协议，其结果奖励为零，且不施加额外的训练惩罚。"
+    },
+    {
+     "en": "For statistical comparisons, exact-input matching retains all 274 ALFWorld and 500 WebShop tasks and 1,488 of 1,819 ScienceWorld tasks, as described in Appendix E .",
+     "zh": "对于统计比较，精确输入匹配保留了全部 274 个 ALFWorld 任务和 500 个 WebShop 任务，以及 1,819 个 ScienceWorld 任务中的 1,488 个，如附录 E 所述。"
+    },
+    {
+     "en": "A two-sided exact McNemar test ( McNemar, 1947 ) assesses binary success differences, and a paired bootstrap ( Efron, 1979 ) with 10,000 resamples estimates 95% percentile intervals for success-rate and official-score differences.",
+     "zh": "双侧精确 McNemar 检验（McNemar, 1947）用于评估二元成功差异，而带 10,000 次重抽样的配对自助法（Efron, 1979）用于估计成功率与官方分数差异的 95% 分位数区间。"
+    },
+    {
+     "en": "These intervals quantify sampling uncertainty over the matched held-out tasks, conditional on the trained policies.",
+     "zh": "这些区间在训练好的智能体策略条件下，量化了匹配的保留任务上的抽样不确定性。"
+    }
+   ]
+  },
+  {
+   "en": "ALFWorld WebShop ScienceWorld Method Score Seen Unseen Score Success Score Success GRPO † 69.71 75.00 64.18 67.21 37.80 30.19 16.66 PPO 91.24 92.86 89.55 70.74 40.20 44.53 28.59 PPO + AttnSR 97.08 96.43 97.76 69.71 41.00 46.35 30.90",
+   "zh": "ALFWorld WebShop ScienceWorld 方法 分数 Seen Unseen 分数 成功 分数 成功 GRPO † 69.71 75.00 64.18 67.21 37.80 30.19 16.66 PPO 91.24 92.86 89.55 70.74 40.20 44.53 28.59 PPO + AttnSR 97.08 96.43 97.76 69.71 41.00 46.35 30.90",
+   "sents": null
+  },
+  {
+   "en": "Method Success Raw 26.64 GRPO † 69.71 PPO 91.24 TARL 96.72 AgentPRM 91.97 FlowTracer 95.62 PPO + AttnSR 97.08",
+   "zh": "方法 成功率 原始（Raw） 26.64 GRPO † 69.71 PPO 91.24 TARL 96.72 AgentPRM 91.97 FlowTracer 95.62 PPO + AttnSR 97.08",
+   "sents": null
+  },
+  {
+   "en": "Raw is the instruction-tuned model before RL. † GRPO uses epoch 1 with n = 4 n=4 , and all other trained policies use epoch 4, with n = 1 n=1 for PPO and AttnSR. Optimization budgets differ. ALFWorld score equals success, while other tasks report score and success separately. Panel (b) reuses the canonical GRPO, PPO, and AttnSR results, and Appendix G details the other baselines.",
+   "zh": "Raw 是指未经强化学习的指令微调模型。† GRPO 使用 epoch 1 且 n=4，其他所有训练后的策略均使用 epoch 4，其中 PPO 和 AttnSR 的 n=1。 优化预算各不相同。 ALFWorld 的分数等于成功率，而其他任务分别报告分数和成功率。 面板 (b) 复用了标准的 GRPO、PPO 和 AttnSR 结果，附录 G 详细介绍了其他基线方法。",
+   "sents": [
+    {
+     "en": "Raw is the instruction-tuned model before RL. † GRPO uses epoch 1 with n = 4 n=4 , and all other trained policies use epoch 4, with n = 1 n=1 for PPO and AttnSR.",
+     "zh": "Raw 是指未经强化学习的指令微调模型。† GRPO 使用 epoch 1 且 n=4，其他所有训练后的策略均使用 epoch 4，其中 PPO 和 AttnSR 的 n=1。"
+    },
+    {
+     "en": "Optimization budgets differ.",
+     "zh": "优化预算各不相同。"
+    },
+    {
+     "en": "ALFWorld score equals success, while other tasks report score and success separately.",
+     "zh": "ALFWorld 的分数等于成功率，而其他任务分别报告分数和成功率。"
+    },
+    {
+     "en": "Panel (b) reuses the canonical GRPO, PPO, and AttnSR results, and Appendix G details the other baselines.",
+     "zh": "面板 (b) 复用了标准的 GRPO、PPO 和 AttnSR 结果，附录 G 详细介绍了其他基线方法。"
+    }
+   ]
+  },
+  {
+   "en": "As shown in Table 1 , at epoch 4 AttnSR shows the clearest benefit on ALFWorld, smaller numerical gains on ScienceWorld, and mixed outcomes on WebShop. ALFWorld success rises from 91.24% to 97.08% (266/274), reducing failures from 24 to 8. ScienceWorld official score increases from 44.53% to 46.35%, and success from 28.59% to 30.90%. WebShop success rises from 40.20% to 41.00%, but official score falls from 70.74% to 69.71%.",
+   "zh": "如表1所示，在第4个epoch时，AttnSR在ALFWorld上的收益最为明显，在ScienceWorld上的数值提升较小，而在WebShop上结果参差不齐。 ALFWorld的成功率从91.24%提升至97.08%（266/274），将失败次数从24次降至8次。 ScienceWorld的官方分数从44.53%提升至46.35%，成功率从28.59%提升至30.90%。 WebShop的成功率从40.20%提升至41.00%，但官方分数从70.74%下降至69.71%。",
+   "sents": [
+    {
+     "en": "As shown in Table 1 , at epoch 4 AttnSR shows the clearest benefit on ALFWorld, smaller numerical gains on ScienceWorld, and mixed outcomes on WebShop.",
+     "zh": "如表1所示，在第4个epoch时，AttnSR在ALFWorld上的收益最为明显，在ScienceWorld上的数值提升较小，而在WebShop上结果参差不齐。"
+    },
+    {
+     "en": "ALFWorld success rises from 91.24% to 97.08% (266/274), reducing failures from 24 to 8.",
+     "zh": "ALFWorld的成功率从91.24%提升至97.08%（266/274），将失败次数从24次降至8次。"
+    },
+    {
+     "en": "ScienceWorld official score increases from 44.53% to 46.35%, and success from 28.59% to 30.90%.",
+     "zh": "ScienceWorld的官方分数从44.53%提升至46.35%，成功率从28.59%提升至30.90%。"
+    },
+    {
+     "en": "WebShop success rises from 40.20% to 41.00%, but official score falls from 70.74% to 69.71%.",
+     "zh": "WebShop的成功率从40.20%提升至41.00%，但官方分数从70.74%下降至69.71%。"
+    }
+   ]
+  },
+  {
+   "en": "Table 1 (b) compares final success with TARL (96.72%), AgentPRM (91.97%), and FlowTracer (95.62%). AttnSR attains the highest observed success, 97.08%, although its margin over TARL is only one task (266 versus 265 of 274). These single-run results are descriptive, and the paired tests below concern the canonical PPO/AttnSR comparison.",
+   "zh": "表1 (b) 比较了最终成功率与 TARL（96.72%）、AgentPRM（91.97%）和 FlowTracer（95.62%）。 AttnSR 取得了最高的观测成功率 97.08%，但其相对 TARL 的优势仅有一个任务（274 个任务中为 266 对 265）。 这些单次运行的结果仅具描述性，下文的配对检验针对的是规范的 PPO/AttnSR 比较。",
+   "sents": [
+    {
+     "en": "Table 1 (b) compares final success with TARL (96.72%), AgentPRM (91.97%), and FlowTracer (95.62%).",
+     "zh": "表1 (b) 比较了最终成功率与 TARL（96.72%）、AgentPRM（91.97%）和 FlowTracer（95.62%）。"
+    },
+    {
+     "en": "AttnSR attains the highest observed success, 97.08%, although its margin over TARL is only one task (266 versus 265 of 274).",
+     "zh": "AttnSR 取得了最高的观测成功率 97.08%，但其相对 TARL 的优势仅有一个任务（274 个任务中为 266 对 265）。"
+    },
+    {
+     "en": "These single-run results are descriptive, and the paired tests below concern the canonical PPO/AttnSR comparison.",
+     "zh": "这些单次运行的结果仅具描述性，下文的配对检验针对的是规范的 PPO/AttnSR 比较。"
+    }
+   ]
+  },
+  {
+   "en": "Tests use exact-input-matched tasks rather than the full-set estimates in Table 1 . On ALFWorld, 20 tasks are solved only by AttnSR and 4 only by PPO, giving p = 0.002 p=0.002 and a 95% gain interval of [ + 2.55 , + 9.49 ] [+2.55,+9.49] points. Only ALFWorld remains significant after Bonferroni correction across the three success tests. ScienceWorld gains + 2.49 +2.49 points on 1,488 matched tasks, versus + 2.31 +2.31 on the full set, but its unadjusted p = 0.040 p=0.040 does not survive correction. As reported in Appendix D , its score interval and both WebShop intervals include zero.",
+   "zh": "测试使用精确输入匹配的任务，而非表 1 中的全集估计。 在 ALFWorld 上，有 20 个任务仅由 AttnSR 解决，4 个仅由 PPO 解决，得到 p = 0.002，95% 增益区间为 [+2.55, +9.49] 点。 在三个成功率检验中进行 Bonferroni 校正后，仅 ALFWorld 仍然显著。 ScienceWorld 在 1,488 个匹配任务上获得 +2.49 点，而在全集上为 +2.31 点，但其未经校正的 p = 0.040 无法在校正后保持显著。 如附录 D 所报告的，其分数区间以及两个 WebShop 区间均包含零。",
+   "sents": [
+    {
+     "en": "Tests use exact-input-matched tasks rather than the full-set estimates in Table 1 .",
+     "zh": "测试使用精确输入匹配的任务，而非表 1 中的全集估计。"
+    },
+    {
+     "en": "On ALFWorld, 20 tasks are solved only by AttnSR and 4 only by PPO, giving p = 0.002 p=0.002 and a 95% gain interval of [ + 2.55 , + 9.49 ] [+2.55,+9.49] points.",
+     "zh": "在 ALFWorld 上，有 20 个任务仅由 AttnSR 解决，4 个仅由 PPO 解决，得到 p = 0.002，95% 增益区间为 [+2.55, +9.49] 点。"
+    },
+    {
+     "en": "Only ALFWorld remains significant after Bonferroni correction across the three success tests.",
+     "zh": "在三个成功率检验中进行 Bonferroni 校正后，仅 ALFWorld 仍然显著。"
+    },
+    {
+     "en": "ScienceWorld gains + 2.49 +2.49 points on 1,488 matched tasks, versus + 2.31 +2.31 on the full set, but its unadjusted p = 0.040 p=0.040 does not survive correction.",
+     "zh": "ScienceWorld 在 1,488 个匹配任务上获得 +2.49 点，而在全集上为 +2.31 点，但其未经校正的 p = 0.040 无法在校正后保持显著。"
+    },
+    {
+     "en": "As reported in Appendix D , its score interval and both WebShop intervals include zero.",
+     "zh": "如附录 D 所报告的，其分数区间以及两个 WebShop 区间均包含零。"
+    }
+   ]
+  },
+  {
+   "en": "Linear Step Reward tests whether a simple temporal allocation can reproduce the ALFWorld gain. It retains the outcome reward, outcome centering, and budget scale 0.25 0.25 , but replaces attention allocation with increasing temporal weights and removes confidence gating. For K i > 1 K_{i}>1 ,",
+   "zh": "Linear Step Reward 检验一种简单的时间分配方式能否复现 ALFWorld 上的增益。 它保留结果奖励、结果中心化以及 0.25 0.25 的预算规模，但用递增的时间权重替代注意力分配，并移除置信度门控。当 K i > 1 K_{i}>1 时，",
+   "sents": [
+    {
+     "en": "Linear Step Reward tests whether a simple temporal allocation can reproduce the ALFWorld gain.",
+     "zh": "Linear Step Reward 检验一种简单的时间分配方式能否复现 ALFWorld 上的增益。"
+    },
+    {
+     "en": "It retains the outcome reward, outcome centering, and budget scale 0.25 0.25 , but replaces attention allocation with increasing temporal weights and removes confidence gating. For K i > 1 K_{i}>1 ,",
+     "zh": "它保留结果奖励、结果中心化以及 0.25 0.25 的预算规模，但用递增的时间权重替代注意力分配，并移除置信度门控。当 K i > 1 K_{i}>1 时，"
+    }
+   ]
+  },
+  {
+   "en": "Each run maintains its own outcome baseline. The control reaches 92.34% success, gaining 1.10 points over PPO versus 5.84 points for AttnSR , as shown in Table 3 . The control thus recovers less than one fifth of the gain.",
+   "zh": "每次运行都维护其自身的结果基线。 如表 3 所示，控制方法达到 92.34% 的成功率，相比 PPO 提升 1.10 个百分点，而 AttnSR 提升 5.84 个百分点。 因此，该控制方法恢复的增益不足五分之一。",
+   "sents": [
+    {
+     "en": "Each run maintains its own outcome baseline.",
+     "zh": "每次运行都维护其自身的结果基线。"
+    },
+    {
+     "en": "The control reaches 92.34% success, gaining 1.10 points over PPO versus 5.84 points for AttnSR , as shown in Table 3 .",
+     "zh": "如表 3 所示，控制方法达到 92.34% 的成功率，相比 PPO 提升 1.10 个百分点，而 AttnSR 提升 5.84 个百分点。"
+    },
+    {
+     "en": "The control thus recovers less than one fifth of the gain.",
+     "zh": "因此，该控制方法恢复的增益不足五分之一。"
+    }
+   ]
+  },
+  {
+   "en": "† Same GRPO reference and checkpoint budgets as Table 1 .",
+   "zh": "† 与表1相同的GRPO参考模型和检查点预算。",
+   "sents": null
+  },
+  {
+   "en": "Table 5 in Appendix A shows that Linear Step Reward leads at epoch 1 but trails both methods at epochs 2–3 and AttnSR at epoch 4. Joint changes to allocation, gating, and realized budgets prevent isolating attention contribution or ruling out other dense rewards. Differences are descriptive because per-task outputs were not retained for paired testing.",
+   "zh": "附录A中的表5显示，Linear Step Reward 在第1个epoch领先，但在第2–3个epoch落后于两种方法，在第4个epoch落后于 AttnSR。 对分配、门控和实际预算的联合调整使得无法分离注意力的贡献，也无法排除其他密集奖励的作用。 由于未保留每个任务的输出进行配对检验，这些差异仅为描述性结果。",
+   "sents": [
+    {
+     "en": "Table 5 in Appendix A shows that Linear Step Reward leads at epoch 1 but trails both methods at epochs 2–3 and AttnSR at epoch 4.",
+     "zh": "附录A中的表5显示，Linear Step Reward 在第1个epoch领先，但在第2–3个epoch落后于两种方法，在第4个epoch落后于 AttnSR。"
+    },
+    {
+     "en": "Joint changes to allocation, gating, and realized budgets prevent isolating attention contribution or ruling out other dense rewards.",
+     "zh": "对分配、门控和实际预算的联合调整使得无法分离注意力的贡献，也无法排除其他密集奖励的作用。"
+    },
+    {
+     "en": "Differences are descriptive because per-task outputs were not retained for paired testing.",
+     "zh": "由于未保留每个任务的输出进行配对检验，这些差异仅为描述性结果。"
+    }
+   ]
+  },
+  {
+   "en": "Single-trajectory asynchronous Qwen2.5-7B-Instruct training gains 4.67 points in Table 3 . Changed collection, importance weighting, and critic updates preclude component attribution or direct comparison with canonical PPO, as discussed in Appendix F .",
+   "zh": "表 3 中单轨迹异步 Qwen2.5-7B-Instruct 训练提升了 4.67 分。 如附录 F 所讨论的，所更改的收集方式、重要性加权和 critic 更新使得无法进行组件归因或与经典 PPO 直接比较。",
+   "sents": [
+    {
+     "en": "Single-trajectory asynchronous Qwen2.5-7B-Instruct training gains 4.67 points in Table 3 .",
+     "zh": "表 3 中单轨迹异步 Qwen2.5-7B-Instruct 训练提升了 4.67 分。"
+    },
+    {
+     "en": "Changed collection, importance weighting, and critic updates preclude component attribution or direct comparison with canonical PPO, as discussed in Appendix F .",
+     "zh": "如附录 F 所讨论的，所更改的收集方式、重要性加权和 critic 更新使得无法进行组件归因或与经典 PPO 直接比较。"
+    }
+   ]
+  },
+  {
+   "en": "Qwen3-4B-Instruct-2507 gains 3.28 points, and Qwen2.5-3B-Instruct gains 7.66 points, rising from 218 to 239 successes in Table 3 . As shown in Figure 4 in the appendix, the 3B model improves on both seen and unseen tasks at all four checkpoints. Both retain the main PPO and shaping hyperparameters, and the 3B model uses relative-depth attention layers.",
+   "zh": "Qwen3-4B-Instruct-2507 提升 3.28 分，Qwen2.5-3B-Instruct 提升 7.66 分，在表 3 中的成功数从 218 上升到 239。 如附录中的图 4 所示，3B 模型在全部四个检查点上均在已见任务和未见任务上有所提升。 两者均保留主要的 PPO 与塑形超参数，且 3B 模型使用相对深度注意力层。",
+   "sents": [
+    {
+     "en": "Qwen3-4B-Instruct-2507 gains 3.28 points, and Qwen2.5-3B-Instruct gains 7.66 points, rising from 218 to 239 successes in Table 3 .",
+     "zh": "Qwen3-4B-Instruct-2507 提升 3.28 分，Qwen2.5-3B-Instruct 提升 7.66 分，在表 3 中的成功数从 218 上升到 239。"
+    },
+    {
+     "en": "As shown in Figure 4 in the appendix, the 3B model improves on both seen and unseen tasks at all four checkpoints.",
+     "zh": "如附录中的图 4 所示，3B 模型在全部四个检查点上均在已见任务和未见任务上有所提升。"
+    },
+    {
+     "en": "Both retain the main PPO and shaping hyperparameters, and the 3B model uses relative-depth attention layers.",
+     "zh": "两者均保留主要的 PPO 与塑形超参数，且 3B 模型使用相对深度注意力层。"
+    }
+   ]
+  },
+  {
+   "en": "GRPO uses four rollouts per prompt for one epoch, matching the rollout count of four-epoch PPO with one rollout per prompt, but with fewer policy updates. 3B GRPO reweights group-normalized outcome advantages across action tokens, preserving each trajectory’s mean advantage with α = 0.25 \\alpha=0.25 , as detailed in Appendix F.2 . In Table 3 , success rises from 34 to 55 tasks. Format-error rates of 36.86% and 34.67% and single runs limit interpretation.",
+   "zh": "GRPO 在一个 epoch 内对每个提示使用四次 rollout，这与 PPO 使用四个 epoch、每个提示一次 rollout 的 rollout 总数相同，但策略更新次数更少。3B 的 GRPO 在动作 token 之间对组归一化的结果优势进行重加权（α = 0.25 \\alpha=0.25），以保持每条轨迹的平均优势不变，详见附录 F.2。 在表 3 中，成功任务数从 34 提升到 55。 36.86% 和 34.67% 的格式错误率以及仅单次运行的结果限制了结论的解释力。",
+   "sents": [
+    {
+     "en": "GRPO uses four rollouts per prompt for one epoch, matching the rollout count of four-epoch PPO with one rollout per prompt, but with fewer policy updates. 3B GRPO reweights group-normalized outcome advantages across action tokens, preserving each trajectory’s mean advantage with α = 0.25 \\alpha=0.25 , as detailed in Appendix F.2 .",
+     "zh": "GRPO 在一个 epoch 内对每个提示使用四次 rollout，这与 PPO 使用四个 epoch、每个提示一次 rollout 的 rollout 总数相同，但策略更新次数更少。3B 的 GRPO 在动作 token 之间对组归一化的结果优势进行重加权（α = 0.25 \\alpha=0.25），以保持每条轨迹的平均优势不变，详见附录 F.2。"
+    },
+    {
+     "en": "In Table 3 , success rises from 34 to 55 tasks.",
+     "zh": "在表 3 中，成功任务数从 34 提升到 55。"
+    },
+    {
+     "en": "Format-error rates of 36.86% and 34.67% and single runs limit interpretation.",
+     "zh": "36.86% 和 34.67% 的格式错误率以及仅单次运行的结果限制了结论的解释力。"
+    }
+   ]
+  },
+  {
+   "en": "As reported in Appendix A , AttnSR scores higher at all four ALFWorld and ScienceWorld checkpoints, with the largest gaps at epochs 4 and 3, respectively. WebShop gains at epochs 1–3 reverse slightly at epoch 4. The eight-epoch traces with learning rate 1e-6 in Figure 3 supplement these results, but neither establishes an asymptotic advantage.",
+   "zh": "如附录 A 所报告，AttnSR 在 ALFWorld 和 ScienceWorld 的全部四个检查点上得分更高，其中分别在 epoch 4 和 epoch 3 时差距最大。 WebShop 在 epoch 1–3 的增益在 epoch 4 时略有回落。 图 3 中学习率为 1e-6 的八个 epoch 的轨迹补充了这些结果，但两者都未能确立渐近优势。",
+   "sents": [
+    {
+     "en": "As reported in Appendix A , AttnSR scores higher at all four ALFWorld and ScienceWorld checkpoints, with the largest gaps at epochs 4 and 3, respectively.",
+     "zh": "如附录 A 所报告，AttnSR 在 ALFWorld 和 ScienceWorld 的全部四个检查点上得分更高，其中分别在 epoch 4 和 epoch 3 时差距最大。"
+    },
+    {
+     "en": "WebShop gains at epochs 1–3 reverse slightly at epoch 4.",
+     "zh": "WebShop 在 epoch 1–3 的增益在 epoch 4 时略有回落。"
+    },
+    {
+     "en": "The eight-epoch traces with learning rate 1e-6 in Figure 3 supplement these results, but neither establishes an asymptotic advantage.",
+     "zh": "图 3 中学习率为 1e-6 的八个 epoch 的轨迹补充了这些结果，但两者都未能确立渐近优势。"
+    }
+   ]
+  },
+  {
+   "en": "ALFWorld success rises from 92.86% to 96.43% on seen tasks and 89.55% to 97.76% on unseen tasks, as shown in Table 1 . Clean , Heat , Cool , and Pick2 gain 6.89–10.87 points, while Pick and Look remain unchanged, as listed in Table 6 in the appendix. Gains on object-processing and two-object tasks are consistent with benefits on dependent actions, but amount to only three to five successes per family. PPO already reaches 100%/96.77% on Pick/Look, so complexity is confounded with headroom.",
+   "zh": "如表1所示，ALFWorld 在已见任务上的成功率从 92.86% 提升至 96.43%，在未见任务上的成功率从 89.55% 提升至 97.76%。 如附录表6所示，Clean、Heat、Cool 和 Pick2 提升了 6.89–10.87 个百分点，而 Pick 和 Look 保持不变。 在对象处理类和双对象任务上的收益与相关动作上的收益一致，但每个任务族仅相当于三到五次成功。 PPO 在 Pick/Look 上已达到 100%/96.77%，因此复杂度与提升空间混杂在一起。",
+   "sents": [
+    {
+     "en": "ALFWorld success rises from 92.86% to 96.43% on seen tasks and 89.55% to 97.76% on unseen tasks, as shown in Table 1 .",
+     "zh": "如表1所示，ALFWorld 在已见任务上的成功率从 92.86% 提升至 96.43%，在未见任务上的成功率从 89.55% 提升至 97.76%。"
+    },
+    {
+     "en": "Clean , Heat , Cool , and Pick2 gain 6.89–10.87 points, while Pick and Look remain unchanged, as listed in Table 6 in the appendix.",
+     "zh": "如附录表6所示，Clean、Heat、Cool 和 Pick2 提升了 6.89–10.87 个百分点，而 Pick 和 Look 保持不变。"
+    },
+    {
+     "en": "Gains on object-processing and two-object tasks are consistent with benefits on dependent actions, but amount to only three to five successes per family.",
+     "zh": "在对象处理类和双对象任务上的收益与相关动作上的收益一致，但每个任务族仅相当于三到五次成功。"
+    },
+    {
+     "en": "PPO already reaches 100%/96.77% on Pick/Look, so complexity is confounded with headroom.",
+     "zh": "PPO 在 Pick/Look 上已达到 100%/96.77%，因此复杂度与提升空间混杂在一起。"
+    }
+   ]
+  },
+  {
+   "en": "Table 3 covers 5,186 PPO/AttnSR and 2,593 GRPO trajectories. Steps and output length do not measure reasoning or generated-token compute. The paired analyses in Appendix E cover only the PPO and AttnSR policies.",
+   "zh": "表 3 涵盖 5,186 条 PPO/AttnSR 轨迹和 2,593 条 GRPO 轨迹。 步数和输出长度并不能衡量推理或生成 token 的计算量。 附录 E 中的成对分析仅涵盖 PPO 和 AttnSR 策略。",
+   "sents": [
+    {
+     "en": "Table 3 covers 5,186 PPO/AttnSR and 2,593 GRPO trajectories.",
+     "zh": "表 3 涵盖 5,186 条 PPO/AttnSR 轨迹和 2,593 条 GRPO 轨迹。"
+    },
+    {
+     "en": "Steps and output length do not measure reasoning or generated-token compute.",
+     "zh": "步数和输出长度并不能衡量推理或生成 token 的计算量。"
+    },
+    {
+     "en": "The paired analyses in Appendix E cover only the PPO and AttnSR policies.",
+     "zh": "附录 E 中的成对分析仅涵盖 PPO 和 AttnSR 策略。"
+    }
+   ]
+  },
+  {
+   "en": "Mean steps fall from 19.28 to 15.51 on ALFWorld ( − 19.56 % -19.56\\% ) and from 30.68 to 21.51 on ScienceWorld ( − 29.88 % -29.88\\% ), with higher success. Serialized output falls by 21.22% and 29.56%, respectively. WebShop rises from 5.93 to 8.03 steps without a clear gain.",
+   "zh": "平均步数在 ALFWorld 上从 19.28 降至 15.51（−19.56%），在 ScienceWorld 上从 30.68 降至 21.51（−29.88%），成功率更高。 序列化输出分别下降 21.22% 和 29.56%。 WebShop 的步数从 5.93 增至 8.03，没有明显收益。",
+   "sents": [
+    {
+     "en": "Mean steps fall from 19.28 to 15.51 on ALFWorld ( − 19.56 % -19.56\\% ) and from 30.68 to 21.51 on ScienceWorld ( − 29.88 % -29.88\\% ), with higher success.",
+     "zh": "平均步数在 ALFWorld 上从 19.28 降至 15.51（−19.56%），在 ScienceWorld 上从 30.68 降至 21.51（−29.88%），成功率更高。"
+    },
+    {
+     "en": "Serialized output falls by 21.22% and 29.56%, respectively.",
+     "zh": "序列化输出分别下降 21.22% 和 29.56%。"
+    },
+    {
+     "en": "WebShop rises from 5.93 to 8.03 steps without a clear gain.",
+     "zh": "WebShop 的步数从 5.93 增至 8.03，没有明显收益。"
+    }
+   ]
+  },
+  {
+   "en": "On 268 ScienceWorld tasks solved by both policies, mean steps fall from 11.06 to 7.40. The 246 joint ALFWorld successes instead increase from 11.19 to 11.99 steps, and the 157 joint WebShop successes from 5.11 to 6.19, as shown in Table 12 in the appendix. The aggregate ALFWorld saving accompanies fewer prolonged failures, since the 24 PPO failures average 103.83 steps versus 109.12 for the 8 AttnSR failures. As discussed in Appendix E , earlier unsuccessful stopping may also reduce aggregate length. These outcome-selected comparisons distinguish shorter solutions from fewer failures but do not establish a causal mechanism.",
+   "zh": "在两种策略均解出的 268 个 ScienceWorld 任务上，平均步数从 11.06 降至 7.40。 246 个双方共同成功的 ALFWorld 任务的平均步数反而从 11.19 增至 11.99，157 个共同成功的 WebShop 任务从 5.11 增至 6.19，如附录表 12 所示。 ALFWorld 上的整体步数节省伴随着更少的长时失败，因为 24 个 PPO 失败平均为 103.83 步，而 8 个 AttnSR 失败平均为 109.12 步。 如附录 E 所讨论的，较早的不成功停止也可能降低整体长度。 这些基于结果筛选的比较能区分更短的求解过程与更少的失败，但并不能确立因果关系。",
+   "sents": [
+    {
+     "en": "On 268 ScienceWorld tasks solved by both policies, mean steps fall from 11.06 to 7.40.",
+     "zh": "在两种策略均解出的 268 个 ScienceWorld 任务上，平均步数从 11.06 降至 7.40。"
+    },
+    {
+     "en": "The 246 joint ALFWorld successes instead increase from 11.19 to 11.99 steps, and the 157 joint WebShop successes from 5.11 to 6.19, as shown in Table 12 in the appendix.",
+     "zh": "246 个双方共同成功的 ALFWorld 任务的平均步数反而从 11.19 增至 11.99，157 个共同成功的 WebShop 任务从 5.11 增至 6.19，如附录表 12 所示。"
+    },
+    {
+     "en": "The aggregate ALFWorld saving accompanies fewer prolonged failures, since the 24 PPO failures average 103.83 steps versus 109.12 for the 8 AttnSR failures.",
+     "zh": "ALFWorld 上的整体步数节省伴随着更少的长时失败，因为 24 个 PPO 失败平均为 103.83 步，而 8 个 AttnSR 失败平均为 109.12 步。"
+    },
+    {
+     "en": "As discussed in Appendix E , earlier unsuccessful stopping may also reduce aggregate length.",
+     "zh": "如附录 E 所讨论的，较早的不成功停止也可能降低整体长度。"
+    },
+    {
+     "en": "These outcome-selected comparisons distinguish shorter solutions from fewer failures but do not establish a causal mechanism.",
+     "zh": "这些基于结果筛选的比较能区分更短的求解过程与更少的失败，但并不能确立因果关系。"
+    }
+   ]
+  },
+  {
+   "en": "WebShop has shorter PPO trajectories (5.93 steps versus 19.28/30.68 on ALFWorld/ScienceWorld), relatively close PPO/GRPO scores (70.74%/67.21%), and no detectable AttnSR gain. This suggests less benefit when shorter trajectories reduce delayed-credit difficulties. However, as noted in Table 1 , PPO and GRPO optimization budgets differ, so this comparison establishes neither equivalence nor convergence. Policy-dependent lengths also confound horizon and complexity. Greater benefit on complex, long-horizon tasks remains a hypothesis, not evidence that step rewards generally fail on short tasks.",
+   "zh": "WebShop 的 PPO 轨迹更短（5.93 步，而 ALFWorld/ScienceWorld 上分别为 19.28/30.68 步），PPO/GRPO 得分较为接近（70.74%/67.21%），且未检测到 AttnSR 带来的提升。 这表明当较短的轨迹降低延迟信用分配的难度时，收益会较小。 然而，正如表 1 所指出，PPO 与 GRPO 的优化预算不同，因此这一比较既不能确立等价性，也不能确立收敛性。 依赖于策略的长度也使任务时域与复杂度相互混淆。 在复杂的长时域任务上收益更大仍是一个假设，并非能证明步级奖励在短任务上普遍失效的证据。",
+   "sents": [
+    {
+     "en": "WebShop has shorter PPO trajectories (5.93 steps versus 19.28/30.68 on ALFWorld/ScienceWorld), relatively close PPO/GRPO scores (70.74%/67.21%), and no detectable AttnSR gain.",
+     "zh": "WebShop 的 PPO 轨迹更短（5.93 步，而 ALFWorld/ScienceWorld 上分别为 19.28/30.68 步），PPO/GRPO 得分较为接近（70.74%/67.21%），且未检测到 AttnSR 带来的提升。"
+    },
+    {
+     "en": "This suggests less benefit when shorter trajectories reduce delayed-credit difficulties.",
+     "zh": "这表明当较短的轨迹降低延迟信用分配的难度时，收益会较小。"
+    },
+    {
+     "en": "However, as noted in Table 1 , PPO and GRPO optimization budgets differ, so this comparison establishes neither equivalence nor convergence.",
+     "zh": "然而，正如表 1 所指出，PPO 与 GRPO 的优化预算不同，因此这一比较既不能确立等价性，也不能确立收敛性。"
+    },
+    {
+     "en": "Policy-dependent lengths also confound horizon and complexity.",
+     "zh": "依赖于策略的长度也使任务时域与复杂度相互混淆。"
+    },
+    {
+     "en": "Greater benefit on complex, long-horizon tasks remains a hypothesis, not evidence that step rewards generally fail on short tasks.",
+     "zh": "在复杂的长时域任务上收益更大仍是一个假设，并非能证明步级奖励在短任务上普遍失效的证据。"
+    }
+   ]
+  },
+  {
+   "en": "Language agents interleave reasoning with actions ( Yao et al., 2023 ; Putta et al., 2024 ) , each spanning multiple tokens. This creates a distinction between token-level optimization and step-level credit assignment. POAD decomposes Bellman backups within and across actions ( Wen et al., 2024 ) , ArCHer pairs a turn-level critic with a token-level actor ( Zhou et al., 2024 ) , and GiGPO groups steps with matching anchor states to estimate critic-free relative advantages ( Feng et al., 2025 ) . These methods address the granularity of value or advantage estimation. AttnSR instead intervenes at the reward interface. It assigns outcome-conditioned rewards to interaction steps, which then enter the target computation of RL algorithms. In our token-level PPO implementation, these rewards are placed at assistant-step endpoints and propagated through GAE ( Schulman et al., 2017 ; Schulman et al., 2016 ) , retaining the critic architecture and optimization losses. We evaluate this reward interface in PPO and separately test attention-based token-advantage reweighting in GRPO.",
+   "zh": "语言智能体将推理与动作交替进行（Yao et al., 2023；Putta et al., 2024），每一部分都跨越多个 token。 这造成了 token 级优化与步骤级信用分配之间的区别。 POAD 在动作内和动作间分解 Bellman 备份（Wen et al., 2024），ArCHer 将回合级评论家与 token 级执行者配对（Zhou et al., 2024），GiGPO 将具有匹配锚定状态的步骤分组以估计无评论家的相对优势（Feng et al., 2025）。 这些方法解决的是价值或优势估计的粒度问题。 AttnSR 则是在奖励接口处进行干预。 它为交互步骤分配以结果为条件的奖励，这些奖励随后进入 RL 算法的目标计算。 在我们的 token 级 PPO 实现中，这些奖励被放置在 assistant 步骤的末端，并通过 GAE（Schulman et al., 2017；Schulman et al., 2016）进行传播，同时保留评论家架构和优化损失。 我们在 PPO 中评估这一奖励接口，并在 GRPO 中单独测试基于注意力的 token 优势重加权。",
+   "sents": [
+    {
+     "en": "Language agents interleave reasoning with actions ( Yao et al., 2023 ; Putta et al., 2024 ) , each spanning multiple tokens.",
+     "zh": "语言智能体将推理与动作交替进行（Yao et al., 2023；Putta et al., 2024），每一部分都跨越多个 token。"
+    },
+    {
+     "en": "This creates a distinction between token-level optimization and step-level credit assignment.",
+     "zh": "这造成了 token 级优化与步骤级信用分配之间的区别。"
+    },
+    {
+     "en": "POAD decomposes Bellman backups within and across actions ( Wen et al., 2024 ) , ArCHer pairs a turn-level critic with a token-level actor ( Zhou et al., 2024 ) , and GiGPO groups steps with matching anchor states to estimate critic-free relative advantages ( Feng et al., 2025 ) .",
+     "zh": "POAD 在动作内和动作间分解 Bellman 备份（Wen et al., 2024），ArCHer 将回合级评论家与 token 级执行者配对（Zhou et al., 2024），GiGPO 将具有匹配锚定状态的步骤分组以估计无评论家的相对优势（Feng et al., 2025）。"
+    },
+    {
+     "en": "These methods address the granularity of value or advantage estimation.",
+     "zh": "这些方法解决的是价值或优势估计的粒度问题。"
+    },
+    {
+     "en": "AttnSR instead intervenes at the reward interface.",
+     "zh": "AttnSR 则是在奖励接口处进行干预。"
+    },
+    {
+     "en": "It assigns outcome-conditioned rewards to interaction steps, which then enter the target computation of RL algorithms.",
+     "zh": "它为交互步骤分配以结果为条件的奖励，这些奖励随后进入 RL 算法的目标计算。"
+    },
+    {
+     "en": "In our token-level PPO implementation, these rewards are placed at assistant-step endpoints and propagated through GAE ( Schulman et al., 2017 ; Schulman et al., 2016 ) , retaining the critic architecture and optimization losses.",
+     "zh": "在我们的 token 级 PPO 实现中，这些奖励被放置在 assistant 步骤的末端，并通过 GAE（Schulman et al., 2017；Schulman et al., 2016）进行传播，同时保留评论家架构和优化损失。"
+    },
+    {
+     "en": "We evaluate this reward interface in PPO and separately test attention-based token-advantage reweighting in GRPO.",
+     "zh": "我们在 PPO 中评估这一奖励接口，并在 GRPO 中单独测试基于注意力的 token 优势重加权。"
+    }
+   ]
+  },
+  {
+   "en": "Long horizons and partial observability complicate credit assignment from terminal outcomes ( Zhang, 2026 ) . VinePPO estimates intermediate values through Monte Carlo rollouts ( Kazemnejad et al., 2025 ) , AgentPRM learns step-level promise and progress ( Xi et al., 2025 ) , TARL uses an LLM judge for turn-level process supervision ( Tan et al., 2025 ) , and SWEET-RL trains an evaluator with privileged information ( Zhou et al., 2025 ) . Process supervision also uses step annotations ( Lightman et al., 2024 ) , estimated progress ( Setlur et al., 2024 ) , or trajectory preferences ( Liu et al., 2025 ) . Other approaches use counterfactual baselines ( Foerster et al., 2018 ) , hindsight estimators ( Tan et al., 2026 ) , learned progress in SPA-RL ( Wang et al., 2025a ) , or gradient saliency in ACPO ( Yin et al., 2025 ) . FlowTracer derives token credit from answer-targeted information flow on an attention-induced graph ( Dong et al., 2026 ) . AttnSR draws its allocation prior from actor attention, avoiding additional environment rollouts, a separately trained large reward model, or an attribution backward pass. This signal expresses relevance rather than verified causal importance ( Jain and Wallace, 2019 ; Abnar and Zuidema, 2020 ) . Confidence gating moderates its strength, while the centered outcome determines its sign. Unlike return-preserving redistribution in RUDDER ( Arjona-Medina et al., 2019 ) , AttnSR retains the outcome reward and adds intermediate rewards. It thus changes the return without guaranteeing policy invariance, and we evaluate on the original metrics.",
+   "zh": "长时程与部分可观测性使得从终止结果进行信用分配变得复杂（Zhang, 2026）。 VinePPO 通过蒙特卡洛展开估计中间价值（Kazemnejad et al., 2025），AgentPRM 学习步骤级的前景与进展（Xi et al., 2025），TARL 使用 LLM 评审进行轮次级过程监督（Tan et al., 2025），SWEET-RL 则利用特权信息训练评估器（Zhou et al., 2025）。 过程监督还使用步骤标注（Lightman et al., 2024）、估计的进展（Setlur et al., 2024）或轨迹偏好（Liu et al., 2025）。 其他方法使用反事实基线（Foerster et al., 2018）、后见之明估计器（Tan et al., 2026）、SPA-RL 中学习到的进展（Wang et al., 2025a），或 ACPO 中的梯度显著性（Yin et al., 2025）。 FlowTracer 在注意力诱导图上从面向答案的信息流中推导词元级信用（Dong et al., 2026）。 AttnSR 从智能体的注意力中获取分配先验，从而避免额外的环境展开、单独训练的大型奖励模型或归因反向传播。 这一信号表达的是相关性，而非经过验证的因果重要性（Jain and Wallace, 2019；Abnar and Zuidema, 2020）。 置信度门控调节该信号的强度，而中心化的结果决定其符号。 与 RUDDER 中保持回报不变的重分配方式（Arjona-Medina et al., 2019）不同，AttnSR 保留结果奖励并在此基础上添加中间奖励。 因此它改变了回报，却不保证策略不变性，我们仍在原始指标上进行评估。",
+   "sents": [
+    {
+     "en": "Long horizons and partial observability complicate credit assignment from terminal outcomes ( Zhang, 2026 ) .",
+     "zh": "长时程与部分可观测性使得从终止结果进行信用分配变得复杂（Zhang, 2026）。"
+    },
+    {
+     "en": "VinePPO estimates intermediate values through Monte Carlo rollouts ( Kazemnejad et al., 2025 ) , AgentPRM learns step-level promise and progress ( Xi et al., 2025 ) , TARL uses an LLM judge for turn-level process supervision ( Tan et al., 2025 ) , and SWEET-RL trains an evaluator with privileged information ( Zhou et al., 2025 ) .",
+     "zh": "VinePPO 通过蒙特卡洛展开估计中间价值（Kazemnejad et al., 2025），AgentPRM 学习步骤级的前景与进展（Xi et al., 2025），TARL 使用 LLM 评审进行轮次级过程监督（Tan et al., 2025），SWEET-RL 则利用特权信息训练评估器（Zhou et al., 2025）。"
+    },
+    {
+     "en": "Process supervision also uses step annotations ( Lightman et al., 2024 ) , estimated progress ( Setlur et al., 2024 ) , or trajectory preferences ( Liu et al., 2025 ) .",
+     "zh": "过程监督还使用步骤标注（Lightman et al., 2024）、估计的进展（Setlur et al., 2024）或轨迹偏好（Liu et al., 2025）。"
+    },
+    {
+     "en": "Other approaches use counterfactual baselines ( Foerster et al., 2018 ) , hindsight estimators ( Tan et al., 2026 ) , learned progress in SPA-RL ( Wang et al., 2025a ) , or gradient saliency in ACPO ( Yin et al., 2025 ) .",
+     "zh": "其他方法使用反事实基线（Foerster et al., 2018）、后见之明估计器（Tan et al., 2026）、SPA-RL 中学习到的进展（Wang et al., 2025a），或 ACPO 中的梯度显著性（Yin et al., 2025）。"
+    },
+    {
+     "en": "FlowTracer derives token credit from answer-targeted information flow on an attention-induced graph ( Dong et al., 2026 ) .",
+     "zh": "FlowTracer 在注意力诱导图上从面向答案的信息流中推导词元级信用（Dong et al., 2026）。"
+    },
+    {
+     "en": "AttnSR draws its allocation prior from actor attention, avoiding additional environment rollouts, a separately trained large reward model, or an attribution backward pass.",
+     "zh": "AttnSR 从智能体的注意力中获取分配先验，从而避免额外的环境展开、单独训练的大型奖励模型或归因反向传播。"
+    },
+    {
+     "en": "This signal expresses relevance rather than verified causal importance ( Jain and Wallace, 2019 ; Abnar and Zuidema, 2020 ) .",
+     "zh": "这一信号表达的是相关性，而非经过验证的因果重要性（Jain and Wallace, 2019；Abnar and Zuidema, 2020）。"
+    },
+    {
+     "en": "Confidence gating moderates its strength, while the centered outcome determines its sign.",
+     "zh": "置信度门控调节该信号的强度，而中心化的结果决定其符号。"
+    },
+    {
+     "en": "Unlike return-preserving redistribution in RUDDER ( Arjona-Medina et al., 2019 ) , AttnSR retains the outcome reward and adds intermediate rewards.",
+     "zh": "与 RUDDER 中保持回报不变的重分配方式（Arjona-Medina et al., 2019）不同，AttnSR 保留结果奖励并在此基础上添加中间奖励。"
+    },
+    {
+     "en": "It thus changes the return without guaranteeing policy invariance, and we evaluate on the original metrics.",
+     "zh": "因此它改变了回报，却不保证策略不变性，我们仍在原始指标上进行评估。"
+    }
+   ]
+  },
+  {
+   "en": "AttnSR allocates outcome-conditioned rewards using actor attention, without extra rollouts or a learned reward model. With PPO, ALFWorld success rises from 91.2% to 97.1%, exceeding the linear control. ScienceWorld shows numerical gains with fewer interactions, while WebShop has no statistically detectable gain. Supplementary experiments show gains under both PPO and a GRPO token-advantage reweighting variant, with one training run per method. Future work will extend the evaluation to longer context lengths and interaction horizons, examining how attention-based credit allocation handles action dependencies spanning more distant steps.",
+   "zh": "AttnSR 利用行动者注意力分配以结果为条件的奖励，无需额外的 rollout 或学习到的奖励模型。 使用 PPO 时，ALFWorld 的成功率从 91.2% 提升到 97.1%，超过了线性对照。 ScienceWorld 在更少的交互次数下取得了数值上的提升，而 WebShop 则没有统计上可检测到的提升。 补充实验显示，在 PPO 和 GRPO token 优势重加权变体下均取得了提升，每种方法各训练一次。 未来的工作将把评估扩展到更长的上下文长度和交互时域，考察基于注意力的信用分配如何处理跨越更远步骤的动作依赖。",
+   "sents": [
+    {
+     "en": "AttnSR allocates outcome-conditioned rewards using actor attention, without extra rollouts or a learned reward model.",
+     "zh": "AttnSR 利用行动者注意力分配以结果为条件的奖励，无需额外的 rollout 或学习到的奖励模型。"
+    },
+    {
+     "en": "With PPO, ALFWorld success rises from 91.2% to 97.1%, exceeding the linear control.",
+     "zh": "使用 PPO 时，ALFWorld 的成功率从 91.2% 提升到 97.1%，超过了线性对照。"
+    },
+    {
+     "en": "ScienceWorld shows numerical gains with fewer interactions, while WebShop has no statistically detectable gain.",
+     "zh": "ScienceWorld 在更少的交互次数下取得了数值上的提升，而 WebShop 则没有统计上可检测到的提升。"
+    },
+    {
+     "en": "Supplementary experiments show gains under both PPO and a GRPO token-advantage reweighting variant, with one training run per method.",
+     "zh": "补充实验显示，在 PPO 和 GRPO token 优势重加权变体下均取得了提升，每种方法各训练一次。"
+    },
+    {
+     "en": "Future work will extend the evaluation to longer context lengths and interaction horizons, examining how attention-based credit allocation handles action dependencies spanning more distant steps.",
+     "zh": "未来的工作将把评估扩展到更长的上下文长度和交互时域，考察基于注意力的信用分配如何处理跨越更远步骤的动作依赖。"
+    }
+   ]
+  },
+  {
+   "en": "This work studies training methods for simulated text-based agents. The experiments use benchmark environments and do not involve human subjects or collection of personal data. As with other agent-training methods, improved planning and tool-use capability could be transferred to applications with unintended consequences. Deployment should thus include task-specific safeguards and monitoring.",
+   "zh": "本研究探讨基于文本的模拟智能体的训练方法。 实验使用基准环境，不涉及人类受试者或个人数据的收集。 与其他智能体训练方法一样，提升后的规划与工具使用能力可能被迁移到具有意外后果的应用中。 因此，部署时应包含针对具体任务的保障措施与监控。",
+   "sents": [
+    {
+     "en": "This work studies training methods for simulated text-based agents.",
+     "zh": "本研究探讨基于文本的模拟智能体的训练方法。"
+    },
+    {
+     "en": "The experiments use benchmark environments and do not involve human subjects or collection of personal data.",
+     "zh": "实验使用基准环境，不涉及人类受试者或个人数据的收集。"
+    },
+    {
+     "en": "As with other agent-training methods, improved planning and tool-use capability could be transferred to applications with unintended consequences.",
+     "zh": "与其他智能体训练方法一样，提升后的规划与工具使用能力可能被迁移到具有意外后果的应用中。"
+    },
+    {
+     "en": "Deployment should thus include task-specific safeguards and monitoring.",
+     "zh": "因此，部署时应包含针对具体任务的保障措施与监控。"
+    }
+   ]
+  },
+  {
+   "en": "We use publicly available ALFWorld, WebShop, and ScienceWorld benchmark environments and do not introduce a new dataset. The evaluation splits, checkpoint-level summaries, and derived tables used in this paper are included with the supplementary artifacts.",
+   "zh": "我们使用公开可用的 ALFWorld、WebShop 和 ScienceWorld 基准环境，不引入新的数据集。 本文使用的评估划分、检查点级别的摘要以及派生表格已包含在补充材料中。",
+   "sents": [
+    {
+     "en": "We use publicly available ALFWorld, WebShop, and ScienceWorld benchmark environments and do not introduce a new dataset.",
+     "zh": "我们使用公开可用的 ALFWorld、WebShop 和 ScienceWorld 基准环境，不引入新的数据集。"
+    },
+    {
+     "en": "The evaluation splits, checkpoint-level summaries, and derived tables used in this paper are included with the supplementary artifacts.",
+     "zh": "本文使用的评估划分、检查点级别的摘要以及派生表格已包含在补充材料中。"
+    }
+   ]
+  },
+  {
+   "en": "The training configuration, reward equations, evaluation splits, and checkpoint-level results are specified in this paper and its appendix. An anonymized repository will provide the reward extraction and allocation implementation, launch configurations, evaluation summaries, experiment record, significance analysis, and cached per-episode inputs. The main experiments use Qwen2.5-7B-Instruct, LoRA rank 64, VERL/Megatron training, vLLM rollout, and the fixed held-out sets of Section 4.1 .",
+   "zh": "训练配置、奖励公式、评估划分以及检查点级别的结果均在本论文及其附录中给出。 一个匿名化的仓库将提供奖励抽取与分配的实现、启动配置、评估摘要、实验记录、显著性分析以及缓存的每回合输入。 主实验使用 Qwen2.5-7B-Instruct、LoRA 秩 64、VERL/Megatron 训练、vLLM 推理生成（rollout），以及第 4.1 节中固定的留出测试集。",
+   "sents": [
+    {
+     "en": "The training configuration, reward equations, evaluation splits, and checkpoint-level results are specified in this paper and its appendix.",
+     "zh": "训练配置、奖励公式、评估划分以及检查点级别的结果均在本论文及其附录中给出。"
+    },
+    {
+     "en": "An anonymized repository will provide the reward extraction and allocation implementation, launch configurations, evaluation summaries, experiment record, significance analysis, and cached per-episode inputs.",
+     "zh": "一个匿名化的仓库将提供奖励抽取与分配的实现、启动配置、评估摘要、实验记录、显著性分析以及缓存的每回合输入。"
+    },
+    {
+     "en": "The main experiments use Qwen2.5-7B-Instruct, LoRA rank 64, VERL/Megatron training, vLLM rollout, and the fixed held-out sets of Section 4.1 .",
+     "zh": "主实验使用 Qwen2.5-7B-Instruct、LoRA 秩 64、VERL/Megatron 训练、vLLM 推理生成（rollout），以及第 4.1 节中固定的留出测试集。"
+    }
+   ]
+  },
+  {
+   "en": "Generative AI tools were used to assist with the organization and language editing of this manuscript, as well as with the development, debugging, and refinement of experimental code. The authors reviewed and verified all AI-assisted content, including technical claims, equations, experimental results, implementation details, and code, against the repository artifacts and experimental records. The authors remain fully responsible for the correctness, integrity, and reproducibility of this work.",
+   "zh": "本稿件在组织结构与语言润色方面，以及在实验代码的开发、调试和优化过程中，使用了生成式人工智能工具辅助完成。 作者已对照仓库产物和实验记录，审查并核实了所有由人工智能辅助生成的内容，包括技术性论述、公式、实验结果、实现细节和代码。 作者仍对本工作的正确性、完整性和可复现性承担全部责任。",
+   "sents": [
+    {
+     "en": "Generative AI tools were used to assist with the organization and language editing of this manuscript, as well as with the development, debugging, and refinement of experimental code.",
+     "zh": "本稿件在组织结构与语言润色方面，以及在实验代码的开发、调试和优化过程中，使用了生成式人工智能工具辅助完成。"
+    },
+    {
+     "en": "The authors reviewed and verified all AI-assisted content, including technical claims, equations, experimental results, implementation details, and code, against the repository artifacts and experimental records.",
+     "zh": "作者已对照仓库产物和实验记录，审查并核实了所有由人工智能辅助生成的内容，包括技术性论述、公式、实验结果、实现细节和代码。"
+    },
+    {
+     "en": "The authors remain fully responsible for the correctness, integrity, and reproducibility of this work.",
+     "zh": "作者仍对本工作的正确性、完整性和可复现性承担全部责任。"
+    }
+   ]
+  },
+  {
+   "en": "The selected layers are 8, 10, 12, 14, 16, and 18. We use full causal-prefix softmax attention and do not renormalize within the step submatrix. AA mass targets historical assistant tokens, while AO mass targets the observation paired with the historical step. Step rewards are placed at assistant-step end tokens, and tool observations are excluded from the actor loss. The main implementation uses query blocks of 128 tokens and reconstructs tensor/context-parallel shards before graph aggregation. Format errors are assigned the ordinary outcome reward of zero rather than an extra penalty.",
+   "zh": "所选的层为第 8、10、12、14、16 和 18 层。 我们使用完整的因果前缀 softmax 注意力，并且不在步内子矩阵中进行重新归一化。 AA 质量作用于历史助手标记，而 AO 质量作用于与历史步骤配对的观测。 步骤奖励被放置在助手步骤的结束标记上，并且工具观测被排除在智能体损失之外。 主实现使用 128 个标记的查询块，并在图聚合之前重建张量/上下文并行分片。 格式错误被赋予普通的零结果奖励，而不是额外的惩罚。",
+   "sents": [
+    {
+     "en": "The selected layers are 8, 10, 12, 14, 16, and 18.",
+     "zh": "所选的层为第 8、10、12、14、16 和 18 层。"
+    },
+    {
+     "en": "We use full causal-prefix softmax attention and do not renormalize within the step submatrix.",
+     "zh": "我们使用完整的因果前缀 softmax 注意力，并且不在步内子矩阵中进行重新归一化。"
+    },
+    {
+     "en": "AA mass targets historical assistant tokens, while AO mass targets the observation paired with the historical step.",
+     "zh": "AA 质量作用于历史助手标记，而 AO 质量作用于与历史步骤配对的观测。"
+    },
+    {
+     "en": "Step rewards are placed at assistant-step end tokens, and tool observations are excluded from the actor loss.",
+     "zh": "步骤奖励被放置在助手步骤的结束标记上，并且工具观测被排除在智能体损失之外。"
+    },
+    {
+     "en": "The main implementation uses query blocks of 128 tokens and reconstructs tensor/context-parallel shards before graph aggregation.",
+     "zh": "主实现使用 128 个标记的查询块，并在图聚合之前重建张量/上下文并行分片。"
+    },
+    {
+     "en": "Format errors are assigned the ordinary outcome reward of zero rather than an extra penalty.",
+     "zh": "格式错误被赋予普通的零结果奖励，而不是额外的惩罚。"
+    }
+   ]
+  },
+  {
+   "en": "Each benchmark is trained independently from the instruction-tuned checkpoint. Table 7 reports the training manifests and collected-batch updates. Epoch lengths use complete batches of eight, dropping the incomplete final batch when present. Training reward is binary success on ALFWorld, the official score in [ 0 , 1 ] [0,1] on WebShop, and the final ScienceWorld score clipped to [ 0,100 ] [0,100] and divided by 100. The native ScienceWorld step-reward increments are not supplied to PPO. Benchmark-specific expert-action and search bonuses are disabled.",
+   "zh": "每个基准都从指令微调后的检查点独立训练。 表 7 报告了训练清单和收集批次的更新情况。 轮次长度使用完整的批次（每批八个），若最后一批不完整则丢弃。 训练奖励在 ALFWorld 上为二值成功奖励，在 WebShop 上为 [0,1] 范围内的官方分数，在 ScienceWorld 上为最终分数裁剪到 [0,100] 后除以 100。 ScienceWorld 原生的步级奖励增量不提供给 PPO。 各基准特定的专家动作奖励与搜索奖励均被禁用。",
+   "sents": [
+    {
+     "en": "Each benchmark is trained independently from the instruction-tuned checkpoint.",
+     "zh": "每个基准都从指令微调后的检查点独立训练。"
+    },
+    {
+     "en": "Table 7 reports the training manifests and collected-batch updates.",
+     "zh": "表 7 报告了训练清单和收集批次的更新情况。"
+    },
+    {
+     "en": "Epoch lengths use complete batches of eight, dropping the incomplete final batch when present.",
+     "zh": "轮次长度使用完整的批次（每批八个），若最后一批不完整则丢弃。"
+    },
+    {
+     "en": "Training reward is binary success on ALFWorld, the official score in [ 0 , 1 ] [0,1] on WebShop, and the final ScienceWorld score clipped to [ 0,100 ] [0,100] and divided by 100.",
+     "zh": "训练奖励在 ALFWorld 上为二值成功奖励，在 WebShop 上为 [0,1] 范围内的官方分数，在 ScienceWorld 上为最终分数裁剪到 [0,100] 后除以 100。"
+    },
+    {
+     "en": "The native ScienceWorld step-reward increments are not supplied to PPO.",
+     "zh": "ScienceWorld 原生的步级奖励增量不提供给 PPO。"
+    },
+    {
+     "en": "Benchmark-specific expert-action and search bonuses are disabled.",
+     "zh": "各基准特定的专家动作奖励与搜索奖励均被禁用。"
+    }
+   ]
+  },
+  {
+   "en": "Table 10 reports the full uncertainty analysis summarized in Section 4.2 . Both policies decode greedily on identical held-out tasks, so the final-checkpoint comparison is paired at the task level over the exact-input-matched episodes defined in Appendix E . Wins and losses count tasks solved by exactly one policy, and the McNemar test is applied to those discordant pairs only. Bootstrap intervals resample the paired per-task differences 10,000 times.",
+   "zh": "表 10 报告了第 4.2 节中总结的完整不确定性分析。 两种策略都在相同的保留任务上进行贪婪解码，因此最终检查点的比较是在附录 E 中定义的精确输入匹配片段上按任务级别进行配对的。 胜负统计的是仅由其中一个策略解决的任务，McNemar 检验仅应用于这些不一致的对。 自助法区间对配对的每任务差异重采样 10,000 次。",
+   "sents": [
+    {
+     "en": "Table 10 reports the full uncertainty analysis summarized in Section 4.2 .",
+     "zh": "表 10 报告了第 4.2 节中总结的完整不确定性分析。"
+    },
+    {
+     "en": "Both policies decode greedily on identical held-out tasks, so the final-checkpoint comparison is paired at the task level over the exact-input-matched episodes defined in Appendix E .",
+     "zh": "两种策略都在相同的保留任务上进行贪婪解码，因此最终检查点的比较是在附录 E 中定义的精确输入匹配片段上按任务级别进行配对的。"
+    },
+    {
+     "en": "Wins and losses count tasks solved by exactly one policy, and the McNemar test is applied to those discordant pairs only.",
+     "zh": "胜负统计的是仅由其中一个策略解决的任务，McNemar 检验仅应用于这些不一致的对。"
+    },
+    {
+     "en": "Bootstrap intervals resample the paired per-task differences 10,000 times.",
+     "zh": "自助法区间对配对的每任务差异重采样 10,000 次。"
+    }
+   ]
+  },
+  {
+   "en": "We re-read the six final-checkpoint generations/*_openai.jsonl files referenced by the canonical evaluation CSVs. The analysis includes 274 ALFWorld, 500 WebShop, and 1,819 ScienceWorld episodes per method. Recomputed means for official score, success, environment steps, parsed calls, serialized output length, and trace-parser events agree with the evaluation summaries. Per-episode numeric extracts and source-file hashes are retained with the analysis script, with no new training or evaluation.",
+   "zh": "我们重新阅读了规范评估 CSV 所引用的六个最终检查点 generations/*_openai.jsonl 文件。 该分析包含每种方法 274 个 ALFWorld、500 个 WebShop 以及 1,819 个 ScienceWorld 片段。 重新计算的官方得分、成功率、环境步数、解析调用数、序列化输出长度以及轨迹解析器事件的均值与评估摘要一致。 逐片段的数值提取结果与源文件哈希随分析脚本一并保留，且没有进行新的训练或评估。",
+   "sents": [
+    {
+     "en": "We re-read the six final-checkpoint generations/*_openai.jsonl files referenced by the canonical evaluation CSVs.",
+     "zh": "我们重新阅读了规范评估 CSV 所引用的六个最终检查点 generations/*_openai.jsonl 文件。"
+    },
+    {
+     "en": "The analysis includes 274 ALFWorld, 500 WebShop, and 1,819 ScienceWorld episodes per method.",
+     "zh": "该分析包含每种方法 274 个 ALFWorld、500 个 WebShop 以及 1,819 个 ScienceWorld 片段。"
+    },
+    {
+     "en": "Recomputed means for official score, success, environment steps, parsed calls, serialized output length, and trace-parser events agree with the evaluation summaries.",
+     "zh": "重新计算的官方得分、成功率、环境步数、解析调用数、序列化输出长度以及轨迹解析器事件的均值与评估摘要一致。"
+    },
+    {
+     "en": "Per-episode numeric extracts and source-file hashes are retained with the analysis script, with no new training or evaluation.",
+     "zh": "逐片段的数值提取结果与源文件哈希随分析脚本一并保留，且没有进行新的训练或评估。"
+    }
+   ]
+  },
+  {
+   "en": "Table 3 additionally reports the three historical one-epoch GRPO evaluations on the same full-set sizes (2,593 trajectories). We extract their environment steps and serialized output lengths using the same definitions, and verify score, success, format-error rate, natural termination, and mean steps against the original GRPO summaries. Source hashes and numeric extracts are retained separately. These GRPO statistics are excluded from the paired and significance analyses below.",
+   "zh": "表 3 还报告了在相同全集规模（2,593 条轨迹）下的三次历史性单轮（one-epoch）GRPO 评估结果。 我们使用相同的定义提取其环境步数与序列化输出长度，并根据原始 GRPO 摘要核对分数、成功率、格式错误率、自然终止情况以及平均步数。 来源哈希值与数值提取结果被分别保存。 这些 GRPO 统计数据不包含在下文的配对分析与显著性分析中。",
+   "sents": [
+    {
+     "en": "Table 3 additionally reports the three historical one-epoch GRPO evaluations on the same full-set sizes (2,593 trajectories).",
+     "zh": "表 3 还报告了在相同全集规模（2,593 条轨迹）下的三次历史性单轮（one-epoch）GRPO 评估结果。"
+    },
+    {
+     "en": "We extract their environment steps and serialized output lengths using the same definitions, and verify score, success, format-error rate, natural termination, and mean steps against the original GRPO summaries.",
+     "zh": "我们使用相同的定义提取其环境步数与序列化输出长度，并根据原始 GRPO 摘要核对分数、成功率、格式错误率、自然终止情况以及平均步数。"
+    },
+    {
+     "en": "Source hashes and numeric extracts are retained separately.",
+     "zh": "来源哈希值与数值提取结果被分别保存。"
+    },
+    {
+     "en": "These GRPO statistics are excluded from the paired and significance analyses below.",
+     "zh": "这些 GRPO 统计数据不包含在下文的配对分析与显著性分析中。"
+    }
+   ]
+  },
+  {
+   "en": "Environment steps use the evaluator env_steps field. Tool calls are counted from openai_tool_calls . They are parseable calls, not necessarily valid or successful environment actions. In these exports, parsed assistant tool-call turns equal the call count and are not reported as an independent measure of reasoning depth. Output length counts characters in the serialized output , including tool-call syntax and observations. We do not interpret it as model-generated token count, internal reasoning length, or inference FLOPs. Medians and P90 values are computed from the episode-level observations, and P90 uses linear interpolation.",
+   "zh": "环境步数使用评估器的 env_steps 字段。 工具调用从 openai_tool_calls 中统计。 它们是可解析的调用，不一定是有效或成功的环境动作。 在这些导出数据中，被解析的助手工具调用轮次等于调用次数，因此不作为衡量推理深度的独立指标。 输出长度统计序列化输出 中的字符数，包括工具调用语法和观测内容。 我们不将其解释为模型生成的 token 数、内部推理长度或推理 FLOPs。 中位数和 P90 值基于回合级观测计算，P90 使用线性插值。",
+   "sents": [
+    {
+     "en": "Environment steps use the evaluator env_steps field.",
+     "zh": "环境步数使用评估器的 env_steps 字段。"
+    },
+    {
+     "en": "Tool calls are counted from openai_tool_calls .",
+     "zh": "工具调用从 openai_tool_calls 中统计。"
+    },
+    {
+     "en": "They are parseable calls, not necessarily valid or successful environment actions.",
+     "zh": "它们是可解析的调用，不一定是有效或成功的环境动作。"
+    },
+    {
+     "en": "In these exports, parsed assistant tool-call turns equal the call count and are not reported as an independent measure of reasoning depth.",
+     "zh": "在这些导出数据中，被解析的助手工具调用轮次等于调用次数，因此不作为衡量推理深度的独立指标。"
+    },
+    {
+     "en": "Output length counts characters in the serialized output , including tool-call syntax and observations.",
+     "zh": "输出长度统计序列化输出 中的字符数，包括工具调用语法和观测内容。"
+    },
+    {
+     "en": "We do not interpret it as model-generated token count, internal reasoning length, or inference FLOPs.",
+     "zh": "我们不将其解释为模型生成的 token 数、内部推理长度或推理 FLOPs。"
+    },
+    {
+     "en": "Medians and P90 values are computed from the episode-level observations, and P90 uses linear interpolation.",
+     "zh": "中位数和 P90 值基于回合级观测计算，P90 使用线性插值。"
+    }
+   ]
+  },
+  {
+   "en": "Table 11 separates successful and unsuccessful episodes using the evaluator binary success flag. These two groups have different task membership under the two policies. The paired analysis in Table 12 additionally requires the same evaluation row, an exact input-text hash match, and an input unique within each benchmark set. This retains all 274 ALFWorld and 500 WebShop pairs. For ScienceWorld, 331 episodes are excluded because inputs differ or are non-unique, leaving 1,488 eligible pairs and 268 joint successes. No matching is inferred from row position alone.",
+   "zh": "表11使用评估器的二值成功标志将成功与失败的回合分开。 在两种策略下，这两组所包含的任务有所不同。 表12中的配对分析还要求属于同一评估行、输入文本哈希完全匹配，且该输入在每个基准集合内唯一。 这保留了全部274个ALFWorld配对和500个WebShop配对。 对于ScienceWorld，331个回合因输入不同或不唯一而被排除，剩下1,488个符合条件的配对和268个联合成功。 不单独根据行的位置来推断匹配。",
+   "sents": [
+    {
+     "en": "Table 11 separates successful and unsuccessful episodes using the evaluator binary success flag.",
+     "zh": "表11使用评估器的二值成功标志将成功与失败的回合分开。"
+    },
+    {
+     "en": "These two groups have different task membership under the two policies.",
+     "zh": "在两种策略下，这两组所包含的任务有所不同。"
+    },
+    {
+     "en": "The paired analysis in Table 12 additionally requires the same evaluation row, an exact input-text hash match, and an input unique within each benchmark set.",
+     "zh": "表12中的配对分析还要求属于同一评估行、输入文本哈希完全匹配，且该输入在每个基准集合内唯一。"
+    },
+    {
+     "en": "This retains all 274 ALFWorld and 500 WebShop pairs.",
+     "zh": "这保留了全部274个ALFWorld配对和500个WebShop配对。"
+    },
+    {
+     "en": "For ScienceWorld, 331 episodes are excluded because inputs differ or are non-unique, leaving 1,488 eligible pairs and 268 joint successes.",
+     "zh": "对于ScienceWorld，331个回合因输入不同或不唯一而被排除，剩下1,488个符合条件的配对和268个联合成功。"
+    },
+    {
+     "en": "No matching is inferred from row position alone.",
+     "zh": "不单独根据行的位置来推断匹配。"
+    }
+   ]
+  },
+  {
+   "en": "On ALFWorld, the verified pairs include 20 tasks solved only by AttnSR, 4 only by PPO, 246 by both, and 4 by neither. This yields the observed net gain of 16 successes without claiming that every previously solved task remains solved. The corresponding WebShop counts are 48, 44, 157, and 251. Within the restricted ScienceWorld eligible set, they are 173, 136, 268, and 911. These counts should not replace the full-test success totals. Successful-subset comparisons are descriptive and post-selected on outcomes of both policies, not estimates of a causal treatment effect.",
+   "zh": "在 ALFWorld 上，经过验证的任务对包括：仅由 AttnSR 解决的 20 个任务、仅由 PPO 解决的 4 个任务、两者都解决的 246 个任务，以及两者都未解决的 4 个任务。 由此得到了所观察到的 16 个成功任务的净增益，而无需声称每个此前已解决的任务仍然被解决。 WebShop 上对应的数字分别为 48、44、157 和 251。 在受限的 ScienceWorld 合格集合中，这些数字分别为 173、136、268 和 911。 这些数字不应取代完整的测试成功总数。 成功子集的比较是描述性的，并且是基于两个策略的结果进行事后选择的，并非对因果处理效应的估计。",
+   "sents": [
+    {
+     "en": "On ALFWorld, the verified pairs include 20 tasks solved only by AttnSR, 4 only by PPO, 246 by both, and 4 by neither.",
+     "zh": "在 ALFWorld 上，经过验证的任务对包括：仅由 AttnSR 解决的 20 个任务、仅由 PPO 解决的 4 个任务、两者都解决的 246 个任务，以及两者都未解决的 4 个任务。"
+    },
+    {
+     "en": "This yields the observed net gain of 16 successes without claiming that every previously solved task remains solved.",
+     "zh": "由此得到了所观察到的 16 个成功任务的净增益，而无需声称每个此前已解决的任务仍然被解决。"
+    },
+    {
+     "en": "The corresponding WebShop counts are 48, 44, 157, and 251.",
+     "zh": "WebShop 上对应的数字分别为 48、44、157 和 251。"
+    },
+    {
+     "en": "Within the restricted ScienceWorld eligible set, they are 173, 136, 268, and 911.",
+     "zh": "在受限的 ScienceWorld 合格集合中，这些数字分别为 173、136、268 和 911。"
+    },
+    {
+     "en": "These counts should not replace the full-test success totals.",
+     "zh": "这些数字不应取代完整的测试成功总数。"
+    },
+    {
+     "en": "Successful-subset comparisons are descriptive and post-selected on outcomes of both policies, not estimates of a causal treatment effect.",
+     "zh": "成功子集的比较是描述性的，并且是基于两个策略的结果进行事后选择的，并非对因果处理效应的估计。"
+    }
+   ]
+  },
+  {
+   "en": "Table 13 distinguishes exported trace-parser events from the evaluator terminal format-error flag. Most parser events are unmatched call/response pairs, not malformed JSON. Specifically, ALFWorld PPO has 23 missing-response events, while AttnSR has 8 missing-response and 4 orphan-response events. ScienceWorld PPO has 426 missing-response and 10 call-parsing events, while AttnSR has 245 missing-response events and no call-parsing events. WebShop has zero events under PPO and 3 missing-response events under AttnSR. An episode may contain multiple events, so the event count per episode differs from the fraction of affected episodes. We do not equate these exported trace diagnostics with runtime tool-execution failures.",
+   "zh": "表 13 区分了导出的轨迹解析事件与评估器终端的格式错误标志。 大多数解析事件是未匹配的调用/响应对，而非格式错误的 JSON。 具体而言，ALFWorld PPO 有 23 个缺失响应事件，而 AttnSR 有 8 个缺失响应事件和 4 个孤立响应事件。 ScienceWorld PPO 有 426 个缺失响应事件和 10 个调用解析事件，而 AttnSR 有 245 个缺失响应事件且没有调用解析事件。 WebShop 在 PPO 下事件数为零，在 AttnSR 下有 3 个缺失响应事件。 一个回合可能包含多个事件，因此每个回合的事件数与受影响回合的比例并不相同。 我们不将这些导出的轨迹诊断与运行时工具执行失败等同起来。",
+   "sents": [
+    {
+     "en": "Table 13 distinguishes exported trace-parser events from the evaluator terminal format-error flag.",
+     "zh": "表 13 区分了导出的轨迹解析事件与评估器终端的格式错误标志。"
+    },
+    {
+     "en": "Most parser events are unmatched call/response pairs, not malformed JSON.",
+     "zh": "大多数解析事件是未匹配的调用/响应对，而非格式错误的 JSON。"
+    },
+    {
+     "en": "Specifically, ALFWorld PPO has 23 missing-response events, while AttnSR has 8 missing-response and 4 orphan-response events.",
+     "zh": "具体而言，ALFWorld PPO 有 23 个缺失响应事件，而 AttnSR 有 8 个缺失响应事件和 4 个孤立响应事件。"
+    },
+    {
+     "en": "ScienceWorld PPO has 426 missing-response and 10 call-parsing events, while AttnSR has 245 missing-response events and no call-parsing events.",
+     "zh": "ScienceWorld PPO 有 426 个缺失响应事件和 10 个调用解析事件，而 AttnSR 有 245 个缺失响应事件且没有调用解析事件。"
+    },
+    {
+     "en": "WebShop has zero events under PPO and 3 missing-response events under AttnSR.",
+     "zh": "WebShop 在 PPO 下事件数为零，在 AttnSR 下有 3 个缺失响应事件。"
+    },
+    {
+     "en": "An episode may contain multiple events, so the event count per episode differs from the fraction of affected episodes.",
+     "zh": "一个回合可能包含多个事件，因此每个回合的事件数与受影响回合的比例并不相同。"
+    },
+    {
+     "en": "We do not equate these exported trace diagnostics with runtime tool-execution failures.",
+     "zh": "我们不将这些导出的轨迹诊断与运行时工具执行失败等同起来。"
+    }
+   ]
+  },
+  {
+   "en": "Natural termination is also not a success indicator. On ScienceWorld its rate increases from 12.15% to 18.42%, so earlier unsuccessful stopping may contribute to the full-set length reduction, which is why we separately report jointly successful trajectories. Exact adjacent-call repetition does not uniformly decrease either, as the pooled ScienceWorld repetition fraction increases from 15.35% to 16.30%. Repeated commands can be necessary in stateful environments and are not labeled invalid or redundant without inspecting the intervening state. On WebShop, the parsed-call totals are 824 search and 2,143 click calls for PPO, versus 1,088 search and 2,925 click calls for AttnSR. This confirms that the higher interaction count involves both search and navigation rather than one tool alone.",
+   "zh": "自然终止同样也不是成功的标志。 在 ScienceWorld 上，该比例从 12.15% 上升到 18.42%，因此较早的失败性停止可能促成了全集上的长度下降，这也是我们单独报告联合成功轨迹的原因。 相邻调用的精确重复也并非一致下降，因为 ScienceWorld 上汇总的重复调用比例从 15.35% 上升到 16.30%。 在有状态环境中，重复命令可能是必要的，若不检查中间状态，就不能将其标记为无效或冗余。 在 WebShop 上，PPO 解析出的调用总数为 824 次 search 调用和 2,143 次 click 调用，而 AttnSR 为 1,088 次 search 调用和 2,925 次 click 调用。 这证实了更高的交互次数同时涉及搜索与导航，而非仅涉及单一工具。",
+   "sents": [
+    {
+     "en": "Natural termination is also not a success indicator.",
+     "zh": "自然终止同样也不是成功的标志。"
+    },
+    {
+     "en": "On ScienceWorld its rate increases from 12.15% to 18.42%, so earlier unsuccessful stopping may contribute to the full-set length reduction, which is why we separately report jointly successful trajectories.",
+     "zh": "在 ScienceWorld 上，该比例从 12.15% 上升到 18.42%，因此较早的失败性停止可能促成了全集上的长度下降，这也是我们单独报告联合成功轨迹的原因。"
+    },
+    {
+     "en": "Exact adjacent-call repetition does not uniformly decrease either, as the pooled ScienceWorld repetition fraction increases from 15.35% to 16.30%.",
+     "zh": "相邻调用的精确重复也并非一致下降，因为 ScienceWorld 上汇总的重复调用比例从 15.35% 上升到 16.30%。"
+    },
+    {
+     "en": "Repeated commands can be necessary in stateful environments and are not labeled invalid or redundant without inspecting the intervening state.",
+     "zh": "在有状态环境中，重复命令可能是必要的，若不检查中间状态，就不能将其标记为无效或冗余。"
+    },
+    {
+     "en": "On WebShop, the parsed-call totals are 824 search and 2,143 click calls for PPO, versus 1,088 search and 2,925 click calls for AttnSR.",
+     "zh": "在 WebShop 上，PPO 解析出的调用总数为 824 次 search 调用和 2,143 次 click 调用，而 AttnSR 为 1,088 次 search 调用和 2,925 次 click 调用。"
+    },
+    {
+     "en": "This confirms that the higher interaction count involves both search and navigation rather than one tool alone.",
+     "zh": "这证实了更高的交互次数同时涉及搜索与导航，而非仅涉及单一工具。"
+    }
+   ]
+  },
+  {
+   "en": "Table 1 includes a one-epoch GRPO reference with four rollouts per prompt. Table 3 reports the canonical positional control, asynchronous and Qwen3 backbone comparisons, and the Qwen2.5-3B PPO and GRPO comparisons. The supplementary results are interpreted within their respective settings and are not pooled with the primary comparison for component attribution.",
+   "zh": "表 1 包含一个单轮次（one-epoch）GRPO 参照结果，其中每个提示执行四次 rollout。 表 3 报告了标准位置控制、异步与 Qwen3 骨干网络的对比，以及 Qwen2.5-3B 上 PPO 和 GRPO 的对比。 补充结果在其各自的设置内进行解释，不与主要对比合并用于组件归因。",
+   "sents": [
+    {
+     "en": "Table 1 includes a one-epoch GRPO reference with four rollouts per prompt.",
+     "zh": "表 1 包含一个单轮次（one-epoch）GRPO 参照结果，其中每个提示执行四次 rollout。"
+    },
+    {
+     "en": "Table 3 reports the canonical positional control, asynchronous and Qwen3 backbone comparisons, and the Qwen2.5-3B PPO and GRPO comparisons.",
+     "zh": "表 3 报告了标准位置控制、异步与 Qwen3 骨干网络的对比，以及 Qwen2.5-3B 上 PPO 和 GRPO 的对比。"
+    },
+    {
+     "en": "The supplementary results are interpreted within their respective settings and are not pooled with the primary comparison for component attribution.",
+     "zh": "补充结果在其各自的设置内进行解释，不与主要对比合并用于组件归因。"
+    }
+   ]
+  },
+  {
+   "en": "Both variants use Qwen2.5-7B-Instruct, rank-64 actor and critic LoRA, batch size 8, actor/critic learning rates of 5 × 10 − 6 5\\times 10^{-6} , a 32,768-token context, and four data epochs on ALFWorld. This configuration uses asynchronous collection with a replay queue and rollout-policy token log-probabilities. Direct token importance sampling masks ratios outside [ 0.7 , 6.0 ] [0.7,6.0] . Observation tokens are skipped in GAE, with actor λ = 1 − 1 / ( 1.5 ​ n i ) \\lambda=1-1/(1.5n_{i}) for n i n_{i} trainable assistant tokens and critic λ = 1 \\lambda=1 . Two critic passes are performed per actor pass, and critic LoRA is restricted to MLP projections, with a trainable value head. The critic is initialized from the instruction-tuned model without additional value pretraining. The AttnSR variant retains the canonical attention layers and shaping hyperparameters. Thus the comparison changes more than collection timing relative to canonical PPO.",
+   "zh": "两种变体均使用 Qwen2.5-7B-Instruct、秩为 64 的 actor 与 critic LoRA、批次大小 8、5 × 10 − 6 5\\times 10^{-6} 的 actor/critic 学习率、32,768 词元的上下文，并在 ALFWorld 上训练四个数据轮次。 该配置使用带重放队列的异步收集以及 rollout 策略的词元对数概率。 直接词元重要性采样会遮蔽 [ 0.7 , 6.0 ] [0.7,6.0] 区间之外的比率。 观测词元在 GAE 中被跳过，对于 n i n_{i} 个可训练的助手词元，actor 采用 λ = 1 − 1 / ( 1.5 ​ n i ) \\lambda=1-1/(1.5n_{i}) ，critic 采用 λ = 1 \\lambda=1 。 每次 actor 更新执行两次 critic 更新，且 critic LoRA 仅限于 MLP 投影，并带有可训练的价值头。 critic 从指令微调模型初始化，无需额外的价值预训练。 AttnSR 变体保留了标准的注意力层与形状调整超参数。 因此，相对于标准 PPO，该比较改变的不只是收集时机。",
+   "sents": [
+    {
+     "en": "Both variants use Qwen2.5-7B-Instruct, rank-64 actor and critic LoRA, batch size 8, actor/critic learning rates of 5 × 10 − 6 5\\times 10^{-6} , a 32,768-token context, and four data epochs on ALFWorld.",
+     "zh": "两种变体均使用 Qwen2.5-7B-Instruct、秩为 64 的 actor 与 critic LoRA、批次大小 8、5 × 10 − 6 5\\times 10^{-6} 的 actor/critic 学习率、32,768 词元的上下文，并在 ALFWorld 上训练四个数据轮次。"
+    },
+    {
+     "en": "This configuration uses asynchronous collection with a replay queue and rollout-policy token log-probabilities.",
+     "zh": "该配置使用带重放队列的异步收集以及 rollout 策略的词元对数概率。"
+    },
+    {
+     "en": "Direct token importance sampling masks ratios outside [ 0.7 , 6.0 ] [0.7,6.0] .",
+     "zh": "直接词元重要性采样会遮蔽 [ 0.7 , 6.0 ] [0.7,6.0] 区间之外的比率。"
+    },
+    {
+     "en": "Observation tokens are skipped in GAE, with actor λ = 1 − 1 / ( 1.5 ​ n i ) \\lambda=1-1/(1.5n_{i}) for n i n_{i} trainable assistant tokens and critic λ = 1 \\lambda=1 .",
+     "zh": "观测词元在 GAE 中被跳过，对于 n i n_{i} 个可训练的助手词元，actor 采用 λ = 1 − 1 / ( 1.5 ​ n i ) \\lambda=1-1/(1.5n_{i}) ，critic 采用 λ = 1 \\lambda=1 。"
+    },
+    {
+     "en": "Two critic passes are performed per actor pass, and critic LoRA is restricted to MLP projections, with a trainable value head.",
+     "zh": "每次 actor 更新执行两次 critic 更新，且 critic LoRA 仅限于 MLP 投影，并带有可训练的价值头。"
+    },
+    {
+     "en": "The critic is initialized from the instruction-tuned model without additional value pretraining.",
+     "zh": "critic 从指令微调模型初始化，无需额外的价值预训练。"
+    },
+    {
+     "en": "The AttnSR variant retains the canonical attention layers and shaping hyperparameters.",
+     "zh": "AttnSR 变体保留了标准的注意力层与形状调整超参数。"
+    },
+    {
+     "en": "Thus the comparison changes more than collection timing relative to canonical PPO.",
+     "zh": "因此，相对于标准 PPO，该比较改变的不只是收集时机。"
+    }
+   ]
+  },
+  {
+   "en": "The paired launch configuration uses Qwen3-4B-Instruct-2507 with the same main hyperparameters as the canonical study, namely rank-64 LoRA, actor/critic learning rates of 5 × 10 − 6 5\\times 10^{-6} , batch and PPO minibatch size 8, one rollout per prompt, one PPO epoch per batch, reference KL coefficient 0.02, and a 32,768-token context. Training uses TP=4 and CP=2, and rollout uses TP=4. AttnSR retains the selected layers and reward settings. Four ALFWorld data epochs give 1,776 updates. Greedy evaluation of the epoch-4 policies on all 274 held-out tasks yields 241 successes for PPO and 250 for AttnSR. This is supplementary evidence across backbones, not a test isolating model size or individual reward components.",
+   "zh": "成对启动配置使用 Qwen3-4B-Instruct-2507，并采用与规范研究相同的主要超参数，即 rank-64 LoRA、actor/critic 学习率为 5 × 10 − 6 5\\times 10^{-6}、批次与 PPO 小批次大小为 8、每个提示一次 rollout、每个批次一次 PPO epoch、参考 KL 系数为 0.02，以及 32,768 个 token 的上下文。 训练使用 TP=4 和 CP=2，rollout 使用 TP=4。 AttnSR 保留所选层和奖励设置。 四个 ALFWorld 数据 epoch 共产生 1,776 次更新。 对 epoch-4 策略在全部 274 个保留任务上进行贪婪评估，PPO 获得 241 次成功，AttnSR 获得 250 次成功。 这只是跨骨干网络的补充证据，并非隔离模型规模或单个奖励组件的测试。",
+   "sents": [
+    {
+     "en": "The paired launch configuration uses Qwen3-4B-Instruct-2507 with the same main hyperparameters as the canonical study, namely rank-64 LoRA, actor/critic learning rates of 5 × 10 − 6 5\\times 10^{-6} , batch and PPO minibatch size 8, one rollout per prompt, one PPO epoch per batch, reference KL coefficient 0.02, and a 32,768-token context.",
+     "zh": "成对启动配置使用 Qwen3-4B-Instruct-2507，并采用与规范研究相同的主要超参数，即 rank-64 LoRA、actor/critic 学习率为 5 × 10 − 6 5\\times 10^{-6}、批次与 PPO 小批次大小为 8、每个提示一次 rollout、每个批次一次 PPO epoch、参考 KL 系数为 0.02，以及 32,768 个 token 的上下文。"
+    },
+    {
+     "en": "Training uses TP=4 and CP=2, and rollout uses TP=4.",
+     "zh": "训练使用 TP=4 和 CP=2，rollout 使用 TP=4。"
+    },
+    {
+     "en": "AttnSR retains the selected layers and reward settings.",
+     "zh": "AttnSR 保留所选层和奖励设置。"
+    },
+    {
+     "en": "Four ALFWorld data epochs give 1,776 updates.",
+     "zh": "四个 ALFWorld 数据 epoch 共产生 1,776 次更新。"
+    },
+    {
+     "en": "Greedy evaluation of the epoch-4 policies on all 274 held-out tasks yields 241 successes for PPO and 250 for AttnSR.",
+     "zh": "对 epoch-4 策略在全部 274 个保留任务上进行贪婪评估，PPO 获得 241 次成功，AttnSR 获得 250 次成功。"
+    },
+    {
+     "en": "This is supplementary evidence across backbones, not a test isolating model size or individual reward components.",
+     "zh": "这只是跨骨干网络的补充证据，并非隔离模型规模或单个奖励组件的测试。"
+    }
+   ]
+  },
+  {
+   "en": "Both policies start from Qwen2.5-3B-Instruct with a frozen base and rank-64 actor/critic LoRA. The main settings are retained, including actor/critic learning rates 5 × 10 − 6 5\\times 10^{-6} , batch and minibatch size 8, one rollout per prompt, one PPO epoch per batch, KL coefficient 0.02, and a 32,768-token context. Four data epochs give 1,776 updates, with checkpoints every 444 updates. AttnSR retains the reward budget scale 0.25, confidence targets, EMA, and attention aggregation settings in Table 9 . To preserve relative depth in the 36-layer model, each zero-based reference index l ∈ { 8 , 10 , 12 , 14 , 16 , 18 } l\\in\\{8,10,12,14,16,18\\} is mapped to ⌊ 35 ​ l / 27 + 0.5 ⌋ \\lfloor 35l/27+0.5\\rfloor , yielding { 10 , 13 , 16 , 18 , 21 , 23 } \\{10,13,16,18,21,23\\} .",
+   "zh": "两种策略均从 Qwen2.5-3B-Instruct 出发，冻结基础模型，并对 actor/critic 使用秩为 64 的 LoRA。 主要设置保持不变，包括 actor/critic 学习率 5 × 10 − 6 5\\times 10^{-6}、批大小和小批大小为 8、每个提示一次 rollout、每个批次一个 PPO 轮次、KL 系数 0.02，以及 32,768 个 token 的上下文长度。 四个数据轮次共产生 1,776 次更新，每 444 次更新保存一次检查点。 AttnSR 保留了表 9 中的奖励预算缩放 0.25、置信度目标、EMA 以及注意力聚合设置。 为了在 36 层模型中保持相对深度，每个从零开始的参考索引 l ∈ { 8 , 10 , 12 , 14 , 16 , 18 } l\\in\\{8,10,12,14,16,18\\} 被映射为 ⌊ 35 ​ l / 27 + 0.5 ⌋ \\lfloor 35l/27+0.5\\rfloor，得到 { 10 , 13 , 16 , 18 , 21 , 23 } \\{10,13,16,18,21,23\\}。",
+   "sents": [
+    {
+     "en": "Both policies start from Qwen2.5-3B-Instruct with a frozen base and rank-64 actor/critic LoRA.",
+     "zh": "两种策略均从 Qwen2.5-3B-Instruct 出发，冻结基础模型，并对 actor/critic 使用秩为 64 的 LoRA。"
+    },
+    {
+     "en": "The main settings are retained, including actor/critic learning rates 5 × 10 − 6 5\\times 10^{-6} , batch and minibatch size 8, one rollout per prompt, one PPO epoch per batch, KL coefficient 0.02, and a 32,768-token context.",
+     "zh": "主要设置保持不变，包括 actor/critic 学习率 5 × 10 − 6 5\\times 10^{-6}、批大小和小批大小为 8、每个提示一次 rollout、每个批次一个 PPO 轮次、KL 系数 0.02，以及 32,768 个 token 的上下文长度。"
+    },
+    {
+     "en": "Four data epochs give 1,776 updates, with checkpoints every 444 updates.",
+     "zh": "四个数据轮次共产生 1,776 次更新，每 444 次更新保存一次检查点。"
+    },
+    {
+     "en": "AttnSR retains the reward budget scale 0.25, confidence targets, EMA, and attention aggregation settings in Table 9 .",
+     "zh": "AttnSR 保留了表 9 中的奖励预算缩放 0.25、置信度目标、EMA 以及注意力聚合设置。"
+    },
+    {
+     "en": "To preserve relative depth in the 36-layer model, each zero-based reference index l ∈ { 8 , 10 , 12 , 14 , 16 , 18 } l\\in\\{8,10,12,14,16,18\\} is mapped to ⌊ 35 ​ l / 27 + 0.5 ⌋ \\lfloor 35l/27+0.5\\rfloor , yielding { 10 , 13 , 16 , 18 , 21 , 23 } \\{10,13,16,18,21,23\\} .",
+     "zh": "为了在 36 层模型中保持相对深度，每个从零开始的参考索引 l ∈ { 8 , 10 , 12 , 14 , 16 , 18 } l\\in\\{8,10,12,14,16,18\\} 被映射为 ⌊ 35 ​ l / 27 + 0.5 ⌋ \\lfloor 35l/27+0.5\\rfloor，得到 { 10 , 13 , 16 , 18 , 21 , 23 } \\{10,13,16,18,21,23\\}。"
+    }
+   ]
+  },
+  {
+   "en": "Figure 4 reports greedy evaluation of every checkpoint on all 274 held-out tasks. Overall success for PPO/AttnSR is 4.74/22.26%, 33.21/61.31%, 61.68/72.26%, and 79.56/87.23% at epochs 1–4. The final checkpoint is reported without best-checkpoint selection. At epoch 4, mean environment steps fall from 32.79 to 22.44, while format errors increase from 0.00% to 2.55%, so higher success does not imply uniform improvement in protocol compliance. Each method has one training run, so the curves do not estimate training-seed variability. The baseline and AttnSR source trees also contain critic/value-head compatibility differences beyond attention reward code, so these runs are a descriptive cross-backbone check rather than an isolated reward-component ablation.",
+   "zh": "图4报告了每个检查点在全部274个留出任务上的贪心评估结果。 PPO/AttnSR在第1–4个轮次的总成功率为4.74/22.26%、33.21/61.31%、61.68/72.26%和79.56/87.23%。 最终检查点是直接报告的，未经过最佳检查点选择。 在第4个轮次，平均环境步数从32.79降至22.44，而格式错误从0.00%升至2.55%，因此更高的成功率并不意味着协议遵从性全面改善。 每种方法只有一次训练运行，因此这些曲线无法估计训练随机种子带来的方差。 基线与AttnSR的代码树在注意力奖励代码之外还存在评论家/价值头的兼容性差异，因此这些运行是对不同骨干结构的描述性对比，而非对奖励组件的单独消融实验。",
+   "sents": [
+    {
+     "en": "Figure 4 reports greedy evaluation of every checkpoint on all 274 held-out tasks.",
+     "zh": "图4报告了每个检查点在全部274个留出任务上的贪心评估结果。"
+    },
+    {
+     "en": "Overall success for PPO/AttnSR is 4.74/22.26%, 33.21/61.31%, 61.68/72.26%, and 79.56/87.23% at epochs 1–4.",
+     "zh": "PPO/AttnSR在第1–4个轮次的总成功率为4.74/22.26%、33.21/61.31%、61.68/72.26%和79.56/87.23%。"
+    },
+    {
+     "en": "The final checkpoint is reported without best-checkpoint selection.",
+     "zh": "最终检查点是直接报告的，未经过最佳检查点选择。"
+    },
+    {
+     "en": "At epoch 4, mean environment steps fall from 32.79 to 22.44, while format errors increase from 0.00% to 2.55%, so higher success does not imply uniform improvement in protocol compliance.",
+     "zh": "在第4个轮次，平均环境步数从32.79降至22.44，而格式错误从0.00%升至2.55%，因此更高的成功率并不意味着协议遵从性全面改善。"
+    },
+    {
+     "en": "Each method has one training run, so the curves do not estimate training-seed variability.",
+     "zh": "每种方法只有一次训练运行，因此这些曲线无法估计训练随机种子带来的方差。"
+    },
+    {
+     "en": "The baseline and AttnSR source trees also contain critic/value-head compatibility differences beyond attention reward code, so these runs are a descriptive cross-backbone check rather than an isolated reward-component ablation.",
+     "zh": "基线与AttnSR的代码树在注意力奖励代码之外还存在评论家/价值头的兼容性差异，因此这些运行是对不同骨干结构的描述性对比，而非对奖励组件的单独消融实验。"
+    }
+   ]
+  },
+  {
+   "en": "The two GRPO policies independently start from Qwen2.5-3B-Instruct and train for one data epoch with four rollouts per prompt. Both use a frozen base, LoRA rank/alpha 64/64, actor learning rate 5 × 10 − 6 5\\times 10^{-6} , prompt batch/minibatch size 8, actor KL loss coefficient 0.02, and no critic. Training uses TP=4, CP=2, rollout TP=4, and a 32,768-token context with prompt/response limits 7,168/25,600. The final checkpoint is saved at update 444. Evaluation uses greedy decoding on the same 274 tasks, with no training-time attention signal. Four rollouts for one epoch match the nominal trajectory count of one rollout for four PPO epochs, but not the update count, generated tokens, or runtime.",
+   "zh": "两个 GRPO 智能体均独立地从 Qwen2.5-3B-Instruct 出发，训练一个数据 epoch，每个 prompt 进行四次 rollout。 两者均使用冻结的基础模型、LoRA rank/alpha 64/64、actor 学习率 5 × 10 − 6 5\\times 10^{-6}、prompt batch/minibatch 大小为 8、actor KL 损失系数 0.02，且不使用 critic。 训练使用 TP=4、CP=2、rollout TP=4，以及 32,768 个 token 的上下文，prompt/response 限制为 7,168/25,600。 最终检查点保存于第 444 次更新处。 评估在相同的 274 个任务上采用贪婪解码，不使用任何训练时的注意力信号。 一个 epoch 的四次 rollout 在名义轨迹数量上等同于四次 PPO epoch 中每次一次 rollout 的设置，但两者的更新次数、生成 token 数量和运行时间并不相同。",
+   "sents": [
+    {
+     "en": "The two GRPO policies independently start from Qwen2.5-3B-Instruct and train for one data epoch with four rollouts per prompt.",
+     "zh": "两个 GRPO 智能体均独立地从 Qwen2.5-3B-Instruct 出发，训练一个数据 epoch，每个 prompt 进行四次 rollout。"
+    },
+    {
+     "en": "Both use a frozen base, LoRA rank/alpha 64/64, actor learning rate 5 × 10 − 6 5\\times 10^{-6} , prompt batch/minibatch size 8, actor KL loss coefficient 0.02, and no critic.",
+     "zh": "两者均使用冻结的基础模型、LoRA rank/alpha 64/64、actor 学习率 5 × 10 − 6 5\\times 10^{-6}、prompt batch/minibatch 大小为 8、actor KL 损失系数 0.02，且不使用 critic。"
+    },
+    {
+     "en": "Training uses TP=4, CP=2, rollout TP=4, and a 32,768-token context with prompt/response limits 7,168/25,600.",
+     "zh": "训练使用 TP=4、CP=2、rollout TP=4，以及 32,768 个 token 的上下文，prompt/response 限制为 7,168/25,600。"
+    },
+    {
+     "en": "The final checkpoint is saved at update 444.",
+     "zh": "最终检查点保存于第 444 次更新处。"
+    },
+    {
+     "en": "Evaluation uses greedy decoding on the same 274 tasks, with no training-time attention signal.",
+     "zh": "评估在相同的 274 个任务上采用贪婪解码，不使用任何训练时的注意力信号。"
+    },
+    {
+     "en": "Four rollouts for one epoch match the nominal trajectory count of one rollout for four PPO epochs, but not the update count, generated tokens, or runtime.",
+     "zh": "一个 epoch 的四次 rollout 在名义轨迹数量上等同于四次 PPO epoch 中每次一次 rollout 的设置，但两者的更新次数、生成 token 数量和运行时间并不相同。"
+    }
+   ]
+  },
+  {
+   "en": "This experiment uses the initial token-advantage reweighting AttnSR variant. Let A i A_{i} be the ordinary GRPO outcome advantage computed from original environment rewards within each prompt group. Intermediate-step weights are broadcast to their action tokens and normalized to mean one over valid tokens with positive weights, accounting for step lengths. Set w ~ i , u = 1 \\widetilde{w}_{i,u}=1 at other valid action tokens, including the final step, unparsed positions, and zero-weight positions. The actor uses",
+   "zh": "本实验使用初始 token 优势重加权的 AttnSR 变体。 设 A i A_{i} 为在每个提示组内由原始环境奖励计算得到的普通 GRPO 结果优势。 中间步骤的权重被广播到其动作 token 上，并在具有正权重的有效 token 上按步骤长度归一化为均值为一。 在其他有效动作 token 上，包括最后一步、未解析位置和零权重位置，设 w ~ i , u = 1 \\widetilde{w}_{i,u}=1。策略模型使用",
+   "sents": [
+    {
+     "en": "This experiment uses the initial token-advantage reweighting AttnSR variant.",
+     "zh": "本实验使用初始 token 优势重加权的 AttnSR 变体。"
+    },
+    {
+     "en": "Let A i A_{i} be the ordinary GRPO outcome advantage computed from original environment rewards within each prompt group.",
+     "zh": "设 A i A_{i} 为在每个提示组内由原始环境奖励计算得到的普通 GRPO 结果优势。"
+    },
+    {
+     "en": "Intermediate-step weights are broadcast to their action tokens and normalized to mean one over valid tokens with positive weights, accounting for step lengths.",
+     "zh": "中间步骤的权重被广播到其动作 token 上，并在具有正权重的有效 token 上按步骤长度归一化为均值为一。"
+    },
+    {
+     "en": "Set w ~ i , u = 1 \\widetilde{w}_{i,u}=1 at other valid action tokens, including the final step, unparsed positions, and zero-weight positions. The actor uses",
+     "zh": "在其他有效动作 token 上，包括最后一步、未解析位置和零权重位置，设 w ~ i , u = 1 \\widetilde{w}_{i,u}=1。策略模型使用"
+    }
+   ]
+  },
+  {
+   "en": "Observations and padding are masked. This preserves each trajectory’s mean advantage and its sign, while varying its magnitude across steps, and equal-reward groups retain zero advantage. The collector uses the same relative layers and attention allocation as the 3B PPO run. However, positive trajectory confidence is a common factor that cancels during token-weight normalization, and only zero confidence disables redistribution. Thus this variant does not retain PPO’s continuous confidence modulation, outcome EMA, or intermediate rewards and GAE.",
+   "zh": "观测与填充被掩蔽。 这在保持每条轨迹的平均优势及其符号不变的同时，使其量级在不同步骤之间变化，且等奖励组的优势保持为零。 采集器使用与 3B PPO 运行相同的相对层与注意力分配。 然而，正轨迹置信度是一个在令牌权重归一化中被抵消的公共因子，只有零置信度才会禁用再分配。 因此，该变体不保留 PPO 的连续置信度调制、结果 EMA，或中间奖励与 GAE。",
+   "sents": [
+    {
+     "en": "Observations and padding are masked.",
+     "zh": "观测与填充被掩蔽。"
+    },
+    {
+     "en": "This preserves each trajectory’s mean advantage and its sign, while varying its magnitude across steps, and equal-reward groups retain zero advantage.",
+     "zh": "这在保持每条轨迹的平均优势及其符号不变的同时，使其量级在不同步骤之间变化，且等奖励组的优势保持为零。"
+    },
+    {
+     "en": "The collector uses the same relative layers and attention allocation as the 3B PPO run.",
+     "zh": "采集器使用与 3B PPO 运行相同的相对层与注意力分配。"
+    },
+    {
+     "en": "However, positive trajectory confidence is a common factor that cancels during token-weight normalization, and only zero confidence disables redistribution.",
+     "zh": "然而，正轨迹置信度是一个在令牌权重归一化中被抵消的公共因子，只有零置信度才会禁用再分配。"
+    },
+    {
+     "en": "Thus this variant does not retain PPO’s continuous confidence modulation, outcome EMA, or intermediate rewards and GAE.",
+     "zh": "因此，该变体不保留 PPO 的连续置信度调制、结果 EMA，或中间奖励与 GAE。"
+    }
+   ]
+  },
+  {
+   "en": "Both methods use the same GRPO implementation overlay, with attention reweighting enabled only in the AttnSR arm. Table 3 shows final success of 34/274 for GRPO and 55/274 for GRPO+AttnSR. Seen success rises from 15.00% to 22.14% (21 to 31 of 140 tasks), and unseen success from 9.70% to 17.91% (13 to 24 of 134 tasks). Format-error counts remain high at 101/274 and 95/274. These single-run results are descriptive, with no repeated-seed or paired significance analysis.",
+   "zh": "两种方法使用相同的 GRPO 实现覆盖层，仅在 AttnSR 组中启用注意力重加权。 表 3 显示 GRPO 的最终成功率为 34/274，GRPO+AttnSR 为 55/274。 已见任务成功率从 15.00% 提升至 22.14%（140 个任务中从 21 个提升到 31 个），未见任务成功率从 9.70% 提升至 17.91%（134 个任务中从 13 个提升到 24 个）。 格式错误计数仍然很高，分别为 101/274 和 95/274。 这些单次运行结果仅为描述性数据，未进行多种子重复或配对显著性分析。",
+   "sents": [
+    {
+     "en": "Both methods use the same GRPO implementation overlay, with attention reweighting enabled only in the AttnSR arm.",
+     "zh": "两种方法使用相同的 GRPO 实现覆盖层，仅在 AttnSR 组中启用注意力重加权。"
+    },
+    {
+     "en": "Table 3 shows final success of 34/274 for GRPO and 55/274 for GRPO+AttnSR.",
+     "zh": "表 3 显示 GRPO 的最终成功率为 34/274，GRPO+AttnSR 为 55/274。"
+    },
+    {
+     "en": "Seen success rises from 15.00% to 22.14% (21 to 31 of 140 tasks), and unseen success from 9.70% to 17.91% (13 to 24 of 134 tasks).",
+     "zh": "已见任务成功率从 15.00% 提升至 22.14%（140 个任务中从 21 个提升到 31 个），未见任务成功率从 9.70% 提升至 17.91%（134 个任务中从 13 个提升到 24 个）。"
+    },
+    {
+     "en": "Format-error counts remain high at 101/274 and 95/274.",
+     "zh": "格式错误计数仍然很高，分别为 101/274 和 95/274。"
+    },
+    {
+     "en": "These single-run results are descriptive, with no repeated-seed or paired significance analysis.",
+     "zh": "这些单次运行结果仅为描述性数据，未进行多种子重复或配对显著性分析。"
+    }
+   ]
+  },
+  {
+   "en": "Our ALFWorld adaptations of TARL ( Tan et al., 2025 ) , AgentPRM ( Xi et al., 2025 ) , and FlowTracer ( Dong et al., 2026 ) are trained independently from Qwen2.5-7B-Instruct with LoRA for four data epochs. We evaluate the final checkpoints at update 1,776 on all 274 held-out ALFWorld tasks (140 seen and 134 unseen), using one greedy rollout per task and a 32,768-token context. The implementation variants recorded in the experiment inventory are TARL-Turn, AgentPRM-Progress, and FlowTracer-PPO, respectively. Table 1 (b) retains the canonical PPO and AttnSR results as references, and no paired significance comparison with the three additional methods is claimed.",
+   "zh": "我们对 TARL（Tan et al., 2025）、AgentPRM（Xi et al., 2025）和 FlowTracer（Dong et al., 2026）的 ALFWorld 适配版本是基于 Qwen2.5-7B-Instruct 使用 LoRA 独立训练的，共训练四个数据轮次。 我们在第 1,776 次更新的最终检查点上，在全部 274 个留出的 ALFWorld 任务（140 个已见任务和 134 个未见任务）上进行评估，每个任务使用一次贪心采样，上下文长度为 32,768 个词元。 实验清单中记录的实现变体分别为 TARL-Turn、AgentPRM-Progress 和 FlowTracer-PPO。 表 1（b）保留了规范的 PPO 和 AttnSR 结果作为参考，并且我们不对这三种额外方法声明任何成对显著性比较。",
+   "sents": [
+    {
+     "en": "Our ALFWorld adaptations of TARL ( Tan et al., 2025 ) , AgentPRM ( Xi et al., 2025 ) , and FlowTracer ( Dong et al., 2026 ) are trained independently from Qwen2.5-7B-Instruct with LoRA for four data epochs.",
+     "zh": "我们对 TARL（Tan et al., 2025）、AgentPRM（Xi et al., 2025）和 FlowTracer（Dong et al., 2026）的 ALFWorld 适配版本是基于 Qwen2.5-7B-Instruct 使用 LoRA 独立训练的，共训练四个数据轮次。"
+    },
+    {
+     "en": "We evaluate the final checkpoints at update 1,776 on all 274 held-out ALFWorld tasks (140 seen and 134 unseen), using one greedy rollout per task and a 32,768-token context.",
+     "zh": "我们在第 1,776 次更新的最终检查点上，在全部 274 个留出的 ALFWorld 任务（140 个已见任务和 134 个未见任务）上进行评估，每个任务使用一次贪心采样，上下文长度为 32,768 个词元。"
+    },
+    {
+     "en": "The implementation variants recorded in the experiment inventory are TARL-Turn, AgentPRM-Progress, and FlowTracer-PPO, respectively.",
+     "zh": "实验清单中记录的实现变体分别为 TARL-Turn、AgentPRM-Progress 和 FlowTracer-PPO。"
+    },
+    {
+     "en": "Table 1 (b) retains the canonical PPO and AttnSR results as references, and no paired significance comparison with the three additional methods is claimed.",
+     "zh": "表 1（b）保留了规范的 PPO 和 AttnSR 结果作为参考，并且我们不对这三种额外方法声明任何成对显著性比较。"
+    }
+   ]
+  },
+  {
+   "en": "Tables 15 and 15 report the final-checkpoint details. Success counts are 265, 252, and 262 for TARL, AgentPRM, and FlowTracer. All three have zero terminal format errors, and AgentPRM has eight naturally terminated episodes. These diagnostic fields are distinct from task success and do not indicate whether training completed normally. The small number of failed tasks (9, 22, and 12) makes failure-conditioned step means sensitive to individual long trajectories. Category-level counts and outcome-conditioned lengths are descriptive, not causal evidence about credit assignment.",
+   "zh": "表15和表15报告了最终检查点的详细信息。 TARL、AgentPRM和FlowTracer的成功次数分别为265、252和262。 三者的终端格式错误均为零，且AgentPRM有八个自然终止的回合。 这些诊断字段与任务成功不同，并不表示训练是否正常完成。 失败任务数量较少（9、22和12），使得以失败为条件的步骤均值对个别长轨迹很敏感。 类别级别的计数和以结果为条件的长度仅是描述性的，并非关于信用分配的因果证据。",
+   "sents": [
+    {
+     "en": "Tables 15 and 15 report the final-checkpoint details.",
+     "zh": "表15和表15报告了最终检查点的详细信息。"
+    },
+    {
+     "en": "Success counts are 265, 252, and 262 for TARL, AgentPRM, and FlowTracer.",
+     "zh": "TARL、AgentPRM和FlowTracer的成功次数分别为265、252和262。"
+    },
+    {
+     "en": "All three have zero terminal format errors, and AgentPRM has eight naturally terminated episodes.",
+     "zh": "三者的终端格式错误均为零，且AgentPRM有八个自然终止的回合。"
+    },
+    {
+     "en": "These diagnostic fields are distinct from task success and do not indicate whether training completed normally.",
+     "zh": "这些诊断字段与任务成功不同，并不表示训练是否正常完成。"
+    },
+    {
+     "en": "The small number of failed tasks (9, 22, and 12) makes failure-conditioned step means sensitive to individual long trajectories.",
+     "zh": "失败任务数量较少（9、22和12），使得以失败为条件的步骤均值对个别长轨迹很敏感。"
+    },
+    {
+     "en": "Category-level counts and outcome-conditioned lengths are descriptive, not causal evidence about credit assignment.",
+     "zh": "类别级别的计数和以结果为条件的长度仅是描述性的，并非关于信用分配的因果证据。"
+    }
+   ]
+  },
+  {
+   "en": "Text lengths are obtained by retokenizing saved evaluation text with Qwen2TokenizerFast , with add_special_tokens=False . Full trajectories include tool observations, while assistant-only counts exclude tool replies. These measurements do not recover the original sampled token IDs and should not be interpreted as exact generation costs. All results are from one training run per method, and no estimate of training-seed variability is available.",
+   "zh": "文本长度是使用 Qwen2TokenizerFast 对保存的评估文本重新分词得到的，且设置 add_special_tokens=False。 完整轨迹包含工具观测，而仅助手文本的统计则不包含工具回复。 这些测量无法还原原始采样的 token ID，因此不应被解读为精确的生成成本。 所有结果均来自每种方法的一次训练运行，因此无法估计训练随机种子带来的变异性。",
+   "sents": [
+    {
+     "en": "Text lengths are obtained by retokenizing saved evaluation text with Qwen2TokenizerFast , with add_special_tokens=False .",
+     "zh": "文本长度是使用 Qwen2TokenizerFast 对保存的评估文本重新分词得到的，且设置 add_special_tokens=False。"
+    },
+    {
+     "en": "Full trajectories include tool observations, while assistant-only counts exclude tool replies.",
+     "zh": "完整轨迹包含工具观测，而仅助手文本的统计则不包含工具回复。"
+    },
+    {
+     "en": "These measurements do not recover the original sampled token IDs and should not be interpreted as exact generation costs.",
+     "zh": "这些测量无法还原原始采样的 token ID，因此不应被解读为精确的生成成本。"
+    },
+    {
+     "en": "All results are from one training run per method, and no estimate of training-seed variability is available.",
+     "zh": "所有结果均来自每种方法的一次训练运行，因此无法估计训练随机种子带来的变异性。"
+    }
+   ]
+  },
+  {
+   "en": "Table 16 lists the symbols of Sections 2 – 3 . Episode index i i is omitted where unambiguous.",
+   "zh": "表 16 列出了第 2 至 3 节的符号。 在无歧义的情况下，省略回合索引 i i。",
+   "sents": [
+    {
+     "en": "Table 16 lists the symbols of Sections 2 – 3 .",
+     "zh": "表 16 列出了第 2 至 3 节的符号。"
+    },
+    {
+     "en": "Episode index i i is omitted where unambiguous.",
+     "zh": "在无歧义的情况下，省略回合索引 i i。"
+    }
+   ]
+  }
+ ]
+}
