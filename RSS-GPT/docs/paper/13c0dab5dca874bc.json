@@ -1,0 +1,1972 @@
+{
+ "id": "13c0dab5dca874bc",
+ "source": "arxiv-agent",
+ "link": "https://arxiv.org/abs/2611.09891v1",
+ "title": "CPU-ARC: Agentic Reasoning Caching for on-CPU Reasoning Reuse",
+ "title_zh": "CPU-ARC：面向CPU端推理复用的智能体推理缓存",
+ "published": "2026-11-06T18:58:50Z",
+ "translated_at": "2026-11-09T19:56:55Z",
+ "paragraphs": [
+  {
+   "en": "Abstract. Large language models re-invent the wheel all the time. They conflate task-solving with the execution of the solutions, which forces them to solve every problem from scratch. We show that once a task has been reasoned through, the application of its solution to a new problem instance can be done very efficiently and with little involvement from language models. We introduce agentic reasoning caching, a method for constructing robust CPU-executable agentic reasoning caches (ARCs) from LLM reasoning traces. ARCs show on-par performance with frontier LLMs across a range of difficult mathematical and scientific tasks, are fully explainable, continually trainable, robust to input perturbations, and 16-291x cheaper to invoke than the source model.",
+   "zh": "摘要。 大语言模型总是在重复发明轮子。 它们将任务求解与解决方案的执行混为一谈，这迫使它们从零开始解决每一个问题。 我们证明，一旦某项任务已经完成推理，其解决方案在新问题实例上的应用可以非常高效地完成，且语言模型的参与极少。 我们提出智能体推理缓存，这是一种从大语言模型推理轨迹构建稳健的、可由CPU执行的智能体推理缓存（ARC）的方法。 在一系列困难的数学和科学任务中，ARC 的性能与前沿大语言模型相当，具备完全可解释性、可持续训练、对输入扰动稳健，且调用成本比源模型低 16 到 291 倍。",
+   "sents": [
+    {
+     "en": "Abstract.",
+     "zh": "摘要。"
+    },
+    {
+     "en": "Large language models re-invent the wheel all the time.",
+     "zh": "大语言模型总是在重复发明轮子。"
+    },
+    {
+     "en": "They conflate task-solving with the execution of the solutions, which forces them to solve every problem from scratch.",
+     "zh": "它们将任务求解与解决方案的执行混为一谈，这迫使它们从零开始解决每一个问题。"
+    },
+    {
+     "en": "We show that once a task has been reasoned through, the application of its solution to a new problem instance can be done very efficiently and with little involvement from language models.",
+     "zh": "我们证明，一旦某项任务已经完成推理，其解决方案在新问题实例上的应用可以非常高效地完成，且语言模型的参与极少。"
+    },
+    {
+     "en": "We introduce agentic reasoning caching, a method for constructing robust CPU-executable agentic reasoning caches (ARCs) from LLM reasoning traces.",
+     "zh": "我们提出智能体推理缓存，这是一种从大语言模型推理轨迹构建稳健的、可由CPU执行的智能体推理缓存（ARC）的方法。"
+    },
+    {
+     "en": "ARCs show on-par performance with frontier LLMs across a range of difficult mathematical and scientific tasks, are fully explainable, continually trainable, robust to input perturbations, and 16-291x cheaper to invoke than the source model.",
+     "zh": "在一系列困难的数学和科学任务中，ARC 的性能与前沿大语言模型相当，具备完全可解释性、可持续训练、对输入扰动稳健，且调用成本比源模型低 16 到 291 倍。"
+    }
+   ]
+  },
+  {
+   "en": "Links: Lab | Project Moonshot: Local Frontier Intelligence",
+   "zh": "链接： Lab | Project Moonshot: Local Frontier Intelligence",
+   "sents": null
+  },
+  {
+   "en": "Language models solve every problem from scratch, no matter how common. However, many of their solutions apply not just to the exact problems posed but extend to entire classes of problems in which the individual problem instances vary in their phrasing or some of their parameters. Table 1 illustrates this on an example drawn from a popular mathematical benchmark.",
+   "zh": "语言模型从头开始解决每一个问题，无论多么常见。 然而，它们的许多解决方案不仅适用于所提出的确切问题，还能扩展到整类问题，这类问题中的各个问题实例在表述或部分参数上有所不同。 表 1 以一个取自流行数学基准测试的示例说明了这一点。",
+   "sents": [
+    {
+     "en": "Language models solve every problem from scratch, no matter how common.",
+     "zh": "语言模型从头开始解决每一个问题，无论多么常见。"
+    },
+    {
+     "en": "However, many of their solutions apply not just to the exact problems posed but extend to entire classes of problems in which the individual problem instances vary in their phrasing or some of their parameters.",
+     "zh": "然而，它们的许多解决方案不仅适用于所提出的确切问题，还能扩展到整类问题，这类问题中的各个问题实例在表述或部分参数上有所不同。"
+    },
+    {
+     "en": "Table 1 illustrates this on an example drawn from a popular mathematical benchmark.",
+     "zh": "表 1 以一个取自流行数学基准测试的示例说明了这一点。"
+    }
+   ]
+  },
+  {
+   "en": "AI agents and AI-enabled software more broadly often rely on repetitive queries to LLMs featuring the same instructions and plans but different payloads. The LLMs comprehending the same prompts and subsequently reasoning through their tasks from scratch for each new query often results in a significant amount of work being done repeatedly across separate inference instances.",
+   "zh": "AI 智能体以及更广泛的 AI 赋能软件，通常依赖于对大语言模型（LLM）的重复查询，这些查询包含相同的指令和计划，但载荷不同。 大语言模型理解相同的提示词，并随后为每个新查询从零开始对其任务进行推理，这往往导致在各个独立推理实例中重复完成大量工作。",
+   "sents": [
+    {
+     "en": "AI agents and AI-enabled software more broadly often rely on repetitive queries to LLMs featuring the same instructions and plans but different payloads.",
+     "zh": "AI 智能体以及更广泛的 AI 赋能软件，通常依赖于对大语言模型（LLM）的重复查询，这些查询包含相同的指令和计划，但载荷不同。"
+    },
+    {
+     "en": "The LLMs comprehending the same prompts and subsequently reasoning through their tasks from scratch for each new query often results in a significant amount of work being done repeatedly across separate inference instances.",
+     "zh": "大语言模型理解相同的提示词，并随后为每个新查询从零开始对其任务进行推理，这往往导致在各个独立推理实例中重复完成大量工作。"
+    }
+   ]
+  },
+  {
+   "en": "System-level caching (SLC) methods aim to address such inefficiencies by recognizing repetitive patterns in LM conversations and caching them at the level of the serving system as a whole rather than within any single inference instance. Maintained at the system level, an SLC’s entries are shared across all of the system’s inference instances and remain reusable beyond the instance in which they were born. SLC methods usually bring one or more of the following benefits:",
+   "zh": "系统级缓存（SLC）方法旨在解决此类低效问题，其做法是识别语言模型对话中的重复模式，并在整个服务系统层面而非任何单一推理实例内部对其进行缓存。 由于由系统层面维护，SLC 的缓存条目可在系统的所有推理实例之间共享，并在其诞生的实例之外仍然可被复用。 SLC 方法通常能带来以下一项或多项好处：",
+   "sents": [
+    {
+     "en": "System-level caching (SLC) methods aim to address such inefficiencies by recognizing repetitive patterns in LM conversations and caching them at the level of the serving system as a whole rather than within any single inference instance.",
+     "zh": "系统级缓存（SLC）方法旨在解决此类低效问题，其做法是识别语言模型对话中的重复模式，并在整个服务系统层面而非任何单一推理实例内部对其进行缓存。"
+    },
+    {
+     "en": "Maintained at the system level, an SLC’s entries are shared across all of the system’s inference instances and remain reusable beyond the instance in which they were born.",
+     "zh": "由于由系统层面维护，SLC 的缓存条目可在系统的所有推理实例之间共享，并在其诞生的实例之外仍然可被复用。"
+    },
+    {
+     "en": "SLC methods usually bring one or more of the following benefits:",
+     "zh": "SLC 方法通常能带来以下一项或多项好处："
+    }
+   ]
+  },
+  {
+   "en": "Cost and latency reduction. SLC methods can reduce the cost and/or the latency of LLM calls by re-using partial or complete results of earlier LLM calls.",
+   "zh": "成本与延迟的降低。 SLC 方法可以通过复用先前 LLM 调用的部分或完整结果，来降低 LLM 调用的成本和/或延迟。",
+   "sents": [
+    {
+     "en": "Cost and latency reduction.",
+     "zh": "成本与延迟的降低。"
+    },
+    {
+     "en": "SLC methods can reduce the cost and/or the latency of LLM calls by re-using partial or complete results of earlier LLM calls.",
+     "zh": "SLC 方法可以通过复用先前 LLM 调用的部分或完整结果，来降低 LLM 调用的成本和/或延迟。"
+    }
+   ]
+  },
+  {
+   "en": "Improved correctness. SLCs can be reviewed asynchronously by humans or a committee of judge agents to ensure that the responses or steps of the most popular queries are correct.",
+   "zh": "提升了正确性。 SLC 可以由人工或由评判智能体组成的委员会异步审查，以确保最受欢迎查询的回复或步骤是正确的。",
+   "sents": [
+    {
+     "en": "Improved correctness.",
+     "zh": "提升了正确性。"
+    },
+    {
+     "en": "SLCs can be reviewed asynchronously by humans or a committee of judge agents to ensure that the responses or steps of the most popular queries are correct.",
+     "zh": "SLC 可以由人工或由评判智能体组成的委员会异步审查，以确保最受欢迎查询的回复或步骤是正确的。"
+    }
+   ]
+  },
+  {
+   "en": "Improved explainability or interpretability. SLCs can be inspected by humans to understand the reasoning process and the final answer or result, providing explanation or at the very least an interpretation of responses to popular queries.",
+   "zh": "提升了可解释性或可阐明性。 人类可以检查 SLC 来理解其推理过程以及最终的答案或结果，从而对热门查询的响应提供解释，或至少提供一种阐明。",
+   "sents": [
+    {
+     "en": "Improved explainability or interpretability.",
+     "zh": "提升了可解释性或可阐明性。"
+    },
+    {
+     "en": "SLCs can be inspected by humans to understand the reasoning process and the final answer or result, providing explanation or at the very least an interpretation of responses to popular queries.",
+     "zh": "人类可以检查 SLC 来理解其推理过程以及最终的答案或结果，从而对热门查询的响应提供解释，或至少提供一种阐明。"
+    }
+   ]
+  },
+  {
+   "en": "When choosing or designing an SLC method, the following considerations are important:",
+   "zh": "在选择或设计 SLC 方法时，需要考虑以下重要因素：",
+   "sents": null
+  },
+  {
+   "en": "Local robustness. How well does the SLC method cover the class of queries it is supposed to cover? How robust is the SLC method to small perturbations of the queries?",
+   "zh": "局部鲁棒性。 SLC 方法对其应当覆盖的查询类别覆盖得如何？ SLC 方法对查询的微小扰动有多鲁棒？",
+   "sents": [
+    {
+     "en": "Local robustness.",
+     "zh": "局部鲁棒性。"
+    },
+    {
+     "en": "How well does the SLC method cover the class of queries it is supposed to cover?",
+     "zh": "SLC 方法对其应当覆盖的查询类别覆盖得如何？"
+    },
+    {
+     "en": "How robust is the SLC method to small perturbations of the queries?",
+     "zh": "SLC 方法对查询的微小扰动有多鲁棒？"
+    }
+   ]
+  },
+  {
+   "en": "Correctness upon hit. If the cache is hit, is the result correct? How much confidence can one have in the correctness of the cached result given a hit from the query neighbourhood it covers?",
+   "zh": "命中时的正确性。 如果缓存命中，结果是正确的吗？ 在缓存覆盖的查询邻域发生命中时，对缓存结果的正确性能有多大信心？",
+   "sents": [
+    {
+     "en": "Correctness upon hit.",
+     "zh": "命中时的正确性。"
+    },
+    {
+     "en": "If the cache is hit, is the result correct?",
+     "zh": "如果缓存命中，结果是正确的吗？"
+    },
+    {
+     "en": "How much confidence can one have in the correctness of the cached result given a hit from the query neighbourhood it covers?",
+     "zh": "在缓存覆盖的查询邻域发生命中时，对缓存结果的正确性能有多大信心？"
+    }
+   ]
+  },
+  {
+   "en": "Explainability or interpretability. How much can one learn by inspecting the caches? How good are the guarantees of correctness provided by the cache entries? Can they be inspected by an authority (e.g., a regulatory body) to provide a guarantee on behavior?",
+   "zh": "可解释性或可解读性。 通过检查缓存能学到多少东西？ 缓存条目所提供的正确性保证有多好？ 权威机构（例如监管机构）能否检查这些缓存条目，从而对行为提供保证？",
+   "sents": [
+    {
+     "en": "Explainability or interpretability.",
+     "zh": "可解释性或可解读性。"
+    },
+    {
+     "en": "How much can one learn by inspecting the caches?",
+     "zh": "通过检查缓存能学到多少东西？"
+    },
+    {
+     "en": "How good are the guarantees of correctness provided by the cache entries?",
+     "zh": "缓存条目所提供的正确性保证有多好？"
+    },
+    {
+     "en": "Can they be inspected by an authority (e.g., a regulatory body) to provide a guarantee on behavior?",
+     "zh": "权威机构（例如监管机构）能否检查这些缓存条目，从而对行为提供保证？"
+    }
+   ]
+  },
+  {
+   "en": "Cost. How expensive is it to build, maintain, and use the SLC?",
+   "zh": "成本。 构建、维护和使用 SLC 的费用有多高？",
+   "sents": [
+    {
+     "en": "Cost.",
+     "zh": "成本。"
+    },
+    {
+     "en": "How expensive is it to build, maintain, and use the SLC?",
+     "zh": "构建、维护和使用 SLC 的费用有多高？"
+    }
+   ]
+  },
+  {
+   "en": "Existing work on SLC falls into two broad categories:",
+   "zh": "关于SLC的现有工作大致分为两类：",
+   "sents": null
+  },
+  {
+   "en": "Monolithic caching. Methods such as ephemeral prefix caching [ 1 ] , programmatic conversation caching [ 2 , 3 ] , and semantic query matching [ 4 ] look up transcripts of previous conversations on the basis of input prefix overlaps, programmatically supplied conversation IDs, and semantic similarities between different queries. They store entire conversations and their corresponding intermediate generation states (e.g., KV caches or Mamba hidden states) and aim to re-use the largest possible contiguous portion of the query’s generation states wherever possible. Monolithic caches are usually not robust to even the slightest perturbations of the conversation, and when they are (e.g., when employing semantic similarity search), it is often at the expense of their correctness. Monolithic caches of responses can be inspected to guarantee absolute correctness. They are usually compute-cheap to build, maintain, and use but are memory- and bandwidth-expensive to maintain and use.",
+   "zh": "单体缓存。 诸如前缀临时缓存 [1]、程序化对话缓存 [2, 3] 和语义查询匹配 [4] 等方法，分别基于输入前缀的重叠、以程序方式提供的对话 ID，以及不同查询之间的语义相似度，来查找先前对话的记录。 它们存储完整的对话及其对应的中间生成状态（例如 KV 缓存或 Mamba 隐状态），并旨在尽可能复用查询生成状态中最大长度的连续部分。 单体缓存通常对对话中哪怕最轻微的扰动都不具备鲁棒性，而即便具备鲁棒性的场景（例如采用语义相似度搜索时），也往往以牺牲正确性为代价。 响应的单体缓存可以被检查以保证绝对的正确性。 它们在构建、维护和使用上通常计算开销很低，但在维护和使用上内存和带宽开销很高。",
+   "sents": [
+    {
+     "en": "Monolithic caching.",
+     "zh": "单体缓存。"
+    },
+    {
+     "en": "Methods such as ephemeral prefix caching [ 1 ] , programmatic conversation caching [ 2 , 3 ] , and semantic query matching [ 4 ] look up transcripts of previous conversations on the basis of input prefix overlaps, programmatically supplied conversation IDs, and semantic similarities between different queries.",
+     "zh": "诸如前缀临时缓存 [1]、程序化对话缓存 [2, 3] 和语义查询匹配 [4] 等方法，分别基于输入前缀的重叠、以程序方式提供的对话 ID，以及不同查询之间的语义相似度，来查找先前对话的记录。"
+    },
+    {
+     "en": "They store entire conversations and their corresponding intermediate generation states (e.g., KV caches or Mamba hidden states) and aim to re-use the largest possible contiguous portion of the query’s generation states wherever possible.",
+     "zh": "它们存储完整的对话及其对应的中间生成状态（例如 KV 缓存或 Mamba 隐状态），并旨在尽可能复用查询生成状态中最大长度的连续部分。"
+    },
+    {
+     "en": "Monolithic caches are usually not robust to even the slightest perturbations of the conversation, and when they are (e.g., when employing semantic similarity search), it is often at the expense of their correctness.",
+     "zh": "单体缓存通常对对话中哪怕最轻微的扰动都不具备鲁棒性，而即便具备鲁棒性的场景（例如采用语义相似度搜索时），也往往以牺牲正确性为代价。"
+    },
+    {
+     "en": "Monolithic caches of responses can be inspected to guarantee absolute correctness.",
+     "zh": "响应的单体缓存可以被检查以保证绝对的正确性。"
+    },
+    {
+     "en": "They are usually compute-cheap to build, maintain, and use but are memory- and bandwidth-expensive to maintain and use.",
+     "zh": "它们在构建、维护和使用上通常计算开销很低，但在维护和使用上内存和带宽开销很高。"
+    }
+   ]
+  },
+  {
+   "en": "Modular caching. Instead of storing the entire conversational transcripts and their generation artifacts, modular SLC methods first perform a mechanical form of decomposition of the existing contexts and their generation states or a distillation of the context into critical logical steps [ 5 , 6 , 7 ] . Later, when encountering an apparently similar problem, the decomposed artifacts are re-supplied to the language model to accelerate their reasoning process. Only parts of the response are cached, and even in the case of a perfect cache hit, a full new generation (though accelerated) of the response is still required. This makes their coverage more robust to parametric perturbations of the inputs but makes it impossible to guarantee correctness upon review. Modular caches sometimes offer interpretable insights into the reasoning process of the underlying models. They are considerably more compute-expensive to build and use than monolithic caches but tend to be more memory- and bandwidth-efficient to maintain and use.",
+   "zh": "模块化缓存。 模块化 SLC 方法不是存储完整的对话记录及其生成产物，而是首先对现有上下文及其生成状态进行某种机械形式的分解，或将上下文蒸馏为关键的逻辑步骤 [ 5 , 6 , 7 ]。 之后，当遇到明显相似的问题时，分解后的产物会重新提供给语言模型，以加速其推理过程。 只有响应的部分内容会被缓存，即使发生完全的缓存命中，仍需要（尽管是加速的）对响应进行全新的完整生成。 这使得它们的覆盖范围对输入的参数扰动更加鲁棒，但也使得无法保证审查时的正确性。 模块化缓存有时能对底层模型的推理过程提供可解释的洞见。 与整体式缓存相比，它们在构建和使用上需要多得多的计算开销，但在维护和使用上往往更节省内存和带宽。",
+   "sents": [
+    {
+     "en": "Modular caching.",
+     "zh": "模块化缓存。"
+    },
+    {
+     "en": "Instead of storing the entire conversational transcripts and their generation artifacts, modular SLC methods first perform a mechanical form of decomposition of the existing contexts and their generation states or a distillation of the context into critical logical steps [ 5 , 6 , 7 ] .",
+     "zh": "模块化 SLC 方法不是存储完整的对话记录及其生成产物，而是首先对现有上下文及其生成状态进行某种机械形式的分解，或将上下文蒸馏为关键的逻辑步骤 [ 5 , 6 , 7 ]。"
+    },
+    {
+     "en": "Later, when encountering an apparently similar problem, the decomposed artifacts are re-supplied to the language model to accelerate their reasoning process.",
+     "zh": "之后，当遇到明显相似的问题时，分解后的产物会重新提供给语言模型，以加速其推理过程。"
+    },
+    {
+     "en": "Only parts of the response are cached, and even in the case of a perfect cache hit, a full new generation (though accelerated) of the response is still required.",
+     "zh": "只有响应的部分内容会被缓存，即使发生完全的缓存命中，仍需要（尽管是加速的）对响应进行全新的完整生成。"
+    },
+    {
+     "en": "This makes their coverage more robust to parametric perturbations of the inputs but makes it impossible to guarantee correctness upon review.",
+     "zh": "这使得它们的覆盖范围对输入的参数扰动更加鲁棒，但也使得无法保证审查时的正确性。"
+    },
+    {
+     "en": "Modular caches sometimes offer interpretable insights into the reasoning process of the underlying models.",
+     "zh": "模块化缓存有时能对底层模型的推理过程提供可解释的洞见。"
+    },
+    {
+     "en": "They are considerably more compute-expensive to build and use than monolithic caches but tend to be more memory- and bandwidth-efficient to maintain and use.",
+     "zh": "与整体式缓存相比，它们在构建和使用上需要多得多的计算开销，但在维护和使用上往往更节省内存和带宽。"
+    }
+   ]
+  },
+  {
+   "en": "We introduce agentic reasoning caching, a (see below) hybrid SLC method that produces agentic reasoning caches (ARCs) that are robust in coverage, can be asynchronously ensured to be correct, are fully explainable, and are cheap to build, maintain, and use. We call them agentic reasoning caches because their elements are small, specialized fractional agents that can be re-used on new parameters. Our approach rests on two observations:",
+   "zh": "我们提出智能体推理缓存，这是一种（见下文）混合式 SLC 方法，其生成的智能体推理缓存（ARCs）在覆盖面上稳健、可异步确保正确性、完全可解释，并且构建、维护和使用的成本低廉。 我们将其称为智能体推理缓存，是因为其中的元素是小型、专门的分数级智能体，可在新参数上复用。 我们的方法基于两点观察：",
+   "sents": [
+    {
+     "en": "We introduce agentic reasoning caching, a (see below) hybrid SLC method that produces agentic reasoning caches (ARCs) that are robust in coverage, can be asynchronously ensured to be correct, are fully explainable, and are cheap to build, maintain, and use.",
+     "zh": "我们提出智能体推理缓存，这是一种（见下文）混合式 SLC 方法，其生成的智能体推理缓存（ARCs）在覆盖面上稳健、可异步确保正确性、完全可解释，并且构建、维护和使用的成本低廉。"
+    },
+    {
+     "en": "We call them agentic reasoning caches because their elements are small, specialized fractional agents that can be re-used on new parameters.",
+     "zh": "我们将其称为智能体推理缓存，是因为其中的元素是小型、专门的分数级智能体，可在新参数上复用。"
+    },
+    {
+     "en": "Our approach rests on two observations:",
+     "zh": "我们的方法基于两点观察："
+    }
+   ]
+  },
+  {
+   "en": "Once a particular problem has been reasoned through and the solution has been found, the execution of the solution – the computation or data manipulation behind the problem – can be performed with little involvement from language models. In other words, the search for a solution can be decoupled from the execution of the solution found.",
+   "zh": "一旦某个特定问题经过推理并找到了解决方案，解决方案的执行——即问题背后的计算或数据操作——就可以在很少需要语言模型参与的情况下完成。 换句话说，解决方案的搜索可以与所找到解决方案的执行解耦。",
+   "sents": [
+    {
+     "en": "Once a particular problem has been reasoned through and the solution has been found, the execution of the solution – the computation or data manipulation behind the problem – can be performed with little involvement from language models.",
+     "zh": "一旦某个特定问题经过推理并找到了解决方案，解决方案的执行——即问题背后的计算或数据操作——就可以在很少需要语言模型参与的情况下完成。"
+    },
+    {
+     "en": "In other words, the search for a solution can be decoupled from the execution of the solution found.",
+     "zh": "换句话说，解决方案的搜索可以与所找到解决方案的执行解耦。"
+    }
+   ]
+  },
+  {
+   "en": "Much of LM’s reasoning about a particular problem instance can be reused for a set of problems extending beyond the singleton instance.",
+   "zh": "语言模型对特定问题实例的大部分推理可以被复用于一组超越单一实例的问题。",
+   "sents": null
+  },
+  {
+   "en": "Leveraging Observation O1 , we choose to convert LM conversation transcripts to code, and allow that code to make use of only small language models to perform semantic similarity search and elementary natural language processing tasks such as value extraction, format conversion, classification, or summarization, and only where needed. Leveraging Observation O2 , we choose to parametrize the code in a way that allows it to be re-used for all problems that are equirational to the problem solved in the original transcript (i.e., can be solved using the same reasoning). Further, we choose to produce code in such a manner that does not rely on fixed variable, parameter, and function names but on their natural language descriptions and examples, thus allowing for a liberal re-use of all logical components of previously cached logic in all semantically equivalent scenarios, no matter how phrased, structured, or parameterized.",
+   "zh": "利用观察结果 O1，我们选择将语言模型的对话记录转换为代码，并允许该代码仅在需要时使用小型语言模型来执行语义相似性搜索以及取值提取、格式转换、分类或摘要等基础自然语言处理任务。 利用观察结果 O2，我们选择对代码进行参数化，使其能够被复用于与原始记录中所解决问题等价合理（equirational）的所有问题（即可以用相同的推理来解决的问题）。 此外，我们选择以不依赖固定的变量、参数和函数名称，而依赖其自然语言描述和示例的方式来生成代码，从而允许在所有语义等价的场景中，无论措辞、结构或参数化方式如何，都可以自由复用先前缓存逻辑的所有逻辑组件。",
+   "sents": [
+    {
+     "en": "Leveraging Observation O1 , we choose to convert LM conversation transcripts to code, and allow that code to make use of only small language models to perform semantic similarity search and elementary natural language processing tasks such as value extraction, format conversion, classification, or summarization, and only where needed.",
+     "zh": "利用观察结果 O1，我们选择将语言模型的对话记录转换为代码，并允许该代码仅在需要时使用小型语言模型来执行语义相似性搜索以及取值提取、格式转换、分类或摘要等基础自然语言处理任务。"
+    },
+    {
+     "en": "Leveraging Observation O2 , we choose to parametrize the code in a way that allows it to be re-used for all problems that are equirational to the problem solved in the original transcript (i.e., can be solved using the same reasoning).",
+     "zh": "利用观察结果 O2，我们选择对代码进行参数化，使其能够被复用于与原始记录中所解决问题等价合理（equirational）的所有问题（即可以用相同的推理来解决的问题）。"
+    },
+    {
+     "en": "Further, we choose to produce code in such a manner that does not rely on fixed variable, parameter, and function names but on their natural language descriptions and examples, thus allowing for a liberal re-use of all logical components of previously cached logic in all semantically equivalent scenarios, no matter how phrased, structured, or parameterized.",
+     "zh": "此外，我们选择以不依赖固定的变量、参数和函数名称，而依赖其自然语言描述和示例的方式来生成代码，从而允许在所有语义等价的场景中，无论措辞、结构或参数化方式如何，都可以自由复用先前缓存逻辑的所有逻辑组件。"
+    }
+   ]
+  },
+  {
+   "en": "Agentic reasoning caching is a hybrid of monolithic and modular SLC because it decomposes the logic of an LLM conversation into a network of modules – semantic functions – that can be re-used individually and also provides their composition into a single function that can be used to solve the problem cached. Because of the semantic functions’ wide parametrization, ARCs are robust to logically valid parametric perturbations of the problem. Since every ARC entry is stored as code, ARCs are fully explainable and correctible upon human or AI inspection. Since ARCs are stored as code using only SLMs, they are cheap to maintain and use since they rely mostly on CPU execution. They are further relatively cheap to build, coming at 12-84x the cost of the original reasoning.",
+   "zh": "智能体推理缓存（Agentic reasoning caching）是单体式与模块化SLC的混合体，因为它将LLM对话的逻辑分解为一个由模块——即语义函数——组成的网络，这些模块可以被单独复用，同时还能将它们组合成一个用于解决所缓存问题的单一函数。 由于语义函数具有广泛的参数化特性，ARC对问题在逻辑有效的参数扰动下具有鲁棒性。 由于每个ARC条目都以代码形式存储，ARC是完全可解释的，并且可以在人类或AI检查后进行修正。 由于ARC仅使用小型语言模型（SLM）以代码形式存储，其维护和使用成本低廉，因为它们主要依赖CPU执行。 此外，构建它们的成本也相对较低，仅为原始推理成本的12至84倍。",
+   "sents": [
+    {
+     "en": "Agentic reasoning caching is a hybrid of monolithic and modular SLC because it decomposes the logic of an LLM conversation into a network of modules – semantic functions – that can be re-used individually and also provides their composition into a single function that can be used to solve the problem cached.",
+     "zh": "智能体推理缓存（Agentic reasoning caching）是单体式与模块化SLC的混合体，因为它将LLM对话的逻辑分解为一个由模块——即语义函数——组成的网络，这些模块可以被单独复用，同时还能将它们组合成一个用于解决所缓存问题的单一函数。"
+    },
+    {
+     "en": "Because of the semantic functions’ wide parametrization, ARCs are robust to logically valid parametric perturbations of the problem.",
+     "zh": "由于语义函数具有广泛的参数化特性，ARC对问题在逻辑有效的参数扰动下具有鲁棒性。"
+    },
+    {
+     "en": "Since every ARC entry is stored as code, ARCs are fully explainable and correctible upon human or AI inspection.",
+     "zh": "由于每个ARC条目都以代码形式存储，ARC是完全可解释的，并且可以在人类或AI检查后进行修正。"
+    },
+    {
+     "en": "Since ARCs are stored as code using only SLMs, they are cheap to maintain and use since they rely mostly on CPU execution.",
+     "zh": "由于ARC仅使用小型语言模型（SLM）以代码形式存储，其维护和使用成本低廉，因为它们主要依赖CPU执行。"
+    },
+    {
+     "en": "They are further relatively cheap to build, coming at 12-84x the cost of the original reasoning.",
+     "zh": "此外，构建它们的成本也相对较低，仅为原始推理成本的12至84倍。"
+    }
+   ]
+  },
+  {
+   "en": "Agentic reasoning caching is particularly suitable for agentic systems that repeatedly use the same prompts with variable payloads. In an agentic system, using an ARC can be attempted before forwarding the request to the cloud LLM, allowing for a significant reduction in the latency and cost in the case of a cache hit. Owing to their reliance on simple CPU execution and SLMs, agentic reasoning caches are so resource-efficient that they can be brought to edge devices, reducing the cost further. Figure 1 briefly illustrates the gated use of an agentic reasoning cache in an AI system where the cache re-use is attempted before forwarding the request to the full LLM.",
+   "zh": "智能体推理缓存特别适合反复使用相同提示词但负载可变的智能体系统。 在智能体系统中，可以在将请求转发给云端大语言模型之前尝试使用智能体推理缓存（ARC），从而在缓存命中的情况下显著降低延迟和成本。 由于依赖简单的 CPU 执行和小型语言模型（SLM），智能体推理缓存的资源效率非常高，可以部署到边缘设备上，进一步降低成本。 图 1 简要展示了智能体推理缓存在 AI 系统中的门控式使用方式，即在将请求转发给完整大语言模型之前先尝试复用缓存。",
+   "sents": [
+    {
+     "en": "Agentic reasoning caching is particularly suitable for agentic systems that repeatedly use the same prompts with variable payloads.",
+     "zh": "智能体推理缓存特别适合反复使用相同提示词但负载可变的智能体系统。"
+    },
+    {
+     "en": "In an agentic system, using an ARC can be attempted before forwarding the request to the cloud LLM, allowing for a significant reduction in the latency and cost in the case of a cache hit.",
+     "zh": "在智能体系统中，可以在将请求转发给云端大语言模型之前尝试使用智能体推理缓存（ARC），从而在缓存命中的情况下显著降低延迟和成本。"
+    },
+    {
+     "en": "Owing to their reliance on simple CPU execution and SLMs, agentic reasoning caches are so resource-efficient that they can be brought to edge devices, reducing the cost further.",
+     "zh": "由于依赖简单的 CPU 执行和小型语言模型（SLM），智能体推理缓存的资源效率非常高，可以部署到边缘设备上，进一步降低成本。"
+    },
+    {
+     "en": "Figure 1 briefly illustrates the gated use of an agentic reasoning cache in an AI system where the cache re-use is attempted before forwarding the request to the full LLM.",
+     "zh": "图 1 简要展示了智能体推理缓存在 AI 系统中的门控式使用方式，即在将请求转发给完整大语言模型之前先尝试复用缓存。"
+    }
+   ]
+  },
+  {
+   "en": "The introduction of agentic reasoning caching, a hybrid SLC method that is robust in its coverage, can be asynchronously ensured to be correct by human or AI inspection, is fully explainable, and is cheap to build, maintain, and use.",
+   "zh": "智能体推理缓存（agentic reasoning caching）的引入，是一种混合式 SLC 方法，其覆盖面稳健，可通过人工或 AI 检查异步确保其正确性，完全可解释，并且构建、维护和使用成本低廉。",
+   "sents": null
+  },
+  {
+   "en": "The evaluation of agentic reasoning caching on a range of challenging mathematical and science benchmarks, including its success rates, correctness, robustness, and cost-saving capabilities.",
+   "zh": "在一系列具有挑战性的数学和科学基准测试上对智能体推理缓存进行评估，包括其成功率、正确性、鲁棒性以及节省成本的能力。",
+   "sents": null
+  },
+  {
+   "en": "A brief discussion of the intended placement and implications of this work.",
+   "zh": "简要讨论本工作的预期定位及其影响。",
+   "sents": null
+  },
+  {
+   "en": "Our long-term goal is to bring ARC to real production agents to help lower their cost. In this initial, exploratory work, we deliberately focus on the hardest case: rather than agentic workloads of varied difficulty, we test whether ARCs can match frontier-level model performance on difficult mathematical and scientific benchmarks that are commonly used to measure intelligence. Succeeding at that (as we show we do) indicates that the method is not capped by the ability of models to produce these small ARCs, and that, by extension, the broader class of agentic tasks currently driven by frontier-level models is plausibly cacheable as well.",
+   "zh": "我们的长远目标是将 ARC 引入真实生产环境中的智能体，以帮助降低其成本。 在这项初步的探索性工作中，我们刻意聚焦于最困难的情形：与其测试难度各异的各种智能体工作负载，我们检验的是 ARC 能否在最常用于衡量智能的困难数学与科学基准上达到前沿级别模型的性能。 成功做到这一点（正如我们所示），表明该方法并不受限于模型生成这些小型 ARC 的能力，由此推论，目前由前沿级别模型驱动的更广泛类别的智能体任务很可能同样可以被缓存。",
+   "sents": [
+    {
+     "en": "Our long-term goal is to bring ARC to real production agents to help lower their cost.",
+     "zh": "我们的长远目标是将 ARC 引入真实生产环境中的智能体，以帮助降低其成本。"
+    },
+    {
+     "en": "In this initial, exploratory work, we deliberately focus on the hardest case: rather than agentic workloads of varied difficulty, we test whether ARCs can match frontier-level model performance on difficult mathematical and scientific benchmarks that are commonly used to measure intelligence.",
+     "zh": "在这项初步的探索性工作中，我们刻意聚焦于最困难的情形：与其测试难度各异的各种智能体工作负载，我们检验的是 ARC 能否在最常用于衡量智能的困难数学与科学基准上达到前沿级别模型的性能。"
+    },
+    {
+     "en": "Succeeding at that (as we show we do) indicates that the method is not capped by the ability of models to produce these small ARCs, and that, by extension, the broader class of agentic tasks currently driven by frontier-level models is plausibly cacheable as well.",
+     "zh": "成功做到这一点（正如我们所示），表明该方法并不受限于模型生成这些小型 ARC 的能力，由此推论，目前由前沿级别模型驱动的更广泛类别的智能体任务很可能同样可以被缓存。"
+    }
+   ]
+  },
+  {
+   "en": "Let 𝒮 , ℬ , 𝒯 \\mathcal{S},\\mathcal{B},\\mathcal{T} be the source, builder, and target language model, respectively, and 𝒜 \\mathcal{A} be an answering oracle that answers all queries correctly. Here, the source 𝒮 \\mathcal{S} is the capable, expensive model whose intelligence we aim to cache; the builder ℬ \\mathcal{B} is the model that analyzes 𝒮 \\mathcal{S} ’s reasoning transcripts and constructs cache entries; and the target 𝒯 \\mathcal{T} is the small, cost-efficient model on which caches are to execute at inference time. Additionally, in some places we make use of LM judges 𝒥 \\mathcal{J} , which are simply language models tasked with verifying the correctness and faithfulness of intermediate and final outputs throughout construction and evaluation. Let q ( ∙ 1 , ∙ 2 , … , ∙ n ) q(\\bullet_{1},\\bullet_{2},\\dotsc,\\bullet_{n}) be a query template with n n parameters.",
+   "zh": "设 𝒮、ℬ、𝒯 分别为源模型、构建器和目标语言模型，𝒜 为一个能正确回答所有查询的回答神谕。 其中，源模型 𝒮 是我们希望缓存其智能的能力强、成本高的模型；构建器 ℬ 是分析 𝒮 的推理记录并构建缓存条目的模型；目标模型 𝒯 是在推理时执行缓存的小型、高性价比模型。 此外，我们在某些地方使用了语言模型裁判 𝒥，它们只是被赋予验证构建和评估过程中间及最终输出的正确性与忠实性任务的语言模型。 设 q(∙₁, ∙₂, …, ∙ₙ) 为一个带有 n 个参数的查询模板。",
+   "sents": [
+    {
+     "en": "Let 𝒮 , ℬ , 𝒯 \\mathcal{S},\\mathcal{B},\\mathcal{T} be the source, builder, and target language model, respectively, and 𝒜 \\mathcal{A} be an answering oracle that answers all queries correctly.",
+     "zh": "设 𝒮、ℬ、𝒯 分别为源模型、构建器和目标语言模型，𝒜 为一个能正确回答所有查询的回答神谕。"
+    },
+    {
+     "en": "Here, the source 𝒮 \\mathcal{S} is the capable, expensive model whose intelligence we aim to cache; the builder ℬ \\mathcal{B} is the model that analyzes 𝒮 \\mathcal{S} ’s reasoning transcripts and constructs cache entries; and the target 𝒯 \\mathcal{T} is the small, cost-efficient model on which caches are to execute at inference time.",
+     "zh": "其中，源模型 𝒮 是我们希望缓存其智能的能力强、成本高的模型；构建器 ℬ 是分析 𝒮 的推理记录并构建缓存条目的模型；目标模型 𝒯 是在推理时执行缓存的小型、高性价比模型。"
+    },
+    {
+     "en": "Additionally, in some places we make use of LM judges 𝒥 \\mathcal{J} , which are simply language models tasked with verifying the correctness and faithfulness of intermediate and final outputs throughout construction and evaluation.",
+     "zh": "此外，我们在某些地方使用了语言模型裁判 𝒥，它们只是被赋予验证构建和评估过程中间及最终输出的正确性与忠实性任务的语言模型。"
+    },
+    {
+     "en": "Let q ( ∙ 1 , ∙ 2 , … , ∙ n ) q(\\bullet_{1},\\bullet_{2},\\dotsc,\\bullet_{n}) be a query template with n n parameters.",
+     "zh": "设 q(∙₁, ∙₂, …, ∙ₙ) 为一个带有 n 个参数的查询模板。"
+    }
+   ]
+  },
+  {
+   "en": "Let q ⁡ ( o ) q(o) be a query instance submitted for caching with o o being a specific value vector for q q ’s parameters.",
+   "zh": "设 q ⁡ ( o ) q(o) 为提交进行缓存的查询实例，其中 o o 是 q q 的参数的一个特定值向量。",
+   "sents": null
+  },
+  {
+   "en": "Assume that 𝒜 ⁡ ( q ⁡ ( o ) ) \\mathcal{A}(q(o)) exists, meaning that q ⁡ ( o ) q(o) is solvable. Observe that there exists a set of parameter vectors Π \\Pi such that for all π ∈ Π \\pi\\in\\Pi , q ⁡ ( π ) q(\\pi) is equirational to q ⁡ ( o ) q(o) . This is because at the very least, q ⁡ ( o ) q(o) is equirational to itself.",
+   "zh": "假设 𝒜 ⁡ ( q ⁡ ( o ) ) \\mathcal{A}(q(o)) 存在，即 q ⁡ ( o ) q(o) 是可解的。 注意到存在一组参数向量 Π \\Pi ，使得对所有 π ∈ Π \\pi\\in\\Pi ， q ⁡ ( π ) q(\\pi) 与 q ⁡ ( o ) q(o) 等有理。 这是因为至少 q ⁡ ( o ) q(o) 与其自身是等有理的。",
+   "sents": [
+    {
+     "en": "Assume that 𝒜 ⁡ ( q ⁡ ( o ) ) \\mathcal{A}(q(o)) exists, meaning that q ⁡ ( o ) q(o) is solvable.",
+     "zh": "假设 𝒜 ⁡ ( q ⁡ ( o ) ) \\mathcal{A}(q(o)) 存在，即 q ⁡ ( o ) q(o) 是可解的。"
+    },
+    {
+     "en": "Observe that there exists a set of parameter vectors Π \\Pi such that for all π ∈ Π \\pi\\in\\Pi , q ⁡ ( π ) q(\\pi) is equirational to q ⁡ ( o ) q(o) .",
+     "zh": "注意到存在一组参数向量 Π \\Pi ，使得对所有 π ∈ Π \\pi\\in\\Pi ， q ⁡ ( π ) q(\\pi) 与 q ⁡ ( o ) q(o) 等有理。"
+    },
+    {
+     "en": "This is because at the very least, q ⁡ ( o ) q(o) is equirational to itself.",
+     "zh": "这是因为至少 q ⁡ ( o ) q(o) 与其自身是等有理的。"
+    }
+   ]
+  },
+  {
+   "en": "Agentic reasoning caching is based on the following two assumptions:",
+   "zh": "智能体推理缓存基于以下两个假设：",
+   "sents": null
+  },
+  {
+   "en": "For every q ⁡ ( o ) q(o) that is solvable there exists a program p ( ∙ 1 , ∙ 2 , … , ∙ n ) p(\\bullet_{1},\\bullet_{2},\\dotsc,\\bullet_{n}) with access to an SLM such that p ⁡ ( π ) = 𝒜 ⁡ ( q ⁡ ( π ) ) p(\\pi)=\\mathcal{A}(q(\\pi)) for all π ∈ Π \\pi\\in\\Pi .",
+   "zh": "对于每一个可求解的 q ⁡ ( o ) q(o) ，都存在一个程序 p ( ∙ 1 , ∙ 2 , … , ∙ n ) p(\\bullet_{1},\\bullet_{2},\\dotsc,\\bullet_{n}) ，该程序可访问一个 SLM，使得对于所有 π ∈ Π \\pi\\in\\Pi ，都有 p ⁡ ( π ) = 𝒜 ⁡ ( q ⁡ ( π ) ) p(\\pi)=\\mathcal{A}(q(\\pi)) 。",
+   "sents": null
+  },
+  {
+   "en": "p ( ∙ 1 , ∙ 2 , … , ∙ n ) p(\\bullet_{1},\\bullet_{2},\\dotsc,\\bullet_{n}) can be constructed by ℬ \\mathcal{B} from knowing q ⁡ ( o ) q(o) and 𝒮 ⁡ ( q ⁡ ( o ) ) \\mathcal{S}(q(o)) .",
+   "zh": "p ( ∙ 1 , ∙ 2 , … , ∙ n ) p(\\bullet_{1},\\bullet_{2},\\dotsc,\\bullet_{n}) 可以由 ℬ \\mathcal{B} 通过已知 q ⁡ ( o ) q(o) 和 𝒮 ⁡ ( q ⁡ ( o ) ) \\mathcal{S}(q(o)) 构造得到。",
+   "sents": null
+  },
+  {
+   "en": "Assumption A1 effectively amounts to the belief that every solvable problem is solvable with a combination of code and a small language model in a way that extends to all equirational variants of the problem. Assumption A2 expresses the belief that it is possible to encode into p p by some language model ℬ \\mathcal{B} the intelligence in 𝒮 \\mathcal{S} required to solve q ⁡ ( o ) q(o) and its equirational variants using q ⁡ ( o ) q(o) and its output under 𝒮 \\mathcal{S} as starting points.",
+   "zh": "假设 A1 实质上等同于这样一个信念：每个可解问题都可以用代码与一个小语言模型的组合来求解，并且这种方式可以推广到该问题的所有等理变体。 假设 A2 表达了这样一个信念：可以由某个语言模型 ℬ \\mathcal{B} 编码进 p p 中，利用 q ⁡ ( o ) q(o) 及其在 𝒮 \\mathcal{S} 下的输出作为起点，求解 q ⁡ ( o ) q(o) 及其等理变体所需的智能 𝒮 \\mathcal{S}。",
+   "sents": [
+    {
+     "en": "Assumption A1 effectively amounts to the belief that every solvable problem is solvable with a combination of code and a small language model in a way that extends to all equirational variants of the problem.",
+     "zh": "假设 A1 实质上等同于这样一个信念：每个可解问题都可以用代码与一个小语言模型的组合来求解，并且这种方式可以推广到该问题的所有等理变体。"
+    },
+    {
+     "en": "Assumption A2 expresses the belief that it is possible to encode into p p by some language model ℬ \\mathcal{B} the intelligence in 𝒮 \\mathcal{S} required to solve q ⁡ ( o ) q(o) and its equirational variants using q ⁡ ( o ) q(o) and its output under 𝒮 \\mathcal{S} as starting points.",
+     "zh": "假设 A2 表达了这样一个信念：可以由某个语言模型 ℬ \\mathcal{B} 编码进 p p 中，利用 q ⁡ ( o ) q(o) 及其在 𝒮 \\mathcal{S} 下的输出作为起点，求解 q ⁡ ( o ) q(o) 及其等理变体所需的智能 𝒮 \\mathcal{S}。"
+    }
+   ]
+  },
+  {
+   "en": "Agentic reasoning caching is the embodiment of the above assumptions. Implementing Assumption A1 , we ask the builder model to analyze source model conversation transcripts to be cached to find which parts (together with their ranges of validity) of their inputs can be varied without requiring substantive changes to the reasoning. Further implementing Assumption A2 , we ask the builder model to comprehend the source transcript and construct a program that can solve the problem posed in the original query considering the above-found input parts as parameters that can be varied. To ensure maximal robustness and cache coverage, we insist that the program is a rich composition of independently invokable units representing logical steps that constitute the reasoning process, which we call semantic functions. An agentic reasoning cache is then a set of semantic functions combined with a many-to-one map of problem instances to the natural language descriptions of the semantic functions that can solve the respective instances.",
+   "zh": "智能体推理缓存是上述假设的具体体现。 为实现假设 A1，我们让构建模型分析待缓存的源模型对话记录，找出其输入中哪些部分（及其有效范围）可以在无需实质性更改推理的情况下进行变化。 为进一步实现假设 A2，我们让构建模型理解源对话记录，并将上述找到的输入部分视为可变化的参数，构建一个能够解决原始查询所提出问题的程序。 为确保最大的稳健性和缓存覆盖率，我们坚持要求该程序是由可独立调用的单元构成的丰富组合，这些单元代表构成推理过程的逻辑步骤，我们将其称为语义函数。 智能体推理缓存由此是一组语义函数，结合一个从问题实例到能够求解相应实例的语义函数的自然语言描述的多对一映射。",
+   "sents": [
+    {
+     "en": "Agentic reasoning caching is the embodiment of the above assumptions.",
+     "zh": "智能体推理缓存是上述假设的具体体现。"
+    },
+    {
+     "en": "Implementing Assumption A1 , we ask the builder model to analyze source model conversation transcripts to be cached to find which parts (together with their ranges of validity) of their inputs can be varied without requiring substantive changes to the reasoning.",
+     "zh": "为实现假设 A1，我们让构建模型分析待缓存的源模型对话记录，找出其输入中哪些部分（及其有效范围）可以在无需实质性更改推理的情况下进行变化。"
+    },
+    {
+     "en": "Further implementing Assumption A2 , we ask the builder model to comprehend the source transcript and construct a program that can solve the problem posed in the original query considering the above-found input parts as parameters that can be varied.",
+     "zh": "为进一步实现假设 A2，我们让构建模型理解源对话记录，并将上述找到的输入部分视为可变化的参数，构建一个能够解决原始查询所提出问题的程序。"
+    },
+    {
+     "en": "To ensure maximal robustness and cache coverage, we insist that the program is a rich composition of independently invokable units representing logical steps that constitute the reasoning process, which we call semantic functions.",
+     "zh": "为确保最大的稳健性和缓存覆盖率，我们坚持要求该程序是由可独立调用的单元构成的丰富组合，这些单元代表构成推理过程的逻辑步骤，我们将其称为语义函数。"
+    },
+    {
+     "en": "An agentic reasoning cache is then a set of semantic functions combined with a many-to-one map of problem instances to the natural language descriptions of the semantic functions that can solve the respective instances.",
+     "zh": "智能体推理缓存由此是一组语义函数，结合一个从问题实例到能够求解相应实例的语义函数的自然语言描述的多对一映射。"
+    }
+   ]
+  },
+  {
+   "en": "The remainder of this section describes the semantic functions that constitute programs p p ( Section 2.1 ) and the cache construction ( Section 2.2.1 ) and invocation ( Section 2.2.2 ) processes.",
+   "zh": "本节其余部分介绍构成程序 p p 的语义函数（第 2.1 节），以及缓存构建过程（第 2.2.1 节）和调用过程（第 2.2.2 节）。",
+   "sents": null
+  },
+  {
+   "en": "A semantic function is an executable abstraction representing one logical step of the source reasoning trace, designed to be maximally reusable across semantically equivalent contexts. They are the matter of which agentic reasoning caching is made up. In our implementation, it is simply a Python callable that takes a Context object and returns a dictionary mapping natural-language descriptions to values:",
+   "zh": "语义函数是一种可执行的抽象，表示源推理轨迹中的一个逻辑步骤，其设计目标是在语义等价的上下文中实现最大程度的复用。 它们是构成智能体推理缓存的基本要素。 在我们的实现中，它只是一个 Python 可调用对象，接受一个 Context 对象并返回一个字典，该字典将自然语言描述映射到相应的值：",
+   "sents": [
+    {
+     "en": "A semantic function is an executable abstraction representing one logical step of the source reasoning trace, designed to be maximally reusable across semantically equivalent contexts.",
+     "zh": "语义函数是一种可执行的抽象，表示源推理轨迹中的一个逻辑步骤，其设计目标是在语义等价的上下文中实现最大程度的复用。"
+    },
+    {
+     "en": "They are the matter of which agentic reasoning caching is made up.",
+     "zh": "它们是构成智能体推理缓存的基本要素。"
+    },
+    {
+     "en": "In our implementation, it is simply a Python callable that takes a Context object and returns a dictionary mapping natural-language descriptions to values:",
+     "zh": "在我们的实现中，它只是一个 Python 可调用对象，接受一个 Context 对象并返回一个字典，该字典将自然语言描述映射到相应的值："
+    }
+   ]
+  },
+  {
+   "en": "Unlike conventional functions whose inputs, outputs, and callees are referenced by fixed identifiers, semantic functions reference everything by natural-language descriptions and examples. This enables semantic discovery: a caller need not know the callee’s name, only a description of what it does, and a callee need not know the names of its inputs, only their descriptions. This design allows any component of a previously cached computation to be reused in any semantically equivalent scenario regardless of how it is phrased or structured ( Figure 2 ). Further, if a change (such as a generalization introducing new parameter) is made to a dependency semantic function, none of its callers need to be updated. Instead, its new, generalized description will open it to a larger set of callers, again without affecting its past callers as long as the new description semantically entails the old one.",
+   "zh": "与传统的输入、输出和被调用者都通过固定标识符引用的函数不同，语义函数通过自然语言描述和示例来引用一切。 这使得语义发现成为可能：调用者无需知道被调用者的名称，只需知道其功能描述；被调用者也无需知道其输入的名称，只需知道它们的描述。 这种设计允许先前缓存的计算的任意组件在任何语义等价的场景中被复用，无论该场景如何措辞或组织（图 2）。 此外，如果对某个依赖的语义函数进行了更改（例如引入新参数的泛化），其调用者都无需更新。 相反，它新的、泛化后的描述将使其对更大的调用者集合开放，同时只要新描述在语义上蕴含旧描述，就不会影响其过去的调用者。",
+   "sents": [
+    {
+     "en": "Unlike conventional functions whose inputs, outputs, and callees are referenced by fixed identifiers, semantic functions reference everything by natural-language descriptions and examples.",
+     "zh": "与传统的输入、输出和被调用者都通过固定标识符引用的函数不同，语义函数通过自然语言描述和示例来引用一切。"
+    },
+    {
+     "en": "This enables semantic discovery: a caller need not know the callee’s name, only a description of what it does, and a callee need not know the names of its inputs, only their descriptions.",
+     "zh": "这使得语义发现成为可能：调用者无需知道被调用者的名称，只需知道其功能描述；被调用者也无需知道其输入的名称，只需知道它们的描述。"
+    },
+    {
+     "en": "This design allows any component of a previously cached computation to be reused in any semantically equivalent scenario regardless of how it is phrased or structured ( Figure 2 ).",
+     "zh": "这种设计允许先前缓存的计算的任意组件在任何语义等价的场景中被复用，无论该场景如何措辞或组织（图 2）。"
+    },
+    {
+     "en": "Further, if a change (such as a generalization introducing new parameter) is made to a dependency semantic function, none of its callers need to be updated.",
+     "zh": "此外，如果对某个依赖的语义函数进行了更改（例如引入新参数的泛化），其调用者都无需更新。"
+    },
+    {
+     "en": "Instead, its new, generalized description will open it to a larger set of callers, again without affecting its past callers as long as the new description semantically entails the old one.",
+     "zh": "相反，它新的、泛化后的描述将使其对更大的调用者集合开放，同时只要新描述在语义上蕴含旧描述，就不会影响其过去的调用者。"
+    }
+   ]
+  },
+  {
+   "en": "Semantic functions are designed to use a small set of runtime primitives that mediate all data flow and computation:",
+   "zh": "语义函数旨在使用一小组运行时原语来中介所有数据流与计算：",
+   "sents": null
+  },
+  {
+   "en": "load(ctx, query) : retrieve a value from the layered context memory via vector similarity search. An optional d_type parameter triggers type coercion on the retrieved value.",
+   "zh": "load(ctx, query)：通过向量相似度搜索从分层上下文记忆中检索一个值。 可选的 d_type 参数会对检索到的值触发类型强制转换。",
+   "sents": [
+    {
+     "en": "load(ctx, query) : retrieve a value from the layered context memory via vector similarity search.",
+     "zh": "load(ctx, query)：通过向量相似度搜索从分层上下文记忆中检索一个值。"
+    },
+    {
+     "en": "An optional d_type parameter triggers type coercion on the retrieved value.",
+     "zh": "可选的 d_type 参数会对检索到的值触发类型强制转换。"
+    }
+   ]
+  },
+  {
+   "en": "do(ctx, query, payloads) : discover and invoke another semantic function by natural-language description. Pushes an isolated memory layer pre-populated with the given payloads, executes the matched function, and returns its output dictionary.",
+   "zh": "do(ctx, query, payloads)：通过自然语言描述发现并调用另一个语义函数。 推入一个预先填充了给定 payloads 的隔离记忆层，执行匹配到的函数，并返回其输出字典。",
+   "sents": [
+    {
+     "en": "do(ctx, query, payloads) : discover and invoke another semantic function by natural-language description.",
+     "zh": "do(ctx, query, payloads)：通过自然语言描述发现并调用另一个语义函数。"
+    },
+    {
+     "en": "Pushes an isolated memory layer pre-populated with the given payloads, executes the matched function, and returns its output dictionary.",
+     "zh": "推入一个预先填充了给定 payloads 的隔离记忆层，执行匹配到的函数，并返回其输出字典。"
+    }
+   ]
+  },
+  {
+   "en": "narrate(ctx, message) : record a human-readable reasoning step in the narration trace, providing a running explanation of the computation for later inspection.",
+   "zh": "narrate(ctx, message)：在叙述轨迹中记录一条人类可读的推理步骤，为计算提供持续的解释，以便后续查看。",
+   "sents": null
+  },
+  {
+   "en": "lm(ctx, prompt) : query the target model 𝒯 \\mathcal{T} for an elementary natural-language processing task such as classification, summarization, or short-form generation.",
+   "zh": "lm(ctx, prompt)：查询目标模型 𝒯 \\mathcal{T} 以执行基本的自然语言处理任务，例如分类、摘要或短文本生成。",
+   "sents": null
+  },
+  {
+   "en": "extract(ctx, text, prompt) : use 𝒯 \\mathcal{T} to perform verbatim value extraction from a piece of text. Supports d_type for type coercion on the extracted value.",
+   "zh": "extract(ctx, text, prompt)：使用 𝒯 \\mathcal{T} 从一段文本中执行逐字值提取。 支持 d_type，用于对提取出的值进行类型强制转换。",
+   "sents": [
+    {
+     "en": "extract(ctx, text, prompt) : use 𝒯 \\mathcal{T} to perform verbatim value extraction from a piece of text.",
+     "zh": "extract(ctx, text, prompt)：使用 𝒯 \\mathcal{T} 从一段文本中执行逐字值提取。"
+    },
+    {
+     "en": "Supports d_type for type coercion on the extracted value.",
+     "zh": "支持 d_type，用于对提取出的值进行类型强制转换。"
+    }
+   ]
+  },
+  {
+   "en": "convert(ctx, value, type) / smart_convert(ctx, text, type) : multi-tier type coercion. Programmatic conversion is attempted first; if it fails, smart_convert asks 𝒯 \\mathcal{T} to rewrite the value into a Python literal that is then validated by ast.literal_eval() .",
+   "zh": "convert(ctx, value, type) / smart_convert(ctx, text, type)：多层级类型强制转换。 首先尝试程序化转换；如果失败，smart_convert 会请 𝒯 \\mathcal{T} 将该值改写为 Python 字面量，随后由 ast.literal_eval() 进行校验。",
+   "sents": [
+    {
+     "en": "convert(ctx, value, type) / smart_convert(ctx, text, type) : multi-tier type coercion.",
+     "zh": "convert(ctx, value, type) / smart_convert(ctx, text, type)：多层级类型强制转换。"
+    },
+    {
+     "en": "Programmatic conversion is attempted first; if it fails, smart_convert asks 𝒯 \\mathcal{T} to rewrite the value into a Python literal that is then validated by ast.literal_eval() .",
+     "zh": "首先尝试程序化转换；如果失败，smart_convert 会请 𝒯 \\mathcal{T} 将该值改写为 Python 字面量，随后由 ast.literal_eval() 进行校验。"
+    }
+   ]
+  },
+  {
+   "en": "invoke_tool(ctx, name, args) : call a registered external tool (e.g., terminal or a web search API), enabling semantic functions to integrate with tool-augmented pipelines.",
+   "zh": "invoke_tool(ctx, name, args)：调用已注册的外部工具（例如终端或网络搜索 API），使语义函数能够与工具增强的流水线集成。",
+   "sents": null
+  },
+  {
+   "en": "Because values flow between functions through semantic search rather than typed variable bindings, type coercion is critical. Both load and extract accept an optional d_type parameter that coerces the retrieved or extracted value to the desired Python type. When direct coercion fails, smart_convert invokes 𝒯 \\mathcal{T} to rewrite the value into a Python literal, which is then parsed via ast.literal_eval() to ensure syntactic validity and type correctness.",
+   "zh": "由于值是通过语义搜索而非类型化的变量绑定在函数之间流动的，因此类型强制转换至关重要。 load 和 extract 都接受一个可选的 d_type 参数，用于将检索到的或提取出的值强制转换为所需的 Python 类型。 当直接强制转换失败时，smart_convert 会调用 𝒯 \\mathcal{T} 将该值重写为 Python 字面量，随后通过 ast.literal_eval() 进行解析，以确保语法有效且类型正确。",
+   "sents": [
+    {
+     "en": "Because values flow between functions through semantic search rather than typed variable bindings, type coercion is critical.",
+     "zh": "由于值是通过语义搜索而非类型化的变量绑定在函数之间流动的，因此类型强制转换至关重要。"
+    },
+    {
+     "en": "Both load and extract accept an optional d_type parameter that coerces the retrieved or extracted value to the desired Python type.",
+     "zh": "load 和 extract 都接受一个可选的 d_type 参数，用于将检索到的或提取出的值强制转换为所需的 Python 类型。"
+    },
+    {
+     "en": "When direct coercion fails, smart_convert invokes 𝒯 \\mathcal{T} to rewrite the value into a Python literal, which is then parsed via ast.literal_eval() to ensure syntactic validity and type correctness.",
+     "zh": "当直接强制转换失败时，smart_convert 会调用 𝒯 \\mathcal{T} 将该值重写为 Python 字面量，随后通过 ast.literal_eval() 进行解析，以确保语法有效且类型正确。"
+    }
+   ]
+  },
+  {
+   "en": "Semantic functions are composed into networks through the do() primitive. The do() primitive invokes a semantic function by describing its intention imperatively in natural language and passing parameters annotated by their natural language descriptions. A caller passes described parameter values into do() , which pushes a fresh, isolated memory layer onto the context stack, populates it with the payloads, and dispatches to the callee found by semantic search over the function registry. The callee accesses its inputs via load() and stores its outputs into the same layer. Upon return, the caller retrieves results from the callee’s output dictionary with load(result, query) . This mechanism enables hierarchical decomposition: a root function can delegate to arbitrarily nested sub-functions based on its intention rather than their named identities, with each sub-function operating in its own scope while sharing the underlying context stack. See Figure 5 in Appendix A for a complete cache entry illustrating these primitives on an ideal gas law problem from SciBench.",
+   "zh": "语义函数通过 do() 原语组合成网络。 do() 原语通过在自然语言中命令式地描述其意图并传递由其自然语言描述标注的参数来调用一个语义函数。 调用方将描述后的参数值传入 do()，do() 会在上下文栈上压入一个全新的隔离内存层，将负载填充其中，并通过在函数注册表上进行语义搜索找到被调用方并分发调用。 被调用方通过 load() 访问其输入，并将其输出存储到同一个层中。 返回时，调用方通过 load(result, query) 从被调用方的输出字典中检索结果。 这一机制实现了层次化分解：根函数可以根据其意图而非子函数的命名标识，将任务委派给任意嵌套的子函数，每个子函数在自己的作用域内运行，同时共享底层上下文栈。 附录 A 中的图 5 展示了一个完整的缓存条目，以 SciBench 中的理想气体定律问题为例说明这些原语的使用。",
+   "sents": [
+    {
+     "en": "Semantic functions are composed into networks through the do() primitive.",
+     "zh": "语义函数通过 do() 原语组合成网络。"
+    },
+    {
+     "en": "The do() primitive invokes a semantic function by describing its intention imperatively in natural language and passing parameters annotated by their natural language descriptions.",
+     "zh": "do() 原语通过在自然语言中命令式地描述其意图并传递由其自然语言描述标注的参数来调用一个语义函数。"
+    },
+    {
+     "en": "A caller passes described parameter values into do() , which pushes a fresh, isolated memory layer onto the context stack, populates it with the payloads, and dispatches to the callee found by semantic search over the function registry.",
+     "zh": "调用方将描述后的参数值传入 do()，do() 会在上下文栈上压入一个全新的隔离内存层，将负载填充其中，并通过在函数注册表上进行语义搜索找到被调用方并分发调用。"
+    },
+    {
+     "en": "The callee accesses its inputs via load() and stores its outputs into the same layer.",
+     "zh": "被调用方通过 load() 访问其输入，并将其输出存储到同一个层中。"
+    },
+    {
+     "en": "Upon return, the caller retrieves results from the callee’s output dictionary with load(result, query) .",
+     "zh": "返回时，调用方通过 load(result, query) 从被调用方的输出字典中检索结果。"
+    },
+    {
+     "en": "This mechanism enables hierarchical decomposition: a root function can delegate to arbitrarily nested sub-functions based on its intention rather than their named identities, with each sub-function operating in its own scope while sharing the underlying context stack.",
+     "zh": "这一机制实现了层次化分解：根函数可以根据其意图而非子函数的命名标识，将任务委派给任意嵌套的子函数，每个子函数在自己的作用域内运行，同时共享底层上下文栈。"
+    },
+    {
+     "en": "See Figure 5 in Appendix A for a complete cache entry illustrating these primitives on an ideal gas law problem from SciBench.",
+     "zh": "附录 A 中的图 5 展示了一个完整的缓存条目，以 SciBench 中的理想气体定律问题为例说明这些原语的使用。"
+    }
+   ]
+  },
+  {
+   "en": "The Context object maintains a stack of memory layers, each backed by a CPU-powered vector store using a small semantic embedding model. When load() is called, it searches the layers top-down, returning the best match from the most local scope. Each invocation of do() pushes a new layer and pops it upon completion, providing natural scoping that prevents unintended interference between sibling calls.",
+   "zh": "Context 对象维护一个内存层栈，每一层由基于 CPU 的向量存储支持，使用一个小型语义嵌入模型。 当调用 load() 时，它会自顶向下搜索各个层，从最局部的作用域返回最佳匹配。 每次调用 do() 都会压入一个新层，并在完成后将其弹出，从而提供天然的作用域，防止同级调用之间产生意外的相互干扰。",
+   "sents": [
+    {
+     "en": "The Context object maintains a stack of memory layers, each backed by a CPU-powered vector store using a small semantic embedding model.",
+     "zh": "Context 对象维护一个内存层栈，每一层由基于 CPU 的向量存储支持，使用一个小型语义嵌入模型。"
+    },
+    {
+     "en": "When load() is called, it searches the layers top-down, returning the best match from the most local scope.",
+     "zh": "当调用 load() 时，它会自顶向下搜索各个层，从最局部的作用域返回最佳匹配。"
+    },
+    {
+     "en": "Each invocation of do() pushes a new layer and pops it upon completion, providing natural scoping that prevents unintended interference between sibling calls.",
+     "zh": "每次调用 do() 都会压入一个新层，并在完成后将其弹出，从而提供天然的作用域，防止同级调用之间产生意外的相互干扰。"
+    }
+   ]
+  },
+  {
+   "en": "Given a query instance q ⁡ ( o ) q(o) and the source model’s transcript 𝒮 ⁡ ( q ⁡ ( o ) ) \\mathcal{S}(q(o)) , the builder model ℬ \\mathcal{B} constructs the program p p through five phases: input–output isolation, decomposition, parameter recognition, planning, and implementation.",
+   "zh": "给定查询实例 q ⁡ ( o ) q(o) 和源模型的转录 𝒮 ⁡ ( q ⁡ ( o ) ) \\mathcal{S}(q(o)) ，构建器模型 ℬ \\mathcal{B} 通过五个阶段构建程序 p p ：输入–输出隔离、分解、参数识别、规划与实现。",
+   "sents": null
+  },
+  {
+   "en": "ℬ \\mathcal{B} extracts the user input from the query and isolates the expected output (the final answer or result) from the transcript 𝒮 ⁡ ( q ⁡ ( o ) ) \\mathcal{S}(q(o)) . This separation grounds the subsequent phases: the user input drives parameter identification in Phase 3, while the expected output serves as the correctness reference against which candidate implementations are tested in Phase 5.",
+   "zh": "ℬ \\mathcal{B} 从查询中提取用户输入，并从转录 𝒮 ⁡ ( q ⁡ ( o ) ) \\mathcal{S}(q(o)) 中分离出期望输出（最终答案或结果）。 这种分离为后续阶段奠定了基础：用户输入驱动第 3 阶段中的参数识别，而期望输出则作为正确性参考，用于在第 5 阶段中对候选实现进行测试。",
+   "sents": [
+    {
+     "en": "ℬ \\mathcal{B} extracts the user input from the query and isolates the expected output (the final answer or result) from the transcript 𝒮 ⁡ ( q ⁡ ( o ) ) \\mathcal{S}(q(o)) .",
+     "zh": "ℬ \\mathcal{B} 从查询中提取用户输入，并从转录 𝒮 ⁡ ( q ⁡ ( o ) ) \\mathcal{S}(q(o)) 中分离出期望输出（最终答案或结果）。"
+    },
+    {
+     "en": "This separation grounds the subsequent phases: the user input drives parameter identification in Phase 3, while the expected output serves as the correctness reference against which candidate implementations are tested in Phase 5.",
+     "zh": "这种分离为后续阶段奠定了基础：用户输入驱动第 3 阶段中的参数识别，而期望输出则作为正确性参考，用于在第 5 阶段中对候选实现进行测试。"
+    }
+   ]
+  },
+  {
+   "en": "ℬ \\mathcal{B} analyzes the transcript 𝒮 ⁡ ( q ⁡ ( o ) ) \\mathcal{S}(q(o)) and decomposes the reasoning into a hierarchical list of logical operations. Each operation is described imperatively, naming the basic individual inputs it consumes (values, entities, relationships, quantities) rather than referring to the problem as a monolithic description. The target granularity is function-sized units of logic: chunks small enough to be implemented as individual semantic functions ( Section 2.1 ), yet large enough to represent a coherent reasoning step. During decomposition, ℬ \\mathcal{B} also identifies reusable sub-computations, each representing an operation likely to recur across equirational variants or entirely different queries, and marks them for extraction into standalone semantic functions.",
+   "zh": "ℬ \\mathcal{B} 分析转录文本 𝒮 ⁡ ( q ⁡ ( o ) ) \\mathcal{S}(q(o))，并将推理分解为一个分层的逻辑操作列表。 每个操作都以命令式方式描述，指明其所消费的基本个体输入（值、实体、关系、数量），而不是将问题视为一个整体性描述来引用。 目标粒度是函数规模的逻辑单元：这些块既要足够小，可以作为独立的语义函数实现（第 2.1 节），又要足够大，能够表示一个连贯的推理步骤。 在分解过程中，ℬ \\mathcal{B} 还会识别可复用的子计算——每个子计算代表一种可能在等理性变体或完全不同的查询中重复出现的操作——并将它们标记出来，以便提取为独立的语义函数。",
+   "sents": [
+    {
+     "en": "ℬ \\mathcal{B} analyzes the transcript 𝒮 ⁡ ( q ⁡ ( o ) ) \\mathcal{S}(q(o)) and decomposes the reasoning into a hierarchical list of logical operations.",
+     "zh": "ℬ \\mathcal{B} 分析转录文本 𝒮 ⁡ ( q ⁡ ( o ) ) \\mathcal{S}(q(o))，并将推理分解为一个分层的逻辑操作列表。"
+    },
+    {
+     "en": "Each operation is described imperatively, naming the basic individual inputs it consumes (values, entities, relationships, quantities) rather than referring to the problem as a monolithic description.",
+     "zh": "每个操作都以命令式方式描述，指明其所消费的基本个体输入（值、实体、关系、数量），而不是将问题视为一个整体性描述来引用。"
+    },
+    {
+     "en": "The target granularity is function-sized units of logic: chunks small enough to be implemented as individual semantic functions ( Section 2.1 ), yet large enough to represent a coherent reasoning step.",
+     "zh": "目标粒度是函数规模的逻辑单元：这些块既要足够小，可以作为独立的语义函数实现（第 2.1 节），又要足够大，能够表示一个连贯的推理步骤。"
+    },
+    {
+     "en": "During decomposition, ℬ \\mathcal{B} also identifies reusable sub-computations, each representing an operation likely to recur across equirational variants or entirely different queries, and marks them for extraction into standalone semantic functions.",
+     "zh": "在分解过程中，ℬ \\mathcal{B} 还会识别可复用的子计算——每个子计算代表一种可能在等理性变体或完全不同的查询中重复出现的操作——并将它们标记出来，以便提取为独立的语义函数。"
+    }
+   ]
+  },
+  {
+   "en": "Using both the user input and the decomposition as context, ℬ \\mathcal{B} identifies the class of problems the query belongs to and determines which parts of the input are the natural input parameters that vary across instances of that class. ℬ \\mathcal{B} produces a generic input template q ( ∙ 1 , ∙ 2 , … , ∙ n ) q(\\bullet_{1},\\bullet_{2},\\dotsc,\\bullet_{n}) and extracts the concrete value of each parameter from the original input, paired with a descriptive name and format examples. Every recognized parameter must be a basic, self-contained piece of information that the reasoning directly consumes (a number, a name, a formula, a relationship, a list of items, a table, and so on) and never an entire problem description or a multi-sentence narrative. Parameters that are naturally variable-size collections (lists, tuples, tables) are kept as single parameters rather than split into individual elements. The output of this phase is the generic input template q ( ∙ 1 , ∙ 2 , … , ∙ n ) q(\\bullet_{1},\\bullet_{2},\\dotsc,\\bullet_{n}) together with a dictionary mapping parameter descriptions to their concrete values in the original instance. The phase concludes with an analysis of the logical validity ranges of the individual parameters.",
+   "zh": "ℬ \\mathcal{B} 同时使用用户输入和任务分解作为上下文，识别该查询所属的问题类别，并确定输入中哪些部分是自然的输入参数，即在该类别的不同实例之间变化的那些部分。ℬ \\mathcal{B} 生成一个通用的输入模板 q ( ∙ 1 , ∙ 2 , … , ∙ n ) q(\\bullet_{1},\\bullet_{2},\\dotsc,\\bullet_{n}) ，并从原始输入中提取每个参数的具体取值，同时为每个参数配上描述性名称和格式示例。 每个被识别出的参数都必须是推理过程直接使用的基本、自包含的信息片段（一个数字、一个名称、一个公式、一种关系、一个条目列表、一张表格等），绝不能是完整的问题描述或多句叙述。 天然为可变大小集合的参数（列表、元组、表格）应保持为单个参数，而不是拆分成单个元素。 该阶段的输出是通用输入模板 q ( ∙ 1 , ∙ 2 , … , ∙ n ) q(\\bullet_{1},\\bullet_{2},\\dotsc,\\bullet_{n}) ，以及一个将参数描述映射到其在原始实例中具体取值的字典。 该阶段以对各个参数的逻辑有效取值范围的分析作为结束。",
+   "sents": [
+    {
+     "en": "Using both the user input and the decomposition as context, ℬ \\mathcal{B} identifies the class of problems the query belongs to and determines which parts of the input are the natural input parameters that vary across instances of that class. ℬ \\mathcal{B} produces a generic input template q ( ∙ 1 , ∙ 2 , … , ∙ n ) q(\\bullet_{1},\\bullet_{2},\\dotsc,\\bullet_{n}) and extracts the concrete value of each parameter from the original input, paired with a descriptive name and format examples.",
+     "zh": "ℬ \\mathcal{B} 同时使用用户输入和任务分解作为上下文，识别该查询所属的问题类别，并确定输入中哪些部分是自然的输入参数，即在该类别的不同实例之间变化的那些部分。ℬ \\mathcal{B} 生成一个通用的输入模板 q ( ∙ 1 , ∙ 2 , … , ∙ n ) q(\\bullet_{1},\\bullet_{2},\\dotsc,\\bullet_{n}) ，并从原始输入中提取每个参数的具体取值，同时为每个参数配上描述性名称和格式示例。"
+    },
+    {
+     "en": "Every recognized parameter must be a basic, self-contained piece of information that the reasoning directly consumes (a number, a name, a formula, a relationship, a list of items, a table, and so on) and never an entire problem description or a multi-sentence narrative.",
+     "zh": "每个被识别出的参数都必须是推理过程直接使用的基本、自包含的信息片段（一个数字、一个名称、一个公式、一种关系、一个条目列表、一张表格等），绝不能是完整的问题描述或多句叙述。"
+    },
+    {
+     "en": "Parameters that are naturally variable-size collections (lists, tuples, tables) are kept as single parameters rather than split into individual elements.",
+     "zh": "天然为可变大小集合的参数（列表、元组、表格）应保持为单个参数，而不是拆分成单个元素。"
+    },
+    {
+     "en": "The output of this phase is the generic input template q ( ∙ 1 , ∙ 2 , … , ∙ n ) q(\\bullet_{1},\\bullet_{2},\\dotsc,\\bullet_{n}) together with a dictionary mapping parameter descriptions to their concrete values in the original instance.",
+     "zh": "该阶段的输出是通用输入模板 q ( ∙ 1 , ∙ 2 , … , ∙ n ) q(\\bullet_{1},\\bullet_{2},\\dotsc,\\bullet_{n}) ，以及一个将参数描述映射到其在原始实例中具体取值的字典。"
+    },
+    {
+     "en": "The phase concludes with an analysis of the logical validity ranges of the individual parameters.",
+     "zh": "该阶段以对各个参数的逻辑有效取值范围的分析作为结束。"
+    }
+   ]
+  },
+  {
+   "en": "Given the transcript, the decomposition, the recognized parameters, and any tools that were available to 𝒮 \\mathcal{S} during the original reasoning, ℬ \\mathcal{B} produces a structural plan for the program. The plan specifies which semantic functions to create, their dependency structure, the order in which they should be implemented (bottom-up, so that each function’s dependencies are available before it is written), and which function serves as the root. A configurable granularity setting (fine, medium, or coarse; specified by the cache user) controls how aggressively small operations are merged into larger functions: at the fine end, nearly every decomposition step becomes its own function, while at the coarse end only the major reasoning stages are preserved. The plan is designed for robustness to re-parameterization: it ensures that the resulting program structure does not depend on the specific parameter values o o of the original instance.",
+   "zh": "给定转录文本、分解结果、已识别的参数，以及 𝒮 \\mathcal{S} 在原始推理过程中可用的任何工具，ℬ \\mathcal{B} 为该程序生成一个结构化规划。 该规划指明要创建哪些语义函数、它们的依赖结构、实现它们的顺序（自底向上，使得每个函数的依赖项在编写该函数之前已经可用），以及哪个函数作为根。 可配置的粒度设置（细、中或粗；由缓存用户指定）控制将小操作合并为更大函数的激进程度：在最细的一端，几乎每个分解步骤都成为其自身的函数；而在最粗的一端，只保留主要的推理阶段。 该规划的设计具备对重新参数化的鲁棒性：它确保所得的程序结构不依赖于原始实例的具体参数值 o o。",
+   "sents": [
+    {
+     "en": "Given the transcript, the decomposition, the recognized parameters, and any tools that were available to 𝒮 \\mathcal{S} during the original reasoning, ℬ \\mathcal{B} produces a structural plan for the program.",
+     "zh": "给定转录文本、分解结果、已识别的参数，以及 𝒮 \\mathcal{S} 在原始推理过程中可用的任何工具，ℬ \\mathcal{B} 为该程序生成一个结构化规划。"
+    },
+    {
+     "en": "The plan specifies which semantic functions to create, their dependency structure, the order in which they should be implemented (bottom-up, so that each function’s dependencies are available before it is written), and which function serves as the root.",
+     "zh": "该规划指明要创建哪些语义函数、它们的依赖结构、实现它们的顺序（自底向上，使得每个函数的依赖项在编写该函数之前已经可用），以及哪个函数作为根。"
+    },
+    {
+     "en": "A configurable granularity setting (fine, medium, or coarse; specified by the cache user) controls how aggressively small operations are merged into larger functions: at the fine end, nearly every decomposition step becomes its own function, while at the coarse end only the major reasoning stages are preserved.",
+     "zh": "可配置的粒度设置（细、中或粗；由缓存用户指定）控制将小操作合并为更大函数的激进程度：在最细的一端，几乎每个分解步骤都成为其自身的函数；而在最粗的一端，只保留主要的推理阶段。"
+    },
+    {
+     "en": "The plan is designed for robustness to re-parameterization: it ensures that the resulting program structure does not depend on the specific parameter values o o of the original instance.",
+     "zh": "该规划的设计具备对重新参数化的鲁棒性：它确保所得的程序结构不依赖于原始实例的具体参数值 o o。"
+    }
+   ]
+  },
+  {
+   "en": "ℬ \\mathcal{B} enters an agentic loop in which it iteratively writes candidate semantic functions. A function remains a candidate until it passes all checks and is registered in the cache. It may be rewritten multiple times before it reaches that point.",
+   "zh": "ℬ \\mathcal{B} 进入一个智能体循环，在其中迭代地编写候选语义函数。 一个函数在通过所有检查并注册到缓存之前，始终只是候选函数。 在达到那一步之前，它可能会被重写多次。",
+   "sents": [
+    {
+     "en": "ℬ \\mathcal{B} enters an agentic loop in which it iteratively writes candidate semantic functions.",
+     "zh": "ℬ \\mathcal{B} 进入一个智能体循环，在其中迭代地编写候选语义函数。"
+    },
+    {
+     "en": "A function remains a candidate until it passes all checks and is registered in the cache.",
+     "zh": "一个函数在通过所有检查并注册到缓存之前，始终只是候选函数。"
+    },
+    {
+     "en": "It may be rewritten multiple times before it reaches that point.",
+     "zh": "在达到那一步之前，它可能会被重写多次。"
+    }
+   ]
+  },
+  {
+   "en": "For each candidate function, ℬ \\mathcal{B} first searches the existing registry for semantically equivalent functions and inspects their source code to assess whether they can be reused directly or adapted. It then writes the candidate function body using the runtime primitives described in Section 2.1 . The candidate is validated syntactically and via static analysis of narration quality, checking that narration calls are present and that their number is commensurate with the function’s control-flow complexity. ℬ \\mathcal{B} then tests the candidate by dispatching it with the original parameters and comparing its output against the corresponding fragment of the transcript, validated by a judge 𝒥 \\mathcal{J} . On success, the function is registered in the cache. On failure, ℬ \\mathcal{B} receives structured feedback (error messages, judge critiques, stack traces) and rewrites the candidate accordingly.",
+   "zh": "对于每个候选函数，ℬ \\mathcal{B} 首先在现有注册表中搜索语义等价的函数，并检查其源代码以评估是否可以直接复用或加以适配。 随后，它使用 2.1 节中描述的运行时原语编写候选函数体。 候选函数会经过语法验证以及对叙述质量的静态分析，检查叙述调用是否存在，且其数量与函数的控制流复杂度相称。接着，ℬ \\mathcal{B} 通过使用原始参数分发候选函数来进行测试，并将其输出与记录的对应片段进行比较，该片段由裁判 𝒥 \\mathcal{J} 验证。 若成功，该函数将被注册到缓存中。 若失败，ℬ \\mathcal{B} 会接收结构化反馈（错误消息、裁判批评意见、堆栈跟踪），并据此重写候选函数。",
+   "sents": [
+    {
+     "en": "For each candidate function, ℬ \\mathcal{B} first searches the existing registry for semantically equivalent functions and inspects their source code to assess whether they can be reused directly or adapted.",
+     "zh": "对于每个候选函数，ℬ \\mathcal{B} 首先在现有注册表中搜索语义等价的函数，并检查其源代码以评估是否可以直接复用或加以适配。"
+    },
+    {
+     "en": "It then writes the candidate function body using the runtime primitives described in Section 2.1 .",
+     "zh": "随后，它使用 2.1 节中描述的运行时原语编写候选函数体。"
+    },
+    {
+     "en": "The candidate is validated syntactically and via static analysis of narration quality, checking that narration calls are present and that their number is commensurate with the function’s control-flow complexity. ℬ \\mathcal{B} then tests the candidate by dispatching it with the original parameters and comparing its output against the corresponding fragment of the transcript, validated by a judge 𝒥 \\mathcal{J} .",
+     "zh": "候选函数会经过语法验证以及对叙述质量的静态分析，检查叙述调用是否存在，且其数量与函数的控制流复杂度相称。接着，ℬ \\mathcal{B} 通过使用原始参数分发候选函数来进行测试，并将其输出与记录的对应片段进行比较，该片段由裁判 𝒥 \\mathcal{J} 验证。"
+    },
+    {
+     "en": "On success, the function is registered in the cache.",
+     "zh": "若成功，该函数将被注册到缓存中。"
+    },
+    {
+     "en": "On failure, ℬ \\mathcal{B} receives structured feedback (error messages, judge critiques, stack traces) and rewrites the candidate accordingly.",
+     "zh": "若失败，ℬ \\mathcal{B} 会接收结构化反馈（错误消息、裁判批评意见、堆栈跟踪），并据此重写候选函数。"
+    }
+   ]
+  },
+  {
+   "en": "Once all individual functions are registered, ℬ \\mathcal{B} tests the root function end-to-end in two stages. In the first stage (correctness), the root function is dispatched with the original parameters o o and its output is judged by 𝒥 \\mathcal{J} against both the transcript and the golden label. In the second stage (extraction robustness), a real invocation is simulated: 𝒯 \\mathcal{T} extracts parameters from the raw user input, the root function is dispatched with the extracted parameters, and the output is judged by 𝒥 \\mathcal{J} . This extraction round-trip is repeated N N times to test robustness to variance in the extraction process.",
+   "zh": "当所有单个函数注册完毕后，ℬ \\mathcal{B} 分两个阶段对根函数进行端到端测试。 第一阶段（正确性），使用原始参数 o o 调度根函数，并由 𝒥 \\mathcal{J} 依据对话记录和金标准标签对其输出进行评判。 第二阶段（抽取鲁棒性），模拟一次真实调用：𝒯 \\mathcal{T} 从原始用户输入中抽取参数，用抽取出的参数调度根函数，再由 𝒥 \\mathcal{J} 对输出进行评判。 该抽取往返过程重复 N N 次，以测试对抽取过程中变化的鲁棒性。",
+   "sents": [
+    {
+     "en": "Once all individual functions are registered, ℬ \\mathcal{B} tests the root function end-to-end in two stages.",
+     "zh": "当所有单个函数注册完毕后，ℬ \\mathcal{B} 分两个阶段对根函数进行端到端测试。"
+    },
+    {
+     "en": "In the first stage (correctness), the root function is dispatched with the original parameters o o and its output is judged by 𝒥 \\mathcal{J} against both the transcript and the golden label.",
+     "zh": "第一阶段（正确性），使用原始参数 o o 调度根函数，并由 𝒥 \\mathcal{J} 依据对话记录和金标准标签对其输出进行评判。"
+    },
+    {
+     "en": "In the second stage (extraction robustness), a real invocation is simulated: 𝒯 \\mathcal{T} extracts parameters from the raw user input, the root function is dispatched with the extracted parameters, and the output is judged by 𝒥 \\mathcal{J} .",
+     "zh": "第二阶段（抽取鲁棒性），模拟一次真实调用：𝒯 \\mathcal{T} 从原始用户输入中抽取参数，用抽取出的参数调度根函数，再由 𝒥 \\mathcal{J} 对输出进行评判。"
+    },
+    {
+     "en": "This extraction round-trip is repeated N N times to test robustness to variance in the extraction process.",
+     "zh": "该抽取往返过程重复 N N 次，以测试对抽取过程中变化的鲁棒性。"
+    }
+   ]
+  },
+  {
+   "en": "On completion, the root function and its entry-point descriptions are registered in the cache’s vector-indexed registries. Both the generic input template q ( ∙ 1 , ∙ 2 , … , ∙ n ) q(\\bullet_{1},\\bullet_{2},\\dotsc,\\bullet_{n}) and the original user input q ⁡ ( o ) q(o) are registered as entry points, enabling retrieval by semantic similarity at invocation time.",
+   "zh": "完成后，根函数及其入口点描述将注册到缓存的向量索引注册表中。 通用输入模板 q ( ∙ 1 , ∙ 2 , … , ∙ n ) 与原始用户输入 q ⁡ ( o) 均被注册为入口点，从而支持在调用时通过语义相似度进行检索。",
+   "sents": [
+    {
+     "en": "On completion, the root function and its entry-point descriptions are registered in the cache’s vector-indexed registries.",
+     "zh": "完成后，根函数及其入口点描述将注册到缓存的向量索引注册表中。"
+    },
+    {
+     "en": "Both the generic input template q ( ∙ 1 , ∙ 2 , … , ∙ n ) q(\\bullet_{1},\\bullet_{2},\\dotsc,\\bullet_{n}) and the original user input q ⁡ ( o ) q(o) are registered as entry points, enabling retrieval by semantic similarity at invocation time.",
+     "zh": "通用输入模板 q ( ∙ 1 , ∙ 2 , … , ∙ n ) 与原始用户输入 q ⁡ ( o) 均被注册为入口点，从而支持在调用时通过语义相似度进行检索。"
+    }
+   ]
+  },
+  {
+   "en": "Once a cache has been constructed, serving a new query q ⁡ ( π ) q(\\pi) for π ∈ Π \\pi\\in\\Pi proceeds through four steps.",
+   "zh": "一旦缓存被构建完成，为 π ∈ Π \\pi\\in\\Pi 提供新查询 q ⁡ ( π ) q(\\pi) 的服务将通过四个步骤进行。",
+   "sents": null
+  },
+  {
+   "en": "Entry-point search. The user input is embedded and compared against the entry-point registry via cosine similarity. If the best result similarity exceeds a configurable threshold, the corresponding root function description is returned. Otherwise, the query is forwarded to the source model 𝒮 \\mathcal{S} as a cache miss.",
+   "zh": "入口点搜索。 将用户输入进行嵌入，并通过余弦相似度与入口点注册表进行比较。 如果最佳结果的相似度超过可配置的阈值，则返回对应的根函数描述。 否则，该查询将作为缓存未命中转发给源模型 𝒮 \\mathcal{S}。",
+   "sents": [
+    {
+     "en": "Entry-point search.",
+     "zh": "入口点搜索。"
+    },
+    {
+     "en": "The user input is embedded and compared against the entry-point registry via cosine similarity.",
+     "zh": "将用户输入进行嵌入，并通过余弦相似度与入口点注册表进行比较。"
+    },
+    {
+     "en": "If the best result similarity exceeds a configurable threshold, the corresponding root function description is returned.",
+     "zh": "如果最佳结果的相似度超过可配置的阈值，则返回对应的根函数描述。"
+    },
+    {
+     "en": "Otherwise, the query is forwarded to the source model 𝒮 \\mathcal{S} as a cache miss.",
+     "zh": "否则，该查询将作为缓存未命中转发给源模型 𝒮 \\mathcal{S}。"
+    }
+   ]
+  },
+  {
+   "en": "Parameter value extraction. The extractor LM, built on 𝒯 \\mathcal{T} , extracts each expected parameter from the user input. The extractor is parameterized by the parameter descriptions stored alongside the root function during registration, ensuring that the extraction is aligned with the function’s expected inputs.",
+   "zh": "参数值提取。 提取器语言模型基于 𝒯 \\mathcal{T} 构建，从用户输入中提取每个预期参数。 提取器由注册时与根函数一同存储的参数描述进行参数化，确保提取结果与该函数的预期输入保持一致。",
+   "sents": [
+    {
+     "en": "Parameter value extraction.",
+     "zh": "参数值提取。"
+    },
+    {
+     "en": "The extractor LM, built on 𝒯 \\mathcal{T} , extracts each expected parameter from the user input.",
+     "zh": "提取器语言模型基于 𝒯 \\mathcal{T} 构建，从用户输入中提取每个预期参数。"
+    },
+    {
+     "en": "The extractor is parameterized by the parameter descriptions stored alongside the root function during registration, ensuring that the extraction is aligned with the function’s expected inputs.",
+     "zh": "提取器由注册时与根函数一同存储的参数描述进行参数化，确保提取结果与该函数的预期输入保持一致。"
+    }
+   ]
+  },
+  {
+   "en": "Dispatch. A fresh Context is created and populated with the extracted parameter values. The root function is executed, potentially invoking sub-functions via do() , querying 𝒯 \\mathcal{T} via lm() , and recording reasoning via narrate() .",
+   "zh": "分发。 系统会创建一个全新的 Context（上下文），并用提取出的参数值对其进行填充。 根函数被执行，它可能通过 do() 调用子函数，通过 lm() 查询 𝒯 \\mathcal{T}，并通过 narrate() 记录推理过程。",
+   "sents": [
+    {
+     "en": "Dispatch.",
+     "zh": "分发。"
+    },
+    {
+     "en": "A fresh Context is created and populated with the extracted parameter values.",
+     "zh": "系统会创建一个全新的 Context（上下文），并用提取出的参数值对其进行填充。"
+    },
+    {
+     "en": "The root function is executed, potentially invoking sub-functions via do() , querying 𝒯 \\mathcal{T} via lm() , and recording reasoning via narrate() .",
+     "zh": "根函数被执行，它可能通过 do() 调用子函数，通过 lm() 查询 𝒯 \\mathcal{T}，并通过 narrate() 记录推理过程。"
+    }
+   ]
+  },
+  {
+   "en": "Output. The function returns a dictionary of named results. The full narration trace, accumulated during execution, serves as a human-readable explanation of how the answer was derived. Note that while the narrations produced by semantic functions might eventually end up appearing formulated in a somewhat structured and machine-like manner, it would not be too difficult to employ a small transcription model that would make them sound more human-like if genuinely desired by the end users.",
+   "zh": "输出。 该函数返回一个包含命名结果的字典。 在执行过程中累积的完整叙述轨迹，可作为答案如何推导出的、人类可读的解释。 需要注意的是，尽管语义函数生成的叙述最终可能呈现出某种结构化、机器化的表达方式，但如果最终用户确实有需求，使用一个小型转写模型让它们听起来更贴近人类语言并不困难。",
+   "sents": [
+    {
+     "en": "Output.",
+     "zh": "输出。"
+    },
+    {
+     "en": "The function returns a dictionary of named results.",
+     "zh": "该函数返回一个包含命名结果的字典。"
+    },
+    {
+     "en": "The full narration trace, accumulated during execution, serves as a human-readable explanation of how the answer was derived.",
+     "zh": "在执行过程中累积的完整叙述轨迹，可作为答案如何推导出的、人类可读的解释。"
+    },
+    {
+     "en": "Note that while the narrations produced by semantic functions might eventually end up appearing formulated in a somewhat structured and machine-like manner, it would not be too difficult to employ a small transcription model that would make them sound more human-like if genuinely desired by the end users.",
+     "zh": "需要注意的是，尽管语义函数生成的叙述最终可能呈现出某种结构化、机器化的表达方式，但如果最终用户确实有需求，使用一个小型转写模型让它们听起来更贴近人类语言并不困难。"
+    }
+   ]
+  },
+  {
+   "en": "A key property of this design is that invocation uses only the target (small) model 𝒯 \\mathcal{T} and CPU execution; the expensive source model 𝒮 \\mathcal{S} and builder model ℬ \\mathcal{B} are required only at construction time. This asymmetry is what makes agentic reasoning caching economical at scale: the one-time construction cost is amortized over arbitrarily many invocations, each of which runs at the cost of a few 𝒯 \\mathcal{T} calls and deterministic code execution.",
+   "zh": "该设计的一个关键特性是：调用过程仅使用目标（小型）模型 𝒯 \\mathcal{T} 和 CPU 执行；昂贵的源模型 𝒮 \\mathcal{S} 和构建器模型 ℬ \\mathcal{B} 仅在构建时需要。 正是这种不对称性使得智能体推理缓存在大规模场景下具有经济性：一次性构建成本可以被任意多次的调用所摊销，而每次调用的成本仅为几次 𝒯 \\mathcal{T} 调用和确定性代码执行的成本。",
+   "sents": [
+    {
+     "en": "A key property of this design is that invocation uses only the target (small) model 𝒯 \\mathcal{T} and CPU execution; the expensive source model 𝒮 \\mathcal{S} and builder model ℬ \\mathcal{B} are required only at construction time.",
+     "zh": "该设计的一个关键特性是：调用过程仅使用目标（小型）模型 𝒯 \\mathcal{T} 和 CPU 执行；昂贵的源模型 𝒮 \\mathcal{S} 和构建器模型 ℬ \\mathcal{B} 仅在构建时需要。"
+    },
+    {
+     "en": "This asymmetry is what makes agentic reasoning caching economical at scale: the one-time construction cost is amortized over arbitrarily many invocations, each of which runs at the cost of a few 𝒯 \\mathcal{T} calls and deterministic code execution.",
+     "zh": "正是这种不对称性使得智能体推理缓存在大规模场景下具有经济性：一次性构建成本可以被任意多次的调用所摊销，而每次调用的成本仅为几次 𝒯 \\mathcal{T} 调用和确定性代码执行的成本。"
+    }
+   ]
+  },
+  {
+   "en": "Although invocation already replaces 𝒮 \\mathcal{S} with the cheaper 𝒯 \\mathcal{T} , it still relies on vector-similarity search at every do() and load() call to resolve function names and parameter bindings at runtime. Once a cache has matured (e.g., its function registry is stable and no further entries are expected), these dynamic lookups can be resolved statically. ARCs can be compiled using static resolution by traversing the semantic function network, replacing each do() dispatch with a direct Python function call to the resolved callee, and replacing each load() with a direct dictionary lookup on the caller’s payload, producing a self-contained Python module that requires no embedding engine and no vector store at execution time.",
+   "zh": "尽管调用（invocation）已经用更廉价的 𝒯 \\mathcal{T} 替换了 𝒮 \\mathcal{S}，它在每次 do() 和 load() 调用时仍依赖向量相似度搜索，以便在运行时解析函数名和参数绑定。 一旦缓存已经成熟（例如其函数注册表已稳定且预计不会再有新条目），这些动态查找就可以被静态解析。 可以通过遍历语义函数网络，将每个 do() 分发替换为对已解析被调用者的直接 Python 函数调用，并将每个 load() 替换为对调用者载荷的直接字典查找，从而以静态解析的方式编译 ARC，生成一个自包含的 Python 模块，该模块在执行时既不需要嵌入引擎，也不需要向量存储。",
+   "sents": [
+    {
+     "en": "Although invocation already replaces 𝒮 \\mathcal{S} with the cheaper 𝒯 \\mathcal{T} , it still relies on vector-similarity search at every do() and load() call to resolve function names and parameter bindings at runtime.",
+     "zh": "尽管调用（invocation）已经用更廉价的 𝒯 \\mathcal{T} 替换了 𝒮 \\mathcal{S}，它在每次 do() 和 load() 调用时仍依赖向量相似度搜索，以便在运行时解析函数名和参数绑定。"
+    },
+    {
+     "en": "Once a cache has matured (e.g., its function registry is stable and no further entries are expected), these dynamic lookups can be resolved statically.",
+     "zh": "一旦缓存已经成熟（例如其函数注册表已稳定且预计不会再有新条目），这些动态查找就可以被静态解析。"
+    },
+    {
+     "en": "ARCs can be compiled using static resolution by traversing the semantic function network, replacing each do() dispatch with a direct Python function call to the resolved callee, and replacing each load() with a direct dictionary lookup on the caller’s payload, producing a self-contained Python module that requires no embedding engine and no vector store at execution time.",
+     "zh": "可以通过遍历语义函数网络，将每个 do() 分发替换为对已解析被调用者的直接 Python 函数调用，并将每个 load() 替换为对调用者载荷的直接字典查找，从而以静态解析的方式编译 ARC，生成一个自包含的 Python 模块，该模块在执行时既不需要嵌入引擎，也不需要向量存储。"
+    }
+   ]
+  },
+  {
+   "en": "The benefit of this is twofold. First, compiled caches execute faster because every semantic search is eliminated and replaced by O ⁡ ( 1 ) O(1) name-based dispatch, reducing invocation latency to that of pure Python execution plus any remaining lm() calls to 𝒯 \\mathcal{T} . Second, the compiled artifact is a readable, standalone Python file that can be inspected, versioned, and deployed independently of the caching runtime. See Appendix A for a compiled version of the cache entry in Figure 5 . The trade-off is that compilation freezes the function network: any subsequent cache update (e.g. adding a new function or generalizing a parameter) requires recompilation. Compilation is therefore best applied as a finalization step after the cache has grown sufficiently and been validated as useful, rather than during iterative construction.",
+   "zh": "这样做的好处有两方面。 首先，编译后的缓存执行更快，因为所有的语义搜索都被消除，并替换为 𝑂(1) 的基于名称的分发，从而将调用延迟降低到纯 Python 执行加上对 𝒯 剩余 lm() 调用的开销。 其次，编译产物是一个可读的、独立的 Python 文件，可以进行检查、版本管理，并独立于缓存运行时进行部署。 图 5 中缓存条目的编译版本参见附录 A。 其权衡在于编译会冻结函数网络：任何后续的缓存更新（例如添加新函数或泛化某个参数）都需要重新编译。 因此，编译最适于作为缓存充分增长并验证有效之后的最终化步骤，而不是在迭代构建过程中使用。",
+   "sents": [
+    {
+     "en": "The benefit of this is twofold.",
+     "zh": "这样做的好处有两方面。"
+    },
+    {
+     "en": "First, compiled caches execute faster because every semantic search is eliminated and replaced by O ⁡ ( 1 ) O(1) name-based dispatch, reducing invocation latency to that of pure Python execution plus any remaining lm() calls to 𝒯 \\mathcal{T} .",
+     "zh": "首先，编译后的缓存执行更快，因为所有的语义搜索都被消除，并替换为 𝑂(1) 的基于名称的分发，从而将调用延迟降低到纯 Python 执行加上对 𝒯 剩余 lm() 调用的开销。"
+    },
+    {
+     "en": "Second, the compiled artifact is a readable, standalone Python file that can be inspected, versioned, and deployed independently of the caching runtime.",
+     "zh": "其次，编译产物是一个可读的、独立的 Python 文件，可以进行检查、版本管理，并独立于缓存运行时进行部署。"
+    },
+    {
+     "en": "See Appendix A for a compiled version of the cache entry in Figure 5 .",
+     "zh": "图 5 中缓存条目的编译版本参见附录 A。"
+    },
+    {
+     "en": "The trade-off is that compilation freezes the function network: any subsequent cache update (e.g. adding a new function or generalizing a parameter) requires recompilation.",
+     "zh": "其权衡在于编译会冻结函数网络：任何后续的缓存更新（例如添加新函数或泛化某个参数）都需要重新编译。"
+    },
+    {
+     "en": "Compilation is therefore best applied as a finalization step after the cache has grown sufficiently and been validated as useful, rather than during iterative construction.",
+     "zh": "因此，编译最适于作为缓存充分增长并验证有效之后的最终化步骤，而不是在迭代构建过程中使用。"
+    }
+   ]
+  },
+  {
+   "en": "The ultimate invocation cost of an agentic reasoning cache with the design as outlined in this section depends to a large extent on the target model 𝒯 \\mathcal{T} that executes the cached functions at invocation time. How small can 𝒯 \\mathcal{T} be? The precise answer depends on the domain and the operational range of the cache: caches that must handle diverse, open-ended inputs would likely place larger demands on the language model than those that operate over narrower domains. In our experiments, the smallest frontier-lab models: Claude Haiku 4.5, Gemini 3.0 Flash Lite, and GPT 5.4 Nano always sufficed as 𝒯 \\mathcal{T} , delivering correct results as a part of ARCs at a fraction of 𝒮 \\mathcal{S} ’s cost.",
+   "zh": "本节所概述设计下，智能体推理缓存的最终调用成本在很大程度上取决于在调用时执行缓存函数的目标模型 𝒯 \\mathcal{T}。 𝒯 \\mathcal{T} 可以小到什么程度？ 精确的答案取决于缓存的领域和运行范围：必须处理多样化、开放式输入的缓存，相比在较窄领域内运行的缓存，可能会对语言模型提出更高的要求。 在我们的实验中，最小的前沿实验室模型：Claude Haiku 4.5、Gemini 3.0 Flash Lite 和 GPT 5.4 Nano 始终足以充当 𝒯 \\mathcal{T}，作为智能体推理缓存（ARC）的一部分以远低于 𝒮 \\mathcal{S} 的成本交付正确结果。",
+   "sents": [
+    {
+     "en": "The ultimate invocation cost of an agentic reasoning cache with the design as outlined in this section depends to a large extent on the target model 𝒯 \\mathcal{T} that executes the cached functions at invocation time.",
+     "zh": "本节所概述设计下，智能体推理缓存的最终调用成本在很大程度上取决于在调用时执行缓存函数的目标模型 𝒯 \\mathcal{T}。"
+    },
+    {
+     "en": "How small can 𝒯 \\mathcal{T} be?",
+     "zh": "𝒯 \\mathcal{T} 可以小到什么程度？"
+    },
+    {
+     "en": "The precise answer depends on the domain and the operational range of the cache: caches that must handle diverse, open-ended inputs would likely place larger demands on the language model than those that operate over narrower domains.",
+     "zh": "精确的答案取决于缓存的领域和运行范围：必须处理多样化、开放式输入的缓存，相比在较窄领域内运行的缓存，可能会对语言模型提出更高的要求。"
+    },
+    {
+     "en": "In our experiments, the smallest frontier-lab models: Claude Haiku 4.5, Gemini 3.0 Flash Lite, and GPT 5.4 Nano always sufficed as 𝒯 \\mathcal{T} , delivering correct results as a part of ARCs at a fraction of 𝒮 \\mathcal{S} ’s cost.",
+     "zh": "在我们的实验中，最小的前沿实验室模型：Claude Haiku 4.5、Gemini 3.0 Flash Lite 和 GPT 5.4 Nano 始终足以充当 𝒯 \\mathcal{T}，作为智能体推理缓存（ARC）的一部分以远低于 𝒮 \\mathcal{S} 的成本交付正确结果。"
+    }
+   ]
+  },
+  {
+   "en": "To explore how much further the target model can be shrunk, we conducted a fine-tuning experiment. We collected 20% of the real usage examples from our benchmark evaluations, used 𝒮 \\mathcal{S} to produce a synthetic training set roughly ten times larger, and finetuned Llama 3.2 1B [ 8 ] on the resulting data. The finetuned 1B-parameter model proved sufficient for the target role, and we began using it as 𝒯 \\mathcal{T} in subsequent runs. Appendix D describes the data collection, synthetic augmentation, and training procedure in detail.",
+   "zh": "为了探究目标模型还能被压缩到多小的程度，我们进行了一项微调实验。 我们从基准评估中收集了 20% 的真实使用示例，使用 𝒮 \\mathcal{S} 生成了规模约为其十倍的合成训练集，并在所得数据上对 Llama 3.2 1B [ 8 ] 进行了微调。 经微调的 1B 参数模型被证明足以胜任目标角色，因此我们在后续运行中开始将其用作 𝒯 \\mathcal{T}。 附录 D 详细描述了数据收集、合成增强和训练流程。",
+   "sents": [
+    {
+     "en": "To explore how much further the target model can be shrunk, we conducted a fine-tuning experiment.",
+     "zh": "为了探究目标模型还能被压缩到多小的程度，我们进行了一项微调实验。"
+    },
+    {
+     "en": "We collected 20% of the real usage examples from our benchmark evaluations, used 𝒮 \\mathcal{S} to produce a synthetic training set roughly ten times larger, and finetuned Llama 3.2 1B [ 8 ] on the resulting data.",
+     "zh": "我们从基准评估中收集了 20% 的真实使用示例，使用 𝒮 \\mathcal{S} 生成了规模约为其十倍的合成训练集，并在所得数据上对 Llama 3.2 1B [ 8 ] 进行了微调。"
+    },
+    {
+     "en": "The finetuned 1B-parameter model proved sufficient for the target role, and we began using it as 𝒯 \\mathcal{T} in subsequent runs.",
+     "zh": "经微调的 1B 参数模型被证明足以胜任目标角色，因此我们在后续运行中开始将其用作 𝒯 \\mathcal{T}。"
+    },
+    {
+     "en": "Appendix D describes the data collection, synthetic augmentation, and training procedure in detail.",
+     "zh": "附录 D 详细描述了数据收集、合成增强和训练流程。"
+    }
+   ]
+  },
+  {
+   "en": "The iterative construction process naturally tolerates an imperfect 𝒯 \\mathcal{T} : because the builder observes invocation outputs and can adjust the language model calls in semantic functions accordingly, transient errors from a weaker target model are corrected over successive rounds rather than propagated silently. We believe a 1B-parameter target is adequate for the majority of agentic reasoning caches, and future work could push the boundary further to models with only hundreds of millions of parameters, such as those in the IBM Granite 4 family [ 9 ] .",
+   "zh": "迭代构建过程天然能够容忍不完美的 𝒯 \\mathcal{T}：因为构建者会观察调用输出，并可以相应地调整语义函数中的语言模型调用，较弱目标模型产生的瞬时错误会在后续轮次中被纠正，而不是被静默传播。 我们认为，对于大多数智能体推理缓存而言，10 亿参数规模的目标模型已经足够，未来的工作可以将边界进一步推进到仅有数亿参数的模型，例如 IBM Granite 4 系列中的模型 [ 9 ]。",
+   "sents": [
+    {
+     "en": "The iterative construction process naturally tolerates an imperfect 𝒯 \\mathcal{T} : because the builder observes invocation outputs and can adjust the language model calls in semantic functions accordingly, transient errors from a weaker target model are corrected over successive rounds rather than propagated silently.",
+     "zh": "迭代构建过程天然能够容忍不完美的 𝒯 \\mathcal{T}：因为构建者会观察调用输出，并可以相应地调整语义函数中的语言模型调用，较弱目标模型产生的瞬时错误会在后续轮次中被纠正，而不是被静默传播。"
+    },
+    {
+     "en": "We believe a 1B-parameter target is adequate for the majority of agentic reasoning caches, and future work could push the boundary further to models with only hundreds of millions of parameters, such as those in the IBM Granite 4 family [ 9 ] .",
+     "zh": "我们认为，对于大多数智能体推理缓存而言，10 亿参数规模的目标模型已经足够，未来的工作可以将边界进一步推进到仅有数亿参数的模型，例如 IBM Granite 4 系列中的模型 [ 9 ]。"
+    }
+   ]
+  },
+  {
+   "en": "We further note that in situations when the cache is being built in the background of LLM inference before it is deployed for use, it is actually possible to build the cache with a more powerful target model first, and then collect all logs of invocations of the more powerful target model, finetune the smallest possible target model that works to replace the more powerful target, and only then deploy the cache live, resulting in greater efficiency.",
+   "zh": "我们进一步指出，在缓存于大语言模型（LLM）推理后台构建、尚未部署使用的场景下，实际上可以先使用更强大的目标模型构建缓存，然后收集该更强大目标模型所有调用的日志，微调出能够替代该更强大目标模型的最小可用目标模型，最后才将缓存上线部署，从而获得更高的效率。",
+   "sents": null
+  },
+  {
+   "en": "We evaluate agentic reasoning caches along three axes: correctness, perturbation robustness, and cost. We first define the properties of experimental interest, then describe the benchmarks and the experimental setup, and finally showcase the results. Appendix A walks through a complete ideal gas law example from SciBench, showing the question ( Figure 3 ), source reasoning ( Figure 4 ), semantic functions and their compiled form, and cache output ( Figure 8 ).",
+   "zh": "我们从三个维度评估智能体推理缓存：正确性、扰动鲁棒性和成本。 我们首先定义实验所关注的属性，然后描述基准测试与实验设置，最后展示结果。 附录 A 完整梳理了来自 SciBench 的理想气体定律示例，展示了问题（图 3）、源推理（图 4）、语义函数及其编译形式，以及缓存输出（图 8）。",
+   "sents": [
+    {
+     "en": "We evaluate agentic reasoning caches along three axes: correctness, perturbation robustness, and cost.",
+     "zh": "我们从三个维度评估智能体推理缓存：正确性、扰动鲁棒性和成本。"
+    },
+    {
+     "en": "We first define the properties of experimental interest, then describe the benchmarks and the experimental setup, and finally showcase the results.",
+     "zh": "我们首先定义实验所关注的属性，然后描述基准测试与实验设置，最后展示结果。"
+    },
+    {
+     "en": "Appendix A walks through a complete ideal gas law example from SciBench, showing the question ( Figure 3 ), source reasoning ( Figure 4 ), semantic functions and their compiled form, and cache output ( Figure 8 ).",
+     "zh": "附录 A 完整梳理了来自 SciBench 的理想气体定律示例，展示了问题（图 3）、源推理（图 4）、语义函数及其编译形式，以及缓存输出（图 8）。"
+    }
+   ]
+  },
+  {
+   "en": "To evaluate how well the logic of cache entries aligns with the benchmark ground truth and source model reasoning, we measure two quantities. Firstly, we measure golden label alignment : the fraction of benchmark problems for which the cache produces the correct answer as determined by the benchmark’s golden label. Secondly, we measure transcript answer alignment : the fraction of problems for which LM judges assess the cache’s answer as semantically equivalent to the source model’s answer. The former captures absolute performance; the latter captures fidelity to 𝒮 \\mathcal{S} . Close alignment between 𝒮 \\mathcal{S} and the cache on both metrics would indicate that the cache faithfully reproduces the source model’s reasoning and as such is a good replacement for the intelligence of the source model on the problems given. A large gap in which the cache underperforms 𝒮 \\mathcal{S} against the golden label would signal that the cache construction has lost information. Note that because the source model’s reasoning can be at odds with golden labels at times, looking at both of these measured qualities in conjunction with the source model’s performance on that benchmark allows us to analyze whether the model favors the ground truth golden labels or the source model’s reasoning when building the cache entries.",
+   "zh": "为了评估缓存条目的逻辑与基准真实标签及源模型推理的契合程度，我们测量两个指标。 首先，我们测量黄金标签对齐度：即缓存给出与基准黄金标签一致的正确答案的基准问题比例。 其次，我们测量转录答案对齐度：即由语言模型裁判判定缓存答案与源模型答案语义等价的问题比例。 前者衡量绝对性能；后者衡量对 𝒮 \\mathcal{S} 的忠实度。 如果 𝒮 \\mathcal{S} 与缓存在这两个指标上都高度对齐，则表明缓存忠实地再现了源模型的推理，因而在给定问题上能够很好地替代源模型的智能。 如果缓存在黄金标签指标上明显低于 𝒮 \\mathcal{S}，出现较大差距，则表明缓存构建过程丢失了信息。 请注意，由于源模型的推理有时可能与黄金标签相悖，将这两个测量指标与源模型在该基准上的表现结合起来分析，可以让我们判断在构建缓存条目时，模型究竟是偏向真实黄金标签，还是偏向源模型的推理。",
+   "sents": [
+    {
+     "en": "To evaluate how well the logic of cache entries aligns with the benchmark ground truth and source model reasoning, we measure two quantities.",
+     "zh": "为了评估缓存条目的逻辑与基准真实标签及源模型推理的契合程度，我们测量两个指标。"
+    },
+    {
+     "en": "Firstly, we measure golden label alignment : the fraction of benchmark problems for which the cache produces the correct answer as determined by the benchmark’s golden label.",
+     "zh": "首先，我们测量黄金标签对齐度：即缓存给出与基准黄金标签一致的正确答案的基准问题比例。"
+    },
+    {
+     "en": "Secondly, we measure transcript answer alignment : the fraction of problems for which LM judges assess the cache’s answer as semantically equivalent to the source model’s answer.",
+     "zh": "其次，我们测量转录答案对齐度：即由语言模型裁判判定缓存答案与源模型答案语义等价的问题比例。"
+    },
+    {
+     "en": "The former captures absolute performance; the latter captures fidelity to 𝒮 \\mathcal{S} .",
+     "zh": "前者衡量绝对性能；后者衡量对 𝒮 \\mathcal{S} 的忠实度。"
+    },
+    {
+     "en": "Close alignment between 𝒮 \\mathcal{S} and the cache on both metrics would indicate that the cache faithfully reproduces the source model’s reasoning and as such is a good replacement for the intelligence of the source model on the problems given.",
+     "zh": "如果 𝒮 \\mathcal{S} 与缓存在这两个指标上都高度对齐，则表明缓存忠实地再现了源模型的推理，因而在给定问题上能够很好地替代源模型的智能。"
+    },
+    {
+     "en": "A large gap in which the cache underperforms 𝒮 \\mathcal{S} against the golden label would signal that the cache construction has lost information.",
+     "zh": "如果缓存在黄金标签指标上明显低于 𝒮 \\mathcal{S}，出现较大差距，则表明缓存构建过程丢失了信息。"
+    },
+    {
+     "en": "Note that because the source model’s reasoning can be at odds with golden labels at times, looking at both of these measured qualities in conjunction with the source model’s performance on that benchmark allows us to analyze whether the model favors the ground truth golden labels or the source model’s reasoning when building the cache entries.",
+     "zh": "请注意，由于源模型的推理有时可能与黄金标签相悖，将这两个测量指标与源模型在该基准上的表现结合起来分析，可以让我们判断在构建缓存条目时，模型究竟是偏向真实黄金标签，还是偏向源模型的推理。"
+    }
+   ]
+  },
+  {
+   "en": "Agentic reasoning caches are designed to generalize beyond the singleton problem instance used during construction despite seeing only the original query q ⁡ ( o ) q(o) and the source model’s reasoning trace 𝒮 ⁡ ( q ⁡ ( o ) ) \\mathcal{S}(q(o)) . We evaluate this generalization through three progressively stronger perturbation testing modes, building on the terminology introduced in Section 2 : phrasal (equiparametric) testing, which varies only the wording of the question; parametric (equiphrasal) testing, which varies only the parameter values; and combined (equisubstantive) testing, which varies both simultaneously. The generation and judging procedures for each mode are described in Section 3.2 .",
+   "zh": "智能体推理缓存的设计目标是超越构建时所用的单一问题实例进行泛化，尽管它仅看到了原始查询 q ⁡ ( o ) q(o) 和源模型的推理轨迹 𝒮 ⁡ ( q ⁡ ( o ) ) \\mathcal{S}(q(o)) 。 我们在第 2 节引入的术语基础上，通过三种强度递进的扰动测试模式来评估这种泛化能力：短语级（等参数）测试，仅改变问题的措辞；参数级（等短语）测试，仅改变参数取值；以及组合（等实质）测试，同时改变两者。 每种模式的生成与评判流程将在 3.2 节中描述。",
+   "sents": [
+    {
+     "en": "Agentic reasoning caches are designed to generalize beyond the singleton problem instance used during construction despite seeing only the original query q ⁡ ( o ) q(o) and the source model’s reasoning trace 𝒮 ⁡ ( q ⁡ ( o ) ) \\mathcal{S}(q(o)) .",
+     "zh": "智能体推理缓存的设计目标是超越构建时所用的单一问题实例进行泛化，尽管它仅看到了原始查询 q ⁡ ( o ) q(o) 和源模型的推理轨迹 𝒮 ⁡ ( q ⁡ ( o ) ) \\mathcal{S}(q(o)) 。"
+    },
+    {
+     "en": "We evaluate this generalization through three progressively stronger perturbation testing modes, building on the terminology introduced in Section 2 : phrasal (equiparametric) testing, which varies only the wording of the question; parametric (equiphrasal) testing, which varies only the parameter values; and combined (equisubstantive) testing, which varies both simultaneously.",
+     "zh": "我们在第 2 节引入的术语基础上，通过三种强度递进的扰动测试模式来评估这种泛化能力：短语级（等参数）测试，仅改变问题的措辞；参数级（等短语）测试，仅改变参数取值；以及组合（等实质）测试，同时改变两者。"
+    },
+    {
+     "en": "The generation and judging procedures for each mode are described in Section 3.2 .",
+     "zh": "每种模式的生成与评判流程将在 3.2 节中描述。"
+    }
+   ]
+  },
+  {
+   "en": "We report three cost figures per benchmark problem, all computed from retail API pricing (including prompt-cache write and read rates where applicable):",
+   "zh": "我们针对每个基准问题报告三项成本数据，均基于零售 API 定价计算（在适用情况下包括提示词缓存的写入和读取费率）：",
+   "sents": null
+  },
+  {
+   "en": "Source cost : the cost of the original 𝒮 \\mathcal{S} solve that produces the transcript to be cached.",
+   "zh": "源成本（Source cost）：产生待缓存转录文本的原始 𝒮 \\mathcal{S} 求解的成本。",
+   "sents": null
+  },
+  {
+   "en": "Builder cost : the cost of constructing the cache entry from the transcript using ℬ \\mathcal{B} .",
+   "zh": "构建成本：使用 ℬ \\mathcal{B} 从对话记录构建缓存条目的成本。",
+   "sents": null
+  },
+  {
+   "en": "Target cost : the cost of invoking the cache on a query, comprising only 𝒯 \\mathcal{T} calls and deterministic execution.",
+   "zh": "目标成本：在查询上调用缓存所产生的成本，仅包含 𝒯 \\mathcal{T} 调用和确定性执行。",
+   "sents": null
+  },
+  {
+   "en": "The ratio of target cost to source cost quantifies the per-invocation savings; the builder cost divided by the source cost quantifies the one-time construction overhead.",
+   "zh": "目标成本与源成本之比量化了每次调用的节省；构建成本除以源成本则量化了一次性的构建开销。",
+   "sents": null
+  },
+  {
+   "en": "Perturbation testing is applied only to benchmark problems for which the cache already produces the correct answer according to the golden label. In other words, to be considered for robustness testing, cache entries need not agree with the source model’s transcript answer, only with the ground truth. This selection criterion ensures that the substance being perturbed is known to be correctly handled by the cache, so that any degradation observed under perturbation can be attributed to a lack of robustness rather than to a pre-existing correctness failure. Foreshadowing the results, a secondary benefit is that the set of golden-matching samples is, in our evaluation, typically larger than the set of transcript-matching samples, yielding more test material.",
+   "zh": "扰动测试仅应用于那些缓存已经能根据黄金标签产出正确答案的基准问题。 换句话说，要被纳入鲁棒性测试，缓存条目无需与源模型的对话转录答案一致，只需与真实值一致即可。 这一筛选标准确保被扰动的对象是缓存已知能正确处理的内容，从而使扰动下观察到的任何性能下降都可以归因于鲁棒性不足，而非预先存在的正确性缺陷。 预告一下结果，次要的好处是，在我们的评估中，与黄金标签匹配的样本集合通常大于与对话转录匹配的样本集合，从而提供更多的测试材料。",
+   "sents": [
+    {
+     "en": "Perturbation testing is applied only to benchmark problems for which the cache already produces the correct answer according to the golden label.",
+     "zh": "扰动测试仅应用于那些缓存已经能根据黄金标签产出正确答案的基准问题。"
+    },
+    {
+     "en": "In other words, to be considered for robustness testing, cache entries need not agree with the source model’s transcript answer, only with the ground truth.",
+     "zh": "换句话说，要被纳入鲁棒性测试，缓存条目无需与源模型的对话转录答案一致，只需与真实值一致即可。"
+    },
+    {
+     "en": "This selection criterion ensures that the substance being perturbed is known to be correctly handled by the cache, so that any degradation observed under perturbation can be attributed to a lack of robustness rather than to a pre-existing correctness failure.",
+     "zh": "这一筛选标准确保被扰动的对象是缓存已知能正确处理的内容，从而使扰动下观察到的任何性能下降都可以归因于鲁棒性不足，而非预先存在的正确性缺陷。"
+    },
+    {
+     "en": "Foreshadowing the results, a secondary benefit is that the set of golden-matching samples is, in our evaluation, typically larger than the set of transcript-matching samples, yielding more test material.",
+     "zh": "预告一下结果，次要的好处是，在我们的评估中，与黄金标签匹配的样本集合通常大于与对话转录匹配的样本集合，从而提供更多的测试材料。"
+    }
+   ]
+  },
+  {
+   "en": "Every perturbation mode follows a three-stage pipeline. Let 𝒢 \\mathcal{G} denote the generator model that produces perturbation candidates (in our experiments, 𝒢 = 𝒮 \\mathcal{G}=\\mathcal{S} ), 𝒥 G \\mathcal{J}_{G} the generation judges that validate candidate perturbations, and 𝒥 T ⊂ 𝒥 \\mathcal{J}_{T}\\subset\\mathcal{J} the testing judges that evaluate cache outputs against ground truth golden labels or golden-passing narrations.",
+   "zh": "每种扰动模式都遵循一个三阶段流水线。 设 𝒢 \\mathcal{G} 表示生成扰动候选的生成器模型（在我们的实验中，𝒢 = 𝒮 \\mathcal{G}=\\mathcal{S} ），𝒥 G \\mathcal{J}_{G} 表示验证候选扰动的生成评审智能体，𝒥 T ⊂ 𝒥 \\mathcal{J}_{T}\\subset\\mathcal{J} 表示针对真实黄金标签或黄金通过叙述来评估缓存输出的测试评审智能体。",
+   "sents": [
+    {
+     "en": "Every perturbation mode follows a three-stage pipeline.",
+     "zh": "每种扰动模式都遵循一个三阶段流水线。"
+    },
+    {
+     "en": "Let 𝒢 \\mathcal{G} denote the generator model that produces perturbation candidates (in our experiments, 𝒢 = 𝒮 \\mathcal{G}=\\mathcal{S} ), 𝒥 G \\mathcal{J}_{G} the generation judges that validate candidate perturbations, and 𝒥 T ⊂ 𝒥 \\mathcal{J}_{T}\\subset\\mathcal{J} the testing judges that evaluate cache outputs against ground truth golden labels or golden-passing narrations.",
+     "zh": "设 𝒢 \\mathcal{G} 表示生成扰动候选的生成器模型（在我们的实验中，𝒢 = 𝒮 \\mathcal{G}=\\mathcal{S} ），𝒥 G \\mathcal{J}_{G} 表示验证候选扰动的生成评审智能体，𝒥 T ⊂ 𝒥 \\mathcal{J}_{T}\\subset\\mathcal{J} 表示针对真实黄金标签或黄金通过叙述来评估缓存输出的测试评审智能体。"
+    }
+   ]
+  },
+  {
+   "en": "Candidate generation. 𝒢 \\mathcal{G} produces a set of candidate perturbations of the original problem q ⁡ ( o ) q(o) : rephrasings, reparameterizations, or both, depending on the mode.",
+   "zh": "候选生成。𝒢 \\mathcal{G} 对原始问题 q ⁡ ( o ) q(o) 产生一组候选扰动：改写、重参数化，或两者的组合，具体取决于模式。",
+   "sents": null
+  },
+  {
+   "en": "Validation judging. The generation judges 𝒥 G \\mathcal{J}_{G} evaluate each candidate to verify that it is a faithful perturbation rather than an artifact of hallucination or reasoning error by 𝒢 \\mathcal{G} . Candidates that fail any judge are discarded. The specific validation criteria differ between phrasal and parametric perturbations and are described below.",
+   "zh": "验证判定。 生成判定 𝒥 G \\mathcal{J}_{G} 对每个候选进行评估，以验证它是忠实的扰动，而不是 𝒢 \\mathcal{G} 产生幻觉或推理错误的产物。 未通过任何判定的候选将被丢弃。 具体的验证标准在短语扰动和参数扰动之间有所不同，将在下文描述。",
+   "sents": [
+    {
+     "en": "Validation judging.",
+     "zh": "验证判定。"
+    },
+    {
+     "en": "The generation judges 𝒥 G \\mathcal{J}_{G} evaluate each candidate to verify that it is a faithful perturbation rather than an artifact of hallucination or reasoning error by 𝒢 \\mathcal{G} .",
+     "zh": "生成判定 𝒥 G \\mathcal{J}_{G} 对每个候选进行评估，以验证它是忠实的扰动，而不是 𝒢 \\mathcal{G} 产生幻觉或推理错误的产物。"
+    },
+    {
+     "en": "Candidates that fail any judge are discarded.",
+     "zh": "未通过任何判定的候选将被丢弃。"
+    },
+    {
+     "en": "The specific validation criteria differ between phrasal and parametric perturbations and are described below.",
+     "zh": "具体的验证标准在短语扰动和参数扰动之间有所不同，将在下文描述。"
+    }
+   ]
+  },
+  {
+   "en": "Result evaluation. Each accepted candidate is run through the cache. The testing judges 𝒥 T \\mathcal{J}_{T} then evaluate the cache’s output against the appropriate ground truth for that candidate.",
+   "zh": "结果评估。 每个被接受的候选都经过缓存运行。 测试评审 𝒥 T \\mathcal{J}_{T} 随后根据该候选对应的真值评估缓存的输出。",
+   "sents": [
+    {
+     "en": "Result evaluation.",
+     "zh": "结果评估。"
+    },
+    {
+     "en": "Each accepted candidate is run through the cache.",
+     "zh": "每个被接受的候选都经过缓存运行。"
+    },
+    {
+     "en": "The testing judges 𝒥 T \\mathcal{J}_{T} then evaluate the cache’s output against the appropriate ground truth for that candidate.",
+     "zh": "测试评审 𝒥 T \\mathcal{J}_{T} 随后根据该候选对应的真值评估缓存的输出。"
+    }
+   ]
+  },
+  {
+   "en": "Generation. Given a problem q ⁡ ( o ) q(o) for which the cache is correct, 𝒢 \\mathcal{G} produces candidate rephrasings of q ⁡ ( o ) q(o) while holding all parameter values in o o fixed. Each candidate must express the substantively same question in sufficiently different phrasing.",
+   "zh": "生成。 给定一个问题 q ⁡ ( o ) q(o)，其缓存是正确的，𝒢 \\mathcal{G} 在保持 o o 中所有参数值不变的情况下，生成 q ⁡ ( o ) q(o) 的候选改写。 每个候选改写必须用足够不同的表述来表达实质上相同的问题。",
+   "sents": [
+    {
+     "en": "Generation.",
+     "zh": "生成。"
+    },
+    {
+     "en": "Given a problem q ⁡ ( o ) q(o) for which the cache is correct, 𝒢 \\mathcal{G} produces candidate rephrasings of q ⁡ ( o ) q(o) while holding all parameter values in o o fixed.",
+     "zh": "给定一个问题 q ⁡ ( o ) q(o)，其缓存是正确的，𝒢 \\mathcal{G} 在保持 o o 中所有参数值不变的情况下，生成 q ⁡ ( o ) q(o) 的候选改写。"
+    },
+    {
+     "en": "Each candidate must express the substantively same question in sufficiently different phrasing.",
+     "zh": "每个候选改写必须用足够不同的表述来表达实质上相同的问题。"
+    }
+   ]
+  },
+  {
+   "en": "Validation. 𝒥 G \\mathcal{J}_{G} evaluate each candidate against three criteria: (i) all parameter values from o o are preserved exactly, (ii) the phrasing is sufficiently different from the original, and (iii) the substance of the question is unchanged. Only candidates that pass all judges in 𝒥 G \\mathcal{J}_{G} unanimously are accepted. This filters out rephrasings that inadvertently alter parameter values or the meaning of the question due to generator hallucination.",
+   "zh": "验证。𝒥 G \\mathcal{J}_{G} 依据三项标准评估每个候选改写：(i) o o 中的所有参数值被完整保留，(ii) 措辞与原始问题有足够差异，以及 (iii) 问题的实质内容保持不变。 只有在 𝒥 G \\mathcal{J}_{G} 的所有评审者一致通过的情况下，候选改写才会被接受。 这一步可以过滤掉因生成器幻觉而无意中改变参数值或问题含义的改写。",
+   "sents": [
+    {
+     "en": "Validation. 𝒥 G \\mathcal{J}_{G} evaluate each candidate against three criteria: (i) all parameter values from o o are preserved exactly, (ii) the phrasing is sufficiently different from the original, and (iii) the substance of the question is unchanged.",
+     "zh": "验证。𝒥 G \\mathcal{J}_{G} 依据三项标准评估每个候选改写：(i) o o 中的所有参数值被完整保留，(ii) 措辞与原始问题有足够差异，以及 (iii) 问题的实质内容保持不变。"
+    },
+    {
+     "en": "Only candidates that pass all judges in 𝒥 G \\mathcal{J}_{G} unanimously are accepted.",
+     "zh": "只有在 𝒥 G \\mathcal{J}_{G} 的所有评审者一致通过的情况下，候选改写才会被接受。"
+    },
+    {
+     "en": "This filters out rephrasings that inadvertently alter parameter values or the meaning of the question due to generator hallucination.",
+     "zh": "这一步可以过滤掉因生成器幻觉而无意中改变参数值或问题含义的改写。"
+    }
+   ]
+  },
+  {
+   "en": "Evaluation. The cache is invoked on each accepted variant and its output is evaluated by 𝒥 T \\mathcal{J}_{T} against the golden label: because the parameters have not changed, the correct answer is the same as for the original problem instance.",
+   "zh": "评估。 缓存会在每个被接受的变体上被调用，其输出由 𝒥 T \\mathcal{J}_{T} 对照黄金标签进行评估：由于参数没有改变，正确答案与原始问题实例的答案相同。",
+   "sents": [
+    {
+     "en": "Evaluation.",
+     "zh": "评估。"
+    },
+    {
+     "en": "The cache is invoked on each accepted variant and its output is evaluated by 𝒥 T \\mathcal{J}_{T} against the golden label: because the parameters have not changed, the correct answer is the same as for the original problem instance.",
+     "zh": "缓存会在每个被接受的变体上被调用，其输出由 𝒥 T \\mathcal{J}_{T} 对照黄金标签进行评估：由于参数没有改变，正确答案与原始问题实例的答案相同。"
+    }
+   ]
+  },
+  {
+   "en": "Generation. Given a problem q ⁡ ( o ) q(o) for which the cache is correct, 𝒢 \\mathcal{G} decomposes the source reasoning into logical steps, identifies the parameters and their valid ranges and constraints within Π \\Pi , and generates candidate parameter vectors π ′ ≠ o \\pi^{\\prime}\\neq o that respect all identified constraints. The phrasing template q ⁡ ( ∙ ) q(\\bullet) is held fixed throughout. Alongside each candidate, 𝒢 \\mathcal{G} produces two narrations: the original narration, which traces the solution of q ⁡ ( o ) q(o) and arrives at the known golden answer, and the final narration, which traces the solution of q ⁡ ( π ′ ) q(\\pi^{\\prime}) under the new parameter values and arrives at a proposed new answer. Validation. 𝒥 G \\mathcal{J}_{G} verify that (i) the question structure is preserved, (ii) at least one parameter value has actually changed, (iii) all domain constraints are satisfied, (iv) the original narration correctly reproduces the known golden answer for q ⁡ ( o ) q(o) , and (v) the final narration is logically consistent and arrives at a coherent answer for q ⁡ ( π ′ ) q(\\pi^{\\prime}) . Criterion (iv) serves as a calibration check: if 𝒢 \\mathcal{G} cannot correctly re-derive the known answer for the original instance, its reasoning about the perturbed instance is not trustworthy, and the candidate is discarded. This filters out reparameterizations that violate domain constraints or contain reasoning errors introduced by 𝒢 \\mathcal{G} . Evaluation. Because parameter values have changed, the golden label of the original instance no longer applies. The cache is invoked on each accepted variant q ⁡ ( π ′ ) q(\\pi^{\\prime}) and its output is compared by 𝒥 T \\mathcal{J}_{T} against the answer from the final narration , which serves as the ground truth for the perturbed instance.",
+   "zh": "生成。 给定一个缓存对其正确的问题 q ⁡ ( o ) q(o)，𝒢 \\mathcal{G} 将源推理分解为逻辑步骤，识别 Π \\Pi 中的参数及其有效范围和约束，并生成满足所有已识别约束的候选参数向量 π ′ ≠ o \\pi^{\\prime}\\neq o。 措辞模板 q ⁡ ( ∙ ) q(\\bullet) 在整个过程中保持不变。 对于每个候选，𝒢 \\mathcal{G} 生成两段叙述：原始叙述，追溯 q ⁡ ( o ) q(o) 的求解过程并得出已知的黄金答案；以及最终叙述，在新的参数值下追溯 q ⁡ ( π ′ ) q(\\pi^{\\prime}) 的求解过程并得出一个提议的新答案。 验证。𝒥 G \\mathcal{J}_{G} 验证：(i) 问题结构被保留，(ii) 至少一个参数值确实发生了改变，(iii) 所有领域约束均得到满足，(iv) 原始叙述正确地复现了 q ⁡ ( o ) q(o) 的已知黄金答案，并且 (v) 最终叙述在逻辑上是一致的，并为 q ⁡ ( π ′ ) q(\\pi^{\\prime}) 得出一个连贯的答案。 准则 (iv) 充当校准检查：如果 𝒢 \\mathcal{G} 无法正确地重新推导出原始实例的已知答案，那么它对扰动实例的推理就不可信，该候选将被丢弃。 这可以过滤掉违反领域约束或包含由 𝒢 \\mathcal{G} 引入的推理错误的重参数化。评估。 由于参数值已经改变，原始实例的黄金标签不再适用。 缓存在每个被接受的变体 q ⁡ ( π ′ ) q(\\pi^{\\prime}) 上被调用，其输出由 𝒥 T \\mathcal{J}_{T} 与来自最终叙述的答案进行比较，该答案充当扰动实例的真值标准。",
+   "sents": [
+    {
+     "en": "Generation.",
+     "zh": "生成。"
+    },
+    {
+     "en": "Given a problem q ⁡ ( o ) q(o) for which the cache is correct, 𝒢 \\mathcal{G} decomposes the source reasoning into logical steps, identifies the parameters and their valid ranges and constraints within Π \\Pi , and generates candidate parameter vectors π ′ ≠ o \\pi^{\\prime}\\neq o that respect all identified constraints.",
+     "zh": "给定一个缓存对其正确的问题 q ⁡ ( o ) q(o)，𝒢 \\mathcal{G} 将源推理分解为逻辑步骤，识别 Π \\Pi 中的参数及其有效范围和约束，并生成满足所有已识别约束的候选参数向量 π ′ ≠ o \\pi^{\\prime}\\neq o。"
+    },
+    {
+     "en": "The phrasing template q ⁡ ( ∙ ) q(\\bullet) is held fixed throughout.",
+     "zh": "措辞模板 q ⁡ ( ∙ ) q(\\bullet) 在整个过程中保持不变。"
+    },
+    {
+     "en": "Alongside each candidate, 𝒢 \\mathcal{G} produces two narrations: the original narration, which traces the solution of q ⁡ ( o ) q(o) and arrives at the known golden answer, and the final narration, which traces the solution of q ⁡ ( π ′ ) q(\\pi^{\\prime}) under the new parameter values and arrives at a proposed new answer.",
+     "zh": "对于每个候选，𝒢 \\mathcal{G} 生成两段叙述：原始叙述，追溯 q ⁡ ( o ) q(o) 的求解过程并得出已知的黄金答案；以及最终叙述，在新的参数值下追溯 q ⁡ ( π ′ ) q(\\pi^{\\prime}) 的求解过程并得出一个提议的新答案。"
+    },
+    {
+     "en": "Validation. 𝒥 G \\mathcal{J}_{G} verify that (i) the question structure is preserved, (ii) at least one parameter value has actually changed, (iii) all domain constraints are satisfied, (iv) the original narration correctly reproduces the known golden answer for q ⁡ ( o ) q(o) , and (v) the final narration is logically consistent and arrives at a coherent answer for q ⁡ ( π ′ ) q(\\pi^{\\prime}) .",
+     "zh": "验证。𝒥 G \\mathcal{J}_{G} 验证：(i) 问题结构被保留，(ii) 至少一个参数值确实发生了改变，(iii) 所有领域约束均得到满足，(iv) 原始叙述正确地复现了 q ⁡ ( o ) q(o) 的已知黄金答案，并且 (v) 最终叙述在逻辑上是一致的，并为 q ⁡ ( π ′ ) q(\\pi^{\\prime}) 得出一个连贯的答案。"
+    },
+    {
+     "en": "Criterion (iv) serves as a calibration check: if 𝒢 \\mathcal{G} cannot correctly re-derive the known answer for the original instance, its reasoning about the perturbed instance is not trustworthy, and the candidate is discarded.",
+     "zh": "准则 (iv) 充当校准检查：如果 𝒢 \\mathcal{G} 无法正确地重新推导出原始实例的已知答案，那么它对扰动实例的推理就不可信，该候选将被丢弃。"
+    },
+    {
+     "en": "This filters out reparameterizations that violate domain constraints or contain reasoning errors introduced by 𝒢 \\mathcal{G} . Evaluation.",
+     "zh": "这可以过滤掉违反领域约束或包含由 𝒢 \\mathcal{G} 引入的推理错误的重参数化。评估。"
+    },
+    {
+     "en": "Because parameter values have changed, the golden label of the original instance no longer applies.",
+     "zh": "由于参数值已经改变，原始实例的黄金标签不再适用。"
+    },
+    {
+     "en": "The cache is invoked on each accepted variant q ⁡ ( π ′ ) q(\\pi^{\\prime}) and its output is compared by 𝒥 T \\mathcal{J}_{T} against the answer from the final narration , which serves as the ground truth for the perturbed instance.",
+     "zh": "缓存在每个被接受的变体 q ⁡ ( π ′ ) q(\\pi^{\\prime}) 上被调用，其输出由 𝒥 T \\mathcal{J}_{T} 与来自最终叙述的答案进行比较，该答案充当扰动实例的真值标准。"
+    }
+   ]
+  },
+  {
+   "en": "Combined testing is a two-stage pipeline that applies both perturbation modes in sequence. Stage 1 generates, validates, and evaluates phrasal variants as described above. Stage 2 takes each accepted phrasal variant and applies parametric perturbation, with its own generation, validation, and evaluation done independently of the first stage. The result is a set of variants that differ from q ⁡ ( o ) q(o) in both phrasing and parameter values. Each stage has its own independent judging committee. Combined testing is the strongest robustness evaluation: it exercises the cache’s ability to handle novel formulations of novel instances simultaneously.",
+   "zh": "组合测试是一个两阶段的流水线，按顺序应用两种扰动模式。 第一阶段如上所述生成、验证并评估短语变体。 第二阶段对每个通过验证的短语变体施加参数扰动，其自身的生成、验证和评估独立于第一阶段进行。 最终得到一组在措辞和参数值上都与 q ⁡ ( o ) q(o) 不同的变体。 每个阶段都有自己独立的评审委员会。 组合测试是最强的鲁棒性评估：它同时检验缓存处理新实例的新颖表述的能力。",
+   "sents": [
+    {
+     "en": "Combined testing is a two-stage pipeline that applies both perturbation modes in sequence.",
+     "zh": "组合测试是一个两阶段的流水线，按顺序应用两种扰动模式。"
+    },
+    {
+     "en": "Stage 1 generates, validates, and evaluates phrasal variants as described above.",
+     "zh": "第一阶段如上所述生成、验证并评估短语变体。"
+    },
+    {
+     "en": "Stage 2 takes each accepted phrasal variant and applies parametric perturbation, with its own generation, validation, and evaluation done independently of the first stage.",
+     "zh": "第二阶段对每个通过验证的短语变体施加参数扰动，其自身的生成、验证和评估独立于第一阶段进行。"
+    },
+    {
+     "en": "The result is a set of variants that differ from q ⁡ ( o ) q(o) in both phrasing and parameter values.",
+     "zh": "最终得到一组在措辞和参数值上都与 q ⁡ ( o ) q(o) 不同的变体。"
+    },
+    {
+     "en": "Each stage has its own independent judging committee.",
+     "zh": "每个阶段都有自己独立的评审委员会。"
+    },
+    {
+     "en": "Combined testing is the strongest robustness evaluation: it exercises the cache’s ability to handle novel formulations of novel instances simultaneously.",
+     "zh": "组合测试是最强的鲁棒性评估：它同时检验缓存处理新实例的新颖表述的能力。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate on six benchmarks spanning competition mathematics, graduate-level science, grade-school reasoning, and multidisciplinary knowledge.",
+   "zh": "我们在六个基准上进行评估，涵盖竞赛数学、研究生水平的科学、小学水平的推理以及多学科知识。",
+   "sents": null
+  },
+  {
+   "en": "MATH-500. A set of 500 competition-style mathematics problems drawn from high-school and undergraduate competitions [ 10 ] . Problems range from algebra and number theory to geometry and combinatorics.",
+   "zh": "MATH-500。 一组从高中和本科竞赛中选取的500道竞赛风格的数学问题[ 10 ]。 问题涵盖代数、数论、几何和组合数学。",
+   "sents": [
+    {
+     "en": "MATH-500.",
+     "zh": "MATH-500。"
+    },
+    {
+     "en": "A set of 500 competition-style mathematics problems drawn from high-school and undergraduate competitions [ 10 ] .",
+     "zh": "一组从高中和本科竞赛中选取的500道竞赛风格的数学问题[ 10 ]。"
+    },
+    {
+     "en": "Problems range from algebra and number theory to geometry and combinatorics.",
+     "zh": "问题涵盖代数、数论、几何和组合数学。"
+    }
+   ]
+  },
+  {
+   "en": "AIME 2024, 2025, 2026. Problems from the American Invitational Mathematics Examination across three consecutive years [ 11 , 12 , 13 ] . AIME problems are significantly harder than MATH-500, requiring multi-step reasoning and creative problem solving.",
+   "zh": "AIME 2024、2025、2026。 来自连续三年美国数学邀请赛（AIME）的题目 [ 11 , 12 , 13 ] 。 AIME 的题目比 MATH-500 难得多，需要多步推理和创造性的问题解决能力。",
+   "sents": [
+    {
+     "en": "AIME 2024, 2025, 2026.",
+     "zh": "AIME 2024、2025、2026。"
+    },
+    {
+     "en": "Problems from the American Invitational Mathematics Examination across three consecutive years [ 11 , 12 , 13 ] .",
+     "zh": "来自连续三年美国数学邀请赛（AIME）的题目 [ 11 , 12 , 13 ] 。"
+    },
+    {
+     "en": "AIME problems are significantly harder than MATH-500, requiring multi-step reasoning and creative problem solving.",
+     "zh": "AIME 的题目比 MATH-500 难得多，需要多步推理和创造性的问题解决能力。"
+    }
+   ]
+  },
+  {
+   "en": "GPQA Diamond. The Diamond subset of the graduate-level Google-Proof Q&A (GPQA) benchmark [ 14 ] , comprising expert-written science questions in physics, chemistry, and biology that are designed to be unsearchable and require graduate-level domain knowledge.",
+   "zh": "GPQA Diamond。 GPQA（Google-Proof Q&A）基准的 Diamond 子集 [ 14 ]，该基准属于研究生水平的防谷歌问答基准，由专家撰写的物理、化学和生物学问题组成，这些问题被设计为无法通过搜索解答，需要研究生水平的领域知识。",
+   "sents": [
+    {
+     "en": "GPQA Diamond.",
+     "zh": "GPQA Diamond。"
+    },
+    {
+     "en": "The Diamond subset of the graduate-level Google-Proof Q&A (GPQA) benchmark [ 14 ] , comprising expert-written science questions in physics, chemistry, and biology that are designed to be unsearchable and require graduate-level domain knowledge.",
+     "zh": "GPQA（Google-Proof Q&A）基准的 Diamond 子集 [ 14 ]，该基准属于研究生水平的防谷歌问答基准，由专家撰写的物理、化学和生物学问题组成，这些问题被设计为无法通过搜索解答，需要研究生水平的领域知识。"
+    }
+   ]
+  },
+  {
+   "en": "GSM8K. A benchmark of approximately 8,000 grade-school math word problems [ 15 ] that test multi-step arithmetic reasoning. Despite the elementary subject matter, the benchmark is useful for evaluating whether cache construction preserves basic reasoning chains.",
+   "zh": "GSM8K。 一个包含约8000道小学数学应用题的基准 [ 15 ]，用于测试多步算术推理。 尽管题材浅显，该基准对于评估缓存构建是否保留了基本推理链仍然很有用。",
+   "sents": [
+    {
+     "en": "GSM8K.",
+     "zh": "GSM8K。"
+    },
+    {
+     "en": "A benchmark of approximately 8,000 grade-school math word problems [ 15 ] that test multi-step arithmetic reasoning.",
+     "zh": "一个包含约8000道小学数学应用题的基准 [ 15 ]，用于测试多步算术推理。"
+    },
+    {
+     "en": "Despite the elementary subject matter, the benchmark is useful for evaluating whether cache construction preserves basic reasoning chains.",
+     "zh": "尽管题材浅显，该基准对于评估缓存构建是否保留了基本推理链仍然很有用。"
+    }
+   ]
+  },
+  {
+   "en": "MMLU-Pro. An extended version of the Massive Multitask Language Understanding benchmark [ 16 ] with harder, reasoning-focused questions across diverse academic disciplines.",
+   "zh": "MMLU-Pro。 大规模多任务语言理解基准 [ 16 ] 的扩展版本，包含涵盖多个学术领域、更具难度且侧重推理的问题。",
+   "sents": [
+    {
+     "en": "MMLU-Pro.",
+     "zh": "MMLU-Pro。"
+    },
+    {
+     "en": "An extended version of the Massive Multitask Language Understanding benchmark [ 16 ] with harder, reasoning-focused questions across diverse academic disciplines.",
+     "zh": "大规模多任务语言理解基准 [ 16 ] 的扩展版本，包含涵盖多个学术领域、更具难度且侧重推理的问题。"
+    }
+   ]
+  },
+  {
+   "en": "SciBench. A collection of science problems drawn from university-level textbooks [ 17 ] in physics, chemistry, and mathematics, requiring both domain knowledge and quantitative reasoning.",
+   "zh": "SciBench。 一组选自大学教材[17]的科学问题，涵盖物理、化学和数学，既需要领域知识又需要定量推理。",
+   "sents": [
+    {
+     "en": "SciBench.",
+     "zh": "SciBench。"
+    },
+    {
+     "en": "A collection of science problems drawn from university-level textbooks [ 17 ] in physics, chemistry, and mathematics, requiring both domain knowledge and quantitative reasoning.",
+     "zh": "一组选自大学教材[17]的科学问题，涵盖物理、化学和数学，既需要领域知识又需要定量推理。"
+    }
+   ]
+  },
+  {
+   "en": "We evaluate on mathematical and science benchmarks not because we intend the agentic reasoning caches to be used on such problems, but because these problems are generally considered to be difficult enough to be used to assess model intelligence. The rationale of this evaluation is then that if our agentic reasoning caching methodology can successfully cache the intelligence required to solve these problems, and these are commonly used proxies to model intelligence, then by extension of maxima, it should be able to cache all intelligence in the appropriate domains.",
+   "zh": "我们在数学和科学基准上进行评估，并不是因为我们打算将智能体推理缓存用于此类问题，而是因为这些问题通常被认为足够困难，可以用来评估模型的智能水平。 这一评估的逻辑在于：如果我们的智能体推理缓存方法能够成功缓存解决这些问题所需的智能，而这些问题又是衡量模型智能的常用代理，那么根据极大值的外推，它应当能够缓存相应领域中的所有智能。",
+   "sents": [
+    {
+     "en": "We evaluate on mathematical and science benchmarks not because we intend the agentic reasoning caches to be used on such problems, but because these problems are generally considered to be difficult enough to be used to assess model intelligence.",
+     "zh": "我们在数学和科学基准上进行评估，并不是因为我们打算将智能体推理缓存用于此类问题，而是因为这些问题通常被认为足够困难，可以用来评估模型的智能水平。"
+    },
+    {
+     "en": "The rationale of this evaluation is then that if our agentic reasoning caching methodology can successfully cache the intelligence required to solve these problems, and these are commonly used proxies to model intelligence, then by extension of maxima, it should be able to cache all intelligence in the appropriate domains.",
+     "zh": "这一评估的逻辑在于：如果我们的智能体推理缓存方法能够成功缓存解决这些问题所需的智能，而这些问题又是衡量模型智能的常用代理，那么根据极大值的外推，它应当能够缓存相应领域中的所有智能。"
+    }
+   ]
+  },
+  {
+   "en": "The source model 𝒮 \\mathcal{S} and the builder model ℬ \\mathcal{B} are both Claude Opus 4.5 with extended thinking enabled at a budget of 4096 tokens. The target model 𝒯 \\mathcal{T} was first Claude Haiku 4.5 and then Llama 3.2 1B as described in Section 2.2.4 , both being small, cost efficient, and run at temperature 0.0 0.0 .",
+   "zh": "源模型 𝒮 \\mathcal{S} 与构建者模型 ℬ \\mathcal{B} 均为 Claude Opus 4.5，并启用了扩展思考，预算为 4096 个 token。 目标模型 𝒯 \\mathcal{T} 最初为 Claude Haiku 4.5，随后为 2.2.4 节所述的 Llama 3.2 1B，两者均为小型、高性价比的模型，且均在温度 0.0 0.0 下运行。",
+   "sents": [
+    {
+     "en": "The source model 𝒮 \\mathcal{S} and the builder model ℬ \\mathcal{B} are both Claude Opus 4.5 with extended thinking enabled at a budget of 4096 tokens.",
+     "zh": "源模型 𝒮 \\mathcal{S} 与构建者模型 ℬ \\mathcal{B} 均为 Claude Opus 4.5，并启用了扩展思考，预算为 4096 个 token。"
+    },
+    {
+     "en": "The target model 𝒯 \\mathcal{T} was first Claude Haiku 4.5 and then Llama 3.2 1B as described in Section 2.2.4 , both being small, cost efficient, and run at temperature 0.0 0.0 .",
+     "zh": "目标模型 𝒯 \\mathcal{T} 最初为 Claude Haiku 4.5，随后为 2.2.4 节所述的 Llama 3.2 1B，两者均为小型、高性价比的模型，且均在温度 0.0 0.0 下运行。"
+    }
+   ]
+  },
+  {
+   "en": "Semantic search during cache invocation ( Section 2.2.2 ) uses Embedding Gemma [ 18 ] (a roughly 300M-parameter model) to produce 768-dimensional text embeddings for all do() and load() dispatch, indexed via a FAISS flat index for CPU-based similarity lookup. Compiled caches ( Section 2.2.3 ) bypass the embedding engine entirely.",
+   "zh": "缓存调用期间的语义搜索（第 2.2.2 节）使用 Embedding Gemma [18]（一个约 300M 参数的模型）为所有 do() 和 load() 分发生成 768 维文本嵌入，并通过 FAISS 扁平索引进行基于 CPU 的相似度查找。 编译缓存（第 2.2.3 节）完全绕过嵌入引擎。",
+   "sents": [
+    {
+     "en": "Semantic search during cache invocation ( Section 2.2.2 ) uses Embedding Gemma [ 18 ] (a roughly 300M-parameter model) to produce 768-dimensional text embeddings for all do() and load() dispatch, indexed via a FAISS flat index for CPU-based similarity lookup.",
+     "zh": "缓存调用期间的语义搜索（第 2.2.2 节）使用 Embedding Gemma [18]（一个约 300M 参数的模型）为所有 do() 和 load() 分发生成 768 维文本嵌入，并通过 FAISS 扁平索引进行基于 CPU 的相似度查找。"
+    },
+    {
+     "en": "Compiled caches ( Section 2.2.3 ) bypass the embedding engine entirely.",
+     "zh": "编译缓存（第 2.2.3 节）完全绕过嵌入引擎。"
+    }
+   ]
+  },
+  {
+   "en": "The generator 𝒢 \\mathcal{G} is Claude Opus 4.5, identical to 𝒮 \\mathcal{S} . The generation judges 𝒥 G \\mathcal{J}_{G} are a committee of 2 Claude Opus 4.5 instances and the testing judges 𝒥 T \\mathcal{J}_{T} are a committee of 2 Claude Opus 4.5 instances, each with extended thinking enabled. Acceptance requires unanimity within each committee.",
+   "zh": "生成器 𝒢 \\mathcal{G} 是 Claude Opus 4.5，与 𝒮 \\mathcal{S} 相同。 生成评审 𝒥 G \\mathcal{J}_{G} 是由 2 个 Claude Opus 4.5 实例组成的评审委员会，测试评审 𝒥 T \\mathcal{J}_{T} 是由 2 个 Claude Opus 4.5 实例组成的评审委员会，每个实例都启用了扩展思考功能。 接受需要在每个评审委员会内部达成一致。",
+   "sents": [
+    {
+     "en": "The generator 𝒢 \\mathcal{G} is Claude Opus 4.5, identical to 𝒮 \\mathcal{S} .",
+     "zh": "生成器 𝒢 \\mathcal{G} 是 Claude Opus 4.5，与 𝒮 \\mathcal{S} 相同。"
+    },
+    {
+     "en": "The generation judges 𝒥 G \\mathcal{J}_{G} are a committee of 2 Claude Opus 4.5 instances and the testing judges 𝒥 T \\mathcal{J}_{T} are a committee of 2 Claude Opus 4.5 instances, each with extended thinking enabled.",
+     "zh": "生成评审 𝒥 G \\mathcal{J}_{G} 是由 2 个 Claude Opus 4.5 实例组成的评审委员会，测试评审 𝒥 T \\mathcal{J}_{T} 是由 2 个 Claude Opus 4.5 实例组成的评审委员会，每个实例都启用了扩展思考功能。"
+    },
+    {
+     "en": "Acceptance requires unanimity within each committee.",
+     "zh": "接受需要在每个评审委员会内部达成一致。"
+    }
+   ]
+  },
+  {
+   "en": "Construction proceeds per-sample: each query instance q ⁡ ( o ) q(o) is built in an isolated, self-contained cache, which simplifies debugging and error attribution. Immediately upon successful construction, the per-sample cache is merged into a master cache that accumulates the entries of all processed samples. The master cache is the artifact that serves queries at invocation time; the per-sample caches are retained only as diagnostic artifacts.",
+   "zh": "构建按样本逐个进行：每个查询实例 q ⁡ ( o ) q(o) 都在一个隔离的、自包含的缓存中构建，这简化了调试和错误定位。 构建成功后，立即将该单样本缓存合并到一个主缓存中，该主缓存累积所有已处理样本的条目。 主缓存是调用时用于服务查询的产物；单样本缓存仅作为诊断用途的产物予以保留。",
+   "sents": [
+    {
+     "en": "Construction proceeds per-sample: each query instance q ⁡ ( o ) q(o) is built in an isolated, self-contained cache, which simplifies debugging and error attribution.",
+     "zh": "构建按样本逐个进行：每个查询实例 q ⁡ ( o ) q(o) 都在一个隔离的、自包含的缓存中构建，这简化了调试和错误定位。"
+    },
+    {
+     "en": "Immediately upon successful construction, the per-sample cache is merged into a master cache that accumulates the entries of all processed samples.",
+     "zh": "构建成功后，立即将该单样本缓存合并到一个主缓存中，该主缓存累积所有已处理样本的条目。"
+    },
+    {
+     "en": "The master cache is the artifact that serves queries at invocation time; the per-sample caches are retained only as diagnostic artifacts.",
+     "zh": "主缓存是调用时用于服务查询的产物；单样本缓存仅作为诊断用途的产物予以保留。"
+    }
+   ]
+  },
+  {
+   "en": "All costs in Table 2 use March 2026 API rates for cost accounting. The source and builder models (Claude Opus 4.5) are priced at $5.00/M input tokens, $25.00/M output tokens, $6.25/M cache-write tokens, and $0.50/M cache-read tokens. The builder’s multi-turn implementation loop is prompt-cached, so the majority of its input tokens are served from cache at the cache-read rate, significantly reducing builder costs relative to a naïve implementation without caching. For cost accounting, calls to the finetuned Llama 3.2 1B model in the target, extractor, and converter roles are valued at $0.023/M input tokens and $0.194/M output tokens, with no prompt-cache discount. The “cache cost” column is the sum of target, extractor, and converter costs incurred at invocation time.",
+   "zh": "表 2 中的所有成本均按 2026 年 3 月的 API 费率进行成本核算。 源模型与构建模型（Claude Opus 4.5）的定价为输入令牌 $5.00/百万、输出令牌 $25.00/百万、缓存写入令牌 $6.25/百万，以及缓存读取令牌 $0.50/百万。 构建模型的多轮实现循环使用了提示缓存，因此其大部分输入令牌以缓存读取费率提供，相较于不使用缓存的朴素实现，显著降低了构建模型的成本。 在成本核算中，以目标、提取器和转换器角色调用的微调 Llama 3.2 1B 模型按输入令牌 $0.023/百万、输出令牌 $0.194/百万计价，且不享受提示缓存折扣。 “缓存成本”一列为调用时发生的目标、提取器与转换器成本之和。",
+   "sents": [
+    {
+     "en": "All costs in Table 2 use March 2026 API rates for cost accounting.",
+     "zh": "表 2 中的所有成本均按 2026 年 3 月的 API 费率进行成本核算。"
+    },
+    {
+     "en": "The source and builder models (Claude Opus 4.5) are priced at $5.00/M input tokens, $25.00/M output tokens, $6.25/M cache-write tokens, and $0.50/M cache-read tokens.",
+     "zh": "源模型与构建模型（Claude Opus 4.5）的定价为输入令牌 $5.00/百万、输出令牌 $25.00/百万、缓存写入令牌 $6.25/百万，以及缓存读取令牌 $0.50/百万。"
+    },
+    {
+     "en": "The builder’s multi-turn implementation loop is prompt-cached, so the majority of its input tokens are served from cache at the cache-read rate, significantly reducing builder costs relative to a naïve implementation without caching.",
+     "zh": "构建模型的多轮实现循环使用了提示缓存，因此其大部分输入令牌以缓存读取费率提供，相较于不使用缓存的朴素实现，显著降低了构建模型的成本。"
+    },
+    {
+     "en": "For cost accounting, calls to the finetuned Llama 3.2 1B model in the target, extractor, and converter roles are valued at $0.023/M input tokens and $0.194/M output tokens, with no prompt-cache discount.",
+     "zh": "在成本核算中，以目标、提取器和转换器角色调用的微调 Llama 3.2 1B 模型按输入令牌 $0.023/百万、输出令牌 $0.194/百万计价，且不享受提示缓存折扣。"
+    },
+    {
+     "en": "The “cache cost” column is the sum of target, extractor, and converter costs incurred at invocation time.",
+     "zh": "“缓存成本”一列为调用时发生的目标、提取器与转换器成本之和。"
+    }
+   ]
+  },
+  {
+   "en": "We observe that cache accuracy (C Acc) matches or exceeds source accuracy (S Acc) on seven of the eight benchmarks. The improvement is most pronounced on the competition mathematics problems of AIME, where the cache achieves 93.3% vs. the source’s 83.3% on AIME ’25 and 96.7% vs. 90.0% on AIME ’26. We attribute this to cases where the source model reasons correctly and its reasoning is therefore used to produce a correct cache entry, but a small computational or logical error in the final steps leads the source model to an imprecise answer, whereas the cache executes the same reasoning as deterministic code and avoids such slips. The sole exception is GSM8K, where the cache (98.0%) trails the source (98.5%) by a narrow margin. Fidelity (the rate at which the cache agrees with the source transcript) is consistently high, exceeding 98% on six of eight benchmarks and reaching 100% on MMLU-Pro. Even where fidelity is lower (AIME ’25 and ’26 at 90.0%), the cache retains the ability to produce golden-correct answers when the transcript answer is itself incorrect.",
+   "zh": "我们观察到，在八个基准中有七个，缓存准确率（C Acc）达到或超过了源准确率（S Acc）。 这种提升在 AIME 竞赛数学题上最为显著，缓存达到 93.3%，而源为 83.3%（AIME '25），以及在 AIME '26 上为 96.7% 对 90.0%。 我们将其归因于如下情形：源模型推理正确，其推理因此被用于生成正确的缓存条目，但在最后步骤中的细小计算或逻辑错误使源模型得到不精确的答案，而缓存将同样的推理作为确定性代码执行，从而避免了此类失误。 唯一的例外是 GSM8K，缓存（98.0%）以微弱差距落后于源（98.5%）。 保真度（缓存与源转写一致的比例）始终保持高位，在八个基准中的六个超过 98%，并在 MMLU-Pro 上达到 100%。 即使在保真度较低的情况下（AIME '25 和 '26 为 90.0%），当转写答案本身不正确时，缓存仍能产出金标准正确的答案。",
+   "sents": [
+    {
+     "en": "We observe that cache accuracy (C Acc) matches or exceeds source accuracy (S Acc) on seven of the eight benchmarks.",
+     "zh": "我们观察到，在八个基准中有七个，缓存准确率（C Acc）达到或超过了源准确率（S Acc）。"
+    },
+    {
+     "en": "The improvement is most pronounced on the competition mathematics problems of AIME, where the cache achieves 93.3% vs. the source’s 83.3% on AIME ’25 and 96.7% vs. 90.0% on AIME ’26.",
+     "zh": "这种提升在 AIME 竞赛数学题上最为显著，缓存达到 93.3%，而源为 83.3%（AIME '25），以及在 AIME '26 上为 96.7% 对 90.0%。"
+    },
+    {
+     "en": "We attribute this to cases where the source model reasons correctly and its reasoning is therefore used to produce a correct cache entry, but a small computational or logical error in the final steps leads the source model to an imprecise answer, whereas the cache executes the same reasoning as deterministic code and avoids such slips.",
+     "zh": "我们将其归因于如下情形：源模型推理正确，其推理因此被用于生成正确的缓存条目，但在最后步骤中的细小计算或逻辑错误使源模型得到不精确的答案，而缓存将同样的推理作为确定性代码执行，从而避免了此类失误。"
+    },
+    {
+     "en": "The sole exception is GSM8K, where the cache (98.0%) trails the source (98.5%) by a narrow margin.",
+     "zh": "唯一的例外是 GSM8K，缓存（98.0%）以微弱差距落后于源（98.5%）。"
+    },
+    {
+     "en": "Fidelity (the rate at which the cache agrees with the source transcript) is consistently high, exceeding 98% on six of eight benchmarks and reaching 100% on MMLU-Pro.",
+     "zh": "保真度（缓存与源转写一致的比例）始终保持高位，在八个基准中的六个超过 98%，并在 MMLU-Pro 上达到 100%。"
+    },
+    {
+     "en": "Even where fidelity is lower (AIME ’25 and ’26 at 90.0%), the cache retains the ability to produce golden-correct answers when the transcript answer is itself incorrect.",
+     "zh": "即使在保真度较低的情况下（AIME '25 和 '26 为 90.0%），当转写答案本身不正确时，缓存仍能产出金标准正确的答案。"
+    }
+   ]
+  },
+  {
+   "en": "Across all benchmarks and perturbation modes, cache entries handle at least 90% of perturbations correctly (the lowest observed rate is 90.8% for combined perturbations on AIME ’26). Phrasal perturbation rates match or exceed parametric rates on four of the eight benchmarks, indicating that the parameter extraction and reasoning logic are generally more robust to surface-level reformulations than to changes in the underlying parameter values. Combined perturbation testing is the most demanding mode and yields the lowest rates in six of eight benchmarks, as expected.",
+   "zh": "在所有基准测试和扰动模式下，缓存条目对至少90%的扰动都能正确处理（观察到的最低比率是 AIME '26 上组合扰动时的 90.8%）。 短语扰动率在八个基准中的四个上达到或超过参数化率，这表明参数抽取与推理逻辑对表层改写的鲁棒性总体上高于对底层参数值变化的鲁棒性。 组合扰动测试是最严苛的模式，正如预期的那样，它在八个基准中的六个上产生了最低比率。",
+   "sents": [
+    {
+     "en": "Across all benchmarks and perturbation modes, cache entries handle at least 90% of perturbations correctly (the lowest observed rate is 90.8% for combined perturbations on AIME ’26).",
+     "zh": "在所有基准测试和扰动模式下，缓存条目对至少90%的扰动都能正确处理（观察到的最低比率是 AIME '26 上组合扰动时的 90.8%）。"
+    },
+    {
+     "en": "Phrasal perturbation rates match or exceed parametric rates on four of the eight benchmarks, indicating that the parameter extraction and reasoning logic are generally more robust to surface-level reformulations than to changes in the underlying parameter values.",
+     "zh": "短语扰动率在八个基准中的四个上达到或超过参数化率，这表明参数抽取与推理逻辑对表层改写的鲁棒性总体上高于对底层参数值变化的鲁棒性。"
+    },
+    {
+     "en": "Combined perturbation testing is the most demanding mode and yields the lowest rates in six of eight benchmarks, as expected.",
+     "zh": "组合扰动测试是最严苛的模式，正如预期的那样，它在八个基准中的六个上产生了最低比率。"
+    }
+   ]
+  },
+  {
+   "en": "We note that builder costs range from 12 × 12\\times to 84 × 84\\times the source invocation cost. This multiplier is characteristically lower for difficult problems where the source model’s reasoning is long but the resulting computation is straightforward to execute (e.g. 12 12 – 13 × 13\\times for AIME), and higher for simpler problems where the source model responds briefly but the cache still requires full construction (e.g. 84 × 84\\times for GSM8K). Conversely, the savings multiplier at invocation time ranges from 16 × 16\\times to 291 × 291\\times , with considerably higher savings on difficult competition mathematics (AIME: 262 262 – 291 × 291\\times ) where the source model’s per-query cost is highest. Even on simple benchmarks such as GSM8K, the cache delivers a 16 × 16\\times cost reduction per invocation. In absolute terms, cache invocation costs are uniformly low across all benchmarks ($0.0004–$0.0019 per sample), owing to the use of a small finetuned open-source target model. Let B B denote the one-time builder cost, S S the source cost per query, and C C the cache cost per invocation. For S > C S>C , the break-even point is B / ( S − C ) B/(S-C) invocations, rounded up to the next whole invocation; the Build × \\times multiplier B / S B/S approximates this when C C is negligible relative to S S . Using the reported cost multipliers, ARCs for AIME problems pay for themselves after approximately 13 neighbourhood invocations, while GSM8K requires approximately 90.",
+   "zh": "我们注意到，构建器成本介于源调用成本的 12 倍到 84 倍之间。 这一倍数在困难问题上通常较低，因为源模型的推理很长，而所得计算执行起来却很直接（例如 AIME 为 12–13 倍）；在较简单的问题上则较高，因为源模型的回答很短，但缓存仍需完整构建（例如 GSM8K 为 84 倍）。 相反，调用时的节省倍数在 16 倍到 291 倍之间，在困难的竞赛数学上节省尤为可观（AIME：262–291 倍），因为源模型的单次查询成本最高。 即使在 GSM8K 这样的简单基准上，缓存也能将每次调用的成本降低 16 倍。 从绝对数值来看，得益于使用了一个小型的微调开源目标模型，缓存的调用成本在所有基准上都保持在较低水平（每个样本 0.0004–0.0019 美元）。 设 B 为一次性构建器成本，S 为每次查询的源成本，C 为每次调用的缓存成本。 当 S > C 时，盈亏平衡点为 B / (S − C) 次调用（向上取整到下一次完整调用）；当 C 相对于 S 可以忽略时，构建倍数 B / S 可近似该值。 根据所报告的成本倍数，AIME 问题的自适应推理缓存在大约 13 次邻域调用后即可收回成本，而 GSM8K 则需要大约 90 次。",
+   "sents": [
+    {
+     "en": "We note that builder costs range from 12 × 12\\times to 84 × 84\\times the source invocation cost.",
+     "zh": "我们注意到，构建器成本介于源调用成本的 12 倍到 84 倍之间。"
+    },
+    {
+     "en": "This multiplier is characteristically lower for difficult problems where the source model’s reasoning is long but the resulting computation is straightforward to execute (e.g. 12 12 – 13 × 13\\times for AIME), and higher for simpler problems where the source model responds briefly but the cache still requires full construction (e.g. 84 × 84\\times for GSM8K).",
+     "zh": "这一倍数在困难问题上通常较低，因为源模型的推理很长，而所得计算执行起来却很直接（例如 AIME 为 12–13 倍）；在较简单的问题上则较高，因为源模型的回答很短，但缓存仍需完整构建（例如 GSM8K 为 84 倍）。"
+    },
+    {
+     "en": "Conversely, the savings multiplier at invocation time ranges from 16 × 16\\times to 291 × 291\\times , with considerably higher savings on difficult competition mathematics (AIME: 262 262 – 291 × 291\\times ) where the source model’s per-query cost is highest.",
+     "zh": "相反，调用时的节省倍数在 16 倍到 291 倍之间，在困难的竞赛数学上节省尤为可观（AIME：262–291 倍），因为源模型的单次查询成本最高。"
+    },
+    {
+     "en": "Even on simple benchmarks such as GSM8K, the cache delivers a 16 × 16\\times cost reduction per invocation.",
+     "zh": "即使在 GSM8K 这样的简单基准上，缓存也能将每次调用的成本降低 16 倍。"
+    },
+    {
+     "en": "In absolute terms, cache invocation costs are uniformly low across all benchmarks ($0.0004–$0.0019 per sample), owing to the use of a small finetuned open-source target model.",
+     "zh": "从绝对数值来看，得益于使用了一个小型的微调开源目标模型，缓存的调用成本在所有基准上都保持在较低水平（每个样本 0.0004–0.0019 美元）。"
+    },
+    {
+     "en": "Let B B denote the one-time builder cost, S S the source cost per query, and C C the cache cost per invocation.",
+     "zh": "设 B 为一次性构建器成本，S 为每次查询的源成本，C 为每次调用的缓存成本。"
+    },
+    {
+     "en": "For S > C S>C , the break-even point is B / ( S − C ) B/(S-C) invocations, rounded up to the next whole invocation; the Build × \\times multiplier B / S B/S approximates this when C C is negligible relative to S S .",
+     "zh": "当 S > C 时，盈亏平衡点为 B / (S − C) 次调用（向上取整到下一次完整调用）；当 C 相对于 S 可以忽略时，构建倍数 B / S 可近似该值。"
+    },
+    {
+     "en": "Using the reported cost multipliers, ARCs for AIME problems pay for themselves after approximately 13 neighbourhood invocations, while GSM8K requires approximately 90.",
+     "zh": "根据所报告的成本倍数，AIME 问题的自适应推理缓存在大约 13 次邻域调用后即可收回成本，而 GSM8K 则需要大约 90 次。"
+    }
+   ]
+  },
+  {
+   "en": "The results of Section 3 can be interpreted as follows: at a two-digit cost multiplier increase, the logic behind mathematical and scientific reasoning of language models can be converted into a form that, when invoked, reduces the cost by a two-digit multiplier. It would be prudent to ask what situations benefit the most from this approach and what the forward-looking implications are.",
+   "zh": "第3节的结果可以这样解读：在两位数的成本乘数提升下，语言模型的数学与科学推理逻辑可以被转化为一种形式，使其在被调用时将成本降低两位数的倍数。 谨慎起见，我们应当追问哪些情形最能从该方法中获益，以及它具有哪些前瞻性影响。",
+   "sents": [
+    {
+     "en": "The results of Section 3 can be interpreted as follows: at a two-digit cost multiplier increase, the logic behind mathematical and scientific reasoning of language models can be converted into a form that, when invoked, reduces the cost by a two-digit multiplier.",
+     "zh": "第3节的结果可以这样解读：在两位数的成本乘数提升下，语言模型的数学与科学推理逻辑可以被转化为一种形式，使其在被调用时将成本降低两位数的倍数。"
+    },
+    {
+     "en": "It would be prudent to ask what situations benefit the most from this approach and what the forward-looking implications are.",
+     "zh": "谨慎起见，我们应当追问哪些情形最能从该方法中获益，以及它具有哪些前瞻性影响。"
+    }
+   ]
+  },
+  {
+   "en": "We imagine future caching work in this direction to be placed in agentic systems and AI-enabled software in which the same reasoning or the same set of instructions is frequently applied to varying payloads. Based on our familiarity with the field, such configurations are common in enterprise agentic software and AI-enabled software more broadly. We see value in installing agentic reasoning caches onto endpoints that handle repetitively equi-instructed payloads accumulating usage over hours or weeks, and then applying the methodology outlined in Section 2 to produce a more efficient version of that endpoint, with the presence of a large language model fallback in case the incoming queries are sufficiently novel or the cache invocation results in a failure.",
+   "zh": "我们设想未来在这一方向上的缓存工作将被置于智能体系统和 AI 赋能的软件中，在这类系统中，相同的推理或同一组指令经常被应用于不同的负载。 根据我们对该领域的了解，这类配置在企业级智能体软件乃至更广泛的 AI 赋能软件中十分常见。 我们认为，在处理重复接收相同指令负载、使用时间累计长达数小时或数周的端点上部署智能体推理缓存是有价值的，然后运用第 2 节概述的方法生成该端点更高效的版本，并保留一个大语言模型作为后备，以应对传入查询足够新颖或缓存调用失败的情况。",
+   "sents": [
+    {
+     "en": "We imagine future caching work in this direction to be placed in agentic systems and AI-enabled software in which the same reasoning or the same set of instructions is frequently applied to varying payloads.",
+     "zh": "我们设想未来在这一方向上的缓存工作将被置于智能体系统和 AI 赋能的软件中，在这类系统中，相同的推理或同一组指令经常被应用于不同的负载。"
+    },
+    {
+     "en": "Based on our familiarity with the field, such configurations are common in enterprise agentic software and AI-enabled software more broadly.",
+     "zh": "根据我们对该领域的了解，这类配置在企业级智能体软件乃至更广泛的 AI 赋能软件中十分常见。"
+    },
+    {
+     "en": "We see value in installing agentic reasoning caches onto endpoints that handle repetitively equi-instructed payloads accumulating usage over hours or weeks, and then applying the methodology outlined in Section 2 to produce a more efficient version of that endpoint, with the presence of a large language model fallback in case the incoming queries are sufficiently novel or the cache invocation results in a failure.",
+     "zh": "我们认为，在处理重复接收相同指令负载、使用时间累计长达数小时或数周的端点上部署智能体推理缓存是有价值的，然后运用第 2 节概述的方法生成该端点更高效的版本，并保留一个大语言模型作为后备，以应对传入查询足够新颖或缓存调用失败的情况。"
+    }
+   ]
+  },
+  {
+   "en": "Even as currently implemented, agentic reasoning caching can learn continuously: a cache that has been built can be continuously added to without having to rebuild the existing entries from scratch, as would be the case for finetuned language models. Moreover, the agentic reasoning cache can be inspected for correctness and is resolutely cheaper than the use of language models that, while smaller, would still have to be sufficiently large to handle the complex reasoning about the payload.",
+   "zh": "即使按照目前的实现方式，智能体推理缓存也可以持续学习：已经构建好的缓存可以在不从头重建现有条目的情况下持续添加内容，而经过微调的语言模型则需要这样做。 此外，智能体推理缓存可以进行正确性检查，并且明显比使用语言模型更省钱，后者即使规模较小，仍必须足够大才能处理对载荷的复杂推理。",
+   "sents": [
+    {
+     "en": "Even as currently implemented, agentic reasoning caching can learn continuously: a cache that has been built can be continuously added to without having to rebuild the existing entries from scratch, as would be the case for finetuned language models.",
+     "zh": "即使按照目前的实现方式，智能体推理缓存也可以持续学习：已经构建好的缓存可以在不从头重建现有条目的情况下持续添加内容，而经过微调的语言模型则需要这样做。"
+    },
+    {
+     "en": "Moreover, the agentic reasoning cache can be inspected for correctness and is resolutely cheaper than the use of language models that, while smaller, would still have to be sufficiently large to handle the complex reasoning about the payload.",
+     "zh": "此外，智能体推理缓存可以进行正确性检查，并且明显比使用语言模型更省钱，后者即使规模较小，仍必须足够大才能处理对载荷的复杂推理。"
+    }
+   ]
+  },
+  {
+   "en": "Going forward, we note that the phenomenon of semantic function reuse, as enabled by the search-based function discovery available during the construction stage ( Section 2.2.1 ) and the natural-language intent-style descriptions of semantic functions and their parameters, enables a great deal of reuse once a cache grows sufficiently large. While the problem of generalizing multiple similar but not identical semantic functions into one coherent, more general semantic function is not addressed by this work, we believe that beyond a certain point agentic reasoning caches could overtake a large proportion of workloads from large language models simply by densely populating the domains of most intense interest by their users while growing at a sublinear rate in proportion to the number of input samples. This would be applicable to domains that do not require a great deal of creativity and are instead focused on the execution of particular instructions.",
+   "zh": "展望未来，我们注意到，语义函数复用现象——得益于构建阶段（第2.2.1节）可用的基于搜索的函数发现机制，以及对语义函数及其参数的自然语言意图式描述——一旦缓存增长到足够大，就能实现大量的复用。 虽然将多个相似但不完全相同的语义函数泛化为一个连贯的、更通用的语义函数这一问题并未在本工作中得到解决，但我们认为，超过某个临界点后，智能体推理缓存只需在其用户最感兴趣的领域进行密集填充，同时以与输入样本数量成亚线性比例的速度增长，就可能取代大语言模型的很大一部分工作负载。 这将适用于那些不需要大量创造力、而专注于执行特定指令的领域。",
+   "sents": [
+    {
+     "en": "Going forward, we note that the phenomenon of semantic function reuse, as enabled by the search-based function discovery available during the construction stage ( Section 2.2.1 ) and the natural-language intent-style descriptions of semantic functions and their parameters, enables a great deal of reuse once a cache grows sufficiently large.",
+     "zh": "展望未来，我们注意到，语义函数复用现象——得益于构建阶段（第2.2.1节）可用的基于搜索的函数发现机制，以及对语义函数及其参数的自然语言意图式描述——一旦缓存增长到足够大，就能实现大量的复用。"
+    },
+    {
+     "en": "While the problem of generalizing multiple similar but not identical semantic functions into one coherent, more general semantic function is not addressed by this work, we believe that beyond a certain point agentic reasoning caches could overtake a large proportion of workloads from large language models simply by densely populating the domains of most intense interest by their users while growing at a sublinear rate in proportion to the number of input samples.",
+     "zh": "虽然将多个相似但不完全相同的语义函数泛化为一个连贯的、更通用的语义函数这一问题并未在本工作中得到解决，但我们认为，超过某个临界点后，智能体推理缓存只需在其用户最感兴趣的领域进行密集填充，同时以与输入样本数量成亚线性比例的速度增长，就可能取代大语言模型的很大一部分工作负载。"
+    },
+    {
+     "en": "This would be applicable to domains that do not require a great deal of creativity and are instead focused on the execution of particular instructions.",
+     "zh": "这将适用于那些不需要大量创造力、而专注于执行特定指令的领域。"
+    }
+   ]
+  },
+  {
+   "en": "It is beyond the scope of this work, but we foresee that applying agentic reasoning caching to post-training data corpora could lead to the development of a new class of models – semantic models – that live above neural models such as SLMs/LLMs and are fully explainable, highly efficient, and continually trainable. In such a configuration, neural models, which currently stand at or near the top of the intelligence stack, become a support layer between hardware and intelligent semantic software – “neuralware.”",
+   "zh": "这超出了本工作的范围，但我们预见，将智能体推理缓存应用于训练后数据语料库，可能会催生一类新模型——语义模型——它们位于SLM/LLM等神经模型之上，完全可解释、高效且可持续训练。 在这种架构中，目前处于智能栈顶层或接近顶层的神经模型，将成为硬件与智能语义软件之间的支撑层——“神经件”（neuralware）。",
+   "sents": [
+    {
+     "en": "It is beyond the scope of this work, but we foresee that applying agentic reasoning caching to post-training data corpora could lead to the development of a new class of models – semantic models – that live above neural models such as SLMs/LLMs and are fully explainable, highly efficient, and continually trainable.",
+     "zh": "这超出了本工作的范围，但我们预见，将智能体推理缓存应用于训练后数据语料库，可能会催生一类新模型——语义模型——它们位于SLM/LLM等神经模型之上，完全可解释、高效且可持续训练。"
+    },
+    {
+     "en": "In such a configuration, neural models, which currently stand at or near the top of the intelligence stack, become a support layer between hardware and intelligent semantic software – “neuralware.”",
+     "zh": "在这种架构中，目前处于智能栈顶层或接近顶层的神经模型，将成为硬件与智能语义软件之间的支撑层——“神经件”（neuralware）。"
+    }
+   ]
+  },
+  {
+   "en": "The fact that our present work demonstrates that frontier-level intelligence can, on problems of interest, be cached to rely only on a single 1B-parameter model in a phrasally and parametrically robust manner gives us strong hope for the ability to perform the entire class of non-creative intelligence tasks on the edge in the future.",
+   "zh": "我们目前的工作表明，前沿级别的智能在感兴趣的问题上，可以通过缓存的方式，以短语层面和参数层面都稳健的方式仅依赖于一个 1B 参数的智能体，这一事实让我们对未来在边缘设备上执行整类非创造性智能任务的能力充满期待。",
+   "sents": null
+  },
+  {
+   "en": "This appendix walks through a single benchmark problem end-to-end, showing every artifact the agentic reasoning caching system produces: the original question, the source model’s reasoning transcript, the semantic functions that constitute the cache entry, their compiled form, and the final cache output with its narration trace. The example is an ideal gas law problem from SciBench [ 17 ] (predicting the pressure of ethane) with three semantic functions exercising temperature conversion, pressure unit conversion, and the root ideal-gas-law computation. Both the source model’s answer and the cache output match the golden label ( ≈ 5130 ​ kPa \\approx 5130\\,\\mathrm{kPa} ). This example was selected because it exercises all core mechanisms (parameter extraction via load() , sub-function delegation via do() , result retrieval via load(result, …) , reasoning narration via narrate() , value extraction via extract() , and target-model querying via lm() ) while requiring an LLM call at invocation time to classify the temperature unit, demonstrating that lm() and extract() survive compilation.",
+   "zh": "本附录完整走查一道基准测试题，展示智能体推理缓存系统产生的每一项制品：原始问题、源模型的推理记录、构成缓存条目的语义函数、它们的编译形式，以及带有叙述轨迹的最终缓存输出。 该示例是 SciBench [ 17 ] 中的理想气体定律问题（预测乙烷的压力），包含三个语义函数，分别执行温度转换、压力单位转换以及理想气体定律的求根计算。 源模型的答案与缓存输出均与标准标签一致（ ≈ 5130 ​ kPa \\approx 5130\\,\\mathrm{kPa} ）。 选择这个示例是因为它覆盖了所有核心机制（通过 load() 进行参数提取、通过 do() 进行子函数委派、通过 load(result, …) 进行结果检索、通过 narrate() 进行推理叙述、通过 extract() 进行数值提取，以及通过 lm() 进行目标模型查询），同时在调用时需要一次 LLM 调用来分类温度单位，从而证明 lm() 和 extract() 在编译后依然可用。",
+   "sents": [
+    {
+     "en": "This appendix walks through a single benchmark problem end-to-end, showing every artifact the agentic reasoning caching system produces: the original question, the source model’s reasoning transcript, the semantic functions that constitute the cache entry, their compiled form, and the final cache output with its narration trace.",
+     "zh": "本附录完整走查一道基准测试题，展示智能体推理缓存系统产生的每一项制品：原始问题、源模型的推理记录、构成缓存条目的语义函数、它们的编译形式，以及带有叙述轨迹的最终缓存输出。"
+    },
+    {
+     "en": "The example is an ideal gas law problem from SciBench [ 17 ] (predicting the pressure of ethane) with three semantic functions exercising temperature conversion, pressure unit conversion, and the root ideal-gas-law computation.",
+     "zh": "该示例是 SciBench [ 17 ] 中的理想气体定律问题（预测乙烷的压力），包含三个语义函数，分别执行温度转换、压力单位转换以及理想气体定律的求根计算。"
+    },
+    {
+     "en": "Both the source model’s answer and the cache output match the golden label ( ≈ 5130 ​ kPa \\approx 5130\\,\\mathrm{kPa} ).",
+     "zh": "源模型的答案与缓存输出均与标准标签一致（ ≈ 5130 ​ kPa \\approx 5130\\,\\mathrm{kPa} ）。"
+    },
+    {
+     "en": "This example was selected because it exercises all core mechanisms (parameter extraction via load() , sub-function delegation via do() , result retrieval via load(result, …) , reasoning narration via narrate() , value extraction via extract() , and target-model querying via lm() ) while requiring an LLM call at invocation time to classify the temperature unit, demonstrating that lm() and extract() survive compilation.",
+     "zh": "选择这个示例是因为它覆盖了所有核心机制（通过 load() 进行参数提取、通过 do() 进行子函数委派、通过 load(result, …) 进行结果检索、通过 narrate() 进行推理叙述、通过 extract() 进行数值提取，以及通过 lm() 进行目标模型查询），同时在调用时需要一次 LLM 调用来分类温度单位，从而证明 lm() 和 extract() 在编译后依然可用。"
+    }
+   ]
+  },
+  {
+   "en": "This appendix walks through a second benchmark problem end-to-end, complementing the ideal gas law example in Appendix A . The example is a university-level thermodynamics problem from SciBench [ 17 ] (constant-volume work calculation) with two semantic functions. Both the source model’s answer and the cache output match the golden label ( w = 0 w=0 ). This example was selected because it is short, scientifically accessible, and exercises all core mechanisms: parameter extraction via load() , sub-function delegation via do() , reasoning narration via narrate() , and value extraction via extract() .",
+   "zh": "本附录完整地走查第二个基准测试问题，是对附录 A 中理想气体状态方程示例的补充。 该示例是来自 SciBench [ 17 ] 的一道大学水平热力学问题（等容功计算），包含两个语义函数。 源模型的答案与缓存输出均与标准答案（ w = 0 w=0 ）一致。 选择这个示例是因为它简短、科学上易于理解，并且锻炼了所有核心机制：通过 load() 进行参数提取、通过 do() 进行子函数委托、通过 narrate() 进行推理叙述，以及通过 extract() 进行数值提取。",
+   "sents": [
+    {
+     "en": "This appendix walks through a second benchmark problem end-to-end, complementing the ideal gas law example in Appendix A .",
+     "zh": "本附录完整地走查第二个基准测试问题，是对附录 A 中理想气体状态方程示例的补充。"
+    },
+    {
+     "en": "The example is a university-level thermodynamics problem from SciBench [ 17 ] (constant-volume work calculation) with two semantic functions.",
+     "zh": "该示例是来自 SciBench [ 17 ] 的一道大学水平热力学问题（等容功计算），包含两个语义函数。"
+    },
+    {
+     "en": "Both the source model’s answer and the cache output match the golden label ( w = 0 w=0 ).",
+     "zh": "源模型的答案与缓存输出均与标准答案（ w = 0 w=0 ）一致。"
+    },
+    {
+     "en": "This example was selected because it is short, scientifically accessible, and exercises all core mechanisms: parameter extraction via load() , sub-function delegation via do() , reasoning narration via narrate() , and value extraction via extract() .",
+     "zh": "选择这个示例是因为它简短、科学上易于理解，并且锻炼了所有核心机制：通过 load() 进行参数提取、通过 do() 进行子函数委托、通过 narrate() 进行推理叙述，以及通过 extract() 进行数值提取。"
+    }
+   ]
+  },
+  {
+   "en": "This appendix provides per-role token usage and cost breakdowns for each experiment with available data. In each table, Avg In and Avg Out are mean input and output tokens per sample; Cache Rd is the mean number of prompt-cache tokens reused (read) per sample; Cache Wr is the mean number of tokens written to the prompt cache per sample (applicable only to the builder’s multi-turn loop); and Cost is the mean per-sample dollar cost for that role. Source averages are divided by the total number of samples; builder averages by the number of newly built cache entries; target, extractor, and converter averages by the total number of samples.",
+   "zh": "本附录提供每项实验中各角色的 token 用量与成本明细（针对有可用数据的实验）。 在每张表中，Avg In 和 Avg Out 是每个样本的平均输入和输出 token 数；Cache Rd 是每个样本平均重用（读取）的提示缓存 token 数；Cache Wr 是每个样本平均写入提示缓存的 token 数（仅适用于智能体的多轮循环）；Cost 是该角色每个样本的平均美元成本。 来源（source）的平均值除以样本总数；智能体（builder）的平均值除以新建缓存条目的数量；目标（target）、抽取器（extractor）和转换器（converter）的平均值除以样本总数。",
+   "sents": [
+    {
+     "en": "This appendix provides per-role token usage and cost breakdowns for each experiment with available data.",
+     "zh": "本附录提供每项实验中各角色的 token 用量与成本明细（针对有可用数据的实验）。"
+    },
+    {
+     "en": "In each table, Avg In and Avg Out are mean input and output tokens per sample; Cache Rd is the mean number of prompt-cache tokens reused (read) per sample; Cache Wr is the mean number of tokens written to the prompt cache per sample (applicable only to the builder’s multi-turn loop); and Cost is the mean per-sample dollar cost for that role.",
+     "zh": "在每张表中，Avg In 和 Avg Out 是每个样本的平均输入和输出 token 数；Cache Rd 是每个样本平均重用（读取）的提示缓存 token 数；Cache Wr 是每个样本平均写入提示缓存的 token 数（仅适用于智能体的多轮循环）；Cost 是该角色每个样本的平均美元成本。"
+    },
+    {
+     "en": "Source averages are divided by the total number of samples; builder averages by the number of newly built cache entries; target, extractor, and converter averages by the total number of samples.",
+     "zh": "来源（source）的平均值除以样本总数；智能体（builder）的平均值除以新建缓存条目的数量；目标（target）、抽取器（extractor）和转换器（converter）的平均值除以样本总数。"
+    }
+   ]
+  },
+  {
+   "en": "This appendix details the three-stage pipeline used to produce the finetuned 1B-parameter target model 𝒯 \\mathcal{T} discussed in Section 2.2.4 : collecting real invocation logs, augmenting them with synthetic data, and supervised fine-tuning.",
+   "zh": "本附录详细介绍了用于生成第 2.2.4 节中讨论的经微调的 1B 参数目标模型 𝒯 \\mathcal{T} 的三阶段流程：收集真实调用日志、用合成数据进行增广，以及监督微调。",
+   "sents": null
+  },
+  {
+   "en": "During ordinary cache construction and evaluation runs the system logs every LM call made by semantic functions. Each log record contains the role of the caller (builder, extractor, converter, or target), the full request prompt, and the model’s response. We assign every record a deterministic identifier derived from the experiment name, sample id, perturbation tag, role, and call index to enable deduplication and reproducibility.",
+   "zh": "在普通的缓存构建和评估运行期间，系统会记录语义功能所做的每一次语言模型调用。 每条日志记录包含调用者的角色（builder、extractor、converter 或 target）、完整的请求提示词以及模型的响应。 我们为每条记录分配一个确定性标识符，该标识符由实验名称、样本 id、扰动标签、角色和调用索引派生而来，以实现去重和可复现性。",
+   "sents": [
+    {
+     "en": "During ordinary cache construction and evaluation runs the system logs every LM call made by semantic functions.",
+     "zh": "在普通的缓存构建和评估运行期间，系统会记录语义功能所做的每一次语言模型调用。"
+    },
+    {
+     "en": "Each log record contains the role of the caller (builder, extractor, converter, or target), the full request prompt, and the model’s response.",
+     "zh": "每条日志记录包含调用者的角色（builder、extractor、converter 或 target）、完整的请求提示词以及模型的响应。"
+    },
+    {
+     "en": "We assign every record a deterministic identifier derived from the experiment name, sample id, perturbation tag, role, and call index to enable deduplication and reproducibility.",
+     "zh": "我们为每条记录分配一个确定性标识符，该标识符由实验名称、样本 id、扰动标签、角色和调用索引派生而来，以实现去重和可复现性。"
+    }
+   ]
+  },
+  {
+   "en": "After running the evaluation benchmarks described in Section 3 , we harvest roughly 20% of the resulting logs. Only records whose role is relevant to the target model (i.e. the target, extractor, and converter roles) are retained, as the builder and source roles exercise capabilities beyond what 𝒯 \\mathcal{T} needs. The filtered records are serialized as a HuggingFace Dataset on disk, forming the seeding dataset for the next stage.",
+   "zh": "在运行第 3 节所述的评估基准后，我们收集了约 20% 的结果日志。 只保留与目标模型相关的角色（即目标、提取器和转换器角色）的记录，因为构建器和源角色所涉及的能力超出了 𝒯 \\mathcal{T} 所需的范围。 过滤后的记录被序列化为磁盘上的 HuggingFace 数据集，构成下一阶段的种子数据集。",
+   "sents": [
+    {
+     "en": "After running the evaluation benchmarks described in Section 3 , we harvest roughly 20% of the resulting logs.",
+     "zh": "在运行第 3 节所述的评估基准后，我们收集了约 20% 的结果日志。"
+    },
+    {
+     "en": "Only records whose role is relevant to the target model (i.e. the target, extractor, and converter roles) are retained, as the builder and source roles exercise capabilities beyond what 𝒯 \\mathcal{T} needs.",
+     "zh": "只保留与目标模型相关的角色（即目标、提取器和转换器角色）的记录，因为构建器和源角色所涉及的能力超出了 𝒯 \\mathcal{T} 所需的范围。"
+    },
+    {
+     "en": "The filtered records are serialized as a HuggingFace Dataset on disk, forming the seeding dataset for the next stage.",
+     "zh": "过滤后的记录被序列化为磁盘上的 HuggingFace 数据集，构成下一阶段的种子数据集。"
+    }
+   ]
+  },
+  {
+   "en": "A seeding set of a few thousand real invocations is too small to finetune a language model reliably. We therefore amplify it with synthetic variants, targeting a roughly 10 × 10\\times expansion.",
+   "zh": "数千条真实调用的种子集规模太小，无法可靠地微调语言模型。 因此，我们通过合成变体对其进行扩充，目标是实现大约 10 倍的扩展。",
+   "sents": [
+    {
+     "en": "A seeding set of a few thousand real invocations is too small to finetune a language model reliably.",
+     "zh": "数千条真实调用的种子集规模太小，无法可靠地微调语言模型。"
+    },
+    {
+     "en": "We therefore amplify it with synthetic variants, targeting a roughly 10 × 10\\times expansion.",
+     "zh": "因此，我们通过合成变体对其进行扩充，目标是实现大约 10 倍的扩展。"
+    }
+   ]
+  },
+  {
+   "en": "For each seeding record, we repeatedly prompt the source model 𝒮 \\mathcal{S} (Claude Opus 4.5) to generate three synthetic variants at a time, aiming for ten valid variants in total. Each variant is a structurally identical request string that differs only in its payload (i.e., the concrete question, problem statement, or data being processed) while preserving the instructional scaffold verbatim. The prompt wraps the seeding request and its response (for context) in XML tags and instructs the model to emit each variant inside <variant> tags. A regex parser extracts the variants and discards degenerate outputs shorter than ten characters or containing leaked chain-of-thought. Within each round, if fewer than three valid variants are recovered, the generator retries up to twice with an appropriately reduced request count.",
+   "zh": "对于每条种子记录，我们反复提示源模型 𝒮 \\mathcal{S}（Claude Opus 4.5）一次生成三个合成变体，目标是总共得到十个有效变体。 每个变体都是结构完全相同的请求字符串，仅在载荷（即正在处理的具体问题、问题陈述或数据）上有所不同，同时逐字保留指令性框架。 该提示将种子请求及其响应（作为上下文）包裹在 XML 标签中，并指示模型在 <variant> 标签内输出每个变体。 一个正则表达式解析器提取这些变体，并丢弃长度少于十个字符或包含泄露思维链的退化输出。 在每一轮中，如果恢复的有效变体少于三个，生成器会以适当减少的请求数量重试最多两次。",
+   "sents": [
+    {
+     "en": "For each seeding record, we repeatedly prompt the source model 𝒮 \\mathcal{S} (Claude Opus 4.5) to generate three synthetic variants at a time, aiming for ten valid variants in total.",
+     "zh": "对于每条种子记录，我们反复提示源模型 𝒮 \\mathcal{S}（Claude Opus 4.5）一次生成三个合成变体，目标是总共得到十个有效变体。"
+    },
+    {
+     "en": "Each variant is a structurally identical request string that differs only in its payload (i.e., the concrete question, problem statement, or data being processed) while preserving the instructional scaffold verbatim.",
+     "zh": "每个变体都是结构完全相同的请求字符串，仅在载荷（即正在处理的具体问题、问题陈述或数据）上有所不同，同时逐字保留指令性框架。"
+    },
+    {
+     "en": "The prompt wraps the seeding request and its response (for context) in XML tags and instructs the model to emit each variant inside <variant> tags.",
+     "zh": "该提示将种子请求及其响应（作为上下文）包裹在 XML 标签中，并指示模型在 <variant> 标签内输出每个变体。"
+    },
+    {
+     "en": "A regex parser extracts the variants and discards degenerate outputs shorter than ten characters or containing leaked chain-of-thought.",
+     "zh": "一个正则表达式解析器提取这些变体，并丢弃长度少于十个字符或包含泄露思维链的退化输出。"
+    },
+    {
+     "en": "Within each round, if fewer than three valid variants are recovered, the generator retries up to twice with an appropriately reduced request count.",
+     "zh": "在每一轮中，如果恢复的有效变体少于三个，生成器会以适当减少的请求数量重试最多两次。"
+    }
+   ]
+  },
+  {
+   "en": "Once all variant requests have been generated, a second pass through the synthetically generated variants fills in the corresponding responses. Each synthetic request is sent to 𝒮 \\mathcal{S} and the reply is recorded alongside the request. The full set of synthetic (request, response) pairs is written to batched JSONL files and finally consolidated into a single HuggingFace Dataset .",
+   "zh": "在所有变体请求生成完毕后，对合成生成的变体进行第二遍处理，填入对应的响应。 每个合成请求都被发送到 𝒮 \\mathcal{S}，回复则与请求一并记录下来。 完整的合成（请求，响应）对集合被写入批量 JSONL 文件，并最终整合为一个 HuggingFace Dataset。",
+   "sents": [
+    {
+     "en": "Once all variant requests have been generated, a second pass through the synthetically generated variants fills in the corresponding responses.",
+     "zh": "在所有变体请求生成完毕后，对合成生成的变体进行第二遍处理，填入对应的响应。"
+    },
+    {
+     "en": "Each synthetic request is sent to 𝒮 \\mathcal{S} and the reply is recorded alongside the request.",
+     "zh": "每个合成请求都被发送到 𝒮 \\mathcal{S}，回复则与请求一并记录下来。"
+    },
+    {
+     "en": "The full set of synthetic (request, response) pairs is written to batched JSONL files and finally consolidated into a single HuggingFace Dataset .",
+     "zh": "完整的合成（请求，响应）对集合被写入批量 JSONL 文件，并最终整合为一个 HuggingFace Dataset。"
+    }
+   ]
+  },
+  {
+   "en": "The consolidated dataset is used to finetune Llama 3.2 1B [ 8 ] with supervised fine-tuning (SFT) via the trl library’s SFTTrainer . Each training example is formatted as a single-turn conversation: the request becomes a user message and the response an assistant message. Rows with empty completions are discarded.",
+   "zh": "整合后的数据集用于通过 trl 库的 SFTTrainer，以监督微调（SFT）方式微调 Llama 3.2 1B [8]。 每个训练样本被格式化为单轮对话：请求成为用户消息，响应成为助手消息。 补全为空的行会被丢弃。",
+   "sents": [
+    {
+     "en": "The consolidated dataset is used to finetune Llama 3.2 1B [ 8 ] with supervised fine-tuning (SFT) via the trl library’s SFTTrainer .",
+     "zh": "整合后的数据集用于通过 trl 库的 SFTTrainer，以监督微调（SFT）方式微调 Llama 3.2 1B [8]。"
+    },
+    {
+     "en": "Each training example is formatted as a single-turn conversation: the request becomes a user message and the response an assistant message.",
+     "zh": "每个训练样本被格式化为单轮对话：请求成为用户消息，响应成为助手消息。"
+    },
+    {
+     "en": "Rows with empty completions are discarded.",
+     "zh": "补全为空的行会被丢弃。"
+    }
+   ]
+  },
+  {
+   "en": "Table 11 lists the hyperparameters. Training uses BFloat16 mixed precision, gradient checkpointing for memory efficiency, and the AdamW optimizer. The trainer evaluates validation loss at the end of every epoch and saves a checkpoint; early stopping with a patience of three epochs halts training when validation loss ceases to improve, and the best checkpoint is restored automatically. The final model and tokenizer are saved as a self-contained artifact that can be used on an edge device or served through an inference endpoint.",
+   "zh": "表11列出了超参数。 训练使用 BFloat16 混合精度、用于提高内存效率的梯度检查点，以及 AdamW 优化器。 训练器在每个 epoch 结束时评估验证损失并保存检查点；当验证损失不再改善时，早停机制（patience 为三个 epoch）会中止训练，并自动恢复最佳检查点。 最终模型和分词器被保存为自包含的制品，可在边缘设备上使用或通过推理端点提供服务。",
+   "sents": [
+    {
+     "en": "Table 11 lists the hyperparameters.",
+     "zh": "表11列出了超参数。"
+    },
+    {
+     "en": "Training uses BFloat16 mixed precision, gradient checkpointing for memory efficiency, and the AdamW optimizer.",
+     "zh": "训练使用 BFloat16 混合精度、用于提高内存效率的梯度检查点，以及 AdamW 优化器。"
+    },
+    {
+     "en": "The trainer evaluates validation loss at the end of every epoch and saves a checkpoint; early stopping with a patience of three epochs halts training when validation loss ceases to improve, and the best checkpoint is restored automatically.",
+     "zh": "训练器在每个 epoch 结束时评估验证损失并保存检查点；当验证损失不再改善时，早停机制（patience 为三个 epoch）会中止训练，并自动恢复最佳检查点。"
+    },
+    {
+     "en": "The final model and tokenizer are saved as a self-contained artifact that can be used on an edge device or served through an inference endpoint.",
+     "zh": "最终模型和分词器被保存为自包含的制品，可在边缘设备上使用或通过推理端点提供服务。"
+    }
+   ]
+  },
+  {
+   "en": "Multi-GPU training is supported via HuggingFace accelerate ; in practice a single GPU sufficed for the 1B-parameter model given the moderate dataset size.",
+   "zh": "通过 HuggingFace accelerate 支持多 GPU 训练；实际上，考虑到数据集规模适中，单张 GPU 即足以训练该 1B 参数模型。",
+   "sents": null
+  }
+ ]
+}
